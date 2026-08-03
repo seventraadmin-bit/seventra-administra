@@ -1,18 +1,46 @@
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
-import '../home/stage1_check_screen.dart';
+import '../shell/app_shell_screen.dart';
+import '../shell/module_placeholder_screen.dart';
+import '../shell/shell_destinations.dart';
 
-/// Configuración de rutas de RISEG ONE.
+/// Construye la configuración de rutas de RISEG ONE.
 ///
-/// Deliberadamente mínima en esta etapa: una sola ruta que confirma que el
-/// arranque funciona. El Shell real (sidebar + top bar + rutas anidadas de
-/// cada módulo) se construye en la Etapa 2 sobre esta misma base.
-final appRouter = GoRouter(
-  initialLocation: '/',
-  routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const Stage1CheckScreen(),
-    ),
-  ],
-);
+/// Es una función (no una instancia global `final`) deliberadamente: un
+/// `GoRouter` guarda estado de navegación mutable, y una sola instancia
+/// global compartida entre pruebas hace que el estado de una prueba se
+/// filtre a la siguiente. Cada `main.dart`/prueba debe crear la suya con
+/// [createAppRouter].
+///
+/// Un `StatefulShellRoute.indexedStack` con una rama por cada uno de los
+/// 10 destinos del Shell — cada rama conserva su propia navegación interna
+/// y queda preparada para rutas anidadas (hoy solo tiene el placeholder).
+GoRouter createAppRouter() {
+  return GoRouter(
+    initialLocation: '/dashboard',
+    redirect: (context, state) => state.uri.path == '/' ? '/dashboard' : null,
+    routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) => AppShellScreen(navigationShell: navigationShell),
+        branches: [
+          for (final def in shellModuleDefs)
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: def.path,
+                  builder: (context, state) {
+                    final l10n = AppLocalizations.of(context)!;
+                    final destinations = buildShellDestinations(l10n);
+                    return ModulePlaceholderScreen(
+                      destination: destinationForPath(destinations, def.path),
+                    );
+                  },
+                ),
+              ],
+            ),
+        ],
+      ),
+    ],
+  );
+}

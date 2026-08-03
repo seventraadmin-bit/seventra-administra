@@ -2,19 +2,11 @@
   "@@locale": "es",
   "appTitle": "RISEG ONE",
   "@appTitle": {
-    "description": "Nombre de la aplicación mostrado en la barra de título de la ventana."
+    "description": "Nombre de la aplicación mostrado en la barra de título de la ventana y como tooltip del logotipo."
   },
   "appSubtitle": "Sistema Integral Administrativo",
   "@appSubtitle": {
     "description": "Subtítulo del sistema."
-  },
-  "stage1CheckTitle": "Etapa 1 — Verificación de infraestructura",
-  "@stage1CheckTitle": {
-    "description": "Título de la pantalla mínima de verificación de la Etapa 1."
-  },
-  "stage1CheckDescription": "Esta pantalla confirma que el arranque, las rutas, la localización, el tema, Riverpod, Drift y el registro de eventos funcionan correctamente. No contiene módulos ni lógica de negocio todavía.",
-  "@stage1CheckDescription": {
-    "description": "Descripción de la pantalla mínima de verificación."
   },
   "themeModeLabel": "Tema",
   "@themeModeLabel": {
@@ -22,5 +14,33 @@
   },
   "themeModeLight": "Claro",
   "themeModeDark": "Oscuro",
-  "themeModeSystem": "Sistema"
+  "themeModeSystem": "Sistema",
+
+  "moduleDashboard": "Dashboard",
+  "moduleOrganizacion": "Organización",
+  "modulePersonal": "Personal",
+  "moduleInventario": "Inventario",
+  "moduleActivos": "Activos",
+  "moduleVehiculos": "Vehículos",
+  "moduleTelefonia": "Telefonía",
+  "moduleDocumentos": "Documentos",
+  "moduleReportes": "Reportes",
+  "moduleConfiguracion": "Configuración",
+
+  "modulePlaceholderMessage": "El módulo {moduleName} estará disponible próximamente.",
+  "@modulePlaceholderMessage": {
+    "description": "Mensaje mostrado en la pantalla placeholder de cada módulo del Shell.",
+    "placeholders": {
+      "moduleName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "shellExpandSidebarTooltip": "Expandir menú",
+  "shellCollapseSidebarTooltip": "Contraer menú",
+  "shellSearchTooltip": "Buscar en todo el sistema",
+  "shellNotificationsTooltip": "Notificaciones",
+  "shellProfileTooltip": "Perfil de usuario",
+  "shellProfilePlaceholderName": "Usuario"
 }

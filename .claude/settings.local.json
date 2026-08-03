@@ -21,7 +21,10 @@
       "PowerShell(Stop-Process -Name riseg_one -Force -ErrorAction SilentlyContinue)",
       "PowerShell(Get-Process riseg_one -ErrorAction SilentlyContinue)",
       "Bash(rm -rf \"/c/Users/segur/AppData/Roaming/com.example\")",
-      "Read(//c/Users/segur/AppData/Roaming//**)"
+      "Read(//c/Users/segur/AppData/Roaming//**)",
+      "Bash(rm lib/app/home/stage1_check_screen.dart)",
+      "Bash(rmdir lib/app/home)",
+      "Bash(cat \"C:\\\\\\\\Users\\\\\\\\segur\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\c--Users-segur-riseg-control-activos\\\\\\\\38891144-ba45-4a5f-853b-a33aa4b15cad\\\\\\\\tasks\\\\\\\\b431w33i5.output\")"
     ]
   }
 }

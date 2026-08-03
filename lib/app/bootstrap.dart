@@ -43,7 +43,7 @@ void bootstrap() {
           appPathsProvider.overrideWithValue(appPaths),
           appDatabaseProvider.overrideWithValue(database),
         ],
-        child: const RisegOneApp(),
+        child: RisegOneApp(),
       ),
     );
   });
