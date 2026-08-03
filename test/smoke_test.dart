@@ -8,10 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:riseg_control_activos/app/app.dart';
-import 'package:riseg_control_activos/core/config/env.dart';
-import 'package:riseg_control_activos/core/database/app_database.dart';
-import 'package:riseg_control_activos/core/di/providers.dart';
+import 'package:riseg_one/app/app.dart';
+import 'package:riseg_one/core/config/env.dart';
+import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/di/providers.dart';
 
 void main() {
   testWidgets('RISEG ONE arranca y muestra la pantalla de verificación', (tester) async {

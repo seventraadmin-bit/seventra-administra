@@ -14,7 +14,14 @@
       "Bash(powershell -Command \"Get-Process riseg_control_activos -ErrorAction SilentlyContinue\")",
       "Bash(powershell -Command \"Stop-Process -Name riseg_control_activos -Force\")",
       "Bash(powershell -Command \"Get-Process riseg_control_activos -ErrorAction SilentlyContinue; Write-Output 'check-done'\")",
-      "Bash(powershell -Command \"Stop-Process -Name riseg_control_activos -Force -ErrorAction SilentlyContinue; Write-Output done\")"
+      "Bash(powershell -Command \"Stop-Process -Name riseg_control_activos -Force -ErrorAction SilentlyContinue; Write-Output done\")",
+      "Read(//c//**)",
+      "Bash(xargs grep -l \"ApplicationSupport\\\\|getApplicationSupportDirectory\")",
+      "Bash(flutter clean *)",
+      "PowerShell(Stop-Process -Name riseg_one -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process riseg_one -ErrorAction SilentlyContinue)",
+      "Bash(rm -rf \"/c/Users/segur/AppData/Roaming/com.example\")",
+      "Read(//c/Users/segur/AppData/Roaming//**)"
     ]
   }
 }
