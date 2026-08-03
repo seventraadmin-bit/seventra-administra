@@ -1,0 +1,26 @@
+{
+  "@@locale": "es",
+  "appTitle": "RISEG ONE",
+  "@appTitle": {
+    "description": "Nombre de la aplicación mostrado en la barra de título de la ventana."
+  },
+  "appSubtitle": "Sistema Integral Administrativo",
+  "@appSubtitle": {
+    "description": "Subtítulo del sistema."
+  },
+  "stage1CheckTitle": "Etapa 1 — Verificación de infraestructura",
+  "@stage1CheckTitle": {
+    "description": "Título de la pantalla mínima de verificación de la Etapa 1."
+  },
+  "stage1CheckDescription": "Esta pantalla confirma que el arranque, las rutas, la localización, el tema, Riverpod, Drift y el registro de eventos funcionan correctamente. No contiene módulos ni lógica de negocio todavía.",
+  "@stage1CheckDescription": {
+    "description": "Descripción de la pantalla mínima de verificación."
+  },
+  "themeModeLabel": "Tema",
+  "@themeModeLabel": {
+    "description": "Etiqueta del selector de tema claro/oscuro."
+  },
+  "themeModeLight": "Claro",
+  "themeModeDark": "Oscuro",
+  "themeModeSystem": "Sistema"
+}

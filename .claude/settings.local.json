@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "Bash(flutter --version)",
+      "Bash(flutter pub *)",
+      "Bash(dart run *)",
+      "Bash(flutter analyze *)",
+      "Bash(flutter test *)",
+      "Bash(flutter devices *)",
+      "Bash(flutter run *)",
+      "Bash(ls -la \"/c/Users/segur/AppData/Roaming/com.example/riseg_control_activos/RISEGONE-dev/\" 2>&1)",
+      "Read(//c/Users/segur/AppData/Roaming/com.example/riseg_control_activos/RISEGONE-dev//**)",
+      "Bash(powershell -Command \"Get-Process riseg_control_activos -ErrorAction SilentlyContinue\")",
+      "Bash(powershell -Command \"Stop-Process -Name riseg_control_activos -Force\")",
+      "Bash(powershell -Command \"Get-Process riseg_control_activos -ErrorAction SilentlyContinue; Write-Output 'check-done'\")",
+      "Bash(powershell -Command \"Stop-Process -Name riseg_control_activos -Force -ErrorAction SilentlyContinue; Write-Output done\")"
     ]
   }
 }
