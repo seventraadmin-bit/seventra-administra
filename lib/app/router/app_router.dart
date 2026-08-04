@@ -1,6 +1,8 @@
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/env.dart';
+import '../dev/design_system_catalog_screen.dart';
 import '../shell/app_shell_screen.dart';
 import '../shell/dashboard_welcome_screen.dart';
 import '../shell/module_placeholder_screen.dart';
@@ -48,6 +50,13 @@ GoRouter createAppRouter() {
             ),
         ],
       ),
+      // Solo se registra en desarrollo: la ruta ni siquiera existe en un
+      // build de producción, no solo queda oculta del sidebar.
+      if (Env.resolve().isDev)
+        GoRoute(
+          path: '/dev/design-system',
+          builder: (context, state) => const DesignSystemCatalogScreen(),
+        ),
     ],
   );
 }

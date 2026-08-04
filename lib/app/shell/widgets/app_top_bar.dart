@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/design_system/components/riseg_search_field.dart';
 import '../../../core/design_system/tokens/app_color_scheme.dart';
-import '../../../core/design_system/tokens/app_radius.dart';
 import '../../../core/design_system/tokens/app_spacing.dart';
 import '../../../core/design_system/tokens/app_typography.dart';
 import '../../theme/theme_mode_controller.dart';
@@ -26,6 +26,7 @@ class AppTopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeControllerProvider);
 
@@ -46,7 +47,11 @@ class AppTopBar extends ConsumerWidget {
             children: [
               Expanded(child: AppBreadcrumb(segments: breadcrumbSegments)),
               const SizedBox(width: AppSpacing.md),
-              _SearchControl(compact: compactSearch),
+              RisegSearchField(
+                key: const Key('top_bar_search'),
+                hint: l10n.shellSearchTooltip,
+                compact: compactSearch,
+              ),
               const SizedBox(width: AppSpacing.xs),
               _ThemeSelector(
                 mode: themeMode,
@@ -59,58 +64,6 @@ class AppTopBar extends ConsumerWidget {
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _SearchControl extends StatelessWidget {
-  const _SearchControl({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final colors = Theme.of(context).extension<AppColorScheme>()!;
-
-    if (compact) {
-      return IconButton(
-        key: const Key('top_bar_search'),
-        tooltip: l10n.shellSearchTooltip,
-        icon: const Icon(Icons.search),
-        onPressed: () {},
-      );
-    }
-
-    // Sin relleno, solo un borde sutil: el fondo lleno anterior competía
-    // demasiado con el resto de la barra. Discreto no significa oculto —
-    // sigue siendo claramente un campo de búsqueda, solo no grita.
-    final border = OutlineInputBorder(
-      borderRadius: AppRadius.mdRadius,
-      borderSide: BorderSide(color: colors.borderSubtle),
-    );
-
-    return ConstrainedBox(
-      key: const Key('top_bar_search'),
-      constraints: const BoxConstraints(maxWidth: 300, minWidth: 160),
-      child: SizedBox(
-        height: 36,
-        child: TextField(
-          readOnly: true,
-          style: AppTypography.body.copyWith(color: colors.textMuted),
-          decoration: InputDecoration(
-            isDense: true,
-            prefixIcon: Icon(Icons.search, size: 18, color: colors.textMuted),
-            prefixIconConstraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-            contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            hintText: l10n.shellSearchTooltip,
-            hintStyle: AppTypography.body.copyWith(color: colors.textMuted),
-            filled: false,
-            border: border,
-            enabledBorder: border,
-          ),
-        ),
       ),
     );
   }

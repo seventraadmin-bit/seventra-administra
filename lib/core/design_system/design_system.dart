@@ -15,5 +15,15 @@ export 'tokens/app_spacing.dart';
 export 'tokens/app_typography.dart';
 export 'theme_context.dart';
 
-// Los componentes base (RisegButton, RisegCard, ...) se agregan en la
-// Etapa 3B, una vez aprobados los tokens.
+export 'components/riseg_button.dart';
+export 'components/riseg_card.dart';
+export 'components/riseg_dialog.dart';
+export 'components/riseg_empty_state.dart';
+export 'components/riseg_form_section.dart';
+export 'components/riseg_search_field.dart';
+export 'components/riseg_section_header.dart';
+export 'components/riseg_stat_card.dart';
+export 'components/riseg_status_badge.dart';
+export 'components/riseg_table_base.dart';
+export 'components/riseg_tabs.dart';
+export 'components/riseg_text_field.dart';
