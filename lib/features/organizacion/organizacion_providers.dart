@@ -21,15 +21,16 @@ import 'domain/usecases/crear_puesto_usecase.dart';
 import 'domain/usecases/crear_servicio_usecase.dart';
 import 'domain/usecases/crear_sucursal_usecase.dart';
 import 'domain/usecases/crear_ubicacion_usecase.dart';
+import 'domain/usecases/guardar_expediente_empresa_usecase.dart';
 import 'domain/usecases/mover_ubicacion_usecase.dart';
 import 'domain/usecases/obtener_arbol_ubicaciones_usecase.dart';
 import 'domain/usecases/obtener_empresa_activa_usecase.dart';
+import 'domain/usecases/obtener_expediente_empresa_usecase.dart';
 
-/// Providers de la Etapa 4A (Fundamentos de Organización).
-///
-/// Deliberadamente solo expone base de datos/servicios/repositorios/
-/// casos de uso — ningún controlador de pantalla, estado de formulario
-/// ni provider de listas para UI todavía. Eso empieza en la Etapa 4B.
+/// Providers de infraestructura de Organización (base de datos,
+/// servicios, repositorios, casos de uso). Los providers de pantalla
+/// (controladores de estado de UI) viven junto a cada pantalla, no aquí
+/// — ver `presentation/empresa/empresa_expediente_controller.dart`.
 
 final codigoSecuenciaServiceProvider = Provider<CodigoSecuenciaService>((ref) {
   return CodigoSecuenciaService(ref.watch(appDatabaseProvider));
@@ -69,6 +70,17 @@ final obtenerEmpresaActivaUseCaseProvider = Provider<ObtenerEmpresaActivaUseCase
 
 final actualizarEmpresaUseCaseProvider = Provider<ActualizarEmpresaUseCase>((ref) {
   return ActualizarEmpresaUseCase(ref.watch(empresaRepositoryProvider));
+});
+
+final obtenerExpedienteEmpresaUseCaseProvider = Provider<ObtenerExpedienteEmpresaUseCase>((ref) {
+  return ObtenerExpedienteEmpresaUseCase(
+    ref.watch(obtenerEmpresaActivaUseCaseProvider),
+    ref.watch(empresaRepositoryProvider),
+  );
+});
+
+final guardarExpedienteEmpresaUseCaseProvider = Provider<GuardarExpedienteEmpresaUseCase>((ref) {
+  return GuardarExpedienteEmpresaUseCase(ref.watch(empresaRepositoryProvider));
 });
 
 final crearPuestoUseCaseProvider = Provider<CrearPuestoUseCase>((ref) {

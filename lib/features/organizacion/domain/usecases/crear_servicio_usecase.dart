@@ -5,6 +5,7 @@ import 'package:riseg_one/core/error/result.dart';
 
 import '../repositories/cliente_repository.dart';
 import '../repositories/servicio_repository.dart';
+import '../shared/direccion_input.dart';
 
 /// Crea un Servicio garantizando transaccionalmente (vía
 /// `ServicioRepository`) el propio Servicio, su Dirección operativa
@@ -23,7 +24,7 @@ class CrearServicioUseCase {
     required String tipoServicioId,
     required String sucursalAdministrativaId,
     required DateTime fechaInicio,
-    required DireccionOperativaInput direccionOperativa,
+    required DireccionInput direccionOperativa,
     DateTime? fechaTermino,
     int elementosAutorizados = 0,
     String? responsableClienteContactoId,

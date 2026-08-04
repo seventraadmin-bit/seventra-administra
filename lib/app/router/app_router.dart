@@ -2,6 +2,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
+import '../../features/organizacion/presentation/empresa/empresa_expediente_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
 import '../shell/app_shell_screen.dart';
 import '../shell/dashboard_welcome_screen.dart';
@@ -38,6 +39,12 @@ GoRouter createAppRouter() {
                     // pantalla en vez del placeholder genérico.
                     if (def.path == '/dashboard') {
                       return const DashboardWelcomeScreen();
+                    }
+                    // Organización todavía no tiene navegación interna
+                    // propia — apunta directo al expediente de Empresa
+                    // mientras no existan otras secciones funcionales.
+                    if (def.path == '/organizacion') {
+                      return const EmpresaExpedienteScreen();
                     }
                     final l10n = AppLocalizations.of(context)!;
                     final destinations = buildShellDestinations(l10n);

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart';
+import 'package:riseg_one/features/organizacion/domain/shared/direccion_input.dart';
 
 import '../../domain/repositories/servicio_repository.dart';
 
@@ -19,7 +20,7 @@ class ServicioRepositoryImpl implements ServicioRepository {
     required String sucursalAdministrativaId,
     required DateTime fechaInicio,
     required String codigoUbicacionRaiz,
-    required DireccionOperativaInput direccionOperativa,
+    required DireccionInput direccionOperativa,
     DateTime? fechaTermino,
     int elementosAutorizados = 0,
     String? responsableClienteContactoId,

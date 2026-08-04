@@ -54,5 +54,56 @@
         "type": "String"
       }
     }
-  }
+  },
+
+  "empresaExpedienteTitulo": "Empresa",
+  "empresaExpedienteBotonEditar": "Editar",
+  "empresaExpedienteBotonGuardar": "Guardar",
+  "empresaExpedienteBotonCancelar": "Cancelar",
+  "empresaExpedienteBotonReintentar": "Reintentar",
+  "empresaExpedienteValorPendiente": "Pendiente de captura",
+  "empresaExpedienteCargaErrorTitulo": "No se pudo cargar el expediente",
+  "empresaExpedienteCargaErrorMensaje": "Ocurrió un problema al consultar los datos de la empresa.",
+
+  "empresaSeccionDatosGeneralesTitulo": "Datos generales",
+  "empresaSeccionLogotipoTitulo": "Logotipo institucional",
+  "empresaSeccionLogotipoNota": "Logotipo institucional configurado en la aplicación.",
+  "empresaSeccionDireccionFiscalTitulo": "Dirección fiscal",
+  "empresaSeccionMediosContactoTitulo": "Medios de contacto",
+
+  "empresaCampoCodigo": "Código",
+  "empresaCampoRazonSocial": "Razón social",
+  "empresaCampoNombreComercial": "Nombre comercial",
+  "empresaCampoRfc": "RFC",
+  "empresaCampoRepresentanteLegal": "Representante legal",
+  "empresaCampoEslogan": "Eslogan",
+
+  "empresaCampoCalle": "Calle",
+  "empresaCampoNumeroExterior": "Número exterior",
+  "empresaCampoNumeroInterior": "Número interior",
+  "empresaCampoColonia": "Colonia",
+  "empresaCampoMunicipioAlcaldia": "Municipio/Alcaldía",
+  "empresaCampoCiudadLocalidad": "Ciudad/Localidad",
+  "empresaCampoEstadoDireccion": "Estado",
+  "empresaCampoCodigoPostal": "Código postal",
+  "empresaCampoPais": "País",
+  "empresaCampoReferencias": "Referencias",
+
+  "empresaCampoTelefono": "Teléfono",
+  "empresaCampoCorreo": "Correo electrónico",
+  "empresaCampoSitioWeb": "Sitio web",
+
+  "empresaErrorCampoRequerido": "Este campo es obligatorio.",
+  "empresaErrorRfcFormato": "El RFC no tiene un formato válido.",
+  "empresaErrorCodigoPostalFormato": "El código postal debe tener 5 dígitos.",
+  "empresaErrorCorreoFormato": "El correo no tiene un formato válido.",
+  "empresaErrorSitioWebFormato": "El sitio web no tiene un formato válido.",
+
+  "empresaGuardadoExito": "Empresa actualizada correctamente.",
+  "empresaGuardadoErrorGeneral": "No se pudo guardar el expediente. Intenta de nuevo.",
+
+  "empresaCancelarConfirmacionTitulo": "Descartar cambios",
+  "empresaCancelarConfirmacionMensaje": "Tienes cambios sin guardar. ¿Quieres descartarlos?",
+  "empresaCancelarConfirmacionConfirmar": "Descartar",
+  "empresaCancelarConfirmacionCancelar": "Seguir editando"
 }

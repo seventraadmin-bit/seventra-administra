@@ -78,6 +78,14 @@ class AppDatabase extends _$AppDatabase {
         }
         await runSeed(this);
       },
+      // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,
+      // todas las FK declaradas en las tablas de la Etapa 4A eran solo
+      // documentación — nunca se rechazaba una referencia inválida ni se
+      // revertía una transacción por violarla. Se encontró al preparar la
+      // prueba de atomicidad de la Etapa 4B.
+      beforeOpen: (details) async {
+        await customStatement('PRAGMA foreign_keys = ON');
+      },
     );
   }
 

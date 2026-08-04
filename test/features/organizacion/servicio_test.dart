@@ -10,12 +10,12 @@ import 'package:riseg_one/features/organizacion/data/repositories/servicio_repos
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/ubicacion_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart';
-import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
+import 'package:riseg_one/features/organizacion/domain/shared/direccion_input.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_sucursal_usecase.dart';
 
-const _direccionDemo = DireccionOperativaInput(
+const _direccionDemo = DireccionInput(
   calle: 'Av. Insurgentes',
   numeroExterior: '123',
   colonia: 'Roma Norte',

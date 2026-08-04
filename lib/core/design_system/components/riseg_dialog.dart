@@ -121,12 +121,15 @@ class _RisegDialogShell extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               content,
               const SizedBox(height: AppSpacing.lg),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  for (var i = 0; i < actions.length; i++)
-                    Padding(padding: EdgeInsets.only(left: i == 0 ? 0 : AppSpacing.xs), child: actions[i]),
-                ],
+              // `Wrap` (no `Row`) — con textos de botón largos (algo común
+              // en español) dos acciones pueden no caber en el ancho fijo
+              // del diálogo; en vez de desbordar, la segunda pasa a una
+              // nueva línea.
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: actions,
               ),
             ],
           ),
