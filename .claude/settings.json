@@ -1,15 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Stop-Process -Name riseg_one -Force -ErrorAction SilentlyContinue)",
-      "PowerShell(Get-Process riseg_one -ErrorAction SilentlyContinue)",
-      "Bash(flutter run *)",
-      "Bash(grep -iE \"overflow|exception\" \"C:\\\\\\\\Users\\\\\\\\segur\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\c--Users-segur-riseg-control-activos\\\\\\\\38891144-ba45-4a5f-853b-a33aa4b15cad\\\\\\\\tasks\\\\\\\\bsk01e60o.output\")",
-      "Bash(grep -B3 -A30 \"83 pixels\" \"C:\\\\\\\\Users\\\\\\\\segur\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\c--Users-segur-riseg-control-activos\\\\\\\\38891144-ba45-4a5f-853b-a33aa4b15cad\\\\\\\\tasks\\\\\\\\bsk01e60o.output\")",
+      "Bash(flutter pub *)",
+      "Bash(dart run build_runner *)",
       "Bash(flutter analyze *)",
       "Bash(flutter test *)",
-      "Bash(grep -iE \"overflow|exception\" \"C:\\\\\\\\Users\\\\\\\\segur\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\c--Users-segur-riseg-control-activos\\\\\\\\38891144-ba45-4a5f-853b-a33aa4b15cad\\\\\\\\tasks\\\\\\\\bg5oq1oi4.output\")",
-      "Bash(python3 -c ' *)"
+      "Bash(flutter run *)",
+      "Bash(flutter clean *)",
+      "Bash(flutter devices *)"
     ]
   }
 }
