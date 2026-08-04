@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../core/design_system/tokens/app_color_scheme.dart';
 import '../shell_breakpoints.dart';
 import '../shell_destinations.dart';
 
@@ -88,7 +89,7 @@ class _SidebarHeader extends StatelessWidget {
   }
 }
 
-class _SidebarItem extends StatelessWidget {
+class _SidebarItem extends StatefulWidget {
   const _SidebarItem({
     required this.destination,
     required this.isActive,
@@ -102,8 +103,21 @@ class _SidebarItem extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_SidebarItem> createState() => _SidebarItemState();
+}
+
+class _SidebarItemState extends State<_SidebarItem> {
+  bool _hasFocus = false;
+
+  ShellDestination get destination => widget.destination;
+  bool get isActive => widget.isActive;
+  bool get collapsed => widget.collapsed;
+  VoidCallback get onTap => widget.onTap;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.extension<AppColorScheme>()!;
 
     final icon = Icon(
       destination.icon,
@@ -137,6 +151,10 @@ class _SidebarItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: isActive ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4) : null,
         borderRadius: BorderRadius.circular(8),
+        // Anillo de foco de teclado explícito: sin esto, Tab a través del
+        // sidebar es invisible (confirmado con captura antes/después de
+        // Tab) — InkWell por sí solo no dibuja un borde perceptible.
+        border: _hasFocus ? Border.all(color: colors.focusRing, width: 2) : null,
       ),
       // Padding horizontal constante a propósito (no condicionado a
       // `collapsed`): si cambiara de golpe junto con la estructura del
@@ -146,7 +164,12 @@ class _SidebarItem extends StatelessWidget {
       child: rowOrIcon,
     );
 
-    Widget child = InkWell(onTap: onTap, borderRadius: BorderRadius.circular(8), child: content);
+    Widget child = InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      onFocusChange: (hasFocus) => setState(() => _hasFocus = hasFocus),
+      child: content,
+    );
     if (collapsed) {
       child = Tooltip(message: destination.label, child: child);
     }

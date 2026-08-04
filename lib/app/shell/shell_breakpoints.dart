@@ -1,9 +1,15 @@
 /// Constantes centralizadas de responsividad del Shell.
 ///
 /// Ningún widget del Shell debe usar un número mágico de ancho — todos los
-/// umbrales de layout se leen de aquí. Son valores provisionales (no forman
-/// parte del Design System definitivo), pero deben mantenerse en un solo
-/// lugar mientras se ajustan.
+/// umbrales de layout se leen de aquí.
+///
+/// **Exclusivo del Shell** — no lo uses fuera de `lib/app/shell/`. Para
+/// formularios y contenido de módulos, usa `AppBreakpoints`
+/// (`lib/core/design_system/tokens/app_breakpoints.dart`). Son dos
+/// sistemas con responsabilidades distintas a propósito: este resuelve
+/// cuándo colapsa el sidebar o se reduce el Top Bar; el otro, cómo se
+/// reorganiza el contenido de un módulo. Si algún día conviene unificarlos,
+/// se hace con evidencia real, no de forma preventiva.
 abstract final class ShellBreakpoints {
   /// Por debajo de este ancho de ventana, el sidebar en modo `automatico`
   /// se colapsa por sí solo.
