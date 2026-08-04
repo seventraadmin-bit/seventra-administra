@@ -3,6 +3,7 @@
     "allow": [
       "Bash(flutter pub *)",
       "Bash(dart run build_runner *)",
+      "Bash(dart run drift_dev *)",
       "Bash(flutter analyze *)",
       "Bash(flutter test *)",
       "Bash(flutter run *)",

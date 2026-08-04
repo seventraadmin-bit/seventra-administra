@@ -3,6 +3,22 @@ import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../features/organizacion/data/tables/cliente_table.dart';
+import '../../features/organizacion/data/tables/contacto_table.dart';
+import '../../features/organizacion/data/tables/empresa_table.dart';
+import '../../features/organizacion/data/tables/puesto_table.dart';
+import '../../features/organizacion/data/tables/servicio_table.dart';
+import '../../features/organizacion/data/tables/sucursal_table.dart';
+import '../../features/organizacion/data/tables/ubicacion_table.dart';
+import 'seed/seed_data.dart';
+import 'tables/attachment_table.dart';
+import 'tables/catalogos_tables.dart';
+import 'tables/codigo_secuencia_table.dart';
+import 'tables/direccion_table.dart';
+import 'tables/horario_table.dart';
+import 'tables/medio_contacto_table.dart';
 
 part 'app_database.g.dart';
 
@@ -23,20 +39,71 @@ class AppMetadata extends Table {
   TextColumn get appVersion => text()();
 }
 
-@DriftDatabase(tables: [AppMetadata])
+@DriftDatabase(tables: [
+  AppMetadata,
+  CodigoSecuencia,
+  TipoSucursal,
+  Industria,
+  TipoServicio,
+  Area,
+  Direccion,
+  MedioContacto,
+  Attachment,
+  Horario,
+  HorarioDetalle,
+  Empresa,
+  Sucursal,
+  Ubicacion,
+  Puesto,
+  Cliente,
+  Contacto,
+  Servicio,
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
+        await runSeed(this);
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from == 1) {
+          await _createEtapa4ATables(m);
+        }
+        await runSeed(this);
       },
     );
+  }
+
+  /// Tablas agregadas por la Etapa 4A (Fundamentos de Organización) —
+  /// puramente aditivo, no toca `AppMetadata`.
+  Future<void> _createEtapa4ATables(Migrator m) async {
+    await m.createTable(codigoSecuencia);
+    await m.createTable(tipoSucursal);
+    await m.createTable(industria);
+    await m.createTable(tipoServicio);
+    await m.createTable(area);
+    await m.createTable(direccion);
+    await m.createTable(medioContacto);
+    await m.createTable(attachment);
+    await m.createTable(horario);
+    await m.createTable(horarioDetalle);
+    await m.createTable(empresa);
+    await m.createTable(sucursal);
+    await m.createTable(cliente);
+    await m.createTable(contacto);
+    await m.createTable(servicio);
+    await m.createTable(ubicacion);
+    await m.createTable(puesto);
+    await m.createIndex(idxDireccionClienteTipoPrincipal);
+    await m.createIndex(idxDireccionCliente);
+    await m.createIndex(idxEmpresaActivaUnica);
   }
 
   /// Garantiza que exista exactamente un renglón de metadata de instalación.
