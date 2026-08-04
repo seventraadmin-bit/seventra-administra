@@ -1,9 +1,13 @@
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
+import 'package:riseg_one/core/database/tables/direccion_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/sucursal_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart';
 
 import '../../domain/repositories/sucursal_repository.dart';
+import '../../domain/shared/direccion_input.dart';
+import '../../domain/shared/horario_input.dart';
 
 class SucursalRepositoryImpl implements SucursalRepository {
   SucursalRepositoryImpl(this._db);
@@ -59,5 +63,207 @@ class SucursalRepositoryImpl implements SucursalRepository {
     return (_db.select(_db.sucursal)
           ..where((t) => t.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name)))
         .get();
+  }
+
+  @override
+  Future<SucursalData> cambiarEstadoOperativo({
+    required String sucursalId,
+    required EstadoOperativoSucursal nuevo,
+  }) async {
+    await (_db.update(_db.sucursal)..where((t) => t.id.equals(sucursalId))).write(
+      SucursalCompanion(estadoOperativo: Value(nuevo.name), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.sucursal)..where((t) => t.id.equals(sucursalId))).getSingle();
+  }
+
+  @override
+  Future<DireccionData?> obtenerDireccionPrincipal(String sucursalId) {
+    return (_db.select(_db.direccion)
+          ..where(
+            (t) =>
+                t.sucursalId.equals(sucursalId) &
+                t.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name),
+          ))
+        .getSingleOrNull();
+  }
+
+  Future<HorarioData?> _obtenerHorarioActivo(String sucursalId) {
+    return (_db.select(_db.horario)
+          ..where(
+            (t) =>
+                t.sucursalId.equals(sucursalId) &
+                t.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name),
+          ))
+        .getSingleOrNull();
+  }
+
+  @override
+  Future<List<HorarioDetalleData>?> obtenerHorario(String sucursalId) async {
+    final horario = await _obtenerHorarioActivo(sucursalId);
+    if (horario == null) return null;
+
+    return (_db.select(_db.horarioDetalle)
+          ..where((t) => t.horarioId.equals(horario.id))
+          ..orderBy([(t) => OrderingTerm.asc(t.diaSemana)]))
+        .get();
+  }
+
+  @override
+  Future<SucursalExpedienteRaw> guardarExpediente({
+    required String sucursalId,
+    required SucursalCompanion datosGenerales,
+    required DireccionInput? direccionPrincipal,
+    required HorarioSemanalInput? horario,
+  }) {
+    return _db.transaction(() async {
+      await (_db.update(_db.sucursal)..where((t) => t.id.equals(sucursalId))).write(
+        datosGenerales.copyWith(updatedAt: Value(DateTime.now())),
+      );
+      final sucursalActualizada =
+          await (_db.select(_db.sucursal)..where((t) => t.id.equals(sucursalId))).getSingle();
+
+      final direccionResultante = await _guardarDireccionPrincipal(sucursalId, direccionPrincipal);
+      final horarioResultante = await _guardarHorario(sucursalId, horario);
+
+      return SucursalExpedienteRaw(
+        sucursal: sucursalActualizada,
+        direccionPrincipal: direccionResultante,
+        horario: horarioResultante,
+      );
+    });
+  }
+
+  /// Busca la fila de Dirección de esta Sucursal sin importar
+  /// `cicloVidaRegistro` — `sucursalId` tiene un `.unique()` real en la
+  /// tabla (no condicionado a estar activa), así que solo puede existir
+  /// una fila por Sucursal en toda su historia. Sin esto, recapturar una
+  /// dirección después de haberla archivado intentaría un `INSERT` que
+  /// choca contra esa fila archivada (mismo bug real ya corregido en
+  /// `EmpresaRepositoryImpl`).
+  Future<DireccionData?> _buscarDireccionDeSucursal(String sucursalId) {
+    return (_db.select(_db.direccion)..where((t) => t.sucursalId.equals(sucursalId))).getSingleOrNull();
+  }
+
+  Future<DireccionData?> _guardarDireccionPrincipal(String sucursalId, DireccionInput? input) async {
+    final existente = await _buscarDireccionDeSucursal(sucursalId);
+
+    if (input == null) {
+      // Sección vacía: si había una dirección activa, se archiva — nunca
+      // se borra físicamente la fila (mismo patrón que Empresa en 4B).
+      if (existente != null && existente.cicloVidaRegistro == CicloVidaRegistro.activo.name) {
+        await (_db.update(_db.direccion)..where((t) => t.id.equals(existente.id))).write(
+          DireccionCompanion(
+            cicloVidaRegistro: Value(CicloVidaRegistro.archivado.name),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+      return null;
+    }
+
+    final cambios = DireccionCompanion(
+      cicloVidaRegistro: Value(CicloVidaRegistro.activo.name),
+      calle: Value(input.calle),
+      numeroExterior: Value(input.numeroExterior),
+      numeroInterior: Value(input.numeroInterior),
+      colonia: Value(input.colonia),
+      municipioAlcaldia: Value(input.municipioAlcaldia),
+      ciudadLocalidad: Value(input.ciudadLocalidad),
+      estado: Value(input.estado),
+      codigoPostal: Value(input.codigoPostal),
+      pais: Value(input.pais),
+      referencias: Value(input.referencias),
+      updatedAt: Value(DateTime.now()),
+    );
+
+    if (existente != null) {
+      // Reactiva (si venía archivada) y actualiza — nunca un segundo
+      // `INSERT`, que chocaría con el `.unique()` de `sucursalId`.
+      final actualizada = existente.copyWithCompanion(cambios);
+      await _db.update(_db.direccion).replace(actualizada);
+      return actualizada;
+    }
+
+    return _db.into(_db.direccion).insertReturning(
+          DireccionCompanion.insert(
+            sucursalId: Value(sucursalId),
+            tipoDireccion: TipoDireccion.administrativa.name,
+            calle: input.calle,
+            numeroExterior: input.numeroExterior,
+            numeroInterior: Value(input.numeroInterior),
+            colonia: input.colonia,
+            municipioAlcaldia: input.municipioAlcaldia,
+            ciudadLocalidad: Value(input.ciudadLocalidad),
+            estado: input.estado,
+            codigoPostal: input.codigoPostal,
+            pais: Value(input.pais),
+            referencias: Value(input.referencias),
+          ),
+        );
+  }
+
+  /// Busca el encabezado de Horario de esta Sucursal sin importar
+  /// `cicloVidaRegistro` — `sucursalId` tiene un `.unique()` real en
+  /// `Horario`, igual que en `Direccion` (ver `_buscarDireccionDeSucursal`).
+  Future<HorarioData?> _buscarHorarioDeSucursal(String sucursalId) {
+    return (_db.select(_db.horario)..where((t) => t.sucursalId.equals(sucursalId))).getSingleOrNull();
+  }
+
+  Future<List<HorarioDetalleData>?> _guardarHorario(String sucursalId, HorarioSemanalInput? input) async {
+    final existente = await _buscarHorarioDeSucursal(sucursalId);
+
+    if (input == null) {
+      // Sin ningún día abierto: si había un Horario activo, se archiva —
+      // nunca se borra físicamente el encabezado.
+      if (existente != null && existente.cicloVidaRegistro == CicloVidaRegistro.activo.name) {
+        await (_db.update(_db.horario)..where((t) => t.id.equals(existente.id))).write(
+          HorarioCompanion(
+            cicloVidaRegistro: Value(CicloVidaRegistro.archivado.name),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+      return null;
+    }
+
+    final HorarioData horarioHeader;
+    if (existente != null) {
+      // Reactiva (si venía archivado) y actualiza — nunca un segundo
+      // `INSERT`, que chocaría con el `.unique()` de `sucursalId`.
+      horarioHeader = existente;
+      await (_db.update(_db.horario)..where((t) => t.id.equals(existente.id))).write(
+        HorarioCompanion(
+          cicloVidaRegistro: Value(CicloVidaRegistro.activo.name),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    } else {
+      horarioHeader = await _db.into(_db.horario).insertReturning(
+            HorarioCompanion.insert(sucursalId: Value(sucursalId)),
+          );
+    }
+
+    // Los 7 renglones siempre se reemplazan completos — no tienen
+    // identidad propia fuera de "el renglón del día X de este Horario",
+    // así que no hace falta (ni tiene sentido) archivarlos uno a uno: se
+    // borran y se vuelven a insertar dentro de la misma transacción.
+    await (_db.delete(_db.horarioDetalle)..where((t) => t.horarioId.equals(horarioHeader.id))).go();
+
+    final renglones = <HorarioDetalleData>[];
+    for (final dia in input.dias) {
+      final renglon = await _db.into(_db.horarioDetalle).insertReturning(
+            HorarioDetalleCompanion.insert(
+              horarioId: horarioHeader.id,
+              diaSemana: dia.diaSemana,
+              horaInicio: dia.horaInicioMinutos ?? 0,
+              horaFin: dia.horaFinMinutos ?? 0,
+              cruzaMedianoche: Value(dia.cruzaMedianoche),
+              activo: Value(dia.abierto),
+            ),
+          );
+      renglones.add(renglon);
+    }
+    renglones.sort((a, b) => a.diaSemana.compareTo(b.diaSemana));
+    return renglones;
   }
 }

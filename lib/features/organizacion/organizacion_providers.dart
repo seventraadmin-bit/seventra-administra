@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/codigos/codigo_secuencia_service.dart';
 import '../../core/codigos/generar_codigo_usecase.dart';
 import '../../core/di/providers.dart';
+import 'data/repositories/catalogo_repository_impl.dart';
 import 'data/repositories/cliente_repository_impl.dart';
 import 'data/repositories/empresa_repository_impl.dart';
 import 'data/repositories/puesto_repository_impl.dart';
 import 'data/repositories/servicio_repository_impl.dart';
 import 'data/repositories/sucursal_repository_impl.dart';
 import 'data/repositories/ubicacion_repository_impl.dart';
+import 'domain/repositories/catalogo_repository.dart';
 import 'domain/repositories/cliente_repository.dart';
 import 'domain/repositories/empresa_repository.dart';
 import 'domain/repositories/puesto_repository.dart';
@@ -16,16 +18,22 @@ import 'domain/repositories/servicio_repository.dart';
 import 'domain/repositories/sucursal_repository.dart';
 import 'domain/repositories/ubicacion_repository.dart';
 import 'domain/usecases/actualizar_empresa_usecase.dart';
+import 'domain/usecases/cambiar_estado_operativo_sucursal_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
 import 'domain/usecases/crear_puesto_usecase.dart';
 import 'domain/usecases/crear_servicio_usecase.dart';
 import 'domain/usecases/crear_sucursal_usecase.dart';
 import 'domain/usecases/crear_ubicacion_usecase.dart';
 import 'domain/usecases/guardar_expediente_empresa_usecase.dart';
+import 'domain/usecases/guardar_expediente_sucursal_usecase.dart';
+import 'domain/usecases/listar_sucursales_usecase.dart';
+import 'domain/usecases/listar_tipos_sucursal_usecase.dart';
 import 'domain/usecases/mover_ubicacion_usecase.dart';
+import 'domain/usecases/obtener_arbol_ubicaciones_de_sucursal_usecase.dart';
 import 'domain/usecases/obtener_arbol_ubicaciones_usecase.dart';
 import 'domain/usecases/obtener_empresa_activa_usecase.dart';
 import 'domain/usecases/obtener_expediente_empresa_usecase.dart';
+import 'domain/usecases/obtener_expediente_sucursal_usecase.dart';
 
 /// Providers de infraestructura de Organización (base de datos,
 /// servicios, repositorios, casos de uso). Los providers de pantalla
@@ -64,6 +72,10 @@ final servicioRepositoryProvider = Provider<ServicioRepository>((ref) {
   return ServicioRepositoryImpl(ref.watch(appDatabaseProvider));
 });
 
+final catalogoRepositoryProvider = Provider<CatalogoRepository>((ref) {
+  return CatalogoRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
 final obtenerEmpresaActivaUseCaseProvider = Provider<ObtenerEmpresaActivaUseCase>((ref) {
   return ObtenerEmpresaActivaUseCase(ref.watch(empresaRepositoryProvider));
 });
@@ -94,6 +106,26 @@ final crearSucursalUseCaseProvider = Provider<CrearSucursalUseCase>((ref) {
   );
 });
 
+final listarSucursalesUseCaseProvider = Provider<ListarSucursalesUseCase>((ref) {
+  return ListarSucursalesUseCase(ref.watch(sucursalRepositoryProvider));
+});
+
+final obtenerExpedienteSucursalUseCaseProvider = Provider<ObtenerExpedienteSucursalUseCase>((ref) {
+  return ObtenerExpedienteSucursalUseCase(ref.watch(sucursalRepositoryProvider));
+});
+
+final guardarExpedienteSucursalUseCaseProvider = Provider<GuardarExpedienteSucursalUseCase>((ref) {
+  return GuardarExpedienteSucursalUseCase(ref.watch(sucursalRepositoryProvider));
+});
+
+final cambiarEstadoOperativoSucursalUseCaseProvider = Provider<CambiarEstadoOperativoSucursalUseCase>((ref) {
+  return CambiarEstadoOperativoSucursalUseCase(ref.watch(sucursalRepositoryProvider));
+});
+
+final listarTiposSucursalUseCaseProvider = Provider<ListarTiposSucursalUseCase>((ref) {
+  return ListarTiposSucursalUseCase(ref.watch(catalogoRepositoryProvider));
+});
+
 final crearUbicacionUseCaseProvider = Provider<CrearUbicacionUseCase>((ref) {
   return CrearUbicacionUseCase(
     ref.watch(ubicacionRepositoryProvider),
@@ -107,6 +139,11 @@ final moverUbicacionUseCaseProvider = Provider<MoverUbicacionUseCase>((ref) {
 
 final obtenerArbolUbicacionesUseCaseProvider = Provider<ObtenerArbolUbicacionesUseCase>((ref) {
   return ObtenerArbolUbicacionesUseCase(ref.watch(ubicacionRepositoryProvider));
+});
+
+final obtenerArbolUbicacionesDeSucursalUseCaseProvider =
+    Provider<ObtenerArbolUbicacionesDeSucursalUseCase>((ref) {
+  return ObtenerArbolUbicacionesDeSucursalUseCase(ref.watch(ubicacionRepositoryProvider));
 });
 
 final crearClienteUseCaseProvider = Provider<CrearClienteUseCase>((ref) {

@@ -5,10 +5,11 @@ import 'package:riseg_one/core/design_system/theme_context.dart';
 import 'package:riseg_one/core/design_system/tokens/app_spacing.dart';
 import 'package:riseg_one/core/design_system/tokens/app_typography.dart';
 
-/// Par etiqueta/valor de solo lectura para el modo consulta del
-/// expediente — nunca un `TextField` deshabilitado. Un valor nulo o en
-/// blanco siempre se muestra con el mismo texto ("Pendiente de
-/// captura"), nunca un guion o un espacio ambiguo.
+/// Par etiqueta/valor de solo lectura para el modo consulta de cualquier
+/// expediente de Organización (Empresa, Sucursal, ...) — nunca un
+/// `TextField` deshabilitado. Un valor nulo o en blanco siempre se
+/// muestra con el mismo texto ("Pendiente de captura"), nunca un guion o
+/// un espacio ambiguo.
 class CampoConsulta extends StatelessWidget {
   const CampoConsulta({required this.label, required this.value, super.key});
 
@@ -20,7 +21,7 @@ class CampoConsulta extends StatelessWidget {
     final colors = context.colors;
     final l10n = AppLocalizations.of(context)!;
     final esPendiente = value == null || value!.trim().isEmpty;
-    final mostrado = esPendiente ? l10n.empresaExpedienteValorPendiente : value!;
+    final mostrado = esPendiente ? l10n.organizacionValorPendiente : value!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

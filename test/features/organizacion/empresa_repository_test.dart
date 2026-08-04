@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -146,6 +146,56 @@ void main() {
         await (db.select(db.medioContacto)..where((t) => t.empresaId.equals(activa.id))).get();
     expect(contactosFisicos, hasLength(1));
     expect(contactosFisicos.single.cicloVidaRegistro, CicloVidaRegistro.archivado.name);
+  });
+
+  test('recapturar una Dirección después de archivarla no revienta contra el índice único', () async {
+    final activa = await repo.obtenerActiva();
+    const direccionInicial = DireccionInput(
+      calle: 'Calle Inicial',
+      numeroExterior: '1',
+      colonia: 'Colonia',
+      municipioAlcaldia: 'Municipio',
+      estado: 'Estado',
+      codigoPostal: '11111',
+    );
+    const direccionRecapturada = DireccionInput(
+      calle: 'Calle Recapturada',
+      numeroExterior: '2',
+      colonia: 'Colonia Nueva',
+      municipioAlcaldia: 'Municipio Nuevo',
+      estado: 'Estado Nuevo',
+      codigoPostal: '22222',
+    );
+
+    await repo.guardarExpediente(
+      empresaId: activa.id,
+      datosGenerales: const EmpresaCompanion(),
+      direccionFiscal: direccionInicial,
+      medioContacto: null,
+    );
+    // Vaciarla la archiva (fila con `empresaId` único ya ocupado).
+    await repo.guardarExpediente(
+      empresaId: activa.id,
+      datosGenerales: const EmpresaCompanion(),
+      direccionFiscal: null,
+      medioContacto: null,
+    );
+    // Recapturarla no debe intentar un segundo INSERT contra ese mismo
+    // `empresaId` — debe reactivar y actualizar la fila archivada.
+    await repo.guardarExpediente(
+      empresaId: activa.id,
+      datosGenerales: const EmpresaCompanion(),
+      direccionFiscal: direccionRecapturada,
+      medioContacto: null,
+    );
+
+    final direccion = await repo.obtenerDireccionFiscal(activa.id);
+    expect(direccion, isNotNull);
+    expect(direccion!.calle, 'Calle Recapturada');
+
+    final todasLasDirecciones =
+        await (db.select(db.direccion)..where((t) => t.empresaId.equals(activa.id))).get();
+    expect(todasLasDirecciones, hasLength(1));
   });
 
   test('una falla al guardar el MedioContacto revierte también Empresa y Dirección', () async {

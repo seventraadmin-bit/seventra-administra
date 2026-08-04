@@ -8,7 +8,7 @@ import 'package:riseg_one/features/organizacion/presentation/empresa/campo_error
 import 'package:riseg_one/features/organizacion/presentation/empresa/empresa_expediente_form_controllers.dart';
 import 'package:riseg_one/features/organizacion/presentation/empresa/empresa_expediente_state.dart';
 
-import 'campo_consulta.dart';
+import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 
 /// Sección "Medios de contacto" — administra únicamente el medio de
 /// contacto principal (`etiqueta = 'principal'`); la etiqueta en sí no

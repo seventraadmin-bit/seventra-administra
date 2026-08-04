@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import 'package:riseg_one/app/app.dart';
 import 'package:riseg_one/app/router/app_router.dart';
 import 'package:riseg_one/core/database/app_database.dart';
@@ -123,4 +125,38 @@ void main() {
     await _pumpApp(tester);
     expect(find.text('Etapa 1 — Verificación de infraestructura'), findsNothing);
   });
+
+  testWidgets(
+    'La pestaña Sucursales permite crear una Sucursal y navega a su expediente',
+    (tester) async {
+      await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      await tester.tap(find.byKey(const Key('nav_item_organizacion')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('empresa_expediente_screen')), findsOneWidget);
+
+      await tester.tap(find.text(l10n.organizacionTabSucursales));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('sucursales_boton_nueva')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('sucursales_boton_nueva')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'Sucursal E2E');
+      await tester.pumpAndSettle();
+
+      // Abre el selector de tipo y elige el primero de los 3 sembrados
+      // (ver `seed_data.dart` — "Oficina Administrativa").
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Oficina Administrativa').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.sucursalAltaBotonCrear));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('sucursal_expediente_boton_editar')), findsOneWidget);
+    },
+  );
 }

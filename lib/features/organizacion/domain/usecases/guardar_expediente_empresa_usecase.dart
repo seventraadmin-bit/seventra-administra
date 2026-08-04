@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/core/validation/rfc_validator.dart';
 
 import '../repositories/empresa_repository.dart';
@@ -30,14 +31,26 @@ class GuardarExpedienteErrorInesperado extends GuardarExpedienteResultado {
   final String mensaje;
 }
 
-const _campoDireccionRequerido = {
-  CampoExpediente.calle,
-  CampoExpediente.numeroExterior,
-  CampoExpediente.colonia,
-  CampoExpediente.municipioAlcaldia,
-  CampoExpediente.estado,
-  CampoExpediente.codigoPostal,
-};
+/// Traduce el campo de [DireccionValidator] (independiente de todo
+/// dominio de negocio) al enum propio de esta pantalla — mismo patrón
+/// que usará cualquier otro módulo (ej. Sucursal en la Etapa 4C).
+CampoExpediente _mapearCampoDireccion(CampoDireccion campo) {
+  return switch (campo) {
+    CampoDireccion.calle => CampoExpediente.calle,
+    CampoDireccion.numeroExterior => CampoExpediente.numeroExterior,
+    CampoDireccion.colonia => CampoExpediente.colonia,
+    CampoDireccion.municipioAlcaldia => CampoExpediente.municipioAlcaldia,
+    CampoDireccion.estado => CampoExpediente.estado,
+    CampoDireccion.codigoPostal => CampoExpediente.codigoPostal,
+  };
+}
+
+CodigoErrorCampo _mapearCodigoDireccion(CodigoErrorCampoDireccion codigo) {
+  return switch (codigo) {
+    CodigoErrorCampoDireccion.requerido => CodigoErrorCampo.requerido,
+    CodigoErrorCampoDireccion.formatoInvalido => CodigoErrorCampo.formatoInvalido,
+  };
+}
 
 /// Coordina el guardado completo del expediente: datos generales,
 /// dirección fiscal y medio de contacto principal, validando primero y
@@ -52,7 +65,6 @@ class GuardarExpedienteEmpresaUseCase {
 
   static final _correoRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
   static final _dominioRegex = RegExp(r'^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+(/.*)?$');
-  static final _codigoPostalMexicoRegex = RegExp(r'^\d{5}$');
 
   Future<GuardarExpedienteResultado> ejecutar({
     required String empresaId,
@@ -111,50 +123,41 @@ class GuardarExpedienteEmpresaUseCase {
     DireccionFiscalBorrador? borrador,
     List<ErrorCampoExpediente> errores,
   ) {
-    if (borrador == null || borrador.estaCompletamenteVacia) return null;
+    if (borrador == null) return null;
 
-    void requerido(String valor, CampoExpediente campo) {
-      if (valor.trim().isEmpty) {
-        errores.add(ErrorCampoExpediente(campo: campo, codigo: CodigoErrorCampo.requerido));
-      }
+    final r = DireccionValidator.validar(
+      DireccionBorrador(
+        calle: borrador.calle,
+        numeroExterior: borrador.numeroExterior,
+        numeroInterior: borrador.numeroInterior,
+        colonia: borrador.colonia,
+        municipioAlcaldia: borrador.municipioAlcaldia,
+        ciudadLocalidad: borrador.ciudadLocalidad,
+        estado: borrador.estado,
+        codigoPostal: borrador.codigoPostal,
+        pais: borrador.pais,
+        referencias: borrador.referencias,
+      ),
+    );
+
+    for (final e in r.errores) {
+      errores.add(ErrorCampoExpediente(campo: _mapearCampoDireccion(e.campo), codigo: _mapearCodigoDireccion(e.codigo)));
     }
 
-    requerido(borrador.calle, CampoExpediente.calle);
-    requerido(borrador.numeroExterior, CampoExpediente.numeroExterior);
-    requerido(borrador.colonia, CampoExpediente.colonia);
-    requerido(borrador.municipioAlcaldia, CampoExpediente.municipioAlcaldia);
-    requerido(borrador.estado, CampoExpediente.estado);
-
-    final cp = borrador.codigoPostal.trim();
-    final paisNormalizado = borrador.pais.trim().isEmpty ? 'México' : borrador.pais.trim();
-    final esMexico = paisNormalizado.toLowerCase() == 'méxico' || paisNormalizado.toLowerCase() == 'mexico';
-
-    if (cp.isEmpty) {
-      errores.add(
-        const ErrorCampoExpediente(campo: CampoExpediente.codigoPostal, codigo: CodigoErrorCampo.requerido),
-      );
-    } else if (esMexico && !_codigoPostalMexicoRegex.hasMatch(cp)) {
-      // La regla de 5 dígitos depende de `país` — si en el futuro se
-      // selecciona otro país, esta validación de formato no aplica.
-      errores.add(
-        const ErrorCampoExpediente(campo: CampoExpediente.codigoPostal, codigo: CodigoErrorCampo.formatoInvalido),
-      );
-    }
-
-    final huboErrorEnDireccion = errores.any((e) => _campoDireccionRequerido.contains(e.campo));
-    if (huboErrorEnDireccion) return null;
+    final validada = r.resultado;
+    if (validada == null) return null;
 
     return DireccionInput(
-      calle: borrador.calle.trim(),
-      numeroExterior: borrador.numeroExterior.trim(),
-      numeroInterior: _vacioANull(borrador.numeroInterior),
-      colonia: borrador.colonia.trim(),
-      municipioAlcaldia: borrador.municipioAlcaldia.trim(),
-      ciudadLocalidad: _vacioANull(borrador.ciudadLocalidad),
-      estado: borrador.estado.trim(),
-      codigoPostal: cp,
-      pais: paisNormalizado,
-      referencias: _vacioANull(borrador.referencias),
+      calle: validada.calle,
+      numeroExterior: validada.numeroExterior,
+      numeroInterior: validada.numeroInterior,
+      colonia: validada.colonia,
+      municipioAlcaldia: validada.municipioAlcaldia,
+      ciudadLocalidad: validada.ciudadLocalidad,
+      estado: validada.estado,
+      codigoPostal: validada.codigoPostal,
+      pais: validada.pais,
+      referencias: validada.referencias,
     );
   }
 

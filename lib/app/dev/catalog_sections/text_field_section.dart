@@ -12,6 +12,8 @@ class TextFieldCatalogSection extends StatefulWidget {
 
 class _TextFieldCatalogSectionState extends State<TextFieldCatalogSection> {
   bool _obscure = true;
+  String? _tipoSeleccionado = 'oficina';
+  TimeOfDay? _hora = const TimeOfDay(hour: 8, minute: 0);
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +69,42 @@ class _TextFieldCatalogSectionState extends State<TextFieldCatalogSection> {
           title: 'RisegSearchField',
           description: 'Densidad distinta al TextField — pensado para barras, no formularios',
           child: RisegSearchField(hint: 'Buscar cliente, contrato o servicio'),
+        ),
+        CatalogSubsection(
+          title: 'RisegSelect',
+          description: 'Selector oficial — mismo look que RisegTextField, con lista cerrada de opciones',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RisegSelect<String>(
+                label: 'Tipo de Sucursal',
+                value: _tipoSeleccionado,
+                items: const [
+                  RisegSelectItem(value: 'oficina', label: 'Oficina Administrativa'),
+                  RisegSelectItem(value: 'base', label: 'Base Operativa'),
+                  RisegSelectItem(value: 'bodega', label: 'Bodega'),
+                ],
+                onChanged: (value) => setState(() => _tipoSeleccionado = value),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const RisegSelect<String>(
+                label: 'Con error',
+                value: null,
+                items: [RisegSelectItem(value: 'a', label: 'Opción A')],
+                onChanged: null,
+                errorText: 'Selecciona una opción',
+              ),
+            ],
+          ),
+        ),
+        CatalogSubsection(
+          title: 'RisegTimeField',
+          description: 'Hora del día vía el selector nativo — usado por Horario',
+          child: RisegTimeField(
+            label: 'Hora de inicio',
+            value: _hora,
+            onChanged: (value) => setState(() => _hora = value),
+          ),
         ),
       ],
     );

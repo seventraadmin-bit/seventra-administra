@@ -7,7 +7,7 @@ part of 'empresa_expediente_controller.dart';
 // **************************************************************************
 
 String _$empresaExpedienteControllerHash() =>
-    r'c737089213c7155a5d89240ffc8382cfbf617604';
+    r'906ac400d0688f75f299fd8649272d1db0d51f78';
 
 /// Controlador de la pantalla de expediente de Empresa.
 ///

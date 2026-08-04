@@ -1,4 +1,8 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/organizacion/data/tables/sucursal_table.dart';
+
+import '../shared/direccion_input.dart';
+import '../shared/horario_input.dart';
 
 /// Transacción que compone 3 escrituras (Sucursal + nodo raíz de
 /// Ubicación + Almacén General) como una sola unidad atómica — es la
@@ -19,4 +23,40 @@ abstract interface class SucursalRepository {
   Future<SucursalData?> obtenerPorId(String id);
 
   Future<List<SucursalData>> listarActivas();
+
+  /// Cambia únicamente `estadoOperativo` — una transición de negocio
+  /// explícita (acción de botón con confirmación en la UI), no un campo
+  /// más del formulario de edición.
+  Future<SucursalData> cambiarEstadoOperativo({required String sucursalId, required EstadoOperativoSucursal nuevo});
+
+  /// Dirección con `tipoDireccion = administrativa` u `operativa` de esta
+  /// Sucursal, si existe y sigue activa. Una fila archivada equivale a
+  /// "sin dirección".
+  Future<DireccionData?> obtenerDireccionPrincipal(String sucursalId);
+
+  /// Los 7 renglones de [HorarioDetalleData] (uno por día, lunes a
+  /// domingo) del `Horario` activo de esta Sucursal, o `null` si no se ha
+  /// capturado ninguno todavía.
+  Future<List<HorarioDetalleData>?> obtenerHorario(String sucursalId);
+
+  /// Guarda el expediente completo (datos generales + dirección
+  /// principal + horario) en una sola transacción — mismo patrón que
+  /// `EmpresaRepository.guardarExpediente`: `direccionPrincipal`/`horario`
+  /// en `null` significa "sección vacía" (archiva lo existente, nunca lo
+  /// borra); si no existía, no crea nada.
+  Future<SucursalExpedienteRaw> guardarExpediente({
+    required String sucursalId,
+    required SucursalCompanion datosGenerales,
+    required DireccionInput? direccionPrincipal,
+    required HorarioSemanalInput? horario,
+  });
+}
+
+/// Resultado crudo de [SucursalRepository.guardarExpediente].
+class SucursalExpedienteRaw {
+  const SucursalExpedienteRaw({required this.sucursal, this.direccionPrincipal, this.horario});
+
+  final SucursalData sucursal;
+  final DireccionData? direccionPrincipal;
+  final List<HorarioDetalleData>? horario;
 }

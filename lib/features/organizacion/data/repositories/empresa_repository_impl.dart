@@ -103,13 +103,24 @@ class EmpresaRepositoryImpl implements EmpresaRepository {
     });
   }
 
+  /// Busca la fila de Dirección de esta Empresa sin importar
+  /// `cicloVidaRegistro` — `empresaId` tiene un `.unique()` real en la
+  /// tabla (no condicionado a estar activa), así que solo puede existir
+  /// una fila por Empresa en toda su historia. Sin esto, recapturar una
+  /// dirección después de haberla archivado intentaría un `INSERT` que
+  /// choca contra esa fila archivada (bug real encontrado al construir
+  /// el mismo patrón para Sucursal en la Etapa 4C).
+  Future<DireccionData?> _buscarDireccionDeEmpresa(String empresaId) {
+    return (_db.select(_db.direccion)..where((t) => t.empresaId.equals(empresaId))).getSingleOrNull();
+  }
+
   Future<DireccionData?> _guardarDireccionFiscal(String empresaId, DireccionInput? input) async {
-    final existente = await obtenerDireccionFiscal(empresaId);
+    final existente = await _buscarDireccionDeEmpresa(empresaId);
 
     if (input == null) {
       // Sección vacía: si había una dirección activa, se archiva — nunca
       // se borra físicamente la fila.
-      if (existente != null) {
+      if (existente != null && existente.cicloVidaRegistro == CicloVidaRegistro.activo.name) {
         await (_db.update(_db.direccion)..where((t) => t.id.equals(existente.id))).write(
           DireccionCompanion(
             cicloVidaRegistro: Value(CicloVidaRegistro.archivado.name),
@@ -121,6 +132,7 @@ class EmpresaRepositoryImpl implements EmpresaRepository {
     }
 
     final cambios = DireccionCompanion(
+      cicloVidaRegistro: Value(CicloVidaRegistro.activo.name),
       calle: Value(input.calle),
       numeroExterior: Value(input.numeroExterior),
       numeroInterior: Value(input.numeroInterior),
@@ -135,6 +147,8 @@ class EmpresaRepositoryImpl implements EmpresaRepository {
     );
 
     if (existente != null) {
+      // Reactiva (si venía archivada) y actualiza — nunca un segundo
+      // `INSERT`, que chocaría con el `.unique()` de `empresaId`.
       final actualizada = existente.copyWithCompanion(cambios);
       await _db.update(_db.direccion).replace(actualizada);
       return actualizada;

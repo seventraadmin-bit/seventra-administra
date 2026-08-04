@@ -2,7 +2,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
-import '../../features/organizacion/presentation/empresa/empresa_expediente_screen.dart';
+import '../../features/organizacion/presentation/organizacion_shell_screen.dart';
+import '../../features/organizacion/presentation/sucursales/sucursal_expediente_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
 import '../shell/app_shell_screen.dart';
 import '../shell/dashboard_welcome_screen.dart';
@@ -31,28 +32,45 @@ GoRouter createAppRouter() {
           for (final def in shellModuleDefs)
             StatefulShellBranch(
               routes: [
-                GoRoute(
-                  path: def.path,
-                  builder: (context, state) {
-                    // El Dashboard es la pantalla de inicio real del
-                    // producto, no un módulo pendiente — tiene su propia
-                    // pantalla en vez del placeholder genérico.
-                    if (def.path == '/dashboard') {
-                      return const DashboardWelcomeScreen();
-                    }
-                    // Organización todavía no tiene navegación interna
-                    // propia — apunta directo al expediente de Empresa
-                    // mientras no existan otras secciones funcionales.
-                    if (def.path == '/organizacion') {
-                      return const EmpresaExpedienteScreen();
-                    }
-                    final l10n = AppLocalizations.of(context)!;
-                    final destinations = buildShellDestinations(l10n);
-                    return ModulePlaceholderScreen(
-                      destination: destinationForPath(destinations, def.path),
-                    );
-                  },
-                ),
+                if (def.path == '/organizacion')
+                  // Organización tiene subnavegación propia (Empresa |
+                  // Sucursales) desde la Etapa 4C — `/organizacion` en sí
+                  // sigue mostrando Empresa por defecto (compatibilidad
+                  // con la Etapa 4B).
+                  GoRoute(
+                    path: def.path,
+                    builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.empresa),
+                    routes: [
+                      GoRoute(
+                        path: 'sucursales',
+                        builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.sucursales),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                SucursalExpedienteScreen(sucursalId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                else
+                  GoRoute(
+                    path: def.path,
+                    builder: (context, state) {
+                      // El Dashboard es la pantalla de inicio real del
+                      // producto, no un módulo pendiente — tiene su
+                      // propia pantalla en vez del placeholder genérico.
+                      if (def.path == '/dashboard') {
+                        return const DashboardWelcomeScreen();
+                      }
+                      final l10n = AppLocalizations.of(context)!;
+                      final destinations = buildShellDestinations(l10n);
+                      return ModulePlaceholderScreen(
+                        destination: destinationForPath(destinations, def.path),
+                      );
+                    },
+                  ),
               ],
             ),
         ],

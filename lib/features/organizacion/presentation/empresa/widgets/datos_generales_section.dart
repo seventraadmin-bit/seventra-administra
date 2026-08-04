@@ -8,7 +8,7 @@ import 'package:riseg_one/features/organizacion/presentation/empresa/campo_error
 import 'package:riseg_one/features/organizacion/presentation/empresa/empresa_expediente_form_controllers.dart';
 import 'package:riseg_one/features/organizacion/presentation/empresa/empresa_expediente_state.dart';
 
-import 'campo_consulta.dart';
+import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 
 /// Sección "Datos generales" — el código de Empresa siempre se muestra
 /// de solo lectura (es autogenerado, nunca es parte de la entrada del
