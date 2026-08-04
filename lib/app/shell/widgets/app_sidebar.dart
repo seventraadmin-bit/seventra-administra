@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../core/design_system/tokens/app_color_scheme.dart';
+import '../../../core/design_system/tokens/app_spacing.dart';
+import '../../../core/design_system/tokens/app_typography.dart';
 import '../shell_breakpoints.dart';
 import '../shell_destinations.dart';
 
@@ -45,7 +47,7 @@ class AppSidebar extends StatelessWidget {
           Divider(height: 1, color: theme.dividerColor),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
               itemCount: destinations.length,
               itemBuilder: (context, index) {
                 final destination = destinations[index];
@@ -66,6 +68,10 @@ class AppSidebar extends StatelessWidget {
   }
 }
 
+/// Encabezado corporativo del sidebar: logotipo + nombre + subtítulo cuando
+/// hay espacio, solo el logotipo (escalado, nunca recortado) cuando está
+/// colapsado. El archivo del logotipo nunca se modifica — solo cambia el
+/// tamaño con el que se dibuja.
 class _SidebarHeader extends StatelessWidget {
   const _SidebarHeader({required this.collapsed});
 
@@ -74,17 +80,41 @@ class _SidebarHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = Theme.of(context).extension<AppColorScheme>()!;
 
     final logo = Image.asset(
       'assets/images/logo.png',
       key: const Key('sidebar_logo'),
       fit: BoxFit.contain,
-      height: collapsed ? 40 : 96,
+      height: collapsed ? 40 : 56,
     );
 
+    if (collapsed) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xl),
+        child: Tooltip(message: l10n.appTitle, child: logo),
+      );
+    }
+
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: collapsed ? 8 : 20, vertical: 20),
-      child: collapsed ? Tooltip(message: l10n.appTitle, child: logo) : logo,
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xxl, AppSpacing.lg, AppSpacing.xl),
+      child: Column(
+        children: [
+          logo,
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.appTitle,
+            textAlign: TextAlign.center,
+            style: AppTypography.heading3.copyWith(color: colors.textPrimary),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.appSubtitle,
+            textAlign: TextAlign.center,
+            style: AppTypography.caption.copyWith(color: colors.textMuted),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -132,7 +162,7 @@ class _SidebarItemState extends State<_SidebarItem> {
         : Row(
             children: [
               icon,
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   destination.label,
@@ -147,7 +177,7 @@ class _SidebarItemState extends State<_SidebarItem> {
           );
 
     final content = Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: isActive ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4) : null,
         borderRadius: BorderRadius.circular(8),
@@ -159,8 +189,10 @@ class _SidebarItemState extends State<_SidebarItem> {
       // Padding horizontal constante a propósito (no condicionado a
       // `collapsed`): si cambiara de golpe junto con la estructura del
       // contenido mientras el ancho del sidebar todavía está animando,
-      // reaparece el desborde transitorio que este diseño evita.
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      // reaparece el desborde transitorio que este diseño evita. El margen
+      // (más generoso que el padding) es lo que da la sensación de
+      // "respiro" entre ítems sin reabrir ese riesgo.
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
       child: rowOrIcon,
     );
 
@@ -196,7 +228,7 @@ class _CollapseButton extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(AppSpacing.xs),
       child: IconButton(
         key: const Key('sidebar_collapse_button'),
         tooltip: collapsed ? l10n.shellExpandSidebarTooltip : l10n.shellCollapseSidebarTooltip,

@@ -21,7 +21,11 @@ abstract final class ShellBreakpoints {
   static const double sidebarForceCollapse = 640;
 
   /// Ancho del sidebar expandido.
-  static const double sidebarExpandedWidth = 240;
+  ///
+  /// Reducido de 240 a 224 en el refinamiento visual previo a la Etapa 3B —
+  /// más angosto se siente más elegante sin perder espacio útil para las
+  /// etiquetas de los 10 destinos.
+  static const double sidebarExpandedWidth = 224;
 
   /// Ancho del sidebar colapsado (modo ícono).
   ///

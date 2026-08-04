@@ -30,30 +30,34 @@ class AppBreadcrumb extends StatelessWidget {
     for (var i = 0; i < segments.length; i++) {
       final segment = segments[i];
       final isLast = i == segments.length - 1;
+      final isInteractive = segment.onTap != null;
 
-      children.add(
-        // Flexible (no solo `overflow: ellipsis` en el Text) es lo que de
-        // verdad evita el desborde: sin él, un Row de tamaño mínimo se
-        // sigue midiendo por el contenido natural del texto y desborda en
-        // vez de encogerse cuando el espacio disponible es menor.
-        Flexible(
-          child: InkWell(
-            onTap: segment.onTap,
-            borderRadius: BorderRadius.circular(4),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: Text(
-                segment.label,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-                style: isLast
-                    ? theme.textTheme.titleMedium
-                    : theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-            ),
-          ),
-        ),
+      final text = Text(
+        segment.label,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
+        style: isLast
+            ? theme.textTheme.titleMedium
+            : theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       );
+
+      // Un solo nivel (el caso de hoy: ningún segmento tiene `onTap`) no
+      // debe sentirse como un control — sin InkWell ni el padding de
+      // objetivo táctil que solo tiene sentido cuando algo es presionable.
+      // Cuando existan rutas anidadas, los segmentos intermedios sí
+      // llevarán `onTap` y recuperan la envoltura interactiva.
+      final segmentWidget = isInteractive
+          ? InkWell(
+              onTap: segment.onTap,
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: text,
+              ),
+            )
+          : text;
+
+      children.add(Flexible(child: segmentWidget));
 
       if (!isLast) {
         children.add(

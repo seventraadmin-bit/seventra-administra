@@ -2,6 +2,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../shell/app_shell_screen.dart';
+import '../shell/dashboard_welcome_screen.dart';
 import '../shell/module_placeholder_screen.dart';
 import '../shell/shell_destinations.dart';
 
@@ -30,6 +31,12 @@ GoRouter createAppRouter() {
                 GoRoute(
                   path: def.path,
                   builder: (context, state) {
+                    // El Dashboard es la pantalla de inicio real del
+                    // producto, no un módulo pendiente — tiene su propia
+                    // pantalla en vez del placeholder genérico.
+                    if (def.path == '/dashboard') {
+                      return const DashboardWelcomeScreen();
+                    }
                     final l10n = AppLocalizations.of(context)!;
                     final destinations = buildShellDestinations(l10n);
                     return ModulePlaceholderScreen(

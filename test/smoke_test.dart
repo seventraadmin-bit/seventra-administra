@@ -35,7 +35,7 @@ void main() {
     await _pumpApp(tester);
 
     expect(find.byKey(const Key('app_shell')), findsOneWidget);
-    expect(find.byKey(const Key('module_placeholder_dashboard')), findsOneWidget);
+    expect(find.byKey(const Key('dashboard_welcome')), findsOneWidget);
   });
 
   testWidgets('Navegar a otra rama cambia el contenido sin reconstruir el shell', (tester) async {
@@ -47,7 +47,7 @@ void main() {
     expect(find.byKey(const Key('app_shell')), findsOneWidget);
     expect(find.byKey(const Key('app_sidebar')), findsOneWidget);
     expect(find.byKey(const Key('module_placeholder_organizacion')), findsOneWidget);
-    expect(find.byKey(const Key('module_placeholder_dashboard')), findsNothing);
+    expect(find.byKey(const Key('dashboard_welcome')), findsNothing);
   });
 
   testWidgets('El destino activo queda marcado semánticamente', (tester) async {

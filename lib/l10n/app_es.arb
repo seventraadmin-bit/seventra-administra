@@ -42,5 +42,17 @@
   "shellSearchTooltip": "Buscar en todo el sistema",
   "shellNotificationsTooltip": "Notificaciones",
   "shellProfileTooltip": "Perfil de usuario",
-  "shellProfilePlaceholderName": "Usuario"
+  "shellProfilePlaceholderName": "Marlon Ríos",
+
+  "dashboardWelcomeTitle": "Bienvenido a RISEG ONE",
+  "dashboardWelcomeMessage": "La infraestructura del sistema ya está lista. Los módulos irán apareciendo en este menú conforme avance el desarrollo.",
+  "dashboardVersionLabel": "Versión {version}",
+  "@dashboardVersionLabel": {
+    "description": "Etiqueta de versión mostrada en la pantalla de bienvenida del Dashboard.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  }
 }
