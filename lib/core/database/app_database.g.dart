@@ -2973,6 +2973,18 @@ class $DireccionTable extends Direccion
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _entidadFiscalIdMeta = const VerificationMeta(
+    'entidadFiscalId',
+  );
+  @override
+  late final GeneratedColumn<String> entidadFiscalId = GeneratedColumn<String>(
+    'entidad_fiscal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
   static const VerificationMeta _tipoDireccionMeta = const VerificationMeta(
     'tipoDireccion',
   );
@@ -3115,6 +3127,7 @@ class $DireccionTable extends Direccion
     sucursalId,
     clienteId,
     servicioId,
+    entidadFiscalId,
     tipoDireccion,
     esPrincipal,
     calle,
@@ -3186,6 +3199,15 @@ class $DireccionTable extends Direccion
       context.handle(
         _servicioIdMeta,
         servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    }
+    if (data.containsKey('entidad_fiscal_id')) {
+      context.handle(
+        _entidadFiscalIdMeta,
+        entidadFiscalId.isAcceptableOrUnknown(
+          data['entidad_fiscal_id']!,
+          _entidadFiscalIdMeta,
+        ),
       );
     }
     if (data.containsKey('tipo_direccion')) {
@@ -3343,6 +3365,10 @@ class $DireccionTable extends Direccion
         DriftSqlType.string,
         data['${effectivePrefix}servicio_id'],
       ),
+      entidadFiscalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entidad_fiscal_id'],
+      ),
       tipoDireccion:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -3418,6 +3444,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
   final String? sucursalId;
   final String? clienteId;
   final String? servicioId;
+  final String? entidadFiscalId;
   final String tipoDireccion;
   final bool esPrincipal;
   final String calle;
@@ -3439,6 +3466,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     this.sucursalId,
     this.clienteId,
     this.servicioId,
+    this.entidadFiscalId,
     required this.tipoDireccion,
     required this.esPrincipal,
     required this.calle,
@@ -3470,6 +3498,9 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     }
     if (!nullToAbsent || servicioId != null) {
       map['servicio_id'] = Variable<String>(servicioId);
+    }
+    if (!nullToAbsent || entidadFiscalId != null) {
+      map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId);
     }
     map['tipo_direccion'] = Variable<String>(tipoDireccion);
     map['es_principal'] = Variable<bool>(esPrincipal);
@@ -3514,6 +3545,10 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
           servicioId == null && nullToAbsent
               ? const Value.absent()
               : Value(servicioId),
+      entidadFiscalId:
+          entidadFiscalId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(entidadFiscalId),
       tipoDireccion: Value(tipoDireccion),
       esPrincipal: Value(esPrincipal),
       calle: Value(calle),
@@ -3552,6 +3587,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
       sucursalId: serializer.fromJson<String?>(json['sucursalId']),
       clienteId: serializer.fromJson<String?>(json['clienteId']),
       servicioId: serializer.fromJson<String?>(json['servicioId']),
+      entidadFiscalId: serializer.fromJson<String?>(json['entidadFiscalId']),
       tipoDireccion: serializer.fromJson<String>(json['tipoDireccion']),
       esPrincipal: serializer.fromJson<bool>(json['esPrincipal']),
       calle: serializer.fromJson<String>(json['calle']),
@@ -3578,6 +3614,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
       'sucursalId': serializer.toJson<String?>(sucursalId),
       'clienteId': serializer.toJson<String?>(clienteId),
       'servicioId': serializer.toJson<String?>(servicioId),
+      'entidadFiscalId': serializer.toJson<String?>(entidadFiscalId),
       'tipoDireccion': serializer.toJson<String>(tipoDireccion),
       'esPrincipal': serializer.toJson<bool>(esPrincipal),
       'calle': serializer.toJson<String>(calle),
@@ -3602,6 +3639,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     Value<String?> sucursalId = const Value.absent(),
     Value<String?> clienteId = const Value.absent(),
     Value<String?> servicioId = const Value.absent(),
+    Value<String?> entidadFiscalId = const Value.absent(),
     String? tipoDireccion,
     bool? esPrincipal,
     String? calle,
@@ -3623,6 +3661,8 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     sucursalId: sucursalId.present ? sucursalId.value : this.sucursalId,
     clienteId: clienteId.present ? clienteId.value : this.clienteId,
     servicioId: servicioId.present ? servicioId.value : this.servicioId,
+    entidadFiscalId:
+        entidadFiscalId.present ? entidadFiscalId.value : this.entidadFiscalId,
     tipoDireccion: tipoDireccion ?? this.tipoDireccion,
     esPrincipal: esPrincipal ?? this.esPrincipal,
     calle: calle ?? this.calle,
@@ -3653,6 +3693,10 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
       clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
       servicioId:
           data.servicioId.present ? data.servicioId.value : this.servicioId,
+      entidadFiscalId:
+          data.entidadFiscalId.present
+              ? data.entidadFiscalId.value
+              : this.entidadFiscalId,
       tipoDireccion:
           data.tipoDireccion.present
               ? data.tipoDireccion.value
@@ -3699,6 +3743,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
           ..write('sucursalId: $sucursalId, ')
           ..write('clienteId: $clienteId, ')
           ..write('servicioId: $servicioId, ')
+          ..write('entidadFiscalId: $entidadFiscalId, ')
           ..write('tipoDireccion: $tipoDireccion, ')
           ..write('esPrincipal: $esPrincipal, ')
           ..write('calle: $calle, ')
@@ -3716,7 +3761,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     createdAt,
     updatedAt,
@@ -3725,6 +3770,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     sucursalId,
     clienteId,
     servicioId,
+    entidadFiscalId,
     tipoDireccion,
     esPrincipal,
     calle,
@@ -3737,7 +3783,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     codigoPostal,
     pais,
     referencias,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3750,6 +3796,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
           other.sucursalId == this.sucursalId &&
           other.clienteId == this.clienteId &&
           other.servicioId == this.servicioId &&
+          other.entidadFiscalId == this.entidadFiscalId &&
           other.tipoDireccion == this.tipoDireccion &&
           other.esPrincipal == this.esPrincipal &&
           other.calle == this.calle &&
@@ -3773,6 +3820,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
   final Value<String?> sucursalId;
   final Value<String?> clienteId;
   final Value<String?> servicioId;
+  final Value<String?> entidadFiscalId;
   final Value<String> tipoDireccion;
   final Value<bool> esPrincipal;
   final Value<String> calle;
@@ -3795,6 +3843,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     this.sucursalId = const Value.absent(),
     this.clienteId = const Value.absent(),
     this.servicioId = const Value.absent(),
+    this.entidadFiscalId = const Value.absent(),
     this.tipoDireccion = const Value.absent(),
     this.esPrincipal = const Value.absent(),
     this.calle = const Value.absent(),
@@ -3818,6 +3867,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     this.sucursalId = const Value.absent(),
     this.clienteId = const Value.absent(),
     this.servicioId = const Value.absent(),
+    this.entidadFiscalId = const Value.absent(),
     required String tipoDireccion,
     this.esPrincipal = const Value.absent(),
     required String calle,
@@ -3847,6 +3897,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     Expression<String>? sucursalId,
     Expression<String>? clienteId,
     Expression<String>? servicioId,
+    Expression<String>? entidadFiscalId,
     Expression<String>? tipoDireccion,
     Expression<bool>? esPrincipal,
     Expression<String>? calle,
@@ -3870,6 +3921,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
       if (sucursalId != null) 'sucursal_id': sucursalId,
       if (clienteId != null) 'cliente_id': clienteId,
       if (servicioId != null) 'servicio_id': servicioId,
+      if (entidadFiscalId != null) 'entidad_fiscal_id': entidadFiscalId,
       if (tipoDireccion != null) 'tipo_direccion': tipoDireccion,
       if (esPrincipal != null) 'es_principal': esPrincipal,
       if (calle != null) 'calle': calle,
@@ -3895,6 +3947,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     Value<String?>? sucursalId,
     Value<String?>? clienteId,
     Value<String?>? servicioId,
+    Value<String?>? entidadFiscalId,
     Value<String>? tipoDireccion,
     Value<bool>? esPrincipal,
     Value<String>? calle,
@@ -3918,6 +3971,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
       sucursalId: sucursalId ?? this.sucursalId,
       clienteId: clienteId ?? this.clienteId,
       servicioId: servicioId ?? this.servicioId,
+      entidadFiscalId: entidadFiscalId ?? this.entidadFiscalId,
       tipoDireccion: tipoDireccion ?? this.tipoDireccion,
       esPrincipal: esPrincipal ?? this.esPrincipal,
       calle: calle ?? this.calle,
@@ -3960,6 +4014,9 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     }
     if (servicioId.present) {
       map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (entidadFiscalId.present) {
+      map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId.value);
     }
     if (tipoDireccion.present) {
       map['tipo_direccion'] = Variable<String>(tipoDireccion.value);
@@ -4014,6 +4071,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
           ..write('sucursalId: $sucursalId, ')
           ..write('clienteId: $clienteId, ')
           ..write('servicioId: $servicioId, ')
+          ..write('entidadFiscalId: $entidadFiscalId, ')
           ..write('tipoDireccion: $tipoDireccion, ')
           ..write('esPrincipal: $esPrincipal, ')
           ..write('calle: $calle, ')
@@ -10920,6 +10978,537 @@ class PuestoCompanion extends UpdateCompanion<PuestoData> {
   }
 }
 
+class $EntidadFiscalTable extends EntidadFiscal
+    with TableInfo<$EntidadFiscalTable, EntidadFiscalData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EntidadFiscalTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _clienteIdMeta = const VerificationMeta(
+    'clienteId',
+  );
+  @override
+  late final GeneratedColumn<String> clienteId = GeneratedColumn<String>(
+    'cliente_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cliente (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _razonSocialMeta = const VerificationMeta(
+    'razonSocial',
+  );
+  @override
+  late final GeneratedColumn<String> razonSocial = GeneratedColumn<String>(
+    'razon_social',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rfcMeta = const VerificationMeta('rfc');
+  @override
+  late final GeneratedColumn<String> rfc = GeneratedColumn<String>(
+    'rfc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    clienteId,
+    razonSocial,
+    rfc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'entidad_fiscal';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EntidadFiscalData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoMeta);
+    }
+    if (data.containsKey('cliente_id')) {
+      context.handle(
+        _clienteIdMeta,
+        clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_clienteIdMeta);
+    }
+    if (data.containsKey('razon_social')) {
+      context.handle(
+        _razonSocialMeta,
+        razonSocial.isAcceptableOrUnknown(
+          data['razon_social']!,
+          _razonSocialMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_razonSocialMeta);
+    }
+    if (data.containsKey('rfc')) {
+      context.handle(
+        _rfcMeta,
+        rfc.isAcceptableOrUnknown(data['rfc']!, _rfcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rfcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EntidadFiscalData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EntidadFiscalData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      codigo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}codigo'],
+          )!,
+      clienteId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}cliente_id'],
+          )!,
+      razonSocial:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}razon_social'],
+          )!,
+      rfc:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}rfc'],
+          )!,
+    );
+  }
+
+  @override
+  $EntidadFiscalTable createAlias(String alias) {
+    return $EntidadFiscalTable(attachedDatabase, alias);
+  }
+}
+
+class EntidadFiscalData extends DataClass
+    implements Insertable<EntidadFiscalData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String codigo;
+  final String clienteId;
+  final String razonSocial;
+
+  /// Único global (no solo por Cliente) — un RFC identifica una sola
+  /// entidad legal. Verificado también en el caso de uso
+  /// (`EntidadFiscalValidator`) para dar un error comprensible; esta
+  /// restricción real protege concurrencia e importaciones futuras que
+  /// no pasen por ese caso de uso.
+  final String rfc;
+  const EntidadFiscalData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.codigo,
+    required this.clienteId,
+    required this.razonSocial,
+    required this.rfc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['codigo'] = Variable<String>(codigo);
+    map['cliente_id'] = Variable<String>(clienteId);
+    map['razon_social'] = Variable<String>(razonSocial);
+    map['rfc'] = Variable<String>(rfc);
+    return map;
+  }
+
+  EntidadFiscalCompanion toCompanion(bool nullToAbsent) {
+    return EntidadFiscalCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      codigo: Value(codigo),
+      clienteId: Value(clienteId),
+      razonSocial: Value(razonSocial),
+      rfc: Value(rfc),
+    );
+  }
+
+  factory EntidadFiscalData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EntidadFiscalData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      codigo: serializer.fromJson<String>(json['codigo']),
+      clienteId: serializer.fromJson<String>(json['clienteId']),
+      razonSocial: serializer.fromJson<String>(json['razonSocial']),
+      rfc: serializer.fromJson<String>(json['rfc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'codigo': serializer.toJson<String>(codigo),
+      'clienteId': serializer.toJson<String>(clienteId),
+      'razonSocial': serializer.toJson<String>(razonSocial),
+      'rfc': serializer.toJson<String>(rfc),
+    };
+  }
+
+  EntidadFiscalData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? codigo,
+    String? clienteId,
+    String? razonSocial,
+    String? rfc,
+  }) => EntidadFiscalData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    codigo: codigo ?? this.codigo,
+    clienteId: clienteId ?? this.clienteId,
+    razonSocial: razonSocial ?? this.razonSocial,
+    rfc: rfc ?? this.rfc,
+  );
+  EntidadFiscalData copyWithCompanion(EntidadFiscalCompanion data) {
+    return EntidadFiscalData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+      razonSocial:
+          data.razonSocial.present ? data.razonSocial.value : this.razonSocial,
+      rfc: data.rfc.present ? data.rfc.value : this.rfc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EntidadFiscalData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('razonSocial: $razonSocial, ')
+          ..write('rfc: $rfc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    clienteId,
+    razonSocial,
+    rfc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EntidadFiscalData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.codigo == this.codigo &&
+          other.clienteId == this.clienteId &&
+          other.razonSocial == this.razonSocial &&
+          other.rfc == this.rfc);
+}
+
+class EntidadFiscalCompanion extends UpdateCompanion<EntidadFiscalData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> codigo;
+  final Value<String> clienteId;
+  final Value<String> razonSocial;
+  final Value<String> rfc;
+  final Value<int> rowid;
+  const EntidadFiscalCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.clienteId = const Value.absent(),
+    this.razonSocial = const Value.absent(),
+    this.rfc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EntidadFiscalCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String codigo,
+    required String clienteId,
+    required String razonSocial,
+    required String rfc,
+    this.rowid = const Value.absent(),
+  }) : codigo = Value(codigo),
+       clienteId = Value(clienteId),
+       razonSocial = Value(razonSocial),
+       rfc = Value(rfc);
+  static Insertable<EntidadFiscalData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? codigo,
+    Expression<String>? clienteId,
+    Expression<String>? razonSocial,
+    Expression<String>? rfc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (codigo != null) 'codigo': codigo,
+      if (clienteId != null) 'cliente_id': clienteId,
+      if (razonSocial != null) 'razon_social': razonSocial,
+      if (rfc != null) 'rfc': rfc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EntidadFiscalCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? codigo,
+    Value<String>? clienteId,
+    Value<String>? razonSocial,
+    Value<String>? rfc,
+    Value<int>? rowid,
+  }) {
+    return EntidadFiscalCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      codigo: codigo ?? this.codigo,
+      clienteId: clienteId ?? this.clienteId,
+      razonSocial: razonSocial ?? this.razonSocial,
+      rfc: rfc ?? this.rfc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (clienteId.present) {
+      map['cliente_id'] = Variable<String>(clienteId.value);
+    }
+    if (razonSocial.present) {
+      map['razon_social'] = Variable<String>(razonSocial.value);
+    }
+    if (rfc.present) {
+      map['rfc'] = Variable<String>(rfc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EntidadFiscalCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('razonSocial: $razonSocial, ')
+          ..write('rfc: $rfc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -10943,6 +11532,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ServicioTable servicio = $ServicioTable(this);
   late final $UbicacionTable ubicacion = $UbicacionTable(this);
   late final $PuestoTable puesto = $PuestoTable(this);
+  late final $EntidadFiscalTable entidadFiscal = $EntidadFiscalTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -10982,6 +11572,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     servicio,
     ubicacion,
     puesto,
+    entidadFiscal,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -12931,6 +13522,7 @@ typedef $$DireccionTableCreateCompanionBuilder =
       Value<String?> sucursalId,
       Value<String?> clienteId,
       Value<String?> servicioId,
+      Value<String?> entidadFiscalId,
       required String tipoDireccion,
       Value<bool> esPrincipal,
       required String calle,
@@ -12955,6 +13547,7 @@ typedef $$DireccionTableUpdateCompanionBuilder =
       Value<String?> sucursalId,
       Value<String?> clienteId,
       Value<String?> servicioId,
+      Value<String?> entidadFiscalId,
       Value<String> tipoDireccion,
       Value<bool> esPrincipal,
       Value<String> calle,
@@ -13016,6 +13609,11 @@ class $$DireccionTableFilterComposer
 
   ColumnFilters<String> get servicioId => $composableBuilder(
     column: $table.servicioId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entidadFiscalId => $composableBuilder(
+    column: $table.entidadFiscalId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13129,6 +13727,11 @@ class $$DireccionTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get entidadFiscalId => $composableBuilder(
+    column: $table.entidadFiscalId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get tipoDireccion => $composableBuilder(
     column: $table.tipoDireccion,
     builder: (column) => ColumnOrderings(column),
@@ -13229,6 +13832,11 @@ class $$DireccionTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get entidadFiscalId => $composableBuilder(
+    column: $table.entidadFiscalId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get tipoDireccion => $composableBuilder(
     column: $table.tipoDireccion,
     builder: (column) => column,
@@ -13321,6 +13929,7 @@ class $$DireccionTableTableManager
                 Value<String?> sucursalId = const Value.absent(),
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> servicioId = const Value.absent(),
+                Value<String?> entidadFiscalId = const Value.absent(),
                 Value<String> tipoDireccion = const Value.absent(),
                 Value<bool> esPrincipal = const Value.absent(),
                 Value<String> calle = const Value.absent(),
@@ -13343,6 +13952,7 @@ class $$DireccionTableTableManager
                 sucursalId: sucursalId,
                 clienteId: clienteId,
                 servicioId: servicioId,
+                entidadFiscalId: entidadFiscalId,
                 tipoDireccion: tipoDireccion,
                 esPrincipal: esPrincipal,
                 calle: calle,
@@ -13367,6 +13977,7 @@ class $$DireccionTableTableManager
                 Value<String?> sucursalId = const Value.absent(),
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> servicioId = const Value.absent(),
+                Value<String?> entidadFiscalId = const Value.absent(),
                 required String tipoDireccion,
                 Value<bool> esPrincipal = const Value.absent(),
                 required String calle,
@@ -13389,6 +14000,7 @@ class $$DireccionTableTableManager
                 sucursalId: sucursalId,
                 clienteId: clienteId,
                 servicioId: servicioId,
+                entidadFiscalId: entidadFiscalId,
                 tipoDireccion: tipoDireccion,
                 esPrincipal: esPrincipal,
                 calle: calle,
@@ -15972,6 +16584,24 @@ final class $$ClienteTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$EntidadFiscalTable, List<EntidadFiscalData>>
+  _entidadFiscalRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.entidadFiscal,
+    aliasName: $_aliasNameGenerator(db.cliente.id, db.entidadFiscal.clienteId),
+  );
+
+  $$EntidadFiscalTableProcessedTableManager get entidadFiscalRefs {
+    final manager = $$EntidadFiscalTableTableManager(
+      $_db,
+      $_db.entidadFiscal,
+    ).filter((f) => f.clienteId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_entidadFiscalRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ClienteTableFilterComposer
@@ -16092,6 +16722,31 @@ class $$ClienteTableFilterComposer
           }) => $$ServicioTableFilterComposer(
             $db: $db,
             $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> entidadFiscalRefs(
+    Expression<bool> Function($$EntidadFiscalTableFilterComposer f) f,
+  ) {
+    final $$EntidadFiscalTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.entidadFiscal,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntidadFiscalTableFilterComposer(
+            $db: $db,
+            $table: $db.entidadFiscal,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -16294,6 +16949,31 @@ class $$ClienteTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> entidadFiscalRefs<T extends Object>(
+    Expression<T> Function($$EntidadFiscalTableAnnotationComposer a) f,
+  ) {
+    final $$EntidadFiscalTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.entidadFiscal,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntidadFiscalTableAnnotationComposer(
+            $db: $db,
+            $table: $db.entidadFiscal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ClienteTableTableManager
@@ -16313,6 +16993,7 @@ class $$ClienteTableTableManager
             bool industriaId,
             bool contactoRefs,
             bool servicioRefs,
+            bool entidadFiscalRefs,
           })
         > {
   $$ClienteTableTableManager(_$AppDatabase db, $ClienteTable table)
@@ -16392,12 +17073,14 @@ class $$ClienteTableTableManager
             industriaId = false,
             contactoRefs = false,
             servicioRefs = false,
+            entidadFiscalRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (contactoRefs) db.contacto,
                 if (servicioRefs) db.servicio,
+                if (entidadFiscalRefs) db.entidadFiscal,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -16477,6 +17160,28 @@ class $$ClienteTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (entidadFiscalRefs)
+                    await $_getPrefetchedData<
+                      ClienteData,
+                      $ClienteTable,
+                      EntidadFiscalData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ClienteTableReferences
+                          ._entidadFiscalRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ClienteTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).entidadFiscalRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.clienteId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -16501,6 +17206,7 @@ typedef $$ClienteTableProcessedTableManager =
         bool industriaId,
         bool contactoRefs,
         bool servicioRefs,
+        bool entidadFiscalRefs,
       })
     >;
 typedef $$ContactoTableCreateCompanionBuilder =
@@ -18966,6 +19672,397 @@ typedef $$PuestoTableProcessedTableManager =
       PuestoData,
       PrefetchHooks Function({bool areaId})
     >;
+typedef $$EntidadFiscalTableCreateCompanionBuilder =
+    EntidadFiscalCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String codigo,
+      required String clienteId,
+      required String razonSocial,
+      required String rfc,
+      Value<int> rowid,
+    });
+typedef $$EntidadFiscalTableUpdateCompanionBuilder =
+    EntidadFiscalCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> codigo,
+      Value<String> clienteId,
+      Value<String> razonSocial,
+      Value<String> rfc,
+      Value<int> rowid,
+    });
+
+final class $$EntidadFiscalTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $EntidadFiscalTable, EntidadFiscalData> {
+  $$EntidadFiscalTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ClienteTable _clienteIdTable(_$AppDatabase db) =>
+      db.cliente.createAlias(
+        $_aliasNameGenerator(db.entidadFiscal.clienteId, db.cliente.id),
+      );
+
+  $$ClienteTableProcessedTableManager get clienteId {
+    final $_column = $_itemColumn<String>('cliente_id')!;
+
+    final manager = $$ClienteTableTableManager(
+      $_db,
+      $_db.cliente,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_clienteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$EntidadFiscalTableFilterComposer
+    extends Composer<_$AppDatabase, $EntidadFiscalTable> {
+  $$EntidadFiscalTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get razonSocial => $composableBuilder(
+    column: $table.razonSocial,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rfc => $composableBuilder(
+    column: $table.rfc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ClienteTableFilterComposer get clienteId {
+    final $$ClienteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableFilterComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EntidadFiscalTableOrderingComposer
+    extends Composer<_$AppDatabase, $EntidadFiscalTable> {
+  $$EntidadFiscalTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get razonSocial => $composableBuilder(
+    column: $table.razonSocial,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rfc => $composableBuilder(
+    column: $table.rfc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ClienteTableOrderingComposer get clienteId {
+    final $$ClienteTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableOrderingComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EntidadFiscalTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EntidadFiscalTable> {
+  $$EntidadFiscalTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  GeneratedColumn<String> get razonSocial => $composableBuilder(
+    column: $table.razonSocial,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get rfc =>
+      $composableBuilder(column: $table.rfc, builder: (column) => column);
+
+  $$ClienteTableAnnotationComposer get clienteId {
+    final $$ClienteTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EntidadFiscalTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EntidadFiscalTable,
+          EntidadFiscalData,
+          $$EntidadFiscalTableFilterComposer,
+          $$EntidadFiscalTableOrderingComposer,
+          $$EntidadFiscalTableAnnotationComposer,
+          $$EntidadFiscalTableCreateCompanionBuilder,
+          $$EntidadFiscalTableUpdateCompanionBuilder,
+          (EntidadFiscalData, $$EntidadFiscalTableReferences),
+          EntidadFiscalData,
+          PrefetchHooks Function({bool clienteId})
+        > {
+  $$EntidadFiscalTableTableManager(_$AppDatabase db, $EntidadFiscalTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$EntidadFiscalTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$EntidadFiscalTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$EntidadFiscalTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> codigo = const Value.absent(),
+                Value<String> clienteId = const Value.absent(),
+                Value<String> razonSocial = const Value.absent(),
+                Value<String> rfc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EntidadFiscalCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                clienteId: clienteId,
+                razonSocial: razonSocial,
+                rfc: rfc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String codigo,
+                required String clienteId,
+                required String razonSocial,
+                required String rfc,
+                Value<int> rowid = const Value.absent(),
+              }) => EntidadFiscalCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                clienteId: clienteId,
+                razonSocial: razonSocial,
+                rfc: rfc,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EntidadFiscalTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({clienteId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (clienteId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.clienteId,
+                            referencedTable: $$EntidadFiscalTableReferences
+                                ._clienteIdTable(db),
+                            referencedColumn:
+                                $$EntidadFiscalTableReferences
+                                    ._clienteIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EntidadFiscalTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EntidadFiscalTable,
+      EntidadFiscalData,
+      $$EntidadFiscalTableFilterComposer,
+      $$EntidadFiscalTableOrderingComposer,
+      $$EntidadFiscalTableAnnotationComposer,
+      $$EntidadFiscalTableCreateCompanionBuilder,
+      $$EntidadFiscalTableUpdateCompanionBuilder,
+      (EntidadFiscalData, $$EntidadFiscalTableReferences),
+      EntidadFiscalData,
+      PrefetchHooks Function({bool clienteId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -19005,4 +20102,6 @@ class $AppDatabaseManager {
       $$UbicacionTableTableManager(_db, _db.ubicacion);
   $$PuestoTableTableManager get puesto =>
       $$PuestoTableTableManager(_db, _db.puesto);
+  $$EntidadFiscalTableTableManager get entidadFiscal =>
+      $$EntidadFiscalTableTableManager(_db, _db.entidadFiscal);
 }

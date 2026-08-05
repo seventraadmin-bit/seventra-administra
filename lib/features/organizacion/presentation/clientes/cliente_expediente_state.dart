@@ -13,6 +13,7 @@ class ClienteExpedienteState {
     this.cargando = true,
     this.guardando = false,
     this.cambiandoEstatus = false,
+    this.operandoEntidadFiscal = false,
     this.tieneCambiosSinGuardar = false,
     this.modo = ClienteExpedienteModo.consulta,
     this.datos,
@@ -24,6 +25,11 @@ class ClienteExpedienteState {
   final bool cargando;
   final bool guardando;
   final bool cambiandoEstatus;
+
+  /// Bloquea las acciones de Entidad fiscal (agregar/editar/archivar/
+  /// reactivar/domicilio) mientras una está en curso — evita doble
+  /// ejecución por doble clic (punto 8 de la Etapa 4E.2).
+  final bool operandoEntidadFiscal;
   final bool tieneCambiosSinGuardar;
   final ClienteExpedienteModo modo;
   final ClienteExpedienteData? datos;
@@ -35,6 +41,7 @@ class ClienteExpedienteState {
     bool? cargando,
     bool? guardando,
     bool? cambiandoEstatus,
+    bool? operandoEntidadFiscal,
     bool? tieneCambiosSinGuardar,
     ClienteExpedienteModo? modo,
     ClienteExpedienteData? datos,
@@ -46,6 +53,7 @@ class ClienteExpedienteState {
       cargando: cargando ?? this.cargando,
       guardando: guardando ?? this.guardando,
       cambiandoEstatus: cambiandoEstatus ?? this.cambiandoEstatus,
+      operandoEntidadFiscal: operandoEntidadFiscal ?? this.operandoEntidadFiscal,
       tieneCambiosSinGuardar: tieneCambiosSinGuardar ?? this.tieneCambiosSinGuardar,
       modo: modo ?? this.modo,
       datos: datos ?? this.datos,

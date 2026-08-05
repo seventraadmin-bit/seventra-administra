@@ -8,12 +8,14 @@ import 'package:uuid/uuid.dart';
 import '../../features/organizacion/data/tables/cliente_table.dart';
 import '../../features/organizacion/data/tables/contacto_table.dart';
 import '../../features/organizacion/data/tables/empresa_table.dart';
+import '../../features/organizacion/data/tables/entidad_fiscal_table.dart';
 import '../../features/organizacion/data/tables/puesto_table.dart';
 import '../../features/organizacion/data/tables/servicio_table.dart';
 import '../../features/organizacion/data/tables/sucursal_table.dart';
 import '../../features/organizacion/data/tables/ubicacion_table.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
+import 'migrations/migrar_direccion_v5.dart';
 import 'seed/seed_data.dart';
 import 'tables/attachment_table.dart';
 import 'tables/catalogos_tables.dart';
@@ -60,12 +62,13 @@ class AppMetadata extends Table {
   Cliente,
   Contacto,
   Servicio,
+  EntidadFiscal,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -78,8 +81,10 @@ class AppDatabase extends _$AppDatabase {
         if (from == 1) {
           // Crea todas las tablas de la Etapa 4A directo con la forma
           // *actual* de sus clases Dart (incluyendo Cliente/Contacto ya
-          // en su forma de la Etapa 4E.1) — nunca necesita pasar también
-          // por `migrarClienteContactoV4` más abajo.
+          // en su forma de la Etapa 4E.1, y Direccion ya con
+          // `entidadFiscalId` de la Etapa 4E.2) — nunca necesita pasar
+          // también por `migrarClienteContactoV4`/`migrarDireccionV5`
+          // más abajo.
           await _createEtapa4ATables(m);
         }
         await runSeed(this);
@@ -99,6 +104,32 @@ class AppDatabase extends _$AppDatabase {
         // `onUpgrade`.
         if (from == 2 || from == 3) {
           await migrarClienteContactoV4(this, m);
+        }
+        // Estructural (Etapa 4E.2): EntidadFiscal es tabla nueva, sin
+        // relación con la Etapa 4A — se crea para cualquier instalación
+        // que todavía no la tenga, sin importar si viene de 1 (que ya
+        // creó todo lo demás arriba) o de una versión posterior.
+        //
+        // Gateada también por `to >= 5`, no solo por `from`: igual que
+        // en la Etapa 4E.1 (ver `migrarClienteContactoV4`), una prueba
+        // de `SchemaVerifier.migrateAndValidate(db, 4)` sustituye el
+        // *objetivo* nominal vía un delegado interno, pero el cuerpo de
+        // este `onUpgrade` sigue ejecutándose completo — sin este
+        // chequeo, un `from <= 4` se dispararía igual aunque el
+        // objetivo real fuera 4, no 5, rompiendo las pruebas de
+        // migración que validan explícitamente ese esquema intermedio.
+        if (to >= 5 && from <= 4) {
+          await m.createTable(entidadFiscal);
+        }
+        // Recrea Direccion con la quinta pata del arco exclusivo
+        // (entidadFiscalId) — requiere que `entidad_fiscal` ya exista
+        // (su FK la referencia), por eso corre después del paso
+        // anterior. Solo aplica a instalaciones que ya tenían Direccion
+        // físicamente creada con la forma anterior (2, 3 o 4) — de 1 ya
+        // se creó con la forma nueva arriba. Mismo motivo de `to >= 5`
+        // que el paso anterior.
+        if (to >= 5 && from >= 2 && from <= 4) {
+          await migrarDireccionV5(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

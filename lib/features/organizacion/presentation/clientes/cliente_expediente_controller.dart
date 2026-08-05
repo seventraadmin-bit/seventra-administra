@@ -1,11 +1,17 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:riseg_one/core/database/tables/audit_columns.dart';
+import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_ciclo_vida_entidad_fiscal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_data.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_input.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/contacto_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/entidad_fiscal_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_contacto_resultado.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_domicilio_fiscal_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_expediente_cliente_usecase.dart';
 
 import '../../organizacion_providers.dart';
@@ -16,9 +22,11 @@ part 'cliente_expediente_controller.g.dart';
 /// Controlador de la pantalla de expediente de Cliente — un `family` por
 /// `clienteId`. Mismo diseño que `PuestoExpedienteController`; el
 /// cambio de estatus es una acción independiente del guardado del
-/// formulario, y los Contactos se agregan/editan/archivan también de
-/// forma independiente (cada uno refresca solo la lista de contactos
-/// del estado, sin tocar `modo` ni los datos generales ya cargados).
+/// formulario, y los Contactos y Entidades fiscales se agregan/editan/
+/// archivan también de forma independiente (cada uno refresca solo su
+/// propia lista del estado, sin tocar `modo` ni los datos generales ya
+/// cargados). No guarda ningún `TextEditingController` ni objeto de UI
+/// — esos viven en el `State` de la pantalla, nunca aquí.
 @riverpod
 class ClienteExpedienteController extends _$ClienteExpedienteController {
   @override
@@ -89,6 +97,7 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
             cliente: actualizado.cliente,
             direccionReferencia: actualizado.direccionReferencia,
             contactos: state.datos!.contactos,
+            entidadesFiscales: state.datos!.entidadesFiscales,
           ),
           modo: ClienteExpedienteModo.consulta,
           tieneCambiosSinGuardar: false,
@@ -120,6 +129,7 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
             cliente: cliente,
             direccionReferencia: datosActuales.direccionReferencia,
             contactos: datosActuales.contactos,
+            entidadesFiscales: datosActuales.entidadesFiscales,
           ),
         );
         return true;
@@ -132,7 +142,7 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
   Future<GuardarContactoResultado> agregarContacto(ContactoBorrador borrador) async {
     final resultado = await ref.read(agregarContactoUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador);
     if (resultado is GuardarContactoExitoso) {
-      await _recargarContactos();
+      await _recargarExpediente();
     }
     return resultado;
   }
@@ -140,20 +150,84 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
   Future<GuardarContactoResultado> actualizarContacto(String contactoId, ContactoBorrador borrador) async {
     final resultado = await ref.read(actualizarContactoUseCaseProvider).ejecutar(id: contactoId, borrador: borrador);
     if (resultado is GuardarContactoExitoso) {
-      await _recargarContactos();
+      await _recargarExpediente();
     }
     return resultado;
   }
 
   Future<void> archivarContacto(String contactoId) async {
     await ref.read(archivarContactoUseCaseProvider).ejecutar(contactoId);
-    await _recargarContactos();
+    await _recargarExpediente();
   }
 
-  /// Refresca únicamente la lista de contactos del estado ya cargado —
-  /// nunca toca `modo` ni reinicia errores de guardado del formulario
-  /// principal, que son independientes de esta acción.
-  Future<void> _recargarContactos() async {
+  Future<GuardarEntidadFiscalResultado?> agregarEntidadFiscal(EntidadFiscalBorrador borrador) async {
+    if (state.operandoEntidadFiscal) return null;
+    state = state.copyWith(operandoEntidadFiscal: true);
+
+    final resultado = await ref
+        .read(crearEntidadFiscalUseCaseProvider)
+        .ejecutar(clienteId: clienteId, borrador: borrador);
+    if (resultado is GuardarEntidadFiscalExitoso) {
+      await _recargarExpediente();
+    }
+    state = state.copyWith(operandoEntidadFiscal: false);
+    return resultado;
+  }
+
+  Future<GuardarEntidadFiscalResultado?> actualizarEntidadFiscal(
+    String entidadFiscalId,
+    EntidadFiscalBorrador borrador,
+  ) async {
+    if (state.operandoEntidadFiscal) return null;
+    state = state.copyWith(operandoEntidadFiscal: true);
+
+    final resultado = await ref
+        .read(actualizarEntidadFiscalUseCaseProvider)
+        .ejecutar(id: entidadFiscalId, borrador: borrador);
+    if (resultado is GuardarEntidadFiscalExitoso) {
+      await _recargarExpediente();
+    }
+    state = state.copyWith(operandoEntidadFiscal: false);
+    return resultado;
+  }
+
+  Future<bool> cambiarCicloVidaEntidadFiscal(String entidadFiscalId, CicloVidaRegistro nuevo) async {
+    if (state.operandoEntidadFiscal) return false;
+    state = state.copyWith(operandoEntidadFiscal: true);
+
+    final resultado = await ref
+        .read(cambiarCicloVidaEntidadFiscalUseCaseProvider)
+        .ejecutar(entidadFiscalId: entidadFiscalId, nuevo: nuevo);
+    final exito = resultado is CambiarCicloVidaEntidadFiscalExitoso;
+    if (exito) {
+      await _recargarExpediente();
+    }
+    state = state.copyWith(operandoEntidadFiscal: false);
+    return exito;
+  }
+
+  Future<GuardarDomicilioFiscalResultado?> guardarDomicilioFiscal(
+    String entidadFiscalId,
+    DireccionBorrador? domicilio,
+  ) async {
+    if (state.operandoEntidadFiscal) return null;
+    state = state.copyWith(operandoEntidadFiscal: true);
+
+    final resultado = await ref
+        .read(guardarDomicilioFiscalUseCaseProvider)
+        .ejecutar(entidadFiscalId: entidadFiscalId, domicilio: domicilio);
+    if (resultado is GuardarDomicilioFiscalExitoso) {
+      await _recargarExpediente();
+    }
+    state = state.copyWith(operandoEntidadFiscal: false);
+    return resultado;
+  }
+
+  /// Refresca el expediente completo (contactos **y** Entidades
+  /// fiscales) preservando `cliente`/`direccionReferencia` ya cargados
+  /// y sin tocar `modo` ni los errores de guardado del formulario
+  /// principal — esas cosas son independientes de estas acciones.
+  Future<void> _recargarExpediente() async {
     final datosActuales = state.datos;
     if (datosActuales == null) return;
 
@@ -165,6 +239,7 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
             cliente: datosActuales.cliente,
             direccionReferencia: datosActuales.direccionReferencia,
             contactos: expediente.contactos,
+            entidadesFiscales: expediente.entidadesFiscales,
           ),
         );
       },

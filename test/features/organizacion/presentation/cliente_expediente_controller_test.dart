@@ -12,9 +12,13 @@ import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/contacto_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_errors.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_input.dart';
+import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/contacto_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/entidad_fiscal_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_contacto_resultado.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_domicilio_fiscal_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/presentation/clientes/cliente_expediente_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/clientes/cliente_expediente_state.dart';
 
@@ -181,5 +185,129 @@ void main() {
     final state = container.read(clienteExpedienteControllerProvider(clienteId));
     expect(state.cargando, isFalse);
     expect(state.datos, isNotNull);
+  });
+
+  group('Entidades fiscales', () {
+    test('agregarEntidadFiscal exitoso refresca la lista sin salir de edición', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(clienteExpedienteControllerProvider(clienteId).notifier);
+      notifier.entrarModoEdicion();
+
+      final resultado = await notifier.agregarEntidadFiscal(
+        const EntidadFiscalBorrador(razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1'),
+      );
+
+      expect(resultado, isA<GuardarEntidadFiscalExitoso>());
+      final state = container.read(clienteExpedienteControllerProvider(clienteId));
+      expect(state.datos?.entidadesFiscales, hasLength(1));
+      expect(state.datos?.entidadesFiscales.single.entidadFiscal.codigo, 'ENF-0001');
+      expect(state.datos?.contactos, isEmpty, reason: 'no debe afectar la lista de contactos ya cargada');
+      expect(state.modo, ClienteExpedienteModo.edicion);
+    });
+
+    test('permite más de una Entidad fiscal por Cliente (caso Sportium)', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(clienteExpedienteControllerProvider(clienteId).notifier);
+
+      await notifier.agregarEntidadFiscal(
+        const EntidadFiscalBorrador(razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1'),
+      );
+      await notifier.agregarEntidadFiscal(
+        const EntidadFiscalBorrador(razonSocial: 'Sportium Interlomas SA de CV', rfc: 'SIN010101AB2'),
+      );
+
+      final state = container.read(clienteExpedienteControllerProvider(clienteId));
+      expect(state.datos?.entidadesFiscales, hasLength(2));
+    });
+
+    test('agregarEntidadFiscal con RFC duplicado no modifica la lista', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(clienteExpedienteControllerProvider(clienteId).notifier);
+
+      await notifier.agregarEntidadFiscal(
+        const EntidadFiscalBorrador(razonSocial: 'Sportium SA de CV', rfc: 'STO010101AB1'),
+      );
+      final resultado = await notifier.agregarEntidadFiscal(
+        const EntidadFiscalBorrador(razonSocial: 'Otra razón social SA', rfc: 'STO010101AB1'),
+      );
+
+      expect(resultado, isA<GuardarEntidadFiscalErroresValidacion>());
+      expect(container.read(clienteExpedienteControllerProvider(clienteId)).datos?.entidadesFiscales, hasLength(1));
+    });
+
+    test('actualizarEntidadFiscal refresca los datos mostrados', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(clienteExpedienteControllerProvider(clienteId).notifier);
+      final agregado = await notifier.agregarEntidadFiscal(
+        const EntidadFiscalBorrador(razonSocial: 'Sportium SA de CV', rfc: 'STO010101AB1'),
+      );
+      final entidadId = (agregado as GuardarEntidadFiscalExitoso).entidadFiscal.id;
+
+      await notifier.actualizarEntidadFiscal(
+        entidadId,
+        const EntidadFiscalBorrador(razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1'),
+      );
+
+      final state = container.read(clienteExpedienteControllerProvider(clienteId));
+      expect(state.datos?.entidadesFiscales.single.entidadFiscal.razonSocial, 'Sportium Toluca SA de CV');
+    });
+
+    test('cambiarCicloVidaEntidadFiscal archiva y una edición posterior es rechazada', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(clienteExpedienteControllerProvider(clienteId).notifier);
+      final agregado = await notifier.agregarEntidadFiscal(
+        const EntidadFiscalBorrador(razonSocial: 'Sportium SA de CV', rfc: 'STO010101AB1'),
+      );
+      final entidadId = (agregado as GuardarEntidadFiscalExitoso).entidadFiscal.id;
+
+      final archivado = await notifier.cambiarCicloVidaEntidadFiscal(entidadId, CicloVidaRegistro.archivado);
+      expect(archivado, isTrue);
+
+      var state = container.read(clienteExpedienteControllerProvider(clienteId));
+      expect(state.datos?.entidadesFiscales.single.entidadFiscal.cicloVidaRegistro, 'archivado');
+
+      final edicion = await notifier.actualizarEntidadFiscal(
+        entidadId,
+        const EntidadFiscalBorrador(razonSocial: 'Otro nombre SA', rfc: 'STO010101AB1'),
+      );
+      expect(edicion, isA<GuardarEntidadFiscalArchivada>());
+
+      final reactivado = await notifier.cambiarCicloVidaEntidadFiscal(entidadId, CicloVidaRegistro.activo);
+      expect(reactivado, isTrue);
+      state = container.read(clienteExpedienteControllerProvider(clienteId));
+      expect(state.datos?.entidadesFiscales.single.entidadFiscal.cicloVidaRegistro, 'activo');
+    });
+
+    test('guardarDomicilioFiscal actualiza "Datos fiscales incompletos"', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(clienteExpedienteControllerProvider(clienteId).notifier);
+      final agregado = await notifier.agregarEntidadFiscal(
+        const EntidadFiscalBorrador(razonSocial: 'Sportium SA de CV', rfc: 'STO010101AB1'),
+      );
+      final entidadId = (agregado as GuardarEntidadFiscalExitoso).entidadFiscal.id;
+
+      expect(
+        container.read(clienteExpedienteControllerProvider(clienteId)).datos?.entidadesFiscales.single.datosFiscalesCompletos,
+        isFalse,
+      );
+
+      final resultado = await notifier.guardarDomicilioFiscal(
+        entidadId,
+        const DireccionBorrador(
+          calle: 'Av. Reforma',
+          numeroExterior: '100',
+          colonia: 'Juárez',
+          municipioAlcaldia: 'Cuauhtémoc',
+          estado: 'CDMX',
+          codigoPostal: '06600',
+        ),
+      );
+
+      expect(resultado, isA<GuardarDomicilioFiscalExitoso>());
+      expect(
+        container.read(clienteExpedienteControllerProvider(clienteId)).datos?.entidadesFiscales.single.datosFiscalesCompletos,
+        isTrue,
+      );
+    });
   });
 }

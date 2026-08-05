@@ -3,13 +3,19 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/contacto_table.dart';
+import 'package:riseg_one/features/organizacion/domain/repositories/entidad_fiscal_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_errors.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_input.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/contacto_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/entidad_fiscal_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_contacto_resultado.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_domicilio_fiscal_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/direccion_controllers.dart';
 
 import 'cliente_expediente_controller.dart';
@@ -18,6 +24,7 @@ import 'cliente_expediente_state.dart';
 import 'widgets/cliente_datos_generales_section.dart';
 import 'widgets/contactos_section.dart';
 import 'widgets/direccion_referencia_section.dart';
+import 'widgets/entidades_fiscales_section.dart';
 
 /// Pantalla de expediente de Cliente comercial — mismo patrón consulta/
 /// edición que Puesto/Sucursal; se apila (`push`) sobre el listado, así
@@ -202,6 +209,131 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
     }
   }
 
+  Future<void> _mostrarDialogoEntidadFiscal({EntidadFiscalData? entidadExistente}) async {
+    final l10n = AppLocalizations.of(context)!;
+    var borrador = EntidadFiscalBorrador(
+      razonSocial: entidadExistente?.razonSocial ?? '',
+      rfc: entidadExistente?.rfc ?? '',
+    );
+
+    final resultado = await RisegDialog.showForm<GuardarEntidadFiscalResultado>(
+      context: context,
+      title: entidadExistente == null
+          ? l10n.entidadFiscalDialogoTituloAlta
+          : l10n.entidadFiscalDialogoTituloEdicion,
+      confirmLabel: l10n.entidadFiscalDialogoBotonGuardar,
+      cancelLabel: l10n.entidadFiscalDialogoBotonCancelar,
+      contentBuilder: (_) => EntidadFiscalForm(
+        entidadInicial: entidadExistente,
+        onCambio: (nuevo) => borrador = nuevo,
+      ),
+      onConfirm: () async {
+        if (entidadExistente == null) {
+          return _notifier.agregarEntidadFiscal(borrador);
+        }
+        return _notifier.actualizarEntidadFiscal(entidadExistente.id, borrador);
+      },
+    );
+
+    if (!mounted) return;
+
+    switch (resultado) {
+      case GuardarEntidadFiscalExitoso():
+        RisegFeedback.showSuccess(context, l10n.entidadFiscalGuardadoExito);
+      case GuardarEntidadFiscalErroresValidacion():
+      case GuardarEntidadFiscalErrorInesperado():
+        RisegFeedback.showError(context, l10n.entidadFiscalGuardadoError);
+      case GuardarEntidadFiscalArchivada():
+        RisegFeedback.showError(context, l10n.entidadFiscalArchivadaNoEditable);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _mostrarDialogoDomicilioFiscal(EntidadFiscalConDomicilio entidad) async {
+    final l10n = AppLocalizations.of(context)!;
+    final domicilio = entidad.domicilioFiscal;
+    var capturado = DireccionBorrador(
+      calle: domicilio?.calle ?? '',
+      numeroExterior: domicilio?.numeroExterior ?? '',
+      numeroInterior: domicilio?.numeroInterior ?? '',
+      colonia: domicilio?.colonia ?? '',
+      municipioAlcaldia: domicilio?.municipioAlcaldia ?? '',
+      ciudadLocalidad: domicilio?.ciudadLocalidad ?? '',
+      estado: domicilio?.estado ?? '',
+      codigoPostal: domicilio?.codigoPostal ?? '',
+      pais: domicilio?.pais ?? 'México',
+      referencias: domicilio?.referencias ?? '',
+    );
+
+    final resultado = await RisegDialog.showForm<GuardarDomicilioFiscalResultado>(
+      context: context,
+      title: l10n.entidadFiscalDomicilioDialogoTitulo,
+      confirmLabel: l10n.entidadFiscalDomicilioDialogoBotonGuardar,
+      cancelLabel: l10n.entidadFiscalDomicilioDialogoBotonCancelar,
+      contentBuilder: (_) => DomicilioFiscalForm(
+        domicilioInicial: domicilio,
+        onCambio: (nuevo) => capturado = nuevo,
+      ),
+      onConfirm: () => _notifier.guardarDomicilioFiscal(entidad.entidadFiscal.id, capturado),
+    );
+
+    if (!mounted) return;
+
+    switch (resultado) {
+      case GuardarDomicilioFiscalExitoso():
+        RisegFeedback.showSuccess(context, l10n.entidadFiscalDomicilioGuardadoExito);
+      case GuardarDomicilioFiscalErroresValidacion():
+      case GuardarDomicilioFiscalErrorInesperado():
+        RisegFeedback.showError(context, l10n.entidadFiscalDomicilioGuardadoError);
+      case GuardarDomicilioFiscalArchivada():
+        RisegFeedback.showError(context, l10n.entidadFiscalArchivadaNoEditable);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _archivarEntidadFiscal(EntidadFiscalData entidad) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: l10n.entidadFiscalConfirmarArchivarTitulo,
+      message: l10n.entidadFiscalConfirmarArchivarMensaje,
+      confirmLabel: l10n.sucursalConfirmarAceptar,
+      cancelLabel: l10n.sucursalConfirmarCancelar,
+      destructive: true,
+    );
+    if (confirmado != true) return;
+
+    final exito = await _notifier.cambiarCicloVidaEntidadFiscal(entidad.id, CicloVidaRegistro.archivado);
+    if (!mounted) return;
+    if (exito) {
+      RisegFeedback.showSuccess(context, l10n.entidadFiscalCicloVidaCambiadoExito);
+    } else {
+      RisegFeedback.showError(context, l10n.entidadFiscalCicloVidaCambiadoError);
+    }
+  }
+
+  Future<void> _reactivarEntidadFiscal(EntidadFiscalData entidad) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: l10n.entidadFiscalConfirmarReactivarTitulo,
+      message: l10n.entidadFiscalConfirmarReactivarMensaje,
+      confirmLabel: l10n.sucursalConfirmarAceptar,
+      cancelLabel: l10n.sucursalConfirmarCancelar,
+    );
+    if (confirmado != true) return;
+
+    final exito = await _notifier.cambiarCicloVidaEntidadFiscal(entidad.id, CicloVidaRegistro.activo);
+    if (!mounted) return;
+    if (exito) {
+      RisegFeedback.showSuccess(context, l10n.entidadFiscalCicloVidaCambiadoExito);
+    } else {
+      RisegFeedback.showError(context, l10n.entidadFiscalCicloVidaCambiadoError);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -315,6 +447,18 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
                   onEditar: (contacto) => _mostrarDialogoContacto(contactoExistente: contacto),
                   onArchivar: _archivarContacto,
                   onMarcarPrincipal: _marcarComoPrincipal,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              RisegCard(
+                child: EntidadesFiscalesSection(
+                  entidades: datos.entidadesFiscales,
+                  deshabilitado: state.operandoEntidadFiscal,
+                  onAgregar: () => _mostrarDialogoEntidadFiscal(),
+                  onEditar: (entidad) => _mostrarDialogoEntidadFiscal(entidadExistente: entidad),
+                  onEditarDomicilio: _mostrarDialogoDomicilioFiscal,
+                  onArchivar: _archivarEntidadFiscal,
+                  onReactivar: _reactivarEntidadFiscal,
                 ),
               ),
             ],

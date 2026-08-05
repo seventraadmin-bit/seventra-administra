@@ -52,6 +52,16 @@ Future<void> _pumpScreen(WidgetTester tester, AppDatabase db, String clienteId) 
   await tester.pumpAndSettle();
 }
 
+Future<void> _agregarEntidadFiscal(WidgetTester tester, {required String razonSocial, required String rfc}) async {
+  await tester.tap(find.byKey(const Key('entidad_fiscal_boton_agregar')));
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextFormField).first, razonSocial);
+  await tester.enterText(find.byType(TextFormField).at(1), rfc);
+  await tester.dragUntilVisible(find.text('Guardar').last, find.byType(Dialog), const Offset(0, -50));
+  await tester.tap(find.text('Guardar').last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late AppDatabase db;
   late String clienteId;
@@ -211,5 +221,90 @@ void main() {
 
     expect(find.text('Juan Pérez'), findsNothing);
     expect(find.text(l10n.clienteContactosVacioMensaje), findsOneWidget);
+  });
+
+
+  testWidgets('agregar una Entidad fiscal la muestra con "Datos fiscales incompletos"', (tester) async {
+    await _pumpScreen(tester, db, clienteId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await _agregarEntidadFiscal(tester, razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1');
+
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.text('Sportium Toluca SA de CV'), findsOneWidget);
+    expect(find.textContaining('ENF-0001'), findsOneWidget);
+    expect(find.text(l10n.entidadFiscalEstadoActiva), findsOneWidget);
+    expect(find.text(l10n.entidadFiscalDatosIncompletos), findsOneWidget);
+  });
+
+  testWidgets('permite agregar más de una Entidad fiscal (caso Sportium)', (tester) async {
+    await _pumpScreen(tester, db, clienteId);
+
+    await _agregarEntidadFiscal(tester, razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1');
+    await _agregarEntidadFiscal(tester, razonSocial: 'Sportium Interlomas SA de CV', rfc: 'SIN010101AB2');
+
+    expect(find.text('Sportium Toluca SA de CV'), findsOneWidget);
+    expect(find.text('Sportium Interlomas SA de CV'), findsOneWidget);
+  });
+
+  testWidgets('editar el domicilio fiscal completa "Datos fiscales completos"', (tester) async {
+    await _pumpScreen(tester, db, clienteId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await _agregarEntidadFiscal(tester, razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1');
+    expect(find.text(l10n.entidadFiscalDatosIncompletos), findsOneWidget);
+
+    await tester.ensureVisible(find.widgetWithIcon(IconButton, Icons.home_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.home_outlined));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsOneWidget);
+
+    final campos = find.byType(TextFormField);
+    await tester.enterText(campos.at(0), 'Av. Reforma');
+    await tester.enterText(campos.at(1), '100');
+    await tester.enterText(campos.at(3), 'Juárez');
+    await tester.enterText(campos.at(4), 'Cuauhtémoc');
+    await tester.enterText(campos.at(6), 'CDMX');
+    await tester.enterText(campos.at(7), '06600');
+
+    await tester.dragUntilVisible(find.text('Guardar').last, find.byType(Dialog), const Offset(0, -50));
+    await tester.tap(find.text('Guardar').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.text(l10n.entidadFiscalDatosIncompletos), findsNothing);
+  });
+
+  testWidgets('archivar una Entidad fiscal la vuelve de solo lectura; reactivarla la habilita de nuevo', (tester) async {
+    await _pumpScreen(tester, db, clienteId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await _agregarEntidadFiscal(tester, razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1');
+    expect(find.text(l10n.entidadFiscalEstadoActiva), findsOneWidget);
+
+    await tester.ensureVisible(find.widgetWithIcon(IconButton, Icons.archive_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.archive_outlined));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsOneWidget);
+    await tester.tap(find.text(l10n.sucursalConfirmarAceptar));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.entidadFiscalEstadoArchivada), findsOneWidget);
+
+    // Solo lectura: los íconos de editar/domicilio quedan deshabilitados.
+    final botonEditar = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.edit_outlined));
+    expect(botonEditar.onPressed, isNull);
+
+    await tester.ensureVisible(find.widgetWithIcon(IconButton, Icons.unarchive_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.unarchive_outlined));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsOneWidget);
+    await tester.tap(find.text(l10n.sucursalConfirmarAceptar));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.entidadFiscalEstadoActiva), findsOneWidget);
   });
 }

@@ -7,7 +7,7 @@ part of 'cliente_expediente_controller.dart';
 // **************************************************************************
 
 String _$clienteExpedienteControllerHash() =>
-    r'9b8a5f1eca05f9473d24a2ffd84a1031591e463e';
+    r'cb324c4a645e6bbc3edaa544ead6fcaa839594b0';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -40,9 +40,11 @@ abstract class _$ClienteExpedienteController
 /// Controlador de la pantalla de expediente de Cliente — un `family` por
 /// `clienteId`. Mismo diseño que `PuestoExpedienteController`; el
 /// cambio de estatus es una acción independiente del guardado del
-/// formulario, y los Contactos se agregan/editan/archivan también de
-/// forma independiente (cada uno refresca solo la lista de contactos
-/// del estado, sin tocar `modo` ni los datos generales ya cargados).
+/// formulario, y los Contactos y Entidades fiscales se agregan/editan/
+/// archivan también de forma independiente (cada uno refresca solo su
+/// propia lista del estado, sin tocar `modo` ni los datos generales ya
+/// cargados). No guarda ningún `TextEditingController` ni objeto de UI
+/// — esos viven en el `State` de la pantalla, nunca aquí.
 ///
 /// Copied from [ClienteExpedienteController].
 @ProviderFor(ClienteExpedienteController)
@@ -51,18 +53,22 @@ const clienteExpedienteControllerProvider = ClienteExpedienteControllerFamily();
 /// Controlador de la pantalla de expediente de Cliente — un `family` por
 /// `clienteId`. Mismo diseño que `PuestoExpedienteController`; el
 /// cambio de estatus es una acción independiente del guardado del
-/// formulario, y los Contactos se agregan/editan/archivan también de
-/// forma independiente (cada uno refresca solo la lista de contactos
-/// del estado, sin tocar `modo` ni los datos generales ya cargados).
+/// formulario, y los Contactos y Entidades fiscales se agregan/editan/
+/// archivan también de forma independiente (cada uno refresca solo su
+/// propia lista del estado, sin tocar `modo` ni los datos generales ya
+/// cargados). No guarda ningún `TextEditingController` ni objeto de UI
+/// — esos viven en el `State` de la pantalla, nunca aquí.
 ///
 /// Copied from [ClienteExpedienteController].
 class ClienteExpedienteControllerFamily extends Family<ClienteExpedienteState> {
   /// Controlador de la pantalla de expediente de Cliente — un `family` por
   /// `clienteId`. Mismo diseño que `PuestoExpedienteController`; el
   /// cambio de estatus es una acción independiente del guardado del
-  /// formulario, y los Contactos se agregan/editan/archivan también de
-  /// forma independiente (cada uno refresca solo la lista de contactos
-  /// del estado, sin tocar `modo` ni los datos generales ya cargados).
+  /// formulario, y los Contactos y Entidades fiscales se agregan/editan/
+  /// archivan también de forma independiente (cada uno refresca solo su
+  /// propia lista del estado, sin tocar `modo` ni los datos generales ya
+  /// cargados). No guarda ningún `TextEditingController` ni objeto de UI
+  /// — esos viven en el `State` de la pantalla, nunca aquí.
   ///
   /// Copied from [ClienteExpedienteController].
   const ClienteExpedienteControllerFamily();
@@ -70,9 +76,11 @@ class ClienteExpedienteControllerFamily extends Family<ClienteExpedienteState> {
   /// Controlador de la pantalla de expediente de Cliente — un `family` por
   /// `clienteId`. Mismo diseño que `PuestoExpedienteController`; el
   /// cambio de estatus es una acción independiente del guardado del
-  /// formulario, y los Contactos se agregan/editan/archivan también de
-  /// forma independiente (cada uno refresca solo la lista de contactos
-  /// del estado, sin tocar `modo` ni los datos generales ya cargados).
+  /// formulario, y los Contactos y Entidades fiscales se agregan/editan/
+  /// archivan también de forma independiente (cada uno refresca solo su
+  /// propia lista del estado, sin tocar `modo` ni los datos generales ya
+  /// cargados). No guarda ningún `TextEditingController` ni objeto de UI
+  /// — esos viven en el `State` de la pantalla, nunca aquí.
   ///
   /// Copied from [ClienteExpedienteController].
   ClienteExpedienteControllerProvider call(String clienteId) {
@@ -104,9 +112,11 @@ class ClienteExpedienteControllerFamily extends Family<ClienteExpedienteState> {
 /// Controlador de la pantalla de expediente de Cliente — un `family` por
 /// `clienteId`. Mismo diseño que `PuestoExpedienteController`; el
 /// cambio de estatus es una acción independiente del guardado del
-/// formulario, y los Contactos se agregan/editan/archivan también de
-/// forma independiente (cada uno refresca solo la lista de contactos
-/// del estado, sin tocar `modo` ni los datos generales ya cargados).
+/// formulario, y los Contactos y Entidades fiscales se agregan/editan/
+/// archivan también de forma independiente (cada uno refresca solo su
+/// propia lista del estado, sin tocar `modo` ni los datos generales ya
+/// cargados). No guarda ningún `TextEditingController` ni objeto de UI
+/// — esos viven en el `State` de la pantalla, nunca aquí.
 ///
 /// Copied from [ClienteExpedienteController].
 class ClienteExpedienteControllerProvider
@@ -118,9 +128,11 @@ class ClienteExpedienteControllerProvider
   /// Controlador de la pantalla de expediente de Cliente — un `family` por
   /// `clienteId`. Mismo diseño que `PuestoExpedienteController`; el
   /// cambio de estatus es una acción independiente del guardado del
-  /// formulario, y los Contactos se agregan/editan/archivan también de
-  /// forma independiente (cada uno refresca solo la lista de contactos
-  /// del estado, sin tocar `modo` ni los datos generales ya cargados).
+  /// formulario, y los Contactos y Entidades fiscales se agregan/editan/
+  /// archivan también de forma independiente (cada uno refresca solo su
+  /// propia lista del estado, sin tocar `modo` ni los datos generales ya
+  /// cargados). No guarda ningún `TextEditingController` ni objeto de UI
+  /// — esos viven en el `State` de la pantalla, nunca aquí.
   ///
   /// Copied from [ClienteExpedienteController].
   ClienteExpedienteControllerProvider(String clienteId)
