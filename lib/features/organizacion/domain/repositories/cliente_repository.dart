@@ -1,20 +1,48 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 
-/// Se justifica por dos reglas propias: normalización + verificación de
-/// unicidad de RFC antes de persistir, y filtrado consistente por
-/// `cicloVidaRegistro`.
+import '../shared/direccion_input.dart';
+
+/// Cliente comercial junto con su dirección de referencia resultante —
+/// lo que devuelve `guardarExpediente` tras persistir ambas secciones en
+/// una sola transacción (mismo patrón que `SucursalExpedienteRaw`).
+class ClienteExpedienteRaw {
+  const ClienteExpedienteRaw({required this.cliente, this.direccionReferencia});
+
+  final ClienteData cliente;
+  final DireccionData? direccionReferencia;
+}
+
 abstract interface class ClienteRepository {
-  /// [rfcNormalizado] ya debe venir en mayúsculas y sin espacios — este
-  /// repositorio no normaliza, eso es responsabilidad del caso de uso.
-  Future<bool> existeRfc(String rfcNormalizado);
-
   Future<ClienteData> crear(ClienteCompanion datos);
 
   Future<ClienteData?> obtenerPorId(String id);
 
   Future<List<ClienteData>> listarActivos();
 
+  Future<ClienteData> cambiarEstatus({required String id, required EstatusCliente nuevo});
+
+  Future<DireccionData?> obtenerDireccionReferencia(String clienteId);
+
+  /// Persiste datos generales + dirección de referencia en una sola
+  /// transacción — mismo patrón que `SucursalRepository.guardarExpediente`.
+  Future<ClienteExpedienteRaw> guardarExpediente({
+    required String clienteId,
+    required ClienteCompanion datosGenerales,
+    required DireccionInput? direccionReferencia,
+  });
+
+  /// Si [datos] trae `esPrincipal = true`, retira esa marca de cualquier
+  /// otro contacto del mismo Cliente y tipo dentro de la misma
+  /// transacción — nunca puede quedar más de un principal activo por
+  /// tipo (lo aplica también la base de datos vía el índice único
+  /// parcial, pero el repositorio nunca depende únicamente de que la
+  /// escritura falle: la resuelve explícitamente).
   Future<ContactoData> agregarContacto(ContactoCompanion datos);
+
+  Future<ContactoData> actualizarContacto({required String id, required ContactoCompanion cambios});
+
+  Future<ContactoData> archivarContacto(String id);
 
   Future<List<ContactoData>> obtenerContactos(String clienteId);
 }

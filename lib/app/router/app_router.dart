@@ -2,6 +2,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
+import '../../features/organizacion/presentation/clientes/cliente_expediente_screen.dart';
+import '../../features/organizacion/presentation/clientes/clientes_list_screen.dart';
 import '../../features/organizacion/presentation/organizacion_shell_screen.dart';
 import '../../features/organizacion/presentation/puestos/puesto_expediente_screen.dart';
 import '../../features/organizacion/presentation/sucursales/sucursal_expediente_screen.dart';
@@ -20,7 +22,7 @@ import '../shell/shell_destinations.dart';
 /// [createAppRouter].
 ///
 /// Un `StatefulShellRoute.indexedStack` con una rama por cada uno de los
-/// 10 destinos del Shell — cada rama conserva su propia navegación interna
+/// 11 destinos del Shell — cada rama conserva su propia navegación interna
 /// y queda preparada para rutas anidadas (hoy solo tiene el placeholder).
 GoRouter createAppRouter() {
   return GoRouter(
@@ -67,6 +69,25 @@ GoRouter createAppRouter() {
                       GoRoute(
                         path: 'areas',
                         builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.areas),
+                      ),
+                    ],
+                  )
+                else if (def.path == '/comercial')
+                  // Comercial es un dominio propio, separado de
+                  // Organización (Arquitectura Funcional v1.1). Por ahora
+                  // `/comercial` muestra el listado de Clientes
+                  // directamente, sin `RisegTabs` — mismo criterio que
+                  // Organización antes de la Etapa 4C: no se introduce un
+                  // shell de pestañas hasta que exista una segunda
+                  // pestaña real (Servicios, Etapa 4F).
+                  GoRoute(
+                    path: def.path,
+                    builder: (context, state) => const ClientesListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'clientes/:id',
+                        builder: (context, state) =>
+                            ClienteExpedienteScreen(clienteId: state.pathParameters['id']!),
                       ),
                     ],
                   )

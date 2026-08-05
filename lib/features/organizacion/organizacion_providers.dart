@@ -21,10 +21,14 @@ import 'domain/repositories/sucursal_repository.dart';
 import 'domain/repositories/ubicacion_repository.dart';
 import 'domain/usecases/activar_area_usecase.dart';
 import 'domain/usecases/actualizar_area_usecase.dart';
+import 'domain/usecases/actualizar_contacto_usecase.dart';
 import 'domain/usecases/actualizar_empresa_usecase.dart';
 import 'domain/usecases/actualizar_puesto_usecase.dart';
+import 'domain/usecases/agregar_contacto_usecase.dart';
+import 'domain/usecases/archivar_contacto_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_puesto_usecase.dart';
 import 'domain/usecases/cambiar_estado_operativo_sucursal_usecase.dart';
+import 'domain/usecases/cambiar_estatus_cliente_usecase.dart';
 import 'domain/usecases/crear_area_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
 import 'domain/usecases/crear_puesto_usecase.dart';
@@ -32,10 +36,12 @@ import 'domain/usecases/crear_servicio_usecase.dart';
 import 'domain/usecases/crear_sucursal_usecase.dart';
 import 'domain/usecases/crear_ubicacion_usecase.dart';
 import 'domain/usecases/desactivar_area_usecase.dart';
+import 'domain/usecases/guardar_expediente_cliente_usecase.dart';
 import 'domain/usecases/guardar_expediente_empresa_usecase.dart';
 import 'domain/usecases/guardar_expediente_sucursal_usecase.dart';
 import 'domain/usecases/listar_areas_activas_usecase.dart';
 import 'domain/usecases/listar_areas_usecase.dart';
+import 'domain/usecases/listar_clientes_usecase.dart';
 import 'domain/usecases/listar_puestos_usecase.dart';
 import 'domain/usecases/listar_sucursales_usecase.dart';
 import 'domain/usecases/listar_tipos_sucursal_usecase.dart';
@@ -43,6 +49,7 @@ import 'domain/usecases/mover_ubicacion_usecase.dart';
 import 'domain/usecases/obtener_arbol_ubicaciones_de_sucursal_usecase.dart';
 import 'domain/usecases/obtener_arbol_ubicaciones_usecase.dart';
 import 'domain/usecases/obtener_empresa_activa_usecase.dart';
+import 'domain/usecases/obtener_expediente_cliente_usecase.dart';
 import 'domain/usecases/obtener_expediente_empresa_usecase.dart';
 import 'domain/usecases/obtener_expediente_puesto_usecase.dart';
 import 'domain/usecases/obtener_expediente_sucursal_usecase.dart';
@@ -213,6 +220,34 @@ final obtenerArbolUbicacionesDeSucursalUseCaseProvider =
 
 final crearClienteUseCaseProvider = Provider<CrearClienteUseCase>((ref) {
   return CrearClienteUseCase(ref.watch(clienteRepositoryProvider), ref.watch(generarCodigoUseCaseProvider));
+});
+
+final guardarExpedienteClienteUseCaseProvider = Provider<GuardarExpedienteClienteUseCase>((ref) {
+  return GuardarExpedienteClienteUseCase(ref.watch(clienteRepositoryProvider));
+});
+
+final cambiarEstatusClienteUseCaseProvider = Provider<CambiarEstatusClienteUseCase>((ref) {
+  return CambiarEstatusClienteUseCase(ref.watch(clienteRepositoryProvider));
+});
+
+final listarClientesUseCaseProvider = Provider<ListarClientesUseCase>((ref) {
+  return ListarClientesUseCase(ref.watch(clienteRepositoryProvider));
+});
+
+final obtenerExpedienteClienteUseCaseProvider = Provider<ObtenerExpedienteClienteUseCase>((ref) {
+  return ObtenerExpedienteClienteUseCase(ref.watch(clienteRepositoryProvider));
+});
+
+final agregarContactoUseCaseProvider = Provider<AgregarContactoUseCase>((ref) {
+  return AgregarContactoUseCase(ref.watch(clienteRepositoryProvider));
+});
+
+final actualizarContactoUseCaseProvider = Provider<ActualizarContactoUseCase>((ref) {
+  return ActualizarContactoUseCase(ref.watch(clienteRepositoryProvider));
+});
+
+final archivarContactoUseCaseProvider = Provider<ArchivarContactoUseCase>((ref) {
+  return ArchivarContactoUseCase(ref.watch(clienteRepositoryProvider));
 });
 
 final crearServicioUseCaseProvider = Provider<CrearServicioUseCase>((ref) {

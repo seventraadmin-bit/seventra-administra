@@ -7468,17 +7468,6 @@ class $ClienteTable extends Cliente with TableInfo<$ClienteTable, ClienteData> {
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
-  static const VerificationMeta _razonSocialMeta = const VerificationMeta(
-    'razonSocial',
-  );
-  @override
-  late final GeneratedColumn<String> razonSocial = GeneratedColumn<String>(
-    'razon_social',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _nombreComercialMeta = const VerificationMeta(
     'nombreComercial',
   );
@@ -7486,19 +7475,9 @@ class $ClienteTable extends Cliente with TableInfo<$ClienteTable, ClienteData> {
   late final GeneratedColumn<String> nombreComercial = GeneratedColumn<String>(
     'nombre_comercial',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _rfcMeta = const VerificationMeta('rfc');
-  @override
-  late final GeneratedColumn<String> rfc = GeneratedColumn<String>(
-    'rfc',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _industriaIdMeta = const VerificationMeta(
     'industriaId',
@@ -7556,9 +7535,7 @@ class $ClienteTable extends Cliente with TableInfo<$ClienteTable, ClienteData> {
     updatedAt,
     cicloVidaRegistro,
     codigo,
-    razonSocial,
     nombreComercial,
-    rfc,
     industriaId,
     estatus,
     fechaAlta,
@@ -7608,17 +7585,6 @@ class $ClienteTable extends Cliente with TableInfo<$ClienteTable, ClienteData> {
     } else if (isInserting) {
       context.missing(_codigoMeta);
     }
-    if (data.containsKey('razon_social')) {
-      context.handle(
-        _razonSocialMeta,
-        razonSocial.isAcceptableOrUnknown(
-          data['razon_social']!,
-          _razonSocialMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_razonSocialMeta);
-    }
     if (data.containsKey('nombre_comercial')) {
       context.handle(
         _nombreComercialMeta,
@@ -7627,12 +7593,8 @@ class $ClienteTable extends Cliente with TableInfo<$ClienteTable, ClienteData> {
           _nombreComercialMeta,
         ),
       );
-    }
-    if (data.containsKey('rfc')) {
-      context.handle(
-        _rfcMeta,
-        rfc.isAcceptableOrUnknown(data['rfc']!, _rfcMeta),
-      );
+    } else if (isInserting) {
+      context.missing(_nombreComercialMeta);
     }
     if (data.containsKey('industria_id')) {
       context.handle(
@@ -7698,19 +7660,11 @@ class $ClienteTable extends Cliente with TableInfo<$ClienteTable, ClienteData> {
             DriftSqlType.string,
             data['${effectivePrefix}codigo'],
           )!,
-      razonSocial:
+      nombreComercial:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
-            data['${effectivePrefix}razon_social'],
+            data['${effectivePrefix}nombre_comercial'],
           )!,
-      nombreComercial: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}nombre_comercial'],
-      ),
-      rfc: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}rfc'],
-      ),
       industriaId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}industria_id'],
@@ -7744,13 +7698,19 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
   final DateTime updatedAt;
   final String cicloVidaRegistro;
   final String codigo;
-  final String razonSocial;
-  final String? nombreComercial;
 
-  /// Nullable — un Prospecto puede no tener RFC todavía. Normalización
-  /// (mayúsculas, sin espacios) y validación de forma ocurren en
-  /// `CrearClienteUseCase`, no aquí.
-  final String? rfc;
+  /// Nombre identificador del Cliente comercial — ya no `razonSocial`:
+  /// esa (junto con el RFC) pertenece a Entidad fiscal (Etapa 4E.2), una
+  /// entidad distinta y separada. Un Cliente comercial puede agrupar
+  /// varias Entidades fiscales (ej. Sportium), así que no tiene sentido
+  /// que Cliente cargue una única razón social/RFC propios.
+  final String nombreComercial;
+
+  /// Dato maestro conservado desde la Etapa 4A — sin consumidor real
+  /// todavía (segmentación comercial, cotizaciones, reportes, CRM), por
+  /// eso no se expone en la interfaz de la Etapa 4E.1. Se conserva en el
+  /// esquema para no tener que reintroducirlo con otra migración cuando
+  /// sí exista ese consumidor.
   final String? industriaId;
   final String estatus;
   final DateTime fechaAlta;
@@ -7761,9 +7721,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
     required this.updatedAt,
     required this.cicloVidaRegistro,
     required this.codigo,
-    required this.razonSocial,
-    this.nombreComercial,
-    this.rfc,
+    required this.nombreComercial,
     this.industriaId,
     required this.estatus,
     required this.fechaAlta,
@@ -7777,13 +7735,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
     map['codigo'] = Variable<String>(codigo);
-    map['razon_social'] = Variable<String>(razonSocial);
-    if (!nullToAbsent || nombreComercial != null) {
-      map['nombre_comercial'] = Variable<String>(nombreComercial);
-    }
-    if (!nullToAbsent || rfc != null) {
-      map['rfc'] = Variable<String>(rfc);
-    }
+    map['nombre_comercial'] = Variable<String>(nombreComercial);
     if (!nullToAbsent || industriaId != null) {
       map['industria_id'] = Variable<String>(industriaId);
     }
@@ -7802,12 +7754,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
       updatedAt: Value(updatedAt),
       cicloVidaRegistro: Value(cicloVidaRegistro),
       codigo: Value(codigo),
-      razonSocial: Value(razonSocial),
-      nombreComercial:
-          nombreComercial == null && nullToAbsent
-              ? const Value.absent()
-              : Value(nombreComercial),
-      rfc: rfc == null && nullToAbsent ? const Value.absent() : Value(rfc),
+      nombreComercial: Value(nombreComercial),
       industriaId:
           industriaId == null && nullToAbsent
               ? const Value.absent()
@@ -7832,9 +7779,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
       codigo: serializer.fromJson<String>(json['codigo']),
-      razonSocial: serializer.fromJson<String>(json['razonSocial']),
-      nombreComercial: serializer.fromJson<String?>(json['nombreComercial']),
-      rfc: serializer.fromJson<String?>(json['rfc']),
+      nombreComercial: serializer.fromJson<String>(json['nombreComercial']),
       industriaId: serializer.fromJson<String?>(json['industriaId']),
       estatus: serializer.fromJson<String>(json['estatus']),
       fechaAlta: serializer.fromJson<DateTime>(json['fechaAlta']),
@@ -7850,9 +7795,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
       'codigo': serializer.toJson<String>(codigo),
-      'razonSocial': serializer.toJson<String>(razonSocial),
-      'nombreComercial': serializer.toJson<String?>(nombreComercial),
-      'rfc': serializer.toJson<String?>(rfc),
+      'nombreComercial': serializer.toJson<String>(nombreComercial),
       'industriaId': serializer.toJson<String?>(industriaId),
       'estatus': serializer.toJson<String>(estatus),
       'fechaAlta': serializer.toJson<DateTime>(fechaAlta),
@@ -7866,9 +7809,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
     DateTime? updatedAt,
     String? cicloVidaRegistro,
     String? codigo,
-    String? razonSocial,
-    Value<String?> nombreComercial = const Value.absent(),
-    Value<String?> rfc = const Value.absent(),
+    String? nombreComercial,
     Value<String?> industriaId = const Value.absent(),
     String? estatus,
     DateTime? fechaAlta,
@@ -7879,10 +7820,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
     updatedAt: updatedAt ?? this.updatedAt,
     cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
     codigo: codigo ?? this.codigo,
-    razonSocial: razonSocial ?? this.razonSocial,
-    nombreComercial:
-        nombreComercial.present ? nombreComercial.value : this.nombreComercial,
-    rfc: rfc.present ? rfc.value : this.rfc,
+    nombreComercial: nombreComercial ?? this.nombreComercial,
     industriaId: industriaId.present ? industriaId.value : this.industriaId,
     estatus: estatus ?? this.estatus,
     fechaAlta: fechaAlta ?? this.fechaAlta,
@@ -7899,13 +7837,10 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
               ? data.cicloVidaRegistro.value
               : this.cicloVidaRegistro,
       codigo: data.codigo.present ? data.codigo.value : this.codigo,
-      razonSocial:
-          data.razonSocial.present ? data.razonSocial.value : this.razonSocial,
       nombreComercial:
           data.nombreComercial.present
               ? data.nombreComercial.value
               : this.nombreComercial,
-      rfc: data.rfc.present ? data.rfc.value : this.rfc,
       industriaId:
           data.industriaId.present ? data.industriaId.value : this.industriaId,
       estatus: data.estatus.present ? data.estatus.value : this.estatus,
@@ -7925,9 +7860,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
           ..write('updatedAt: $updatedAt, ')
           ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
           ..write('codigo: $codigo, ')
-          ..write('razonSocial: $razonSocial, ')
           ..write('nombreComercial: $nombreComercial, ')
-          ..write('rfc: $rfc, ')
           ..write('industriaId: $industriaId, ')
           ..write('estatus: $estatus, ')
           ..write('fechaAlta: $fechaAlta, ')
@@ -7943,9 +7876,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
     updatedAt,
     cicloVidaRegistro,
     codigo,
-    razonSocial,
     nombreComercial,
-    rfc,
     industriaId,
     estatus,
     fechaAlta,
@@ -7960,9 +7891,7 @@ class ClienteData extends DataClass implements Insertable<ClienteData> {
           other.updatedAt == this.updatedAt &&
           other.cicloVidaRegistro == this.cicloVidaRegistro &&
           other.codigo == this.codigo &&
-          other.razonSocial == this.razonSocial &&
           other.nombreComercial == this.nombreComercial &&
-          other.rfc == this.rfc &&
           other.industriaId == this.industriaId &&
           other.estatus == this.estatus &&
           other.fechaAlta == this.fechaAlta &&
@@ -7975,9 +7904,7 @@ class ClienteCompanion extends UpdateCompanion<ClienteData> {
   final Value<DateTime> updatedAt;
   final Value<String> cicloVidaRegistro;
   final Value<String> codigo;
-  final Value<String> razonSocial;
-  final Value<String?> nombreComercial;
-  final Value<String?> rfc;
+  final Value<String> nombreComercial;
   final Value<String?> industriaId;
   final Value<String> estatus;
   final Value<DateTime> fechaAlta;
@@ -7989,9 +7916,7 @@ class ClienteCompanion extends UpdateCompanion<ClienteData> {
     this.updatedAt = const Value.absent(),
     this.cicloVidaRegistro = const Value.absent(),
     this.codigo = const Value.absent(),
-    this.razonSocial = const Value.absent(),
     this.nombreComercial = const Value.absent(),
-    this.rfc = const Value.absent(),
     this.industriaId = const Value.absent(),
     this.estatus = const Value.absent(),
     this.fechaAlta = const Value.absent(),
@@ -8004,25 +7929,21 @@ class ClienteCompanion extends UpdateCompanion<ClienteData> {
     this.updatedAt = const Value.absent(),
     this.cicloVidaRegistro = const Value.absent(),
     required String codigo,
-    required String razonSocial,
-    this.nombreComercial = const Value.absent(),
-    this.rfc = const Value.absent(),
+    required String nombreComercial,
     this.industriaId = const Value.absent(),
     this.estatus = const Value.absent(),
     this.fechaAlta = const Value.absent(),
     this.observaciones = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : codigo = Value(codigo),
-       razonSocial = Value(razonSocial);
+       nombreComercial = Value(nombreComercial);
   static Insertable<ClienteData> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? cicloVidaRegistro,
     Expression<String>? codigo,
-    Expression<String>? razonSocial,
     Expression<String>? nombreComercial,
-    Expression<String>? rfc,
     Expression<String>? industriaId,
     Expression<String>? estatus,
     Expression<DateTime>? fechaAlta,
@@ -8035,9 +7956,7 @@ class ClienteCompanion extends UpdateCompanion<ClienteData> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
       if (codigo != null) 'codigo': codigo,
-      if (razonSocial != null) 'razon_social': razonSocial,
       if (nombreComercial != null) 'nombre_comercial': nombreComercial,
-      if (rfc != null) 'rfc': rfc,
       if (industriaId != null) 'industria_id': industriaId,
       if (estatus != null) 'estatus': estatus,
       if (fechaAlta != null) 'fecha_alta': fechaAlta,
@@ -8052,9 +7971,7 @@ class ClienteCompanion extends UpdateCompanion<ClienteData> {
     Value<DateTime>? updatedAt,
     Value<String>? cicloVidaRegistro,
     Value<String>? codigo,
-    Value<String>? razonSocial,
-    Value<String?>? nombreComercial,
-    Value<String?>? rfc,
+    Value<String>? nombreComercial,
     Value<String?>? industriaId,
     Value<String>? estatus,
     Value<DateTime>? fechaAlta,
@@ -8067,9 +7984,7 @@ class ClienteCompanion extends UpdateCompanion<ClienteData> {
       updatedAt: updatedAt ?? this.updatedAt,
       cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
       codigo: codigo ?? this.codigo,
-      razonSocial: razonSocial ?? this.razonSocial,
       nombreComercial: nombreComercial ?? this.nombreComercial,
-      rfc: rfc ?? this.rfc,
       industriaId: industriaId ?? this.industriaId,
       estatus: estatus ?? this.estatus,
       fechaAlta: fechaAlta ?? this.fechaAlta,
@@ -8096,14 +8011,8 @@ class ClienteCompanion extends UpdateCompanion<ClienteData> {
     if (codigo.present) {
       map['codigo'] = Variable<String>(codigo.value);
     }
-    if (razonSocial.present) {
-      map['razon_social'] = Variable<String>(razonSocial.value);
-    }
     if (nombreComercial.present) {
       map['nombre_comercial'] = Variable<String>(nombreComercial.value);
-    }
-    if (rfc.present) {
-      map['rfc'] = Variable<String>(rfc.value);
     }
     if (industriaId.present) {
       map['industria_id'] = Variable<String>(industriaId.value);
@@ -8131,9 +8040,7 @@ class ClienteCompanion extends UpdateCompanion<ClienteData> {
           ..write('updatedAt: $updatedAt, ')
           ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
           ..write('codigo: $codigo, ')
-          ..write('razonSocial: $razonSocial, ')
           ..write('nombreComercial: $nombreComercial, ')
-          ..write('rfc: $rfc, ')
           ..write('industriaId: $industriaId, ')
           ..write('estatus: $estatus, ')
           ..write('fechaAlta: $fechaAlta, ')
@@ -8264,6 +8171,15 @@ class $ContactoTable extends Contacto
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8276,6 +8192,7 @@ class $ContactoTable extends Contacto
     telefono,
     correo,
     esPrincipal,
+    tipo,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8356,6 +8273,14 @@ class $ContactoTable extends Contacto
         ),
       );
     }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
     return context;
   }
 
@@ -8412,6 +8337,11 @@ class $ContactoTable extends Contacto
             DriftSqlType.bool,
             data['${effectivePrefix}es_principal'],
           )!,
+      tipo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo'],
+          )!,
     );
   }
 
@@ -8432,6 +8362,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
   final String? telefono;
   final String? correo;
   final bool esPrincipal;
+  final String tipo;
   const ContactoData({
     required this.id,
     required this.createdAt,
@@ -8443,6 +8374,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
     this.telefono,
     this.correo,
     required this.esPrincipal,
+    required this.tipo,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8463,6 +8395,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
       map['correo'] = Variable<String>(correo);
     }
     map['es_principal'] = Variable<bool>(esPrincipal);
+    map['tipo'] = Variable<String>(tipo);
     return map;
   }
 
@@ -8483,6 +8416,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
       correo:
           correo == null && nullToAbsent ? const Value.absent() : Value(correo),
       esPrincipal: Value(esPrincipal),
+      tipo: Value(tipo),
     );
   }
 
@@ -8502,6 +8436,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
       telefono: serializer.fromJson<String?>(json['telefono']),
       correo: serializer.fromJson<String?>(json['correo']),
       esPrincipal: serializer.fromJson<bool>(json['esPrincipal']),
+      tipo: serializer.fromJson<String>(json['tipo']),
     );
   }
   @override
@@ -8518,6 +8453,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
       'telefono': serializer.toJson<String?>(telefono),
       'correo': serializer.toJson<String?>(correo),
       'esPrincipal': serializer.toJson<bool>(esPrincipal),
+      'tipo': serializer.toJson<String>(tipo),
     };
   }
 
@@ -8532,6 +8468,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
     Value<String?> telefono = const Value.absent(),
     Value<String?> correo = const Value.absent(),
     bool? esPrincipal,
+    String? tipo,
   }) => ContactoData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -8543,6 +8480,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
     telefono: telefono.present ? telefono.value : this.telefono,
     correo: correo.present ? correo.value : this.correo,
     esPrincipal: esPrincipal ?? this.esPrincipal,
+    tipo: tipo ?? this.tipo,
   );
   ContactoData copyWithCompanion(ContactoCompanion data) {
     return ContactoData(
@@ -8560,6 +8498,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
       correo: data.correo.present ? data.correo.value : this.correo,
       esPrincipal:
           data.esPrincipal.present ? data.esPrincipal.value : this.esPrincipal,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
     );
   }
 
@@ -8575,7 +8514,8 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
           ..write('puesto: $puesto, ')
           ..write('telefono: $telefono, ')
           ..write('correo: $correo, ')
-          ..write('esPrincipal: $esPrincipal')
+          ..write('esPrincipal: $esPrincipal, ')
+          ..write('tipo: $tipo')
           ..write(')'))
         .toString();
   }
@@ -8592,6 +8532,7 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
     telefono,
     correo,
     esPrincipal,
+    tipo,
   );
   @override
   bool operator ==(Object other) =>
@@ -8606,7 +8547,8 @@ class ContactoData extends DataClass implements Insertable<ContactoData> {
           other.puesto == this.puesto &&
           other.telefono == this.telefono &&
           other.correo == this.correo &&
-          other.esPrincipal == this.esPrincipal);
+          other.esPrincipal == this.esPrincipal &&
+          other.tipo == this.tipo);
 }
 
 class ContactoCompanion extends UpdateCompanion<ContactoData> {
@@ -8620,6 +8562,7 @@ class ContactoCompanion extends UpdateCompanion<ContactoData> {
   final Value<String?> telefono;
   final Value<String?> correo;
   final Value<bool> esPrincipal;
+  final Value<String> tipo;
   final Value<int> rowid;
   const ContactoCompanion({
     this.id = const Value.absent(),
@@ -8632,6 +8575,7 @@ class ContactoCompanion extends UpdateCompanion<ContactoData> {
     this.telefono = const Value.absent(),
     this.correo = const Value.absent(),
     this.esPrincipal = const Value.absent(),
+    this.tipo = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ContactoCompanion.insert({
@@ -8645,9 +8589,11 @@ class ContactoCompanion extends UpdateCompanion<ContactoData> {
     this.telefono = const Value.absent(),
     this.correo = const Value.absent(),
     this.esPrincipal = const Value.absent(),
+    required String tipo,
     this.rowid = const Value.absent(),
   }) : clienteId = Value(clienteId),
-       nombre = Value(nombre);
+       nombre = Value(nombre),
+       tipo = Value(tipo);
   static Insertable<ContactoData> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
@@ -8659,6 +8605,7 @@ class ContactoCompanion extends UpdateCompanion<ContactoData> {
     Expression<String>? telefono,
     Expression<String>? correo,
     Expression<bool>? esPrincipal,
+    Expression<String>? tipo,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -8672,6 +8619,7 @@ class ContactoCompanion extends UpdateCompanion<ContactoData> {
       if (telefono != null) 'telefono': telefono,
       if (correo != null) 'correo': correo,
       if (esPrincipal != null) 'es_principal': esPrincipal,
+      if (tipo != null) 'tipo': tipo,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -8687,6 +8635,7 @@ class ContactoCompanion extends UpdateCompanion<ContactoData> {
     Value<String?>? telefono,
     Value<String?>? correo,
     Value<bool>? esPrincipal,
+    Value<String>? tipo,
     Value<int>? rowid,
   }) {
     return ContactoCompanion(
@@ -8700,6 +8649,7 @@ class ContactoCompanion extends UpdateCompanion<ContactoData> {
       telefono: telefono ?? this.telefono,
       correo: correo ?? this.correo,
       esPrincipal: esPrincipal ?? this.esPrincipal,
+      tipo: tipo ?? this.tipo,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -8737,6 +8687,9 @@ class ContactoCompanion extends UpdateCompanion<ContactoData> {
     if (esPrincipal.present) {
       map['es_principal'] = Variable<bool>(esPrincipal.value);
     }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -8756,6 +8709,7 @@ class ContactoCompanion extends UpdateCompanion<ContactoData> {
           ..write('telefono: $telefono, ')
           ..write('correo: $correo, ')
           ..write('esPrincipal: $esPrincipal, ')
+          ..write('tipo: $tipo, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11001,6 +10955,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_empresa_activa_unica',
     'CREATE UNIQUE INDEX idx_empresa_activa_unica ON empresa (ciclo_vida_registro) WHERE ciclo_vida_registro = \'activo\'',
   );
+  late final Index idxContactoClienteTipoPrincipalActivo = Index(
+    'idx_contacto_cliente_tipo_principal_activo',
+    'CREATE UNIQUE INDEX idx_contacto_cliente_tipo_principal_activo ON contacto (cliente_id, tipo) WHERE es_principal = 1 AND ciclo_vida_registro = \'activo\'',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11027,6 +10985,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
+    idxContactoClienteTipoPrincipalActivo,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -15933,9 +15892,7 @@ typedef $$ClienteTableCreateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<String> cicloVidaRegistro,
       required String codigo,
-      required String razonSocial,
-      Value<String?> nombreComercial,
-      Value<String?> rfc,
+      required String nombreComercial,
       Value<String?> industriaId,
       Value<String> estatus,
       Value<DateTime> fechaAlta,
@@ -15949,9 +15906,7 @@ typedef $$ClienteTableUpdateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<String> cicloVidaRegistro,
       Value<String> codigo,
-      Value<String> razonSocial,
-      Value<String?> nombreComercial,
-      Value<String?> rfc,
+      Value<String> nombreComercial,
       Value<String?> industriaId,
       Value<String> estatus,
       Value<DateTime> fechaAlta,
@@ -16053,18 +16008,8 @@ class $$ClienteTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get razonSocial => $composableBuilder(
-    column: $table.razonSocial,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get nombreComercial => $composableBuilder(
     column: $table.nombreComercial,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get rfc => $composableBuilder(
-    column: $table.rfc,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16191,18 +16136,8 @@ class $$ClienteTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get razonSocial => $composableBuilder(
-    column: $table.razonSocial,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get nombreComercial => $composableBuilder(
     column: $table.nombreComercial,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get rfc => $composableBuilder(
-    column: $table.rfc,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -16271,18 +16206,10 @@ class $$ClienteTableAnnotationComposer
   GeneratedColumn<String> get codigo =>
       $composableBuilder(column: $table.codigo, builder: (column) => column);
 
-  GeneratedColumn<String> get razonSocial => $composableBuilder(
-    column: $table.razonSocial,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<String> get nombreComercial => $composableBuilder(
     column: $table.nombreComercial,
     builder: (column) => column,
   );
-
-  GeneratedColumn<String> get rfc =>
-      $composableBuilder(column: $table.rfc, builder: (column) => column);
 
   GeneratedColumn<String> get estatus =>
       $composableBuilder(column: $table.estatus, builder: (column) => column);
@@ -16406,9 +16333,7 @@ class $$ClienteTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> cicloVidaRegistro = const Value.absent(),
                 Value<String> codigo = const Value.absent(),
-                Value<String> razonSocial = const Value.absent(),
-                Value<String?> nombreComercial = const Value.absent(),
-                Value<String?> rfc = const Value.absent(),
+                Value<String> nombreComercial = const Value.absent(),
                 Value<String?> industriaId = const Value.absent(),
                 Value<String> estatus = const Value.absent(),
                 Value<DateTime> fechaAlta = const Value.absent(),
@@ -16420,9 +16345,7 @@ class $$ClienteTableTableManager
                 updatedAt: updatedAt,
                 cicloVidaRegistro: cicloVidaRegistro,
                 codigo: codigo,
-                razonSocial: razonSocial,
                 nombreComercial: nombreComercial,
-                rfc: rfc,
                 industriaId: industriaId,
                 estatus: estatus,
                 fechaAlta: fechaAlta,
@@ -16436,9 +16359,7 @@ class $$ClienteTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> cicloVidaRegistro = const Value.absent(),
                 required String codigo,
-                required String razonSocial,
-                Value<String?> nombreComercial = const Value.absent(),
-                Value<String?> rfc = const Value.absent(),
+                required String nombreComercial,
                 Value<String?> industriaId = const Value.absent(),
                 Value<String> estatus = const Value.absent(),
                 Value<DateTime> fechaAlta = const Value.absent(),
@@ -16450,9 +16371,7 @@ class $$ClienteTableTableManager
                 updatedAt: updatedAt,
                 cicloVidaRegistro: cicloVidaRegistro,
                 codigo: codigo,
-                razonSocial: razonSocial,
                 nombreComercial: nombreComercial,
-                rfc: rfc,
                 industriaId: industriaId,
                 estatus: estatus,
                 fechaAlta: fechaAlta,
@@ -16596,6 +16515,7 @@ typedef $$ContactoTableCreateCompanionBuilder =
       Value<String?> telefono,
       Value<String?> correo,
       Value<bool> esPrincipal,
+      required String tipo,
       Value<int> rowid,
     });
 typedef $$ContactoTableUpdateCompanionBuilder =
@@ -16610,6 +16530,7 @@ typedef $$ContactoTableUpdateCompanionBuilder =
       Value<String?> telefono,
       Value<String?> correo,
       Value<bool> esPrincipal,
+      Value<String> tipo,
       Value<int> rowid,
     });
 
@@ -16708,6 +16629,11 @@ class $$ContactoTableFilterComposer
 
   ColumnFilters<bool> get esPrincipal => $composableBuilder(
     column: $table.esPrincipal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16814,6 +16740,11 @@ class $$ContactoTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ClienteTableOrderingComposer get clienteId {
     final $$ClienteTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -16877,6 +16808,9 @@ class $$ContactoTableAnnotationComposer
     column: $table.esPrincipal,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
 
   $$ClienteTableAnnotationComposer get clienteId {
     final $$ClienteTableAnnotationComposer composer = $composerBuilder(
@@ -16965,6 +16899,7 @@ class $$ContactoTableTableManager
                 Value<String?> telefono = const Value.absent(),
                 Value<String?> correo = const Value.absent(),
                 Value<bool> esPrincipal = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ContactoCompanion(
                 id: id,
@@ -16977,6 +16912,7 @@ class $$ContactoTableTableManager
                 telefono: telefono,
                 correo: correo,
                 esPrincipal: esPrincipal,
+                tipo: tipo,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -16991,6 +16927,7 @@ class $$ContactoTableTableManager
                 Value<String?> telefono = const Value.absent(),
                 Value<String?> correo = const Value.absent(),
                 Value<bool> esPrincipal = const Value.absent(),
+                required String tipo,
                 Value<int> rowid = const Value.absent(),
               }) => ContactoCompanion.insert(
                 id: id,
@@ -17003,6 +16940,7 @@ class $$ContactoTableTableManager
                 telefono: telefono,
                 correo: correo,
                 esPrincipal: esPrincipal,
+                tipo: tipo,
                 rowid: rowid,
               ),
           withReferenceMapper:

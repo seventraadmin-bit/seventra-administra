@@ -12,6 +12,7 @@ import '../../features/organizacion/data/tables/puesto_table.dart';
 import '../../features/organizacion/data/tables/servicio_table.dart';
 import '../../features/organizacion/data/tables/sucursal_table.dart';
 import '../../features/organizacion/data/tables/ubicacion_table.dart';
+import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'seed/seed_data.dart';
 import 'tables/attachment_table.dart';
@@ -64,7 +65,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -75,6 +76,10 @@ class AppDatabase extends _$AppDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from == 1) {
+          // Crea todas las tablas de la Etapa 4A directo con la forma
+          // *actual* de sus clases Dart (incluyendo Cliente/Contacto ya
+          // en su forma de la Etapa 4E.1) — nunca necesita pasar también
+          // por `migrarClienteContactoV4` más abajo.
           await _createEtapa4ATables(m);
         }
         await runSeed(this);
@@ -85,6 +90,15 @@ class AppDatabase extends _$AppDatabase {
         // definitivo (ver `_seedArea`).
         if (from <= 2) {
           await migrarCodigosAreaV3(this);
+        }
+        // Estructural (Etapa 4E.1): retira razonSocial/rfc de Cliente y
+        // agrega Contacto.tipo. Solo aplica a instalaciones que ya tenían
+        // Cliente/Contacto físicamente creados con la forma anterior
+        // (schemaVersion 2 o 3) — una instalación que viene de 1 ya los
+        // creó con la forma nueva unas líneas arriba, en este mismo
+        // `onUpgrade`.
+        if (from == 2 || from == 3) {
+          await migrarClienteContactoV4(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,
@@ -121,6 +135,7 @@ class AppDatabase extends _$AppDatabase {
     await m.createIndex(idxDireccionClienteTipoPrincipal);
     await m.createIndex(idxDireccionCliente);
     await m.createIndex(idxEmpresaActivaUnica);
+    await m.createIndex(idxContactoClienteTipoPrincipalActivo);
   }
 
   /// Garantiza que exista exactamente un renglón de metadata de instalación.

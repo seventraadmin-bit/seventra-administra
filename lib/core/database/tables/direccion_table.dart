@@ -4,7 +4,7 @@ import 'audit_columns.dart';
 
 /// Tipo de una [Direccion] — determina qué dueño puede usarla (ver los
 /// `CHECK` de la tabla) y, para Cliente, permite varias por tipo distinto.
-enum TipoDireccion { fiscal, administrativa, operativa, entrega, otra }
+enum TipoDireccion { fiscal, administrativa, operativa, entrega, otra, referencia }
 
 /// Dirección física, compartida por Empresa, Sucursal, Cliente y Servicio.
 ///

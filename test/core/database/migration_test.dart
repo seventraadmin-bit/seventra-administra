@@ -50,7 +50,7 @@ void main() {
     schema.rawDatabase.dispose();
   });
 
-  test('migración 1 → 2 conserva AppMetadata original y aplica la siembra', () async {
+  test('migración 1 → versión actual conserva AppMetadata original y aplica la siembra', () async {
     // Construye una base física en schemaVersion 1 con un renglón real de
     // AppMetadata, como tendría una instalación existente.
     final schemaV1 = await verifier.schemaAt(1);
@@ -61,9 +61,12 @@ void main() {
 
     final db = AppDatabase(schemaV1.newConnection());
 
-    // Corre la migración real 1 -> 2 generada por el proyecto y valida
-    // que el esquema resultante coincide con drift_schema_v2.json.
-    await verifier.migrateAndValidate(db, 2);
+    // Corre la migración real generada por el proyecto hasta la versión
+    // actual (4) — no puede validarse contra un objetivo intermedio (2)
+    // porque `_createEtapa4ATables` siempre crea Cliente/Contacto con la
+    // forma *actual* de sus clases Dart (ya la de la Etapa 4E.1), sin
+    // importar el objetivo nominal de la migración.
+    await verifier.migrateAndValidate(db, 4);
 
     // El renglón de AppMetadata que ya existía antes de migrar debe
     // seguir intacto — la migración es puramente aditiva.
@@ -84,7 +87,7 @@ void main() {
   test('runSeed es idempotente: llamarlo varias veces no duplica filas', () async {
     final schemaV1 = await verifier.schemaAt(1);
     final db = AppDatabase(schemaV1.newConnection());
-    await verifier.migrateAndValidate(db, 2);
+    await verifier.migrateAndValidate(db, 4);
 
     // La migración ya corrió la siembra una vez; se invoca explícitamente
     // varias veces más para comprobar que no duplica nada.
@@ -132,7 +135,7 @@ void main() {
     schema.rawDatabase.dispose();
   });
 
-  test('migración 1 → 3 directa siembra las Áreas ya con el formato definitivo', () async {
+  test('migración 1 → versión actual siembra las Áreas ya con el formato definitivo', () async {
     final schemaV1 = await verifier.schemaAt(1);
     schemaV1.rawDatabase.execute('''
       INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
@@ -140,7 +143,7 @@ void main() {
     ''');
 
     final db = AppDatabase(schemaV1.newConnection());
-    await verifier.migrateAndValidate(db, 3);
+    await verifier.migrateAndValidate(db, 4);
 
     final metadata = await db.select(db.appMetadata).getSingle();
     expect(metadata.installationId, 'instalacion-real-existente');
@@ -160,7 +163,7 @@ void main() {
     await db.close();
   });
 
-  test('migración 2 → 3 convierte los códigos alfabéticos de Área existentes sin duplicar filas', () async {
+  test('migración 2 → versión actual convierte los códigos alfabéticos de Área existentes sin duplicar filas', () async {
     // Simula una instalación real que ya pasó por la Etapa 4A/4B/4C —
     // llegó a schemaVersion 2 cuando `_seedArea` todavía sembraba códigos
     // alfabéticos, así que se insertan a mano tal como habrían quedado
@@ -193,7 +196,7 @@ void main() {
     // apenas en esta etapa.
 
     final db = AppDatabase(schemaV2.newConnection());
-    await verifier.migrateAndValidate(db, 3);
+    await verifier.migrateAndValidate(db, 4);
 
     final metadata = await db.select(db.appMetadata).getSingle();
     expect(metadata.installationId, 'instalacion-real-existente');
@@ -211,6 +214,136 @@ void main() {
 
     final codigoArea = await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('area'))).getSingle();
     expect(codigoArea.contadorActual, 6);
+
+    await db.close();
+  });
+
+  test('4.json coincide con el esquema final de la Etapa 4E.1 (sin tablas nuevas)', () async {
+    final schema = await verifier.schemaAt(4);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+
+    expect(
+      tablas,
+      containsAll(<String>[
+        'app_metadata', 'codigo_secuencia', 'tipo_sucursal', 'industria',
+        'tipo_servicio', 'area', 'direccion', 'medio_contacto', 'attachment',
+        'horario', 'horario_detalle', 'empresa', 'sucursal', 'cliente',
+        'contacto', 'servicio', 'ubicacion', 'puesto',
+      ]),
+    );
+
+    final columnasCliente = schema.rawDatabase
+        .select("PRAGMA table_info(cliente)")
+        .map((row) => row['name'] as String)
+        .toSet();
+    expect(columnasCliente, isNot(contains('razon_social')));
+    expect(columnasCliente, isNot(contains('rfc')));
+    expect(columnasCliente, contains('nombre_comercial'));
+    expect(columnasCliente, contains('industria_id'));
+
+    final columnasContacto = schema.rawDatabase
+        .select("PRAGMA table_info(contacto)")
+        .map((row) => row['name'] as String)
+        .toSet();
+    expect(columnasContacto, contains('tipo'));
+
+    final indices = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'index'")
+        .map((row) => row['name'] as String)
+        .toSet();
+    expect(indices, contains('idx_contacto_cliente_tipo_principal_activo'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 1 → 4 directa crea Cliente/Contacto ya con la forma nueva', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    schemaV1.rawDatabase.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, 4);
+
+    final metadata = await db.select(db.appMetadata).getSingle();
+    expect(metadata.installationId, 'instalacion-real-existente');
+
+    // Debe poder insertarse un Cliente con la forma nueva (sin razón
+    // social/RFC, nombreComercial requerido) sin ningún error.
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Prueba S.A.'),
+        );
+    expect(cliente.nombreComercial, 'Prueba S.A.');
+
+    await db.close();
+  });
+
+  test('migración 2 → 4 con Cliente/Contacto vacíos no falla y deja la forma nueva', () async {
+    final schemaV2 = await verifier.schemaAt(2);
+    schemaV2.rawDatabase.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+
+    final db = AppDatabase(schemaV2.newConnection());
+    await verifier.migrateAndValidate(db, 4);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Prueba S.A.'),
+        );
+    final contacto = await db.into(db.contacto).insertReturning(
+          ContactoCompanion.insert(clienteId: cliente.id, nombre: 'Juan Pérez', tipo: 'comercial'),
+        );
+    expect(contacto.tipo, 'comercial');
+
+    await db.close();
+  });
+
+  test('migración 3 → 4 con Cliente/Contacto vacíos no falla y deja la forma nueva', () async {
+    final schemaV3 = await verifier.schemaAt(3);
+    schemaV3.rawDatabase.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+
+    final db = AppDatabase(schemaV3.newConnection());
+    await verifier.migrateAndValidate(db, 4);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Prueba S.A.'),
+        );
+    expect(cliente.nombreComercial, 'Prueba S.A.');
+
+    await db.close();
+  });
+
+  test('migración 2 → 4 falla explícitamente si Cliente ya tiene filas reales', () async {
+    // Simula una instalación real (imposible hoy, pero la migración debe
+    // protegerse igual) que ya tenía un Cliente capturado con la forma
+    // anterior — la migración debe detenerse en vez de descartar sus
+    // datos en silencio.
+    final schemaV2 = await verifier.schemaAt(2);
+    schemaV2.rawDatabase.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    schemaV2.rawDatabase.execute('''
+      INSERT INTO cliente (
+        id, codigo, razon_social, nombre_comercial, rfc, estatus,
+        fecha_alta, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'cliente-existente', 'CLI-000001', 'Cliente Real S.A. de C.V.', 'Cliente Real',
+        'CRE010101AA1', 'activo', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV2.newConnection());
+
+    await expectLater(verifier.migrateAndValidate(db, 4), throwsStateError);
 
     await db.close();
   });

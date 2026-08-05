@@ -13,15 +13,18 @@ enum EstatusCliente { prospecto, activo, suspendido, terminado, descartado }
 class Cliente extends Table with AuditColumns {
   TextColumn get codigo => text().unique()();
 
-  TextColumn get razonSocial => text()();
+  /// Nombre identificador del Cliente comercial — ya no `razonSocial`:
+  /// esa (junto con el RFC) pertenece a Entidad fiscal (Etapa 4E.2), una
+  /// entidad distinta y separada. Un Cliente comercial puede agrupar
+  /// varias Entidades fiscales (ej. Sportium), así que no tiene sentido
+  /// que Cliente cargue una única razón social/RFC propios.
+  TextColumn get nombreComercial => text()();
 
-  TextColumn get nombreComercial => text().nullable()();
-
-  /// Nullable — un Prospecto puede no tener RFC todavía. Normalización
-  /// (mayúsculas, sin espacios) y validación de forma ocurren en
-  /// `CrearClienteUseCase`, no aquí.
-  TextColumn get rfc => text().nullable().unique()();
-
+  /// Dato maestro conservado desde la Etapa 4A — sin consumidor real
+  /// todavía (segmentación comercial, cotizaciones, reportes, CRM), por
+  /// eso no se expone en la interfaz de la Etapa 4E.1. Se conserva en el
+  /// esquema para no tener que reintroducirlo con otra migración cuando
+  /// sí exista ese consumidor.
   TextColumn get industriaId => text().nullable().references(Industria, #id)();
 
   // Literal en vez de referencia al enum: ver la nota en

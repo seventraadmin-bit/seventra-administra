@@ -220,4 +220,27 @@ void main() {
     expect(find.byKey(const Key('areas_boton_nueva')), findsOneWidget);
     expect(find.text('Operaciones'), findsOneWidget);
   });
+
+  testWidgets(
+    'El destino Comercial permite crear un Cliente y navega a su expediente',
+    (tester) async {
+      await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      await tester.tap(find.byKey(const Key('nav_item_comercial')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('clientes_boton_nueva')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('clientes_boton_nueva')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'Sportium E2E');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.clienteAltaBotonCrear));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('cliente_expediente_boton_editar')), findsOneWidget);
+    },
+  );
 }

@@ -22,12 +22,13 @@ class ShellDestination {
   String get id => path.replaceFirst('/', '');
 }
 
-/// Definición estructural (ruta + ícono) de los 10 módulos, sin depender de
+/// Definición estructural (ruta + ícono) de los 11 módulos, sin depender de
 /// localización — la usa el router para construir las ramas del
 /// `StatefulShellRoute`, que se arma una sola vez sin `BuildContext`.
 const List<({String path, IconData icon})> shellModuleDefs = [
   (path: '/dashboard', icon: Icons.dashboard_outlined),
   (path: '/organizacion', icon: Icons.apartment_outlined),
+  (path: '/comercial', icon: Icons.handshake_outlined),
   (path: '/personal', icon: Icons.people_outline),
   (path: '/inventario', icon: Icons.inventory_2_outlined),
   (path: '/activos', icon: Icons.qr_code_2_outlined),
@@ -42,6 +43,7 @@ String _labelFor(String path, AppLocalizations l10n) {
   return switch (path) {
     '/dashboard' => l10n.moduleDashboard,
     '/organizacion' => l10n.moduleOrganizacion,
+    '/comercial' => l10n.moduleComercial,
     '/personal' => l10n.modulePersonal,
     '/inventario' => l10n.moduleInventario,
     '/activos' => l10n.moduleActivos,

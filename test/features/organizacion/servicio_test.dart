@@ -49,7 +49,7 @@ void main() {
   tearDown(() => db.close());
 
   Future<String> crearClienteDePrueba() async {
-    final r = await crearCliente.ejecutar(razonSocial: 'Sportium');
+    final r = await crearCliente.ejecutar(nombreComercial: 'Sportium');
     late String id;
     r.when(ok: (c) => id = c.id, failure: (_) => fail('no debería fallar'));
     return id;
@@ -125,7 +125,7 @@ void main() {
     final sucursalId = await crearSucursalDePrueba();
 
     final contactoDeOtroCliente = await clienteRepo.agregarContacto(
-      ContactoCompanion.insert(clienteId: otroClienteId, nombre: 'Contacto ajeno'),
+      ContactoCompanion.insert(clienteId: otroClienteId, nombre: 'Contacto ajeno', tipo: 'comercial'),
     );
 
     final result = await crearServicio.ejecutar(
@@ -145,7 +145,7 @@ void main() {
     final sucursalId = await crearSucursalDePrueba();
 
     final contacto = await clienteRepo.agregarContacto(
-      ContactoCompanion.insert(clienteId: clienteId, nombre: 'Contacto correcto'),
+      ContactoCompanion.insert(clienteId: clienteId, nombre: 'Contacto correcto', tipo: 'comercial'),
     );
 
     final result = await crearServicio.ejecutar(
