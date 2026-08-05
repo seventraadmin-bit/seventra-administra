@@ -1,53 +1,33 @@
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
-import 'package:riseg_one/core/database/app_database.dart';
-import 'package:riseg_one/core/error/failure.dart';
 import 'package:riseg_one/core/error/result.dart';
 
-import '../repositories/cliente_repository.dart';
 import '../repositories/servicio_repository.dart';
-import '../shared/direccion_input.dart';
+import 'guardar_servicio_resultado.dart';
+import 'servicio_validator.dart';
 
-/// Crea un Servicio garantizando transaccionalmente (vía
-/// `ServicioRepository`) el propio Servicio, su Dirección operativa
-/// principal y su nodo raíz de Ubicación — no hay estado de "borrador
-/// sin dirección" en esta etapa.
+/// Alta mínima de Servicio (Etapa 4F.1) — nombre, Cliente, Tipo de
+/// Servicio, fecha de inicio y observaciones opcionales. Entidad fiscal,
+/// Dirección operativa, responsables y referencias se capturan después
+/// desde el expediente (Etapa 4F.2), nunca aquí.
+///
+/// La Ubicación raíz (ancla del árbol) se crea siempre, exista o no
+/// todavía una Dirección operativa — ver `ServicioRepository.crear`.
 class CrearServicioUseCase {
-  CrearServicioUseCase(this._servicioRepository, this._clienteRepository, this._generarCodigo);
+  CrearServicioUseCase(this._servicioRepository, this._generarCodigo, this._validator);
 
   final ServicioRepository _servicioRepository;
-  final ClienteRepository _clienteRepository;
   final GenerarCodigoUseCase _generarCodigo;
+  final ServicioValidator _validator;
 
-  Future<Result<ServicioData>> ejecutar({
+  Future<GuardarServicioResultado> ejecutar({
     required String clienteId,
-    required String nombre,
-    required String tipoServicioId,
-    required String sucursalAdministrativaId,
-    required DateTime fechaInicio,
-    required DireccionInput direccionOperativa,
-    DateTime? fechaTermino,
-    int elementosAutorizados = 0,
-    String? responsableClienteContactoId,
-    String? observaciones,
+    required ServicioBorrador borrador,
   }) async {
-    if (elementosAutorizados < 0) {
-      return const Result.failure(ValidationFailure('elementosAutorizados no puede ser negativo.'));
+    final validacion = await _validator.validar(clienteId: clienteId, borrador: borrador);
+    if (validacion.errores.isNotEmpty) {
+      return GuardarServicioErroresValidacion(validacion.errores);
     }
-    if (fechaTermino != null && fechaTermino.isBefore(fechaInicio)) {
-      return const Result.failure(
-        ValidationFailure('fechaTermino no puede ser anterior a fechaInicio.'),
-      );
-    }
-
-    if (responsableClienteContactoId != null) {
-      final contactos = await _clienteRepository.obtenerContactos(clienteId);
-      final pertenece = contactos.any((c) => c.id == responsableClienteContactoId);
-      if (!pertenece) {
-        return const Result.failure(
-          ValidationFailure('El contacto responsable no pertenece a este Cliente.'),
-        );
-      }
-    }
+    final validado = validacion.resultado!;
 
     final codigoServicioResult = await _generarCodigo.ejecutar('servicio');
     final String codigoServicio;
@@ -55,7 +35,7 @@ class CrearServicioUseCase {
       case Ok<String>(value: final v):
         codigoServicio = v;
       case Err<String>(failure: final f):
-        return Result.failure(f);
+        return GuardarServicioErrorInesperado(f.message);
     }
 
     final codigoUbicacionResult = await _generarCodigo.ejecutar('ubicacion');
@@ -64,23 +44,22 @@ class CrearServicioUseCase {
       case Ok<String>(value: final v):
         codigoUbicacion = v;
       case Err<String>(failure: final f):
-        return Result.failure(f);
+        return GuardarServicioErrorInesperado(f.message);
     }
 
-    final servicio = await _servicioRepository.crear(
-      codigoServicio: codigoServicio,
-      clienteId: clienteId,
-      nombre: nombre,
-      tipoServicioId: tipoServicioId,
-      sucursalAdministrativaId: sucursalAdministrativaId,
-      fechaInicio: fechaInicio,
-      fechaTermino: fechaTermino,
-      elementosAutorizados: elementosAutorizados,
-      responsableClienteContactoId: responsableClienteContactoId,
-      observaciones: observaciones,
-      codigoUbicacionRaiz: codigoUbicacion,
-      direccionOperativa: direccionOperativa,
-    );
-    return Result.ok(servicio);
+    try {
+      final servicio = await _servicioRepository.crear(
+        codigoServicio: codigoServicio,
+        clienteId: clienteId,
+        nombre: validado.nombre,
+        tipoServicioId: validado.tipoServicioId,
+        fechaInicio: validado.fechaInicio,
+        observaciones: validado.observaciones,
+        codigoUbicacionRaiz: codigoUbicacion,
+      );
+      return GuardarServicioExitoso(servicio);
+    } catch (e) {
+      return GuardarServicioErrorInesperado(e.toString());
+    }
   }
 }

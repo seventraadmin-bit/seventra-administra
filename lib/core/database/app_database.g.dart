@@ -8881,9 +8881,9 @@ class $ServicioTable extends Servicio
       GeneratedColumn<String>(
         'sucursal_administrativa_id',
         aliasedName,
-        false,
+        true,
         type: DriftSqlType.string,
-        requiredDuringInsert: true,
+        requiredDuringInsert: false,
         defaultConstraints: GeneratedColumn.constraintIsAlways(
           'REFERENCES sucursal (id) ON DELETE RESTRICT',
         ),
@@ -9055,8 +9055,6 @@ class $ServicioTable extends Servicio
           _sucursalAdministrativaIdMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_sucursalAdministrativaIdMeta);
     }
     if (data.containsKey('estatus')) {
       context.handle(
@@ -9160,11 +9158,10 @@ class $ServicioTable extends Servicio
             DriftSqlType.string,
             data['${effectivePrefix}tipo_servicio_id'],
           )!,
-      sucursalAdministrativaId:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}sucursal_administrativa_id'],
-          )!,
+      sucursalAdministrativaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sucursal_administrativa_id'],
+      ),
       estatus:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -9210,7 +9207,12 @@ class ServicioData extends DataClass implements Insertable<ServicioData> {
   final String clienteId;
   final String nombre;
   final String tipoServicioId;
-  final String sucursalAdministrativaId;
+
+  /// Opcional desde la Etapa 4F.1 — RISEG no tiene hoy varias oficinas
+  /// administrativas y no se inventa una Sucursal solo para satisfacer
+  /// esta FK. Queda disponible para cuando una empresa (propia o de un
+  /// escenario futuro reutilizando este sistema) sí las tenga.
+  final String? sucursalAdministrativaId;
   final String estatus;
   final DateTime fechaInicio;
   final DateTime? fechaTermino;
@@ -9231,7 +9233,7 @@ class ServicioData extends DataClass implements Insertable<ServicioData> {
     required this.clienteId,
     required this.nombre,
     required this.tipoServicioId,
-    required this.sucursalAdministrativaId,
+    this.sucursalAdministrativaId,
     required this.estatus,
     required this.fechaInicio,
     this.fechaTermino,
@@ -9250,9 +9252,11 @@ class ServicioData extends DataClass implements Insertable<ServicioData> {
     map['cliente_id'] = Variable<String>(clienteId);
     map['nombre'] = Variable<String>(nombre);
     map['tipo_servicio_id'] = Variable<String>(tipoServicioId);
-    map['sucursal_administrativa_id'] = Variable<String>(
-      sucursalAdministrativaId,
-    );
+    if (!nullToAbsent || sucursalAdministrativaId != null) {
+      map['sucursal_administrativa_id'] = Variable<String>(
+        sucursalAdministrativaId,
+      );
+    }
     map['estatus'] = Variable<String>(estatus);
     map['fecha_inicio'] = Variable<DateTime>(fechaInicio);
     if (!nullToAbsent || fechaTermino != null) {
@@ -9280,7 +9284,10 @@ class ServicioData extends DataClass implements Insertable<ServicioData> {
       clienteId: Value(clienteId),
       nombre: Value(nombre),
       tipoServicioId: Value(tipoServicioId),
-      sucursalAdministrativaId: Value(sucursalAdministrativaId),
+      sucursalAdministrativaId:
+          sucursalAdministrativaId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(sucursalAdministrativaId),
       estatus: Value(estatus),
       fechaInicio: Value(fechaInicio),
       fechaTermino:
@@ -9313,7 +9320,7 @@ class ServicioData extends DataClass implements Insertable<ServicioData> {
       clienteId: serializer.fromJson<String>(json['clienteId']),
       nombre: serializer.fromJson<String>(json['nombre']),
       tipoServicioId: serializer.fromJson<String>(json['tipoServicioId']),
-      sucursalAdministrativaId: serializer.fromJson<String>(
+      sucursalAdministrativaId: serializer.fromJson<String?>(
         json['sucursalAdministrativaId'],
       ),
       estatus: serializer.fromJson<String>(json['estatus']),
@@ -9340,7 +9347,7 @@ class ServicioData extends DataClass implements Insertable<ServicioData> {
       'clienteId': serializer.toJson<String>(clienteId),
       'nombre': serializer.toJson<String>(nombre),
       'tipoServicioId': serializer.toJson<String>(tipoServicioId),
-      'sucursalAdministrativaId': serializer.toJson<String>(
+      'sucursalAdministrativaId': serializer.toJson<String?>(
         sucursalAdministrativaId,
       ),
       'estatus': serializer.toJson<String>(estatus),
@@ -9363,7 +9370,7 @@ class ServicioData extends DataClass implements Insertable<ServicioData> {
     String? clienteId,
     String? nombre,
     String? tipoServicioId,
-    String? sucursalAdministrativaId,
+    Value<String?> sucursalAdministrativaId = const Value.absent(),
     String? estatus,
     DateTime? fechaInicio,
     Value<DateTime?> fechaTermino = const Value.absent(),
@@ -9380,7 +9387,9 @@ class ServicioData extends DataClass implements Insertable<ServicioData> {
     nombre: nombre ?? this.nombre,
     tipoServicioId: tipoServicioId ?? this.tipoServicioId,
     sucursalAdministrativaId:
-        sucursalAdministrativaId ?? this.sucursalAdministrativaId,
+        sucursalAdministrativaId.present
+            ? sucursalAdministrativaId.value
+            : this.sucursalAdministrativaId,
     estatus: estatus ?? this.estatus,
     fechaInicio: fechaInicio ?? this.fechaInicio,
     fechaTermino: fechaTermino.present ? fechaTermino.value : this.fechaTermino,
@@ -9507,7 +9516,7 @@ class ServicioCompanion extends UpdateCompanion<ServicioData> {
   final Value<String> clienteId;
   final Value<String> nombre;
   final Value<String> tipoServicioId;
-  final Value<String> sucursalAdministrativaId;
+  final Value<String?> sucursalAdministrativaId;
   final Value<String> estatus;
   final Value<DateTime> fechaInicio;
   final Value<DateTime?> fechaTermino;
@@ -9542,7 +9551,7 @@ class ServicioCompanion extends UpdateCompanion<ServicioData> {
     required String clienteId,
     required String nombre,
     required String tipoServicioId,
-    required String sucursalAdministrativaId,
+    this.sucursalAdministrativaId = const Value.absent(),
     this.estatus = const Value.absent(),
     required DateTime fechaInicio,
     this.fechaTermino = const Value.absent(),
@@ -9554,7 +9563,6 @@ class ServicioCompanion extends UpdateCompanion<ServicioData> {
        clienteId = Value(clienteId),
        nombre = Value(nombre),
        tipoServicioId = Value(tipoServicioId),
-       sucursalAdministrativaId = Value(sucursalAdministrativaId),
        fechaInicio = Value(fechaInicio);
   static Insertable<ServicioData> custom({
     Expression<String>? id,
@@ -9606,7 +9614,7 @@ class ServicioCompanion extends UpdateCompanion<ServicioData> {
     Value<String>? clienteId,
     Value<String>? nombre,
     Value<String>? tipoServicioId,
-    Value<String>? sucursalAdministrativaId,
+    Value<String?>? sucursalAdministrativaId,
     Value<String>? estatus,
     Value<DateTime>? fechaInicio,
     Value<DateTime?>? fechaTermino,
@@ -17751,7 +17759,7 @@ typedef $$ServicioTableCreateCompanionBuilder =
       required String clienteId,
       required String nombre,
       required String tipoServicioId,
-      required String sucursalAdministrativaId,
+      Value<String?> sucursalAdministrativaId,
       Value<String> estatus,
       required DateTime fechaInicio,
       Value<DateTime?> fechaTermino,
@@ -17770,7 +17778,7 @@ typedef $$ServicioTableUpdateCompanionBuilder =
       Value<String> clienteId,
       Value<String> nombre,
       Value<String> tipoServicioId,
-      Value<String> sucursalAdministrativaId,
+      Value<String?> sucursalAdministrativaId,
       Value<String> estatus,
       Value<DateTime> fechaInicio,
       Value<DateTime?> fechaTermino,
@@ -17828,9 +17836,9 @@ final class $$ServicioTableReferences
         ),
       );
 
-  $$SucursalTableProcessedTableManager get sucursalAdministrativaId {
-    final $_column = $_itemColumn<String>('sucursal_administrativa_id')!;
-
+  $$SucursalTableProcessedTableManager? get sucursalAdministrativaId {
+    final $_column = $_itemColumn<String>('sucursal_administrativa_id');
+    if ($_column == null) return null;
     final manager = $$SucursalTableTableManager(
       $_db,
       $_db.sucursal,
@@ -18438,7 +18446,7 @@ class $$ServicioTableTableManager
                 Value<String> clienteId = const Value.absent(),
                 Value<String> nombre = const Value.absent(),
                 Value<String> tipoServicioId = const Value.absent(),
-                Value<String> sucursalAdministrativaId = const Value.absent(),
+                Value<String?> sucursalAdministrativaId = const Value.absent(),
                 Value<String> estatus = const Value.absent(),
                 Value<DateTime> fechaInicio = const Value.absent(),
                 Value<DateTime?> fechaTermino = const Value.absent(),
@@ -18475,7 +18483,7 @@ class $$ServicioTableTableManager
                 required String clienteId,
                 required String nombre,
                 required String tipoServicioId,
-                required String sucursalAdministrativaId,
+                Value<String?> sucursalAdministrativaId = const Value.absent(),
                 Value<String> estatus = const Value.absent(),
                 required DateTime fechaInicio,
                 Value<DateTime?> fechaTermino = const Value.absent(),

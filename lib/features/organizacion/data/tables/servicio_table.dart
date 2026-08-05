@@ -32,8 +32,12 @@ class Servicio extends Table with AuditColumns {
 
   TextColumn get tipoServicioId => text().references(TipoServicio, #id)();
 
+  /// Opcional desde la Etapa 4F.1 — RISEG no tiene hoy varias oficinas
+  /// administrativas y no se inventa una Sucursal solo para satisfacer
+  /// esta FK. Queda disponible para cuando una empresa (propia o de un
+  /// escenario futuro reutilizando este sistema) sí las tenga.
   TextColumn get sucursalAdministrativaId =>
-      text().references(Sucursal, #id, onDelete: KeyAction.restrict)();
+      text().nullable().references(Sucursal, #id, onDelete: KeyAction.restrict)();
 
   // Literal en vez de referencia al enum: ver la nota en
   // `AuditColumns.cicloVidaRegistro` sobre por qué (mismo SQL resultante).

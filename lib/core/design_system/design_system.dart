@@ -29,4 +29,5 @@ export 'components/riseg_status_badge.dart';
 export 'components/riseg_table_base.dart';
 export 'components/riseg_tabs.dart';
 export 'components/riseg_text_field.dart';
+export 'components/riseg_date_field.dart';
 export 'components/riseg_time_field.dart';

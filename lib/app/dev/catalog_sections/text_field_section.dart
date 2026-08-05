@@ -14,6 +14,7 @@ class _TextFieldCatalogSectionState extends State<TextFieldCatalogSection> {
   bool _obscure = true;
   String? _tipoSeleccionado = 'oficina';
   TimeOfDay? _hora = const TimeOfDay(hour: 8, minute: 0);
+  DateTime? _fecha = DateTime(2026, 8, 5);
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +107,37 @@ class _TextFieldCatalogSectionState extends State<TextFieldCatalogSection> {
             onChanged: (value) => setState(() => _hora = value),
           ),
         ),
+        CatalogSubsection(
+          title: 'RisegDateField',
+          description: 'Fecha del calendario vía el selector nativo — usado por Servicio',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RisegDateField(
+                label: 'Fecha de inicio',
+                value: _fecha,
+                onChanged: (value) => setState(() => _fecha = value),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const RisegDateField(
+                label: 'Con error',
+                value: null,
+                onChanged: _noop,
+                errorText: 'La fecha es obligatoria',
+              ),
+              const SizedBox(height: AppSpacing.md),
+              RisegDateField(
+                label: 'Deshabilitado',
+                value: DateTime(2026, 1, 1),
+                onChanged: _noop,
+                enabled: false,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 }
+
+void _noop(DateTime _) {}

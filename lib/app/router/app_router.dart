@@ -3,9 +3,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
 import '../../features/organizacion/presentation/clientes/cliente_expediente_screen.dart';
-import '../../features/organizacion/presentation/clientes/clientes_list_screen.dart';
+import '../../features/organizacion/presentation/comercial_shell_screen.dart';
 import '../../features/organizacion/presentation/organizacion_shell_screen.dart';
 import '../../features/organizacion/presentation/puestos/puesto_expediente_screen.dart';
+import '../../features/organizacion/presentation/servicios/servicio_expediente_screen.dart';
 import '../../features/organizacion/presentation/sucursales/sucursal_expediente_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
 import '../shell/app_shell_screen.dart';
@@ -74,20 +75,46 @@ GoRouter createAppRouter() {
                   )
                 else if (def.path == '/comercial')
                   // Comercial es un dominio propio, separado de
-                  // Organización (Arquitectura Funcional v1.1). Por ahora
-                  // `/comercial` muestra el listado de Clientes
-                  // directamente, sin `RisegTabs` — mismo criterio que
-                  // Organización antes de la Etapa 4C: no se introduce un
-                  // shell de pestañas hasta que exista una segunda
-                  // pestaña real (Servicios, Etapa 4F).
+                  // Organización (Arquitectura Funcional v1.1). Desde la
+                  // Etapa 4F.1 ya tiene 2 pestañas reales (Clientes,
+                  // Servicios) — `/comercial` en sí ya no muestra nada
+                  // directamente, redirige a `/comercial/clientes` (a
+                  // diferencia de `/organizacion`, que sí muestra Empresa
+                  // en su propia ruta).
                   GoRoute(
                     path: def.path,
-                    builder: (context, state) => const ClientesListScreen(),
+                    // Condicionado a la ruta exacta: el `redirect` de un
+                    // `GoRoute` se evalúa para toda la cadena de rutas
+                    // coincidentes al resolver una ruta anidada (ej.
+                    // `/comercial/clientes/:id`), no solo cuando la ruta
+                    // navegada es literalmente `/comercial` — sin esta
+                    // condición, cualquier sub-ruta (incluida
+                    // `/comercial/clientes/:id`) quedaba redirigida de
+                    // vuelta a `/comercial/clientes`, perdiendo el `:id`.
+                    redirect: (context, state) =>
+                        state.uri.path == '/comercial' ? '/comercial/clientes' : null,
                     routes: [
                       GoRoute(
-                        path: 'clientes/:id',
-                        builder: (context, state) =>
-                            ClienteExpedienteScreen(clienteId: state.pathParameters['id']!),
+                        path: 'clientes',
+                        builder: (context, state) => const ComercialShellScreen(tab: ComercialTab.clientes),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                ClienteExpedienteScreen(clienteId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'servicios',
+                        builder: (context, state) => const ComercialShellScreen(tab: ComercialTab.servicios),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                ServicioExpedienteScreen(servicioId: state.pathParameters['id']!),
+                          ),
+                        ],
                       ),
                     ],
                   )

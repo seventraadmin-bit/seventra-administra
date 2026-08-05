@@ -27,12 +27,14 @@ import 'domain/usecases/actualizar_contacto_usecase.dart';
 import 'domain/usecases/actualizar_empresa_usecase.dart';
 import 'domain/usecases/actualizar_entidad_fiscal_usecase.dart';
 import 'domain/usecases/actualizar_puesto_usecase.dart';
+import 'domain/usecases/actualizar_servicio_usecase.dart';
 import 'domain/usecases/agregar_contacto_usecase.dart';
 import 'domain/usecases/archivar_contacto_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_entidad_fiscal_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_puesto_usecase.dart';
 import 'domain/usecases/cambiar_estado_operativo_sucursal_usecase.dart';
 import 'domain/usecases/cambiar_estatus_cliente_usecase.dart';
+import 'domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'domain/usecases/crear_area_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
 import 'domain/usecases/crear_entidad_fiscal_usecase.dart';
@@ -51,6 +53,7 @@ import 'domain/usecases/listar_areas_usecase.dart';
 import 'domain/usecases/listar_clientes_usecase.dart';
 import 'domain/usecases/listar_entidades_fiscales_de_cliente_usecase.dart';
 import 'domain/usecases/listar_puestos_usecase.dart';
+import 'domain/usecases/listar_servicios_usecase.dart';
 import 'domain/usecases/listar_sucursales_usecase.dart';
 import 'domain/usecases/listar_tipos_sucursal_usecase.dart';
 import 'domain/usecases/mover_ubicacion_usecase.dart';
@@ -60,8 +63,10 @@ import 'domain/usecases/obtener_empresa_activa_usecase.dart';
 import 'domain/usecases/obtener_expediente_cliente_usecase.dart';
 import 'domain/usecases/obtener_expediente_empresa_usecase.dart';
 import 'domain/usecases/obtener_expediente_puesto_usecase.dart';
+import 'domain/usecases/obtener_expediente_servicio_usecase.dart';
 import 'domain/usecases/obtener_expediente_sucursal_usecase.dart';
 import 'domain/usecases/puesto_validator.dart';
+import 'domain/usecases/servicio_validator.dart';
 
 /// Providers de infraestructura de Organización (base de datos,
 /// servicios, repositorios, casos de uso). Los providers de pantalla
@@ -290,10 +295,30 @@ final listarEntidadesFiscalesDeClienteUseCaseProvider = Provider<ListarEntidades
   return ListarEntidadesFiscalesDeClienteUseCase(ref.watch(entidadFiscalRepositoryProvider));
 });
 
+final servicioValidatorProvider = Provider<ServicioValidator>((ref) {
+  return ServicioValidator(ref.watch(clienteRepositoryProvider), ref.watch(catalogoRepositoryProvider));
+});
+
 final crearServicioUseCaseProvider = Provider<CrearServicioUseCase>((ref) {
   return CrearServicioUseCase(
     ref.watch(servicioRepositoryProvider),
-    ref.watch(clienteRepositoryProvider),
     ref.watch(generarCodigoUseCaseProvider),
+    ref.watch(servicioValidatorProvider),
   );
+});
+
+final actualizarServicioUseCaseProvider = Provider<ActualizarServicioUseCase>((ref) {
+  return ActualizarServicioUseCase(ref.watch(servicioRepositoryProvider), ref.watch(servicioValidatorProvider));
+});
+
+final cambiarEstatusServicioUseCaseProvider = Provider<CambiarEstatusServicioUseCase>((ref) {
+  return CambiarEstatusServicioUseCase(ref.watch(servicioRepositoryProvider), ref.watch(clienteRepositoryProvider));
+});
+
+final listarServiciosUseCaseProvider = Provider<ListarServiciosUseCase>((ref) {
+  return ListarServiciosUseCase(ref.watch(servicioRepositoryProvider));
+});
+
+final obtenerExpedienteServicioUseCaseProvider = Provider<ObtenerExpedienteServicioUseCase>((ref) {
+  return ObtenerExpedienteServicioUseCase(ref.watch(servicioRepositoryProvider));
 });

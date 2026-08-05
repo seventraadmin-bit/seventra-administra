@@ -16,6 +16,7 @@ import '../../features/organizacion/data/tables/ubicacion_table.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
+import 'migrations/migrar_servicio_v6.dart';
 import 'seed/seed_data.dart';
 import 'tables/attachment_table.dart';
 import 'tables/catalogos_tables.dart';
@@ -68,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -130,6 +131,14 @@ class AppDatabase extends _$AppDatabase {
         // que el paso anterior.
         if (to >= 5 && from >= 2 && from <= 4) {
           await migrarDireccionV5(this, m);
+        }
+        // Estructural (Etapa 4F.1): vuelve sucursalAdministrativaId
+        // nullable en Servicio — requiere recrear la tabla. Solo aplica
+        // a instalaciones que ya tenían Servicio físicamente creado con
+        // la forma anterior (2, 3, 4 o 5) — de 1 ya se creó con la forma
+        // nueva arriba. Mismo motivo de `to >=` que los pasos previos.
+        if (to >= 6 && from >= 2 && from <= 5) {
+          await migrarServicioV6(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

@@ -16,4 +16,6 @@ class CatalogoItem {
 /// todavía — por eso esta interfaz solo expone lecturas.
 abstract interface class CatalogoRepository {
   Future<List<CatalogoItem>> listarTiposSucursal();
+
+  Future<List<CatalogoItem>> listarTiposServicio();
 }
