@@ -31,13 +31,19 @@ Future<void> _seedCodigoSecuencia(AppDatabase db) async {
     ('puesto', 'PUE', 4),
     ('cliente', 'CLI', 6),
     ('servicio', 'SER', 6),
+    ('area', 'ARE', 4),
   ];
 
   for (final (entityType, prefijo, digitos) in config) {
-    // El contador de 'empresa' arranca en 1: RSG-01 ya se emite en esta
-    // misma siembra (ver _seedEmpresa) — si no se reflejara aquí, el
-    // servicio y el dato sembrado quedarían desincronizados.
-    final contadorInicial = entityType == 'empresa' ? 1 : 0;
+    // El contador de 'empresa' arranca en 1 (RSG-01 ya se emite en esta
+    // misma siembra) y el de 'area' en 6 (las 6 Áreas base ya se siembran
+    // con ARE-0001..ARE-0006) — si no se reflejaran aquí, el servicio y
+    // los datos sembrados quedarían desincronizados.
+    final contadorInicial = switch (entityType) {
+      'empresa' => 1,
+      'area' => 6,
+      _ => 0,
+    };
 
     await db.into(db.codigoSecuencia).insert(
           CodigoSecuenciaCompanion.insert(
@@ -100,13 +106,18 @@ Future<void> _seedTipoServicio(AppDatabase db) async {
 }
 
 Future<void> _seedArea(AppDatabase db) async {
+  // Formato definitivo (`ARE-####`) desde la Etapa 4D — una instalación
+  // nueva siembra directo con este formato; una instalación existente
+  // que todavía tenga los códigos alfabéticos originales (`OPERACIONES`,
+  // `RH`, ...) los recibe vía `migrarCodigosAreaV3` en el upgrade a
+  // schemaVersion 3, nunca aquí (esta función nunca hace `UPDATE`).
   final filas = [
-    (SeedIds.areaOperaciones, 'OPERACIONES', 'Operaciones'),
-    (SeedIds.areaRecursosHumanos, 'RH', 'Recursos Humanos'),
-    (SeedIds.areaAdministracion, 'ADMINISTRACION', 'Administración'),
-    (SeedIds.areaDireccion, 'DIRECCION', 'Dirección'),
-    (SeedIds.areaMonitoreo, 'MONITOREO', 'Monitoreo'),
-    (SeedIds.areaReclutamiento, 'RECLUTAMIENTO', 'Reclutamiento'),
+    (SeedIds.areaOperaciones, 'ARE-0001', 'Operaciones'),
+    (SeedIds.areaRecursosHumanos, 'ARE-0002', 'Recursos Humanos'),
+    (SeedIds.areaAdministracion, 'ARE-0003', 'Administración'),
+    (SeedIds.areaDireccion, 'ARE-0004', 'Dirección'),
+    (SeedIds.areaMonitoreo, 'ARE-0005', 'Monitoreo'),
+    (SeedIds.areaReclutamiento, 'ARE-0006', 'Reclutamiento'),
   ];
 
   for (final (id, codigo, nombre) in filas) {

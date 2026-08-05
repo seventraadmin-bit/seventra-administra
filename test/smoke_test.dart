@@ -14,6 +14,7 @@ import 'package:riseg_one/app/app.dart';
 import 'package:riseg_one/app/router/app_router.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/di/providers.dart';
+import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
 
 /// Fuerza un tamaño de ventana de escritorio "cómodo" (por encima del
 /// breakpoint de colapso automático del sidebar) para que las pruebas no
@@ -159,4 +160,64 @@ void main() {
       expect(find.byKey(const Key('sucursal_expediente_boton_editar')), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'Organización expone las 4 pestañas estables y la pestaña Puestos permite crear y navegar al expediente',
+    (tester) async {
+      await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      await tester.tap(find.byKey(const Key('nav_item_organizacion')));
+      await tester.pumpAndSettle();
+
+      // Orden fijo aprobado en la Etapa 4D: Empresa, Sucursales, Puestos,
+      // Áreas — no debe reordenarse en etapas futuras. "Empresa" aparece
+      // dos veces (la pestaña y el título del expediente ya abierto),
+      // así que solo esa se verifica con `findsWidgets`.
+      expect(find.text(l10n.organizacionTabEmpresa), findsWidgets);
+      expect(find.text(l10n.organizacionTabSucursales), findsOneWidget);
+      expect(find.text(l10n.organizacionTabPuestos), findsOneWidget);
+      expect(find.text(l10n.organizacionTabAreas), findsOneWidget);
+
+      await tester.tap(find.text(l10n.organizacionTabPuestos));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('puestos_boton_nueva')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('puestos_boton_nueva')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'Guardia E2E');
+
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Operaciones').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButtonFormField<TipoPuesto>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.puestoTipoOperativo).last);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).last, '5');
+
+      await tester.tap(find.text(l10n.puestoAltaBotonCrear));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('puesto_expediente_boton_editar')), findsOneWidget);
+    },
+  );
+
+  testWidgets('La pestaña Áreas del listado de Organización es alcanzable', (tester) async {
+    await _pumpApp(tester);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.tap(find.byKey(const Key('nav_item_organizacion')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.organizacionTabAreas));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('areas_boton_nueva')), findsOneWidget);
+    expect(find.text('Operaciones'), findsOneWidget);
+  });
 }

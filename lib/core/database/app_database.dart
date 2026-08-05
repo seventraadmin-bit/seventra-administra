@@ -12,6 +12,7 @@ import '../../features/organizacion/data/tables/puesto_table.dart';
 import '../../features/organizacion/data/tables/servicio_table.dart';
 import '../../features/organizacion/data/tables/sucursal_table.dart';
 import '../../features/organizacion/data/tables/ubicacion_table.dart';
+import 'migrations/migrar_codigos_area_v3.dart';
 import 'seed/seed_data.dart';
 import 'tables/attachment_table.dart';
 import 'tables/catalogos_tables.dart';
@@ -63,7 +64,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -77,6 +78,14 @@ class AppDatabase extends _$AppDatabase {
           await _createEtapa4ATables(m);
         }
         await runSeed(this);
+        // Puramente de datos (sin cambio de tabla): unifica el formato de
+        // código de Área. Corre en cualquier instalación que vaya a
+        // schemaVersion 3 viniendo de 1 o 2 — nunca en una instalación
+        // nueva (`onCreate`), que ya siembra directo con el formato
+        // definitivo (ver `_seedArea`).
+        if (from <= 2) {
+          await migrarCodigosAreaV3(this);
+        }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,
       // todas las FK declaradas en las tablas de la Etapa 4A eran solo

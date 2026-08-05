@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/codigos/codigo_secuencia_service.dart';
 import '../../core/codigos/generar_codigo_usecase.dart';
 import '../../core/di/providers.dart';
+import 'data/repositories/area_repository_impl.dart';
 import 'data/repositories/catalogo_repository_impl.dart';
 import 'data/repositories/cliente_repository_impl.dart';
 import 'data/repositories/empresa_repository_impl.dart';
@@ -10,6 +11,7 @@ import 'data/repositories/puesto_repository_impl.dart';
 import 'data/repositories/servicio_repository_impl.dart';
 import 'data/repositories/sucursal_repository_impl.dart';
 import 'data/repositories/ubicacion_repository_impl.dart';
+import 'domain/repositories/area_repository.dart';
 import 'domain/repositories/catalogo_repository.dart';
 import 'domain/repositories/cliente_repository.dart';
 import 'domain/repositories/empresa_repository.dart';
@@ -17,15 +19,24 @@ import 'domain/repositories/puesto_repository.dart';
 import 'domain/repositories/servicio_repository.dart';
 import 'domain/repositories/sucursal_repository.dart';
 import 'domain/repositories/ubicacion_repository.dart';
+import 'domain/usecases/activar_area_usecase.dart';
+import 'domain/usecases/actualizar_area_usecase.dart';
 import 'domain/usecases/actualizar_empresa_usecase.dart';
+import 'domain/usecases/actualizar_puesto_usecase.dart';
+import 'domain/usecases/cambiar_ciclo_vida_puesto_usecase.dart';
 import 'domain/usecases/cambiar_estado_operativo_sucursal_usecase.dart';
+import 'domain/usecases/crear_area_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
 import 'domain/usecases/crear_puesto_usecase.dart';
 import 'domain/usecases/crear_servicio_usecase.dart';
 import 'domain/usecases/crear_sucursal_usecase.dart';
 import 'domain/usecases/crear_ubicacion_usecase.dart';
+import 'domain/usecases/desactivar_area_usecase.dart';
 import 'domain/usecases/guardar_expediente_empresa_usecase.dart';
 import 'domain/usecases/guardar_expediente_sucursal_usecase.dart';
+import 'domain/usecases/listar_areas_activas_usecase.dart';
+import 'domain/usecases/listar_areas_usecase.dart';
+import 'domain/usecases/listar_puestos_usecase.dart';
 import 'domain/usecases/listar_sucursales_usecase.dart';
 import 'domain/usecases/listar_tipos_sucursal_usecase.dart';
 import 'domain/usecases/mover_ubicacion_usecase.dart';
@@ -33,7 +44,9 @@ import 'domain/usecases/obtener_arbol_ubicaciones_de_sucursal_usecase.dart';
 import 'domain/usecases/obtener_arbol_ubicaciones_usecase.dart';
 import 'domain/usecases/obtener_empresa_activa_usecase.dart';
 import 'domain/usecases/obtener_expediente_empresa_usecase.dart';
+import 'domain/usecases/obtener_expediente_puesto_usecase.dart';
 import 'domain/usecases/obtener_expediente_sucursal_usecase.dart';
+import 'domain/usecases/puesto_validator.dart';
 
 /// Providers de infraestructura de Organización (base de datos,
 /// servicios, repositorios, casos de uso). Los providers de pantalla
@@ -76,6 +89,10 @@ final catalogoRepositoryProvider = Provider<CatalogoRepository>((ref) {
   return CatalogoRepositoryImpl(ref.watch(appDatabaseProvider));
 });
 
+final areaRepositoryProvider = Provider<AreaRepository>((ref) {
+  return AreaRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
 final obtenerEmpresaActivaUseCaseProvider = Provider<ObtenerEmpresaActivaUseCase>((ref) {
   return ObtenerEmpresaActivaUseCase(ref.watch(empresaRepositoryProvider));
 });
@@ -95,8 +112,56 @@ final guardarExpedienteEmpresaUseCaseProvider = Provider<GuardarExpedienteEmpres
   return GuardarExpedienteEmpresaUseCase(ref.watch(empresaRepositoryProvider));
 });
 
+final puestoValidatorProvider = Provider<PuestoValidator>((ref) {
+  return PuestoValidator(ref.watch(areaRepositoryProvider));
+});
+
 final crearPuestoUseCaseProvider = Provider<CrearPuestoUseCase>((ref) {
-  return CrearPuestoUseCase(ref.watch(puestoRepositoryProvider), ref.watch(generarCodigoUseCaseProvider));
+  return CrearPuestoUseCase(
+    ref.watch(puestoRepositoryProvider),
+    ref.watch(generarCodigoUseCaseProvider),
+    ref.watch(puestoValidatorProvider),
+  );
+});
+
+final actualizarPuestoUseCaseProvider = Provider<ActualizarPuestoUseCase>((ref) {
+  return ActualizarPuestoUseCase(ref.watch(puestoRepositoryProvider), ref.watch(puestoValidatorProvider));
+});
+
+final cambiarCicloVidaPuestoUseCaseProvider = Provider<CambiarCicloVidaPuestoUseCase>((ref) {
+  return CambiarCicloVidaPuestoUseCase(ref.watch(puestoRepositoryProvider), ref.watch(areaRepositoryProvider));
+});
+
+final listarPuestosUseCaseProvider = Provider<ListarPuestosUseCase>((ref) {
+  return ListarPuestosUseCase(ref.watch(puestoRepositoryProvider));
+});
+
+final obtenerExpedientePuestoUseCaseProvider = Provider<ObtenerExpedientePuestoUseCase>((ref) {
+  return ObtenerExpedientePuestoUseCase(ref.watch(puestoRepositoryProvider));
+});
+
+final listarAreasUseCaseProvider = Provider<ListarAreasUseCase>((ref) {
+  return ListarAreasUseCase(ref.watch(areaRepositoryProvider));
+});
+
+final listarAreasActivasUseCaseProvider = Provider<ListarAreasActivasUseCase>((ref) {
+  return ListarAreasActivasUseCase(ref.watch(areaRepositoryProvider));
+});
+
+final crearAreaUseCaseProvider = Provider<CrearAreaUseCase>((ref) {
+  return CrearAreaUseCase(ref.watch(areaRepositoryProvider), ref.watch(generarCodigoUseCaseProvider));
+});
+
+final actualizarAreaUseCaseProvider = Provider<ActualizarAreaUseCase>((ref) {
+  return ActualizarAreaUseCase(ref.watch(areaRepositoryProvider));
+});
+
+final activarAreaUseCaseProvider = Provider<ActivarAreaUseCase>((ref) {
+  return ActivarAreaUseCase(ref.watch(areaRepositoryProvider));
+});
+
+final desactivarAreaUseCaseProvider = Provider<DesactivarAreaUseCase>((ref) {
+  return DesactivarAreaUseCase(ref.watch(areaRepositoryProvider), ref.watch(puestoRepositoryProvider));
 });
 
 final crearSucursalUseCaseProvider = Provider<CrearSucursalUseCase>((ref) {

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
 import '../../features/organizacion/presentation/organizacion_shell_screen.dart';
+import '../../features/organizacion/presentation/puestos/puesto_expediente_screen.dart';
 import '../../features/organizacion/presentation/sucursales/sucursal_expediente_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
 import '../shell/app_shell_screen.dart';
@@ -34,9 +35,9 @@ GoRouter createAppRouter() {
               routes: [
                 if (def.path == '/organizacion')
                   // Organización tiene subnavegación propia (Empresa |
-                  // Sucursales) desde la Etapa 4C — `/organizacion` en sí
-                  // sigue mostrando Empresa por defecto (compatibilidad
-                  // con la Etapa 4B).
+                  // Sucursales | Puestos | Áreas) desde la Etapa 4D —
+                  // `/organizacion` en sí sigue mostrando Empresa por
+                  // defecto (compatibilidad con la Etapa 4B).
                   GoRoute(
                     path: def.path,
                     builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.empresa),
@@ -51,6 +52,21 @@ GoRouter createAppRouter() {
                                 SucursalExpedienteScreen(sucursalId: state.pathParameters['id']!),
                           ),
                         ],
+                      ),
+                      GoRoute(
+                        path: 'puestos',
+                        builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.puestos),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                PuestoExpedienteScreen(puestoId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'areas',
+                        builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.areas),
                       ),
                     ],
                   )
