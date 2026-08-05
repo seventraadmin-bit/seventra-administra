@@ -15,3 +15,9 @@ class Industria extends Table with CatalogoColumns {}
 class TipoServicio extends Table with CatalogoColumns {}
 
 class Area extends Table with CatalogoColumns {}
+
+/// Modalidad de turno de una vigencia de Configuración comercial (Etapa
+/// 4G.1) — 24×24, 12×12, Nocturno, etc. Catálogo abierto (no un enum
+/// Dart) deliberadamente: RISEG puede necesitar agregar una modalidad
+/// nueva sin requerir una actualización de la aplicación.
+class TipoModalidadTurno extends Table with CatalogoColumns {}

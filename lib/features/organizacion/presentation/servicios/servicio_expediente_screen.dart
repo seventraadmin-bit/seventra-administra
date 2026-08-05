@@ -13,7 +13,9 @@ import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_errors.dart';
 
 import '../../organizacion_providers.dart';
@@ -21,6 +23,7 @@ import 'servicio_expediente_controller.dart';
 import 'servicio_expediente_form_controllers.dart';
 import 'servicio_expediente_state.dart';
 import 'widgets/servicio_auditoria_section.dart';
+import 'widgets/servicio_configuracion_comercial_section.dart';
 import 'widgets/servicio_datos_generales_section.dart';
 import 'widgets/servicio_direccion_operativa_section.dart';
 import 'widgets/servicio_referencias_section.dart';
@@ -427,6 +430,50 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     }
   }
 
+  Future<void> _agregarLineaComercial() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final puestos = await ref.read(puestoRepositoryProvider).listarActivos();
+    final modalidades = await ref.read(catalogoRepositoryProvider).listarModalidadesTurno();
+    if (!mounted) return;
+
+    var borrador = const LineaComercialBorrador(
+      puestoId: '',
+      modalidadTurnoId: '',
+      cantidadElementos: null,
+      precioUnitario: null,
+      tratamientoIva: null,
+      fechaInicioVigencia: null,
+    );
+
+    final resultado = await RisegDialog.showForm<CrearLineaComercialResultado?>(
+      context: context,
+      title: l10n.servicioComercialDialogoAltaTitulo,
+      confirmLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (_) => ServicioLineaComercialForm(
+        puestos: puestos,
+        modalidadesTurno: modalidades,
+        onCambio: (nuevo) => borrador = nuevo,
+      ),
+      onConfirm: () => _notifier.agregarLineaComercial(borrador),
+    );
+
+    if (!mounted) return;
+    switch (resultado) {
+      case CrearLineaComercialExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioComercialGuardadoExito);
+      case CrearLineaComercialErroresValidacion():
+        RisegFeedback.showError(context, l10n.servicioComercialErrorValidacion);
+      case CrearLineaComercialServicioNoDisponible():
+        RisegFeedback.showError(context, l10n.servicioComercialErrorServicioNoDisponible);
+      case CrearLineaComercialErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioComercialErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
   String _nombreEstatus(AppLocalizations l10n, EstatusServicio estatus) {
     return switch (estatus) {
       EstatusServicio.activo => l10n.servicioEstatusActivo,
@@ -617,6 +664,16 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
                   onEditarResponsableInterno: _editarResponsableInterno,
                   onAsignarSucursalAdministrativa: _asignarSucursalAdministrativa,
                   onQuitarSucursalAdministrativa: _quitarSucursalAdministrativa,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              RisegCard(
+                child: ServicioConfiguracionComercialSection(
+                  lineas: datos.lineasComerciales,
+                  subtotalComercial: datos.subtotalComercial,
+                  ivaVariaPorLinea: datos.ivaVariaPorLinea,
+                  deshabilitado: state.operandoComercial,
+                  onAgregarLinea: _agregarLineaComercial,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),

@@ -11,6 +11,7 @@ import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
@@ -78,7 +79,13 @@ void main() {
     asignarSucursalAdministrativa = AsignarSucursalAdministrativaUseCase(servicioRepo, sucursalRepo);
     guardarDireccionOperativa = GuardarDireccionOperativaServicioUseCase(servicioRepo);
     guardarResponsableInterno = GuardarResponsableInternoUseCase(servicioRepo);
-    obtenerExpediente = ObtenerExpedienteServicioUseCase(servicioRepo, clienteRepo, entidadFiscalRepo, sucursalRepo);
+    obtenerExpediente = ObtenerExpedienteServicioUseCase(
+      servicioRepo,
+      clienteRepo,
+      entidadFiscalRepo,
+      sucursalRepo,
+      ServicioComercialRepositoryImpl(db),
+    );
   });
 
   tearDown(() => db.close());

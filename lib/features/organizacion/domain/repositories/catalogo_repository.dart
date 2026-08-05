@@ -18,4 +18,6 @@ abstract interface class CatalogoRepository {
   Future<List<CatalogoItem>> listarTiposSucursal();
 
   Future<List<CatalogoItem>> listarTiposServicio();
+
+  Future<List<CatalogoItem>> listarModalidadesTurno();
 }

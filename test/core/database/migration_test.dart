@@ -21,7 +21,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 7;
+const _currentSchemaVersion = 8;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -1171,6 +1171,201 @@ void main() {
         ) VALUES (
           'servicio-entidad-invalida', 'SER-000001', '${cliente.id}', 'Servicio inválido',
           '${SeedIds.tipoServicioVigilanciaFija}', 'entidad-fiscal-inexistente', 'cotizado', 1700000000, 1700000000, 1700000000, 'activo'
+        );
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('8.json coincide con el esquema final de la Etapa 4G.1 (catálogo + líneas comerciales, tablas nuevas)', () async {
+    final schema = await verifier.schemaAt(8);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+
+    expect(
+      tablas,
+      containsAll(<String>[
+        'app_metadata', 'codigo_secuencia', 'tipo_sucursal', 'industria',
+        'tipo_servicio', 'area', 'direccion', 'medio_contacto', 'attachment',
+        'horario', 'horario_detalle', 'empresa', 'sucursal', 'cliente',
+        'contacto', 'servicio', 'ubicacion', 'puesto', 'entidad_fiscal',
+        'tipo_modalidad_turno', 'servicio_linea_comercial', 'servicio_linea_comercial_vigencia',
+      ]),
+    );
+
+    final sqlVigencia = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'servicio_linea_comercial_vigencia'")
+        .single['sql'] as String;
+    expect(sqlVigencia, contains('REFERENCES puesto (id) ON DELETE RESTRICT'));
+    expect(sqlVigencia, contains('REFERENCES tipo_modalidad_turno (id) ON DELETE RESTRICT'));
+    expect(sqlVigencia, contains('REFERENCES servicio_linea_comercial (id) ON DELETE RESTRICT'));
+    expect(sqlVigencia, contains('CHECK (cantidad_elementos > 0)'));
+    expect(sqlVigencia, contains('CHECK (precio_unitario > 0)'));
+    expect(sqlVigencia, contains('CHECK (fecha_fin_vigencia IS NULL OR fecha_fin_vigencia >= fecha_inicio_vigencia)'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 1 → versión actual siembra las 7 modalidades de turno confirmadas', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    schemaV1.rawDatabase.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final modalidades = await db.select(db.tipoModalidadTurno).get();
+    expect(
+      modalidades.map((m) => m.codigo).toSet(),
+      {'24X24', '24X48', '12X12', 'NOCTURNO', 'DIURNO', 'MIXTO', 'PERSONALIZADO'},
+    );
+
+    await db.close();
+  });
+
+  test('migración 7 → 8 conserva un Servicio real existente y crea las tablas de Configuración comercial vacías', () async {
+    final schemaV7 = await verifier.schemaAt(7);
+    final raw = schemaV7.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('tipo-servicio-real', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-real', 'SER-000001', 'cliente-real', 'Vigilancia Sportium Toluca', 'tipo-servicio-real',
+        'activo', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV7.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final servicios = await db.select(db.servicio).get();
+    expect(servicios, hasLength(1), reason: 'ningún Servicio real debe perderse en una migración aditiva');
+
+    final lineas = await db.select(db.servicioLineaComercial).get();
+    expect(lineas, isEmpty);
+    final modalidades = await db.select(db.tipoModalidadTurno).get();
+    expect(modalidades, hasLength(7));
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test('acepta una línea comercial con su primera vigencia tras la migración', () async {
+    final schemaV7 = await verifier.schemaAt(7);
+    final db = AppDatabase(schemaV7.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final servicio = await db.into(db.servicio).insertReturning(
+          ServicioCompanion.insert(
+            codigo: 'SER-000001',
+            clienteId: cliente.id,
+            nombre: 'Vigilancia Sportium Toluca',
+            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+            fechaInicio: DateTime(2026, 1, 1),
+          ),
+        );
+    final puesto = await db.into(db.puesto).insertReturning(
+          PuestoCompanion.insert(
+            codigo: 'PUE-0001',
+            nombre: 'Guardia',
+            areaId: SeedIds.areaOperaciones,
+            tipo: 'operativo',
+            nivelJerarquico: 5,
+          ),
+        );
+
+    final linea = await db.into(db.servicioLineaComercial).insertReturning(
+          ServicioLineaComercialCompanion.insert(servicioId: servicio.id),
+        );
+    final vigencia = await db.into(db.servicioLineaComercialVigencia).insertReturning(
+          ServicioLineaComercialVigenciaCompanion.insert(
+            lineaComercialId: linea.id,
+            puestoId: puesto.id,
+            modalidadTurnoId: SeedIds.modalidadTurno24x24,
+            cantidadElementos: 2,
+            precioUnitario: 1500000,
+            tratamientoIva: 'noAplica',
+            fechaInicioVigencia: DateTime(2026, 1, 1),
+          ),
+        );
+    expect(vigencia.cantidadElementos, 2);
+    expect(vigencia.precioUnitario, 1500000);
+
+    await db.close();
+  });
+
+  test('rechaza una línea comercial con Puesto o modalidad de turno inexistentes tras la migración', () async {
+    final schemaV7 = await verifier.schemaAt(7);
+    final db = AppDatabase(schemaV7.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final servicio = await db.into(db.servicio).insertReturning(
+          ServicioCompanion.insert(
+            codigo: 'SER-000001',
+            clienteId: cliente.id,
+            nombre: 'Vigilancia Sportium Toluca',
+            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+            fechaInicio: DateTime(2026, 1, 1),
+          ),
+        );
+    final linea = await db.into(db.servicioLineaComercial).insertReturning(
+          ServicioLineaComercialCompanion.insert(servicioId: servicio.id),
+        );
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO servicio_linea_comercial_vigencia (
+          id, linea_comercial_id, puesto_id, modalidad_turno_id, cantidad_elementos, precio_unitario,
+          tratamiento_iva, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'vigencia-puesto-invalido', '${linea.id}', 'puesto-inexistente', '${SeedIds.modalidadTurno24x24}',
+          2, 1500000, 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+        );
+      '''),
+      throwsA(anything),
+    );
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO servicio_linea_comercial_vigencia (
+          id, linea_comercial_id, puesto_id, modalidad_turno_id, cantidad_elementos, precio_unitario,
+          tratamiento_iva, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'vigencia-turno-invalido', '${linea.id}', '${SeedIds.areaOperaciones}', 'modalidad-inexistente',
+          2, 1500000, 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
         );
       '''),
       throwsA(anything),

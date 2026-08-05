@@ -9,6 +9,7 @@ import 'data/repositories/cliente_repository_impl.dart';
 import 'data/repositories/empresa_repository_impl.dart';
 import 'data/repositories/entidad_fiscal_repository_impl.dart';
 import 'data/repositories/puesto_repository_impl.dart';
+import 'data/repositories/servicio_comercial_repository_impl.dart';
 import 'data/repositories/servicio_repository_impl.dart';
 import 'data/repositories/sucursal_repository_impl.dart';
 import 'data/repositories/ubicacion_repository_impl.dart';
@@ -18,6 +19,7 @@ import 'domain/repositories/cliente_repository.dart';
 import 'domain/repositories/empresa_repository.dart';
 import 'domain/repositories/entidad_fiscal_repository.dart';
 import 'domain/repositories/puesto_repository.dart';
+import 'domain/repositories/servicio_comercial_repository.dart';
 import 'domain/repositories/servicio_repository.dart';
 import 'domain/repositories/sucursal_repository.dart';
 import 'domain/repositories/ubicacion_repository.dart';
@@ -41,6 +43,7 @@ import 'domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'domain/usecases/crear_area_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
 import 'domain/usecases/crear_entidad_fiscal_usecase.dart';
+import 'domain/usecases/crear_linea_comercial_usecase.dart';
 import 'domain/usecases/crear_puesto_usecase.dart';
 import 'domain/usecases/crear_servicio_usecase.dart';
 import 'domain/usecases/crear_sucursal_usecase.dart';
@@ -53,6 +56,7 @@ import 'domain/usecases/guardar_expediente_cliente_usecase.dart';
 import 'domain/usecases/guardar_expediente_empresa_usecase.dart';
 import 'domain/usecases/guardar_expediente_sucursal_usecase.dart';
 import 'domain/usecases/guardar_responsable_interno_usecase.dart';
+import 'domain/usecases/linea_comercial_validator.dart';
 import 'domain/usecases/listar_areas_activas_usecase.dart';
 import 'domain/usecases/listar_areas_usecase.dart';
 import 'domain/usecases/listar_clientes_usecase.dart';
@@ -120,6 +124,10 @@ final areaRepositoryProvider = Provider<AreaRepository>((ref) {
 
 final entidadFiscalRepositoryProvider = Provider<EntidadFiscalRepository>((ref) {
   return EntidadFiscalRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final servicioComercialRepositoryProvider = Provider<ServicioComercialRepository>((ref) {
+  return ServicioComercialRepositoryImpl(ref.watch(appDatabaseProvider));
 });
 
 final obtenerEmpresaActivaUseCaseProvider = Provider<ObtenerEmpresaActivaUseCase>((ref) {
@@ -330,6 +338,7 @@ final obtenerExpedienteServicioUseCaseProvider = Provider<ObtenerExpedienteServi
     ref.watch(clienteRepositoryProvider),
     ref.watch(entidadFiscalRepositoryProvider),
     ref.watch(sucursalRepositoryProvider),
+    ref.watch(servicioComercialRepositoryProvider),
   );
 });
 
@@ -351,4 +360,20 @@ final guardarDireccionOperativaServicioUseCaseProvider = Provider<GuardarDirecci
 
 final guardarResponsableInternoUseCaseProvider = Provider<GuardarResponsableInternoUseCase>((ref) {
   return GuardarResponsableInternoUseCase(ref.watch(servicioRepositoryProvider));
+});
+
+final lineaComercialValidatorProvider = Provider<LineaComercialValidator>((ref) {
+  return LineaComercialValidator(
+    ref.watch(puestoRepositoryProvider),
+    ref.watch(catalogoRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+  );
+});
+
+final crearLineaComercialUseCaseProvider = Provider<CrearLineaComercialUseCase>((ref) {
+  return CrearLineaComercialUseCase(
+    ref.watch(servicioComercialRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(lineaComercialValidatorProvider),
+  );
 });

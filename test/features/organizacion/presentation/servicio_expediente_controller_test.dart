@@ -11,8 +11,10 @@ import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_responsable_cliente_usecase.dart';
@@ -20,12 +22,14 @@ import 'package:riseg_one/features/organizacion/domain/usecases/asignar_sucursal
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_entidad_fiscal_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_sucursal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/entidad_fiscal_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/organizacion/presentation/servicios/servicio_expediente_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/servicios/servicio_expediente_state.dart';
@@ -343,6 +347,58 @@ void main() {
         container.read(servicioExpedienteControllerProvider(servicioId)).datos?.servicio.responsableInterno,
         isNull,
       );
+    });
+  });
+
+  group('agregarLineaComercial', () {
+    test('agrega una línea comercial válida y refresca el subtotal', () async {
+      await esperarCargaInicial();
+      final guardia = await PuestoRepositoryImpl(db).crear(
+        PuestoCompanion.insert(
+          codigo: 'PUE-0001',
+          nombre: 'Guardia',
+          areaId: SeedIds.areaOperaciones,
+          tipo: 'operativo',
+          nivelJerarquico: 5,
+        ),
+      );
+      final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+
+      final resultado = await notifier.agregarLineaComercial(
+        LineaComercialBorrador(
+          puestoId: guardia.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 2,
+          precioUnitario: 1500000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CrearLineaComercialExitoso>());
+      final state = container.read(servicioExpedienteControllerProvider(servicioId));
+      expect(state.datos?.lineasComerciales, hasLength(1));
+      expect(state.datos?.subtotalComercial, 3000000);
+      expect(state.operandoComercial, isFalse);
+    });
+
+    test('rechaza un Puesto inexistente sin persistir nada', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+
+      final resultado = await notifier.agregarLineaComercial(
+        LineaComercialBorrador(
+          puestoId: 'puesto-inexistente',
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 2,
+          precioUnitario: 1500000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CrearLineaComercialErroresValidacion>());
+      expect(container.read(servicioExpedienteControllerProvider(servicioId)).datos?.lineasComerciales, isEmpty);
     });
   });
 }

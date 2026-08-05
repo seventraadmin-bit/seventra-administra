@@ -12,6 +12,7 @@ class ServicioExpedienteState {
     this.guardando = false,
     this.cambiandoEstatus = false,
     this.operandoRelacion = false,
+    this.operandoComercial = false,
     this.tieneCambiosSinGuardar = false,
     this.modo = ServicioExpedienteModo.consulta,
     this.datos,
@@ -29,6 +30,11 @@ class ServicioExpedienteState {
   /// Dirección operativa) contra doble-clic — mismo patrón que
   /// `operandoEntidadFiscal` en `ClienteExpedienteState`.
   final bool operandoRelacion;
+
+  /// Bloquea el alta de una línea comercial (Etapa 4G.1) contra
+  /// doble-clic — independiente de `operandoRelacion` porque es un
+  /// dominio propio (Configuración comercial), no una vinculación.
+  final bool operandoComercial;
   final bool tieneCambiosSinGuardar;
   final ServicioExpedienteModo modo;
   final ServicioExpedienteData? datos;
@@ -41,6 +47,7 @@ class ServicioExpedienteState {
     bool? guardando,
     bool? cambiandoEstatus,
     bool? operandoRelacion,
+    bool? operandoComercial,
     bool? tieneCambiosSinGuardar,
     ServicioExpedienteModo? modo,
     ServicioExpedienteData? datos,
@@ -53,6 +60,7 @@ class ServicioExpedienteState {
       guardando: guardando ?? this.guardando,
       cambiandoEstatus: cambiandoEstatus ?? this.cambiandoEstatus,
       operandoRelacion: operandoRelacion ?? this.operandoRelacion,
+      operandoComercial: operandoComercial ?? this.operandoComercial,
       tieneCambiosSinGuardar: tieneCambiosSinGuardar ?? this.tieneCambiosSinGuardar,
       modo: modo ?? this.modo,
       datos: datos ?? this.datos,

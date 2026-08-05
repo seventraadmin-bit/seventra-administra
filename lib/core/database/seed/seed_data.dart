@@ -129,6 +129,36 @@ Future<void> _seedArea(AppDatabase db) async {
   }
 }
 
+/// Deliberadamente fuera de `runSeed()`: esa función corre sin
+/// condiciones en cualquier `onUpgrade`, incluidas las pruebas de
+/// migración que apuntan a versiones nominales históricas (5, 6, 7)
+/// cuyo snapshot físico nunca tuvo `tipo_modalidad_turno` — llamarla
+/// desde ahí rompería esas pruebas con "no such table". Se llama
+/// explícitamente solo donde la tabla ya existe: en `onCreate`
+/// (`m.createAll()` ya la creó) y en el paso `to >= 8` de `onUpgrade`
+/// (justo después de crearla) — ver `app_database.dart`.
+Future<void> seedTipoModalidadTurno(AppDatabase db) async {
+  // Lista confirmada por Marlon para la Etapa 4G.1 — no se agrega
+  // ninguna modalidad no solicitada. "Personalizado" cubre casos que no
+  // encajan en las modalidades fijas sin forzar una elección incorrecta.
+  final filas = [
+    (SeedIds.modalidadTurno24x24, '24X24', '24×24'),
+    (SeedIds.modalidadTurno24x48, '24X48', '24×48'),
+    (SeedIds.modalidadTurno12x12, '12X12', '12×12'),
+    (SeedIds.modalidadTurnoNocturno, 'NOCTURNO', 'Nocturno'),
+    (SeedIds.modalidadTurnoDiurno, 'DIURNO', 'Diurno'),
+    (SeedIds.modalidadTurnoMixto, 'MIXTO', 'Mixto'),
+    (SeedIds.modalidadTurnoPersonalizado, 'PERSONALIZADO', 'Personalizado'),
+  ];
+
+  for (final (id, codigo, nombre) in filas) {
+    await db.into(db.tipoModalidadTurno).insert(
+          TipoModalidadTurnoCompanion.insert(id: id, codigo: codigo, nombre: nombre),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+}
+
 Future<void> _seedEmpresa(AppDatabase db) async {
   // Sin datos legales inventados: razonSocial/rfc/representanteLegal/
   // eslogan quedan pendientes de captura real en la Etapa 4B.

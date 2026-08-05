@@ -17,7 +17,9 @@ import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_entidad_fiscal_usecase.dart';
@@ -71,6 +73,18 @@ Future<SucursalData> _crearSucursal(AppDatabase db) async {
   final crear = CrearSucursalUseCase(SucursalRepositoryImpl(db), GenerarCodigoUseCase(CodigoSecuenciaService(db)));
   final r = await crear.ejecutar(nombre: 'Sucursal Centro', tipoSucursalId: SeedIds.tipoSucursalBaseOperativa);
   return r.when(ok: (s) => s, failure: (_) => throw StateError('no debería fallar'));
+}
+
+Future<PuestoData> _crearPuesto(AppDatabase db) {
+  return PuestoRepositoryImpl(db).crear(
+    PuestoCompanion.insert(
+      codigo: 'PUE-0001',
+      nombre: 'Guardia',
+      areaId: SeedIds.areaOperaciones,
+      tipo: 'operativo',
+      nivelJerarquico: 5,
+    ),
+  );
 }
 
 Future<void> _pumpScreen(WidgetTester tester, AppDatabase db, String servicioId) async {
@@ -326,5 +340,56 @@ void main() {
       find.descendant(of: find.byKey(const Key('servicio_boton_activar')), matching: find.byType(OutlinedButton)),
     );
     expect(botonActivar.onPressed, isNotNull);
+  });
+
+  testWidgets('Configuración comercial sin líneas muestra el mensaje vacío', (tester) async {
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    expect(find.text(l10n.servicioComercialSinLineas), findsOneWidget);
+    expect(find.text(l10n.servicioComercialSubtotalTitulo), findsOneWidget);
+  });
+
+  testWidgets('agregar una línea comercial vía el diálogo muestra el subtotal', (tester) async {
+    await _crearPuesto(db);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.ensureVisible(find.byKey(const Key('servicio_boton_agregar_linea_comercial')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('servicio_boton_agregar_linea_comercial')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guardia').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('24×24').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), '2');
+    await tester.enterText(find.byType(TextFormField).at(1), '15000');
+
+    await tester.tap(find.byType(DropdownButtonFormField<TratamientoIva>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.servicioComercialTratamientoIvaMasIva).last);
+    await tester.pumpAndSettle();
+
+    final campoFechaInicio = find.byType(TextFormField).at(2);
+    await tester.tap(campoFechaInicio);
+    await tester.pumpAndSettle();
+    var dialogoSelector = find.byType(Dialog).last;
+    await tester.tap(find.descendant(of: dialogoSelector, matching: find.byType(TextButton)).last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioComercialGuardadoExito), findsOneWidget);
+    expect(find.text(l10n.servicioComercialSinLineas), findsNothing);
+    expect(find.text(r'$30,000.00'), findsWidgets);
   });
 }

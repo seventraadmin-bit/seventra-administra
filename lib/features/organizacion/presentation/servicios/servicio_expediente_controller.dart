@@ -7,8 +7,10 @@ import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_expediente_data.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 
@@ -182,6 +184,19 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     return resultado;
   }
 
+  Future<CrearLineaComercialResultado?> agregarLineaComercial(LineaComercialBorrador borrador) async {
+    if (state.operandoComercial) return null;
+    state = state.copyWith(operandoComercial: true);
+
+    final resultado =
+        await ref.read(crearLineaComercialUseCaseProvider).ejecutar(servicioId: servicioId, borrador: borrador);
+    if (resultado is CrearLineaComercialExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoComercial: false);
+    return resultado;
+  }
+
   Future<bool> guardarResponsableInterno(String? texto) async {
     if (state.operandoRelacion) return false;
     state = state.copyWith(operandoRelacion: true);
@@ -213,6 +228,7 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
       entidadFiscal: datosActuales.entidadFiscal,
       responsableCliente: datosActuales.responsableCliente,
       sucursalAdministrativa: datosActuales.sucursalAdministrativa,
+      lineasComerciales: datosActuales.lineasComerciales,
     );
   }
 

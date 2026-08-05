@@ -10,6 +10,8 @@ import '../../features/organizacion/data/tables/contacto_table.dart';
 import '../../features/organizacion/data/tables/empresa_table.dart';
 import '../../features/organizacion/data/tables/entidad_fiscal_table.dart';
 import '../../features/organizacion/data/tables/puesto_table.dart';
+import '../../features/organizacion/data/tables/servicio_linea_comercial_table.dart';
+import '../../features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import '../../features/organizacion/data/tables/servicio_table.dart';
 import '../../features/organizacion/data/tables/sucursal_table.dart';
 import '../../features/organizacion/data/tables/ubicacion_table.dart';
@@ -52,6 +54,7 @@ class AppMetadata extends Table {
   Industria,
   TipoServicio,
   Area,
+  TipoModalidadTurno,
   Direccion,
   MedioContacto,
   Attachment,
@@ -65,12 +68,14 @@ class AppMetadata extends Table {
   Contacto,
   Servicio,
   EntidadFiscal,
+  ServicioLineaComercial,
+  ServicioLineaComercialVigencia,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -78,6 +83,7 @@ class AppDatabase extends _$AppDatabase {
       onCreate: (Migrator m) async {
         await m.createAll();
         await runSeed(this);
+        await seedTipoModalidadTurno(this);
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from == 1) {
@@ -88,6 +94,28 @@ class AppDatabase extends _$AppDatabase {
           // también por `migrarClienteContactoV4`/`migrarDireccionV5`
           // más abajo.
           await _createEtapa4ATables(m);
+        }
+        // Aditiva (Etapa 4G.1): catálogo TipoModalidadTurno + tablas
+        // ServicioLineaComercial/ServicioLineaComercialVigencia — 3
+        // tablas completamente nuevas, ninguna existió en ninguna etapa
+        // previa, así que `from <= 7` (sin necesidad de acotar un
+        // origen exacto) es seguro: ningún otro paso de este `onUpgrade`
+        // pudo haberlas creado ya.
+        //
+        // `seedTipoModalidadTurno` se llama aquí mismo, no dentro de
+        // `runSeed()`: `runSeed()` corre sin condiciones para cualquier
+        // `to`, incluidas las pruebas de migración que apuntan a
+        // versiones nominales históricas (5, 6, 7) — su snapshot físico
+        // nunca tuvo esta tabla, así que sembrarla desde `runSeed()`
+        // rompería esas pruebas con "no such table" en cuanto `to` deja
+        // de ser 8 (recordatorio: `to` refleja el objetivo nominal real
+        // pasado a `SchemaVerifier.migrateAndValidate`, no siempre el
+        // `schemaVersion` de hoy).
+        if (to >= 8 && from <= 7) {
+          await m.createTable(tipoModalidadTurno);
+          await m.createTable(servicioLineaComercial);
+          await m.createTable(servicioLineaComercialVigencia);
+          await seedTipoModalidadTurno(this);
         }
         await runSeed(this);
         // Puramente de datos (sin cambio de tabla): unifica el formato de

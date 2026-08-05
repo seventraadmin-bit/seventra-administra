@@ -33,4 +33,13 @@ abstract final class SeedIds {
 
   // Empresa
   static const empresaRiseg = '00000000-0000-4000-8000-000000000401';
+
+  // TipoModalidadTurno
+  static const modalidadTurno24x24 = '00000000-0000-4000-8000-000000000501';
+  static const modalidadTurno24x48 = '00000000-0000-4000-8000-000000000502';
+  static const modalidadTurno12x12 = '00000000-0000-4000-8000-000000000503';
+  static const modalidadTurnoNocturno = '00000000-0000-4000-8000-000000000504';
+  static const modalidadTurnoDiurno = '00000000-0000-4000-8000-000000000505';
+  static const modalidadTurnoMixto = '00000000-0000-4000-8000-000000000506';
+  static const modalidadTurnoPersonalizado = '00000000-0000-4000-8000-000000000507';
 }
