@@ -10,11 +10,12 @@ import 'package:riseg_one/features/organizacion/presentation/servicios/servicio_
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
-final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
 
-/// Sección "Datos generales" de Servicio — código y fechas de auditoría
-/// siempre de solo lectura (mismo patrón que Cliente/Puesto); nombre,
-/// Tipo de Servicio, fecha de inicio y observaciones editables.
+/// Sección "Datos generales" de Servicio — código siempre de solo
+/// lectura; nombre, Tipo de Servicio, fecha de inicio y observaciones
+/// editables. Las fechas de auditoría viven en `ServicioAuditoriaSection`
+/// (widget propio desde la Etapa 4F.2, para que el expediente crezca
+/// agregando secciones sin reestructurar las existentes).
 class ServicioDatosGeneralesSection extends StatelessWidget {
   const ServicioDatosGeneralesSection({
     required this.modo,
@@ -61,10 +62,6 @@ class ServicioDatosGeneralesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final camposAuditoria = [
-      CampoConsulta(label: l10n.servicioAuditoriaCreado, value: _formatoFechaHora.format(servicio.createdAt)),
-      CampoConsulta(label: l10n.servicioAuditoriaActualizado, value: _formatoFechaHora.format(servicio.updatedAt)),
-    ];
 
     if (modo == ServicioExpedienteModo.consulta) {
       return RisegFormSection(
@@ -75,7 +72,6 @@ class ServicioDatosGeneralesSection extends StatelessWidget {
           CampoConsulta(label: l10n.servicioCampoTipoServicio, value: _nombreTipoServicio(servicio.tipoServicioId)),
           CampoConsulta(label: l10n.servicioCampoFechaInicio, value: _formatoFecha.format(servicio.fechaInicio)),
           CampoConsulta(label: l10n.servicioCampoObservaciones, value: servicio.observaciones),
-          ...camposAuditoria,
         ],
       );
     }
@@ -112,7 +108,6 @@ class ServicioDatosGeneralesSection extends StatelessWidget {
           enabled: habilitado,
           onChanged: (_) => onCampoModificado(),
         ),
-        ...camposAuditoria,
       ],
     );
   }

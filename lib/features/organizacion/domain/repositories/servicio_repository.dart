@@ -1,6 +1,8 @@
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 
+import '../shared/direccion_input.dart';
+
 /// Fila de Servicio ya acompañada del nombre de su Cliente y de su Tipo
 /// de Servicio — lo que necesita el listado sin que la UI tenga que
 /// resolver esas dos relaciones por su cuenta (mismo motivo que
@@ -56,4 +58,34 @@ abstract interface class ServicioRepository {
   /// (esa es de la Etapa 4F.2). Usada por `CambiarEstatusServicioUseCase`
   /// para bloquear la transición a `activo`.
   Future<bool> tieneDireccionOperativaActiva(String servicioId);
+
+  /// La Dirección operativa activa de este Servicio, si existe — para
+  /// mostrarla en el expediente (Etapa 4F.2).
+  Future<DireccionData?> obtenerDireccionOperativa(String servicioId);
+
+  /// Captura/edita/limpia la Dirección operativa — mismo patrón de
+  /// upsert que `EntidadFiscalRepository.guardarDomicilioFiscal`: busca
+  /// la fila existente sin importar `cicloVidaRegistro` (a lo más una,
+  /// garantizado por el `UNIQUE` real de `servicio_id`), reactiva y
+  /// actualiza si existe, inserta solo si nunca existió — nunca un
+  /// segundo `INSERT`, que además violaría ese `UNIQUE`. `input == null`
+  /// archiva la existente (si había alguna) sin borrarla físicamente.
+  Future<DireccionData?> guardarDireccionOperativa(String servicioId, DireccionInput? input);
+
+  /// `entidadFiscalId == null` quita la asignación. Nunca valida
+  /// pertenencia al mismo Cliente ni estado activo — eso vive en
+  /// `AsignarEntidadFiscalAServicioUseCase`.
+  Future<ServicioData> asignarEntidadFiscal({required String servicioId, required String? entidadFiscalId});
+
+  /// `contactoId == null` quita la asignación. Nunca valida pertenencia
+  /// ni estado — eso vive en `AsignarResponsableClienteUseCase`.
+  Future<ServicioData> asignarResponsableCliente({required String servicioId, required String? contactoId});
+
+  /// `sucursalId == null` quita la asignación. Nunca valida estado —
+  /// eso vive en `AsignarSucursalAdministrativaUseCase`.
+  Future<ServicioData> asignarSucursalAdministrativa({required String servicioId, required String? sucursalId});
+
+  /// Texto libre transitorio — sin validación de dominio más allá de
+  /// recorte/`vacío→null` (ver `GuardarResponsableInternoUseCase`).
+  Future<ServicioData> guardarResponsableInterno({required String servicioId, required String? texto});
 }

@@ -7,7 +7,7 @@ part of 'servicio_expediente_controller.dart';
 // **************************************************************************
 
 String _$servicioExpedienteControllerHash() =>
-    r'd8d469680633f49e65252833e3c89a0a846b5b55';
+    r'93fa912251347b98ebc18ebfe9684f1f97364aa8';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -39,8 +39,12 @@ abstract class _$ServicioExpedienteController
 
 /// Controlador de la pantalla de expediente de Servicio — un `family`
 /// por `servicioId`. Mismo diseño que `ClienteExpedienteController`; el
-/// cambio de estatus es una acción independiente del guardado del
-/// formulario principal.
+/// cambio de estatus y las 5 acciones de vinculación (Entidad fiscal,
+/// Responsable del Cliente, Sucursal administrativa, Responsable
+/// interno, Dirección operativa) son todas independientes del guardado
+/// del formulario principal — cada una refresca el expediente completo
+/// (`_recargarDatos`) sin tocar `modo` ni los errores del formulario de
+/// Datos generales/Referencias.
 ///
 /// Copied from [ServicioExpedienteController].
 @ProviderFor(ServicioExpedienteController)
@@ -49,24 +53,36 @@ const servicioExpedienteControllerProvider =
 
 /// Controlador de la pantalla de expediente de Servicio — un `family`
 /// por `servicioId`. Mismo diseño que `ClienteExpedienteController`; el
-/// cambio de estatus es una acción independiente del guardado del
-/// formulario principal.
+/// cambio de estatus y las 5 acciones de vinculación (Entidad fiscal,
+/// Responsable del Cliente, Sucursal administrativa, Responsable
+/// interno, Dirección operativa) son todas independientes del guardado
+/// del formulario principal — cada una refresca el expediente completo
+/// (`_recargarDatos`) sin tocar `modo` ni los errores del formulario de
+/// Datos generales/Referencias.
 ///
 /// Copied from [ServicioExpedienteController].
 class ServicioExpedienteControllerFamily
     extends Family<ServicioExpedienteState> {
   /// Controlador de la pantalla de expediente de Servicio — un `family`
   /// por `servicioId`. Mismo diseño que `ClienteExpedienteController`; el
-  /// cambio de estatus es una acción independiente del guardado del
-  /// formulario principal.
+  /// cambio de estatus y las 5 acciones de vinculación (Entidad fiscal,
+  /// Responsable del Cliente, Sucursal administrativa, Responsable
+  /// interno, Dirección operativa) son todas independientes del guardado
+  /// del formulario principal — cada una refresca el expediente completo
+  /// (`_recargarDatos`) sin tocar `modo` ni los errores del formulario de
+  /// Datos generales/Referencias.
   ///
   /// Copied from [ServicioExpedienteController].
   const ServicioExpedienteControllerFamily();
 
   /// Controlador de la pantalla de expediente de Servicio — un `family`
   /// por `servicioId`. Mismo diseño que `ClienteExpedienteController`; el
-  /// cambio de estatus es una acción independiente del guardado del
-  /// formulario principal.
+  /// cambio de estatus y las 5 acciones de vinculación (Entidad fiscal,
+  /// Responsable del Cliente, Sucursal administrativa, Responsable
+  /// interno, Dirección operativa) son todas independientes del guardado
+  /// del formulario principal — cada una refresca el expediente completo
+  /// (`_recargarDatos`) sin tocar `modo` ni los errores del formulario de
+  /// Datos generales/Referencias.
   ///
   /// Copied from [ServicioExpedienteController].
   ServicioExpedienteControllerProvider call(String servicioId) {
@@ -97,8 +113,12 @@ class ServicioExpedienteControllerFamily
 
 /// Controlador de la pantalla de expediente de Servicio — un `family`
 /// por `servicioId`. Mismo diseño que `ClienteExpedienteController`; el
-/// cambio de estatus es una acción independiente del guardado del
-/// formulario principal.
+/// cambio de estatus y las 5 acciones de vinculación (Entidad fiscal,
+/// Responsable del Cliente, Sucursal administrativa, Responsable
+/// interno, Dirección operativa) son todas independientes del guardado
+/// del formulario principal — cada una refresca el expediente completo
+/// (`_recargarDatos`) sin tocar `modo` ni los errores del formulario de
+/// Datos generales/Referencias.
 ///
 /// Copied from [ServicioExpedienteController].
 class ServicioExpedienteControllerProvider
@@ -109,8 +129,12 @@ class ServicioExpedienteControllerProvider
         > {
   /// Controlador de la pantalla de expediente de Servicio — un `family`
   /// por `servicioId`. Mismo diseño que `ClienteExpedienteController`; el
-  /// cambio de estatus es una acción independiente del guardado del
-  /// formulario principal.
+  /// cambio de estatus y las 5 acciones de vinculación (Entidad fiscal,
+  /// Responsable del Cliente, Sucursal administrativa, Responsable
+  /// interno, Dirección operativa) son todas independientes del guardado
+  /// del formulario principal — cada una refresca el expediente completo
+  /// (`_recargarDatos`) sin tocar `modo` ni los errores del formulario de
+  /// Datos generales/Referencias.
   ///
   /// Copied from [ServicioExpedienteController].
   ServicioExpedienteControllerProvider(String servicioId)

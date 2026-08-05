@@ -20,12 +20,16 @@ class ServicioBorrador {
     required this.tipoServicioId,
     required this.fechaInicio,
     this.observaciones,
+    this.referenciaComercial,
+    this.referenciaContractual,
   });
 
   final String nombre;
   final String tipoServicioId;
   final DateTime? fechaInicio;
   final String? observaciones;
+  final String? referenciaComercial;
+  final String? referenciaContractual;
 }
 
 /// Servicio ya validado y normalizado — listo para persistir.
@@ -35,12 +39,16 @@ class ServicioValidado {
     required this.tipoServicioId,
     required this.fechaInicio,
     this.observaciones,
+    this.referenciaComercial,
+    this.referenciaContractual,
   });
 
   final String nombre;
   final String tipoServicioId;
   final DateTime fechaInicio;
   final String? observaciones;
+  final String? referenciaComercial;
+  final String? referenciaContractual;
 }
 
 /// Validación compartida entre alta y edición de Servicio — nunca
@@ -106,16 +114,19 @@ class ServicioValidator {
       return (resultado: null, errores: errores);
     }
 
-    final observacionesNormalizadas = borrador.observaciones?.trim();
+    String? vacioANull(String? valor) {
+      final recortado = valor?.trim();
+      return (recortado == null || recortado.isEmpty) ? null : recortado;
+    }
 
     return (
       resultado: ServicioValidado(
         nombre: nombre,
         tipoServicioId: tipoServicioId,
         fechaInicio: fechaInicio!,
-        observaciones: (observacionesNormalizadas == null || observacionesNormalizadas.isEmpty)
-            ? null
-            : observacionesNormalizadas,
+        observaciones: vacioANull(borrador.observaciones),
+        referenciaComercial: vacioANull(borrador.referenciaComercial),
+        referenciaContractual: vacioANull(borrador.referenciaContractual),
       ),
       errores: const <ErrorCampoServicio>[],
     );

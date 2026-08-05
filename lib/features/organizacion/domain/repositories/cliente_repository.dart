@@ -45,4 +45,11 @@ abstract interface class ClienteRepository {
   Future<ContactoData> archivarContacto(String id);
 
   Future<List<ContactoData>> obtenerContactos(String clienteId);
+
+  /// A diferencia de `obtenerContactos` (que solo devuelve activos), este
+  /// método no filtra por `cicloVidaRegistro` — lo necesita cualquier
+  /// pantalla que deba seguir mostrando un Contacto ya asignado como
+  /// responsable aunque después se haya archivado (ver
+  /// `ServicioExpedienteScreen`, Etapa 4F.2).
+  Future<ContactoData?> obtenerContactoPorId(String id);
 }

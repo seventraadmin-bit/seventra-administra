@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -20,7 +21,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 6;
+const _currentSchemaVersion = 7;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -984,6 +985,192 @@ void main() {
         ) VALUES (
           'servicio-sucursal-invalida', 'SER-000002', '${cliente.id}', 'Servicio inválido',
           '${SeedIds.tipoServicioVigilanciaFija}', 'sucursal-inexistente', 'cotizado', 1700000000, 1700000000, 1700000000, 'activo'
+        );
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('7.json coincide con el esquema final de la Etapa 4F.2 (columnas nuevas de Servicio, todas nullable)', () async {
+    final schema = await verifier.schemaAt(7);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+
+    // Sin tablas nuevas — 4F.2 solo agrega columnas a Servicio.
+    expect(
+      tablas,
+      containsAll(<String>[
+        'app_metadata', 'codigo_secuencia', 'tipo_sucursal', 'industria',
+        'tipo_servicio', 'area', 'direccion', 'medio_contacto', 'attachment',
+        'horario', 'horario_detalle', 'empresa', 'sucursal', 'cliente',
+        'contacto', 'servicio', 'ubicacion', 'puesto', 'entidad_fiscal',
+      ]),
+    );
+
+    final columnasServicio = await Future.wait(
+      ['entidad_fiscal_id', 'responsable_interno', 'referencia_comercial', 'referencia_contractual'].map(
+        (nombre) async {
+          final columnas = schema.rawDatabase.select('PRAGMA table_info(servicio)');
+          return columnas.firstWhere((c) => c['name'] == nombre);
+        },
+      ),
+    );
+    for (final columna in columnasServicio) {
+      expect(columna['notnull'], 0, reason: '${columna['name']} debe ser nullable');
+    }
+
+    final sqlServicio = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'servicio'")
+        .single['sql'] as String;
+    expect(sqlServicio, contains('"entidad_fiscal_id" TEXT NULL REFERENCES entidad_fiscal (id) ON DELETE RESTRICT'));
+    expect(sqlServicio, contains('"responsable_interno" TEXT NULL'));
+    expect(sqlServicio, contains('"referencia_comercial" TEXT NULL'));
+    expect(sqlServicio, contains('"referencia_contractual" TEXT NULL'));
+    // Las columnas/FKs/CHECK ya existentes desde la Etapa 4F.1 siguen
+    // intactas — una migración aditiva nunca debería tocarlas.
+    expect(sqlServicio, contains('"sucursal_administrativa_id" TEXT NULL REFERENCES sucursal (id) ON DELETE RESTRICT'));
+    expect(sqlServicio, contains('CHECK (elementos_autorizados >= 0)'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 1 → versión actual crea Servicio ya con las columnas de la Etapa 4F.2', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    schemaV1.rawDatabase.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final servicio = await db.into(db.servicio).insertReturning(
+          ServicioCompanion.insert(
+            codigo: 'SER-000001',
+            clienteId: cliente.id,
+            nombre: 'Vigilancia Sportium Toluca',
+            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+            fechaInicio: DateTime(2026, 1, 1),
+          ),
+        );
+    expect(servicio.entidadFiscalId, isNull);
+    expect(servicio.responsableInterno, isNull);
+    expect(servicio.referenciaComercial, isNull);
+    expect(servicio.referenciaContractual, isNull);
+
+    await db.close();
+  });
+
+  test('migración 6 → 7 conserva un Servicio real existente, con las columnas nuevas en NULL', () async {
+    final schemaV6 = await verifier.schemaAt(6);
+    final raw = schemaV6.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('tipo-servicio-real', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-real', 'SER-000001', 'cliente-real', 'Vigilancia Sportium Toluca', 'tipo-servicio-real',
+        'activo', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV6.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final servicios = await db.select(db.servicio).get();
+    expect(servicios, hasLength(1), reason: 'ningún Servicio real debe perderse en una migración aditiva');
+    final servicio = servicios.single;
+    expect(servicio.id, 'servicio-real');
+    expect(servicio.entidadFiscalId, isNull);
+    expect(servicio.responsableInterno, isNull);
+    expect(servicio.referenciaComercial, isNull);
+    expect(servicio.referenciaContractual, isNull);
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test('acepta un Servicio con entidadFiscalId/responsableInterno/referencias tras la migración', () async {
+    final schemaV6 = await verifier.schemaAt(6);
+    final db = AppDatabase(schemaV6.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final entidad = await db.into(db.entidadFiscal).insertReturning(
+          EntidadFiscalCompanion.insert(
+            codigo: 'ENF-0001',
+            clienteId: cliente.id,
+            razonSocial: 'Sportium SA de CV',
+            rfc: 'SPO010101AA1',
+          ),
+        );
+    final servicio = await db.into(db.servicio).insertReturning(
+          ServicioCompanion.insert(
+            codigo: 'SER-000001',
+            clienteId: cliente.id,
+            nombre: 'Vigilancia Sportium Toluca',
+            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+            fechaInicio: DateTime(2026, 1, 1),
+            entidadFiscalId: Value(entidad.id),
+            responsableInterno: const Value('Juan Pérez'),
+            referenciaComercial: const Value('COT-2026-001'),
+            referenciaContractual: const Value('CTR-2026-001'),
+          ),
+        );
+    expect(servicio.entidadFiscalId, entidad.id);
+    expect(servicio.responsableInterno, 'Juan Pérez');
+    expect(servicio.referenciaComercial, 'COT-2026-001');
+    expect(servicio.referenciaContractual, 'CTR-2026-001');
+
+    await db.close();
+  });
+
+  test('rechaza un Servicio con entidadFiscalId inexistente tras la migración', () async {
+    final schemaV6 = await verifier.schemaAt(6);
+    final db = AppDatabase(schemaV6.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO servicio (
+          id, codigo, cliente_id, nombre, tipo_servicio_id, entidad_fiscal_id, estatus, fecha_inicio,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'servicio-entidad-invalida', 'SER-000001', '${cliente.id}', 'Servicio inválido',
+          '${SeedIds.tipoServicioVigilanciaFija}', 'entidad-fiscal-inexistente', 'cotizado', 1700000000, 1700000000, 1700000000, 'activo'
         );
       '''),
       throwsA(anything),

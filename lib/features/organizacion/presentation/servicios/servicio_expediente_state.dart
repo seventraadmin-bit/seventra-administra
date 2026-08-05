@@ -11,6 +11,7 @@ class ServicioExpedienteState {
     this.cargando = true,
     this.guardando = false,
     this.cambiandoEstatus = false,
+    this.operandoRelacion = false,
     this.tieneCambiosSinGuardar = false,
     this.modo = ServicioExpedienteModo.consulta,
     this.datos,
@@ -22,6 +23,12 @@ class ServicioExpedienteState {
   final bool cargando;
   final bool guardando;
   final bool cambiandoEstatus;
+
+  /// Bloquea las 5 acciones de vinculación (Entidad fiscal, Responsable
+  /// del Cliente, Sucursal administrativa, Responsable interno,
+  /// Dirección operativa) contra doble-clic — mismo patrón que
+  /// `operandoEntidadFiscal` en `ClienteExpedienteState`.
+  final bool operandoRelacion;
   final bool tieneCambiosSinGuardar;
   final ServicioExpedienteModo modo;
   final ServicioExpedienteData? datos;
@@ -33,6 +40,7 @@ class ServicioExpedienteState {
     bool? cargando,
     bool? guardando,
     bool? cambiandoEstatus,
+    bool? operandoRelacion,
     bool? tieneCambiosSinGuardar,
     ServicioExpedienteModo? modo,
     ServicioExpedienteData? datos,
@@ -44,6 +52,7 @@ class ServicioExpedienteState {
       cargando: cargando ?? this.cargando,
       guardando: guardando ?? this.guardando,
       cambiandoEstatus: cambiandoEstatus ?? this.cambiandoEstatus,
+      operandoRelacion: operandoRelacion ?? this.operandoRelacion,
       tieneCambiosSinGuardar: tieneCambiosSinGuardar ?? this.tieneCambiosSinGuardar,
       modo: modo ?? this.modo,
       datos: datos ?? this.datos,

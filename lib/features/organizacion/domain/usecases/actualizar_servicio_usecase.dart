@@ -40,6 +40,8 @@ class ActualizarServicioUseCase {
           tipoServicioId: Value(validado.tipoServicioId),
           fechaInicio: Value(validado.fechaInicio),
           observaciones: Value(validado.observaciones),
+          referenciaComercial: Value(validado.referenciaComercial),
+          referenciaContractual: Value(validado.referenciaContractual),
         ),
       );
       return GuardarServicioExitoso(actualizado);

@@ -503,5 +503,66 @@
   "servicioCambiarEstatusErrorFaltaDireccion": "No se puede activar: falta la Dirección operativa.",
   "servicioCambiarEstatusErrorRequiereFechaTermino": "Indica la fecha efectiva de término.",
   "servicioCambiarEstatusErrorFechaTerminoInvalida": "La fecha de término no puede ser anterior a la fecha de inicio.",
-  "servicioCambiarEstatusErrorInesperado": "No se pudo actualizar el estatus. Intenta de nuevo."
+  "servicioCambiarEstatusErrorInesperado": "No se pudo actualizar el estatus. Intenta de nuevo.",
+
+  "servicioSeccionReferenciasTitulo": "Referencias",
+  "servicioCampoReferenciaComercial": "Referencia comercial",
+  "servicioCampoReferenciaContractual": "Referencia contractual",
+
+  "servicioSeccionDireccionOperativaTitulo": "Dirección operativa",
+  "servicioDireccionOperativaVacia": "Sin Dirección operativa capturada",
+  "servicioBotonAgregarDireccionOperativa": "Agregar Dirección operativa",
+  "servicioBotonEditarDireccionOperativa": "Editar",
+  "servicioDireccionOperativaDialogoTitulo": "Dirección operativa",
+  "servicioDireccionOperativaGuardadoExito": "Dirección operativa guardada correctamente.",
+  "servicioDireccionOperativaGuardadoError": "No se pudo guardar la Dirección operativa. Verifica los datos.",
+
+  "servicioSeccionVinculacionesTitulo": "Vinculaciones",
+  "servicioSubseccionRelacionesExternas": "Relaciones externas",
+  "servicioSubseccionRelacionesInternas": "Relaciones internas",
+
+  "servicioVinculacionCliente": "Cliente",
+  "servicioVinculacionEntidadFiscal": "Entidad fiscal",
+  "servicioVinculacionResponsableCliente": "Responsable del Cliente",
+  "servicioVinculacionResponsableInterno": "Responsable interno",
+  "servicioVinculacionSucursalAdministrativa": "Sucursal administrativa",
+  "servicioVinculacionSinAsignar": "Sin asignar",
+  "servicioEstadoArchivadoMasculino": "Archivado",
+
+  "servicioVinculacionBotonAsignar": "Asignar",
+  "servicioVinculacionBotonEditar": "Editar",
+  "servicioVinculacionBotonQuitar": "Quitar",
+  "servicioVinculacionDialogoBotonGuardar": "Guardar",
+  "servicioVinculacionDialogoBotonCancelar": "Cancelar",
+
+  "servicioAdvertenciaEntidadFiscalArchivada": "Esta Entidad fiscal está archivada. La relación se conserva; puedes quitarla o asignar otra.",
+  "servicioAdvertenciaResponsableClienteArchivado": "Este Contacto está archivado. La relación se conserva; puedes quitarla o asignar otro.",
+  "servicioAdvertenciaSucursalAdministrativaArchivada": "Esta Sucursal está archivada. La relación se conserva; puedes quitarla o asignar otra.",
+
+  "servicioAsignarEntidadFiscalTitulo": "Asignar Entidad fiscal",
+  "servicioAsignarEntidadFiscalExito": "Entidad fiscal asignada correctamente.",
+  "servicioAsignarEntidadFiscalErrorNoPertenece": "La Entidad fiscal seleccionada no pertenece a este Cliente.",
+  "servicioAsignarEntidadFiscalErrorNoDisponible": "Esta Entidad fiscal está archivada y no puede asignarse.",
+  "servicioAsignarEntidadFiscalErrorInesperado": "No se pudo asignar la Entidad fiscal. Intenta de nuevo.",
+  "servicioQuitarEntidadFiscalExito": "Entidad fiscal desvinculada correctamente.",
+
+  "servicioAsignarResponsableClienteTitulo": "Asignar Responsable del Cliente",
+  "servicioAsignarResponsableClienteExito": "Responsable del Cliente asignado correctamente.",
+  "servicioAsignarResponsableClienteErrorNoPertenece": "El Contacto seleccionado no pertenece a este Cliente.",
+  "servicioAsignarResponsableClienteErrorNoDisponible": "Este Contacto está archivado y no puede asignarse.",
+  "servicioAsignarResponsableClienteErrorInesperado": "No se pudo asignar el Responsable del Cliente. Intenta de nuevo.",
+  "servicioQuitarResponsableClienteExito": "Responsable del Cliente desvinculado correctamente.",
+
+  "servicioAsignarSucursalAdministrativaTitulo": "Asignar Sucursal administrativa",
+  "servicioAsignarSucursalAdministrativaExito": "Sucursal administrativa asignada correctamente.",
+  "servicioAsignarSucursalAdministrativaErrorNoExiste": "La Sucursal seleccionada ya no existe.",
+  "servicioAsignarSucursalAdministrativaErrorNoDisponible": "Esta Sucursal está archivada y no puede asignarse.",
+  "servicioAsignarSucursalAdministrativaErrorInesperado": "No se pudo asignar la Sucursal administrativa. Intenta de nuevo.",
+  "servicioQuitarSucursalAdministrativaExito": "Sucursal administrativa desvinculada correctamente.",
+
+  "servicioResponsableInternoDialogoTitulo": "Responsable interno",
+  "servicioResponsableInternoCampoTexto": "Responsable interno",
+  "servicioResponsableInternoAyuda": "Solución temporal — texto libre hasta que exista el módulo de Personal.",
+  "servicioResponsableInternoGuardadoExito": "Responsable interno guardado correctamente.",
+  "servicioResponsableInternoGuardadoError": "No se pudo guardar el Responsable interno. Intenta de nuevo."
 }

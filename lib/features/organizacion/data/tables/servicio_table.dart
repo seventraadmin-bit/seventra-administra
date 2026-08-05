@@ -4,6 +4,7 @@ import '../../../../core/database/tables/audit_columns.dart';
 import '../../../../core/database/tables/catalogos_tables.dart';
 import 'cliente_table.dart';
 import 'contacto_table.dart';
+import 'entidad_fiscal_table.dart';
 import 'sucursal_table.dart';
 
 /// Ciclo comercial de un Servicio — independiente de `cicloVidaRegistro`,
@@ -18,10 +19,11 @@ enum EstatusServicio { cotizado, activo, suspendido, terminado }
 /// introducir una referencia circular Servicio↔Dirección/Ubicación.
 ///
 /// La creación de un Servicio garantiza transaccionalmente, en una sola
-/// transacción de `ServicioRepository`: el propio Servicio, su Dirección
-/// operativa principal y su nodo raíz de Ubicación — no existe un estado
-/// "borrador sin dirección"; la dirección operativa es obligatoria desde
-/// el alta (no hay todavía UI que justifique diferirla).
+/// transacción de `ServicioRepository`: el propio Servicio y su nodo raíz
+/// de Ubicación — desde la Etapa 4F.1, la Dirección operativa es
+/// opcional al alta (se captura después desde el expediente, Etapa
+/// 4F.2); la Ubicación raíz es solo el ancla estructural del árbol, no
+/// depende de que exista una Dirección.
 class Servicio extends Table with AuditColumns {
   TextColumn get codigo => text().unique()();
 
@@ -57,6 +59,32 @@ class Servicio extends Table with AuditColumns {
       text().nullable().references(Contacto, #id, onDelete: KeyAction.restrict)();
 
   TextColumn get observaciones => text().nullable()();
+
+  /// Opcional — Etapa 4F.2. Debe pertenecer al mismo Cliente de este
+  /// Servicio (igual razón que `responsableClienteContactoId`: no
+  /// expresable como `CHECK`, se valida en
+  /// `AsignarEntidadFiscalAServicioUseCase`). Una Entidad fiscal
+  /// archivada después de asignada no se desvincula automáticamente —
+  /// el expediente solo muestra una advertencia.
+  TextColumn get entidadFiscalId =>
+      text().nullable().references(EntidadFiscal, #id, onDelete: KeyAction.restrict)();
+
+  /// Texto libre transitorio — Etapa 4F.2. Personal/Usuario todavía no
+  /// existen; cuando existan, este campo migrará a una FK real
+  /// conservando el texto histórico de los Servicios ya creados (mismo
+  /// criterio ya aplicado a `Empresa.representanteLegal` en la Etapa
+  /// 4A). No representa todavía ningún rol específico (supervisor,
+  /// coordinador, ejecutivo comercial, etc.) — es deliberadamente
+  /// genérico hasta que exista ese dominio.
+  TextColumn get responsableInterno => text().nullable()();
+
+  /// Referencia comercial de origen — típicamente un número de
+  /// cotización hoy, pero deliberadamente sin acoplarse a ese origen:
+  /// puede contener referencias de CRM, propuestas u otras fuentes
+  /// futuras. Texto libre, opcional.
+  TextColumn get referenciaComercial => text().nullable()();
+
+  TextColumn get referenciaContractual => text().nullable()();
 
   @override
   List<String> get customConstraints => [

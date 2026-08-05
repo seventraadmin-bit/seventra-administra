@@ -30,6 +30,9 @@ import 'domain/usecases/actualizar_puesto_usecase.dart';
 import 'domain/usecases/actualizar_servicio_usecase.dart';
 import 'domain/usecases/agregar_contacto_usecase.dart';
 import 'domain/usecases/archivar_contacto_usecase.dart';
+import 'domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
+import 'domain/usecases/asignar_responsable_cliente_usecase.dart';
+import 'domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_entidad_fiscal_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_puesto_usecase.dart';
 import 'domain/usecases/cambiar_estado_operativo_sucursal_usecase.dart';
@@ -44,10 +47,12 @@ import 'domain/usecases/crear_sucursal_usecase.dart';
 import 'domain/usecases/crear_ubicacion_usecase.dart';
 import 'domain/usecases/desactivar_area_usecase.dart';
 import 'domain/usecases/entidad_fiscal_validator.dart';
+import 'domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'domain/usecases/guardar_domicilio_fiscal_usecase.dart';
 import 'domain/usecases/guardar_expediente_cliente_usecase.dart';
 import 'domain/usecases/guardar_expediente_empresa_usecase.dart';
 import 'domain/usecases/guardar_expediente_sucursal_usecase.dart';
+import 'domain/usecases/guardar_responsable_interno_usecase.dart';
 import 'domain/usecases/listar_areas_activas_usecase.dart';
 import 'domain/usecases/listar_areas_usecase.dart';
 import 'domain/usecases/listar_clientes_usecase.dart';
@@ -320,5 +325,30 @@ final listarServiciosUseCaseProvider = Provider<ListarServiciosUseCase>((ref) {
 });
 
 final obtenerExpedienteServicioUseCaseProvider = Provider<ObtenerExpedienteServicioUseCase>((ref) {
-  return ObtenerExpedienteServicioUseCase(ref.watch(servicioRepositoryProvider));
+  return ObtenerExpedienteServicioUseCase(
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(clienteRepositoryProvider),
+    ref.watch(entidadFiscalRepositoryProvider),
+    ref.watch(sucursalRepositoryProvider),
+  );
+});
+
+final asignarEntidadFiscalAServicioUseCaseProvider = Provider<AsignarEntidadFiscalAServicioUseCase>((ref) {
+  return AsignarEntidadFiscalAServicioUseCase(ref.watch(servicioRepositoryProvider), ref.watch(entidadFiscalRepositoryProvider));
+});
+
+final asignarResponsableClienteUseCaseProvider = Provider<AsignarResponsableClienteUseCase>((ref) {
+  return AsignarResponsableClienteUseCase(ref.watch(servicioRepositoryProvider), ref.watch(clienteRepositoryProvider));
+});
+
+final asignarSucursalAdministrativaUseCaseProvider = Provider<AsignarSucursalAdministrativaUseCase>((ref) {
+  return AsignarSucursalAdministrativaUseCase(ref.watch(servicioRepositoryProvider), ref.watch(sucursalRepositoryProvider));
+});
+
+final guardarDireccionOperativaServicioUseCaseProvider = Provider<GuardarDireccionOperativaServicioUseCase>((ref) {
+  return GuardarDireccionOperativaServicioUseCase(ref.watch(servicioRepositoryProvider));
+});
+
+final guardarResponsableInternoUseCaseProvider = Provider<GuardarResponsableInternoUseCase>((ref) {
+  return GuardarResponsableInternoUseCase(ref.watch(servicioRepositoryProvider));
 });

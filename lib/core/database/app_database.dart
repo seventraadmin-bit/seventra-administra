@@ -17,6 +17,7 @@ import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
 import 'migrations/migrar_servicio_v6.dart';
+import 'migrations/migrar_servicio_v7.dart';
 import 'seed/seed_data.dart';
 import 'tables/attachment_table.dart';
 import 'tables/catalogos_tables.dart';
@@ -69,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -139,6 +140,27 @@ class AppDatabase extends _$AppDatabase {
         // nueva arriba. Mismo motivo de `to >=` que los pasos previos.
         if (to >= 6 && from >= 2 && from <= 5) {
           await migrarServicioV6(this, m);
+        }
+        // Aditiva (Etapa 4F.2): 4 columnas nuevas nullable en Servicio
+        // (entidadFiscalId, responsableInterno, referenciaComercial,
+        // referenciaContractual) — sin recreación de tabla.
+        //
+        // Solo `from == 6`, NUNCA `from <= 6`: `migrarServicioV6` (arriba)
+        // recrea la tabla completa vía `m.createTable(servicio)`, que
+        // siempre lee la forma *actual* de la clase Dart — hoy esa forma
+        // YA incluye las 4 columnas de esta migración. Por eso, para
+        // cualquier `from` entre 2 y 5 (que dispara `migrarServicioV6` en
+        // este mismo `onUpgrade`), la tabla recreada ya sale con estas 4
+        // columnas — volver a agregarlas aquí lanzaría "duplicate column
+        // name". Solo una instalación que ya estaba exactamente en
+        // schemaVersion 6 (nunca pasó por `migrarServicioV6` en esta
+        // corrida) todavía tiene la forma vieja y necesita este paso.
+        // Mismo tipo de error de fondo que ya mordió antes con
+        // `_createEtapa4ATables`/`_currentSchemaVersion` — cualquier
+        // migración futura que agregue una columna a Servicio debe
+        // revisar si algún paso anterior ya la recrea por completo.
+        if (to >= 7 && from == 6) {
+          await migrarServicioV7(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

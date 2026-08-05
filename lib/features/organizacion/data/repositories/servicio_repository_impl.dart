@@ -6,6 +6,7 @@ import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart'
 import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart';
 
 import '../../domain/repositories/servicio_repository.dart';
+import '../../domain/shared/direccion_input.dart';
 
 class ServicioRepositoryImpl implements ServicioRepository {
   ServicioRepositoryImpl(this._db);
@@ -111,5 +112,116 @@ class ServicioRepositoryImpl implements ServicioRepository {
           ))
         .getSingleOrNull();
     return fila != null;
+  }
+
+  @override
+  Future<DireccionData?> obtenerDireccionOperativa(String servicioId) {
+    return (_db.select(_db.direccion)
+          ..where(
+            (t) =>
+                t.servicioId.equals(servicioId) &
+                t.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name),
+          ))
+        .getSingleOrNull();
+  }
+
+  /// Busca la Dirección operativa de este Servicio sin importar
+  /// `cicloVidaRegistro` — `servicio_id` tiene un `.unique()` real en
+  /// `Direccion` (1:1), así que solo puede existir una fila por Servicio
+  /// en toda su historia (mismo patrón que
+  /// `_buscarDomicilioDeEntidadFiscal` en Entidad fiscal).
+  Future<DireccionData?> _buscarDireccionDeServicio(String servicioId) {
+    return (_db.select(_db.direccion)..where((t) => t.servicioId.equals(servicioId))).getSingleOrNull();
+  }
+
+  @override
+  Future<DireccionData?> guardarDireccionOperativa(String servicioId, DireccionInput? input) async {
+    final existente = await _buscarDireccionDeServicio(servicioId);
+
+    if (input == null) {
+      // Sección vacía: si había una Dirección activa, se archiva — nunca
+      // se borra físicamente la fila.
+      if (existente != null && existente.cicloVidaRegistro == CicloVidaRegistro.activo.name) {
+        await (_db.update(_db.direccion)..where((t) => t.id.equals(existente.id))).write(
+          DireccionCompanion(
+            cicloVidaRegistro: Value(CicloVidaRegistro.archivado.name),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+      return null;
+    }
+
+    final cambios = DireccionCompanion(
+      cicloVidaRegistro: Value(CicloVidaRegistro.activo.name),
+      calle: Value(input.calle),
+      numeroExterior: Value(input.numeroExterior),
+      numeroInterior: Value(input.numeroInterior),
+      colonia: Value(input.colonia),
+      municipioAlcaldia: Value(input.municipioAlcaldia),
+      ciudadLocalidad: Value(input.ciudadLocalidad),
+      estado: Value(input.estado),
+      codigoPostal: Value(input.codigoPostal),
+      pais: Value(input.pais),
+      referencias: Value(input.referencias),
+      updatedAt: Value(DateTime.now()),
+    );
+
+    if (existente != null) {
+      // Reactiva (si venía archivada) y actualiza — nunca un segundo
+      // `INSERT`, que violaría el `UNIQUE` real de `servicio_id`.
+      final actualizada = existente.copyWithCompanion(cambios);
+      await _db.update(_db.direccion).replace(actualizada);
+      return actualizada;
+    }
+
+    return _db.into(_db.direccion).insertReturning(
+          DireccionCompanion.insert(
+            servicioId: Value(servicioId),
+            tipoDireccion: TipoDireccion.operativa.name,
+            calle: input.calle,
+            numeroExterior: input.numeroExterior,
+            numeroInterior: Value(input.numeroInterior),
+            colonia: input.colonia,
+            municipioAlcaldia: input.municipioAlcaldia,
+            ciudadLocalidad: Value(input.ciudadLocalidad),
+            estado: input.estado,
+            codigoPostal: input.codigoPostal,
+            pais: Value(input.pais),
+            referencias: Value(input.referencias),
+          ),
+        );
+  }
+
+  @override
+  Future<ServicioData> asignarEntidadFiscal({required String servicioId, required String? entidadFiscalId}) async {
+    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
+      ServicioCompanion(entidadFiscalId: Value(entidadFiscalId), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+  }
+
+  @override
+  Future<ServicioData> asignarResponsableCliente({required String servicioId, required String? contactoId}) async {
+    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
+      ServicioCompanion(responsableClienteContactoId: Value(contactoId), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+  }
+
+  @override
+  Future<ServicioData> asignarSucursalAdministrativa({required String servicioId, required String? sucursalId}) async {
+    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
+      ServicioCompanion(sucursalAdministrativaId: Value(sucursalId), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+  }
+
+  @override
+  Future<ServicioData> guardarResponsableInterno({required String servicioId, required String? texto}) async {
+    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
+      ServicioCompanion(responsableInterno: Value(texto), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
   }
 }

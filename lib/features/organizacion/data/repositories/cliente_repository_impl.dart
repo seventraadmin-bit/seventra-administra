@@ -210,4 +210,9 @@ class ClienteRepositoryImpl implements ClienteRepository {
           ))
         .get();
   }
+
+  @override
+  Future<ContactoData?> obtenerContactoPorId(String id) {
+    return (_db.select(_db.contacto)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
 }

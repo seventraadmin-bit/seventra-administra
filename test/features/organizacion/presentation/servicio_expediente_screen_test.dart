@@ -16,14 +16,20 @@ import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_entidad_fiscal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_sucursal_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/entidad_fiscal_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/organizacion/presentation/servicios/servicio_expediente_screen.dart';
 
-Future<String> _crearServicio(AppDatabase db) async {
+Future<({String servicioId, String clienteId})> _crearServicio(AppDatabase db) async {
   final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
   final clienteRepo = ClienteRepositoryImpl(db);
   final validator = ServicioValidator(clienteRepo, CatalogoRepositoryImpl(db));
@@ -40,7 +46,31 @@ Future<String> _crearServicio(AppDatabase db) async {
       fechaInicio: DateTime(2026, 1, 1),
     ),
   );
-  return (creado as GuardarServicioExitoso).servicio.id;
+  return (servicioId: (creado as GuardarServicioExitoso).servicio.id, clienteId: clienteId);
+}
+
+Future<EntidadFiscalData> _crearEntidadFiscal(AppDatabase db, String clienteId) async {
+  final clienteRepo = ClienteRepositoryImpl(db);
+  final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+  final validator = EntidadFiscalValidator(clienteRepo, entidadFiscalRepo);
+  final crear = CrearEntidadFiscalUseCase(entidadFiscalRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)), validator);
+  final creada = await crear.ejecutar(
+    clienteId: clienteId,
+    borrador: const EntidadFiscalBorrador(razonSocial: 'Sportium SA de CV', rfc: 'SPO010101AA1'),
+  );
+  return (creada as GuardarEntidadFiscalExitoso).entidadFiscal;
+}
+
+Future<ContactoData> _crearContacto(AppDatabase db, String clienteId) {
+  return ClienteRepositoryImpl(
+    db,
+  ).agregarContacto(ContactoCompanion.insert(clienteId: clienteId, nombre: 'Juan Pérez', tipo: 'comercial'));
+}
+
+Future<SucursalData> _crearSucursal(AppDatabase db) async {
+  final crear = CrearSucursalUseCase(SucursalRepositoryImpl(db), GenerarCodigoUseCase(CodigoSecuenciaService(db)));
+  final r = await crear.ejecutar(nombre: 'Sucursal Centro', tipoSucursalId: SeedIds.tipoSucursalBaseOperativa);
+  return r.when(ok: (s) => s, failure: (_) => throw StateError('no debería fallar'));
 }
 
 Future<void> _pumpScreen(WidgetTester tester, AppDatabase db, String servicioId) async {
@@ -66,10 +96,13 @@ Future<void> _pumpScreen(WidgetTester tester, AppDatabase db, String servicioId)
 void main() {
   late AppDatabase db;
   late String servicioId;
+  late String clienteId;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    servicioId = await _crearServicio(db);
+    final creado = await _crearServicio(db);
+    servicioId = creado.servicioId;
+    clienteId = creado.clienteId;
   });
 
   tearDown(() => db.close());
@@ -142,5 +175,156 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.servicioEstatusTerminado), findsOneWidget);
+  });
+
+  testWidgets('Vinculaciones sin asignaciones muestra "Sin asignar" y el Cliente de solo lectura', (tester) async {
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    expect(find.text('Sportium'), findsOneWidget, reason: 'Cliente de solo lectura, sin icono de acción');
+    expect(
+      find.descendant(of: find.byKey(const Key('servicio_vinculacion_cliente')), matching: find.byType(IconButton)),
+      findsNothing,
+    );
+    expect(find.text(l10n.servicioVinculacionSinAsignar), findsNWidgets(4));
+  });
+
+  testWidgets('asignar una Entidad fiscal del mismo Cliente vía el diálogo selector', (tester) async {
+    await _crearEntidadFiscal(db, clienteId);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('servicio_vinculacion_entidad_fiscal')),
+        matching: find.byType(IconButton),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sportium SA de CV').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sportium SA de CV'), findsOneWidget);
+    expect(find.text(l10n.servicioAsignarEntidadFiscalExito), findsOneWidget);
+  });
+
+  testWidgets('quitar una Entidad fiscal ya asignada', (tester) async {
+    final entidad = await _crearEntidadFiscal(db, clienteId);
+    await ServicioRepositoryImpl(db).asignarEntidadFiscal(servicioId: servicioId, entidadFiscalId: entidad.id);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    final iconos = find.descendant(
+      of: find.byKey(const Key('servicio_vinculacion_entidad_fiscal')),
+      matching: find.byType(IconButton),
+    );
+    expect(iconos, findsNWidgets(2), reason: 'editar + quitar, una vez asignada');
+    await tester.tap(iconos.last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioQuitarEntidadFiscalExito), findsOneWidget);
+    expect(find.text('Sportium SA de CV'), findsNothing);
+  });
+
+  testWidgets('asignar un Responsable del Cliente (Contacto activo)', (tester) async {
+    await _crearContacto(db, clienteId);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('servicio_vinculacion_responsable_cliente')),
+        matching: find.byType(IconButton),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Juan Pérez').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Juan Pérez'), findsOneWidget);
+    expect(find.text(l10n.servicioAsignarResponsableClienteExito), findsOneWidget);
+  });
+
+  testWidgets('asignar una Sucursal administrativa', (tester) async {
+    await _crearSucursal(db);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('servicio_vinculacion_sucursal_administrativa')),
+        matching: find.byType(IconButton),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sucursal Centro').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sucursal Centro'), findsOneWidget);
+    expect(find.text(l10n.servicioAsignarSucursalAdministrativaExito), findsOneWidget);
+  });
+
+  testWidgets('editar el Responsable interno como texto libre', (tester) async {
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('servicio_vinculacion_responsable_interno')),
+        matching: find.byType(IconButton),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Ana López');
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ana López'), findsOneWidget);
+    expect(find.text(l10n.servicioResponsableInternoGuardadoExito), findsOneWidget);
+  });
+
+  testWidgets('agregar una Dirección operativa completa habilita el botón Activar', (tester) async {
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.tap(find.byKey(const Key('servicio_boton_agregar_direccion_operativa')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Av. Toluca');
+    await tester.enterText(find.byType(TextFormField).at(1), '50');
+    await tester.enterText(find.byType(TextFormField).at(3), 'Centro');
+    await tester.enterText(find.byType(TextFormField).at(4), 'Toluca');
+    await tester.enterText(find.byType(TextFormField).at(6), 'Estado de México');
+    await tester.enterText(find.byType(TextFormField).at(7), '50000');
+
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioDireccionOperativaGuardadoExito), findsOneWidget);
+    expect(find.text(l10n.servicioBotonActivarAyudaSinDireccion), findsNothing);
+
+    final botonActivar = tester.widget<OutlinedButton>(
+      find.descendant(of: find.byKey(const Key('servicio_boton_activar')), matching: find.byType(OutlinedButton)),
+    );
+    expect(botonActivar.onPressed, isNotNull);
   });
 }
