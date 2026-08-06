@@ -306,4 +306,45 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
     );
     return (_db.select(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).getSingle();
   }
+
+  @override
+  Future<ConfiguracionCobroVigenciaData?> obtenerVigenciaEnFecha(String configuracionCobroId, DateTime fecha) async {
+    final fechaSinHora = soloFechaCobro(fecha);
+    final vigencias = await (_db.select(_db.configuracionCobroVigencia)
+          ..where(
+            (t) =>
+                t.configuracionCobroId.equals(configuracionCobroId) &
+                t.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name),
+          ))
+        .get();
+
+    for (final v in vigencias) {
+      final inicio = soloFechaCobro(v.fechaInicioVigencia);
+      final fin = v.fechaFinVigencia == null ? null : soloFechaCobro(v.fechaFinVigencia!);
+      if (!inicio.isAfter(fechaSinHora) && (fin == null || !fin.isBefore(fechaSinHora))) {
+        return v;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<List<ConfiguracionCobroData>> listarConfiguraciones({String? clienteId, String? servicioId}) async {
+    if (servicioId != null) {
+      final fila =
+          await (_db.select(_db.configuracionCobro)..where((t) => t.servicioId.equals(servicioId))).getSingleOrNull();
+      return fila == null ? const [] : [fila];
+    }
+
+    if (clienteId != null) {
+      final query = _db.select(_db.configuracionCobro).join([
+        innerJoin(_db.servicio, _db.servicio.id.equalsExp(_db.configuracionCobro.servicioId)),
+      ])
+        ..where(_db.servicio.clienteId.equals(clienteId));
+      final filas = await query.get();
+      return [for (final f in filas) f.readTable(_db.configuracionCobro)];
+    }
+
+    return _db.select(_db.configuracionCobro).get();
+  }
 }

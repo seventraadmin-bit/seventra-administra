@@ -74,4 +74,18 @@ abstract interface class ConfiguracionCobroRepository {
     required String vigenciaId,
     String? observaciones,
   });
+
+  /// La vigencia `activo` efectiva en `fecha` — distinto de "vigente
+  /// hoy" (Etapa 4I.1): busca por rango de fechas propio de cada
+  /// vigencia, nunca por `Clock.now()`. Es lo que permite que generar la
+  /// agenda de enero use la vigencia nueva y la de diciembre conserve la
+  /// anterior, sin importar qué día se ejecute la generación. `null` si
+  /// ninguna vigencia cubre esa fecha.
+  Future<ConfiguracionCobroVigenciaData?> obtenerVigenciaEnFecha(String configuracionCobroId, DateTime fecha);
+
+  /// Todas las Configuraciones de cobro del sistema, opcionalmente
+  /// acotadas por Cliente o Servicio — insumo de `GenerarAgendaUseCase`
+  /// para enumerar candidatos sin que el caso de uso conozca el detalle
+  /// de cómo se relacionan Servicio/Cliente.
+  Future<List<ConfiguracionCobroData>> listarConfiguraciones({String? clienteId, String? servicioId});
 }

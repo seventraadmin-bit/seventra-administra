@@ -116,6 +116,13 @@ GoRouter createAppRouter() {
                           ),
                         ],
                       ),
+                      GoRoute(
+                        path: 'agenda',
+                        // Sin sub-ruta `:id` — el detalle de un
+                        // DocumentoPorEmitir se muestra en un diálogo, no
+                        // en su propia pantalla (Etapa 4I.1).
+                        builder: (context, state) => const ComercialShellScreen(tab: ComercialTab.agenda),
+                      ),
                     ],
                   )
                 else

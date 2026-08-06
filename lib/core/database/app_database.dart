@@ -11,6 +11,7 @@ import '../../features/organizacion/data/tables/configuracion_cobro_regla_evento
 import '../../features/organizacion/data/tables/configuracion_cobro_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import '../../features/organizacion/data/tables/contacto_table.dart';
+import '../../features/organizacion/data/tables/documento_por_emitir_table.dart';
 import '../../features/organizacion/data/tables/empresa_table.dart';
 import '../../features/organizacion/data/tables/entidad_fiscal_table.dart';
 import '../../features/organizacion/data/tables/puesto_table.dart';
@@ -79,12 +80,17 @@ class AppMetadata extends Table {
   ConfiguracionCobroVigencia,
   ConfiguracionCobroCorreo,
   ConfiguracionCobroReglaEvento,
+  DocumentoPorEmitir,
+  DocumentoPorEmitirServicio,
+  DocumentoPorEmitirConfiguracion,
+  DocumentoPorEmitirLinea,
+  DocumentoPorEmitirCorreo,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
@@ -222,6 +228,22 @@ class AppDatabase extends _$AppDatabase {
         // catálogo).
         if (to >= 10 && from <= 9) {
           await m.createTable(configuracionCobroReglaEvento);
+        }
+        // Aditiva (Etapa 4I.1): DocumentoPorEmitir y sus 4 tablas hijas
+        // (Servicio/Configuracion/Linea/Correo) — todas completamente
+        // nuevas, mismo motivo que los pasos anteriores: `from <= 10` es
+        // seguro sin acotar un origen exacto. El renglón nuevo de
+        // `CodigoSecuencia('documento_por_emitir')` se siembra vía
+        // `runSeed()` normal (a diferencia de los catálogos de 4G.1/
+        // 4H.1): `codigo_secuencia` ya existe desde schemaVersion 1 en
+        // todo snapshot histórico, así que no hay riesgo de "no such
+        // table" al llamar `runSeed()` sin condiciones.
+        if (to >= 11 && from <= 10) {
+          await m.createTable(documentoPorEmitir);
+          await m.createTable(documentoPorEmitirServicio);
+          await m.createTable(documentoPorEmitirConfiguracion);
+          await m.createTable(documentoPorEmitirLinea);
+          await m.createTable(documentoPorEmitirCorreo);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

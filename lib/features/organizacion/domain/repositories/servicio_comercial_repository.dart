@@ -23,6 +23,13 @@ abstract interface class ServicioComercialRepository {
   /// el nombre de Puesto/modalidad de turno listo para mostrar.
   Future<List<LineaComercialConVigencia>> listarLineas(String servicioId);
 
+  /// Igual que `listarLineas`, pero la clasificación vigente/programada
+  /// de cada línea se resuelve contra `fecha` en vez de `Clock.now()`
+  /// (Etapa 4I.1) — necesario para generar la agenda de un periodo
+  /// futuro o pasado usando exactamente la condición comercial que
+  /// aplicaba (o aplicará) en esa fecha, no la de hoy.
+  Future<List<LineaComercialConVigencia>> listarLineasEnFecha(String servicioId, DateTime fecha);
+
   /// La línea misma (para resolver su `servicioId`, entre otros usos) —
   /// `null` si no existe.
   Future<ServicioLineaComercialData?> obtenerLinea(String lineaComercialId);

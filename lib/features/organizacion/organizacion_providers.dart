@@ -7,6 +7,7 @@ import 'data/repositories/area_repository_impl.dart';
 import 'data/repositories/catalogo_repository_impl.dart';
 import 'data/repositories/cliente_repository_impl.dart';
 import 'data/repositories/configuracion_cobro_repository_impl.dart';
+import 'data/repositories/documento_por_emitir_repository_impl.dart';
 import 'data/repositories/empresa_repository_impl.dart';
 import 'data/repositories/entidad_fiscal_repository_impl.dart';
 import 'data/repositories/puesto_repository_impl.dart';
@@ -18,6 +19,7 @@ import 'domain/repositories/area_repository.dart';
 import 'domain/repositories/catalogo_repository.dart';
 import 'domain/repositories/cliente_repository.dart';
 import 'domain/repositories/configuracion_cobro_repository.dart';
+import 'domain/repositories/documento_por_emitir_repository.dart';
 import 'domain/repositories/empresa_repository.dart';
 import 'domain/repositories/entidad_fiscal_repository.dart';
 import 'domain/repositories/puesto_repository.dart';
@@ -26,6 +28,7 @@ import 'domain/repositories/servicio_repository.dart';
 import 'domain/repositories/sucursal_repository.dart';
 import 'domain/repositories/ubicacion_repository.dart';
 import 'domain/usecases/activar_area_usecase.dart';
+import 'domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
 import 'domain/usecases/actualizar_area_usecase.dart';
 import 'domain/usecases/actualizar_contacto_usecase.dart';
@@ -43,6 +46,7 @@ import 'domain/usecases/cambiar_ciclo_vida_entidad_fiscal_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_puesto_usecase.dart';
 import 'domain/usecases/cambiar_estado_operativo_sucursal_usecase.dart';
 import 'domain/usecases/cambiar_estatus_cliente_usecase.dart';
+import 'domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
 import 'domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'domain/usecases/cambiar_vigencia_configuracion_cobro_usecase.dart';
 import 'domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
@@ -55,12 +59,15 @@ import 'domain/usecases/configuracion_cobro_validator.dart';
 import 'domain/usecases/crear_area_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
 import 'domain/usecases/crear_configuracion_cobro_usecase.dart';
+import 'domain/usecases/crear_documento_manual_usecase.dart';
 import 'domain/usecases/crear_entidad_fiscal_usecase.dart';
 import 'domain/usecases/crear_linea_comercial_usecase.dart';
 import 'domain/usecases/crear_puesto_usecase.dart';
 import 'domain/usecases/crear_servicio_usecase.dart';
 import 'domain/usecases/crear_sucursal_usecase.dart';
 import 'domain/usecases/crear_ubicacion_usecase.dart';
+import 'domain/usecases/ensamblar_documento_por_emitir_usecase.dart';
+import 'domain/usecases/generar_agenda_usecase.dart';
 import 'domain/usecases/desactivar_area_usecase.dart';
 import 'domain/usecases/entidad_fiscal_validator.dart';
 import 'domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
@@ -486,4 +493,45 @@ final obtenerHistorialLineaComercialUseCaseProvider = Provider<ObtenerHistorialL
     ref.watch(catalogoRepositoryProvider),
     ref.watch(clockProvider),
   );
+});
+
+// --- Etapa 4I.1 — Agenda de documentos por emitir ---
+
+final documentoPorEmitirRepositoryProvider = Provider<DocumentoPorEmitirRepository>((ref) {
+  return DocumentoPorEmitirRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final ensamblarDocumentoPorEmitirUseCaseProvider = Provider<EnsamblarDocumentoPorEmitirUseCase>((ref) {
+  return EnsamblarDocumentoPorEmitirUseCase(
+    ref.watch(servicioComercialRepositoryProvider),
+    ref.watch(configuracionCobroRepositoryProvider),
+  );
+});
+
+final generarAgendaUseCaseProvider = Provider<GenerarAgendaUseCase>((ref) {
+  return GenerarAgendaUseCase(
+    ref.watch(documentoPorEmitirRepositoryProvider),
+    ref.watch(configuracionCobroRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(ensamblarDocumentoPorEmitirUseCaseProvider),
+    ref.watch(generarCodigoUseCaseProvider),
+  );
+});
+
+final crearDocumentoManualUseCaseProvider = Provider<CrearDocumentoManualUseCase>((ref) {
+  return CrearDocumentoManualUseCase(
+    ref.watch(documentoPorEmitirRepositoryProvider),
+    ref.watch(configuracionCobroRepositoryProvider),
+    ref.watch(ensamblarDocumentoPorEmitirUseCaseProvider),
+    ref.watch(generarCodigoUseCaseProvider),
+  );
+});
+
+final cambiarEstatusDocumentoPorEmitirUseCaseProvider = Provider<CambiarEstatusDocumentoPorEmitirUseCase>((ref) {
+  return CambiarEstatusDocumentoPorEmitirUseCase(ref.watch(documentoPorEmitirRepositoryProvider));
+});
+
+final actualizarAjusteManualDocumentoPorEmitirUseCaseProvider =
+    Provider<ActualizarAjusteManualDocumentoPorEmitirUseCase>((ref) {
+  return ActualizarAjusteManualDocumentoPorEmitirUseCase(ref.watch(documentoPorEmitirRepositoryProvider));
 });

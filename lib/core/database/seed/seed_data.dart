@@ -33,6 +33,7 @@ Future<void> _seedCodigoSecuencia(AppDatabase db) async {
     ('servicio', 'SER', 6),
     ('area', 'ARE', 4),
     ('entidad_fiscal', 'ENF', 4),
+    ('documento_por_emitir', 'DOC', 6),
   ];
 
   for (final (entityType, prefijo, digitos) in config) {

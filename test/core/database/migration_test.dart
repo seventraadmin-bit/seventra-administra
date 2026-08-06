@@ -21,7 +21,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 10;
+const _currentSchemaVersion = 11;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -128,7 +128,7 @@ void main() {
     expect(areas, hasLength(6));
 
     final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-    expect(codigosSecuencia, hasLength(8));
+    expect(codigosSecuencia, hasLength(9));
 
     await db.close();
   });
@@ -253,7 +253,7 @@ void main() {
     );
 
     final columnasCliente = schema.rawDatabase
-        .select("PRAGMA table_info(cliente)")
+        .select('PRAGMA table_info(cliente)')
         .map((row) => row['name'] as String)
         .toSet();
     expect(columnasCliente, isNot(contains('razon_social')));
@@ -262,7 +262,7 @@ void main() {
     expect(columnasCliente, contains('industria_id'));
 
     final columnasContacto = schema.rawDatabase
-        .select("PRAGMA table_info(contacto)")
+        .select('PRAGMA table_info(contacto)')
         .map((row) => row['name'] as String)
         .toSet();
     expect(columnasContacto, contains('tipo'));
@@ -1795,6 +1795,306 @@ void main() {
         ) VALUES (
           'vigencia-inexistente', 'emision', 'diaFijoDelMes', 'actual', 1
         );
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('11.json coincide con el esquema final de la Etapa 4I.1 (Agenda de documentos por emitir, tablas nuevas)', () async {
+    final schema = await verifier.schemaAt(11);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+
+    expect(
+      tablas,
+      containsAll(<String>[
+        'app_metadata', 'codigo_secuencia', 'tipo_sucursal', 'industria',
+        'tipo_servicio', 'area', 'direccion', 'medio_contacto', 'attachment',
+        'horario', 'horario_detalle', 'empresa', 'sucursal', 'cliente',
+        'contacto', 'servicio', 'ubicacion', 'puesto', 'entidad_fiscal',
+        'tipo_modalidad_turno', 'servicio_linea_comercial', 'servicio_linea_comercial_vigencia',
+        'tipo_frecuencia_cobro', 'configuracion_cobro', 'configuracion_cobro_vigencia',
+        'configuracion_cobro_correo', 'configuracion_cobro_regla_evento',
+        'documento_por_emitir', 'documento_por_emitir_servicio', 'documento_por_emitir_configuracion',
+        'documento_por_emitir_linea', 'documento_por_emitir_correo',
+      ]),
+    );
+
+    final sqlDocumento = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir'")
+        .single['sql'] as String;
+    expect(sqlDocumento, contains('"codigo" TEXT NOT NULL UNIQUE'));
+    expect(sqlDocumento, contains('"generation_key" TEXT NOT NULL UNIQUE'));
+    expect(sqlDocumento, contains('REFERENCES cliente (id) ON DELETE RESTRICT'));
+    expect(sqlDocumento, contains('REFERENCES entidad_fiscal (id) ON DELETE RESTRICT'));
+    expect(sqlDocumento, contains('CHECK (periodo_fin >= periodo_inicio)'));
+    expect(sqlDocumento, contains('CHECK (importe_base_esperado >= 0)'));
+    expect(sqlDocumento, contains('CHECK (importe_final_esperado >= 0)'));
+
+    final sqlServicio = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir_servicio'")
+        .single['sql'] as String;
+    expect(sqlServicio, contains('UNIQUE (documento_por_emitir_id, servicio_id)'));
+
+    final sqlConfiguracion = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir_configuracion'")
+        .single['sql'] as String;
+    expect(sqlConfiguracion, contains('UNIQUE (documento_por_emitir_id, servicio_id)'));
+    expect(sqlConfiguracion, contains('REFERENCES configuracion_cobro_vigencia (id) ON DELETE RESTRICT'));
+
+    final sqlLinea = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir_linea'")
+        .single['sql'] as String;
+    expect(sqlLinea, contains('CHECK (cantidad_elementos > 0)'));
+    expect(sqlLinea, contains('CHECK (subtotal_proporcional >= 0)'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 1 → versión actual siembra CodigoSecuencia(documento_por_emitir)', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    schemaV1.rawDatabase.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final codigoDocumento =
+        await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('documento_por_emitir'))).getSingle();
+    expect(codigoDocumento.prefijo, 'DOC');
+    expect(codigoDocumento.digitos, 6);
+    expect(codigoDocumento.contadorActual, 0);
+
+    await db.close();
+  });
+
+  test('migración 10 → 11 conserva datos reales y crea las tablas de Agenda vacías', () async {
+    final schemaV10 = await verifier.schemaAt(10);
+    final raw = schemaV10.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('tipo-servicio-real', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-real', 'SER-000001', 'cliente-real', 'Vigilancia Sportium Toluca', 'tipo-servicio-real',
+        'activo', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV10.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final servicios = await db.select(db.servicio).get();
+    expect(servicios, hasLength(1), reason: 'ningún Servicio real debe perderse en una migración aditiva');
+
+    final documentos = await db.select(db.documentoPorEmitir).get();
+    expect(documentos, isEmpty);
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test('acepta un DocumentoPorEmitir completo (servicio, configuración y línea) tras la migración', () async {
+    // Origen 7, no 8: el paso `to >= 8 && from <= 7` (que crea y siembra
+    // TipoModalidadTurno) solo corre si `from <= 7` — partir de 8 deja
+    // esa tabla ya creada pero vacía (el snapshot es estructural puro,
+    // sin siembra), mismo gotcha ya documentado en 4G.1.
+    final schemaV7 = await verifier.schemaAt(7);
+    final db = AppDatabase(schemaV7.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final servicio = await db.into(db.servicio).insertReturning(
+          ServicioCompanion.insert(
+            codigo: 'SER-000001',
+            clienteId: cliente.id,
+            nombre: 'Vigilancia Sportium Toluca',
+            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+            fechaInicio: DateTime(2026, 1, 1),
+          ),
+        );
+    final puesto = await db.into(db.puesto).insertReturning(
+          PuestoCompanion.insert(
+            codigo: 'PUE-0001',
+            nombre: 'Guardia',
+            areaId: SeedIds.areaOperaciones,
+            tipo: 'operativo',
+            nivelJerarquico: 5,
+          ),
+        );
+    final linea = await db.into(db.servicioLineaComercial).insertReturning(
+          ServicioLineaComercialCompanion.insert(servicioId: servicio.id),
+        );
+    final vigenciaLinea = await db.into(db.servicioLineaComercialVigencia).insertReturning(
+          ServicioLineaComercialVigenciaCompanion.insert(
+            lineaComercialId: linea.id,
+            puestoId: puesto.id,
+            modalidadTurnoId: SeedIds.modalidadTurno24x24,
+            cantidadElementos: 2,
+            precioUnitario: 1500000,
+            tratamientoIva: 'noAplica',
+            fechaInicioVigencia: DateTime(2026, 1, 1),
+          ),
+        );
+    final configuracion = await db.into(db.configuracionCobro).insertReturning(
+          ConfiguracionCobroCompanion.insert(servicioId: servicio.id),
+        );
+    final vigenciaCobro = await db.into(db.configuracionCobroVigencia).insertReturning(
+          ConfiguracionCobroVigenciaCompanion.insert(
+            configuracionCobroId: configuracion.id,
+            tipoDocumento: 'reciboDePago',
+            frecuenciaId: SeedIds.frecuenciaCobroMensual,
+            diaInicioPeriodo: 1,
+            agrupacion: 'porServicio',
+            metodo: 'noAplica',
+            fechaInicioVigencia: DateTime(2026, 1, 1),
+          ),
+        );
+
+    final documento = await db.into(db.documentoPorEmitir).insertReturning(
+          DocumentoPorEmitirCompanion.insert(
+            codigo: 'DOC-000001',
+            clienteId: cliente.id,
+            tipoDocumento: 'reciboDePago',
+            agrupacion: 'porServicio',
+            metodo: 'noAplica',
+            periodoInicio: DateTime(2026, 1, 1),
+            periodoFin: DateTime(2026, 1, 31),
+            generationKey: 'porServicio|${cliente.id}||${servicio.id}|${vigenciaCobro.id}|2026-01-01|2026-01-31|reciboDePago',
+            importeBaseEsperado: 3000000,
+            importeFinalEsperado: 3000000,
+          ),
+        );
+    await db.into(db.documentoPorEmitirServicio).insertReturning(
+          DocumentoPorEmitirServicioCompanion.insert(documentoPorEmitirId: documento.id, servicioId: servicio.id),
+        );
+    await db.into(db.documentoPorEmitirConfiguracion).insertReturning(
+          DocumentoPorEmitirConfiguracionCompanion.insert(
+            documentoPorEmitirId: documento.id,
+            servicioId: servicio.id,
+            configuracionCobroVigenciaId: vigenciaCobro.id,
+            fechaPagoEsperadoProgramada: const Value(null),
+          ),
+        );
+    final documentoLinea = await db.into(db.documentoPorEmitirLinea).insertReturning(
+          DocumentoPorEmitirLineaCompanion.insert(
+            documentoPorEmitirId: documento.id,
+            servicioId: servicio.id,
+            lineaComercialVigenciaId: vigenciaLinea.id,
+            puestoNombre: 'Guardia',
+            modalidadTurnoNombre: '24×24',
+            cantidadElementos: 2,
+            precioUnitario: 1500000,
+            tratamientoIva: 'noAplica',
+            diasAplicables: 31,
+            subtotalProporcional: 3100000,
+          ),
+        );
+    expect(documentoLinea.subtotalProporcional, 3100000);
+
+    await db.close();
+  });
+
+  test('rechaza dos DocumentoPorEmitir con la misma generationKey tras la migración', () async {
+    final schemaV10 = await verifier.schemaAt(10);
+    final db = AppDatabase(schemaV10.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+
+    await db.into(db.documentoPorEmitir).insertReturning(
+          DocumentoPorEmitirCompanion.insert(
+            codigo: 'DOC-000001',
+            clienteId: cliente.id,
+            tipoDocumento: 'reciboDePago',
+            agrupacion: 'porServicio',
+            metodo: 'noAplica',
+            periodoInicio: DateTime(2026, 1, 1),
+            periodoFin: DateTime(2026, 1, 31),
+            generationKey: 'clave-repetida',
+            importeBaseEsperado: 0,
+            importeFinalEsperado: 0,
+          ),
+        );
+
+    expect(
+      () => db.into(db.documentoPorEmitir).insertReturning(
+            DocumentoPorEmitirCompanion.insert(
+              codigo: 'DOC-000002',
+              clienteId: cliente.id,
+              tipoDocumento: 'reciboDePago',
+              agrupacion: 'porServicio',
+              metodo: 'noAplica',
+              periodoInicio: DateTime(2026, 2, 1),
+              periodoFin: DateTime(2026, 2, 28),
+              generationKey: 'clave-repetida',
+              importeBaseEsperado: 0,
+              importeFinalEsperado: 0,
+            ),
+          ),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('rechaza un DocumentoPorEmitirServicio con Servicio inexistente tras la migración', () async {
+    final schemaV10 = await verifier.schemaAt(10);
+    final db = AppDatabase(schemaV10.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final documento = await db.into(db.documentoPorEmitir).insertReturning(
+          DocumentoPorEmitirCompanion.insert(
+            codigo: 'DOC-000001',
+            clienteId: cliente.id,
+            tipoDocumento: 'reciboDePago',
+            agrupacion: 'porServicio',
+            metodo: 'noAplica',
+            periodoInicio: DateTime(2026, 1, 1),
+            periodoFin: DateTime(2026, 1, 31),
+            generationKey: 'clave-unica',
+            importeBaseEsperado: 0,
+            importeFinalEsperado: 0,
+          ),
+        );
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO documento_por_emitir_servicio (documento_por_emitir_id, servicio_id)
+        VALUES ('${documento.id}', 'servicio-inexistente');
       '''),
       throwsA(anything),
     );

@@ -16781,6 +16781,3374 @@ class ConfiguracionCobroReglaEventoCompanion
   }
 }
 
+class $DocumentoPorEmitirTable extends DocumentoPorEmitir
+    with TableInfo<$DocumentoPorEmitirTable, DocumentoPorEmitirData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentoPorEmitirTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _clienteIdMeta = const VerificationMeta(
+    'clienteId',
+  );
+  @override
+  late final GeneratedColumn<String> clienteId = GeneratedColumn<String>(
+    'cliente_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cliente (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _entidadFiscalIdMeta = const VerificationMeta(
+    'entidadFiscalId',
+  );
+  @override
+  late final GeneratedColumn<String> entidadFiscalId = GeneratedColumn<String>(
+    'entidad_fiscal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES entidad_fiscal (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _tipoDocumentoMeta = const VerificationMeta(
+    'tipoDocumento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoDocumento = GeneratedColumn<String>(
+    'tipo_documento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _agrupacionMeta = const VerificationMeta(
+    'agrupacion',
+  );
+  @override
+  late final GeneratedColumn<String> agrupacion = GeneratedColumn<String>(
+    'agrupacion',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _metodoMeta = const VerificationMeta('metodo');
+  @override
+  late final GeneratedColumn<String> metodo = GeneratedColumn<String>(
+    'metodo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _requiereComplementoMeta =
+      const VerificationMeta('requiereComplemento');
+  @override
+  late final GeneratedColumn<bool> requiereComplemento = GeneratedColumn<bool>(
+    'requiere_complemento',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("requiere_complemento" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _periodoInicioMeta = const VerificationMeta(
+    'periodoInicio',
+  );
+  @override
+  late final GeneratedColumn<DateTime> periodoInicio =
+      GeneratedColumn<DateTime>(
+        'periodo_inicio',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _periodoFinMeta = const VerificationMeta(
+    'periodoFin',
+  );
+  @override
+  late final GeneratedColumn<DateTime> periodoFin = GeneratedColumn<DateTime>(
+    'periodo_fin',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaEmisionProgramadaMeta =
+      const VerificationMeta('fechaEmisionProgramada');
+  @override
+  late final GeneratedColumn<DateTime> fechaEmisionProgramada =
+      GeneratedColumn<DateTime>(
+        'fecha_emision_programada',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _fechaProcesamientoProgramadaMeta =
+      const VerificationMeta('fechaProcesamientoProgramada');
+  @override
+  late final GeneratedColumn<DateTime> fechaProcesamientoProgramada =
+      GeneratedColumn<DateTime>(
+        'fecha_procesamiento_programada',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _fechaPagoEsperadoProgramadaMeta =
+      const VerificationMeta('fechaPagoEsperadoProgramada');
+  @override
+  late final GeneratedColumn<DateTime> fechaPagoEsperadoProgramada =
+      GeneratedColumn<DateTime>(
+        'fecha_pago_esperado_programada',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _generationKeyMeta = const VerificationMeta(
+    'generationKey',
+  );
+  @override
+  late final GeneratedColumn<String> generationKey = GeneratedColumn<String>(
+    'generation_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _importeBaseEsperadoMeta =
+      const VerificationMeta('importeBaseEsperado');
+  @override
+  late final GeneratedColumn<int> importeBaseEsperado = GeneratedColumn<int>(
+    'importe_base_esperado',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ajusteManualMeta = const VerificationMeta(
+    'ajusteManual',
+  );
+  @override
+  late final GeneratedColumn<int> ajusteManual = GeneratedColumn<int>(
+    'ajuste_manual',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _motivoAjusteMeta = const VerificationMeta(
+    'motivoAjuste',
+  );
+  @override
+  late final GeneratedColumn<String> motivoAjuste = GeneratedColumn<String>(
+    'motivo_ajuste',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _importeFinalEsperadoMeta =
+      const VerificationMeta('importeFinalEsperado');
+  @override
+  late final GeneratedColumn<int> importeFinalEsperado = GeneratedColumn<int>(
+    'importe_final_esperado',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pendiente'),
+  );
+  static const VerificationMeta _motivoEstatusMeta = const VerificationMeta(
+    'motivoEstatus',
+  );
+  @override
+  late final GeneratedColumn<String> motivoEstatus = GeneratedColumn<String>(
+    'motivo_estatus',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    clienteId,
+    entidadFiscalId,
+    tipoDocumento,
+    agrupacion,
+    metodo,
+    requiereComplemento,
+    periodoInicio,
+    periodoFin,
+    fechaEmisionProgramada,
+    fechaProcesamientoProgramada,
+    fechaPagoEsperadoProgramada,
+    generationKey,
+    importeBaseEsperado,
+    ajusteManual,
+    motivoAjuste,
+    importeFinalEsperado,
+    estatus,
+    motivoEstatus,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento_por_emitir';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentoPorEmitirData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoMeta);
+    }
+    if (data.containsKey('cliente_id')) {
+      context.handle(
+        _clienteIdMeta,
+        clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_clienteIdMeta);
+    }
+    if (data.containsKey('entidad_fiscal_id')) {
+      context.handle(
+        _entidadFiscalIdMeta,
+        entidadFiscalId.isAcceptableOrUnknown(
+          data['entidad_fiscal_id']!,
+          _entidadFiscalIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tipo_documento')) {
+      context.handle(
+        _tipoDocumentoMeta,
+        tipoDocumento.isAcceptableOrUnknown(
+          data['tipo_documento']!,
+          _tipoDocumentoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoDocumentoMeta);
+    }
+    if (data.containsKey('agrupacion')) {
+      context.handle(
+        _agrupacionMeta,
+        agrupacion.isAcceptableOrUnknown(data['agrupacion']!, _agrupacionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_agrupacionMeta);
+    }
+    if (data.containsKey('metodo')) {
+      context.handle(
+        _metodoMeta,
+        metodo.isAcceptableOrUnknown(data['metodo']!, _metodoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_metodoMeta);
+    }
+    if (data.containsKey('requiere_complemento')) {
+      context.handle(
+        _requiereComplementoMeta,
+        requiereComplemento.isAcceptableOrUnknown(
+          data['requiere_complemento']!,
+          _requiereComplementoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('periodo_inicio')) {
+      context.handle(
+        _periodoInicioMeta,
+        periodoInicio.isAcceptableOrUnknown(
+          data['periodo_inicio']!,
+          _periodoInicioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_periodoInicioMeta);
+    }
+    if (data.containsKey('periodo_fin')) {
+      context.handle(
+        _periodoFinMeta,
+        periodoFin.isAcceptableOrUnknown(data['periodo_fin']!, _periodoFinMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_periodoFinMeta);
+    }
+    if (data.containsKey('fecha_emision_programada')) {
+      context.handle(
+        _fechaEmisionProgramadaMeta,
+        fechaEmisionProgramada.isAcceptableOrUnknown(
+          data['fecha_emision_programada']!,
+          _fechaEmisionProgramadaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_procesamiento_programada')) {
+      context.handle(
+        _fechaProcesamientoProgramadaMeta,
+        fechaProcesamientoProgramada.isAcceptableOrUnknown(
+          data['fecha_procesamiento_programada']!,
+          _fechaProcesamientoProgramadaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_pago_esperado_programada')) {
+      context.handle(
+        _fechaPagoEsperadoProgramadaMeta,
+        fechaPagoEsperadoProgramada.isAcceptableOrUnknown(
+          data['fecha_pago_esperado_programada']!,
+          _fechaPagoEsperadoProgramadaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('generation_key')) {
+      context.handle(
+        _generationKeyMeta,
+        generationKey.isAcceptableOrUnknown(
+          data['generation_key']!,
+          _generationKeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_generationKeyMeta);
+    }
+    if (data.containsKey('importe_base_esperado')) {
+      context.handle(
+        _importeBaseEsperadoMeta,
+        importeBaseEsperado.isAcceptableOrUnknown(
+          data['importe_base_esperado']!,
+          _importeBaseEsperadoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_importeBaseEsperadoMeta);
+    }
+    if (data.containsKey('ajuste_manual')) {
+      context.handle(
+        _ajusteManualMeta,
+        ajusteManual.isAcceptableOrUnknown(
+          data['ajuste_manual']!,
+          _ajusteManualMeta,
+        ),
+      );
+    }
+    if (data.containsKey('motivo_ajuste')) {
+      context.handle(
+        _motivoAjusteMeta,
+        motivoAjuste.isAcceptableOrUnknown(
+          data['motivo_ajuste']!,
+          _motivoAjusteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('importe_final_esperado')) {
+      context.handle(
+        _importeFinalEsperadoMeta,
+        importeFinalEsperado.isAcceptableOrUnknown(
+          data['importe_final_esperado']!,
+          _importeFinalEsperadoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_importeFinalEsperadoMeta);
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('motivo_estatus')) {
+      context.handle(
+        _motivoEstatusMeta,
+        motivoEstatus.isAcceptableOrUnknown(
+          data['motivo_estatus']!,
+          _motivoEstatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentoPorEmitirData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentoPorEmitirData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      codigo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}codigo'],
+          )!,
+      clienteId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}cliente_id'],
+          )!,
+      entidadFiscalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entidad_fiscal_id'],
+      ),
+      tipoDocumento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_documento'],
+          )!,
+      agrupacion:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}agrupacion'],
+          )!,
+      metodo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}metodo'],
+          )!,
+      requiereComplemento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}requiere_complemento'],
+          )!,
+      periodoInicio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}periodo_inicio'],
+          )!,
+      periodoFin:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}periodo_fin'],
+          )!,
+      fechaEmisionProgramada: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_emision_programada'],
+      ),
+      fechaProcesamientoProgramada: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_procesamiento_programada'],
+      ),
+      fechaPagoEsperadoProgramada: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_pago_esperado_programada'],
+      ),
+      generationKey:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}generation_key'],
+          )!,
+      importeBaseEsperado:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}importe_base_esperado'],
+          )!,
+      ajusteManual: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ajuste_manual'],
+      ),
+      motivoAjuste: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_ajuste'],
+      ),
+      importeFinalEsperado:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}importe_final_esperado'],
+          )!,
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      motivoEstatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_estatus'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $DocumentoPorEmitirTable createAlias(String alias) {
+    return $DocumentoPorEmitirTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentoPorEmitirData extends DataClass
+    implements Insertable<DocumentoPorEmitirData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String codigo;
+  final String clienteId;
+  final String? entidadFiscalId;
+  final String tipoDocumento;
+  final String agrupacion;
+  final String metodo;
+  final bool requiereComplemento;
+  final DateTime periodoInicio;
+  final DateTime periodoFin;
+  final DateTime? fechaEmisionProgramada;
+  final DateTime? fechaProcesamientoProgramada;
+  final DateTime? fechaPagoEsperadoProgramada;
+
+  /// Clave determinista de generación — protege la idempotencia real
+  /// (un documento agrupado puede usar varias vigencias de cobro a la
+  /// vez, así que `UNIQUE(configuracionCobroVigenciaId, periodoInicio)`
+  /// no alcanza). Calculada en el dominio a partir de: agrupación,
+  /// Cliente, Entidad fiscal, el conjunto ordenado de Servicios, el
+  /// conjunto ordenado de vigencias de cobro, periodoInicio, periodoFin
+  /// y tipoDocumento — ver `calcularGenerationKey`.
+  final String generationKey;
+  final int importeBaseEsperado;
+  final int? ajusteManual;
+  final String? motivoAjuste;
+  final int importeFinalEsperado;
+  final String estatus;
+
+  /// Motivo obligatorio al pasar a `cancelado`/`noRequerido` — el mismo
+  /// campo cubre ambos casos (ver dominio para la distinción semántica
+  /// entre uno y otro).
+  final String? motivoEstatus;
+  final String? observaciones;
+  const DocumentoPorEmitirData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.codigo,
+    required this.clienteId,
+    this.entidadFiscalId,
+    required this.tipoDocumento,
+    required this.agrupacion,
+    required this.metodo,
+    required this.requiereComplemento,
+    required this.periodoInicio,
+    required this.periodoFin,
+    this.fechaEmisionProgramada,
+    this.fechaProcesamientoProgramada,
+    this.fechaPagoEsperadoProgramada,
+    required this.generationKey,
+    required this.importeBaseEsperado,
+    this.ajusteManual,
+    this.motivoAjuste,
+    required this.importeFinalEsperado,
+    required this.estatus,
+    this.motivoEstatus,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['codigo'] = Variable<String>(codigo);
+    map['cliente_id'] = Variable<String>(clienteId);
+    if (!nullToAbsent || entidadFiscalId != null) {
+      map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId);
+    }
+    map['tipo_documento'] = Variable<String>(tipoDocumento);
+    map['agrupacion'] = Variable<String>(agrupacion);
+    map['metodo'] = Variable<String>(metodo);
+    map['requiere_complemento'] = Variable<bool>(requiereComplemento);
+    map['periodo_inicio'] = Variable<DateTime>(periodoInicio);
+    map['periodo_fin'] = Variable<DateTime>(periodoFin);
+    if (!nullToAbsent || fechaEmisionProgramada != null) {
+      map['fecha_emision_programada'] = Variable<DateTime>(
+        fechaEmisionProgramada,
+      );
+    }
+    if (!nullToAbsent || fechaProcesamientoProgramada != null) {
+      map['fecha_procesamiento_programada'] = Variable<DateTime>(
+        fechaProcesamientoProgramada,
+      );
+    }
+    if (!nullToAbsent || fechaPagoEsperadoProgramada != null) {
+      map['fecha_pago_esperado_programada'] = Variable<DateTime>(
+        fechaPagoEsperadoProgramada,
+      );
+    }
+    map['generation_key'] = Variable<String>(generationKey);
+    map['importe_base_esperado'] = Variable<int>(importeBaseEsperado);
+    if (!nullToAbsent || ajusteManual != null) {
+      map['ajuste_manual'] = Variable<int>(ajusteManual);
+    }
+    if (!nullToAbsent || motivoAjuste != null) {
+      map['motivo_ajuste'] = Variable<String>(motivoAjuste);
+    }
+    map['importe_final_esperado'] = Variable<int>(importeFinalEsperado);
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || motivoEstatus != null) {
+      map['motivo_estatus'] = Variable<String>(motivoEstatus);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  DocumentoPorEmitirCompanion toCompanion(bool nullToAbsent) {
+    return DocumentoPorEmitirCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      codigo: Value(codigo),
+      clienteId: Value(clienteId),
+      entidadFiscalId:
+          entidadFiscalId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(entidadFiscalId),
+      tipoDocumento: Value(tipoDocumento),
+      agrupacion: Value(agrupacion),
+      metodo: Value(metodo),
+      requiereComplemento: Value(requiereComplemento),
+      periodoInicio: Value(periodoInicio),
+      periodoFin: Value(periodoFin),
+      fechaEmisionProgramada:
+          fechaEmisionProgramada == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaEmisionProgramada),
+      fechaProcesamientoProgramada:
+          fechaProcesamientoProgramada == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaProcesamientoProgramada),
+      fechaPagoEsperadoProgramada:
+          fechaPagoEsperadoProgramada == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaPagoEsperadoProgramada),
+      generationKey: Value(generationKey),
+      importeBaseEsperado: Value(importeBaseEsperado),
+      ajusteManual:
+          ajusteManual == null && nullToAbsent
+              ? const Value.absent()
+              : Value(ajusteManual),
+      motivoAjuste:
+          motivoAjuste == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoAjuste),
+      importeFinalEsperado: Value(importeFinalEsperado),
+      estatus: Value(estatus),
+      motivoEstatus:
+          motivoEstatus == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoEstatus),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory DocumentoPorEmitirData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentoPorEmitirData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      codigo: serializer.fromJson<String>(json['codigo']),
+      clienteId: serializer.fromJson<String>(json['clienteId']),
+      entidadFiscalId: serializer.fromJson<String?>(json['entidadFiscalId']),
+      tipoDocumento: serializer.fromJson<String>(json['tipoDocumento']),
+      agrupacion: serializer.fromJson<String>(json['agrupacion']),
+      metodo: serializer.fromJson<String>(json['metodo']),
+      requiereComplemento: serializer.fromJson<bool>(
+        json['requiereComplemento'],
+      ),
+      periodoInicio: serializer.fromJson<DateTime>(json['periodoInicio']),
+      periodoFin: serializer.fromJson<DateTime>(json['periodoFin']),
+      fechaEmisionProgramada: serializer.fromJson<DateTime?>(
+        json['fechaEmisionProgramada'],
+      ),
+      fechaProcesamientoProgramada: serializer.fromJson<DateTime?>(
+        json['fechaProcesamientoProgramada'],
+      ),
+      fechaPagoEsperadoProgramada: serializer.fromJson<DateTime?>(
+        json['fechaPagoEsperadoProgramada'],
+      ),
+      generationKey: serializer.fromJson<String>(json['generationKey']),
+      importeBaseEsperado: serializer.fromJson<int>(
+        json['importeBaseEsperado'],
+      ),
+      ajusteManual: serializer.fromJson<int?>(json['ajusteManual']),
+      motivoAjuste: serializer.fromJson<String?>(json['motivoAjuste']),
+      importeFinalEsperado: serializer.fromJson<int>(
+        json['importeFinalEsperado'],
+      ),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      motivoEstatus: serializer.fromJson<String?>(json['motivoEstatus']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'codigo': serializer.toJson<String>(codigo),
+      'clienteId': serializer.toJson<String>(clienteId),
+      'entidadFiscalId': serializer.toJson<String?>(entidadFiscalId),
+      'tipoDocumento': serializer.toJson<String>(tipoDocumento),
+      'agrupacion': serializer.toJson<String>(agrupacion),
+      'metodo': serializer.toJson<String>(metodo),
+      'requiereComplemento': serializer.toJson<bool>(requiereComplemento),
+      'periodoInicio': serializer.toJson<DateTime>(periodoInicio),
+      'periodoFin': serializer.toJson<DateTime>(periodoFin),
+      'fechaEmisionProgramada': serializer.toJson<DateTime?>(
+        fechaEmisionProgramada,
+      ),
+      'fechaProcesamientoProgramada': serializer.toJson<DateTime?>(
+        fechaProcesamientoProgramada,
+      ),
+      'fechaPagoEsperadoProgramada': serializer.toJson<DateTime?>(
+        fechaPagoEsperadoProgramada,
+      ),
+      'generationKey': serializer.toJson<String>(generationKey),
+      'importeBaseEsperado': serializer.toJson<int>(importeBaseEsperado),
+      'ajusteManual': serializer.toJson<int?>(ajusteManual),
+      'motivoAjuste': serializer.toJson<String?>(motivoAjuste),
+      'importeFinalEsperado': serializer.toJson<int>(importeFinalEsperado),
+      'estatus': serializer.toJson<String>(estatus),
+      'motivoEstatus': serializer.toJson<String?>(motivoEstatus),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  DocumentoPorEmitirData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? codigo,
+    String? clienteId,
+    Value<String?> entidadFiscalId = const Value.absent(),
+    String? tipoDocumento,
+    String? agrupacion,
+    String? metodo,
+    bool? requiereComplemento,
+    DateTime? periodoInicio,
+    DateTime? periodoFin,
+    Value<DateTime?> fechaEmisionProgramada = const Value.absent(),
+    Value<DateTime?> fechaProcesamientoProgramada = const Value.absent(),
+    Value<DateTime?> fechaPagoEsperadoProgramada = const Value.absent(),
+    String? generationKey,
+    int? importeBaseEsperado,
+    Value<int?> ajusteManual = const Value.absent(),
+    Value<String?> motivoAjuste = const Value.absent(),
+    int? importeFinalEsperado,
+    String? estatus,
+    Value<String?> motivoEstatus = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => DocumentoPorEmitirData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    codigo: codigo ?? this.codigo,
+    clienteId: clienteId ?? this.clienteId,
+    entidadFiscalId:
+        entidadFiscalId.present ? entidadFiscalId.value : this.entidadFiscalId,
+    tipoDocumento: tipoDocumento ?? this.tipoDocumento,
+    agrupacion: agrupacion ?? this.agrupacion,
+    metodo: metodo ?? this.metodo,
+    requiereComplemento: requiereComplemento ?? this.requiereComplemento,
+    periodoInicio: periodoInicio ?? this.periodoInicio,
+    periodoFin: periodoFin ?? this.periodoFin,
+    fechaEmisionProgramada:
+        fechaEmisionProgramada.present
+            ? fechaEmisionProgramada.value
+            : this.fechaEmisionProgramada,
+    fechaProcesamientoProgramada:
+        fechaProcesamientoProgramada.present
+            ? fechaProcesamientoProgramada.value
+            : this.fechaProcesamientoProgramada,
+    fechaPagoEsperadoProgramada:
+        fechaPagoEsperadoProgramada.present
+            ? fechaPagoEsperadoProgramada.value
+            : this.fechaPagoEsperadoProgramada,
+    generationKey: generationKey ?? this.generationKey,
+    importeBaseEsperado: importeBaseEsperado ?? this.importeBaseEsperado,
+    ajusteManual: ajusteManual.present ? ajusteManual.value : this.ajusteManual,
+    motivoAjuste: motivoAjuste.present ? motivoAjuste.value : this.motivoAjuste,
+    importeFinalEsperado: importeFinalEsperado ?? this.importeFinalEsperado,
+    estatus: estatus ?? this.estatus,
+    motivoEstatus:
+        motivoEstatus.present ? motivoEstatus.value : this.motivoEstatus,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  DocumentoPorEmitirData copyWithCompanion(DocumentoPorEmitirCompanion data) {
+    return DocumentoPorEmitirData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+      entidadFiscalId:
+          data.entidadFiscalId.present
+              ? data.entidadFiscalId.value
+              : this.entidadFiscalId,
+      tipoDocumento:
+          data.tipoDocumento.present
+              ? data.tipoDocumento.value
+              : this.tipoDocumento,
+      agrupacion:
+          data.agrupacion.present ? data.agrupacion.value : this.agrupacion,
+      metodo: data.metodo.present ? data.metodo.value : this.metodo,
+      requiereComplemento:
+          data.requiereComplemento.present
+              ? data.requiereComplemento.value
+              : this.requiereComplemento,
+      periodoInicio:
+          data.periodoInicio.present
+              ? data.periodoInicio.value
+              : this.periodoInicio,
+      periodoFin:
+          data.periodoFin.present ? data.periodoFin.value : this.periodoFin,
+      fechaEmisionProgramada:
+          data.fechaEmisionProgramada.present
+              ? data.fechaEmisionProgramada.value
+              : this.fechaEmisionProgramada,
+      fechaProcesamientoProgramada:
+          data.fechaProcesamientoProgramada.present
+              ? data.fechaProcesamientoProgramada.value
+              : this.fechaProcesamientoProgramada,
+      fechaPagoEsperadoProgramada:
+          data.fechaPagoEsperadoProgramada.present
+              ? data.fechaPagoEsperadoProgramada.value
+              : this.fechaPagoEsperadoProgramada,
+      generationKey:
+          data.generationKey.present
+              ? data.generationKey.value
+              : this.generationKey,
+      importeBaseEsperado:
+          data.importeBaseEsperado.present
+              ? data.importeBaseEsperado.value
+              : this.importeBaseEsperado,
+      ajusteManual:
+          data.ajusteManual.present
+              ? data.ajusteManual.value
+              : this.ajusteManual,
+      motivoAjuste:
+          data.motivoAjuste.present
+              ? data.motivoAjuste.value
+              : this.motivoAjuste,
+      importeFinalEsperado:
+          data.importeFinalEsperado.present
+              ? data.importeFinalEsperado.value
+              : this.importeFinalEsperado,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      motivoEstatus:
+          data.motivoEstatus.present
+              ? data.motivoEstatus.value
+              : this.motivoEstatus,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('entidadFiscalId: $entidadFiscalId, ')
+          ..write('tipoDocumento: $tipoDocumento, ')
+          ..write('agrupacion: $agrupacion, ')
+          ..write('metodo: $metodo, ')
+          ..write('requiereComplemento: $requiereComplemento, ')
+          ..write('periodoInicio: $periodoInicio, ')
+          ..write('periodoFin: $periodoFin, ')
+          ..write('fechaEmisionProgramada: $fechaEmisionProgramada, ')
+          ..write(
+            'fechaProcesamientoProgramada: $fechaProcesamientoProgramada, ',
+          )
+          ..write('fechaPagoEsperadoProgramada: $fechaPagoEsperadoProgramada, ')
+          ..write('generationKey: $generationKey, ')
+          ..write('importeBaseEsperado: $importeBaseEsperado, ')
+          ..write('ajusteManual: $ajusteManual, ')
+          ..write('motivoAjuste: $motivoAjuste, ')
+          ..write('importeFinalEsperado: $importeFinalEsperado, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoEstatus: $motivoEstatus, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    clienteId,
+    entidadFiscalId,
+    tipoDocumento,
+    agrupacion,
+    metodo,
+    requiereComplemento,
+    periodoInicio,
+    periodoFin,
+    fechaEmisionProgramada,
+    fechaProcesamientoProgramada,
+    fechaPagoEsperadoProgramada,
+    generationKey,
+    importeBaseEsperado,
+    ajusteManual,
+    motivoAjuste,
+    importeFinalEsperado,
+    estatus,
+    motivoEstatus,
+    observaciones,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentoPorEmitirData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.codigo == this.codigo &&
+          other.clienteId == this.clienteId &&
+          other.entidadFiscalId == this.entidadFiscalId &&
+          other.tipoDocumento == this.tipoDocumento &&
+          other.agrupacion == this.agrupacion &&
+          other.metodo == this.metodo &&
+          other.requiereComplemento == this.requiereComplemento &&
+          other.periodoInicio == this.periodoInicio &&
+          other.periodoFin == this.periodoFin &&
+          other.fechaEmisionProgramada == this.fechaEmisionProgramada &&
+          other.fechaProcesamientoProgramada ==
+              this.fechaProcesamientoProgramada &&
+          other.fechaPagoEsperadoProgramada ==
+              this.fechaPagoEsperadoProgramada &&
+          other.generationKey == this.generationKey &&
+          other.importeBaseEsperado == this.importeBaseEsperado &&
+          other.ajusteManual == this.ajusteManual &&
+          other.motivoAjuste == this.motivoAjuste &&
+          other.importeFinalEsperado == this.importeFinalEsperado &&
+          other.estatus == this.estatus &&
+          other.motivoEstatus == this.motivoEstatus &&
+          other.observaciones == this.observaciones);
+}
+
+class DocumentoPorEmitirCompanion
+    extends UpdateCompanion<DocumentoPorEmitirData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> codigo;
+  final Value<String> clienteId;
+  final Value<String?> entidadFiscalId;
+  final Value<String> tipoDocumento;
+  final Value<String> agrupacion;
+  final Value<String> metodo;
+  final Value<bool> requiereComplemento;
+  final Value<DateTime> periodoInicio;
+  final Value<DateTime> periodoFin;
+  final Value<DateTime?> fechaEmisionProgramada;
+  final Value<DateTime?> fechaProcesamientoProgramada;
+  final Value<DateTime?> fechaPagoEsperadoProgramada;
+  final Value<String> generationKey;
+  final Value<int> importeBaseEsperado;
+  final Value<int?> ajusteManual;
+  final Value<String?> motivoAjuste;
+  final Value<int> importeFinalEsperado;
+  final Value<String> estatus;
+  final Value<String?> motivoEstatus;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const DocumentoPorEmitirCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.clienteId = const Value.absent(),
+    this.entidadFiscalId = const Value.absent(),
+    this.tipoDocumento = const Value.absent(),
+    this.agrupacion = const Value.absent(),
+    this.metodo = const Value.absent(),
+    this.requiereComplemento = const Value.absent(),
+    this.periodoInicio = const Value.absent(),
+    this.periodoFin = const Value.absent(),
+    this.fechaEmisionProgramada = const Value.absent(),
+    this.fechaProcesamientoProgramada = const Value.absent(),
+    this.fechaPagoEsperadoProgramada = const Value.absent(),
+    this.generationKey = const Value.absent(),
+    this.importeBaseEsperado = const Value.absent(),
+    this.ajusteManual = const Value.absent(),
+    this.motivoAjuste = const Value.absent(),
+    this.importeFinalEsperado = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.motivoEstatus = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DocumentoPorEmitirCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String codigo,
+    required String clienteId,
+    this.entidadFiscalId = const Value.absent(),
+    required String tipoDocumento,
+    required String agrupacion,
+    required String metodo,
+    this.requiereComplemento = const Value.absent(),
+    required DateTime periodoInicio,
+    required DateTime periodoFin,
+    this.fechaEmisionProgramada = const Value.absent(),
+    this.fechaProcesamientoProgramada = const Value.absent(),
+    this.fechaPagoEsperadoProgramada = const Value.absent(),
+    required String generationKey,
+    required int importeBaseEsperado,
+    this.ajusteManual = const Value.absent(),
+    this.motivoAjuste = const Value.absent(),
+    required int importeFinalEsperado,
+    this.estatus = const Value.absent(),
+    this.motivoEstatus = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : codigo = Value(codigo),
+       clienteId = Value(clienteId),
+       tipoDocumento = Value(tipoDocumento),
+       agrupacion = Value(agrupacion),
+       metodo = Value(metodo),
+       periodoInicio = Value(periodoInicio),
+       periodoFin = Value(periodoFin),
+       generationKey = Value(generationKey),
+       importeBaseEsperado = Value(importeBaseEsperado),
+       importeFinalEsperado = Value(importeFinalEsperado);
+  static Insertable<DocumentoPorEmitirData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? codigo,
+    Expression<String>? clienteId,
+    Expression<String>? entidadFiscalId,
+    Expression<String>? tipoDocumento,
+    Expression<String>? agrupacion,
+    Expression<String>? metodo,
+    Expression<bool>? requiereComplemento,
+    Expression<DateTime>? periodoInicio,
+    Expression<DateTime>? periodoFin,
+    Expression<DateTime>? fechaEmisionProgramada,
+    Expression<DateTime>? fechaProcesamientoProgramada,
+    Expression<DateTime>? fechaPagoEsperadoProgramada,
+    Expression<String>? generationKey,
+    Expression<int>? importeBaseEsperado,
+    Expression<int>? ajusteManual,
+    Expression<String>? motivoAjuste,
+    Expression<int>? importeFinalEsperado,
+    Expression<String>? estatus,
+    Expression<String>? motivoEstatus,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (codigo != null) 'codigo': codigo,
+      if (clienteId != null) 'cliente_id': clienteId,
+      if (entidadFiscalId != null) 'entidad_fiscal_id': entidadFiscalId,
+      if (tipoDocumento != null) 'tipo_documento': tipoDocumento,
+      if (agrupacion != null) 'agrupacion': agrupacion,
+      if (metodo != null) 'metodo': metodo,
+      if (requiereComplemento != null)
+        'requiere_complemento': requiereComplemento,
+      if (periodoInicio != null) 'periodo_inicio': periodoInicio,
+      if (periodoFin != null) 'periodo_fin': periodoFin,
+      if (fechaEmisionProgramada != null)
+        'fecha_emision_programada': fechaEmisionProgramada,
+      if (fechaProcesamientoProgramada != null)
+        'fecha_procesamiento_programada': fechaProcesamientoProgramada,
+      if (fechaPagoEsperadoProgramada != null)
+        'fecha_pago_esperado_programada': fechaPagoEsperadoProgramada,
+      if (generationKey != null) 'generation_key': generationKey,
+      if (importeBaseEsperado != null)
+        'importe_base_esperado': importeBaseEsperado,
+      if (ajusteManual != null) 'ajuste_manual': ajusteManual,
+      if (motivoAjuste != null) 'motivo_ajuste': motivoAjuste,
+      if (importeFinalEsperado != null)
+        'importe_final_esperado': importeFinalEsperado,
+      if (estatus != null) 'estatus': estatus,
+      if (motivoEstatus != null) 'motivo_estatus': motivoEstatus,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DocumentoPorEmitirCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? codigo,
+    Value<String>? clienteId,
+    Value<String?>? entidadFiscalId,
+    Value<String>? tipoDocumento,
+    Value<String>? agrupacion,
+    Value<String>? metodo,
+    Value<bool>? requiereComplemento,
+    Value<DateTime>? periodoInicio,
+    Value<DateTime>? periodoFin,
+    Value<DateTime?>? fechaEmisionProgramada,
+    Value<DateTime?>? fechaProcesamientoProgramada,
+    Value<DateTime?>? fechaPagoEsperadoProgramada,
+    Value<String>? generationKey,
+    Value<int>? importeBaseEsperado,
+    Value<int?>? ajusteManual,
+    Value<String?>? motivoAjuste,
+    Value<int>? importeFinalEsperado,
+    Value<String>? estatus,
+    Value<String?>? motivoEstatus,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return DocumentoPorEmitirCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      codigo: codigo ?? this.codigo,
+      clienteId: clienteId ?? this.clienteId,
+      entidadFiscalId: entidadFiscalId ?? this.entidadFiscalId,
+      tipoDocumento: tipoDocumento ?? this.tipoDocumento,
+      agrupacion: agrupacion ?? this.agrupacion,
+      metodo: metodo ?? this.metodo,
+      requiereComplemento: requiereComplemento ?? this.requiereComplemento,
+      periodoInicio: periodoInicio ?? this.periodoInicio,
+      periodoFin: periodoFin ?? this.periodoFin,
+      fechaEmisionProgramada:
+          fechaEmisionProgramada ?? this.fechaEmisionProgramada,
+      fechaProcesamientoProgramada:
+          fechaProcesamientoProgramada ?? this.fechaProcesamientoProgramada,
+      fechaPagoEsperadoProgramada:
+          fechaPagoEsperadoProgramada ?? this.fechaPagoEsperadoProgramada,
+      generationKey: generationKey ?? this.generationKey,
+      importeBaseEsperado: importeBaseEsperado ?? this.importeBaseEsperado,
+      ajusteManual: ajusteManual ?? this.ajusteManual,
+      motivoAjuste: motivoAjuste ?? this.motivoAjuste,
+      importeFinalEsperado: importeFinalEsperado ?? this.importeFinalEsperado,
+      estatus: estatus ?? this.estatus,
+      motivoEstatus: motivoEstatus ?? this.motivoEstatus,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (clienteId.present) {
+      map['cliente_id'] = Variable<String>(clienteId.value);
+    }
+    if (entidadFiscalId.present) {
+      map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId.value);
+    }
+    if (tipoDocumento.present) {
+      map['tipo_documento'] = Variable<String>(tipoDocumento.value);
+    }
+    if (agrupacion.present) {
+      map['agrupacion'] = Variable<String>(agrupacion.value);
+    }
+    if (metodo.present) {
+      map['metodo'] = Variable<String>(metodo.value);
+    }
+    if (requiereComplemento.present) {
+      map['requiere_complemento'] = Variable<bool>(requiereComplemento.value);
+    }
+    if (periodoInicio.present) {
+      map['periodo_inicio'] = Variable<DateTime>(periodoInicio.value);
+    }
+    if (periodoFin.present) {
+      map['periodo_fin'] = Variable<DateTime>(periodoFin.value);
+    }
+    if (fechaEmisionProgramada.present) {
+      map['fecha_emision_programada'] = Variable<DateTime>(
+        fechaEmisionProgramada.value,
+      );
+    }
+    if (fechaProcesamientoProgramada.present) {
+      map['fecha_procesamiento_programada'] = Variable<DateTime>(
+        fechaProcesamientoProgramada.value,
+      );
+    }
+    if (fechaPagoEsperadoProgramada.present) {
+      map['fecha_pago_esperado_programada'] = Variable<DateTime>(
+        fechaPagoEsperadoProgramada.value,
+      );
+    }
+    if (generationKey.present) {
+      map['generation_key'] = Variable<String>(generationKey.value);
+    }
+    if (importeBaseEsperado.present) {
+      map['importe_base_esperado'] = Variable<int>(importeBaseEsperado.value);
+    }
+    if (ajusteManual.present) {
+      map['ajuste_manual'] = Variable<int>(ajusteManual.value);
+    }
+    if (motivoAjuste.present) {
+      map['motivo_ajuste'] = Variable<String>(motivoAjuste.value);
+    }
+    if (importeFinalEsperado.present) {
+      map['importe_final_esperado'] = Variable<int>(importeFinalEsperado.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (motivoEstatus.present) {
+      map['motivo_estatus'] = Variable<String>(motivoEstatus.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('entidadFiscalId: $entidadFiscalId, ')
+          ..write('tipoDocumento: $tipoDocumento, ')
+          ..write('agrupacion: $agrupacion, ')
+          ..write('metodo: $metodo, ')
+          ..write('requiereComplemento: $requiereComplemento, ')
+          ..write('periodoInicio: $periodoInicio, ')
+          ..write('periodoFin: $periodoFin, ')
+          ..write('fechaEmisionProgramada: $fechaEmisionProgramada, ')
+          ..write(
+            'fechaProcesamientoProgramada: $fechaProcesamientoProgramada, ',
+          )
+          ..write('fechaPagoEsperadoProgramada: $fechaPagoEsperadoProgramada, ')
+          ..write('generationKey: $generationKey, ')
+          ..write('importeBaseEsperado: $importeBaseEsperado, ')
+          ..write('ajusteManual: $ajusteManual, ')
+          ..write('motivoAjuste: $motivoAjuste, ')
+          ..write('importeFinalEsperado: $importeFinalEsperado, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoEstatus: $motivoEstatus, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DocumentoPorEmitirServicioTable extends DocumentoPorEmitirServicio
+    with
+        TableInfo<
+          $DocumentoPorEmitirServicioTable,
+          DocumentoPorEmitirServicioData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentoPorEmitirServicioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, documentoPorEmitirId, servicioId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento_por_emitir_servicio';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentoPorEmitirServicioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentoPorEmitirIdMeta);
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_servicioIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentoPorEmitirServicioData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentoPorEmitirServicioData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      documentoPorEmitirId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}documento_por_emitir_id'],
+          )!,
+      servicioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}servicio_id'],
+          )!,
+    );
+  }
+
+  @override
+  $DocumentoPorEmitirServicioTable createAlias(String alias) {
+    return $DocumentoPorEmitirServicioTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentoPorEmitirServicioData extends DataClass
+    implements Insertable<DocumentoPorEmitirServicioData> {
+  final int id;
+  final String documentoPorEmitirId;
+  final String servicioId;
+  const DocumentoPorEmitirServicioData({
+    required this.id,
+    required this.documentoPorEmitirId,
+    required this.servicioId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    map['servicio_id'] = Variable<String>(servicioId);
+    return map;
+  }
+
+  DocumentoPorEmitirServicioCompanion toCompanion(bool nullToAbsent) {
+    return DocumentoPorEmitirServicioCompanion(
+      id: Value(id),
+      documentoPorEmitirId: Value(documentoPorEmitirId),
+      servicioId: Value(servicioId),
+    );
+  }
+
+  factory DocumentoPorEmitirServicioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentoPorEmitirServicioData(
+      id: serializer.fromJson<int>(json['id']),
+      documentoPorEmitirId: serializer.fromJson<String>(
+        json['documentoPorEmitirId'],
+      ),
+      servicioId: serializer.fromJson<String>(json['servicioId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'documentoPorEmitirId': serializer.toJson<String>(documentoPorEmitirId),
+      'servicioId': serializer.toJson<String>(servicioId),
+    };
+  }
+
+  DocumentoPorEmitirServicioData copyWith({
+    int? id,
+    String? documentoPorEmitirId,
+    String? servicioId,
+  }) => DocumentoPorEmitirServicioData(
+    id: id ?? this.id,
+    documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+    servicioId: servicioId ?? this.servicioId,
+  );
+  DocumentoPorEmitirServicioData copyWithCompanion(
+    DocumentoPorEmitirServicioCompanion data,
+  ) {
+    return DocumentoPorEmitirServicioData(
+      id: data.id.present ? data.id.value : this.id,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirServicioData(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('servicioId: $servicioId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, documentoPorEmitirId, servicioId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentoPorEmitirServicioData &&
+          other.id == this.id &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.servicioId == this.servicioId);
+}
+
+class DocumentoPorEmitirServicioCompanion
+    extends UpdateCompanion<DocumentoPorEmitirServicioData> {
+  final Value<int> id;
+  final Value<String> documentoPorEmitirId;
+  final Value<String> servicioId;
+  const DocumentoPorEmitirServicioCompanion({
+    this.id = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+  });
+  DocumentoPorEmitirServicioCompanion.insert({
+    this.id = const Value.absent(),
+    required String documentoPorEmitirId,
+    required String servicioId,
+  }) : documentoPorEmitirId = Value(documentoPorEmitirId),
+       servicioId = Value(servicioId);
+  static Insertable<DocumentoPorEmitirServicioData> custom({
+    Expression<int>? id,
+    Expression<String>? documentoPorEmitirId,
+    Expression<String>? servicioId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (servicioId != null) 'servicio_id': servicioId,
+    });
+  }
+
+  DocumentoPorEmitirServicioCompanion copyWith({
+    Value<int>? id,
+    Value<String>? documentoPorEmitirId,
+    Value<String>? servicioId,
+  }) {
+    return DocumentoPorEmitirServicioCompanion(
+      id: id ?? this.id,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      servicioId: servicioId ?? this.servicioId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirServicioCompanion(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('servicioId: $servicioId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DocumentoPorEmitirConfiguracionTable
+    extends DocumentoPorEmitirConfiguracion
+    with
+        TableInfo<
+          $DocumentoPorEmitirConfiguracionTable,
+          DocumentoPorEmitirConfiguracionData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentoPorEmitirConfiguracionTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _configuracionCobroVigenciaIdMeta =
+      const VerificationMeta('configuracionCobroVigenciaId');
+  @override
+  late final GeneratedColumn<String> configuracionCobroVigenciaId =
+      GeneratedColumn<String>(
+        'configuracion_cobro_vigencia_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES configuracion_cobro_vigencia (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _fechaEmisionProgramadaMeta =
+      const VerificationMeta('fechaEmisionProgramada');
+  @override
+  late final GeneratedColumn<DateTime> fechaEmisionProgramada =
+      GeneratedColumn<DateTime>(
+        'fecha_emision_programada',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _fechaProcesamientoProgramadaMeta =
+      const VerificationMeta('fechaProcesamientoProgramada');
+  @override
+  late final GeneratedColumn<DateTime> fechaProcesamientoProgramada =
+      GeneratedColumn<DateTime>(
+        'fecha_procesamiento_programada',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _fechaPagoEsperadoProgramadaMeta =
+      const VerificationMeta('fechaPagoEsperadoProgramada');
+  @override
+  late final GeneratedColumn<DateTime> fechaPagoEsperadoProgramada =
+      GeneratedColumn<DateTime>(
+        'fecha_pago_esperado_programada',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    documentoPorEmitirId,
+    servicioId,
+    configuracionCobroVigenciaId,
+    fechaEmisionProgramada,
+    fechaProcesamientoProgramada,
+    fechaPagoEsperadoProgramada,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento_por_emitir_configuracion';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentoPorEmitirConfiguracionData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentoPorEmitirIdMeta);
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_servicioIdMeta);
+    }
+    if (data.containsKey('configuracion_cobro_vigencia_id')) {
+      context.handle(
+        _configuracionCobroVigenciaIdMeta,
+        configuracionCobroVigenciaId.isAcceptableOrUnknown(
+          data['configuracion_cobro_vigencia_id']!,
+          _configuracionCobroVigenciaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_configuracionCobroVigenciaIdMeta);
+    }
+    if (data.containsKey('fecha_emision_programada')) {
+      context.handle(
+        _fechaEmisionProgramadaMeta,
+        fechaEmisionProgramada.isAcceptableOrUnknown(
+          data['fecha_emision_programada']!,
+          _fechaEmisionProgramadaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_procesamiento_programada')) {
+      context.handle(
+        _fechaProcesamientoProgramadaMeta,
+        fechaProcesamientoProgramada.isAcceptableOrUnknown(
+          data['fecha_procesamiento_programada']!,
+          _fechaProcesamientoProgramadaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_pago_esperado_programada')) {
+      context.handle(
+        _fechaPagoEsperadoProgramadaMeta,
+        fechaPagoEsperadoProgramada.isAcceptableOrUnknown(
+          data['fecha_pago_esperado_programada']!,
+          _fechaPagoEsperadoProgramadaMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentoPorEmitirConfiguracionData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentoPorEmitirConfiguracionData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      documentoPorEmitirId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}documento_por_emitir_id'],
+          )!,
+      servicioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}servicio_id'],
+          )!,
+      configuracionCobroVigenciaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}configuracion_cobro_vigencia_id'],
+          )!,
+      fechaEmisionProgramada: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_emision_programada'],
+      ),
+      fechaProcesamientoProgramada: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_procesamiento_programada'],
+      ),
+      fechaPagoEsperadoProgramada: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_pago_esperado_programada'],
+      ),
+    );
+  }
+
+  @override
+  $DocumentoPorEmitirConfiguracionTable createAlias(String alias) {
+    return $DocumentoPorEmitirConfiguracionTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentoPorEmitirConfiguracionData extends DataClass
+    implements Insertable<DocumentoPorEmitirConfiguracionData> {
+  final int id;
+  final String documentoPorEmitirId;
+  final String servicioId;
+  final String configuracionCobroVigenciaId;
+  final DateTime? fechaEmisionProgramada;
+  final DateTime? fechaProcesamientoProgramada;
+  final DateTime? fechaPagoEsperadoProgramada;
+  const DocumentoPorEmitirConfiguracionData({
+    required this.id,
+    required this.documentoPorEmitirId,
+    required this.servicioId,
+    required this.configuracionCobroVigenciaId,
+    this.fechaEmisionProgramada,
+    this.fechaProcesamientoProgramada,
+    this.fechaPagoEsperadoProgramada,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    map['servicio_id'] = Variable<String>(servicioId);
+    map['configuracion_cobro_vigencia_id'] = Variable<String>(
+      configuracionCobroVigenciaId,
+    );
+    if (!nullToAbsent || fechaEmisionProgramada != null) {
+      map['fecha_emision_programada'] = Variable<DateTime>(
+        fechaEmisionProgramada,
+      );
+    }
+    if (!nullToAbsent || fechaProcesamientoProgramada != null) {
+      map['fecha_procesamiento_programada'] = Variable<DateTime>(
+        fechaProcesamientoProgramada,
+      );
+    }
+    if (!nullToAbsent || fechaPagoEsperadoProgramada != null) {
+      map['fecha_pago_esperado_programada'] = Variable<DateTime>(
+        fechaPagoEsperadoProgramada,
+      );
+    }
+    return map;
+  }
+
+  DocumentoPorEmitirConfiguracionCompanion toCompanion(bool nullToAbsent) {
+    return DocumentoPorEmitirConfiguracionCompanion(
+      id: Value(id),
+      documentoPorEmitirId: Value(documentoPorEmitirId),
+      servicioId: Value(servicioId),
+      configuracionCobroVigenciaId: Value(configuracionCobroVigenciaId),
+      fechaEmisionProgramada:
+          fechaEmisionProgramada == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaEmisionProgramada),
+      fechaProcesamientoProgramada:
+          fechaProcesamientoProgramada == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaProcesamientoProgramada),
+      fechaPagoEsperadoProgramada:
+          fechaPagoEsperadoProgramada == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaPagoEsperadoProgramada),
+    );
+  }
+
+  factory DocumentoPorEmitirConfiguracionData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentoPorEmitirConfiguracionData(
+      id: serializer.fromJson<int>(json['id']),
+      documentoPorEmitirId: serializer.fromJson<String>(
+        json['documentoPorEmitirId'],
+      ),
+      servicioId: serializer.fromJson<String>(json['servicioId']),
+      configuracionCobroVigenciaId: serializer.fromJson<String>(
+        json['configuracionCobroVigenciaId'],
+      ),
+      fechaEmisionProgramada: serializer.fromJson<DateTime?>(
+        json['fechaEmisionProgramada'],
+      ),
+      fechaProcesamientoProgramada: serializer.fromJson<DateTime?>(
+        json['fechaProcesamientoProgramada'],
+      ),
+      fechaPagoEsperadoProgramada: serializer.fromJson<DateTime?>(
+        json['fechaPagoEsperadoProgramada'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'documentoPorEmitirId': serializer.toJson<String>(documentoPorEmitirId),
+      'servicioId': serializer.toJson<String>(servicioId),
+      'configuracionCobroVigenciaId': serializer.toJson<String>(
+        configuracionCobroVigenciaId,
+      ),
+      'fechaEmisionProgramada': serializer.toJson<DateTime?>(
+        fechaEmisionProgramada,
+      ),
+      'fechaProcesamientoProgramada': serializer.toJson<DateTime?>(
+        fechaProcesamientoProgramada,
+      ),
+      'fechaPagoEsperadoProgramada': serializer.toJson<DateTime?>(
+        fechaPagoEsperadoProgramada,
+      ),
+    };
+  }
+
+  DocumentoPorEmitirConfiguracionData copyWith({
+    int? id,
+    String? documentoPorEmitirId,
+    String? servicioId,
+    String? configuracionCobroVigenciaId,
+    Value<DateTime?> fechaEmisionProgramada = const Value.absent(),
+    Value<DateTime?> fechaProcesamientoProgramada = const Value.absent(),
+    Value<DateTime?> fechaPagoEsperadoProgramada = const Value.absent(),
+  }) => DocumentoPorEmitirConfiguracionData(
+    id: id ?? this.id,
+    documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+    servicioId: servicioId ?? this.servicioId,
+    configuracionCobroVigenciaId:
+        configuracionCobroVigenciaId ?? this.configuracionCobroVigenciaId,
+    fechaEmisionProgramada:
+        fechaEmisionProgramada.present
+            ? fechaEmisionProgramada.value
+            : this.fechaEmisionProgramada,
+    fechaProcesamientoProgramada:
+        fechaProcesamientoProgramada.present
+            ? fechaProcesamientoProgramada.value
+            : this.fechaProcesamientoProgramada,
+    fechaPagoEsperadoProgramada:
+        fechaPagoEsperadoProgramada.present
+            ? fechaPagoEsperadoProgramada.value
+            : this.fechaPagoEsperadoProgramada,
+  );
+  DocumentoPorEmitirConfiguracionData copyWithCompanion(
+    DocumentoPorEmitirConfiguracionCompanion data,
+  ) {
+    return DocumentoPorEmitirConfiguracionData(
+      id: data.id.present ? data.id.value : this.id,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      configuracionCobroVigenciaId:
+          data.configuracionCobroVigenciaId.present
+              ? data.configuracionCobroVigenciaId.value
+              : this.configuracionCobroVigenciaId,
+      fechaEmisionProgramada:
+          data.fechaEmisionProgramada.present
+              ? data.fechaEmisionProgramada.value
+              : this.fechaEmisionProgramada,
+      fechaProcesamientoProgramada:
+          data.fechaProcesamientoProgramada.present
+              ? data.fechaProcesamientoProgramada.value
+              : this.fechaProcesamientoProgramada,
+      fechaPagoEsperadoProgramada:
+          data.fechaPagoEsperadoProgramada.present
+              ? data.fechaPagoEsperadoProgramada.value
+              : this.fechaPagoEsperadoProgramada,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirConfiguracionData(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write(
+            'configuracionCobroVigenciaId: $configuracionCobroVigenciaId, ',
+          )
+          ..write('fechaEmisionProgramada: $fechaEmisionProgramada, ')
+          ..write(
+            'fechaProcesamientoProgramada: $fechaProcesamientoProgramada, ',
+          )
+          ..write('fechaPagoEsperadoProgramada: $fechaPagoEsperadoProgramada')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    documentoPorEmitirId,
+    servicioId,
+    configuracionCobroVigenciaId,
+    fechaEmisionProgramada,
+    fechaProcesamientoProgramada,
+    fechaPagoEsperadoProgramada,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentoPorEmitirConfiguracionData &&
+          other.id == this.id &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.servicioId == this.servicioId &&
+          other.configuracionCobroVigenciaId ==
+              this.configuracionCobroVigenciaId &&
+          other.fechaEmisionProgramada == this.fechaEmisionProgramada &&
+          other.fechaProcesamientoProgramada ==
+              this.fechaProcesamientoProgramada &&
+          other.fechaPagoEsperadoProgramada ==
+              this.fechaPagoEsperadoProgramada);
+}
+
+class DocumentoPorEmitirConfiguracionCompanion
+    extends UpdateCompanion<DocumentoPorEmitirConfiguracionData> {
+  final Value<int> id;
+  final Value<String> documentoPorEmitirId;
+  final Value<String> servicioId;
+  final Value<String> configuracionCobroVigenciaId;
+  final Value<DateTime?> fechaEmisionProgramada;
+  final Value<DateTime?> fechaProcesamientoProgramada;
+  final Value<DateTime?> fechaPagoEsperadoProgramada;
+  const DocumentoPorEmitirConfiguracionCompanion({
+    this.id = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.configuracionCobroVigenciaId = const Value.absent(),
+    this.fechaEmisionProgramada = const Value.absent(),
+    this.fechaProcesamientoProgramada = const Value.absent(),
+    this.fechaPagoEsperadoProgramada = const Value.absent(),
+  });
+  DocumentoPorEmitirConfiguracionCompanion.insert({
+    this.id = const Value.absent(),
+    required String documentoPorEmitirId,
+    required String servicioId,
+    required String configuracionCobroVigenciaId,
+    this.fechaEmisionProgramada = const Value.absent(),
+    this.fechaProcesamientoProgramada = const Value.absent(),
+    this.fechaPagoEsperadoProgramada = const Value.absent(),
+  }) : documentoPorEmitirId = Value(documentoPorEmitirId),
+       servicioId = Value(servicioId),
+       configuracionCobroVigenciaId = Value(configuracionCobroVigenciaId);
+  static Insertable<DocumentoPorEmitirConfiguracionData> custom({
+    Expression<int>? id,
+    Expression<String>? documentoPorEmitirId,
+    Expression<String>? servicioId,
+    Expression<String>? configuracionCobroVigenciaId,
+    Expression<DateTime>? fechaEmisionProgramada,
+    Expression<DateTime>? fechaProcesamientoProgramada,
+    Expression<DateTime>? fechaPagoEsperadoProgramada,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (configuracionCobroVigenciaId != null)
+        'configuracion_cobro_vigencia_id': configuracionCobroVigenciaId,
+      if (fechaEmisionProgramada != null)
+        'fecha_emision_programada': fechaEmisionProgramada,
+      if (fechaProcesamientoProgramada != null)
+        'fecha_procesamiento_programada': fechaProcesamientoProgramada,
+      if (fechaPagoEsperadoProgramada != null)
+        'fecha_pago_esperado_programada': fechaPagoEsperadoProgramada,
+    });
+  }
+
+  DocumentoPorEmitirConfiguracionCompanion copyWith({
+    Value<int>? id,
+    Value<String>? documentoPorEmitirId,
+    Value<String>? servicioId,
+    Value<String>? configuracionCobroVigenciaId,
+    Value<DateTime?>? fechaEmisionProgramada,
+    Value<DateTime?>? fechaProcesamientoProgramada,
+    Value<DateTime?>? fechaPagoEsperadoProgramada,
+  }) {
+    return DocumentoPorEmitirConfiguracionCompanion(
+      id: id ?? this.id,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      servicioId: servicioId ?? this.servicioId,
+      configuracionCobroVigenciaId:
+          configuracionCobroVigenciaId ?? this.configuracionCobroVigenciaId,
+      fechaEmisionProgramada:
+          fechaEmisionProgramada ?? this.fechaEmisionProgramada,
+      fechaProcesamientoProgramada:
+          fechaProcesamientoProgramada ?? this.fechaProcesamientoProgramada,
+      fechaPagoEsperadoProgramada:
+          fechaPagoEsperadoProgramada ?? this.fechaPagoEsperadoProgramada,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (configuracionCobroVigenciaId.present) {
+      map['configuracion_cobro_vigencia_id'] = Variable<String>(
+        configuracionCobroVigenciaId.value,
+      );
+    }
+    if (fechaEmisionProgramada.present) {
+      map['fecha_emision_programada'] = Variable<DateTime>(
+        fechaEmisionProgramada.value,
+      );
+    }
+    if (fechaProcesamientoProgramada.present) {
+      map['fecha_procesamiento_programada'] = Variable<DateTime>(
+        fechaProcesamientoProgramada.value,
+      );
+    }
+    if (fechaPagoEsperadoProgramada.present) {
+      map['fecha_pago_esperado_programada'] = Variable<DateTime>(
+        fechaPagoEsperadoProgramada.value,
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirConfiguracionCompanion(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write(
+            'configuracionCobroVigenciaId: $configuracionCobroVigenciaId, ',
+          )
+          ..write('fechaEmisionProgramada: $fechaEmisionProgramada, ')
+          ..write(
+            'fechaProcesamientoProgramada: $fechaProcesamientoProgramada, ',
+          )
+          ..write('fechaPagoEsperadoProgramada: $fechaPagoEsperadoProgramada')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DocumentoPorEmitirLineaTable extends DocumentoPorEmitirLinea
+    with TableInfo<$DocumentoPorEmitirLineaTable, DocumentoPorEmitirLineaData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentoPorEmitirLineaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _lineaComercialVigenciaIdMeta =
+      const VerificationMeta('lineaComercialVigenciaId');
+  @override
+  late final GeneratedColumn<String>
+  lineaComercialVigenciaId = GeneratedColumn<String>(
+    'linea_comercial_vigencia_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio_linea_comercial_vigencia (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _puestoNombreMeta = const VerificationMeta(
+    'puestoNombre',
+  );
+  @override
+  late final GeneratedColumn<String> puestoNombre = GeneratedColumn<String>(
+    'puesto_nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modalidadTurnoNombreMeta =
+      const VerificationMeta('modalidadTurnoNombre');
+  @override
+  late final GeneratedColumn<String> modalidadTurnoNombre =
+      GeneratedColumn<String>(
+        'modalidad_turno_nombre',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _cantidadElementosMeta = const VerificationMeta(
+    'cantidadElementos',
+  );
+  @override
+  late final GeneratedColumn<int> cantidadElementos = GeneratedColumn<int>(
+    'cantidad_elementos',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _precioUnitarioMeta = const VerificationMeta(
+    'precioUnitario',
+  );
+  @override
+  late final GeneratedColumn<int> precioUnitario = GeneratedColumn<int>(
+    'precio_unitario',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tratamientoIvaMeta = const VerificationMeta(
+    'tratamientoIva',
+  );
+  @override
+  late final GeneratedColumn<String> tratamientoIva = GeneratedColumn<String>(
+    'tratamiento_iva',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _diasAplicablesMeta = const VerificationMeta(
+    'diasAplicables',
+  );
+  @override
+  late final GeneratedColumn<int> diasAplicables = GeneratedColumn<int>(
+    'dias_aplicables',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _subtotalProporcionalMeta =
+      const VerificationMeta('subtotalProporcional');
+  @override
+  late final GeneratedColumn<int> subtotalProporcional = GeneratedColumn<int>(
+    'subtotal_proporcional',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    documentoPorEmitirId,
+    servicioId,
+    lineaComercialVigenciaId,
+    puestoNombre,
+    modalidadTurnoNombre,
+    cantidadElementos,
+    precioUnitario,
+    tratamientoIva,
+    diasAplicables,
+    subtotalProporcional,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento_por_emitir_linea';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentoPorEmitirLineaData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentoPorEmitirIdMeta);
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_servicioIdMeta);
+    }
+    if (data.containsKey('linea_comercial_vigencia_id')) {
+      context.handle(
+        _lineaComercialVigenciaIdMeta,
+        lineaComercialVigenciaId.isAcceptableOrUnknown(
+          data['linea_comercial_vigencia_id']!,
+          _lineaComercialVigenciaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lineaComercialVigenciaIdMeta);
+    }
+    if (data.containsKey('puesto_nombre')) {
+      context.handle(
+        _puestoNombreMeta,
+        puestoNombre.isAcceptableOrUnknown(
+          data['puesto_nombre']!,
+          _puestoNombreMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_puestoNombreMeta);
+    }
+    if (data.containsKey('modalidad_turno_nombre')) {
+      context.handle(
+        _modalidadTurnoNombreMeta,
+        modalidadTurnoNombre.isAcceptableOrUnknown(
+          data['modalidad_turno_nombre']!,
+          _modalidadTurnoNombreMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_modalidadTurnoNombreMeta);
+    }
+    if (data.containsKey('cantidad_elementos')) {
+      context.handle(
+        _cantidadElementosMeta,
+        cantidadElementos.isAcceptableOrUnknown(
+          data['cantidad_elementos']!,
+          _cantidadElementosMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_cantidadElementosMeta);
+    }
+    if (data.containsKey('precio_unitario')) {
+      context.handle(
+        _precioUnitarioMeta,
+        precioUnitario.isAcceptableOrUnknown(
+          data['precio_unitario']!,
+          _precioUnitarioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_precioUnitarioMeta);
+    }
+    if (data.containsKey('tratamiento_iva')) {
+      context.handle(
+        _tratamientoIvaMeta,
+        tratamientoIva.isAcceptableOrUnknown(
+          data['tratamiento_iva']!,
+          _tratamientoIvaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tratamientoIvaMeta);
+    }
+    if (data.containsKey('dias_aplicables')) {
+      context.handle(
+        _diasAplicablesMeta,
+        diasAplicables.isAcceptableOrUnknown(
+          data['dias_aplicables']!,
+          _diasAplicablesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_diasAplicablesMeta);
+    }
+    if (data.containsKey('subtotal_proporcional')) {
+      context.handle(
+        _subtotalProporcionalMeta,
+        subtotalProporcional.isAcceptableOrUnknown(
+          data['subtotal_proporcional']!,
+          _subtotalProporcionalMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_subtotalProporcionalMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentoPorEmitirLineaData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentoPorEmitirLineaData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      documentoPorEmitirId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}documento_por_emitir_id'],
+          )!,
+      servicioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}servicio_id'],
+          )!,
+      lineaComercialVigenciaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}linea_comercial_vigencia_id'],
+          )!,
+      puestoNombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}puesto_nombre'],
+          )!,
+      modalidadTurnoNombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}modalidad_turno_nombre'],
+          )!,
+      cantidadElementos:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}cantidad_elementos'],
+          )!,
+      precioUnitario:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}precio_unitario'],
+          )!,
+      tratamientoIva:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tratamiento_iva'],
+          )!,
+      diasAplicables:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}dias_aplicables'],
+          )!,
+      subtotalProporcional:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}subtotal_proporcional'],
+          )!,
+    );
+  }
+
+  @override
+  $DocumentoPorEmitirLineaTable createAlias(String alias) {
+    return $DocumentoPorEmitirLineaTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentoPorEmitirLineaData extends DataClass
+    implements Insertable<DocumentoPorEmitirLineaData> {
+  final int id;
+  final String documentoPorEmitirId;
+  final String servicioId;
+  final String lineaComercialVigenciaId;
+  final String puestoNombre;
+  final String modalidadTurnoNombre;
+  final int cantidadElementos;
+  final int precioUnitario;
+  final String tratamientoIva;
+  final int diasAplicables;
+  final int subtotalProporcional;
+  const DocumentoPorEmitirLineaData({
+    required this.id,
+    required this.documentoPorEmitirId,
+    required this.servicioId,
+    required this.lineaComercialVigenciaId,
+    required this.puestoNombre,
+    required this.modalidadTurnoNombre,
+    required this.cantidadElementos,
+    required this.precioUnitario,
+    required this.tratamientoIva,
+    required this.diasAplicables,
+    required this.subtotalProporcional,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    map['servicio_id'] = Variable<String>(servicioId);
+    map['linea_comercial_vigencia_id'] = Variable<String>(
+      lineaComercialVigenciaId,
+    );
+    map['puesto_nombre'] = Variable<String>(puestoNombre);
+    map['modalidad_turno_nombre'] = Variable<String>(modalidadTurnoNombre);
+    map['cantidad_elementos'] = Variable<int>(cantidadElementos);
+    map['precio_unitario'] = Variable<int>(precioUnitario);
+    map['tratamiento_iva'] = Variable<String>(tratamientoIva);
+    map['dias_aplicables'] = Variable<int>(diasAplicables);
+    map['subtotal_proporcional'] = Variable<int>(subtotalProporcional);
+    return map;
+  }
+
+  DocumentoPorEmitirLineaCompanion toCompanion(bool nullToAbsent) {
+    return DocumentoPorEmitirLineaCompanion(
+      id: Value(id),
+      documentoPorEmitirId: Value(documentoPorEmitirId),
+      servicioId: Value(servicioId),
+      lineaComercialVigenciaId: Value(lineaComercialVigenciaId),
+      puestoNombre: Value(puestoNombre),
+      modalidadTurnoNombre: Value(modalidadTurnoNombre),
+      cantidadElementos: Value(cantidadElementos),
+      precioUnitario: Value(precioUnitario),
+      tratamientoIva: Value(tratamientoIva),
+      diasAplicables: Value(diasAplicables),
+      subtotalProporcional: Value(subtotalProporcional),
+    );
+  }
+
+  factory DocumentoPorEmitirLineaData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentoPorEmitirLineaData(
+      id: serializer.fromJson<int>(json['id']),
+      documentoPorEmitirId: serializer.fromJson<String>(
+        json['documentoPorEmitirId'],
+      ),
+      servicioId: serializer.fromJson<String>(json['servicioId']),
+      lineaComercialVigenciaId: serializer.fromJson<String>(
+        json['lineaComercialVigenciaId'],
+      ),
+      puestoNombre: serializer.fromJson<String>(json['puestoNombre']),
+      modalidadTurnoNombre: serializer.fromJson<String>(
+        json['modalidadTurnoNombre'],
+      ),
+      cantidadElementos: serializer.fromJson<int>(json['cantidadElementos']),
+      precioUnitario: serializer.fromJson<int>(json['precioUnitario']),
+      tratamientoIva: serializer.fromJson<String>(json['tratamientoIva']),
+      diasAplicables: serializer.fromJson<int>(json['diasAplicables']),
+      subtotalProporcional: serializer.fromJson<int>(
+        json['subtotalProporcional'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'documentoPorEmitirId': serializer.toJson<String>(documentoPorEmitirId),
+      'servicioId': serializer.toJson<String>(servicioId),
+      'lineaComercialVigenciaId': serializer.toJson<String>(
+        lineaComercialVigenciaId,
+      ),
+      'puestoNombre': serializer.toJson<String>(puestoNombre),
+      'modalidadTurnoNombre': serializer.toJson<String>(modalidadTurnoNombre),
+      'cantidadElementos': serializer.toJson<int>(cantidadElementos),
+      'precioUnitario': serializer.toJson<int>(precioUnitario),
+      'tratamientoIva': serializer.toJson<String>(tratamientoIva),
+      'diasAplicables': serializer.toJson<int>(diasAplicables),
+      'subtotalProporcional': serializer.toJson<int>(subtotalProporcional),
+    };
+  }
+
+  DocumentoPorEmitirLineaData copyWith({
+    int? id,
+    String? documentoPorEmitirId,
+    String? servicioId,
+    String? lineaComercialVigenciaId,
+    String? puestoNombre,
+    String? modalidadTurnoNombre,
+    int? cantidadElementos,
+    int? precioUnitario,
+    String? tratamientoIva,
+    int? diasAplicables,
+    int? subtotalProporcional,
+  }) => DocumentoPorEmitirLineaData(
+    id: id ?? this.id,
+    documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+    servicioId: servicioId ?? this.servicioId,
+    lineaComercialVigenciaId:
+        lineaComercialVigenciaId ?? this.lineaComercialVigenciaId,
+    puestoNombre: puestoNombre ?? this.puestoNombre,
+    modalidadTurnoNombre: modalidadTurnoNombre ?? this.modalidadTurnoNombre,
+    cantidadElementos: cantidadElementos ?? this.cantidadElementos,
+    precioUnitario: precioUnitario ?? this.precioUnitario,
+    tratamientoIva: tratamientoIva ?? this.tratamientoIva,
+    diasAplicables: diasAplicables ?? this.diasAplicables,
+    subtotalProporcional: subtotalProporcional ?? this.subtotalProporcional,
+  );
+  DocumentoPorEmitirLineaData copyWithCompanion(
+    DocumentoPorEmitirLineaCompanion data,
+  ) {
+    return DocumentoPorEmitirLineaData(
+      id: data.id.present ? data.id.value : this.id,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      lineaComercialVigenciaId:
+          data.lineaComercialVigenciaId.present
+              ? data.lineaComercialVigenciaId.value
+              : this.lineaComercialVigenciaId,
+      puestoNombre:
+          data.puestoNombre.present
+              ? data.puestoNombre.value
+              : this.puestoNombre,
+      modalidadTurnoNombre:
+          data.modalidadTurnoNombre.present
+              ? data.modalidadTurnoNombre.value
+              : this.modalidadTurnoNombre,
+      cantidadElementos:
+          data.cantidadElementos.present
+              ? data.cantidadElementos.value
+              : this.cantidadElementos,
+      precioUnitario:
+          data.precioUnitario.present
+              ? data.precioUnitario.value
+              : this.precioUnitario,
+      tratamientoIva:
+          data.tratamientoIva.present
+              ? data.tratamientoIva.value
+              : this.tratamientoIva,
+      diasAplicables:
+          data.diasAplicables.present
+              ? data.diasAplicables.value
+              : this.diasAplicables,
+      subtotalProporcional:
+          data.subtotalProporcional.present
+              ? data.subtotalProporcional.value
+              : this.subtotalProporcional,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirLineaData(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('lineaComercialVigenciaId: $lineaComercialVigenciaId, ')
+          ..write('puestoNombre: $puestoNombre, ')
+          ..write('modalidadTurnoNombre: $modalidadTurnoNombre, ')
+          ..write('cantidadElementos: $cantidadElementos, ')
+          ..write('precioUnitario: $precioUnitario, ')
+          ..write('tratamientoIva: $tratamientoIva, ')
+          ..write('diasAplicables: $diasAplicables, ')
+          ..write('subtotalProporcional: $subtotalProporcional')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    documentoPorEmitirId,
+    servicioId,
+    lineaComercialVigenciaId,
+    puestoNombre,
+    modalidadTurnoNombre,
+    cantidadElementos,
+    precioUnitario,
+    tratamientoIva,
+    diasAplicables,
+    subtotalProporcional,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentoPorEmitirLineaData &&
+          other.id == this.id &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.servicioId == this.servicioId &&
+          other.lineaComercialVigenciaId == this.lineaComercialVigenciaId &&
+          other.puestoNombre == this.puestoNombre &&
+          other.modalidadTurnoNombre == this.modalidadTurnoNombre &&
+          other.cantidadElementos == this.cantidadElementos &&
+          other.precioUnitario == this.precioUnitario &&
+          other.tratamientoIva == this.tratamientoIva &&
+          other.diasAplicables == this.diasAplicables &&
+          other.subtotalProporcional == this.subtotalProporcional);
+}
+
+class DocumentoPorEmitirLineaCompanion
+    extends UpdateCompanion<DocumentoPorEmitirLineaData> {
+  final Value<int> id;
+  final Value<String> documentoPorEmitirId;
+  final Value<String> servicioId;
+  final Value<String> lineaComercialVigenciaId;
+  final Value<String> puestoNombre;
+  final Value<String> modalidadTurnoNombre;
+  final Value<int> cantidadElementos;
+  final Value<int> precioUnitario;
+  final Value<String> tratamientoIva;
+  final Value<int> diasAplicables;
+  final Value<int> subtotalProporcional;
+  const DocumentoPorEmitirLineaCompanion({
+    this.id = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.lineaComercialVigenciaId = const Value.absent(),
+    this.puestoNombre = const Value.absent(),
+    this.modalidadTurnoNombre = const Value.absent(),
+    this.cantidadElementos = const Value.absent(),
+    this.precioUnitario = const Value.absent(),
+    this.tratamientoIva = const Value.absent(),
+    this.diasAplicables = const Value.absent(),
+    this.subtotalProporcional = const Value.absent(),
+  });
+  DocumentoPorEmitirLineaCompanion.insert({
+    this.id = const Value.absent(),
+    required String documentoPorEmitirId,
+    required String servicioId,
+    required String lineaComercialVigenciaId,
+    required String puestoNombre,
+    required String modalidadTurnoNombre,
+    required int cantidadElementos,
+    required int precioUnitario,
+    required String tratamientoIva,
+    required int diasAplicables,
+    required int subtotalProporcional,
+  }) : documentoPorEmitirId = Value(documentoPorEmitirId),
+       servicioId = Value(servicioId),
+       lineaComercialVigenciaId = Value(lineaComercialVigenciaId),
+       puestoNombre = Value(puestoNombre),
+       modalidadTurnoNombre = Value(modalidadTurnoNombre),
+       cantidadElementos = Value(cantidadElementos),
+       precioUnitario = Value(precioUnitario),
+       tratamientoIva = Value(tratamientoIva),
+       diasAplicables = Value(diasAplicables),
+       subtotalProporcional = Value(subtotalProporcional);
+  static Insertable<DocumentoPorEmitirLineaData> custom({
+    Expression<int>? id,
+    Expression<String>? documentoPorEmitirId,
+    Expression<String>? servicioId,
+    Expression<String>? lineaComercialVigenciaId,
+    Expression<String>? puestoNombre,
+    Expression<String>? modalidadTurnoNombre,
+    Expression<int>? cantidadElementos,
+    Expression<int>? precioUnitario,
+    Expression<String>? tratamientoIva,
+    Expression<int>? diasAplicables,
+    Expression<int>? subtotalProporcional,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (lineaComercialVigenciaId != null)
+        'linea_comercial_vigencia_id': lineaComercialVigenciaId,
+      if (puestoNombre != null) 'puesto_nombre': puestoNombre,
+      if (modalidadTurnoNombre != null)
+        'modalidad_turno_nombre': modalidadTurnoNombre,
+      if (cantidadElementos != null) 'cantidad_elementos': cantidadElementos,
+      if (precioUnitario != null) 'precio_unitario': precioUnitario,
+      if (tratamientoIva != null) 'tratamiento_iva': tratamientoIva,
+      if (diasAplicables != null) 'dias_aplicables': diasAplicables,
+      if (subtotalProporcional != null)
+        'subtotal_proporcional': subtotalProporcional,
+    });
+  }
+
+  DocumentoPorEmitirLineaCompanion copyWith({
+    Value<int>? id,
+    Value<String>? documentoPorEmitirId,
+    Value<String>? servicioId,
+    Value<String>? lineaComercialVigenciaId,
+    Value<String>? puestoNombre,
+    Value<String>? modalidadTurnoNombre,
+    Value<int>? cantidadElementos,
+    Value<int>? precioUnitario,
+    Value<String>? tratamientoIva,
+    Value<int>? diasAplicables,
+    Value<int>? subtotalProporcional,
+  }) {
+    return DocumentoPorEmitirLineaCompanion(
+      id: id ?? this.id,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      servicioId: servicioId ?? this.servicioId,
+      lineaComercialVigenciaId:
+          lineaComercialVigenciaId ?? this.lineaComercialVigenciaId,
+      puestoNombre: puestoNombre ?? this.puestoNombre,
+      modalidadTurnoNombre: modalidadTurnoNombre ?? this.modalidadTurnoNombre,
+      cantidadElementos: cantidadElementos ?? this.cantidadElementos,
+      precioUnitario: precioUnitario ?? this.precioUnitario,
+      tratamientoIva: tratamientoIva ?? this.tratamientoIva,
+      diasAplicables: diasAplicables ?? this.diasAplicables,
+      subtotalProporcional: subtotalProporcional ?? this.subtotalProporcional,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (lineaComercialVigenciaId.present) {
+      map['linea_comercial_vigencia_id'] = Variable<String>(
+        lineaComercialVigenciaId.value,
+      );
+    }
+    if (puestoNombre.present) {
+      map['puesto_nombre'] = Variable<String>(puestoNombre.value);
+    }
+    if (modalidadTurnoNombre.present) {
+      map['modalidad_turno_nombre'] = Variable<String>(
+        modalidadTurnoNombre.value,
+      );
+    }
+    if (cantidadElementos.present) {
+      map['cantidad_elementos'] = Variable<int>(cantidadElementos.value);
+    }
+    if (precioUnitario.present) {
+      map['precio_unitario'] = Variable<int>(precioUnitario.value);
+    }
+    if (tratamientoIva.present) {
+      map['tratamiento_iva'] = Variable<String>(tratamientoIva.value);
+    }
+    if (diasAplicables.present) {
+      map['dias_aplicables'] = Variable<int>(diasAplicables.value);
+    }
+    if (subtotalProporcional.present) {
+      map['subtotal_proporcional'] = Variable<int>(subtotalProporcional.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirLineaCompanion(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('lineaComercialVigenciaId: $lineaComercialVigenciaId, ')
+          ..write('puestoNombre: $puestoNombre, ')
+          ..write('modalidadTurnoNombre: $modalidadTurnoNombre, ')
+          ..write('cantidadElementos: $cantidadElementos, ')
+          ..write('precioUnitario: $precioUnitario, ')
+          ..write('tratamientoIva: $tratamientoIva, ')
+          ..write('diasAplicables: $diasAplicables, ')
+          ..write('subtotalProporcional: $subtotalProporcional')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DocumentoPorEmitirCorreoTable extends DocumentoPorEmitirCorreo
+    with
+        TableInfo<
+          $DocumentoPorEmitirCorreoTable,
+          DocumentoPorEmitirCorreoData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentoPorEmitirCorreoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _correoMeta = const VerificationMeta('correo');
+  @override
+  late final GeneratedColumn<String> correo = GeneratedColumn<String>(
+    'correo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, documentoPorEmitirId, correo];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento_por_emitir_correo';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentoPorEmitirCorreoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentoPorEmitirIdMeta);
+    }
+    if (data.containsKey('correo')) {
+      context.handle(
+        _correoMeta,
+        correo.isAcceptableOrUnknown(data['correo']!, _correoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_correoMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentoPorEmitirCorreoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentoPorEmitirCorreoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      documentoPorEmitirId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}documento_por_emitir_id'],
+          )!,
+      correo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}correo'],
+          )!,
+    );
+  }
+
+  @override
+  $DocumentoPorEmitirCorreoTable createAlias(String alias) {
+    return $DocumentoPorEmitirCorreoTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentoPorEmitirCorreoData extends DataClass
+    implements Insertable<DocumentoPorEmitirCorreoData> {
+  final int id;
+  final String documentoPorEmitirId;
+  final String correo;
+  const DocumentoPorEmitirCorreoData({
+    required this.id,
+    required this.documentoPorEmitirId,
+    required this.correo,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    map['correo'] = Variable<String>(correo);
+    return map;
+  }
+
+  DocumentoPorEmitirCorreoCompanion toCompanion(bool nullToAbsent) {
+    return DocumentoPorEmitirCorreoCompanion(
+      id: Value(id),
+      documentoPorEmitirId: Value(documentoPorEmitirId),
+      correo: Value(correo),
+    );
+  }
+
+  factory DocumentoPorEmitirCorreoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentoPorEmitirCorreoData(
+      id: serializer.fromJson<int>(json['id']),
+      documentoPorEmitirId: serializer.fromJson<String>(
+        json['documentoPorEmitirId'],
+      ),
+      correo: serializer.fromJson<String>(json['correo']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'documentoPorEmitirId': serializer.toJson<String>(documentoPorEmitirId),
+      'correo': serializer.toJson<String>(correo),
+    };
+  }
+
+  DocumentoPorEmitirCorreoData copyWith({
+    int? id,
+    String? documentoPorEmitirId,
+    String? correo,
+  }) => DocumentoPorEmitirCorreoData(
+    id: id ?? this.id,
+    documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+    correo: correo ?? this.correo,
+  );
+  DocumentoPorEmitirCorreoData copyWithCompanion(
+    DocumentoPorEmitirCorreoCompanion data,
+  ) {
+    return DocumentoPorEmitirCorreoData(
+      id: data.id.present ? data.id.value : this.id,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+      correo: data.correo.present ? data.correo.value : this.correo,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirCorreoData(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('correo: $correo')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, documentoPorEmitirId, correo);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentoPorEmitirCorreoData &&
+          other.id == this.id &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.correo == this.correo);
+}
+
+class DocumentoPorEmitirCorreoCompanion
+    extends UpdateCompanion<DocumentoPorEmitirCorreoData> {
+  final Value<int> id;
+  final Value<String> documentoPorEmitirId;
+  final Value<String> correo;
+  const DocumentoPorEmitirCorreoCompanion({
+    this.id = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.correo = const Value.absent(),
+  });
+  DocumentoPorEmitirCorreoCompanion.insert({
+    this.id = const Value.absent(),
+    required String documentoPorEmitirId,
+    required String correo,
+  }) : documentoPorEmitirId = Value(documentoPorEmitirId),
+       correo = Value(correo);
+  static Insertable<DocumentoPorEmitirCorreoData> custom({
+    Expression<int>? id,
+    Expression<String>? documentoPorEmitirId,
+    Expression<String>? correo,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (correo != null) 'correo': correo,
+    });
+  }
+
+  DocumentoPorEmitirCorreoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? documentoPorEmitirId,
+    Value<String>? correo,
+  }) {
+    return DocumentoPorEmitirCorreoCompanion(
+      id: id ?? this.id,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      correo: correo ?? this.correo,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (correo.present) {
+      map['correo'] = Variable<String>(correo.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirCorreoCompanion(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('correo: $correo')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -16821,6 +20189,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ConfiguracionCobroCorreoTable(this);
   late final $ConfiguracionCobroReglaEventoTable configuracionCobroReglaEvento =
       $ConfiguracionCobroReglaEventoTable(this);
+  late final $DocumentoPorEmitirTable documentoPorEmitir =
+      $DocumentoPorEmitirTable(this);
+  late final $DocumentoPorEmitirServicioTable documentoPorEmitirServicio =
+      $DocumentoPorEmitirServicioTable(this);
+  late final $DocumentoPorEmitirConfiguracionTable
+  documentoPorEmitirConfiguracion = $DocumentoPorEmitirConfiguracionTable(this);
+  late final $DocumentoPorEmitirLineaTable documentoPorEmitirLinea =
+      $DocumentoPorEmitirLineaTable(this);
+  late final $DocumentoPorEmitirCorreoTable documentoPorEmitirCorreo =
+      $DocumentoPorEmitirCorreoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -16869,6 +20247,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     configuracionCobroVigencia,
     configuracionCobroCorreo,
     configuracionCobroReglaEvento,
+    documentoPorEmitir,
+    documentoPorEmitirServicio,
+    documentoPorEmitirConfiguracion,
+    documentoPorEmitirLinea,
+    documentoPorEmitirCorreo,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -16902,6 +20285,45 @@ abstract class _$AppDatabase extends GeneratedDatabase {
           'configuracion_cobro_regla_evento',
           kind: UpdateKind.delete,
         ),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'documento_por_emitir',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('documento_por_emitir_servicio', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'documento_por_emitir',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate(
+          'documento_por_emitir_configuracion',
+          kind: UpdateKind.delete,
+        ),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'documento_por_emitir',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('documento_por_emitir_linea', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'documento_por_emitir',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('documento_por_emitir_correo', kind: UpdateKind.delete),
       ],
     ),
   ]);
@@ -22733,6 +26155,33 @@ final class $$ClienteTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirTable,
+    List<DocumentoPorEmitirData>
+  >
+  _documentoPorEmitirRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitir,
+        aliasName: $_aliasNameGenerator(
+          db.cliente.id,
+          db.documentoPorEmitir.clienteId,
+        ),
+      );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirRefs {
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.clienteId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ClienteTableFilterComposer
@@ -22878,6 +26327,31 @@ class $$ClienteTableFilterComposer
           }) => $$ServicioTableFilterComposer(
             $db: $db,
             $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirRefs(
+    Expression<bool> Function($$DocumentoPorEmitirTableFilterComposer f) f,
+  ) {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -23105,6 +26579,32 @@ class $$ClienteTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> documentoPorEmitirRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirTableAnnotationComposer a) f,
+  ) {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.clienteId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ClienteTableTableManager
@@ -23125,6 +26625,7 @@ class $$ClienteTableTableManager
             bool contactoRefs,
             bool entidadFiscalRefs,
             bool servicioRefs,
+            bool documentoPorEmitirRefs,
           })
         > {
   $$ClienteTableTableManager(_$AppDatabase db, $ClienteTable table)
@@ -23205,6 +26706,7 @@ class $$ClienteTableTableManager
             contactoRefs = false,
             entidadFiscalRefs = false,
             servicioRefs = false,
+            documentoPorEmitirRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -23212,6 +26714,7 @@ class $$ClienteTableTableManager
                 if (contactoRefs) db.contacto,
                 if (entidadFiscalRefs) db.entidadFiscal,
                 if (servicioRefs) db.servicio,
+                if (documentoPorEmitirRefs) db.documentoPorEmitir,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -23313,6 +26816,28 @@ class $$ClienteTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (documentoPorEmitirRefs)
+                    await $_getPrefetchedData<
+                      ClienteData,
+                      $ClienteTable,
+                      DocumentoPorEmitirData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ClienteTableReferences
+                          ._documentoPorEmitirRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ClienteTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.clienteId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -23338,6 +26863,7 @@ typedef $$ClienteTableProcessedTableManager =
         bool contactoRefs,
         bool entidadFiscalRefs,
         bool servicioRefs,
+        bool documentoPorEmitirRefs,
       })
     >;
 typedef $$ContactoTableCreateCompanionBuilder =
@@ -23974,6 +27500,35 @@ final class $$EntidadFiscalTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirTable,
+    List<DocumentoPorEmitirData>
+  >
+  _documentoPorEmitirRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitir,
+        aliasName: $_aliasNameGenerator(
+          db.entidadFiscal.id,
+          db.documentoPorEmitir.entidadFiscalId,
+        ),
+      );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirRefs {
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter(
+      (f) => f.entidadFiscalId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$EntidadFiscalTableFilterComposer
@@ -24092,6 +27647,31 @@ class $$EntidadFiscalTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirRefs(
+    Expression<bool> Function($$DocumentoPorEmitirTableFilterComposer f) f,
+  ) {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.entidadFiscalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -24274,6 +27854,32 @@ class $$EntidadFiscalTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> documentoPorEmitirRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirTableAnnotationComposer a) f,
+  ) {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.entidadFiscalId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$EntidadFiscalTableTableManager
@@ -24293,6 +27899,7 @@ class $$EntidadFiscalTableTableManager
             bool clienteId,
             bool servicioRefs,
             bool configuracionCobroVigenciaRefs,
+            bool documentoPorEmitirRefs,
           })
         > {
   $$EntidadFiscalTableTableManager(_$AppDatabase db, $EntidadFiscalTable table)
@@ -24368,6 +27975,7 @@ class $$EntidadFiscalTableTableManager
             clienteId = false,
             servicioRefs = false,
             configuracionCobroVigenciaRefs = false,
+            documentoPorEmitirRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -24375,6 +27983,7 @@ class $$EntidadFiscalTableTableManager
                 if (servicioRefs) db.servicio,
                 if (configuracionCobroVigenciaRefs)
                   db.configuracionCobroVigencia,
+                if (documentoPorEmitirRefs) db.documentoPorEmitir,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -24454,6 +28063,28 @@ class $$EntidadFiscalTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (documentoPorEmitirRefs)
+                    await $_getPrefetchedData<
+                      EntidadFiscalData,
+                      $EntidadFiscalTable,
+                      DocumentoPorEmitirData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EntidadFiscalTableReferences
+                          ._documentoPorEmitirRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EntidadFiscalTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.entidadFiscalId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -24478,6 +28109,7 @@ typedef $$EntidadFiscalTableProcessedTableManager =
         bool clienteId,
         bool servicioRefs,
         bool configuracionCobroVigenciaRefs,
+        bool documentoPorEmitirRefs,
       })
     >;
 typedef $$ServicioTableCreateCompanionBuilder =
@@ -24701,6 +28333,90 @@ final class $$ServicioTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _configuracionCobroRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirServicioTable,
+    List<DocumentoPorEmitirServicioData>
+  >
+  _documentoPorEmitirServicioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirServicio,
+        aliasName: $_aliasNameGenerator(
+          db.servicio.id,
+          db.documentoPorEmitirServicio.servicioId,
+        ),
+      );
+
+  $$DocumentoPorEmitirServicioTableProcessedTableManager
+  get documentoPorEmitirServicioRefs {
+    final manager = $$DocumentoPorEmitirServicioTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirServicio,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirServicioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirConfiguracionTable,
+    List<DocumentoPorEmitirConfiguracionData>
+  >
+  _documentoPorEmitirConfiguracionRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirConfiguracion,
+        aliasName: $_aliasNameGenerator(
+          db.servicio.id,
+          db.documentoPorEmitirConfiguracion.servicioId,
+        ),
+      );
+
+  $$DocumentoPorEmitirConfiguracionTableProcessedTableManager
+  get documentoPorEmitirConfiguracionRefs {
+    final manager = $$DocumentoPorEmitirConfiguracionTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirConfiguracion,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirConfiguracionRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirLineaTable,
+    List<DocumentoPorEmitirLineaData>
+  >
+  _documentoPorEmitirLineaRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirLinea,
+        aliasName: $_aliasNameGenerator(
+          db.servicio.id,
+          db.documentoPorEmitirLinea.servicioId,
+        ),
+      );
+
+  $$DocumentoPorEmitirLineaTableProcessedTableManager
+  get documentoPorEmitirLineaRefs {
+    final manager = $$DocumentoPorEmitirLineaTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirLinea,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirLineaRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -24975,6 +28691,88 @@ class $$ServicioTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirServicioRefs(
+    Expression<bool> Function($$DocumentoPorEmitirServicioTableFilterComposer f)
+    f,
+  ) {
+    final $$DocumentoPorEmitirServicioTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirServicio,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirServicioTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirServicio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirConfiguracionRefs(
+    Expression<bool> Function(
+      $$DocumentoPorEmitirConfiguracionTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirConfiguracionTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirConfiguracion,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirConfiguracionTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirConfiguracion,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirLineaRefs(
+    Expression<bool> Function($$DocumentoPorEmitirLineaTableFilterComposer f) f,
+  ) {
+    final $$DocumentoPorEmitirLineaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirLinea,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirLineaTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirLinea,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -25432,6 +29230,91 @@ class $$ServicioTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> documentoPorEmitirServicioRefs<T extends Object>(
+    Expression<T> Function(
+      $$DocumentoPorEmitirServicioTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirServicioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirServicio,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirServicioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirServicio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> documentoPorEmitirConfiguracionRefs<T extends Object>(
+    Expression<T> Function(
+      $$DocumentoPorEmitirConfiguracionTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirConfiguracionTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirConfiguracion,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirConfiguracionTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirConfiguracion,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> documentoPorEmitirLineaRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirLineaTableAnnotationComposer a)
+    f,
+  ) {
+    final $$DocumentoPorEmitirLineaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirLinea,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirLineaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirLinea,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ServicioTableTableManager
@@ -25456,6 +29339,9 @@ class $$ServicioTableTableManager
             bool ubicacionRefs,
             bool servicioLineaComercialRefs,
             bool configuracionCobroRefs,
+            bool documentoPorEmitirServicioRefs,
+            bool documentoPorEmitirConfiguracionRefs,
+            bool documentoPorEmitirLineaRefs,
           })
         > {
   $$ServicioTableTableManager(_$AppDatabase db, $ServicioTable table)
@@ -25578,6 +29464,9 @@ class $$ServicioTableTableManager
             ubicacionRefs = false,
             servicioLineaComercialRefs = false,
             configuracionCobroRefs = false,
+            documentoPorEmitirServicioRefs = false,
+            documentoPorEmitirConfiguracionRefs = false,
+            documentoPorEmitirLineaRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -25585,6 +29474,11 @@ class $$ServicioTableTableManager
                 if (ubicacionRefs) db.ubicacion,
                 if (servicioLineaComercialRefs) db.servicioLineaComercial,
                 if (configuracionCobroRefs) db.configuracionCobro,
+                if (documentoPorEmitirServicioRefs)
+                  db.documentoPorEmitirServicio,
+                if (documentoPorEmitirConfiguracionRefs)
+                  db.documentoPorEmitirConfiguracion,
+                if (documentoPorEmitirLineaRefs) db.documentoPorEmitirLinea,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -25742,6 +29636,72 @@ class $$ServicioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (documentoPorEmitirServicioRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      DocumentoPorEmitirServicioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._documentoPorEmitirServicioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirServicioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirConfiguracionRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      DocumentoPorEmitirConfiguracionData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._documentoPorEmitirConfiguracionRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirConfiguracionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirLineaRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      DocumentoPorEmitirLineaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._documentoPorEmitirLineaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirLineaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -25771,6 +29731,9 @@ typedef $$ServicioTableProcessedTableManager =
         bool ubicacionRefs,
         bool servicioLineaComercialRefs,
         bool configuracionCobroRefs,
+        bool documentoPorEmitirServicioRefs,
+        bool documentoPorEmitirConfiguracionRefs,
+        bool documentoPorEmitirLineaRefs,
       })
     >;
 typedef $$UbicacionTableCreateCompanionBuilder =
@@ -27503,6 +31466,37 @@ final class $$ServicioLineaComercialVigenciaTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirLineaTable,
+    List<DocumentoPorEmitirLineaData>
+  >
+  _documentoPorEmitirLineaRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirLinea,
+        aliasName: $_aliasNameGenerator(
+          db.servicioLineaComercialVigencia.id,
+          db.documentoPorEmitirLinea.lineaComercialVigenciaId,
+        ),
+      );
+
+  $$DocumentoPorEmitirLineaTableProcessedTableManager
+  get documentoPorEmitirLineaRefs {
+    final manager = $$DocumentoPorEmitirLineaTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirLinea,
+    ).filter(
+      (f) =>
+          f.lineaComercialVigenciaId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirLineaRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ServicioLineaComercialVigenciaTableFilterComposer
@@ -27637,6 +31631,32 @@ class $$ServicioLineaComercialVigenciaTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> documentoPorEmitirLineaRefs(
+    Expression<bool> Function($$DocumentoPorEmitirLineaTableFilterComposer f) f,
+  ) {
+    final $$DocumentoPorEmitirLineaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirLinea,
+          getReferencedColumn: (t) => t.lineaComercialVigenciaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirLineaTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirLinea,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
   }
 }
 
@@ -27903,6 +31923,33 @@ class $$ServicioLineaComercialVigenciaTableAnnotationComposer
         );
     return composer;
   }
+
+  Expression<T> documentoPorEmitirLineaRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirLineaTableAnnotationComposer a)
+    f,
+  ) {
+    final $$DocumentoPorEmitirLineaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirLinea,
+          getReferencedColumn: (t) => t.lineaComercialVigenciaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirLineaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirLinea,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ServicioLineaComercialVigenciaTableTableManager
@@ -27925,6 +31972,7 @@ class $$ServicioLineaComercialVigenciaTableTableManager
             bool lineaComercialId,
             bool puestoId,
             bool modalidadTurnoId,
+            bool documentoPorEmitirLineaRefs,
           })
         > {
   $$ServicioLineaComercialVigenciaTableTableManager(
@@ -28035,10 +32083,13 @@ class $$ServicioLineaComercialVigenciaTableTableManager
             lineaComercialId = false,
             puestoId = false,
             modalidadTurnoId = false,
+            documentoPorEmitirLineaRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [
+                if (documentoPorEmitirLineaRefs) db.documentoPorEmitirLinea,
+              ],
               addJoins: <
                 T extends TableManagerState<
                   dynamic,
@@ -28103,7 +32154,31 @@ class $$ServicioLineaComercialVigenciaTableTableManager
                 return state;
               },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (documentoPorEmitirLineaRefs)
+                    await $_getPrefetchedData<
+                      ServicioLineaComercialVigenciaData,
+                      $ServicioLineaComercialVigenciaTable,
+                      DocumentoPorEmitirLineaData
+                    >(
+                      currentTable: table,
+                      referencedTable:
+                          $$ServicioLineaComercialVigenciaTableReferences
+                              ._documentoPorEmitirLineaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioLineaComercialVigenciaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirLineaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.lineaComercialVigenciaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
               },
             );
           },
@@ -28130,6 +32205,7 @@ typedef $$ServicioLineaComercialVigenciaTableProcessedTableManager =
         bool lineaComercialId,
         bool puestoId,
         bool modalidadTurnoId,
+        bool documentoPorEmitirLineaRefs,
       })
     >;
 typedef $$ConfiguracionCobroTableCreateCompanionBuilder =
@@ -28792,6 +32868,38 @@ final class $$ConfiguracionCobroVigenciaTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirConfiguracionTable,
+    List<DocumentoPorEmitirConfiguracionData>
+  >
+  _documentoPorEmitirConfiguracionRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirConfiguracion,
+        aliasName: $_aliasNameGenerator(
+          db.configuracionCobroVigencia.id,
+          db.documentoPorEmitirConfiguracion.configuracionCobroVigenciaId,
+        ),
+      );
+
+  $$DocumentoPorEmitirConfiguracionTableProcessedTableManager
+  get documentoPorEmitirConfiguracionRefs {
+    final manager = $$DocumentoPorEmitirConfiguracionTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirConfiguracion,
+    ).filter(
+      (f) => f.configuracionCobroVigenciaId.id.sqlEquals(
+        $_itemColumn<String>('id')!,
+      ),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirConfiguracionRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ConfiguracionCobroVigenciaTableFilterComposer
@@ -29009,6 +33117,35 @@ class $$ConfiguracionCobroVigenciaTableFilterComposer
               }) => $$ConfiguracionCobroReglaEventoTableFilterComposer(
                 $db: $db,
                 $table: $db.configuracionCobroReglaEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirConfiguracionRefs(
+    Expression<bool> Function(
+      $$DocumentoPorEmitirConfiguracionTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirConfiguracionTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirConfiguracion,
+          getReferencedColumn: (t) => t.configuracionCobroVigenciaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirConfiguracionTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirConfiguracion,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -29404,6 +33541,35 @@ class $$ConfiguracionCobroVigenciaTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> documentoPorEmitirConfiguracionRefs<T extends Object>(
+    Expression<T> Function(
+      $$DocumentoPorEmitirConfiguracionTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirConfiguracionTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirConfiguracion,
+          getReferencedColumn: (t) => t.configuracionCobroVigenciaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirConfiguracionTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirConfiguracion,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ConfiguracionCobroVigenciaTableTableManager
@@ -29428,6 +33594,7 @@ class $$ConfiguracionCobroVigenciaTableTableManager
             bool entidadFiscalId,
             bool configuracionCobroCorreoRefs,
             bool configuracionCobroReglaEventoRefs,
+            bool documentoPorEmitirConfiguracionRefs,
           })
         > {
   $$ConfiguracionCobroVigenciaTableTableManager(
@@ -29568,6 +33735,7 @@ class $$ConfiguracionCobroVigenciaTableTableManager
             entidadFiscalId = false,
             configuracionCobroCorreoRefs = false,
             configuracionCobroReglaEventoRefs = false,
+            documentoPorEmitirConfiguracionRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -29575,6 +33743,8 @@ class $$ConfiguracionCobroVigenciaTableTableManager
                 if (configuracionCobroCorreoRefs) db.configuracionCobroCorreo,
                 if (configuracionCobroReglaEventoRefs)
                   db.configuracionCobroReglaEvento,
+                if (documentoPorEmitirConfiguracionRefs)
+                  db.documentoPorEmitirConfiguracion,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -29687,6 +33857,29 @@ class $$ConfiguracionCobroVigenciaTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (documentoPorEmitirConfiguracionRefs)
+                    await $_getPrefetchedData<
+                      ConfiguracionCobroVigenciaData,
+                      $ConfiguracionCobroVigenciaTable,
+                      DocumentoPorEmitirConfiguracionData
+                    >(
+                      currentTable: table,
+                      referencedTable:
+                          $$ConfiguracionCobroVigenciaTableReferences
+                              ._documentoPorEmitirConfiguracionRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ConfiguracionCobroVigenciaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirConfiguracionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.configuracionCobroVigenciaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -29716,6 +33909,7 @@ typedef $$ConfiguracionCobroVigenciaTableProcessedTableManager =
         bool entidadFiscalId,
         bool configuracionCobroCorreoRefs,
         bool configuracionCobroReglaEventoRefs,
+        bool documentoPorEmitirConfiguracionRefs,
       })
     >;
 typedef $$ConfiguracionCobroCorreoTableCreateCompanionBuilder =
@@ -30502,6 +34696,3323 @@ typedef $$ConfiguracionCobroReglaEventoTableProcessedTableManager =
       ConfiguracionCobroReglaEventoData,
       PrefetchHooks Function({bool configuracionCobroVigenciaId})
     >;
+typedef $$DocumentoPorEmitirTableCreateCompanionBuilder =
+    DocumentoPorEmitirCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String codigo,
+      required String clienteId,
+      Value<String?> entidadFiscalId,
+      required String tipoDocumento,
+      required String agrupacion,
+      required String metodo,
+      Value<bool> requiereComplemento,
+      required DateTime periodoInicio,
+      required DateTime periodoFin,
+      Value<DateTime?> fechaEmisionProgramada,
+      Value<DateTime?> fechaProcesamientoProgramada,
+      Value<DateTime?> fechaPagoEsperadoProgramada,
+      required String generationKey,
+      required int importeBaseEsperado,
+      Value<int?> ajusteManual,
+      Value<String?> motivoAjuste,
+      required int importeFinalEsperado,
+      Value<String> estatus,
+      Value<String?> motivoEstatus,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$DocumentoPorEmitirTableUpdateCompanionBuilder =
+    DocumentoPorEmitirCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> codigo,
+      Value<String> clienteId,
+      Value<String?> entidadFiscalId,
+      Value<String> tipoDocumento,
+      Value<String> agrupacion,
+      Value<String> metodo,
+      Value<bool> requiereComplemento,
+      Value<DateTime> periodoInicio,
+      Value<DateTime> periodoFin,
+      Value<DateTime?> fechaEmisionProgramada,
+      Value<DateTime?> fechaProcesamientoProgramada,
+      Value<DateTime?> fechaPagoEsperadoProgramada,
+      Value<String> generationKey,
+      Value<int> importeBaseEsperado,
+      Value<int?> ajusteManual,
+      Value<String?> motivoAjuste,
+      Value<int> importeFinalEsperado,
+      Value<String> estatus,
+      Value<String?> motivoEstatus,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$DocumentoPorEmitirTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentoPorEmitirTable,
+          DocumentoPorEmitirData
+        > {
+  $$DocumentoPorEmitirTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ClienteTable _clienteIdTable(_$AppDatabase db) =>
+      db.cliente.createAlias(
+        $_aliasNameGenerator(db.documentoPorEmitir.clienteId, db.cliente.id),
+      );
+
+  $$ClienteTableProcessedTableManager get clienteId {
+    final $_column = $_itemColumn<String>('cliente_id')!;
+
+    final manager = $$ClienteTableTableManager(
+      $_db,
+      $_db.cliente,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_clienteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EntidadFiscalTable _entidadFiscalIdTable(_$AppDatabase db) =>
+      db.entidadFiscal.createAlias(
+        $_aliasNameGenerator(
+          db.documentoPorEmitir.entidadFiscalId,
+          db.entidadFiscal.id,
+        ),
+      );
+
+  $$EntidadFiscalTableProcessedTableManager? get entidadFiscalId {
+    final $_column = $_itemColumn<String>('entidad_fiscal_id');
+    if ($_column == null) return null;
+    final manager = $$EntidadFiscalTableTableManager(
+      $_db,
+      $_db.entidadFiscal,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_entidadFiscalIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirServicioTable,
+    List<DocumentoPorEmitirServicioData>
+  >
+  _documentoPorEmitirServicioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirServicio,
+        aliasName: $_aliasNameGenerator(
+          db.documentoPorEmitir.id,
+          db.documentoPorEmitirServicio.documentoPorEmitirId,
+        ),
+      );
+
+  $$DocumentoPorEmitirServicioTableProcessedTableManager
+  get documentoPorEmitirServicioRefs {
+    final manager = $$DocumentoPorEmitirServicioTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirServicio,
+    ).filter(
+      (f) => f.documentoPorEmitirId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirServicioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirConfiguracionTable,
+    List<DocumentoPorEmitirConfiguracionData>
+  >
+  _documentoPorEmitirConfiguracionRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirConfiguracion,
+        aliasName: $_aliasNameGenerator(
+          db.documentoPorEmitir.id,
+          db.documentoPorEmitirConfiguracion.documentoPorEmitirId,
+        ),
+      );
+
+  $$DocumentoPorEmitirConfiguracionTableProcessedTableManager
+  get documentoPorEmitirConfiguracionRefs {
+    final manager = $$DocumentoPorEmitirConfiguracionTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirConfiguracion,
+    ).filter(
+      (f) => f.documentoPorEmitirId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirConfiguracionRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirLineaTable,
+    List<DocumentoPorEmitirLineaData>
+  >
+  _documentoPorEmitirLineaRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirLinea,
+        aliasName: $_aliasNameGenerator(
+          db.documentoPorEmitir.id,
+          db.documentoPorEmitirLinea.documentoPorEmitirId,
+        ),
+      );
+
+  $$DocumentoPorEmitirLineaTableProcessedTableManager
+  get documentoPorEmitirLineaRefs {
+    final manager = $$DocumentoPorEmitirLineaTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirLinea,
+    ).filter(
+      (f) => f.documentoPorEmitirId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirLineaRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirCorreoTable,
+    List<DocumentoPorEmitirCorreoData>
+  >
+  _documentoPorEmitirCorreoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirCorreo,
+        aliasName: $_aliasNameGenerator(
+          db.documentoPorEmitir.id,
+          db.documentoPorEmitirCorreo.documentoPorEmitirId,
+        ),
+      );
+
+  $$DocumentoPorEmitirCorreoTableProcessedTableManager
+  get documentoPorEmitirCorreoRefs {
+    final manager = $$DocumentoPorEmitirCorreoTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirCorreo,
+    ).filter(
+      (f) => f.documentoPorEmitirId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirCorreoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$DocumentoPorEmitirTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirTable> {
+  $$DocumentoPorEmitirTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoDocumento => $composableBuilder(
+    column: $table.tipoDocumento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get agrupacion => $composableBuilder(
+    column: $table.agrupacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metodo => $composableBuilder(
+    column: $table.metodo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get requiereComplemento => $composableBuilder(
+    column: $table.requiereComplemento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get periodoInicio => $composableBuilder(
+    column: $table.periodoInicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get periodoFin => $composableBuilder(
+    column: $table.periodoFin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaEmisionProgramada => $composableBuilder(
+    column: $table.fechaEmisionProgramada,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaProcesamientoProgramada =>
+      $composableBuilder(
+        column: $table.fechaProcesamientoProgramada,
+        builder: (column) => ColumnFilters(column),
+      );
+
+  ColumnFilters<DateTime> get fechaPagoEsperadoProgramada => $composableBuilder(
+    column: $table.fechaPagoEsperadoProgramada,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get generationKey => $composableBuilder(
+    column: $table.generationKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importeBaseEsperado => $composableBuilder(
+    column: $table.importeBaseEsperado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ajusteManual => $composableBuilder(
+    column: $table.ajusteManual,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoAjuste => $composableBuilder(
+    column: $table.motivoAjuste,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importeFinalEsperado => $composableBuilder(
+    column: $table.importeFinalEsperado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoEstatus => $composableBuilder(
+    column: $table.motivoEstatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ClienteTableFilterComposer get clienteId {
+    final $$ClienteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableFilterComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EntidadFiscalTableFilterComposer get entidadFiscalId {
+    final $$EntidadFiscalTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.entidadFiscalId,
+      referencedTable: $db.entidadFiscal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntidadFiscalTableFilterComposer(
+            $db: $db,
+            $table: $db.entidadFiscal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> documentoPorEmitirServicioRefs(
+    Expression<bool> Function($$DocumentoPorEmitirServicioTableFilterComposer f)
+    f,
+  ) {
+    final $$DocumentoPorEmitirServicioTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirServicio,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirServicioTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirServicio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirConfiguracionRefs(
+    Expression<bool> Function(
+      $$DocumentoPorEmitirConfiguracionTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirConfiguracionTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirConfiguracion,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirConfiguracionTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirConfiguracion,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirLineaRefs(
+    Expression<bool> Function($$DocumentoPorEmitirLineaTableFilterComposer f) f,
+  ) {
+    final $$DocumentoPorEmitirLineaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirLinea,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirLineaTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirLinea,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirCorreoRefs(
+    Expression<bool> Function($$DocumentoPorEmitirCorreoTableFilterComposer f)
+    f,
+  ) {
+    final $$DocumentoPorEmitirCorreoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirCorreo,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirCorreoTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirCorreo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$DocumentoPorEmitirTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirTable> {
+  $$DocumentoPorEmitirTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoDocumento => $composableBuilder(
+    column: $table.tipoDocumento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get agrupacion => $composableBuilder(
+    column: $table.agrupacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metodo => $composableBuilder(
+    column: $table.metodo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get requiereComplemento => $composableBuilder(
+    column: $table.requiereComplemento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get periodoInicio => $composableBuilder(
+    column: $table.periodoInicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get periodoFin => $composableBuilder(
+    column: $table.periodoFin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaEmisionProgramada => $composableBuilder(
+    column: $table.fechaEmisionProgramada,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaProcesamientoProgramada =>
+      $composableBuilder(
+        column: $table.fechaProcesamientoProgramada,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  ColumnOrderings<DateTime> get fechaPagoEsperadoProgramada =>
+      $composableBuilder(
+        column: $table.fechaPagoEsperadoProgramada,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  ColumnOrderings<String> get generationKey => $composableBuilder(
+    column: $table.generationKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importeBaseEsperado => $composableBuilder(
+    column: $table.importeBaseEsperado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ajusteManual => $composableBuilder(
+    column: $table.ajusteManual,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoAjuste => $composableBuilder(
+    column: $table.motivoAjuste,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importeFinalEsperado => $composableBuilder(
+    column: $table.importeFinalEsperado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoEstatus => $composableBuilder(
+    column: $table.motivoEstatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ClienteTableOrderingComposer get clienteId {
+    final $$ClienteTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableOrderingComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EntidadFiscalTableOrderingComposer get entidadFiscalId {
+    final $$EntidadFiscalTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.entidadFiscalId,
+      referencedTable: $db.entidadFiscal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntidadFiscalTableOrderingComposer(
+            $db: $db,
+            $table: $db.entidadFiscal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirTable> {
+  $$DocumentoPorEmitirTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoDocumento => $composableBuilder(
+    column: $table.tipoDocumento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get agrupacion => $composableBuilder(
+    column: $table.agrupacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get metodo =>
+      $composableBuilder(column: $table.metodo, builder: (column) => column);
+
+  GeneratedColumn<bool> get requiereComplemento => $composableBuilder(
+    column: $table.requiereComplemento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get periodoInicio => $composableBuilder(
+    column: $table.periodoInicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get periodoFin => $composableBuilder(
+    column: $table.periodoFin,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaEmisionProgramada => $composableBuilder(
+    column: $table.fechaEmisionProgramada,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaProcesamientoProgramada =>
+      $composableBuilder(
+        column: $table.fechaProcesamientoProgramada,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<DateTime> get fechaPagoEsperadoProgramada =>
+      $composableBuilder(
+        column: $table.fechaPagoEsperadoProgramada,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get generationKey => $composableBuilder(
+    column: $table.generationKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get importeBaseEsperado => $composableBuilder(
+    column: $table.importeBaseEsperado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get ajusteManual => $composableBuilder(
+    column: $table.ajusteManual,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get motivoAjuste => $composableBuilder(
+    column: $table.motivoAjuste,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get importeFinalEsperado => $composableBuilder(
+    column: $table.importeFinalEsperado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoEstatus => $composableBuilder(
+    column: $table.motivoEstatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  $$ClienteTableAnnotationComposer get clienteId {
+    final $$ClienteTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EntidadFiscalTableAnnotationComposer get entidadFiscalId {
+    final $$EntidadFiscalTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.entidadFiscalId,
+      referencedTable: $db.entidadFiscal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntidadFiscalTableAnnotationComposer(
+            $db: $db,
+            $table: $db.entidadFiscal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> documentoPorEmitirServicioRefs<T extends Object>(
+    Expression<T> Function(
+      $$DocumentoPorEmitirServicioTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirServicioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirServicio,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirServicioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirServicio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> documentoPorEmitirConfiguracionRefs<T extends Object>(
+    Expression<T> Function(
+      $$DocumentoPorEmitirConfiguracionTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirConfiguracionTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirConfiguracion,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirConfiguracionTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirConfiguracion,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> documentoPorEmitirLineaRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirLineaTableAnnotationComposer a)
+    f,
+  ) {
+    final $$DocumentoPorEmitirLineaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirLinea,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirLineaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirLinea,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> documentoPorEmitirCorreoRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirCorreoTableAnnotationComposer a)
+    f,
+  ) {
+    final $$DocumentoPorEmitirCorreoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirCorreo,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirCorreoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirCorreo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$DocumentoPorEmitirTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentoPorEmitirTable,
+          DocumentoPorEmitirData,
+          $$DocumentoPorEmitirTableFilterComposer,
+          $$DocumentoPorEmitirTableOrderingComposer,
+          $$DocumentoPorEmitirTableAnnotationComposer,
+          $$DocumentoPorEmitirTableCreateCompanionBuilder,
+          $$DocumentoPorEmitirTableUpdateCompanionBuilder,
+          (DocumentoPorEmitirData, $$DocumentoPorEmitirTableReferences),
+          DocumentoPorEmitirData,
+          PrefetchHooks Function({
+            bool clienteId,
+            bool entidadFiscalId,
+            bool documentoPorEmitirServicioRefs,
+            bool documentoPorEmitirConfiguracionRefs,
+            bool documentoPorEmitirLineaRefs,
+            bool documentoPorEmitirCorreoRefs,
+          })
+        > {
+  $$DocumentoPorEmitirTableTableManager(
+    _$AppDatabase db,
+    $DocumentoPorEmitirTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DocumentoPorEmitirTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DocumentoPorEmitirTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> codigo = const Value.absent(),
+                Value<String> clienteId = const Value.absent(),
+                Value<String?> entidadFiscalId = const Value.absent(),
+                Value<String> tipoDocumento = const Value.absent(),
+                Value<String> agrupacion = const Value.absent(),
+                Value<String> metodo = const Value.absent(),
+                Value<bool> requiereComplemento = const Value.absent(),
+                Value<DateTime> periodoInicio = const Value.absent(),
+                Value<DateTime> periodoFin = const Value.absent(),
+                Value<DateTime?> fechaEmisionProgramada = const Value.absent(),
+                Value<DateTime?> fechaProcesamientoProgramada =
+                    const Value.absent(),
+                Value<DateTime?> fechaPagoEsperadoProgramada =
+                    const Value.absent(),
+                Value<String> generationKey = const Value.absent(),
+                Value<int> importeBaseEsperado = const Value.absent(),
+                Value<int?> ajusteManual = const Value.absent(),
+                Value<String?> motivoAjuste = const Value.absent(),
+                Value<int> importeFinalEsperado = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoEstatus = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DocumentoPorEmitirCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                clienteId: clienteId,
+                entidadFiscalId: entidadFiscalId,
+                tipoDocumento: tipoDocumento,
+                agrupacion: agrupacion,
+                metodo: metodo,
+                requiereComplemento: requiereComplemento,
+                periodoInicio: periodoInicio,
+                periodoFin: periodoFin,
+                fechaEmisionProgramada: fechaEmisionProgramada,
+                fechaProcesamientoProgramada: fechaProcesamientoProgramada,
+                fechaPagoEsperadoProgramada: fechaPagoEsperadoProgramada,
+                generationKey: generationKey,
+                importeBaseEsperado: importeBaseEsperado,
+                ajusteManual: ajusteManual,
+                motivoAjuste: motivoAjuste,
+                importeFinalEsperado: importeFinalEsperado,
+                estatus: estatus,
+                motivoEstatus: motivoEstatus,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String codigo,
+                required String clienteId,
+                Value<String?> entidadFiscalId = const Value.absent(),
+                required String tipoDocumento,
+                required String agrupacion,
+                required String metodo,
+                Value<bool> requiereComplemento = const Value.absent(),
+                required DateTime periodoInicio,
+                required DateTime periodoFin,
+                Value<DateTime?> fechaEmisionProgramada = const Value.absent(),
+                Value<DateTime?> fechaProcesamientoProgramada =
+                    const Value.absent(),
+                Value<DateTime?> fechaPagoEsperadoProgramada =
+                    const Value.absent(),
+                required String generationKey,
+                required int importeBaseEsperado,
+                Value<int?> ajusteManual = const Value.absent(),
+                Value<String?> motivoAjuste = const Value.absent(),
+                required int importeFinalEsperado,
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoEstatus = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DocumentoPorEmitirCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                clienteId: clienteId,
+                entidadFiscalId: entidadFiscalId,
+                tipoDocumento: tipoDocumento,
+                agrupacion: agrupacion,
+                metodo: metodo,
+                requiereComplemento: requiereComplemento,
+                periodoInicio: periodoInicio,
+                periodoFin: periodoFin,
+                fechaEmisionProgramada: fechaEmisionProgramada,
+                fechaProcesamientoProgramada: fechaProcesamientoProgramada,
+                fechaPagoEsperadoProgramada: fechaPagoEsperadoProgramada,
+                generationKey: generationKey,
+                importeBaseEsperado: importeBaseEsperado,
+                ajusteManual: ajusteManual,
+                motivoAjuste: motivoAjuste,
+                importeFinalEsperado: importeFinalEsperado,
+                estatus: estatus,
+                motivoEstatus: motivoEstatus,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DocumentoPorEmitirTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            clienteId = false,
+            entidadFiscalId = false,
+            documentoPorEmitirServicioRefs = false,
+            documentoPorEmitirConfiguracionRefs = false,
+            documentoPorEmitirLineaRefs = false,
+            documentoPorEmitirCorreoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (documentoPorEmitirServicioRefs)
+                  db.documentoPorEmitirServicio,
+                if (documentoPorEmitirConfiguracionRefs)
+                  db.documentoPorEmitirConfiguracion,
+                if (documentoPorEmitirLineaRefs) db.documentoPorEmitirLinea,
+                if (documentoPorEmitirCorreoRefs) db.documentoPorEmitirCorreo,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (clienteId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.clienteId,
+                            referencedTable: $$DocumentoPorEmitirTableReferences
+                                ._clienteIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirTableReferences
+                                    ._clienteIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (entidadFiscalId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.entidadFiscalId,
+                            referencedTable: $$DocumentoPorEmitirTableReferences
+                                ._entidadFiscalIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirTableReferences
+                                    ._entidadFiscalIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (documentoPorEmitirServicioRefs)
+                    await $_getPrefetchedData<
+                      DocumentoPorEmitirData,
+                      $DocumentoPorEmitirTable,
+                      DocumentoPorEmitirServicioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$DocumentoPorEmitirTableReferences
+                          ._documentoPorEmitirServicioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$DocumentoPorEmitirTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirServicioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.documentoPorEmitirId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirConfiguracionRefs)
+                    await $_getPrefetchedData<
+                      DocumentoPorEmitirData,
+                      $DocumentoPorEmitirTable,
+                      DocumentoPorEmitirConfiguracionData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$DocumentoPorEmitirTableReferences
+                          ._documentoPorEmitirConfiguracionRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$DocumentoPorEmitirTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirConfiguracionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.documentoPorEmitirId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirLineaRefs)
+                    await $_getPrefetchedData<
+                      DocumentoPorEmitirData,
+                      $DocumentoPorEmitirTable,
+                      DocumentoPorEmitirLineaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$DocumentoPorEmitirTableReferences
+                          ._documentoPorEmitirLineaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$DocumentoPorEmitirTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirLineaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.documentoPorEmitirId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirCorreoRefs)
+                    await $_getPrefetchedData<
+                      DocumentoPorEmitirData,
+                      $DocumentoPorEmitirTable,
+                      DocumentoPorEmitirCorreoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$DocumentoPorEmitirTableReferences
+                          ._documentoPorEmitirCorreoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$DocumentoPorEmitirTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirCorreoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.documentoPorEmitirId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DocumentoPorEmitirTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentoPorEmitirTable,
+      DocumentoPorEmitirData,
+      $$DocumentoPorEmitirTableFilterComposer,
+      $$DocumentoPorEmitirTableOrderingComposer,
+      $$DocumentoPorEmitirTableAnnotationComposer,
+      $$DocumentoPorEmitirTableCreateCompanionBuilder,
+      $$DocumentoPorEmitirTableUpdateCompanionBuilder,
+      (DocumentoPorEmitirData, $$DocumentoPorEmitirTableReferences),
+      DocumentoPorEmitirData,
+      PrefetchHooks Function({
+        bool clienteId,
+        bool entidadFiscalId,
+        bool documentoPorEmitirServicioRefs,
+        bool documentoPorEmitirConfiguracionRefs,
+        bool documentoPorEmitirLineaRefs,
+        bool documentoPorEmitirCorreoRefs,
+      })
+    >;
+typedef $$DocumentoPorEmitirServicioTableCreateCompanionBuilder =
+    DocumentoPorEmitirServicioCompanion Function({
+      Value<int> id,
+      required String documentoPorEmitirId,
+      required String servicioId,
+    });
+typedef $$DocumentoPorEmitirServicioTableUpdateCompanionBuilder =
+    DocumentoPorEmitirServicioCompanion Function({
+      Value<int> id,
+      Value<String> documentoPorEmitirId,
+      Value<String> servicioId,
+    });
+
+final class $$DocumentoPorEmitirServicioTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentoPorEmitirServicioTable,
+          DocumentoPorEmitirServicioData
+        > {
+  $$DocumentoPorEmitirServicioTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $DocumentoPorEmitirTable _documentoPorEmitirIdTable(
+    _$AppDatabase db,
+  ) => db.documentoPorEmitir.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirServicio.documentoPorEmitirId,
+      db.documentoPorEmitir.id,
+    ),
+  );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirId {
+    final $_column = $_itemColumn<String>('documento_por_emitir_id')!;
+
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _documentoPorEmitirIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(
+          db.documentoPorEmitirServicio.servicioId,
+          db.servicio.id,
+        ),
+      );
+
+  $$ServicioTableProcessedTableManager get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id')!;
+
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DocumentoPorEmitirServicioTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirServicioTable> {
+  $$DocumentoPorEmitirServicioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$DocumentoPorEmitirTableFilterComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirServicioTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirServicioTable> {
+  $$DocumentoPorEmitirServicioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$DocumentoPorEmitirTableOrderingComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableOrderingComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirServicioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirServicioTable> {
+  $$DocumentoPorEmitirServicioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  $$DocumentoPorEmitirTableAnnotationComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.documentoPorEmitirId,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirServicioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentoPorEmitirServicioTable,
+          DocumentoPorEmitirServicioData,
+          $$DocumentoPorEmitirServicioTableFilterComposer,
+          $$DocumentoPorEmitirServicioTableOrderingComposer,
+          $$DocumentoPorEmitirServicioTableAnnotationComposer,
+          $$DocumentoPorEmitirServicioTableCreateCompanionBuilder,
+          $$DocumentoPorEmitirServicioTableUpdateCompanionBuilder,
+          (
+            DocumentoPorEmitirServicioData,
+            $$DocumentoPorEmitirServicioTableReferences,
+          ),
+          DocumentoPorEmitirServicioData,
+          PrefetchHooks Function({bool documentoPorEmitirId, bool servicioId})
+        > {
+  $$DocumentoPorEmitirServicioTableTableManager(
+    _$AppDatabase db,
+    $DocumentoPorEmitirServicioTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DocumentoPorEmitirServicioTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DocumentoPorEmitirServicioTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DocumentoPorEmitirServicioTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> documentoPorEmitirId = const Value.absent(),
+                Value<String> servicioId = const Value.absent(),
+              }) => DocumentoPorEmitirServicioCompanion(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                servicioId: servicioId,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String documentoPorEmitirId,
+                required String servicioId,
+              }) => DocumentoPorEmitirServicioCompanion.insert(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                servicioId: servicioId,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DocumentoPorEmitirServicioTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            documentoPorEmitirId = false,
+            servicioId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (documentoPorEmitirId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.documentoPorEmitirId,
+                            referencedTable:
+                                $$DocumentoPorEmitirServicioTableReferences
+                                    ._documentoPorEmitirIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirServicioTableReferences
+                                    ._documentoPorEmitirIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable:
+                                $$DocumentoPorEmitirServicioTableReferences
+                                    ._servicioIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirServicioTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DocumentoPorEmitirServicioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentoPorEmitirServicioTable,
+      DocumentoPorEmitirServicioData,
+      $$DocumentoPorEmitirServicioTableFilterComposer,
+      $$DocumentoPorEmitirServicioTableOrderingComposer,
+      $$DocumentoPorEmitirServicioTableAnnotationComposer,
+      $$DocumentoPorEmitirServicioTableCreateCompanionBuilder,
+      $$DocumentoPorEmitirServicioTableUpdateCompanionBuilder,
+      (
+        DocumentoPorEmitirServicioData,
+        $$DocumentoPorEmitirServicioTableReferences,
+      ),
+      DocumentoPorEmitirServicioData,
+      PrefetchHooks Function({bool documentoPorEmitirId, bool servicioId})
+    >;
+typedef $$DocumentoPorEmitirConfiguracionTableCreateCompanionBuilder =
+    DocumentoPorEmitirConfiguracionCompanion Function({
+      Value<int> id,
+      required String documentoPorEmitirId,
+      required String servicioId,
+      required String configuracionCobroVigenciaId,
+      Value<DateTime?> fechaEmisionProgramada,
+      Value<DateTime?> fechaProcesamientoProgramada,
+      Value<DateTime?> fechaPagoEsperadoProgramada,
+    });
+typedef $$DocumentoPorEmitirConfiguracionTableUpdateCompanionBuilder =
+    DocumentoPorEmitirConfiguracionCompanion Function({
+      Value<int> id,
+      Value<String> documentoPorEmitirId,
+      Value<String> servicioId,
+      Value<String> configuracionCobroVigenciaId,
+      Value<DateTime?> fechaEmisionProgramada,
+      Value<DateTime?> fechaProcesamientoProgramada,
+      Value<DateTime?> fechaPagoEsperadoProgramada,
+    });
+
+final class $$DocumentoPorEmitirConfiguracionTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentoPorEmitirConfiguracionTable,
+          DocumentoPorEmitirConfiguracionData
+        > {
+  $$DocumentoPorEmitirConfiguracionTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $DocumentoPorEmitirTable _documentoPorEmitirIdTable(
+    _$AppDatabase db,
+  ) => db.documentoPorEmitir.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirConfiguracion.documentoPorEmitirId,
+      db.documentoPorEmitir.id,
+    ),
+  );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirId {
+    final $_column = $_itemColumn<String>('documento_por_emitir_id')!;
+
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _documentoPorEmitirIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(
+          db.documentoPorEmitirConfiguracion.servicioId,
+          db.servicio.id,
+        ),
+      );
+
+  $$ServicioTableProcessedTableManager get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id')!;
+
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ConfiguracionCobroVigenciaTable _configuracionCobroVigenciaIdTable(
+    _$AppDatabase db,
+  ) => db.configuracionCobroVigencia.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirConfiguracion.configuracionCobroVigenciaId,
+      db.configuracionCobroVigencia.id,
+    ),
+  );
+
+  $$ConfiguracionCobroVigenciaTableProcessedTableManager
+  get configuracionCobroVigenciaId {
+    final $_column = $_itemColumn<String>('configuracion_cobro_vigencia_id')!;
+
+    final manager = $$ConfiguracionCobroVigenciaTableTableManager(
+      $_db,
+      $_db.configuracionCobroVigencia,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _configuracionCobroVigenciaIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DocumentoPorEmitirConfiguracionTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirConfiguracionTable> {
+  $$DocumentoPorEmitirConfiguracionTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaEmisionProgramada => $composableBuilder(
+    column: $table.fechaEmisionProgramada,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaProcesamientoProgramada =>
+      $composableBuilder(
+        column: $table.fechaProcesamientoProgramada,
+        builder: (column) => ColumnFilters(column),
+      );
+
+  ColumnFilters<DateTime> get fechaPagoEsperadoProgramada => $composableBuilder(
+    column: $table.fechaPagoEsperadoProgramada,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$DocumentoPorEmitirTableFilterComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConfiguracionCobroVigenciaTableFilterComposer
+  get configuracionCobroVigenciaId {
+    final $$ConfiguracionCobroVigenciaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.configuracionCobroVigenciaId,
+          referencedTable: $db.configuracionCobroVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroVigenciaTableFilterComposer(
+                $db: $db,
+                $table: $db.configuracionCobroVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirConfiguracionTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirConfiguracionTable> {
+  $$DocumentoPorEmitirConfiguracionTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaEmisionProgramada => $composableBuilder(
+    column: $table.fechaEmisionProgramada,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaProcesamientoProgramada =>
+      $composableBuilder(
+        column: $table.fechaProcesamientoProgramada,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  ColumnOrderings<DateTime> get fechaPagoEsperadoProgramada =>
+      $composableBuilder(
+        column: $table.fechaPagoEsperadoProgramada,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  $$DocumentoPorEmitirTableOrderingComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableOrderingComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConfiguracionCobroVigenciaTableOrderingComposer
+  get configuracionCobroVigenciaId {
+    final $$ConfiguracionCobroVigenciaTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.configuracionCobroVigenciaId,
+          referencedTable: $db.configuracionCobroVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroVigenciaTableOrderingComposer(
+                $db: $db,
+                $table: $db.configuracionCobroVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirConfiguracionTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirConfiguracionTable> {
+  $$DocumentoPorEmitirConfiguracionTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaEmisionProgramada => $composableBuilder(
+    column: $table.fechaEmisionProgramada,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaProcesamientoProgramada =>
+      $composableBuilder(
+        column: $table.fechaProcesamientoProgramada,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<DateTime> get fechaPagoEsperadoProgramada =>
+      $composableBuilder(
+        column: $table.fechaPagoEsperadoProgramada,
+        builder: (column) => column,
+      );
+
+  $$DocumentoPorEmitirTableAnnotationComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.documentoPorEmitirId,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConfiguracionCobroVigenciaTableAnnotationComposer
+  get configuracionCobroVigenciaId {
+    final $$ConfiguracionCobroVigenciaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.configuracionCobroVigenciaId,
+          referencedTable: $db.configuracionCobroVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroVigenciaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.configuracionCobroVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirConfiguracionTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentoPorEmitirConfiguracionTable,
+          DocumentoPorEmitirConfiguracionData,
+          $$DocumentoPorEmitirConfiguracionTableFilterComposer,
+          $$DocumentoPorEmitirConfiguracionTableOrderingComposer,
+          $$DocumentoPorEmitirConfiguracionTableAnnotationComposer,
+          $$DocumentoPorEmitirConfiguracionTableCreateCompanionBuilder,
+          $$DocumentoPorEmitirConfiguracionTableUpdateCompanionBuilder,
+          (
+            DocumentoPorEmitirConfiguracionData,
+            $$DocumentoPorEmitirConfiguracionTableReferences,
+          ),
+          DocumentoPorEmitirConfiguracionData,
+          PrefetchHooks Function({
+            bool documentoPorEmitirId,
+            bool servicioId,
+            bool configuracionCobroVigenciaId,
+          })
+        > {
+  $$DocumentoPorEmitirConfiguracionTableTableManager(
+    _$AppDatabase db,
+    $DocumentoPorEmitirConfiguracionTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DocumentoPorEmitirConfiguracionTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DocumentoPorEmitirConfiguracionTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DocumentoPorEmitirConfiguracionTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> documentoPorEmitirId = const Value.absent(),
+                Value<String> servicioId = const Value.absent(),
+                Value<String> configuracionCobroVigenciaId =
+                    const Value.absent(),
+                Value<DateTime?> fechaEmisionProgramada = const Value.absent(),
+                Value<DateTime?> fechaProcesamientoProgramada =
+                    const Value.absent(),
+                Value<DateTime?> fechaPagoEsperadoProgramada =
+                    const Value.absent(),
+              }) => DocumentoPorEmitirConfiguracionCompanion(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                servicioId: servicioId,
+                configuracionCobroVigenciaId: configuracionCobroVigenciaId,
+                fechaEmisionProgramada: fechaEmisionProgramada,
+                fechaProcesamientoProgramada: fechaProcesamientoProgramada,
+                fechaPagoEsperadoProgramada: fechaPagoEsperadoProgramada,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String documentoPorEmitirId,
+                required String servicioId,
+                required String configuracionCobroVigenciaId,
+                Value<DateTime?> fechaEmisionProgramada = const Value.absent(),
+                Value<DateTime?> fechaProcesamientoProgramada =
+                    const Value.absent(),
+                Value<DateTime?> fechaPagoEsperadoProgramada =
+                    const Value.absent(),
+              }) => DocumentoPorEmitirConfiguracionCompanion.insert(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                servicioId: servicioId,
+                configuracionCobroVigenciaId: configuracionCobroVigenciaId,
+                fechaEmisionProgramada: fechaEmisionProgramada,
+                fechaProcesamientoProgramada: fechaProcesamientoProgramada,
+                fechaPagoEsperadoProgramada: fechaPagoEsperadoProgramada,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DocumentoPorEmitirConfiguracionTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            documentoPorEmitirId = false,
+            servicioId = false,
+            configuracionCobroVigenciaId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (documentoPorEmitirId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.documentoPorEmitirId,
+                            referencedTable:
+                                $$DocumentoPorEmitirConfiguracionTableReferences
+                                    ._documentoPorEmitirIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirConfiguracionTableReferences
+                                    ._documentoPorEmitirIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable:
+                                $$DocumentoPorEmitirConfiguracionTableReferences
+                                    ._servicioIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirConfiguracionTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (configuracionCobroVigenciaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.configuracionCobroVigenciaId,
+                            referencedTable:
+                                $$DocumentoPorEmitirConfiguracionTableReferences
+                                    ._configuracionCobroVigenciaIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirConfiguracionTableReferences
+                                    ._configuracionCobroVigenciaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DocumentoPorEmitirConfiguracionTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentoPorEmitirConfiguracionTable,
+      DocumentoPorEmitirConfiguracionData,
+      $$DocumentoPorEmitirConfiguracionTableFilterComposer,
+      $$DocumentoPorEmitirConfiguracionTableOrderingComposer,
+      $$DocumentoPorEmitirConfiguracionTableAnnotationComposer,
+      $$DocumentoPorEmitirConfiguracionTableCreateCompanionBuilder,
+      $$DocumentoPorEmitirConfiguracionTableUpdateCompanionBuilder,
+      (
+        DocumentoPorEmitirConfiguracionData,
+        $$DocumentoPorEmitirConfiguracionTableReferences,
+      ),
+      DocumentoPorEmitirConfiguracionData,
+      PrefetchHooks Function({
+        bool documentoPorEmitirId,
+        bool servicioId,
+        bool configuracionCobroVigenciaId,
+      })
+    >;
+typedef $$DocumentoPorEmitirLineaTableCreateCompanionBuilder =
+    DocumentoPorEmitirLineaCompanion Function({
+      Value<int> id,
+      required String documentoPorEmitirId,
+      required String servicioId,
+      required String lineaComercialVigenciaId,
+      required String puestoNombre,
+      required String modalidadTurnoNombre,
+      required int cantidadElementos,
+      required int precioUnitario,
+      required String tratamientoIva,
+      required int diasAplicables,
+      required int subtotalProporcional,
+    });
+typedef $$DocumentoPorEmitirLineaTableUpdateCompanionBuilder =
+    DocumentoPorEmitirLineaCompanion Function({
+      Value<int> id,
+      Value<String> documentoPorEmitirId,
+      Value<String> servicioId,
+      Value<String> lineaComercialVigenciaId,
+      Value<String> puestoNombre,
+      Value<String> modalidadTurnoNombre,
+      Value<int> cantidadElementos,
+      Value<int> precioUnitario,
+      Value<String> tratamientoIva,
+      Value<int> diasAplicables,
+      Value<int> subtotalProporcional,
+    });
+
+final class $$DocumentoPorEmitirLineaTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentoPorEmitirLineaTable,
+          DocumentoPorEmitirLineaData
+        > {
+  $$DocumentoPorEmitirLineaTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $DocumentoPorEmitirTable _documentoPorEmitirIdTable(
+    _$AppDatabase db,
+  ) => db.documentoPorEmitir.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirLinea.documentoPorEmitirId,
+      db.documentoPorEmitir.id,
+    ),
+  );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirId {
+    final $_column = $_itemColumn<String>('documento_por_emitir_id')!;
+
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _documentoPorEmitirIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(
+          db.documentoPorEmitirLinea.servicioId,
+          db.servicio.id,
+        ),
+      );
+
+  $$ServicioTableProcessedTableManager get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id')!;
+
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioLineaComercialVigenciaTable _lineaComercialVigenciaIdTable(
+    _$AppDatabase db,
+  ) => db.servicioLineaComercialVigencia.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirLinea.lineaComercialVigenciaId,
+      db.servicioLineaComercialVigencia.id,
+    ),
+  );
+
+  $$ServicioLineaComercialVigenciaTableProcessedTableManager
+  get lineaComercialVigenciaId {
+    final $_column = $_itemColumn<String>('linea_comercial_vigencia_id')!;
+
+    final manager = $$ServicioLineaComercialVigenciaTableTableManager(
+      $_db,
+      $_db.servicioLineaComercialVigencia,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _lineaComercialVigenciaIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DocumentoPorEmitirLineaTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirLineaTable> {
+  $$DocumentoPorEmitirLineaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get puestoNombre => $composableBuilder(
+    column: $table.puestoNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modalidadTurnoNombre => $composableBuilder(
+    column: $table.modalidadTurnoNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cantidadElementos => $composableBuilder(
+    column: $table.cantidadElementos,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get precioUnitario => $composableBuilder(
+    column: $table.precioUnitario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tratamientoIva => $composableBuilder(
+    column: $table.tratamientoIva,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diasAplicables => $composableBuilder(
+    column: $table.diasAplicables,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get subtotalProporcional => $composableBuilder(
+    column: $table.subtotalProporcional,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$DocumentoPorEmitirTableFilterComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioLineaComercialVigenciaTableFilterComposer
+  get lineaComercialVigenciaId {
+    final $$ServicioLineaComercialVigenciaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lineaComercialVigenciaId,
+          referencedTable: $db.servicioLineaComercialVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialVigenciaTableFilterComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercialVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirLineaTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirLineaTable> {
+  $$DocumentoPorEmitirLineaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get puestoNombre => $composableBuilder(
+    column: $table.puestoNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modalidadTurnoNombre => $composableBuilder(
+    column: $table.modalidadTurnoNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cantidadElementos => $composableBuilder(
+    column: $table.cantidadElementos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get precioUnitario => $composableBuilder(
+    column: $table.precioUnitario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tratamientoIva => $composableBuilder(
+    column: $table.tratamientoIva,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diasAplicables => $composableBuilder(
+    column: $table.diasAplicables,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get subtotalProporcional => $composableBuilder(
+    column: $table.subtotalProporcional,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$DocumentoPorEmitirTableOrderingComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableOrderingComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioLineaComercialVigenciaTableOrderingComposer
+  get lineaComercialVigenciaId {
+    final $$ServicioLineaComercialVigenciaTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lineaComercialVigenciaId,
+          referencedTable: $db.servicioLineaComercialVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialVigenciaTableOrderingComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercialVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirLineaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirLineaTable> {
+  $$DocumentoPorEmitirLineaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get puestoNombre => $composableBuilder(
+    column: $table.puestoNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modalidadTurnoNombre => $composableBuilder(
+    column: $table.modalidadTurnoNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cantidadElementos => $composableBuilder(
+    column: $table.cantidadElementos,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get precioUnitario => $composableBuilder(
+    column: $table.precioUnitario,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tratamientoIva => $composableBuilder(
+    column: $table.tratamientoIva,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get diasAplicables => $composableBuilder(
+    column: $table.diasAplicables,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get subtotalProporcional => $composableBuilder(
+    column: $table.subtotalProporcional,
+    builder: (column) => column,
+  );
+
+  $$DocumentoPorEmitirTableAnnotationComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.documentoPorEmitirId,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioLineaComercialVigenciaTableAnnotationComposer
+  get lineaComercialVigenciaId {
+    final $$ServicioLineaComercialVigenciaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lineaComercialVigenciaId,
+          referencedTable: $db.servicioLineaComercialVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialVigenciaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercialVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirLineaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentoPorEmitirLineaTable,
+          DocumentoPorEmitirLineaData,
+          $$DocumentoPorEmitirLineaTableFilterComposer,
+          $$DocumentoPorEmitirLineaTableOrderingComposer,
+          $$DocumentoPorEmitirLineaTableAnnotationComposer,
+          $$DocumentoPorEmitirLineaTableCreateCompanionBuilder,
+          $$DocumentoPorEmitirLineaTableUpdateCompanionBuilder,
+          (
+            DocumentoPorEmitirLineaData,
+            $$DocumentoPorEmitirLineaTableReferences,
+          ),
+          DocumentoPorEmitirLineaData,
+          PrefetchHooks Function({
+            bool documentoPorEmitirId,
+            bool servicioId,
+            bool lineaComercialVigenciaId,
+          })
+        > {
+  $$DocumentoPorEmitirLineaTableTableManager(
+    _$AppDatabase db,
+    $DocumentoPorEmitirLineaTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DocumentoPorEmitirLineaTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DocumentoPorEmitirLineaTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DocumentoPorEmitirLineaTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> documentoPorEmitirId = const Value.absent(),
+                Value<String> servicioId = const Value.absent(),
+                Value<String> lineaComercialVigenciaId = const Value.absent(),
+                Value<String> puestoNombre = const Value.absent(),
+                Value<String> modalidadTurnoNombre = const Value.absent(),
+                Value<int> cantidadElementos = const Value.absent(),
+                Value<int> precioUnitario = const Value.absent(),
+                Value<String> tratamientoIva = const Value.absent(),
+                Value<int> diasAplicables = const Value.absent(),
+                Value<int> subtotalProporcional = const Value.absent(),
+              }) => DocumentoPorEmitirLineaCompanion(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                servicioId: servicioId,
+                lineaComercialVigenciaId: lineaComercialVigenciaId,
+                puestoNombre: puestoNombre,
+                modalidadTurnoNombre: modalidadTurnoNombre,
+                cantidadElementos: cantidadElementos,
+                precioUnitario: precioUnitario,
+                tratamientoIva: tratamientoIva,
+                diasAplicables: diasAplicables,
+                subtotalProporcional: subtotalProporcional,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String documentoPorEmitirId,
+                required String servicioId,
+                required String lineaComercialVigenciaId,
+                required String puestoNombre,
+                required String modalidadTurnoNombre,
+                required int cantidadElementos,
+                required int precioUnitario,
+                required String tratamientoIva,
+                required int diasAplicables,
+                required int subtotalProporcional,
+              }) => DocumentoPorEmitirLineaCompanion.insert(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                servicioId: servicioId,
+                lineaComercialVigenciaId: lineaComercialVigenciaId,
+                puestoNombre: puestoNombre,
+                modalidadTurnoNombre: modalidadTurnoNombre,
+                cantidadElementos: cantidadElementos,
+                precioUnitario: precioUnitario,
+                tratamientoIva: tratamientoIva,
+                diasAplicables: diasAplicables,
+                subtotalProporcional: subtotalProporcional,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DocumentoPorEmitirLineaTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            documentoPorEmitirId = false,
+            servicioId = false,
+            lineaComercialVigenciaId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (documentoPorEmitirId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.documentoPorEmitirId,
+                            referencedTable:
+                                $$DocumentoPorEmitirLineaTableReferences
+                                    ._documentoPorEmitirIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirLineaTableReferences
+                                    ._documentoPorEmitirIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable:
+                                $$DocumentoPorEmitirLineaTableReferences
+                                    ._servicioIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirLineaTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (lineaComercialVigenciaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.lineaComercialVigenciaId,
+                            referencedTable:
+                                $$DocumentoPorEmitirLineaTableReferences
+                                    ._lineaComercialVigenciaIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirLineaTableReferences
+                                    ._lineaComercialVigenciaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DocumentoPorEmitirLineaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentoPorEmitirLineaTable,
+      DocumentoPorEmitirLineaData,
+      $$DocumentoPorEmitirLineaTableFilterComposer,
+      $$DocumentoPorEmitirLineaTableOrderingComposer,
+      $$DocumentoPorEmitirLineaTableAnnotationComposer,
+      $$DocumentoPorEmitirLineaTableCreateCompanionBuilder,
+      $$DocumentoPorEmitirLineaTableUpdateCompanionBuilder,
+      (DocumentoPorEmitirLineaData, $$DocumentoPorEmitirLineaTableReferences),
+      DocumentoPorEmitirLineaData,
+      PrefetchHooks Function({
+        bool documentoPorEmitirId,
+        bool servicioId,
+        bool lineaComercialVigenciaId,
+      })
+    >;
+typedef $$DocumentoPorEmitirCorreoTableCreateCompanionBuilder =
+    DocumentoPorEmitirCorreoCompanion Function({
+      Value<int> id,
+      required String documentoPorEmitirId,
+      required String correo,
+    });
+typedef $$DocumentoPorEmitirCorreoTableUpdateCompanionBuilder =
+    DocumentoPorEmitirCorreoCompanion Function({
+      Value<int> id,
+      Value<String> documentoPorEmitirId,
+      Value<String> correo,
+    });
+
+final class $$DocumentoPorEmitirCorreoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentoPorEmitirCorreoTable,
+          DocumentoPorEmitirCorreoData
+        > {
+  $$DocumentoPorEmitirCorreoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $DocumentoPorEmitirTable _documentoPorEmitirIdTable(
+    _$AppDatabase db,
+  ) => db.documentoPorEmitir.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirCorreo.documentoPorEmitirId,
+      db.documentoPorEmitir.id,
+    ),
+  );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirId {
+    final $_column = $_itemColumn<String>('documento_por_emitir_id')!;
+
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _documentoPorEmitirIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DocumentoPorEmitirCorreoTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirCorreoTable> {
+  $$DocumentoPorEmitirCorreoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get correo => $composableBuilder(
+    column: $table.correo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$DocumentoPorEmitirTableFilterComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirCorreoTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirCorreoTable> {
+  $$DocumentoPorEmitirCorreoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get correo => $composableBuilder(
+    column: $table.correo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$DocumentoPorEmitirTableOrderingComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableOrderingComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirCorreoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirCorreoTable> {
+  $$DocumentoPorEmitirCorreoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get correo =>
+      $composableBuilder(column: $table.correo, builder: (column) => column);
+
+  $$DocumentoPorEmitirTableAnnotationComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.documentoPorEmitirId,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirCorreoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentoPorEmitirCorreoTable,
+          DocumentoPorEmitirCorreoData,
+          $$DocumentoPorEmitirCorreoTableFilterComposer,
+          $$DocumentoPorEmitirCorreoTableOrderingComposer,
+          $$DocumentoPorEmitirCorreoTableAnnotationComposer,
+          $$DocumentoPorEmitirCorreoTableCreateCompanionBuilder,
+          $$DocumentoPorEmitirCorreoTableUpdateCompanionBuilder,
+          (
+            DocumentoPorEmitirCorreoData,
+            $$DocumentoPorEmitirCorreoTableReferences,
+          ),
+          DocumentoPorEmitirCorreoData,
+          PrefetchHooks Function({bool documentoPorEmitirId})
+        > {
+  $$DocumentoPorEmitirCorreoTableTableManager(
+    _$AppDatabase db,
+    $DocumentoPorEmitirCorreoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DocumentoPorEmitirCorreoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DocumentoPorEmitirCorreoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DocumentoPorEmitirCorreoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> documentoPorEmitirId = const Value.absent(),
+                Value<String> correo = const Value.absent(),
+              }) => DocumentoPorEmitirCorreoCompanion(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                correo: correo,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String documentoPorEmitirId,
+                required String correo,
+              }) => DocumentoPorEmitirCorreoCompanion.insert(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                correo: correo,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DocumentoPorEmitirCorreoTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({documentoPorEmitirId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (documentoPorEmitirId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.documentoPorEmitirId,
+                            referencedTable:
+                                $$DocumentoPorEmitirCorreoTableReferences
+                                    ._documentoPorEmitirIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirCorreoTableReferences
+                                    ._documentoPorEmitirIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DocumentoPorEmitirCorreoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentoPorEmitirCorreoTable,
+      DocumentoPorEmitirCorreoData,
+      $$DocumentoPorEmitirCorreoTableFilterComposer,
+      $$DocumentoPorEmitirCorreoTableOrderingComposer,
+      $$DocumentoPorEmitirCorreoTableAnnotationComposer,
+      $$DocumentoPorEmitirCorreoTableCreateCompanionBuilder,
+      $$DocumentoPorEmitirCorreoTableUpdateCompanionBuilder,
+      (DocumentoPorEmitirCorreoData, $$DocumentoPorEmitirCorreoTableReferences),
+      DocumentoPorEmitirCorreoData,
+      PrefetchHooks Function({bool documentoPorEmitirId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -30576,5 +38087,29 @@ class $AppDatabaseManager {
       $$ConfiguracionCobroReglaEventoTableTableManager(
         _db,
         _db.configuracionCobroReglaEvento,
+      );
+  $$DocumentoPorEmitirTableTableManager get documentoPorEmitir =>
+      $$DocumentoPorEmitirTableTableManager(_db, _db.documentoPorEmitir);
+  $$DocumentoPorEmitirServicioTableTableManager
+  get documentoPorEmitirServicio =>
+      $$DocumentoPorEmitirServicioTableTableManager(
+        _db,
+        _db.documentoPorEmitirServicio,
+      );
+  $$DocumentoPorEmitirConfiguracionTableTableManager
+  get documentoPorEmitirConfiguracion =>
+      $$DocumentoPorEmitirConfiguracionTableTableManager(
+        _db,
+        _db.documentoPorEmitirConfiguracion,
+      );
+  $$DocumentoPorEmitirLineaTableTableManager get documentoPorEmitirLinea =>
+      $$DocumentoPorEmitirLineaTableTableManager(
+        _db,
+        _db.documentoPorEmitirLinea,
+      );
+  $$DocumentoPorEmitirCorreoTableTableManager get documentoPorEmitirCorreo =>
+      $$DocumentoPorEmitirCorreoTableTableManager(
+        _db,
+        _db.documentoPorEmitirCorreo,
       );
 }

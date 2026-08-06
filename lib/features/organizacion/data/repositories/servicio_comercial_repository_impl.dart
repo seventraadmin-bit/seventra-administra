@@ -43,9 +43,14 @@ class ServicioComercialRepositoryImpl implements ServicioComercialRepository {
   }
 
   @override
-  Future<List<LineaComercialConVigencia>> listarLineas(String servicioId) async {
+  Future<List<LineaComercialConVigencia>> listarLineas(String servicioId) {
+    return listarLineasEnFecha(servicioId, _clock.now());
+  }
+
+  @override
+  Future<List<LineaComercialConVigencia>> listarLineasEnFecha(String servicioId, DateTime fecha) async {
     final lineas = await (_db.select(_db.servicioLineaComercial)..where((t) => t.servicioId.equals(servicioId))).get();
-    final hoy = _clock.now();
+    final hoy = fecha;
 
     final resultado = <LineaComercialConVigencia>[];
     for (final linea in lineas) {

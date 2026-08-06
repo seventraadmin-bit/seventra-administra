@@ -31,9 +31,30 @@ DateTime diasHabilesDespues(DateTime fecha, int cantidad) {
 
 int _ultimoDiaDelMes(int anio, int mes) => DateTime(anio, mes + 1, 0).day;
 
-DateTime _diaFijoDelMes(int anio, int mes, int dia) {
+/// Público (Etapa 4I.1) — además de usarse aquí para `diaFijoDelMes`/
+/// `nEsimoDiaSemanaDelMes`, la Agenda de documentos por emitir lo
+/// reutiliza directamente para calcular los límites de un periodo de
+/// servicio a partir de `diaInicioPeriodo`, sin duplicar el mismo
+/// recorte de fin de mes.
+DateTime diaFijoDelMes(int anio, int mes, int dia) {
   final ultimoDia = _ultimoDiaDelMes(anio, mes);
   return DateTime(anio, mes, dia > ultimoDia ? ultimoDia : dia);
+}
+
+/// Los límites `[periodoInicio, periodoFin]` de un periodo de servicio
+/// que arranca en `mesInicioPeriodo` con el día `diaInicioPeriodo` de
+/// `ConfiguracionCobroVigencia` (Etapa 4I.1) — `periodoFin` es el día
+/// anterior a que inicie el periodo siguiente, mismo criterio inclusivo
+/// que el resto del proyecto usa para `fechaFinVigencia`.
+({DateTime periodoInicio, DateTime periodoFin}) calcularLimitesPeriodo({
+  required int diaInicioPeriodo,
+  required DateTime mesInicioPeriodo,
+}) {
+  final inicio = diaFijoDelMes(mesInicioPeriodo.year, mesInicioPeriodo.month, diaInicioPeriodo);
+  final mesSiguiente = DateTime(mesInicioPeriodo.year, mesInicioPeriodo.month + 1, 1);
+  final inicioSiguiente = diaFijoDelMes(mesSiguiente.year, mesSiguiente.month, diaInicioPeriodo);
+  final fin = inicioSiguiente.subtract(const Duration(days: 1));
+  return (periodoInicio: inicio, periodoFin: fin);
 }
 
 int _weekdayDe(DiaSemanaCobro dia) {
@@ -100,7 +121,7 @@ DateTime mismoDiaSemanaSiguienteA(DateTime referencia, DiaSemanaCobro diaSemana)
 /// identifica por su mes de inicio, nunca por el mes en que termina).
 DateTime mesInicioDelPeriodoActual({required int diaInicioPeriodo, required DateTime hoy}) {
   final hoySinHora = _soloFecha(hoy);
-  final inicioEsteMes = _diaFijoDelMes(hoySinHora.year, hoySinHora.month, diaInicioPeriodo);
+  final inicioEsteMes = diaFijoDelMes(hoySinHora.year, hoySinHora.month, diaInicioPeriodo);
 
   if (!hoySinHora.isBefore(inicioEsteMes)) {
     return DateTime(hoySinHora.year, hoySinHora.month, 1);
@@ -153,7 +174,7 @@ class CalcularFechasCobroUseCase {
         case TipoReglaEvento.diaFijoDelMes:
           resultado = mesObjetivo == null || regla.diaDelMes == null
               ? null
-              : _diaFijoDelMes(mesObjetivo.year, mesObjetivo.month, regla.diaDelMes!);
+              : diaFijoDelMes(mesObjetivo.year, mesObjetivo.month, regla.diaDelMes!);
         case TipoReglaEvento.nEsimoDiaSemanaDelMes:
           resultado = mesObjetivo == null || regla.diaSemana == null || regla.ordinalSemana == null
               ? null
