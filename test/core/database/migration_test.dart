@@ -21,7 +21,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 9;
+const _currentSchemaVersion = 10;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -1571,6 +1571,229 @@ void main() {
         ) VALUES (
           'vigencia-frecuencia-invalida', '${configuracion.id}', 'reciboDePago', 'frecuencia-inexistente', 1,
           'porServicio', 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+        );
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('10.json coincide con el esquema final de la Etapa 4H.2 (reglas de evento, tabla nueva)', () async {
+    final schema = await verifier.schemaAt(10);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+
+    expect(
+      tablas,
+      containsAll(<String>[
+        'app_metadata', 'codigo_secuencia', 'tipo_sucursal', 'industria',
+        'tipo_servicio', 'area', 'direccion', 'medio_contacto', 'attachment',
+        'horario', 'horario_detalle', 'empresa', 'sucursal', 'cliente',
+        'contacto', 'servicio', 'ubicacion', 'puesto', 'entidad_fiscal',
+        'tipo_modalidad_turno', 'servicio_linea_comercial', 'servicio_linea_comercial_vigencia',
+        'tipo_frecuencia_cobro', 'configuracion_cobro', 'configuracion_cobro_vigencia',
+        'configuracion_cobro_correo', 'configuracion_cobro_regla_evento',
+      ]),
+    );
+
+    final sqlReglaEvento = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'configuracion_cobro_regla_evento'")
+        .single['sql'] as String;
+    expect(sqlReglaEvento, contains('REFERENCES configuracion_cobro_vigencia (id) ON DELETE CASCADE'));
+    expect(sqlReglaEvento, contains('UNIQUE (configuracion_cobro_vigencia_id, tipo_evento)'));
+    expect(sqlReglaEvento, contains('CHECK (dia_del_mes IS NULL OR dia_del_mes BETWEEN 1 AND 31)'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 9 → 10 conserva una Configuración de cobro real y crea la tabla de reglas de evento vacía', () async {
+    final schemaV9 = await verifier.schemaAt(9);
+    final raw = schemaV9.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    // `schemaAt(9)` da un snapshot estructural puro, sin la siembra que
+    // una instalación real ya habría aplicado en su propia migración
+    // 8→9 — se inserta a mano para simular ese estado real.
+    raw.execute('''
+      INSERT INTO tipo_frecuencia_cobro (id, codigo, nombre, created_at, updated_at)
+      VALUES ('${SeedIds.frecuenciaCobroMensual}', 'MENSUAL', 'Mensual', 1700000000, 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('tipo-servicio-real', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-real', 'SER-000001', 'cliente-real', 'Vigilancia Sportium Toluca', 'tipo-servicio-real',
+        'activo', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+    raw.execute('''
+      INSERT INTO configuracion_cobro (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('configuracion-real', 'servicio-real', 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO configuracion_cobro_vigencia (
+        id, configuracion_cobro_id, tipo_documento, frecuencia_id, dia_inicio_periodo,
+        agrupacion, metodo, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vigencia-real', 'configuracion-real', 'reciboDePago', '${SeedIds.frecuenciaCobroMensual}', 1,
+        'porServicio', 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV9.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final configuraciones = await db.select(db.configuracionCobro).get();
+    expect(configuraciones, hasLength(1), reason: 'ninguna Configuración de cobro real debe perderse en una migración aditiva');
+
+    final vigencias = await db.select(db.configuracionCobroVigencia).get();
+    expect(vigencias, hasLength(1));
+
+    final reglas = await db.select(db.configuracionCobroReglaEvento).get();
+    expect(reglas, isEmpty);
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test('acepta una regla de evento válida tras la migración', () async {
+    final schemaV8 = await verifier.schemaAt(8);
+    final db = AppDatabase(schemaV8.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final servicio = await db.into(db.servicio).insertReturning(
+          ServicioCompanion.insert(
+            codigo: 'SER-000001',
+            clienteId: cliente.id,
+            nombre: 'Vigilancia Sportium Toluca',
+            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+            fechaInicio: DateTime(2026, 1, 1),
+          ),
+        );
+    final configuracion = await db.into(db.configuracionCobro).insertReturning(
+          ConfiguracionCobroCompanion.insert(servicioId: servicio.id),
+        );
+    final vigencia = await db.into(db.configuracionCobroVigencia).insertReturning(
+          ConfiguracionCobroVigenciaCompanion.insert(
+            configuracionCobroId: configuracion.id,
+            tipoDocumento: 'cfdi',
+            frecuenciaId: SeedIds.frecuenciaCobroMensual,
+            diaInicioPeriodo: 21,
+            agrupacion: 'porEntidadFiscal',
+            metodo: 'ppd',
+            requiereComplemento: const Value(true),
+            fechaInicioVigencia: DateTime(2026, 1, 21),
+          ),
+        );
+
+    final regla = await db.into(db.configuracionCobroReglaEvento).insertReturning(
+          ConfiguracionCobroReglaEventoCompanion.insert(
+            configuracionCobroVigenciaId: vigencia.id,
+            tipoEvento: 'emision',
+            tipoRegla: 'diaFijoDelMes',
+            mesRelativo: const Value('siguiente'),
+            diaDelMes: const Value(21),
+          ),
+        );
+    expect(regla.tipoEvento, 'emision');
+    expect(regla.diaDelMes, 21);
+
+    await db.close();
+  });
+
+  test('rechaza dos reglas de evento con el mismo tipoEvento en la misma vigencia tras la migración', () async {
+    final schemaV8 = await verifier.schemaAt(8);
+    final db = AppDatabase(schemaV8.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final servicio = await db.into(db.servicio).insertReturning(
+          ServicioCompanion.insert(
+            codigo: 'SER-000001',
+            clienteId: cliente.id,
+            nombre: 'Vigilancia Sportium Toluca',
+            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+            fechaInicio: DateTime(2026, 1, 1),
+          ),
+        );
+    final configuracion = await db.into(db.configuracionCobro).insertReturning(
+          ConfiguracionCobroCompanion.insert(servicioId: servicio.id),
+        );
+    final vigencia = await db.into(db.configuracionCobroVigencia).insertReturning(
+          ConfiguracionCobroVigenciaCompanion.insert(
+            configuracionCobroId: configuracion.id,
+            tipoDocumento: 'reciboDePago',
+            frecuenciaId: SeedIds.frecuenciaCobroMensual,
+            diaInicioPeriodo: 1,
+            agrupacion: 'porServicio',
+            metodo: 'noAplica',
+            fechaInicioVigencia: DateTime(2026, 1, 1),
+          ),
+        );
+    await db.into(db.configuracionCobroReglaEvento).insert(
+          ConfiguracionCobroReglaEventoCompanion.insert(
+            configuracionCobroVigenciaId: vigencia.id,
+            tipoEvento: 'pagoEsperado',
+            tipoRegla: 'diaFijoDelMes',
+            mesRelativo: const Value('actual'),
+            diaDelMes: const Value(10),
+          ),
+        );
+
+    expect(
+      () => db.into(db.configuracionCobroReglaEvento).insert(
+            ConfiguracionCobroReglaEventoCompanion.insert(
+              configuracionCobroVigenciaId: vigencia.id,
+              tipoEvento: 'pagoEsperado',
+              tipoRegla: 'diaFijoDelMes',
+              mesRelativo: const Value('actual'),
+              diaDelMes: const Value(20),
+            ),
+          ),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('rechaza una regla de evento con vigencia inexistente tras la migración', () async {
+    final schemaV8 = await verifier.schemaAt(8);
+    final db = AppDatabase(schemaV8.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO configuracion_cobro_regla_evento (
+          configuracion_cobro_vigencia_id, tipo_evento, tipo_regla, mes_relativo, dia_del_mes
+        ) VALUES (
+          'vigencia-inexistente', 'emision', 'diaFijoDelMes', 'actual', 1
         );
       '''),
       throwsA(anything),

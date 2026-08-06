@@ -38,14 +38,19 @@ import 'domain/usecases/archivar_contacto_usecase.dart';
 import 'domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'domain/usecases/asignar_sucursal_administrativa_usecase.dart';
+import 'domain/usecases/actualizar_observaciones_configuracion_cobro_vigencia_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_entidad_fiscal_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_puesto_usecase.dart';
 import 'domain/usecases/cambiar_estado_operativo_sucursal_usecase.dart';
 import 'domain/usecases/cambiar_estatus_cliente_usecase.dart';
 import 'domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'domain/usecases/cambiar_vigencia_configuracion_cobro_usecase.dart';
 import 'domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
+import 'domain/usecases/cancelar_vigencia_programada_configuracion_cobro_usecase.dart';
 import 'domain/usecases/cancelar_vigencia_programada_usecase.dart';
+import 'domain/usecases/cerrar_configuracion_cobro_usecase.dart';
 import 'domain/usecases/cerrar_linea_comercial_usecase.dart';
+import 'domain/usecases/configuracion_cobro_regla_evento_validator.dart';
 import 'domain/usecases/configuracion_cobro_validator.dart';
 import 'domain/usecases/crear_area_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
@@ -82,6 +87,7 @@ import 'domain/usecases/obtener_expediente_empresa_usecase.dart';
 import 'domain/usecases/obtener_expediente_puesto_usecase.dart';
 import 'domain/usecases/obtener_expediente_servicio_usecase.dart';
 import 'domain/usecases/obtener_expediente_sucursal_usecase.dart';
+import 'domain/usecases/obtener_historial_configuracion_cobro_usecase.dart';
 import 'domain/usecases/obtener_historial_linea_comercial_usecase.dart';
 import 'domain/usecases/puesto_validator.dart';
 import 'domain/usecases/servicio_validator.dart';
@@ -394,11 +400,54 @@ final configuracionCobroValidatorProvider = Provider<ConfiguracionCobroValidator
   );
 });
 
+final configuracionCobroReglaEventoValidatorProvider = Provider<ConfiguracionCobroReglaEventoValidator>((ref) {
+  return const ConfiguracionCobroReglaEventoValidator();
+});
+
 final crearConfiguracionCobroUseCaseProvider = Provider<CrearConfiguracionCobroUseCase>((ref) {
   return CrearConfiguracionCobroUseCase(
     ref.watch(configuracionCobroRepositoryProvider),
     ref.watch(servicioRepositoryProvider),
     ref.watch(configuracionCobroValidatorProvider),
+    ref.watch(configuracionCobroReglaEventoValidatorProvider),
+  );
+});
+
+final cambiarVigenciaConfiguracionCobroUseCaseProvider = Provider<CambiarVigenciaConfiguracionCobroUseCase>((ref) {
+  return CambiarVigenciaConfiguracionCobroUseCase(
+    ref.watch(configuracionCobroRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(configuracionCobroValidatorProvider),
+    ref.watch(configuracionCobroReglaEventoValidatorProvider),
+  );
+});
+
+final cerrarConfiguracionCobroUseCaseProvider = Provider<CerrarConfiguracionCobroUseCase>((ref) {
+  return CerrarConfiguracionCobroUseCase(ref.watch(configuracionCobroRepositoryProvider), ref.watch(clockProvider));
+});
+
+final cancelarVigenciaProgramadaConfiguracionCobroUseCaseProvider =
+    Provider<CancelarVigenciaProgramadaConfiguracionCobroUseCase>((ref) {
+  return CancelarVigenciaProgramadaConfiguracionCobroUseCase(
+    ref.watch(configuracionCobroRepositoryProvider),
+    ref.watch(clockProvider),
+  );
+});
+
+final actualizarObservacionesConfiguracionCobroVigenciaUseCaseProvider =
+    Provider<ActualizarObservacionesConfiguracionCobroVigenciaUseCase>((ref) {
+  return ActualizarObservacionesConfiguracionCobroVigenciaUseCase(
+    ref.watch(configuracionCobroRepositoryProvider),
+    ref.watch(clockProvider),
+  );
+});
+
+final obtenerHistorialConfiguracionCobroUseCaseProvider = Provider<ObtenerHistorialConfiguracionCobroUseCase>((ref) {
+  return ObtenerHistorialConfiguracionCobroUseCase(
+    ref.watch(configuracionCobroRepositoryProvider),
+    ref.watch(entidadFiscalRepositoryProvider),
+    ref.watch(catalogoRepositoryProvider),
+    ref.watch(clockProvider),
   );
 });
 

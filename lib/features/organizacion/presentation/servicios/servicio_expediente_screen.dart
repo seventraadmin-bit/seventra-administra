@@ -7,23 +7,30 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/catalogo_repository.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_observaciones_configuracion_cobro_vigencia_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/obtener_historial_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/obtener_historial_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_errors.dart';
 
@@ -36,6 +43,7 @@ import 'widgets/servicio_configuracion_comercial_section.dart';
 import 'widgets/servicio_configuracion_cobro_section.dart';
 import 'widgets/servicio_datos_generales_section.dart';
 import 'widgets/servicio_direccion_operativa_section.dart';
+import 'widgets/servicio_historial_configuracion_cobro_dialog.dart';
 import 'widgets/servicio_historial_linea_comercial_dialog.dart';
 import 'widgets/servicio_referencias_section.dart';
 import 'widgets/servicio_vinculaciones_section.dart';
@@ -505,6 +513,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       requiereComplemento: false,
       fechaInicioVigencia: null,
     );
+    var reglas = const <ReglaEventoBorrador>[];
 
     final resultado = await RisegDialog.showForm<CrearConfiguracionCobroResultado?>(
       context: context,
@@ -514,9 +523,12 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       contentBuilder: (_) => ServicioConfiguracionCobroForm(
         frecuencias: frecuencias,
         entidadesFiscales: entidades,
-        onCambio: (nuevo) => borrador = nuevo,
+        onCambio: (nuevoBorrador, nuevasReglas) {
+          borrador = nuevoBorrador;
+          reglas = nuevasReglas;
+        },
       ),
-      onConfirm: () => _notifier.agregarConfiguracionCobro(borrador),
+      onConfirm: () => _notifier.agregarConfiguracionCobro(borrador, reglas: reglas),
     );
 
     if (!mounted) return;
@@ -534,6 +546,205 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       case null:
         break;
     }
+  }
+
+  Future<void> _nuevaVigenciaConfiguracionCobro() async {
+    final l10n = AppLocalizations.of(context)!;
+    final datos = ref.read(servicioExpedienteControllerProvider(widget.servicioId)).datos!;
+    final configuracionCobro = datos.configuracionCobro!;
+
+    final frecuencias = await ref.read(catalogoRepositoryProvider).listarFrecuenciasCobro();
+    final entidades = (await ref.read(entidadFiscalRepositoryProvider).listarPorCliente(datos.cliente.id))
+        .where((e) => e.entidadFiscal.cicloVidaRegistro == CicloVidaRegistro.activo.name)
+        .map((e) => e.entidadFiscal)
+        .toList();
+    if (!mounted) return;
+
+    final vigenciaActual = configuracionCobro.vigenciaActual;
+    var borrador = ConfiguracionCobroBorrador(
+      tipoDocumento: vigenciaActual == null ? null : TipoDocumentoCobro.values.byName(vigenciaActual.tipoDocumento),
+      frecuenciaId: vigenciaActual?.frecuenciaId ?? '',
+      diaInicioPeriodo: vigenciaActual?.diaInicioPeriodo,
+      agrupacion: vigenciaActual == null ? null : AgrupacionCobro.values.byName(vigenciaActual.agrupacion),
+      metodo: vigenciaActual == null ? null : MetodoPagoCobro.values.byName(vigenciaActual.metodo),
+      requiereComplemento: vigenciaActual?.requiereComplemento ?? false,
+      fechaInicioVigencia: null,
+      entidadFiscalId: vigenciaActual?.entidadFiscalId,
+      portalNombre: vigenciaActual?.portalNombre,
+      portalUrl: vigenciaActual?.portalUrl,
+      portalUsuario: vigenciaActual?.portalUsuario,
+      portalContrasena: vigenciaActual?.portalContrasena,
+      portalObservaciones: vigenciaActual?.portalObservaciones,
+      cuentaBancaria: vigenciaActual?.cuentaBancaria,
+      observaciones: vigenciaActual?.observaciones,
+      correos: configuracionCobro.correos,
+    );
+    var reglas = const <ReglaEventoBorrador>[];
+
+    final resultado = await RisegDialog.showForm<CambiarVigenciaConfiguracionCobroResultado?>(
+      context: context,
+      title: l10n.servicioCobroNuevaVigenciaDialogoTitulo,
+      confirmLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (_) => ServicioConfiguracionCobroForm(
+        frecuencias: frecuencias,
+        entidadesFiscales: entidades,
+        valoresIniciales: vigenciaActual,
+        reglasIniciales: configuracionCobro.reglasEventos,
+        onCambio: (nuevoBorrador, nuevasReglas) {
+          borrador = nuevoBorrador;
+          reglas = nuevasReglas;
+        },
+      ),
+      onConfirm: () async {
+        if (!await _confirmarSiEsRetroactiva(borrador.fechaInicioVigencia)) return null;
+        if (!mounted) return null;
+        return _notifier.cambiarVigenciaConfiguracionCobro(configuracionCobro.configuracion.id, borrador, reglas: reglas);
+      },
+    );
+
+    if (!mounted) return;
+    switch (resultado) {
+      case CambiarVigenciaConfiguracionCobroExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioCobroNuevaVigenciaExito);
+      case CambiarVigenciaConfiguracionCobroErroresValidacion():
+        RisegFeedback.showError(context, l10n.servicioCobroErrorValidacion);
+      case CambiarVigenciaConfiguracionCobroServicioNoDisponible():
+        RisegFeedback.showError(context, l10n.servicioCobroNuevaVigenciaErrorServicioNoDisponible);
+      case CambiarVigenciaConfiguracionCobroNoExiste():
+        RisegFeedback.showError(context, l10n.servicioCobroNuevaVigenciaErrorInesperado);
+      case CambiarVigenciaConfiguracionCobroErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioCobroNuevaVigenciaErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _cerrarConfiguracionCobro() async {
+    final l10n = AppLocalizations.of(context)!;
+    final configuracionCobro = ref.read(servicioExpedienteControllerProvider(widget.servicioId)).datos!.configuracionCobro!;
+
+    var fechaEfectiva = DateTime.now();
+    final resultado = await RisegDialog.showForm<CerrarConfiguracionCobroResultado?>(
+      context: context,
+      title: l10n.servicioCobroCerrarDialogoTitulo,
+      confirmLabel: l10n.servicioCobroCerrarBotonConfirmar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (_) => ServicioCerrarConfiguracionCobroForm(onCambio: (valor) => fechaEfectiva = valor),
+      onConfirm: () =>
+          _notifier.cerrarConfiguracionCobro(configuracionCobro.configuracion.id, fechaEfectiva),
+    );
+
+    if (!mounted) return;
+    switch (resultado) {
+      case CerrarConfiguracionCobroExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioCobroCerrarExito);
+      case CerrarConfiguracionCobroSinCondicionVigente():
+        RisegFeedback.showError(context, l10n.servicioCobroCerrarErrorSinCondicionVigente);
+      case CerrarConfiguracionCobroTieneVigenciaProgramada():
+        RisegFeedback.showError(context, l10n.servicioCobroCerrarErrorTieneProgramada);
+      case CerrarConfiguracionCobroFechaAnteriorInicio():
+        RisegFeedback.showError(context, l10n.servicioCobroCerrarErrorFechaAnterior);
+      case CerrarConfiguracionCobroNoExiste():
+        RisegFeedback.showError(context, l10n.servicioCobroCerrarErrorInesperado);
+      case CerrarConfiguracionCobroErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioCobroCerrarErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _editarObservacionesConfiguracionCobroVigencia(VigenciaHistorialCobro fila) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    String? observaciones = fila.vigencia.observaciones;
+    final resultado = await RisegDialog.showForm<ActualizarObservacionesConfiguracionCobroVigenciaResultado?>(
+      context: context,
+      title: l10n.servicioCobroObservacionesDialogoTitulo,
+      confirmLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (_) => ServicioObservacionesConfiguracionCobroForm(
+        vigencia: fila,
+        onCambio: (nuevo) => observaciones = nuevo,
+      ),
+      onConfirm: () => _notifier.actualizarObservacionesConfiguracionCobroVigencia(
+        vigenciaId: fila.vigencia.id,
+        observaciones: observaciones,
+      ),
+    );
+
+    if (!mounted) return;
+    switch (resultado) {
+      case ActualizarObservacionesConfiguracionCobroVigenciaExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioCobroObservacionesGuardadoExito);
+      case ActualizarObservacionesConfiguracionCobroVigenciaNoEditable():
+        RisegFeedback.showError(context, l10n.servicioCobroObservacionesErrorNoEditable);
+      case ActualizarObservacionesConfiguracionCobroVigenciaNoExiste():
+        RisegFeedback.showError(context, l10n.servicioCobroObservacionesErrorInesperado);
+      case ActualizarObservacionesConfiguracionCobroVigenciaErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioCobroObservacionesErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _cancelarVigenciaProgramadaConfiguracionCobro(VigenciaHistorialCobro fila) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: l10n.servicioCobroCancelarProgramadaConfirmacionTitulo,
+      message: l10n.servicioCobroCancelarProgramadaConfirmacionMensaje,
+      confirmLabel: l10n.servicioCobroCancelarProgramadaConfirmacionConfirmar,
+      cancelLabel: l10n.servicioCobroCancelarProgramadaConfirmacionCancelar,
+      destructive: true,
+    );
+    if (confirmado != true) return;
+
+    final resultado = await _notifier.cancelarVigenciaProgramadaConfiguracionCobro(fila.vigencia.id);
+    if (!mounted) return;
+    switch (resultado) {
+      case CancelarVigenciaProgramadaConfiguracionCobroExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioCobroCancelarProgramadaExito);
+      case CancelarVigenciaProgramadaConfiguracionCobroNoEsProgramada():
+        RisegFeedback.showError(context, l10n.servicioCobroCancelarProgramadaErrorNoEsProgramada);
+      case CancelarVigenciaProgramadaConfiguracionCobroNoExiste():
+        RisegFeedback.showError(context, l10n.servicioCobroCancelarProgramadaErrorInesperado);
+      case CancelarVigenciaProgramadaConfiguracionCobroErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioCobroCancelarProgramadaErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _verHistorialConfiguracionCobro() async {
+    final l10n = AppLocalizations.of(context)!;
+    final configuracionCobroId =
+        ref.read(servicioExpedienteControllerProvider(widget.servicioId)).datos!.configuracionCobro!.configuracion.id;
+    final historial = await ref.read(obtenerHistorialConfiguracionCobroUseCaseProvider).ejecutar(configuracionCobroId);
+    if (!mounted) return;
+
+    await RisegDialog.showForm<void>(
+      context: context,
+      title: l10n.servicioCobroHistorialDialogoTitulo,
+      confirmLabel: l10n.servicioCobroHistorialBotonCerrar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (dialogContext) => ServicioHistorialConfiguracionCobroContent(
+        historial: historial,
+        onEditarObservaciones: (fila) async {
+          Navigator.of(dialogContext).pop();
+          await _editarObservacionesConfiguracionCobroVigencia(fila);
+          if (!mounted) return;
+          await _verHistorialConfiguracionCobro();
+        },
+        onCancelarProgramada: (fila) async {
+          Navigator.of(dialogContext).pop();
+          await _cancelarVigenciaProgramadaConfiguracionCobro(fila);
+          if (!mounted) return;
+          await _verHistorialConfiguracionCobro();
+        },
+      ),
+    );
   }
 
   /// `true` si el usuario confirma continuar — usado antes de registrar
@@ -952,6 +1163,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
                   configuracionCobro: datos.configuracionCobro,
                   deshabilitado: state.operandoCobro,
                   onAgregar: _agregarConfiguracionCobro,
+                  onNuevaVigencia: _nuevaVigenciaConfiguracionCobro,
+                  onCerrar: _cerrarConfiguracionCobro,
+                  onVerHistorial: _verHistorialConfiguracionCobro,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),

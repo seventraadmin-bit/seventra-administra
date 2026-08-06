@@ -3,14 +3,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_observaciones_configuracion_cobro_vigencia_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
@@ -203,13 +208,86 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     return resultado;
   }
 
-  Future<CrearConfiguracionCobroResultado?> agregarConfiguracionCobro(ConfiguracionCobroBorrador borrador) async {
+  Future<CrearConfiguracionCobroResultado?> agregarConfiguracionCobro(
+    ConfiguracionCobroBorrador borrador, {
+    List<ReglaEventoBorrador> reglas = const [],
+  }) async {
+    if (state.operandoCobro) return null;
+    state = state.copyWith(operandoCobro: true);
+
+    final resultado = await ref
+        .read(crearConfiguracionCobroUseCaseProvider)
+        .ejecutar(servicioId: servicioId, borrador: borrador, reglas: reglas);
+    if (resultado is CrearConfiguracionCobroExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoCobro: false);
+    return resultado;
+  }
+
+  Future<CambiarVigenciaConfiguracionCobroResultado?> cambiarVigenciaConfiguracionCobro(
+    String configuracionCobroId,
+    ConfiguracionCobroBorrador borrador, {
+    List<ReglaEventoBorrador> reglas = const [],
+  }) async {
+    if (state.operandoCobro) return null;
+    state = state.copyWith(operandoCobro: true);
+
+    final resultado = await ref.read(cambiarVigenciaConfiguracionCobroUseCaseProvider).ejecutar(
+          configuracionCobroId: configuracionCobroId,
+          borrador: borrador,
+          reglas: reglas,
+        );
+    if (resultado is CambiarVigenciaConfiguracionCobroExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoCobro: false);
+    return resultado;
+  }
+
+  Future<CerrarConfiguracionCobroResultado?> cerrarConfiguracionCobro(
+    String configuracionCobroId,
+    DateTime fechaEfectiva,
+  ) async {
+    if (state.operandoCobro) return null;
+    state = state.copyWith(operandoCobro: true);
+
+    final resultado = await ref
+        .read(cerrarConfiguracionCobroUseCaseProvider)
+        .ejecutar(configuracionCobroId: configuracionCobroId, fechaEfectiva: fechaEfectiva);
+    if (resultado is CerrarConfiguracionCobroExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoCobro: false);
+    return resultado;
+  }
+
+  Future<CancelarVigenciaProgramadaConfiguracionCobroResultado?> cancelarVigenciaProgramadaConfiguracionCobro(
+    String vigenciaId,
+  ) async {
     if (state.operandoCobro) return null;
     state = state.copyWith(operandoCobro: true);
 
     final resultado =
-        await ref.read(crearConfiguracionCobroUseCaseProvider).ejecutar(servicioId: servicioId, borrador: borrador);
-    if (resultado is CrearConfiguracionCobroExitoso) {
+        await ref.read(cancelarVigenciaProgramadaConfiguracionCobroUseCaseProvider).ejecutar(vigenciaId: vigenciaId);
+    if (resultado is CancelarVigenciaProgramadaConfiguracionCobroExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoCobro: false);
+    return resultado;
+  }
+
+  Future<ActualizarObservacionesConfiguracionCobroVigenciaResultado?> actualizarObservacionesConfiguracionCobroVigencia({
+    required String vigenciaId,
+    String? observaciones,
+  }) async {
+    if (state.operandoCobro) return null;
+    state = state.copyWith(operandoCobro: true);
+
+    final resultado = await ref
+        .read(actualizarObservacionesConfiguracionCobroVigenciaUseCaseProvider)
+        .ejecutar(vigenciaId: vigenciaId, observaciones: observaciones);
+    if (resultado is ActualizarObservacionesConfiguracionCobroVigenciaExitoso) {
       await _recargarDatos();
     }
     state = state.copyWith(operandoCobro: false);

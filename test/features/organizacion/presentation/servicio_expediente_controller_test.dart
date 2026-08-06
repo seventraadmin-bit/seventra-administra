@@ -14,17 +14,23 @@ import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_observaciones_configuracion_cobro_vigencia_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
@@ -424,12 +430,45 @@ void main() {
           requiereComplemento: false,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        reglas: const [
+          ReglaEventoBorrador(
+            tipoEvento: TipoEventoCobro.pagoEsperado,
+            tipoRegla: TipoReglaEvento.diaFijoDelMes,
+            mesRelativo: MesRelativoCobro.actual,
+            diaDelMes: 10,
+          ),
+        ],
       );
 
       expect(resultado, isA<CrearConfiguracionCobroExitoso>());
       final state = container.read(servicioExpedienteControllerProvider(servicioId));
-      expect(state.datos?.configuracionCobro?.estaCompleta, isTrue);
+      expect(
+        state.datos?.configuracionCobro?.estaCompleta,
+        isTrue,
+        reason: 'recibo con Pago esperado capturado ya se considera completa (Etapa 4H.2)',
+      );
       expect(state.operandoCobro, isFalse);
+    });
+
+    test('sin reglas de Pago esperado, la Configuración de cobro queda incompleta (Mirabilia/Toluca 32/Tikal)', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+
+      final resultado = await notifier.agregarConfiguracionCobro(
+        ConfiguracionCobroBorrador(
+          tipoDocumento: TipoDocumentoCobro.reciboDePago,
+          frecuenciaId: SeedIds.frecuenciaCobroMensual,
+          diaInicioPeriodo: 1,
+          agrupacion: AgrupacionCobro.porServicio,
+          metodo: MetodoPagoCobro.noAplica,
+          requiereComplemento: false,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CrearConfiguracionCobroExitoso>());
+      final state = container.read(servicioExpedienteControllerProvider(servicioId));
+      expect(state.datos?.configuracionCobro?.estaCompleta, isFalse);
     });
 
     test('rechaza una segunda Configuración de cobro para el mismo Servicio', () async {
@@ -451,6 +490,111 @@ void main() {
       expect(resultado, isA<CrearConfiguracionCobroYaExiste>());
     });
   });
+
+  group(
+    'cambiarVigenciaConfiguracionCobro / cerrarConfiguracionCobro / cancelarVigenciaProgramadaConfiguracionCobro / actualizarObservacionesConfiguracionCobroVigencia',
+    () {
+      Future<String> agregarConfiguracionCobroDePrueba(ServicioExpedienteController notifier) async {
+        final resultado = await notifier.agregarConfiguracionCobro(
+          ConfiguracionCobroBorrador(
+            tipoDocumento: TipoDocumentoCobro.reciboDePago,
+            frecuenciaId: SeedIds.frecuenciaCobroMensual,
+            diaInicioPeriodo: 1,
+            agrupacion: AgrupacionCobro.porServicio,
+            metodo: MetodoPagoCobro.noAplica,
+            requiereComplemento: false,
+            fechaInicioVigencia: DateTime(2026, 1, 1),
+          ),
+        );
+        return (resultado as CrearConfiguracionCobroExitoso).configuracion.id;
+      }
+
+      test('cambiarVigenciaConfiguracionCobro reemplaza la condición vigente de inmediato', () async {
+        await esperarCargaInicial();
+        final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+        final configuracionCobroId = await agregarConfiguracionCobroDePrueba(notifier);
+
+        final resultado = await notifier.cambiarVigenciaConfiguracionCobro(
+          configuracionCobroId,
+          ConfiguracionCobroBorrador(
+            tipoDocumento: TipoDocumentoCobro.reciboDePago,
+            frecuenciaId: SeedIds.frecuenciaCobroMensual,
+            diaInicioPeriodo: 1,
+            agrupacion: AgrupacionCobro.porServicio,
+            metodo: MetodoPagoCobro.noAplica,
+            requiereComplemento: false,
+            fechaInicioVigencia: DateTime.now(),
+          ),
+          reglas: const [
+            ReglaEventoBorrador(
+              tipoEvento: TipoEventoCobro.pagoEsperado,
+              tipoRegla: TipoReglaEvento.diaFijoDelMes,
+              mesRelativo: MesRelativoCobro.actual,
+              diaDelMes: 15,
+            ),
+          ],
+        );
+
+        expect(resultado, isA<CambiarVigenciaConfiguracionCobroExitoso>());
+        final state = container.read(servicioExpedienteControllerProvider(servicioId));
+        expect(state.datos?.configuracionCobro?.estaCompleta, isTrue);
+        expect(state.operandoCobro, isFalse);
+      });
+
+      test('cerrarConfiguracionCobro cierra la vigente actual', () async {
+        await esperarCargaInicial();
+        final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+        final configuracionCobroId = await agregarConfiguracionCobroDePrueba(notifier);
+
+        final resultado = await notifier.cerrarConfiguracionCobro(configuracionCobroId, DateTime.now());
+        expect(resultado, isA<CerrarConfiguracionCobroExitoso>());
+      });
+
+      test('cancelarVigenciaProgramadaConfiguracionCobro cancela una programada', () async {
+        await esperarCargaInicial();
+        final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+        final configuracionCobroId = await agregarConfiguracionCobroDePrueba(notifier);
+
+        final enUnAnio = DateTime.now().add(const Duration(days: 365));
+        final creada = await notifier.cambiarVigenciaConfiguracionCobro(
+          configuracionCobroId,
+          ConfiguracionCobroBorrador(
+            tipoDocumento: TipoDocumentoCobro.reciboDePago,
+            frecuenciaId: SeedIds.frecuenciaCobroMensual,
+            diaInicioPeriodo: 1,
+            agrupacion: AgrupacionCobro.porServicio,
+            metodo: MetodoPagoCobro.noAplica,
+            requiereComplemento: false,
+            fechaInicioVigencia: enUnAnio,
+          ),
+        );
+        final programadaId = (creada as CambiarVigenciaConfiguracionCobroExitoso).vigencia.id;
+
+        final resultado = await notifier.cancelarVigenciaProgramadaConfiguracionCobro(programadaId);
+        expect(resultado, isA<CancelarVigenciaProgramadaConfiguracionCobroExitoso>());
+        final state = container.read(servicioExpedienteControllerProvider(servicioId));
+        expect(state.datos?.configuracionCobro?.vigenciasProgramadas, isEmpty);
+      });
+
+      test('actualizarObservacionesConfiguracionCobroVigencia edita observaciones sin crear una nueva vigencia', () async {
+        await esperarCargaInicial();
+        final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+        final configuracionCobroId = await agregarConfiguracionCobroDePrueba(notifier);
+        final vigenciaId =
+            container.read(servicioExpedienteControllerProvider(servicioId)).datos!.configuracionCobro!.vigenciaActual!.id;
+
+        final resultado = await notifier.actualizarObservacionesConfiguracionCobroVigencia(
+          vigenciaId: vigenciaId,
+          observaciones: 'Cliente confirmó por correo',
+        );
+
+        expect(resultado, isA<ActualizarObservacionesConfiguracionCobroVigenciaExitoso>());
+        final state = container.read(servicioExpedienteControllerProvider(servicioId));
+        expect(state.datos?.configuracionCobro?.vigenciaActual?.observaciones, 'Cliente confirmó por correo');
+        expect(configuracionCobroId, isNotNull);
+      });
+    },
+  );
 
   group('cambiarVigenciaLinea / cerrarLineaComercial / cancelarVigenciaProgramada / actualizarAnotacionesVigencia', () {
     Future<String> agregarLineaDePrueba(ServicioExpedienteController notifier, PuestoData puesto) async {

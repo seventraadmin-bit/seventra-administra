@@ -38,6 +38,11 @@ enum CodigoErrorConfiguracionCobro {
   reciboRequiereIvaNoAplica,
 
   fechaAnteriorInicioServicio,
+
+  /// Etapa 4H.2 — ya existe una vigencia de esta Configuración de cobro
+  /// con exactamente esa fecha de inicio.
+  fechaDuplicada,
+
   correoInvalido,
 }
 

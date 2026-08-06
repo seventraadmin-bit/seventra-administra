@@ -16084,6 +16084,703 @@ class ConfiguracionCobroCorreoCompanion
   }
 }
 
+class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
+    with
+        TableInfo<
+          $ConfiguracionCobroReglaEventoTable,
+          ConfiguracionCobroReglaEventoData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConfiguracionCobroReglaEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _configuracionCobroVigenciaIdMeta =
+      const VerificationMeta('configuracionCobroVigenciaId');
+  @override
+  late final GeneratedColumn<String> configuracionCobroVigenciaId =
+      GeneratedColumn<String>(
+        'configuracion_cobro_vigencia_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES configuracion_cobro_vigencia (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoReglaMeta = const VerificationMeta(
+    'tipoRegla',
+  );
+  @override
+  late final GeneratedColumn<String> tipoRegla = GeneratedColumn<String>(
+    'tipo_regla',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mesRelativoMeta = const VerificationMeta(
+    'mesRelativo',
+  );
+  @override
+  late final GeneratedColumn<String> mesRelativo = GeneratedColumn<String>(
+    'mes_relativo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _diaDelMesMeta = const VerificationMeta(
+    'diaDelMes',
+  );
+  @override
+  late final GeneratedColumn<int> diaDelMes = GeneratedColumn<int>(
+    'dia_del_mes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ordinalSemanaMeta = const VerificationMeta(
+    'ordinalSemana',
+  );
+  @override
+  late final GeneratedColumn<String> ordinalSemana = GeneratedColumn<String>(
+    'ordinal_semana',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _diaSemanaMeta = const VerificationMeta(
+    'diaSemana',
+  );
+  @override
+  late final GeneratedColumn<String> diaSemana = GeneratedColumn<String>(
+    'dia_semana',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _offsetDiasHabilesMeta = const VerificationMeta(
+    'offsetDiasHabiles',
+  );
+  @override
+  late final GeneratedColumn<int> offsetDiasHabiles = GeneratedColumn<int>(
+    'offset_dias_habiles',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventoReferenciaMeta = const VerificationMeta(
+    'eventoReferencia',
+  );
+  @override
+  late final GeneratedColumn<String> eventoReferencia = GeneratedColumn<String>(
+    'evento_referencia',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    configuracionCobroVigenciaId,
+    tipoEvento,
+    tipoRegla,
+    mesRelativo,
+    diaDelMes,
+    ordinalSemana,
+    diaSemana,
+    offsetDiasHabiles,
+    eventoReferencia,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'configuracion_cobro_regla_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConfiguracionCobroReglaEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('configuracion_cobro_vigencia_id')) {
+      context.handle(
+        _configuracionCobroVigenciaIdMeta,
+        configuracionCobroVigenciaId.isAcceptableOrUnknown(
+          data['configuracion_cobro_vigencia_id']!,
+          _configuracionCobroVigenciaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_configuracionCobroVigenciaIdMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('tipo_regla')) {
+      context.handle(
+        _tipoReglaMeta,
+        tipoRegla.isAcceptableOrUnknown(data['tipo_regla']!, _tipoReglaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoReglaMeta);
+    }
+    if (data.containsKey('mes_relativo')) {
+      context.handle(
+        _mesRelativoMeta,
+        mesRelativo.isAcceptableOrUnknown(
+          data['mes_relativo']!,
+          _mesRelativoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('dia_del_mes')) {
+      context.handle(
+        _diaDelMesMeta,
+        diaDelMes.isAcceptableOrUnknown(data['dia_del_mes']!, _diaDelMesMeta),
+      );
+    }
+    if (data.containsKey('ordinal_semana')) {
+      context.handle(
+        _ordinalSemanaMeta,
+        ordinalSemana.isAcceptableOrUnknown(
+          data['ordinal_semana']!,
+          _ordinalSemanaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('dia_semana')) {
+      context.handle(
+        _diaSemanaMeta,
+        diaSemana.isAcceptableOrUnknown(data['dia_semana']!, _diaSemanaMeta),
+      );
+    }
+    if (data.containsKey('offset_dias_habiles')) {
+      context.handle(
+        _offsetDiasHabilesMeta,
+        offsetDiasHabiles.isAcceptableOrUnknown(
+          data['offset_dias_habiles']!,
+          _offsetDiasHabilesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('evento_referencia')) {
+      context.handle(
+        _eventoReferenciaMeta,
+        eventoReferencia.isAcceptableOrUnknown(
+          data['evento_referencia']!,
+          _eventoReferenciaMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ConfiguracionCobroReglaEventoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConfiguracionCobroReglaEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      configuracionCobroVigenciaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}configuracion_cobro_vigencia_id'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      tipoRegla:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_regla'],
+          )!,
+      mesRelativo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mes_relativo'],
+      ),
+      diaDelMes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}dia_del_mes'],
+      ),
+      ordinalSemana: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ordinal_semana'],
+      ),
+      diaSemana: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dia_semana'],
+      ),
+      offsetDiasHabiles: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}offset_dias_habiles'],
+      ),
+      eventoReferencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evento_referencia'],
+      ),
+    );
+  }
+
+  @override
+  $ConfiguracionCobroReglaEventoTable createAlias(String alias) {
+    return $ConfiguracionCobroReglaEventoTable(attachedDatabase, alias);
+  }
+}
+
+class ConfiguracionCobroReglaEventoData extends DataClass
+    implements Insertable<ConfiguracionCobroReglaEventoData> {
+  final int id;
+  final String configuracionCobroVigenciaId;
+  final String tipoEvento;
+  final String tipoRegla;
+
+  /// Solo aplica a `diaFijoDelMes`/`nEsimoDiaSemanaDelMes`.
+  final String? mesRelativo;
+
+  /// Solo aplica a `diaFijoDelMes`.
+  final int? diaDelMes;
+
+  /// Solo aplica a `nEsimoDiaSemanaDelMes`.
+  final String? ordinalSemana;
+
+  /// Aplica a `nEsimoDiaSemanaDelMes` y `mismoDiaSemanaSiguienteA`.
+  final String? diaSemana;
+
+  /// Solo aplica a `diasHabilesDespuesDe`.
+  final int? offsetDiasHabiles;
+
+  /// De qué evento de la misma vigencia depende — solo aplica a
+  /// `diasHabilesDespuesDe`/`mismoDiaSemanaSiguienteA`. Emisión nunca
+  /// tiene un valor aquí (no puede depender de otro evento); las
+  /// combinaciones válidas (Procesamiento→Emisión;
+  /// Pago esperado→Emisión o →Procesamiento; nunca auto-referencia ni
+  /// ciclos) se validan en el dominio, no aquí.
+  final String? eventoReferencia;
+  const ConfiguracionCobroReglaEventoData({
+    required this.id,
+    required this.configuracionCobroVigenciaId,
+    required this.tipoEvento,
+    required this.tipoRegla,
+    this.mesRelativo,
+    this.diaDelMes,
+    this.ordinalSemana,
+    this.diaSemana,
+    this.offsetDiasHabiles,
+    this.eventoReferencia,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['configuracion_cobro_vigencia_id'] = Variable<String>(
+      configuracionCobroVigenciaId,
+    );
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    map['tipo_regla'] = Variable<String>(tipoRegla);
+    if (!nullToAbsent || mesRelativo != null) {
+      map['mes_relativo'] = Variable<String>(mesRelativo);
+    }
+    if (!nullToAbsent || diaDelMes != null) {
+      map['dia_del_mes'] = Variable<int>(diaDelMes);
+    }
+    if (!nullToAbsent || ordinalSemana != null) {
+      map['ordinal_semana'] = Variable<String>(ordinalSemana);
+    }
+    if (!nullToAbsent || diaSemana != null) {
+      map['dia_semana'] = Variable<String>(diaSemana);
+    }
+    if (!nullToAbsent || offsetDiasHabiles != null) {
+      map['offset_dias_habiles'] = Variable<int>(offsetDiasHabiles);
+    }
+    if (!nullToAbsent || eventoReferencia != null) {
+      map['evento_referencia'] = Variable<String>(eventoReferencia);
+    }
+    return map;
+  }
+
+  ConfiguracionCobroReglaEventoCompanion toCompanion(bool nullToAbsent) {
+    return ConfiguracionCobroReglaEventoCompanion(
+      id: Value(id),
+      configuracionCobroVigenciaId: Value(configuracionCobroVigenciaId),
+      tipoEvento: Value(tipoEvento),
+      tipoRegla: Value(tipoRegla),
+      mesRelativo:
+          mesRelativo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(mesRelativo),
+      diaDelMes:
+          diaDelMes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(diaDelMes),
+      ordinalSemana:
+          ordinalSemana == null && nullToAbsent
+              ? const Value.absent()
+              : Value(ordinalSemana),
+      diaSemana:
+          diaSemana == null && nullToAbsent
+              ? const Value.absent()
+              : Value(diaSemana),
+      offsetDiasHabiles:
+          offsetDiasHabiles == null && nullToAbsent
+              ? const Value.absent()
+              : Value(offsetDiasHabiles),
+      eventoReferencia:
+          eventoReferencia == null && nullToAbsent
+              ? const Value.absent()
+              : Value(eventoReferencia),
+    );
+  }
+
+  factory ConfiguracionCobroReglaEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConfiguracionCobroReglaEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      configuracionCobroVigenciaId: serializer.fromJson<String>(
+        json['configuracionCobroVigenciaId'],
+      ),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      tipoRegla: serializer.fromJson<String>(json['tipoRegla']),
+      mesRelativo: serializer.fromJson<String?>(json['mesRelativo']),
+      diaDelMes: serializer.fromJson<int?>(json['diaDelMes']),
+      ordinalSemana: serializer.fromJson<String?>(json['ordinalSemana']),
+      diaSemana: serializer.fromJson<String?>(json['diaSemana']),
+      offsetDiasHabiles: serializer.fromJson<int?>(json['offsetDiasHabiles']),
+      eventoReferencia: serializer.fromJson<String?>(json['eventoReferencia']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'configuracionCobroVigenciaId': serializer.toJson<String>(
+        configuracionCobroVigenciaId,
+      ),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'tipoRegla': serializer.toJson<String>(tipoRegla),
+      'mesRelativo': serializer.toJson<String?>(mesRelativo),
+      'diaDelMes': serializer.toJson<int?>(diaDelMes),
+      'ordinalSemana': serializer.toJson<String?>(ordinalSemana),
+      'diaSemana': serializer.toJson<String?>(diaSemana),
+      'offsetDiasHabiles': serializer.toJson<int?>(offsetDiasHabiles),
+      'eventoReferencia': serializer.toJson<String?>(eventoReferencia),
+    };
+  }
+
+  ConfiguracionCobroReglaEventoData copyWith({
+    int? id,
+    String? configuracionCobroVigenciaId,
+    String? tipoEvento,
+    String? tipoRegla,
+    Value<String?> mesRelativo = const Value.absent(),
+    Value<int?> diaDelMes = const Value.absent(),
+    Value<String?> ordinalSemana = const Value.absent(),
+    Value<String?> diaSemana = const Value.absent(),
+    Value<int?> offsetDiasHabiles = const Value.absent(),
+    Value<String?> eventoReferencia = const Value.absent(),
+  }) => ConfiguracionCobroReglaEventoData(
+    id: id ?? this.id,
+    configuracionCobroVigenciaId:
+        configuracionCobroVigenciaId ?? this.configuracionCobroVigenciaId,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    tipoRegla: tipoRegla ?? this.tipoRegla,
+    mesRelativo: mesRelativo.present ? mesRelativo.value : this.mesRelativo,
+    diaDelMes: diaDelMes.present ? diaDelMes.value : this.diaDelMes,
+    ordinalSemana:
+        ordinalSemana.present ? ordinalSemana.value : this.ordinalSemana,
+    diaSemana: diaSemana.present ? diaSemana.value : this.diaSemana,
+    offsetDiasHabiles:
+        offsetDiasHabiles.present
+            ? offsetDiasHabiles.value
+            : this.offsetDiasHabiles,
+    eventoReferencia:
+        eventoReferencia.present
+            ? eventoReferencia.value
+            : this.eventoReferencia,
+  );
+  ConfiguracionCobroReglaEventoData copyWithCompanion(
+    ConfiguracionCobroReglaEventoCompanion data,
+  ) {
+    return ConfiguracionCobroReglaEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      configuracionCobroVigenciaId:
+          data.configuracionCobroVigenciaId.present
+              ? data.configuracionCobroVigenciaId.value
+              : this.configuracionCobroVigenciaId,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      tipoRegla: data.tipoRegla.present ? data.tipoRegla.value : this.tipoRegla,
+      mesRelativo:
+          data.mesRelativo.present ? data.mesRelativo.value : this.mesRelativo,
+      diaDelMes: data.diaDelMes.present ? data.diaDelMes.value : this.diaDelMes,
+      ordinalSemana:
+          data.ordinalSemana.present
+              ? data.ordinalSemana.value
+              : this.ordinalSemana,
+      diaSemana: data.diaSemana.present ? data.diaSemana.value : this.diaSemana,
+      offsetDiasHabiles:
+          data.offsetDiasHabiles.present
+              ? data.offsetDiasHabiles.value
+              : this.offsetDiasHabiles,
+      eventoReferencia:
+          data.eventoReferencia.present
+              ? data.eventoReferencia.value
+              : this.eventoReferencia,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConfiguracionCobroReglaEventoData(')
+          ..write('id: $id, ')
+          ..write(
+            'configuracionCobroVigenciaId: $configuracionCobroVigenciaId, ',
+          )
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('tipoRegla: $tipoRegla, ')
+          ..write('mesRelativo: $mesRelativo, ')
+          ..write('diaDelMes: $diaDelMes, ')
+          ..write('ordinalSemana: $ordinalSemana, ')
+          ..write('diaSemana: $diaSemana, ')
+          ..write('offsetDiasHabiles: $offsetDiasHabiles, ')
+          ..write('eventoReferencia: $eventoReferencia')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    configuracionCobroVigenciaId,
+    tipoEvento,
+    tipoRegla,
+    mesRelativo,
+    diaDelMes,
+    ordinalSemana,
+    diaSemana,
+    offsetDiasHabiles,
+    eventoReferencia,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConfiguracionCobroReglaEventoData &&
+          other.id == this.id &&
+          other.configuracionCobroVigenciaId ==
+              this.configuracionCobroVigenciaId &&
+          other.tipoEvento == this.tipoEvento &&
+          other.tipoRegla == this.tipoRegla &&
+          other.mesRelativo == this.mesRelativo &&
+          other.diaDelMes == this.diaDelMes &&
+          other.ordinalSemana == this.ordinalSemana &&
+          other.diaSemana == this.diaSemana &&
+          other.offsetDiasHabiles == this.offsetDiasHabiles &&
+          other.eventoReferencia == this.eventoReferencia);
+}
+
+class ConfiguracionCobroReglaEventoCompanion
+    extends UpdateCompanion<ConfiguracionCobroReglaEventoData> {
+  final Value<int> id;
+  final Value<String> configuracionCobroVigenciaId;
+  final Value<String> tipoEvento;
+  final Value<String> tipoRegla;
+  final Value<String?> mesRelativo;
+  final Value<int?> diaDelMes;
+  final Value<String?> ordinalSemana;
+  final Value<String?> diaSemana;
+  final Value<int?> offsetDiasHabiles;
+  final Value<String?> eventoReferencia;
+  const ConfiguracionCobroReglaEventoCompanion({
+    this.id = const Value.absent(),
+    this.configuracionCobroVigenciaId = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.tipoRegla = const Value.absent(),
+    this.mesRelativo = const Value.absent(),
+    this.diaDelMes = const Value.absent(),
+    this.ordinalSemana = const Value.absent(),
+    this.diaSemana = const Value.absent(),
+    this.offsetDiasHabiles = const Value.absent(),
+    this.eventoReferencia = const Value.absent(),
+  });
+  ConfiguracionCobroReglaEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String configuracionCobroVigenciaId,
+    required String tipoEvento,
+    required String tipoRegla,
+    this.mesRelativo = const Value.absent(),
+    this.diaDelMes = const Value.absent(),
+    this.ordinalSemana = const Value.absent(),
+    this.diaSemana = const Value.absent(),
+    this.offsetDiasHabiles = const Value.absent(),
+    this.eventoReferencia = const Value.absent(),
+  }) : configuracionCobroVigenciaId = Value(configuracionCobroVigenciaId),
+       tipoEvento = Value(tipoEvento),
+       tipoRegla = Value(tipoRegla);
+  static Insertable<ConfiguracionCobroReglaEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? configuracionCobroVigenciaId,
+    Expression<String>? tipoEvento,
+    Expression<String>? tipoRegla,
+    Expression<String>? mesRelativo,
+    Expression<int>? diaDelMes,
+    Expression<String>? ordinalSemana,
+    Expression<String>? diaSemana,
+    Expression<int>? offsetDiasHabiles,
+    Expression<String>? eventoReferencia,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (configuracionCobroVigenciaId != null)
+        'configuracion_cobro_vigencia_id': configuracionCobroVigenciaId,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (tipoRegla != null) 'tipo_regla': tipoRegla,
+      if (mesRelativo != null) 'mes_relativo': mesRelativo,
+      if (diaDelMes != null) 'dia_del_mes': diaDelMes,
+      if (ordinalSemana != null) 'ordinal_semana': ordinalSemana,
+      if (diaSemana != null) 'dia_semana': diaSemana,
+      if (offsetDiasHabiles != null) 'offset_dias_habiles': offsetDiasHabiles,
+      if (eventoReferencia != null) 'evento_referencia': eventoReferencia,
+    });
+  }
+
+  ConfiguracionCobroReglaEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? configuracionCobroVigenciaId,
+    Value<String>? tipoEvento,
+    Value<String>? tipoRegla,
+    Value<String?>? mesRelativo,
+    Value<int?>? diaDelMes,
+    Value<String?>? ordinalSemana,
+    Value<String?>? diaSemana,
+    Value<int?>? offsetDiasHabiles,
+    Value<String?>? eventoReferencia,
+  }) {
+    return ConfiguracionCobroReglaEventoCompanion(
+      id: id ?? this.id,
+      configuracionCobroVigenciaId:
+          configuracionCobroVigenciaId ?? this.configuracionCobroVigenciaId,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      tipoRegla: tipoRegla ?? this.tipoRegla,
+      mesRelativo: mesRelativo ?? this.mesRelativo,
+      diaDelMes: diaDelMes ?? this.diaDelMes,
+      ordinalSemana: ordinalSemana ?? this.ordinalSemana,
+      diaSemana: diaSemana ?? this.diaSemana,
+      offsetDiasHabiles: offsetDiasHabiles ?? this.offsetDiasHabiles,
+      eventoReferencia: eventoReferencia ?? this.eventoReferencia,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (configuracionCobroVigenciaId.present) {
+      map['configuracion_cobro_vigencia_id'] = Variable<String>(
+        configuracionCobroVigenciaId.value,
+      );
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (tipoRegla.present) {
+      map['tipo_regla'] = Variable<String>(tipoRegla.value);
+    }
+    if (mesRelativo.present) {
+      map['mes_relativo'] = Variable<String>(mesRelativo.value);
+    }
+    if (diaDelMes.present) {
+      map['dia_del_mes'] = Variable<int>(diaDelMes.value);
+    }
+    if (ordinalSemana.present) {
+      map['ordinal_semana'] = Variable<String>(ordinalSemana.value);
+    }
+    if (diaSemana.present) {
+      map['dia_semana'] = Variable<String>(diaSemana.value);
+    }
+    if (offsetDiasHabiles.present) {
+      map['offset_dias_habiles'] = Variable<int>(offsetDiasHabiles.value);
+    }
+    if (eventoReferencia.present) {
+      map['evento_referencia'] = Variable<String>(eventoReferencia.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConfiguracionCobroReglaEventoCompanion(')
+          ..write('id: $id, ')
+          ..write(
+            'configuracionCobroVigenciaId: $configuracionCobroVigenciaId, ',
+          )
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('tipoRegla: $tipoRegla, ')
+          ..write('mesRelativo: $mesRelativo, ')
+          ..write('diaDelMes: $diaDelMes, ')
+          ..write('ordinalSemana: $ordinalSemana, ')
+          ..write('diaSemana: $diaSemana, ')
+          ..write('offsetDiasHabiles: $offsetDiasHabiles, ')
+          ..write('eventoReferencia: $eventoReferencia')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -16122,6 +16819,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ConfiguracionCobroVigenciaTable(this);
   late final $ConfiguracionCobroCorreoTable configuracionCobroCorreo =
       $ConfiguracionCobroCorreoTable(this);
+  late final $ConfiguracionCobroReglaEventoTable configuracionCobroReglaEvento =
+      $ConfiguracionCobroReglaEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -16169,6 +16868,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     configuracionCobro,
     configuracionCobroVigencia,
     configuracionCobroCorreo,
+    configuracionCobroReglaEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -16190,6 +16890,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ),
       result: [
         TableUpdate('configuracion_cobro_correo', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'configuracion_cobro_vigencia',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate(
+          'configuracion_cobro_regla_evento',
+          kind: UpdateKind.delete,
+        ),
       ],
     ),
   ]);
@@ -28048,6 +28760,38 @@ final class $$ConfiguracionCobroVigenciaTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $ConfiguracionCobroReglaEventoTable,
+    List<ConfiguracionCobroReglaEventoData>
+  >
+  _configuracionCobroReglaEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.configuracionCobroReglaEvento,
+        aliasName: $_aliasNameGenerator(
+          db.configuracionCobroVigencia.id,
+          db.configuracionCobroReglaEvento.configuracionCobroVigenciaId,
+        ),
+      );
+
+  $$ConfiguracionCobroReglaEventoTableProcessedTableManager
+  get configuracionCobroReglaEventoRefs {
+    final manager = $$ConfiguracionCobroReglaEventoTableTableManager(
+      $_db,
+      $_db.configuracionCobroReglaEvento,
+    ).filter(
+      (f) => f.configuracionCobroVigenciaId.id.sqlEquals(
+        $_itemColumn<String>('id')!,
+      ),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _configuracionCobroReglaEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ConfiguracionCobroVigenciaTableFilterComposer
@@ -28236,6 +28980,35 @@ class $$ConfiguracionCobroVigenciaTableFilterComposer
               }) => $$ConfiguracionCobroCorreoTableFilterComposer(
                 $db: $db,
                 $table: $db.configuracionCobroCorreo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> configuracionCobroReglaEventoRefs(
+    Expression<bool> Function(
+      $$ConfiguracionCobroReglaEventoTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$ConfiguracionCobroReglaEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.configuracionCobroReglaEvento,
+          getReferencedColumn: (t) => t.configuracionCobroVigenciaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroReglaEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.configuracionCobroReglaEvento,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -28602,6 +29375,35 @@ class $$ConfiguracionCobroVigenciaTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> configuracionCobroReglaEventoRefs<T extends Object>(
+    Expression<T> Function(
+      $$ConfiguracionCobroReglaEventoTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$ConfiguracionCobroReglaEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.configuracionCobroReglaEvento,
+          getReferencedColumn: (t) => t.configuracionCobroVigenciaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroReglaEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.configuracionCobroReglaEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ConfiguracionCobroVigenciaTableTableManager
@@ -28625,6 +29427,7 @@ class $$ConfiguracionCobroVigenciaTableTableManager
             bool frecuenciaId,
             bool entidadFiscalId,
             bool configuracionCobroCorreoRefs,
+            bool configuracionCobroReglaEventoRefs,
           })
         > {
   $$ConfiguracionCobroVigenciaTableTableManager(
@@ -28764,11 +29567,14 @@ class $$ConfiguracionCobroVigenciaTableTableManager
             frecuenciaId = false,
             entidadFiscalId = false,
             configuracionCobroCorreoRefs = false,
+            configuracionCobroReglaEventoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (configuracionCobroCorreoRefs) db.configuracionCobroCorreo,
+                if (configuracionCobroReglaEventoRefs)
+                  db.configuracionCobroReglaEvento,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -28858,6 +29664,29 @@ class $$ConfiguracionCobroVigenciaTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (configuracionCobroReglaEventoRefs)
+                    await $_getPrefetchedData<
+                      ConfiguracionCobroVigenciaData,
+                      $ConfiguracionCobroVigenciaTable,
+                      ConfiguracionCobroReglaEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable:
+                          $$ConfiguracionCobroVigenciaTableReferences
+                              ._configuracionCobroReglaEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ConfiguracionCobroVigenciaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).configuracionCobroReglaEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.configuracionCobroVigenciaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -28886,6 +29715,7 @@ typedef $$ConfiguracionCobroVigenciaTableProcessedTableManager =
         bool frecuenciaId,
         bool entidadFiscalId,
         bool configuracionCobroCorreoRefs,
+        bool configuracionCobroReglaEventoRefs,
       })
     >;
 typedef $$ConfiguracionCobroCorreoTableCreateCompanionBuilder =
@@ -29207,6 +30037,471 @@ typedef $$ConfiguracionCobroCorreoTableProcessedTableManager =
       ConfiguracionCobroCorreoData,
       PrefetchHooks Function({bool configuracionCobroVigenciaId})
     >;
+typedef $$ConfiguracionCobroReglaEventoTableCreateCompanionBuilder =
+    ConfiguracionCobroReglaEventoCompanion Function({
+      Value<int> id,
+      required String configuracionCobroVigenciaId,
+      required String tipoEvento,
+      required String tipoRegla,
+      Value<String?> mesRelativo,
+      Value<int?> diaDelMes,
+      Value<String?> ordinalSemana,
+      Value<String?> diaSemana,
+      Value<int?> offsetDiasHabiles,
+      Value<String?> eventoReferencia,
+    });
+typedef $$ConfiguracionCobroReglaEventoTableUpdateCompanionBuilder =
+    ConfiguracionCobroReglaEventoCompanion Function({
+      Value<int> id,
+      Value<String> configuracionCobroVigenciaId,
+      Value<String> tipoEvento,
+      Value<String> tipoRegla,
+      Value<String?> mesRelativo,
+      Value<int?> diaDelMes,
+      Value<String?> ordinalSemana,
+      Value<String?> diaSemana,
+      Value<int?> offsetDiasHabiles,
+      Value<String?> eventoReferencia,
+    });
+
+final class $$ConfiguracionCobroReglaEventoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ConfiguracionCobroReglaEventoTable,
+          ConfiguracionCobroReglaEventoData
+        > {
+  $$ConfiguracionCobroReglaEventoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ConfiguracionCobroVigenciaTable _configuracionCobroVigenciaIdTable(
+    _$AppDatabase db,
+  ) => db.configuracionCobroVigencia.createAlias(
+    $_aliasNameGenerator(
+      db.configuracionCobroReglaEvento.configuracionCobroVigenciaId,
+      db.configuracionCobroVigencia.id,
+    ),
+  );
+
+  $$ConfiguracionCobroVigenciaTableProcessedTableManager
+  get configuracionCobroVigenciaId {
+    final $_column = $_itemColumn<String>('configuracion_cobro_vigencia_id')!;
+
+    final manager = $$ConfiguracionCobroVigenciaTableTableManager(
+      $_db,
+      $_db.configuracionCobroVigencia,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _configuracionCobroVigenciaIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ConfiguracionCobroReglaEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $ConfiguracionCobroReglaEventoTable> {
+  $$ConfiguracionCobroReglaEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoRegla => $composableBuilder(
+    column: $table.tipoRegla,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mesRelativo => $composableBuilder(
+    column: $table.mesRelativo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diaDelMes => $composableBuilder(
+    column: $table.diaDelMes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ordinalSemana => $composableBuilder(
+    column: $table.ordinalSemana,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get diaSemana => $composableBuilder(
+    column: $table.diaSemana,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get offsetDiasHabiles => $composableBuilder(
+    column: $table.offsetDiasHabiles,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventoReferencia => $composableBuilder(
+    column: $table.eventoReferencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ConfiguracionCobroVigenciaTableFilterComposer
+  get configuracionCobroVigenciaId {
+    final $$ConfiguracionCobroVigenciaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.configuracionCobroVigenciaId,
+          referencedTable: $db.configuracionCobroVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroVigenciaTableFilterComposer(
+                $db: $db,
+                $table: $db.configuracionCobroVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ConfiguracionCobroReglaEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $ConfiguracionCobroReglaEventoTable> {
+  $$ConfiguracionCobroReglaEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoRegla => $composableBuilder(
+    column: $table.tipoRegla,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mesRelativo => $composableBuilder(
+    column: $table.mesRelativo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diaDelMes => $composableBuilder(
+    column: $table.diaDelMes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ordinalSemana => $composableBuilder(
+    column: $table.ordinalSemana,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get diaSemana => $composableBuilder(
+    column: $table.diaSemana,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get offsetDiasHabiles => $composableBuilder(
+    column: $table.offsetDiasHabiles,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventoReferencia => $composableBuilder(
+    column: $table.eventoReferencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ConfiguracionCobroVigenciaTableOrderingComposer
+  get configuracionCobroVigenciaId {
+    final $$ConfiguracionCobroVigenciaTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.configuracionCobroVigenciaId,
+          referencedTable: $db.configuracionCobroVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroVigenciaTableOrderingComposer(
+                $db: $db,
+                $table: $db.configuracionCobroVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ConfiguracionCobroReglaEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ConfiguracionCobroReglaEventoTable> {
+  $$ConfiguracionCobroReglaEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tipoRegla =>
+      $composableBuilder(column: $table.tipoRegla, builder: (column) => column);
+
+  GeneratedColumn<String> get mesRelativo => $composableBuilder(
+    column: $table.mesRelativo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get diaDelMes =>
+      $composableBuilder(column: $table.diaDelMes, builder: (column) => column);
+
+  GeneratedColumn<String> get ordinalSemana => $composableBuilder(
+    column: $table.ordinalSemana,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get diaSemana =>
+      $composableBuilder(column: $table.diaSemana, builder: (column) => column);
+
+  GeneratedColumn<int> get offsetDiasHabiles => $composableBuilder(
+    column: $table.offsetDiasHabiles,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get eventoReferencia => $composableBuilder(
+    column: $table.eventoReferencia,
+    builder: (column) => column,
+  );
+
+  $$ConfiguracionCobroVigenciaTableAnnotationComposer
+  get configuracionCobroVigenciaId {
+    final $$ConfiguracionCobroVigenciaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.configuracionCobroVigenciaId,
+          referencedTable: $db.configuracionCobroVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroVigenciaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.configuracionCobroVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ConfiguracionCobroReglaEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ConfiguracionCobroReglaEventoTable,
+          ConfiguracionCobroReglaEventoData,
+          $$ConfiguracionCobroReglaEventoTableFilterComposer,
+          $$ConfiguracionCobroReglaEventoTableOrderingComposer,
+          $$ConfiguracionCobroReglaEventoTableAnnotationComposer,
+          $$ConfiguracionCobroReglaEventoTableCreateCompanionBuilder,
+          $$ConfiguracionCobroReglaEventoTableUpdateCompanionBuilder,
+          (
+            ConfiguracionCobroReglaEventoData,
+            $$ConfiguracionCobroReglaEventoTableReferences,
+          ),
+          ConfiguracionCobroReglaEventoData,
+          PrefetchHooks Function({bool configuracionCobroVigenciaId})
+        > {
+  $$ConfiguracionCobroReglaEventoTableTableManager(
+    _$AppDatabase db,
+    $ConfiguracionCobroReglaEventoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ConfiguracionCobroReglaEventoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$ConfiguracionCobroReglaEventoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$ConfiguracionCobroReglaEventoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> configuracionCobroVigenciaId =
+                    const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String> tipoRegla = const Value.absent(),
+                Value<String?> mesRelativo = const Value.absent(),
+                Value<int?> diaDelMes = const Value.absent(),
+                Value<String?> ordinalSemana = const Value.absent(),
+                Value<String?> diaSemana = const Value.absent(),
+                Value<int?> offsetDiasHabiles = const Value.absent(),
+                Value<String?> eventoReferencia = const Value.absent(),
+              }) => ConfiguracionCobroReglaEventoCompanion(
+                id: id,
+                configuracionCobroVigenciaId: configuracionCobroVigenciaId,
+                tipoEvento: tipoEvento,
+                tipoRegla: tipoRegla,
+                mesRelativo: mesRelativo,
+                diaDelMes: diaDelMes,
+                ordinalSemana: ordinalSemana,
+                diaSemana: diaSemana,
+                offsetDiasHabiles: offsetDiasHabiles,
+                eventoReferencia: eventoReferencia,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String configuracionCobroVigenciaId,
+                required String tipoEvento,
+                required String tipoRegla,
+                Value<String?> mesRelativo = const Value.absent(),
+                Value<int?> diaDelMes = const Value.absent(),
+                Value<String?> ordinalSemana = const Value.absent(),
+                Value<String?> diaSemana = const Value.absent(),
+                Value<int?> offsetDiasHabiles = const Value.absent(),
+                Value<String?> eventoReferencia = const Value.absent(),
+              }) => ConfiguracionCobroReglaEventoCompanion.insert(
+                id: id,
+                configuracionCobroVigenciaId: configuracionCobroVigenciaId,
+                tipoEvento: tipoEvento,
+                tipoRegla: tipoRegla,
+                mesRelativo: mesRelativo,
+                diaDelMes: diaDelMes,
+                ordinalSemana: ordinalSemana,
+                diaSemana: diaSemana,
+                offsetDiasHabiles: offsetDiasHabiles,
+                eventoReferencia: eventoReferencia,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ConfiguracionCobroReglaEventoTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({configuracionCobroVigenciaId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (configuracionCobroVigenciaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.configuracionCobroVigenciaId,
+                            referencedTable:
+                                $$ConfiguracionCobroReglaEventoTableReferences
+                                    ._configuracionCobroVigenciaIdTable(db),
+                            referencedColumn:
+                                $$ConfiguracionCobroReglaEventoTableReferences
+                                    ._configuracionCobroVigenciaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ConfiguracionCobroReglaEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ConfiguracionCobroReglaEventoTable,
+      ConfiguracionCobroReglaEventoData,
+      $$ConfiguracionCobroReglaEventoTableFilterComposer,
+      $$ConfiguracionCobroReglaEventoTableOrderingComposer,
+      $$ConfiguracionCobroReglaEventoTableAnnotationComposer,
+      $$ConfiguracionCobroReglaEventoTableCreateCompanionBuilder,
+      $$ConfiguracionCobroReglaEventoTableUpdateCompanionBuilder,
+      (
+        ConfiguracionCobroReglaEventoData,
+        $$ConfiguracionCobroReglaEventoTableReferences,
+      ),
+      ConfiguracionCobroReglaEventoData,
+      PrefetchHooks Function({bool configuracionCobroVigenciaId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -29275,5 +30570,11 @@ class $AppDatabaseManager {
       $$ConfiguracionCobroCorreoTableTableManager(
         _db,
         _db.configuracionCobroCorreo,
+      );
+  $$ConfiguracionCobroReglaEventoTableTableManager
+  get configuracionCobroReglaEvento =>
+      $$ConfiguracionCobroReglaEventoTableTableManager(
+        _db,
+        _db.configuracionCobroReglaEvento,
       );
 }

@@ -17,6 +17,7 @@ import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comer
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_errors.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
@@ -56,8 +57,12 @@ void main() {
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     crearLineaComercial = CrearLineaComercialUseCase(comercialRepo, servicioRepo, lineaComercialValidator);
     cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);
-    crearConfiguracionCobro =
-        CrearConfiguracionCobroUseCase(configuracionCobroRepo, servicioRepo, configuracionCobroValidator);
+    crearConfiguracionCobro = CrearConfiguracionCobroUseCase(
+      configuracionCobroRepo,
+      servicioRepo,
+      configuracionCobroValidator,
+      const ConfiguracionCobroReglaEventoValidator(),
+    );
   });
 
   tearDown(() => db.close());

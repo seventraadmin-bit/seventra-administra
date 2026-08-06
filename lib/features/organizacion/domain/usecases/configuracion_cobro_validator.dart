@@ -1,3 +1,4 @@
+import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
@@ -6,6 +7,7 @@ import '../repositories/catalogo_repository.dart';
 import '../repositories/entidad_fiscal_repository.dart';
 import '../repositories/servicio_comercial_repository.dart';
 import '../repositories/servicio_repository.dart';
+import 'configuracion_cobro_con_vigencia.dart';
 import 'configuracion_cobro_errors.dart';
 
 /// Condiciones de Configuración de cobro tal como llegan del formulario
@@ -110,9 +112,14 @@ class ConfiguracionCobroValidator {
 
   bool _esCorreoValido(String correo) => correo.contains('@') && correo.contains('.') && !correo.contains(' ');
 
+  /// `vigenciasExistentes` solo se pasa al registrar una nueva vigencia
+  /// (Etapa 4H.2) — el alta original (4H.1) nunca tiene vigencias
+  /// previas que pudieran colisionar. Mismo criterio que
+  /// `LineaComercialValidator.validarNuevaVigencia`.
   Future<({ConfiguracionCobroValidada? resultado, List<ErrorConfiguracionCobro> errores})> validar({
     required String servicioId,
     required ConfiguracionCobroBorrador borrador,
+    List<ConfiguracionCobroVigenciaData>? vigenciasExistentes,
   }) async {
     final errores = <ErrorConfiguracionCobro>[];
 
@@ -241,6 +248,14 @@ class ConfiguracionCobroValidator {
           const ErrorConfiguracionCobro(
             campo: CampoConfiguracionCobro.fechaInicioVigencia,
             codigo: CodigoErrorConfiguracionCobro.fechaAnteriorInicioServicio,
+          ),
+        );
+      } else if (vigenciasExistentes != null &&
+          vigenciasExistentes.any((v) => soloFechaCobro(v.fechaInicioVigencia) == soloFechaCobro(fechaInicioVigencia))) {
+        errores.add(
+          const ErrorConfiguracionCobro(
+            campo: CampoConfiguracionCobro.fechaInicioVigencia,
+            codigo: CodigoErrorConfiguracionCobro.fechaDuplicada,
           ),
         );
       }

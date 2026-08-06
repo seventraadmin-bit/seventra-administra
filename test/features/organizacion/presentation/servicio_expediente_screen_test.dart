@@ -24,7 +24,10 @@ import 'package:riseg_one/features/organizacion/data/repositories/servicio_repos
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_entidad_fiscal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
@@ -112,6 +115,35 @@ Future<String> _crearLineaComercial(AppDatabase db, String servicioId, String pu
     ),
   );
   return (resultado as CrearLineaComercialExitoso).linea.id;
+}
+
+Future<String> _crearConfiguracionCobro(AppDatabase db, String servicioId) async {
+  final servicioRepo = ServicioRepositoryImpl(db);
+  final catalogoRepo = CatalogoRepositoryImpl(db);
+  final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+  final comercialRepo = ServicioComercialRepositoryImpl(db);
+  final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
+  final validator = ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
+  final crear = CrearConfiguracionCobroUseCase(
+    configuracionCobroRepo,
+    servicioRepo,
+    validator,
+    const ConfiguracionCobroReglaEventoValidator(),
+  );
+
+  final resultado = await crear.ejecutar(
+    servicioId: servicioId,
+    borrador: ConfiguracionCobroBorrador(
+      tipoDocumento: TipoDocumentoCobro.reciboDePago,
+      frecuenciaId: SeedIds.frecuenciaCobroMensual,
+      diaInicioPeriodo: 1,
+      agrupacion: AgrupacionCobro.porServicio,
+      metodo: MetodoPagoCobro.noAplica,
+      requiereComplemento: false,
+      fechaInicioVigencia: DateTime(2026, 1, 1),
+    ),
+  );
+  return (resultado as CrearConfiguracionCobroExitoso).configuracion.id;
 }
 
 Future<void> _pumpScreen(WidgetTester tester, AppDatabase db, String servicioId) async {
@@ -541,5 +573,54 @@ void main() {
     expect(find.text(l10n.servicioCobroGuardadoExito), findsOneWidget);
     expect(find.text(l10n.servicioCobroSinConfiguracion), findsNothing);
     expect(find.text(l10n.servicioCobroTipoDocumentoReciboDePago), findsWidgets);
+  });
+
+  testWidgets('Configuración de cobro sin reglas temporales muestra el badge Incompleta', (tester) async {
+    await _crearConfiguracionCobro(db, servicioId);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    expect(find.text(l10n.servicioCobroBadgeIncompleta), findsOneWidget);
+    expect(find.text(l10n.servicioCobroReglaPendiente), findsWidgets);
+  });
+
+  testWidgets('Historial de Configuración de cobro muestra la vigencia vigente y permite editar observaciones', (tester) async {
+    await _crearConfiguracionCobro(db, servicioId);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.ensureVisible(find.text(l10n.servicioCobroBotonHistorial));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.servicioCobroBotonHistorial));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioComercialEstadoVigente), findsWidgets);
+
+    await tester.tap(find.text(l10n.servicioCobroHistorialBotonEditarObservaciones).last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Cliente confirmó condiciones por correo');
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioCobroObservacionesGuardadoExito), findsOneWidget);
+  });
+
+  testWidgets('Cerrar Configuración de cobro muestra la advertencia y confirma el cierre', (tester) async {
+    await _crearConfiguracionCobro(db, servicioId);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.ensureVisible(find.text(l10n.servicioCobroBotonCerrarConfiguracion));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.servicioCobroBotonCerrarConfiguracion));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioCobroCerrarAdvertencia), findsOneWidget);
+
+    await tester.tap(find.text(l10n.servicioCobroCerrarBotonConfirmar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioCobroCerrarExito), findsOneWidget);
   });
 }

@@ -740,5 +740,97 @@
   "servicioCobroErrorValidacion": "Revisa los datos capturados: hay campos incompletos o inválidos.",
   "servicioCobroErrorServicioNoDisponible": "Este Servicio ya no admite una nueva Configuración de cobro.",
   "servicioCobroErrorYaExiste": "Este Servicio ya tiene una Configuración de cobro registrada.",
-  "servicioCobroErrorInesperado": "No se pudo agregar la Configuración de cobro. Intenta de nuevo."
+  "servicioCobroErrorInesperado": "No se pudo agregar la Configuración de cobro. Intenta de nuevo.",
+
+  "servicioCobroEventoEmision": "Emisión",
+  "servicioCobroEventoProcesamiento": "Procesamiento",
+  "servicioCobroEventoPagoEsperado": "Pago esperado",
+
+  "servicioCobroReglaDiaFijoDelMes": "Día fijo del mes",
+  "servicioCobroReglaDiasHabilesDespuesDe": "N días hábiles después de otro evento",
+  "servicioCobroReglaNEsimoDiaSemanaDelMes": "N-ésimo día de la semana del mes",
+  "servicioCobroReglaMismoDiaSemanaSiguienteA": "Siguiente mismo día de la semana, después de otro evento",
+
+  "servicioCobroMesRelativoActual": "Mes en que inicia el periodo",
+  "servicioCobroMesRelativoSiguiente": "Mes siguiente al inicio del periodo",
+
+  "servicioCobroOrdinalPrimero": "Primero",
+  "servicioCobroOrdinalSegundo": "Segundo",
+  "servicioCobroOrdinalTercero": "Tercero",
+  "servicioCobroOrdinalCuarto": "Cuarto",
+  "servicioCobroOrdinalUltimo": "Último",
+
+  "servicioCobroDiaSemanaLunes": "Lunes",
+  "servicioCobroDiaSemanaMartes": "Martes",
+  "servicioCobroDiaSemanaMiercoles": "Miércoles",
+  "servicioCobroDiaSemanaJueves": "Jueves",
+  "servicioCobroDiaSemanaViernes": "Viernes",
+  "servicioCobroDiaSemanaSabado": "Sábado",
+  "servicioCobroDiaSemanaDomingo": "Domingo",
+
+  "servicioCobroCampoTipoRegla": "Tipo de regla",
+  "servicioCobroCampoMesRelativo": "Mes relativo",
+  "servicioCobroCampoDiaDelMes": "Día del mes",
+  "servicioCobroCampoOrdinalSemana": "Ordinal",
+  "servicioCobroCampoDiaSemana": "Día de la semana",
+  "servicioCobroCampoOffsetDiasHabiles": "Días hábiles",
+  "servicioCobroCampoEventoReferencia": "Evento de referencia",
+
+  "servicioCobroSeccionReglasTitulo": "Reglas temporales",
+  "servicioCobroReglaEmisionTitulo": "Regla de emisión",
+  "servicioCobroReglaProcesamientoTitulo": "Regla de procesamiento (opcional)",
+  "servicioCobroReglaPagoTitulo": "Regla de pago esperado",
+  "servicioCobroReglaPendiente": "Pendiente de captura",
+  "servicioCobroReglaNoAplicaOPendiente": "No aplica / Pendiente",
+
+  "servicioCobroFechasCalculadasTitulo": "Fechas calculadas del periodo actual",
+  "servicioCobroFechaEmisionCalculada": "Emisión",
+  "servicioCobroFechaProcesamientoCalculada": "Procesamiento",
+  "servicioCobroFechaPagoCalculada": "Pago esperado",
+
+  "servicioCobroBadgeCompleta": "Completa",
+  "servicioCobroBadgeIncompleta": "Incompleta",
+
+  "servicioCobroBotonNuevaVigencia": "Nueva vigencia",
+  "servicioCobroBotonCerrarConfiguracion": "Cerrar configuración",
+  "servicioCobroBotonHistorial": "Historial",
+
+  "servicioCobroNuevaVigenciaDialogoTitulo": "Nueva vigencia",
+  "servicioCobroNuevaVigenciaExito": "Nueva vigencia registrada correctamente.",
+  "servicioCobroNuevaVigenciaErrorServicioNoDisponible": "Este Servicio ya no admite una nueva condición de cobro.",
+  "servicioCobroNuevaVigenciaErrorInesperado": "No se pudo registrar la nueva vigencia. Intenta de nuevo.",
+
+  "servicioCobroRetroactivoConfirmacionTitulo": "Vigencia retroactiva",
+  "servicioCobroRetroactivoConfirmacionMensaje": "La fecha de inicio ya transcurrió. Esto modifica qué condición de cobro aplicó en el pasado. ¿Confirmas continuar?",
+  "servicioCobroRetroactivoConfirmacionConfirmar": "Sí, continuar",
+  "servicioCobroRetroactivoConfirmacionCancelar": "Cancelar",
+
+  "servicioCobroCerrarDialogoTitulo": "Cerrar Configuración de cobro",
+  "servicioCobroCerrarAdvertencia": "Esta configuración dejará de participar en el cálculo de fechas de cobro vigente del Servicio.",
+  "servicioCobroCerrarCampoFecha": "Fecha efectiva de cierre",
+  "servicioCobroCerrarBotonConfirmar": "Cerrar configuración",
+  "servicioCobroCerrarExito": "Configuración de cobro cerrada correctamente.",
+  "servicioCobroCerrarErrorSinCondicionVigente": "Esta configuración no tiene una condición vigente que cerrar.",
+  "servicioCobroCerrarErrorTieneProgramada": "Esta configuración tiene una vigencia programada — cancélala antes de cerrar.",
+  "servicioCobroCerrarErrorFechaAnterior": "La fecha de cierre no puede ser anterior al inicio de la condición vigente.",
+  "servicioCobroCerrarErrorInesperado": "No se pudo cerrar la Configuración de cobro. Intenta de nuevo.",
+
+  "servicioCobroHistorialDialogoTitulo": "Historial de la Configuración de cobro",
+  "servicioCobroHistorialCampoCreadaEl": "Registrada el",
+  "servicioCobroHistorialBotonEditarObservaciones": "Editar observaciones",
+  "servicioCobroHistorialBotonCancelarProgramada": "Cancelar",
+  "servicioCobroHistorialBotonCerrar": "Cerrar",
+
+  "servicioCobroObservacionesDialogoTitulo": "Editar observaciones",
+  "servicioCobroObservacionesGuardadoExito": "Observaciones guardadas correctamente.",
+  "servicioCobroObservacionesErrorNoEditable": "Esta vigencia ya no se puede editar (histórica o cancelada).",
+  "servicioCobroObservacionesErrorInesperado": "No se pudieron guardar las observaciones. Intenta de nuevo.",
+
+  "servicioCobroCancelarProgramadaConfirmacionTitulo": "Cancelar vigencia programada",
+  "servicioCobroCancelarProgramadaConfirmacionMensaje": "Esta vigencia programada se cancelará. Quedará visible en el historial como cancelada, pero nunca aplicará ni podrá reactivarse. ¿Confirmas?",
+  "servicioCobroCancelarProgramadaConfirmacionConfirmar": "Sí, cancelar",
+  "servicioCobroCancelarProgramadaConfirmacionCancelar": "No cancelar",
+  "servicioCobroCancelarProgramadaExito": "Vigencia programada cancelada correctamente.",
+  "servicioCobroCancelarProgramadaErrorNoEsProgramada": "Esta vigencia ya no está programada.",
+  "servicioCobroCancelarProgramadaErrorInesperado": "No se pudo cancelar la vigencia. Intenta de nuevo."
 }

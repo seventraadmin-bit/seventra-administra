@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../features/organizacion/data/tables/cliente_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_correo_table.dart';
+import '../../features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import '../../features/organizacion/data/tables/contacto_table.dart';
@@ -77,12 +78,13 @@ class AppMetadata extends Table {
   ConfiguracionCobro,
   ConfiguracionCobroVigencia,
   ConfiguracionCobroCorreo,
+  ConfiguracionCobroReglaEvento,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -212,6 +214,14 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(configuracionCobroVigencia);
           await m.createTable(configuracionCobroCorreo);
           await seedTipoFrecuenciaCobro(this);
+        }
+        // Aditiva (Etapa 4H.2): ConfiguracionCobroReglaEvento — tabla
+        // completamente nueva, mismo motivo que los pasos `to >= 8`/
+        // `to >= 9` de arriba: nunca existió antes, `from <= 9` es
+        // seguro sin acotar un origen exacto. Sin siembra (no es un
+        // catálogo).
+        if (to >= 10 && from <= 9) {
+          await m.createTable(configuracionCobroReglaEvento);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,
