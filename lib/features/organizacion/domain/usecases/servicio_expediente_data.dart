@@ -1,6 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 
+import 'configuracion_cobro_con_vigencia.dart';
 import 'linea_comercial_con_vigencia.dart';
 
 /// Servicio junto con todo lo que su expediente necesita mostrar: el
@@ -28,6 +29,7 @@ class ServicioExpedienteData {
     this.entidadFiscal,
     this.responsableCliente,
     this.sucursalAdministrativa,
+    this.configuracionCobro,
   });
 
   final ServicioData servicio;
@@ -41,6 +43,10 @@ class ServicioExpedienteData {
   /// Configuración comercial (Etapa 4G.1) — cada línea ya resuelta
   /// contra la fecha de hoy (vigente/programadas).
   final List<LineaComercialConVigencia> lineasComerciales;
+
+  /// Configuración de cobro (Etapa 4H.1) — `null` si el Servicio todavía
+  /// no tiene ninguna capturada.
+  final ConfiguracionCobroConVigencia? configuracionCobro;
 
   /// Suma de `cantidad × precio` de la vigencia vigente de cada línea —
   /// nunca mezcla tratamientos de IVA distintos (Etapa 4G.1, Resolución

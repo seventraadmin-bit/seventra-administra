@@ -6,6 +6,7 @@ import '../../core/di/providers.dart';
 import 'data/repositories/area_repository_impl.dart';
 import 'data/repositories/catalogo_repository_impl.dart';
 import 'data/repositories/cliente_repository_impl.dart';
+import 'data/repositories/configuracion_cobro_repository_impl.dart';
 import 'data/repositories/empresa_repository_impl.dart';
 import 'data/repositories/entidad_fiscal_repository_impl.dart';
 import 'data/repositories/puesto_repository_impl.dart';
@@ -16,6 +17,7 @@ import 'data/repositories/ubicacion_repository_impl.dart';
 import 'domain/repositories/area_repository.dart';
 import 'domain/repositories/catalogo_repository.dart';
 import 'domain/repositories/cliente_repository.dart';
+import 'domain/repositories/configuracion_cobro_repository.dart';
 import 'domain/repositories/empresa_repository.dart';
 import 'domain/repositories/entidad_fiscal_repository.dart';
 import 'domain/repositories/puesto_repository.dart';
@@ -44,8 +46,10 @@ import 'domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
 import 'domain/usecases/cancelar_vigencia_programada_usecase.dart';
 import 'domain/usecases/cerrar_linea_comercial_usecase.dart';
+import 'domain/usecases/configuracion_cobro_validator.dart';
 import 'domain/usecases/crear_area_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
+import 'domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'domain/usecases/crear_entidad_fiscal_usecase.dart';
 import 'domain/usecases/crear_linea_comercial_usecase.dart';
 import 'domain/usecases/crear_puesto_usecase.dart';
@@ -133,6 +137,10 @@ final entidadFiscalRepositoryProvider = Provider<EntidadFiscalRepository>((ref) 
 
 final servicioComercialRepositoryProvider = Provider<ServicioComercialRepository>((ref) {
   return ServicioComercialRepositoryImpl(ref.watch(appDatabaseProvider), clock: ref.watch(clockProvider));
+});
+
+final configuracionCobroRepositoryProvider = Provider<ConfiguracionCobroRepository>((ref) {
+  return ConfiguracionCobroRepositoryImpl(ref.watch(appDatabaseProvider), clock: ref.watch(clockProvider));
 });
 
 final obtenerEmpresaActivaUseCaseProvider = Provider<ObtenerEmpresaActivaUseCase>((ref) {
@@ -344,6 +352,7 @@ final obtenerExpedienteServicioUseCaseProvider = Provider<ObtenerExpedienteServi
     ref.watch(entidadFiscalRepositoryProvider),
     ref.watch(sucursalRepositoryProvider),
     ref.watch(servicioComercialRepositoryProvider),
+    ref.watch(configuracionCobroRepositoryProvider),
   );
 });
 
@@ -372,6 +381,24 @@ final lineaComercialValidatorProvider = Provider<LineaComercialValidator>((ref) 
     ref.watch(puestoRepositoryProvider),
     ref.watch(catalogoRepositoryProvider),
     ref.watch(servicioRepositoryProvider),
+    ref.watch(configuracionCobroRepositoryProvider),
+  );
+});
+
+final configuracionCobroValidatorProvider = Provider<ConfiguracionCobroValidator>((ref) {
+  return ConfiguracionCobroValidator(
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(entidadFiscalRepositoryProvider),
+    ref.watch(catalogoRepositoryProvider),
+    ref.watch(servicioComercialRepositoryProvider),
+  );
+});
+
+final crearConfiguracionCobroUseCaseProvider = Provider<CrearConfiguracionCobroUseCase>((ref) {
+  return CrearConfiguracionCobroUseCase(
+    ref.watch(configuracionCobroRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(configuracionCobroValidatorProvider),
   );
 });
 

@@ -8,6 +8,7 @@ import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/utils/clock.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
@@ -71,7 +72,8 @@ void main() {
     clock = _RelojFijo(hoy);
     comercialRepo = ServicioComercialRepositoryImpl(db, clock: clock);
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
-    final lineaComercialValidator = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo);
+    final lineaComercialValidator =
+        LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, ConfiguracionCobroRepositoryImpl(db));
 
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     crearLineaComercial = CrearLineaComercialUseCase(comercialRepo, servicioRepo, lineaComercialValidator);

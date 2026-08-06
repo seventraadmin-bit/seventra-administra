@@ -7,6 +7,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
@@ -30,6 +31,7 @@ void main() {
   late PuestoRepositoryImpl puestoRepo;
   late CatalogoRepositoryImpl catalogoRepo;
   late ServicioComercialRepositoryImpl comercialRepo;
+  late ConfiguracionCobroRepositoryImpl configuracionCobroRepo;
   late CrearServicioUseCase crearServicio;
   late CrearLineaComercialUseCase crearLineaComercial;
   late CambiarEstatusServicioUseCase cambiarEstatusServicio;
@@ -46,13 +48,21 @@ void main() {
     final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
     final sucursalRepo = SucursalRepositoryImpl(db);
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
-    final lineaComercialValidator = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo);
+    configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
+    final lineaComercialValidator =
+        LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, configuracionCobroRepo);
 
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     crearLineaComercial = CrearLineaComercialUseCase(comercialRepo, servicioRepo, lineaComercialValidator);
     cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);
-    obtenerExpediente =
-        ObtenerExpedienteServicioUseCase(servicioRepo, clienteRepo, entidadFiscalRepo, sucursalRepo, comercialRepo);
+    obtenerExpediente = ObtenerExpedienteServicioUseCase(
+      servicioRepo,
+      clienteRepo,
+      entidadFiscalRepo,
+      sucursalRepo,
+      comercialRepo,
+      configuracionCobroRepo,
+    );
   });
 
   tearDown(() => db.close());

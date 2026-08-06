@@ -2,6 +2,7 @@ import 'package:riseg_one/core/error/failure.dart';
 import 'package:riseg_one/core/error/result.dart';
 
 import '../repositories/cliente_repository.dart';
+import '../repositories/configuracion_cobro_repository.dart';
 import '../repositories/entidad_fiscal_repository.dart';
 import '../repositories/servicio_comercial_repository.dart';
 import '../repositories/servicio_repository.dart';
@@ -10,12 +11,13 @@ import 'servicio_expediente_data.dart';
 
 /// Ensambla el expediente completo de un Servicio (Servicio + Cliente +
 /// Dirección operativa + Entidad fiscal + Responsable del Cliente +
-/// Sucursal administrativa + Configuración comercial) — mismo patrón que
-/// `ObtenerExpedienteClienteUseCase`, ahora componiendo 5 repositorios
-/// porque el expediente de Servicio ya vincula entidades de otros 3
-/// dominios (Cliente, Entidad fiscal, Sucursal) además del propio
-/// Contacto (vía `ClienteRepository`) y, desde la Etapa 4G.1, su propia
-/// Configuración comercial.
+/// Sucursal administrativa + Configuración comercial + Configuración de
+/// cobro) — mismo patrón que `ObtenerExpedienteClienteUseCase`, ahora
+/// componiendo 6 repositorios porque el expediente de Servicio ya
+/// vincula entidades de otros 3 dominios (Cliente, Entidad fiscal,
+/// Sucursal) además del propio Contacto (vía `ClienteRepository`) y, desde
+/// las Etapas 4G.1/4H.1, sus propias Configuración comercial y
+/// Configuración de cobro.
 class ObtenerExpedienteServicioUseCase {
   ObtenerExpedienteServicioUseCase(
     this._servicioRepository,
@@ -23,6 +25,7 @@ class ObtenerExpedienteServicioUseCase {
     this._entidadFiscalRepository,
     this._sucursalRepository,
     this._servicioComercialRepository,
+    this._configuracionCobroRepository,
   );
 
   final ServicioRepository _servicioRepository;
@@ -30,6 +33,7 @@ class ObtenerExpedienteServicioUseCase {
   final EntidadFiscalRepository _entidadFiscalRepository;
   final SucursalRepository _sucursalRepository;
   final ServicioComercialRepository _servicioComercialRepository;
+  final ConfiguracionCobroRepository _configuracionCobroRepository;
 
   Future<Result<ServicioExpedienteData>> ejecutar(String servicioId) async {
     final servicio = await _servicioRepository.obtenerPorId(servicioId);
@@ -55,6 +59,7 @@ class ObtenerExpedienteServicioUseCase {
     final sucursalAdministrativa = sucursalId == null ? null : await _sucursalRepository.obtenerPorId(sucursalId);
 
     final lineasComerciales = await _servicioComercialRepository.listarLineas(servicioId);
+    final configuracionCobro = await _configuracionCobroRepository.obtenerConfiguracion(servicioId);
 
     return Result.ok(
       ServicioExpedienteData(
@@ -66,6 +71,7 @@ class ObtenerExpedienteServicioUseCase {
         responsableCliente: responsableCliente,
         sucursalAdministrativa: sucursalAdministrativa,
         lineasComerciales: lineasComerciales,
+        configuracionCobro: configuracionCobro,
       ),
     );
   }

@@ -14,6 +14,7 @@ import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
@@ -24,7 +25,9 @@ import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_entidad_fiscal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
@@ -403,6 +406,49 @@ void main() {
 
       expect(resultado, isA<CrearLineaComercialErroresValidacion>());
       expect(container.read(servicioExpedienteControllerProvider(servicioId)).datos?.lineasComerciales, isEmpty);
+    });
+  });
+
+  group('agregarConfiguracionCobro', () {
+    test('agrega la Configuración de cobro y la refleja en el expediente', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+
+      final resultado = await notifier.agregarConfiguracionCobro(
+        ConfiguracionCobroBorrador(
+          tipoDocumento: TipoDocumentoCobro.reciboDePago,
+          frecuenciaId: SeedIds.frecuenciaCobroMensual,
+          diaInicioPeriodo: 1,
+          agrupacion: AgrupacionCobro.porServicio,
+          metodo: MetodoPagoCobro.noAplica,
+          requiereComplemento: false,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CrearConfiguracionCobroExitoso>());
+      final state = container.read(servicioExpedienteControllerProvider(servicioId));
+      expect(state.datos?.configuracionCobro?.estaCompleta, isTrue);
+      expect(state.operandoCobro, isFalse);
+    });
+
+    test('rechaza una segunda Configuración de cobro para el mismo Servicio', () async {
+      await esperarCargaInicial();
+      final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+      final borrador = ConfiguracionCobroBorrador(
+        tipoDocumento: TipoDocumentoCobro.reciboDePago,
+        frecuenciaId: SeedIds.frecuenciaCobroMensual,
+        diaInicioPeriodo: 1,
+        agrupacion: AgrupacionCobro.porServicio,
+        metodo: MetodoPagoCobro.noAplica,
+        requiereComplemento: false,
+        fechaInicioVigencia: DateTime(2026, 1, 1),
+      );
+
+      await notifier.agregarConfiguracionCobro(borrador);
+      final resultado = await notifier.agregarConfiguracionCobro(borrador);
+
+      expect(resultado, isA<CrearConfiguracionCobroYaExiste>());
     });
   });
 

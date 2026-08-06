@@ -18,6 +18,8 @@ import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
@@ -31,6 +33,7 @@ import 'servicio_expediente_form_controllers.dart';
 import 'servicio_expediente_state.dart';
 import 'widgets/servicio_auditoria_section.dart';
 import 'widgets/servicio_configuracion_comercial_section.dart';
+import 'widgets/servicio_configuracion_cobro_section.dart';
 import 'widgets/servicio_datos_generales_section.dart';
 import 'widgets/servicio_direccion_operativa_section.dart';
 import 'widgets/servicio_historial_linea_comercial_dialog.dart';
@@ -482,6 +485,57 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     }
   }
 
+  Future<void> _agregarConfiguracionCobro() async {
+    final l10n = AppLocalizations.of(context)!;
+    final datos = ref.read(servicioExpedienteControllerProvider(widget.servicioId)).datos!;
+
+    final frecuencias = await ref.read(catalogoRepositoryProvider).listarFrecuenciasCobro();
+    final entidades = (await ref.read(entidadFiscalRepositoryProvider).listarPorCliente(datos.cliente.id))
+        .where((e) => e.entidadFiscal.cicloVidaRegistro == CicloVidaRegistro.activo.name)
+        .map((e) => e.entidadFiscal)
+        .toList();
+    if (!mounted) return;
+
+    var borrador = const ConfiguracionCobroBorrador(
+      tipoDocumento: null,
+      frecuenciaId: '',
+      diaInicioPeriodo: null,
+      agrupacion: null,
+      metodo: null,
+      requiereComplemento: false,
+      fechaInicioVigencia: null,
+    );
+
+    final resultado = await RisegDialog.showForm<CrearConfiguracionCobroResultado?>(
+      context: context,
+      title: l10n.servicioCobroDialogoAltaTitulo,
+      confirmLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (_) => ServicioConfiguracionCobroForm(
+        frecuencias: frecuencias,
+        entidadesFiscales: entidades,
+        onCambio: (nuevo) => borrador = nuevo,
+      ),
+      onConfirm: () => _notifier.agregarConfiguracionCobro(borrador),
+    );
+
+    if (!mounted) return;
+    switch (resultado) {
+      case CrearConfiguracionCobroExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioCobroGuardadoExito);
+      case CrearConfiguracionCobroErroresValidacion():
+        RisegFeedback.showError(context, l10n.servicioCobroErrorValidacion);
+      case CrearConfiguracionCobroServicioNoDisponible():
+        RisegFeedback.showError(context, l10n.servicioCobroErrorServicioNoDisponible);
+      case CrearConfiguracionCobroYaExiste():
+        RisegFeedback.showError(context, l10n.servicioCobroErrorYaExiste);
+      case CrearConfiguracionCobroErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioCobroErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
   /// `true` si el usuario confirma continuar — usado antes de registrar
   /// una vigencia retroactiva (Etapa 4G.2, Resolución H: permitido, pero
   /// solo con confirmación explícita; nunca bloqueado desde el dominio
@@ -890,6 +944,14 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
                   onNuevaVigencia: _nuevaVigencia,
                   onCerrarLinea: _cerrarLinea,
                   onVerHistorial: _verHistorial,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              RisegCard(
+                child: ServicioConfiguracionCobroSection(
+                  configuracionCobro: datos.configuracionCobro,
+                  deshabilitado: state.operandoCobro,
+                  onAgregar: _agregarConfiguracionCobro,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),

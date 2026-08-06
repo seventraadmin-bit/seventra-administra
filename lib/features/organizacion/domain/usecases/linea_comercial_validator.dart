@@ -1,8 +1,10 @@
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 
 import '../repositories/catalogo_repository.dart';
+import '../repositories/configuracion_cobro_repository.dart';
 import '../repositories/puesto_repository.dart';
 import '../repositories/servicio_repository.dart';
 import 'linea_comercial_con_vigencia.dart';
@@ -65,11 +67,44 @@ class LineaComercialValidada {
 /// el alta (Etapa 4G.1) como por la nueva vigencia (Etapa 4G.2), nunca
 /// duplicada (mismo motivo que `ServicioValidator`/`PuestoValidator`).
 class LineaComercialValidator {
-  LineaComercialValidator(this._puestoRepository, this._catalogoRepository, this._servicioRepository);
+  LineaComercialValidator(
+    this._puestoRepository,
+    this._catalogoRepository,
+    this._servicioRepository,
+    this._configuracionCobroRepository,
+  );
 
   final PuestoRepository _puestoRepository;
   final CatalogoRepository _catalogoRepository;
   final ServicioRepository _servicioRepository;
+  final ConfiguracionCobroRepository _configuracionCobroRepository;
+
+  /// Validación cruzada contra la Configuración de cobro vigente del
+  /// Servicio (Etapa 4H.1, Resoluciones D y G) — la misma pareja de
+  /// reglas vive en `ConfiguracionCobroValidator`, aplicada en sentido
+  /// inverso; cualquier cambio a una debe revisar la otra.
+  Future<List<ErrorLineaComercial>> _validarCompatibilidadConfiguracionCobro({
+    required String servicioId,
+    required TratamientoIva? tratamientoIva,
+  }) async {
+    if (tratamientoIva == null) return const [];
+
+    final configuracion = await _configuracionCobroRepository.obtenerConfiguracion(servicioId);
+    final vigente = configuracion?.vigenciaActual;
+    if (vigente == null) return const [];
+
+    final tipoDocumento = TipoDocumentoCobro.values.byName(vigente.tipoDocumento);
+    final incompatible = (tipoDocumento == TipoDocumentoCobro.cfdi && tratamientoIva == TratamientoIva.noAplica) ||
+        (tipoDocumento == TipoDocumentoCobro.reciboDePago && tratamientoIva != TratamientoIva.noAplica);
+
+    if (!incompatible) return const [];
+    return const [
+      ErrorLineaComercial(
+        campo: CampoLineaComercial.tratamientoIva,
+        codigo: CodigoErrorLineaComercial.ivaIncompatibleConfiguracionCobro,
+      ),
+    ];
+  }
 
   /// Puesto/modalidad/cantidad/precio/IVA — idénticos entre alta y
   /// nueva vigencia. Las reglas de fecha difieren (nueva vigencia
@@ -151,6 +186,9 @@ class LineaComercialValidator {
     required LineaComercialBorrador borrador,
   }) async {
     final errores = await _validarCondicionesBase(borrador);
+    errores.addAll(
+      await _validarCompatibilidadConfiguracionCobro(servicioId: servicioId, tratamientoIva: borrador.tratamientoIva),
+    );
 
     final fechaInicioVigencia = borrador.fechaInicioVigencia;
     if (fechaInicioVigencia == null) {
@@ -195,6 +233,9 @@ class LineaComercialValidator {
     required List<ServicioLineaComercialVigenciaData> vigenciasExistentes,
   }) async {
     final errores = await _validarCondicionesBase(borrador);
+    errores.addAll(
+      await _validarCompatibilidadConfiguracionCobro(servicioId: servicioId, tratamientoIva: borrador.tratamientoIva),
+    );
 
     final fechaInicioVigencia = borrador.fechaInicioVigencia;
     if (fechaInicioVigencia == null) {

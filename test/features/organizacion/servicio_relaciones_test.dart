@@ -10,6 +10,7 @@ import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
@@ -85,6 +86,7 @@ void main() {
       entidadFiscalRepo,
       sucursalRepo,
       ServicioComercialRepositoryImpl(db),
+      ConfiguracionCobroRepositoryImpl(db),
     );
   });
 

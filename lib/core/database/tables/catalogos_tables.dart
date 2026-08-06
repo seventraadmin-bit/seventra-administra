@@ -21,3 +21,9 @@ class Area extends Table with CatalogoColumns {}
 /// Dart) deliberadamente: RISEG puede necesitar agregar una modalidad
 /// nueva sin requerir una actualización de la aplicación.
 class TipoModalidadTurno extends Table with CatalogoColumns {}
+
+/// Frecuencia de una vigencia de Configuración de cobro (Etapa 4H.1) —
+/// sembrado solo con "Mensual" por ahora, el único valor que los casos
+/// reales conocidos confirman. Catálogo abierto, mismo motivo que
+/// [TipoModalidadTurno].
+class TipoFrecuenciaCobro extends Table with CatalogoColumns {}

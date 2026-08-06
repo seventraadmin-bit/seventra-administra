@@ -34,4 +34,13 @@ class CatalogoRepositoryImpl implements CatalogoRepository {
         .get();
     return [for (final fila in filas) CatalogoItem(id: fila.id, codigo: fila.codigo, nombre: fila.nombre)];
   }
+
+  @override
+  Future<List<CatalogoItem>> listarFrecuenciasCobro() async {
+    final filas = await (_db.select(_db.tipoFrecuenciaCobro)
+          ..where((t) => t.activo.equals(true))
+          ..orderBy([(t) => OrderingTerm.asc(t.orden), (t) => OrderingTerm.asc(t.nombre)]))
+        .get();
+    return [for (final fila in filas) CatalogoItem(id: fila.id, codigo: fila.codigo, nombre: fila.nombre)];
+  }
 }

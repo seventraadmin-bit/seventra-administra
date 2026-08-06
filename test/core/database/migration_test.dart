@@ -21,7 +21,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 8;
+const _currentSchemaVersion = 9;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -1366,6 +1366,211 @@ void main() {
         ) VALUES (
           'vigencia-turno-invalido', '${linea.id}', '${SeedIds.areaOperaciones}', 'modalidad-inexistente',
           2, 1500000, 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+        );
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('9.json coincide con el esquema final de la Etapa 4H.1 (Configuración de cobro, tablas nuevas)', () async {
+    final schema = await verifier.schemaAt(9);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+
+    expect(
+      tablas,
+      containsAll(<String>[
+        'app_metadata', 'codigo_secuencia', 'tipo_sucursal', 'industria',
+        'tipo_servicio', 'area', 'direccion', 'medio_contacto', 'attachment',
+        'horario', 'horario_detalle', 'empresa', 'sucursal', 'cliente',
+        'contacto', 'servicio', 'ubicacion', 'puesto', 'entidad_fiscal',
+        'tipo_modalidad_turno', 'servicio_linea_comercial', 'servicio_linea_comercial_vigencia',
+        'tipo_frecuencia_cobro', 'configuracion_cobro', 'configuracion_cobro_vigencia',
+        'configuracion_cobro_correo',
+      ]),
+    );
+
+    final sqlConfiguracionCobro = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'configuracion_cobro'")
+        .single['sql'] as String;
+    expect(sqlConfiguracionCobro, contains('"servicio_id" TEXT NOT NULL UNIQUE REFERENCES servicio (id) ON DELETE RESTRICT'));
+
+    final sqlVigencia = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'configuracion_cobro_vigencia'")
+        .single['sql'] as String;
+    expect(sqlVigencia, contains('REFERENCES configuracion_cobro (id) ON DELETE RESTRICT'));
+    expect(sqlVigencia, contains('REFERENCES tipo_frecuencia_cobro (id) ON DELETE RESTRICT'));
+    expect(sqlVigencia, contains('REFERENCES entidad_fiscal (id) ON DELETE RESTRICT'));
+    expect(sqlVigencia, contains('"entidad_fiscal_id" TEXT NULL'), reason: 'opcional — solo obligatoria para CFDI, validado en dominio');
+    expect(sqlVigencia, contains('"portal_contrasena" TEXT NULL'));
+    expect(sqlVigencia, contains('"cuenta_bancaria" TEXT NULL'));
+    expect(sqlVigencia, contains('CHECK (dia_inicio_periodo BETWEEN 1 AND 31)'));
+    expect(sqlVigencia, contains('CHECK (fecha_fin_vigencia IS NULL OR fecha_fin_vigencia >= fecha_inicio_vigencia)'));
+
+    final sqlCorreo = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'configuracion_cobro_correo'")
+        .single['sql'] as String;
+    expect(sqlCorreo, contains('REFERENCES configuracion_cobro_vigencia (id) ON DELETE CASCADE'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 1 → versión actual siembra la frecuencia de cobro Mensual', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    schemaV1.rawDatabase.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final frecuencias = await db.select(db.tipoFrecuenciaCobro).get();
+    expect(frecuencias.map((f) => f.codigo).toSet(), {'MENSUAL'});
+
+    await db.close();
+  });
+
+  test('migración 8 → 9 conserva Servicio/líneas comerciales reales y crea las tablas de Configuración de cobro vacías', () async {
+    final schemaV8 = await verifier.schemaAt(8);
+    final raw = schemaV8.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('tipo-servicio-real', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-real', 'SER-000001', 'cliente-real', 'Vigilancia Sportium Toluca', 'tipo-servicio-real',
+        'activo', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+    raw.execute('''
+      INSERT INTO servicio_linea_comercial (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('linea-real', 'servicio-real', 1700000000, 1700000000, 'activo');
+    ''');
+
+    final db = AppDatabase(schemaV8.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final servicios = await db.select(db.servicio).get();
+    expect(servicios, hasLength(1), reason: 'ningún Servicio real debe perderse en una migración aditiva');
+
+    final lineas = await db.select(db.servicioLineaComercial).get();
+    expect(lineas, hasLength(1), reason: 'ninguna línea comercial real debe perderse en una migración aditiva');
+
+    final configuraciones = await db.select(db.configuracionCobro).get();
+    expect(configuraciones, isEmpty);
+    final frecuencias = await db.select(db.tipoFrecuenciaCobro).get();
+    expect(frecuencias, hasLength(1));
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test('acepta una Configuración de cobro con su primera vigencia y un correo tras la migración', () async {
+    final schemaV8 = await verifier.schemaAt(8);
+    final db = AppDatabase(schemaV8.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final servicio = await db.into(db.servicio).insertReturning(
+          ServicioCompanion.insert(
+            codigo: 'SER-000001',
+            clienteId: cliente.id,
+            nombre: 'Vigilancia Sportium Toluca',
+            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+            fechaInicio: DateTime(2026, 1, 1),
+          ),
+        );
+
+    final configuracion = await db.into(db.configuracionCobro).insertReturning(
+          ConfiguracionCobroCompanion.insert(servicioId: servicio.id),
+        );
+    final vigencia = await db.into(db.configuracionCobroVigencia).insertReturning(
+          ConfiguracionCobroVigenciaCompanion.insert(
+            configuracionCobroId: configuracion.id,
+            tipoDocumento: 'reciboDePago',
+            frecuenciaId: SeedIds.frecuenciaCobroMensual,
+            diaInicioPeriodo: 1,
+            agrupacion: 'porServicio',
+            metodo: 'noAplica',
+            fechaInicioVigencia: DateTime(2026, 1, 1),
+          ),
+        );
+    final correo = await db.into(db.configuracionCobroCorreo).insertReturning(
+          ConfiguracionCobroCorreoCompanion.insert(
+            configuracionCobroVigenciaId: vigencia.id,
+            correo: 'facturacion@sportium.mx',
+          ),
+        );
+    expect(vigencia.diaInicioPeriodo, 1);
+    expect(correo.correo, 'facturacion@sportium.mx');
+
+    await db.close();
+  });
+
+  test('rechaza una Configuración de cobro con Servicio o Vigencia con frecuencia inexistente tras la migración', () async {
+    final schemaV8 = await verifier.schemaAt(8);
+    final db = AppDatabase(schemaV8.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO configuracion_cobro (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+        VALUES ('configuracion-invalida', 'servicio-inexistente', 1700000000, 1700000000, 'activo');
+      '''),
+      throwsA(anything),
+    );
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final servicio = await db.into(db.servicio).insertReturning(
+          ServicioCompanion.insert(
+            codigo: 'SER-000001',
+            clienteId: cliente.id,
+            nombre: 'Vigilancia Sportium Toluca',
+            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+            fechaInicio: DateTime(2026, 1, 1),
+          ),
+        );
+    final configuracion = await db.into(db.configuracionCobro).insertReturning(
+          ConfiguracionCobroCompanion.insert(servicioId: servicio.id),
+        );
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO configuracion_cobro_vigencia (
+          id, configuracion_cobro_id, tipo_documento, frecuencia_id, dia_inicio_periodo,
+          agrupacion, metodo, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'vigencia-frecuencia-invalida', '${configuracion.id}', 'reciboDePago', 'frecuencia-inexistente', 1,
+          'porServicio', 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
         );
       '''),
       throwsA(anything),

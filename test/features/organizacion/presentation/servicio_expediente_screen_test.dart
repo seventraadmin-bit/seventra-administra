@@ -16,11 +16,13 @@ import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_entidad_fiscal_usecase.dart';
@@ -95,7 +97,7 @@ Future<String> _crearLineaComercial(AppDatabase db, String servicioId, String pu
   final catalogoRepo = CatalogoRepositoryImpl(db);
   final puestoRepo = PuestoRepositoryImpl(db);
   final comercialRepo = ServicioComercialRepositoryImpl(db);
-  final validator = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo);
+  final validator = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, ConfiguracionCobroRepositoryImpl(db));
   final crear = CrearLineaComercialUseCase(comercialRepo, servicioRepo, validator);
 
   final resultado = await crear.ejecutar(
@@ -486,5 +488,58 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.servicioComercialAnotacionesGuardadoExito), findsOneWidget);
+  });
+
+  testWidgets('Configuración de cobro sin registro muestra el mensaje vacío', (tester) async {
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    expect(find.text(l10n.servicioCobroSinConfiguracion), findsOneWidget);
+  });
+
+  testWidgets('agregar una Configuración de cobro vía el diálogo (recibo, IVA no aplica)', (tester) async {
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.ensureVisible(find.byKey(const Key('servicio_boton_agregar_configuracion_cobro')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('servicio_boton_agregar_configuracion_cobro')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<TipoDocumentoCobro>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.servicioCobroTipoDocumentoReciboDePago).last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mensual').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), '1');
+
+    await tester.tap(find.byType(DropdownButtonFormField<AgrupacionCobro>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.servicioCobroAgrupacionPorServicio).last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<MetodoPagoCobro>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.servicioCobroMetodoNoAplica).last);
+    await tester.pumpAndSettle();
+
+    final campoFechaInicio = find.byType(TextFormField).at(1);
+    await tester.tap(campoFechaInicio);
+    await tester.pumpAndSettle();
+    final dialogoSelector = find.byType(Dialog).last;
+    await tester.tap(find.descendant(of: dialogoSelector, matching: find.byType(TextButton)).last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioCobroGuardadoExito), findsOneWidget);
+    expect(find.text(l10n.servicioCobroSinConfiguracion), findsNothing);
+    expect(find.text(l10n.servicioCobroTipoDocumentoReciboDePago), findsWidgets);
   });
 }

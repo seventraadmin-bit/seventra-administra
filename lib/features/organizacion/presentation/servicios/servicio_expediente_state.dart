@@ -13,6 +13,7 @@ class ServicioExpedienteState {
     this.cambiandoEstatus = false,
     this.operandoRelacion = false,
     this.operandoComercial = false,
+    this.operandoCobro = false,
     this.tieneCambiosSinGuardar = false,
     this.modo = ServicioExpedienteModo.consulta,
     this.datos,
@@ -35,6 +36,10 @@ class ServicioExpedienteState {
   /// doble-clic — independiente de `operandoRelacion` porque es un
   /// dominio propio (Configuración comercial), no una vinculación.
   final bool operandoComercial;
+
+  /// Bloquea el alta de la Configuración de cobro (Etapa 4H.1) contra
+  /// doble-clic — dominio propio, independiente de `operandoComercial`.
+  final bool operandoCobro;
   final bool tieneCambiosSinGuardar;
   final ServicioExpedienteModo modo;
   final ServicioExpedienteData? datos;
@@ -48,6 +53,7 @@ class ServicioExpedienteState {
     bool? cambiandoEstatus,
     bool? operandoRelacion,
     bool? operandoComercial,
+    bool? operandoCobro,
     bool? tieneCambiosSinGuardar,
     ServicioExpedienteModo? modo,
     ServicioExpedienteData? datos,
@@ -61,6 +67,7 @@ class ServicioExpedienteState {
       cambiandoEstatus: cambiandoEstatus ?? this.cambiandoEstatus,
       operandoRelacion: operandoRelacion ?? this.operandoRelacion,
       operandoComercial: operandoComercial ?? this.operandoComercial,
+      operandoCobro: operandoCobro ?? this.operandoCobro,
       tieneCambiosSinGuardar: tieneCambiosSinGuardar ?? this.tieneCambiosSinGuardar,
       modo: modo ?? this.modo,
       datos: datos ?? this.datos,

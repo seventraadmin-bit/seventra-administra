@@ -23,6 +23,11 @@ enum CodigoErrorLineaComercial {
   /// vigencia posterior ya registrada (nunca se trunca en silencio un
   /// valor que el usuario escribió explícitamente).
   solapamiento,
+
+  /// Etapa 4H.1 — el tratamiento de IVA capturado es incompatible con
+  /// la Configuración de cobro vigente del Servicio (CFDI nunca admite
+  /// `noAplica`; recibo exige `noAplica` en todas las líneas).
+  ivaIncompatibleConfiguracionCobro,
 }
 
 class ErrorLineaComercial {

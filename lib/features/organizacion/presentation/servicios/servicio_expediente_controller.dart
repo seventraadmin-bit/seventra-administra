@@ -11,6 +11,8 @@ import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
@@ -201,6 +203,19 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     return resultado;
   }
 
+  Future<CrearConfiguracionCobroResultado?> agregarConfiguracionCobro(ConfiguracionCobroBorrador borrador) async {
+    if (state.operandoCobro) return null;
+    state = state.copyWith(operandoCobro: true);
+
+    final resultado =
+        await ref.read(crearConfiguracionCobroUseCaseProvider).ejecutar(servicioId: servicioId, borrador: borrador);
+    if (resultado is CrearConfiguracionCobroExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoCobro: false);
+    return resultado;
+  }
+
   Future<CambiarVigenciaLineaComercialResultado?> cambiarVigenciaLinea(
     String lineaComercialId,
     LineaComercialBorrador borrador,
@@ -299,6 +314,7 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
       responsableCliente: datosActuales.responsableCliente,
       sucursalAdministrativa: datosActuales.sucursalAdministrativa,
       lineasComerciales: datosActuales.lineasComerciales,
+      configuracionCobro: datosActuales.configuracionCobro,
     );
   }
 

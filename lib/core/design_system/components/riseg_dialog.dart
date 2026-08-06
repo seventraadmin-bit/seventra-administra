@@ -119,7 +119,11 @@ class _RisegDialogShell extends StatelessWidget {
             children: [
               Text(title, style: AppTypography.heading2.copyWith(color: colors.textPrimary)),
               const SizedBox(height: AppSpacing.sm),
-              content,
+              // `Flexible` + scroll: la mayoría de los formularios caben
+              // sin desbordar, pero uno con muchos campos (ej.
+              // Configuración de cobro, Etapa 4H.1) no debe romper el
+              // layout — se vuelve desplazable en vez de desbordar.
+              Flexible(child: SingleChildScrollView(child: content)),
               const SizedBox(height: AppSpacing.lg),
               // `Wrap` (no `Row`) — con textos de botón largos (algo común
               // en español) dos acciones pueden no caber en el ancho fijo

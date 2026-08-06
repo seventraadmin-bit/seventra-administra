@@ -6,6 +6,9 @@ import 'package:drift/native.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../features/organizacion/data/tables/cliente_table.dart';
+import '../../features/organizacion/data/tables/configuracion_cobro_correo_table.dart';
+import '../../features/organizacion/data/tables/configuracion_cobro_table.dart';
+import '../../features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import '../../features/organizacion/data/tables/contacto_table.dart';
 import '../../features/organizacion/data/tables/empresa_table.dart';
 import '../../features/organizacion/data/tables/entidad_fiscal_table.dart';
@@ -55,6 +58,7 @@ class AppMetadata extends Table {
   TipoServicio,
   Area,
   TipoModalidadTurno,
+  TipoFrecuenciaCobro,
   Direccion,
   MedioContacto,
   Attachment,
@@ -70,12 +74,15 @@ class AppMetadata extends Table {
   EntidadFiscal,
   ServicioLineaComercial,
   ServicioLineaComercialVigencia,
+  ConfiguracionCobro,
+  ConfiguracionCobroVigencia,
+  ConfiguracionCobroCorreo,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -84,6 +91,7 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
         await runSeed(this);
         await seedTipoModalidadTurno(this);
+        await seedTipoFrecuenciaCobro(this);
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from == 1) {
@@ -189,6 +197,21 @@ class AppDatabase extends _$AppDatabase {
         // revisar si algún paso anterior ya la recrea por completo.
         if (to >= 7 && from == 6) {
           await migrarServicioV7(this, m);
+        }
+        // Aditiva (Etapa 4H.1): catálogo TipoFrecuenciaCobro + tablas
+        // ConfiguracionCobro/ConfiguracionCobroVigencia/
+        // ConfiguracionCobroCorreo — 4 tablas completamente nuevas,
+        // mismo motivo que el paso `to >= 8` de arriba (Etapa 4G.1):
+        // ninguna existió antes, así que `from <= 8` es seguro sin
+        // acotar un origen exacto. `seedTipoFrecuenciaCobro` se llama
+        // aquí, no dentro de `runSeed()`, por la misma razón que
+        // `seedTipoModalidadTurno`.
+        if (to >= 9 && from <= 8) {
+          await m.createTable(tipoFrecuenciaCobro);
+          await m.createTable(configuracionCobro);
+          await m.createTable(configuracionCobroVigencia);
+          await m.createTable(configuracionCobroCorreo);
+          await seedTipoFrecuenciaCobro(this);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

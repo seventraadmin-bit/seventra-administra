@@ -42,4 +42,7 @@ abstract final class SeedIds {
   static const modalidadTurnoDiurno = '00000000-0000-4000-8000-000000000505';
   static const modalidadTurnoMixto = '00000000-0000-4000-8000-000000000506';
   static const modalidadTurnoPersonalizado = '00000000-0000-4000-8000-000000000507';
+
+  // TipoFrecuenciaCobro
+  static const frecuenciaCobroMensual = '00000000-0000-4000-8000-000000000601';
 }

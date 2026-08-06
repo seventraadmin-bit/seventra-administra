@@ -159,6 +159,26 @@ Future<void> seedTipoModalidadTurno(AppDatabase db) async {
   }
 }
 
+/// Mismo motivo que `seedTipoModalidadTurno`: fuera de `runSeed()`,
+/// llamada explícitamente donde la tabla ya existe (`onCreate` y el
+/// paso `to >= 9` de `onUpgrade`).
+Future<void> seedTipoFrecuenciaCobro(AppDatabase db) async {
+  // Solo "Mensual" — el único valor que los casos reales conocidos
+  // (Sportium, Miluyole, Toluca 32, Tikal, Morgan) confirman para la
+  // Etapa 4H.1. Otras frecuencias (quincenal, semanal) se agregan solo
+  // cuando un caso real las requiera.
+  const filas = [
+    (SeedIds.frecuenciaCobroMensual, 'MENSUAL', 'Mensual'),
+  ];
+
+  for (final (id, codigo, nombre) in filas) {
+    await db.into(db.tipoFrecuenciaCobro).insert(
+          TipoFrecuenciaCobroCompanion.insert(id: id, codigo: codigo, nombre: nombre),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+}
+
 Future<void> _seedEmpresa(AppDatabase db) async {
   // Sin datos legales inventados: razonSocial/rfc/representanteLegal/
   // eslogan quedan pendientes de captura real en la Etapa 4B.
