@@ -611,5 +611,76 @@
   "servicioComercialErrorPrecioUnitarioRequerido": "Captura un precio unitario mayor a cero.",
   "servicioComercialErrorTratamientoIvaRequerido": "Selecciona el tratamiento de IVA.",
   "servicioComercialErrorFechaInicioVigenciaRequerido": "Captura la fecha de inicio de vigencia.",
-  "servicioComercialErrorFechaAnteriorInicioServicio": "La vigencia no puede iniciar antes del inicio del Servicio."
+  "servicioComercialErrorFechaAnteriorInicioServicio": "La vigencia no puede iniciar antes del inicio del Servicio.",
+  "servicioComercialErrorFechaDuplicada": "Ya existe una vigencia de esta línea con esa misma fecha de inicio.",
+  "servicioComercialErrorSolapamiento": "La fecha de fin capturada se solapa con una vigencia posterior ya registrada.",
+
+  "servicioComercialBotonNuevaVigencia": "Nueva vigencia",
+  "servicioComercialBotonCerrarLinea": "Cerrar línea",
+  "servicioComercialBotonHistorial": "Historial",
+  "servicioComercialEstadoHistorica": "Histórica",
+  "servicioComercialEstadoCancelada": "Cancelada",
+  "servicioComercialEstadoSinCondicionVigente": "Sin condición vigente",
+
+  "servicioComercialElementosVigentesTitulo": "Elementos comerciales vigentes",
+  "servicioComercialElementosDifierenAdvertencia": "No coinciden con los {autorizados} elementos autorizados del Servicio.",
+  "@servicioComercialElementosDifierenAdvertencia": {
+    "placeholders": {
+      "autorizados": {
+        "type": "int"
+      }
+    }
+  },
+  "servicioComercialAvisoProgramadas": "{cantidad, plural, one{Hay 1 vigencia programada} other{Hay {cantidad} vigencias programadas}} — la próxima entra en vigor el {fecha}.",
+  "@servicioComercialAvisoProgramadas": {
+    "placeholders": {
+      "cantidad": {
+        "type": "int"
+      },
+      "fecha": {
+        "type": "String"
+      }
+    }
+  },
+
+  "servicioComercialNuevaVigenciaDialogoTitulo": "Nueva vigencia",
+  "servicioComercialNuevaVigenciaExito": "Nueva vigencia registrada correctamente.",
+  "servicioComercialNuevaVigenciaErrorServicioNoDisponible": "Este Servicio ya no admite nuevas condiciones comerciales.",
+  "servicioComercialNuevaVigenciaErrorInesperado": "No se pudo registrar la nueva vigencia. Intenta de nuevo.",
+
+  "servicioComercialRetroactivoConfirmacionTitulo": "Vigencia retroactiva",
+  "servicioComercialRetroactivoConfirmacionMensaje": "La fecha de inicio ya transcurrió. Esto modifica qué condición comercial aplicó en el pasado. ¿Confirmas continuar?",
+  "servicioComercialRetroactivoConfirmacionConfirmar": "Sí, continuar",
+  "servicioComercialRetroactivoConfirmacionCancelar": "Cancelar",
+
+  "servicioComercialCerrarLineaDialogoTitulo": "Cerrar línea comercial",
+  "servicioComercialCerrarLineaAdvertencia": "Esta línea dejará de participar en el cálculo comercial vigente del Servicio.",
+  "servicioComercialCerrarLineaCampoFecha": "Fecha efectiva de cierre",
+  "servicioComercialCerrarLineaBotonConfirmar": "Cerrar línea",
+  "servicioComercialCerrarLineaExito": "Línea comercial cerrada correctamente.",
+  "servicioComercialCerrarLineaErrorSinCondicionVigente": "Esta línea no tiene una condición vigente que cerrar.",
+  "servicioComercialCerrarLineaErrorTieneProgramada": "Esta línea tiene una vigencia programada — cancélala antes de cerrar la línea.",
+  "servicioComercialCerrarLineaErrorFechaAnterior": "La fecha de cierre no puede ser anterior al inicio de la condición vigente.",
+  "servicioComercialCerrarLineaErrorInesperado": "No se pudo cerrar la línea comercial. Intenta de nuevo.",
+  "servicioComercialCerrarLineaBotonAyudaSinCondicion": "No hay una condición vigente que cerrar.",
+  "servicioComercialCerrarLineaBotonAyudaTieneProgramada": "Cancela la vigencia programada antes de cerrar la línea.",
+
+  "servicioComercialHistorialDialogoTitulo": "Historial de la línea comercial",
+  "servicioComercialHistorialCampoCreadaEl": "Registrada el",
+  "servicioComercialHistorialBotonEditarAnotaciones": "Editar anotaciones",
+  "servicioComercialHistorialBotonCancelarProgramada": "Cancelar",
+  "servicioComercialHistorialBotonCerrar": "Cerrar",
+
+  "servicioComercialAnotacionesDialogoTitulo": "Editar anotaciones",
+  "servicioComercialAnotacionesGuardadoExito": "Anotaciones guardadas correctamente.",
+  "servicioComercialAnotacionesErrorNoEditable": "Esta vigencia ya no se puede editar (histórica o cancelada).",
+  "servicioComercialAnotacionesErrorInesperado": "No se pudieron guardar las anotaciones. Intenta de nuevo.",
+
+  "servicioComercialCancelarProgramadaConfirmacionTitulo": "Cancelar vigencia programada",
+  "servicioComercialCancelarProgramadaConfirmacionMensaje": "Esta vigencia programada se cancelará. Quedará visible en el historial como cancelada, pero nunca aplicará ni podrá reactivarse. ¿Confirmas?",
+  "servicioComercialCancelarProgramadaConfirmacionConfirmar": "Sí, cancelar",
+  "servicioComercialCancelarProgramadaConfirmacionCancelar": "No cancelar",
+  "servicioComercialCancelarProgramadaExito": "Vigencia programada cancelada correctamente.",
+  "servicioComercialCancelarProgramadaErrorNoEsProgramada": "Esta vigencia ya no está programada.",
+  "servicioComercialCancelarProgramadaErrorInesperado": "No se pudo cancelar la vigencia. Intenta de nuevo."
 }

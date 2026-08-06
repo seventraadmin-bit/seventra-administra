@@ -18,16 +18,19 @@ import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repos
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
-import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_entidad_fiscal_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_sucursal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/entidad_fiscal_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/organizacion/presentation/servicios/servicio_expediente_screen.dart';
 
@@ -85,6 +88,28 @@ Future<PuestoData> _crearPuesto(AppDatabase db) {
       nivelJerarquico: 5,
     ),
   );
+}
+
+Future<String> _crearLineaComercial(AppDatabase db, String servicioId, String puestoId) async {
+  final servicioRepo = ServicioRepositoryImpl(db);
+  final catalogoRepo = CatalogoRepositoryImpl(db);
+  final puestoRepo = PuestoRepositoryImpl(db);
+  final comercialRepo = ServicioComercialRepositoryImpl(db);
+  final validator = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo);
+  final crear = CrearLineaComercialUseCase(comercialRepo, servicioRepo, validator);
+
+  final resultado = await crear.ejecutar(
+    servicioId: servicioId,
+    borrador: LineaComercialBorrador(
+      puestoId: puestoId,
+      modalidadTurnoId: SeedIds.modalidadTurno24x24,
+      cantidadElementos: 2,
+      precioUnitario: 1500000,
+      tratamientoIva: TratamientoIva.masIva,
+      fechaInicioVigencia: DateTime(2026, 1, 1),
+    ),
+  );
+  return (resultado as CrearLineaComercialExitoso).linea.id;
 }
 
 Future<void> _pumpScreen(WidgetTester tester, AppDatabase db, String servicioId) async {
@@ -391,5 +416,75 @@ void main() {
     expect(find.text(l10n.servicioComercialGuardadoExito), findsOneWidget);
     expect(find.text(l10n.servicioComercialSinLineas), findsNothing);
     expect(find.text(r'$30,000.00'), findsWidgets);
+  });
+
+  testWidgets('nueva vigencia reemplaza la condición vigente y actualiza el subtotal', (tester) async {
+    final puesto = await _crearPuesto(db);
+    await _crearLineaComercial(db, servicioId, puesto.id);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.ensureVisible(find.byTooltip(l10n.servicioComercialBotonNuevaVigencia));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(l10n.servicioComercialBotonNuevaVigencia));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), '5');
+
+    final campoFechaInicio = find.byType(TextFormField).at(2);
+    await tester.tap(campoFechaInicio);
+    await tester.pumpAndSettle();
+    final dialogoSelector = find.byType(Dialog).last;
+    await tester.tap(find.descendant(of: dialogoSelector, matching: find.byType(TextButton)).last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioComercialNuevaVigenciaExito), findsOneWidget);
+    expect(find.text('5'), findsWidgets);
+  });
+
+  testWidgets('cerrar línea muestra la advertencia del efecto administrativo antes de confirmar', (tester) async {
+    final puesto = await _crearPuesto(db);
+    await _crearLineaComercial(db, servicioId, puesto.id);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.ensureVisible(find.byTooltip(l10n.servicioComercialBotonCerrarLinea));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(l10n.servicioComercialBotonCerrarLinea));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioComercialCerrarLineaAdvertencia), findsOneWidget);
+
+    await tester.tap(find.text(l10n.servicioComercialCerrarLineaBotonConfirmar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioComercialCerrarLineaExito), findsOneWidget);
+  });
+
+  testWidgets('ver historial muestra la vigencia vigente y permite editar anotaciones', (tester) async {
+    final puesto = await _crearPuesto(db);
+    await _crearLineaComercial(db, servicioId, puesto.id);
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.ensureVisible(find.byTooltip(l10n.servicioComercialBotonHistorial));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(l10n.servicioComercialBotonHistorial));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioComercialEstadoVigente), findsWidgets);
+    expect(find.textContaining('Guardia'), findsWidgets);
+
+    await tester.tap(find.text(l10n.servicioComercialHistorialBotonEditarAnotaciones).last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Turno principal confirmado');
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioComercialAnotacionesGuardadoExito), findsOneWidget);
   });
 }

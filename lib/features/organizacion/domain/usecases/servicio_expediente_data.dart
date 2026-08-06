@@ -54,6 +54,35 @@ class ServicioExpedienteData {
   bool get ivaVariaPorLinea =>
       lineasComerciales.map((l) => l.vigenciaActual?.tratamientoIva).toSet().length > 1;
 
+  /// Suma de `cantidadElementos` de la vigencia vigente de cada línea —
+  /// "elementos comerciales vigentes hoy" (Etapa 4G.2), independiente de
+  /// `Servicio.elementosAutorizados`.
+  int get elementosComercialesVigentes =>
+      lineasComerciales.fold(0, (acc, l) => acc + (l.vigenciaActual?.cantidadElementos ?? 0));
+
+  /// `true` si los elementos según Configuración comercial no coinciden
+  /// con `elementosAutorizados` — Etapa 4G.1, Resolución E: nunca se
+  /// sincronizan automáticamente, solo se advierte la diferencia.
+  bool get elementosDifierenDeAutorizados => elementosComercialesVigentes != servicio.elementosAutorizados;
+
+  /// `true` si alguna línea tiene al menos una vigencia programada a
+  /// futuro — aviso agregado a nivel de expediente (Etapa 4G.2).
+  bool get tieneVigenciasProgramadas => lineasComerciales.any((l) => l.vigenciasProgramadas.isNotEmpty);
+
+  /// La fecha de inicio más próxima entre todas las vigencias
+  /// programadas de todas las líneas — `null` si no hay ninguna.
+  DateTime? get proximaFechaProgramada {
+    DateTime? proxima;
+    for (final linea in lineasComerciales) {
+      for (final v in linea.vigenciasProgramadas) {
+        if (proxima == null || v.fechaInicioVigencia.isBefore(proxima)) {
+          proxima = v.fechaInicioVigencia;
+        }
+      }
+    }
+    return proxima;
+  }
+
   bool get entidadFiscalArchivada =>
       entidadFiscal != null && entidadFiscal!.cicloVidaRegistro != CicloVidaRegistro.activo.name;
 

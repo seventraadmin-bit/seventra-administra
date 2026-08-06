@@ -24,6 +24,7 @@ import 'domain/repositories/servicio_repository.dart';
 import 'domain/repositories/sucursal_repository.dart';
 import 'domain/repositories/ubicacion_repository.dart';
 import 'domain/usecases/activar_area_usecase.dart';
+import 'domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
 import 'domain/usecases/actualizar_area_usecase.dart';
 import 'domain/usecases/actualizar_contacto_usecase.dart';
 import 'domain/usecases/actualizar_empresa_usecase.dart';
@@ -40,6 +41,9 @@ import 'domain/usecases/cambiar_ciclo_vida_puesto_usecase.dart';
 import 'domain/usecases/cambiar_estado_operativo_sucursal_usecase.dart';
 import 'domain/usecases/cambiar_estatus_cliente_usecase.dart';
 import 'domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
+import 'domain/usecases/cancelar_vigencia_programada_usecase.dart';
+import 'domain/usecases/cerrar_linea_comercial_usecase.dart';
 import 'domain/usecases/crear_area_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
 import 'domain/usecases/crear_entidad_fiscal_usecase.dart';
@@ -74,6 +78,7 @@ import 'domain/usecases/obtener_expediente_empresa_usecase.dart';
 import 'domain/usecases/obtener_expediente_puesto_usecase.dart';
 import 'domain/usecases/obtener_expediente_servicio_usecase.dart';
 import 'domain/usecases/obtener_expediente_sucursal_usecase.dart';
+import 'domain/usecases/obtener_historial_linea_comercial_usecase.dart';
 import 'domain/usecases/puesto_validator.dart';
 import 'domain/usecases/servicio_validator.dart';
 
@@ -127,7 +132,7 @@ final entidadFiscalRepositoryProvider = Provider<EntidadFiscalRepository>((ref) 
 });
 
 final servicioComercialRepositoryProvider = Provider<ServicioComercialRepository>((ref) {
-  return ServicioComercialRepositoryImpl(ref.watch(appDatabaseProvider));
+  return ServicioComercialRepositoryImpl(ref.watch(appDatabaseProvider), clock: ref.watch(clockProvider));
 });
 
 final obtenerEmpresaActivaUseCaseProvider = Provider<ObtenerEmpresaActivaUseCase>((ref) {
@@ -375,5 +380,34 @@ final crearLineaComercialUseCaseProvider = Provider<CrearLineaComercialUseCase>(
     ref.watch(servicioComercialRepositoryProvider),
     ref.watch(servicioRepositoryProvider),
     ref.watch(lineaComercialValidatorProvider),
+  );
+});
+
+final cambiarVigenciaLineaComercialUseCaseProvider = Provider<CambiarVigenciaLineaComercialUseCase>((ref) {
+  return CambiarVigenciaLineaComercialUseCase(
+    ref.watch(servicioComercialRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(lineaComercialValidatorProvider),
+  );
+});
+
+final cerrarLineaComercialUseCaseProvider = Provider<CerrarLineaComercialUseCase>((ref) {
+  return CerrarLineaComercialUseCase(ref.watch(servicioComercialRepositoryProvider), ref.watch(clockProvider));
+});
+
+final cancelarVigenciaProgramadaUseCaseProvider = Provider<CancelarVigenciaProgramadaUseCase>((ref) {
+  return CancelarVigenciaProgramadaUseCase(ref.watch(servicioComercialRepositoryProvider), ref.watch(clockProvider));
+});
+
+final actualizarAnotacionesVigenciaUseCaseProvider = Provider<ActualizarAnotacionesVigenciaUseCase>((ref) {
+  return ActualizarAnotacionesVigenciaUseCase(ref.watch(servicioComercialRepositoryProvider), ref.watch(clockProvider));
+});
+
+final obtenerHistorialLineaComercialUseCaseProvider = Provider<ObtenerHistorialLineaComercialUseCase>((ref) {
+  return ObtenerHistorialLineaComercialUseCase(
+    ref.watch(servicioComercialRepositoryProvider),
+    ref.watch(puestoRepositoryProvider),
+    ref.watch(catalogoRepositoryProvider),
+    ref.watch(clockProvider),
   );
 });

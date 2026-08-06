@@ -5,8 +5,12 @@ import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_responsable_cliente_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
@@ -191,6 +195,72 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     final resultado =
         await ref.read(crearLineaComercialUseCaseProvider).ejecutar(servicioId: servicioId, borrador: borrador);
     if (resultado is CrearLineaComercialExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoComercial: false);
+    return resultado;
+  }
+
+  Future<CambiarVigenciaLineaComercialResultado?> cambiarVigenciaLinea(
+    String lineaComercialId,
+    LineaComercialBorrador borrador,
+  ) async {
+    if (state.operandoComercial) return null;
+    state = state.copyWith(operandoComercial: true);
+
+    final resultado = await ref
+        .read(cambiarVigenciaLineaComercialUseCaseProvider)
+        .ejecutar(lineaComercialId: lineaComercialId, borrador: borrador);
+    if (resultado is CambiarVigenciaLineaComercialExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoComercial: false);
+    return resultado;
+  }
+
+  Future<CerrarLineaComercialResultado?> cerrarLineaComercial(
+    String lineaComercialId,
+    DateTime fechaEfectiva,
+  ) async {
+    if (state.operandoComercial) return null;
+    state = state.copyWith(operandoComercial: true);
+
+    final resultado = await ref
+        .read(cerrarLineaComercialUseCaseProvider)
+        .ejecutar(lineaComercialId: lineaComercialId, fechaEfectiva: fechaEfectiva);
+    if (resultado is CerrarLineaComercialExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoComercial: false);
+    return resultado;
+  }
+
+  Future<CancelarVigenciaProgramadaResultado?> cancelarVigenciaProgramada(String vigenciaId) async {
+    if (state.operandoComercial) return null;
+    state = state.copyWith(operandoComercial: true);
+
+    final resultado = await ref.read(cancelarVigenciaProgramadaUseCaseProvider).ejecutar(vigenciaId: vigenciaId);
+    if (resultado is CancelarVigenciaProgramadaExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoComercial: false);
+    return resultado;
+  }
+
+  Future<ActualizarAnotacionesVigenciaResultado?> actualizarAnotacionesVigencia({
+    required String vigenciaId,
+    String? descripcion,
+    String? observaciones,
+  }) async {
+    if (state.operandoComercial) return null;
+    state = state.copyWith(operandoComercial: true);
+
+    final resultado = await ref.read(actualizarAnotacionesVigenciaUseCaseProvider).ejecutar(
+          vigenciaId: vigenciaId,
+          descripcion: descripcion,
+          observaciones: observaciones,
+        );
+    if (resultado is ActualizarAnotacionesVigenciaExitoso) {
       await _recargarDatos();
     }
     state = state.copyWith(operandoComercial: false);

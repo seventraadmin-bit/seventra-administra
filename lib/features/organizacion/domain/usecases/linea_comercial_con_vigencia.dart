@@ -1,4 +1,5 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/tables/audit_columns.dart';
 
 /// Una línea comercial ya resuelta contra la fecha de hoy: su vigencia
 /// vigente (si alguna vigencia activa ya empezó y no ha terminado) y
@@ -29,13 +30,18 @@ class LineaComercialConVigencia {
       vigenciaActual == null ? 0 : vigenciaActual!.cantidadElementos * vigenciaActual!.precioUnitario;
 }
 
+/// Compara solo año/mes/día — una vigencia es cuestión de fechas de
+/// calendario, nunca de hora exacta.
+DateTime soloFecha(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+
 /// Clasifica las vigencias `activo` de una línea contra la fecha de hoy
-/// (comparando solo año/mes/día, nunca hora) en "vigente" (a lo más una)
-/// y "programadas" (orden ascendente por fecha de inicio) — pura función
-/// de fechas, reutilizable por el repositorio y por las pruebas.
+/// en "vigente" (a lo más una) y "programadas" (orden ascendente por
+/// fecha de inicio) — pura función de fechas, reutilizable por el
+/// repositorio y por las pruebas. Nunca recibe vigencias `archivado`
+/// (canceladas) — esas nunca participan en esta clasificación ni en
+/// ningún cálculo comercial.
 ({ServicioLineaComercialVigenciaData? vigente, List<ServicioLineaComercialVigenciaData> programadas})
     clasificarVigencias(List<ServicioLineaComercialVigenciaData> vigenciasActivas, DateTime hoy) {
-  DateTime soloFecha(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
   final hoySinHora = soloFecha(hoy);
 
   ServicioLineaComercialVigenciaData? vigente;
@@ -59,4 +65,29 @@ class LineaComercialConVigencia {
 
   programadas.sort((a, b) => a.fechaInicioVigencia.compareTo(b.fechaInicioVigencia));
   return (vigente: vigente, programadas: programadas);
+}
+
+/// Los 4 estados que puede mostrar el historial de una línea comercial —
+/// distinto del par vigente/programadas de arriba porque este sí incluye
+/// las vigencias canceladas (Etapa 4G.2): la trazabilidad administrativa
+/// es más importante que ocultarlas, aunque nunca participen en ningún
+/// cálculo ni puedan reactivarse.
+enum EstadoVigencia { vigente, programada, historica, cancelada }
+
+/// Clasifica una vigencia individual para el historial — a diferencia de
+/// [clasificarVigencias] (que decide cuál es LA vigente de un grupo),
+/// esta função no necesita comparar contra otras vigencias de la misma
+/// línea: el estado de cada fila es autosuficiente.
+EstadoVigencia clasificarParaHistorial(ServicioLineaComercialVigenciaData vigencia, DateTime hoy) {
+  if (vigencia.cicloVidaRegistro == CicloVidaRegistro.archivado.name) {
+    return EstadoVigencia.cancelada;
+  }
+
+  final hoySinHora = soloFecha(hoy);
+  final inicio = soloFecha(vigencia.fechaInicioVigencia);
+  final fin = vigencia.fechaFinVigencia == null ? null : soloFecha(vigencia.fechaFinVigencia!);
+
+  if (inicio.isAfter(hoySinHora)) return EstadoVigencia.programada;
+  if (fin != null && fin.isBefore(hoySinHora)) return EstadoVigencia.historica;
+  return EstadoVigencia.vigente;
 }

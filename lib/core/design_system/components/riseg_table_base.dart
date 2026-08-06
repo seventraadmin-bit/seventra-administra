@@ -41,6 +41,7 @@ class RisegTableBase<T> extends StatelessWidget {
     this.selectedRow,
     this.loading = false,
     this.emptyState,
+    this.actionsWidth = 96,
     super.key,
   });
 
@@ -55,7 +56,13 @@ class RisegTableBase<T> extends StatelessWidget {
   final bool loading;
   final Widget? emptyState;
 
-  double get _actionsWidth => rowActionsBuilder == null ? 0 : 96;
+  /// Ancho de la columna de acciones cuando `rowActionsBuilder` no es
+  /// nulo — 96px por defecto (sin cambio para ningún uso existente).
+  /// Una fila con más de 1-2 acciones compactas necesita más espacio
+  /// (Etapa 4G.2, Configuración comercial: hasta 3 acciones por fila).
+  final double actionsWidth;
+
+  double get _actionsWidth => rowActionsBuilder == null ? 0 : actionsWidth;
 
   @override
   Widget build(BuildContext context) {

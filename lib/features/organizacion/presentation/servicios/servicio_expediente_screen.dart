@@ -7,15 +7,22 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
+import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/catalogo_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_responsable_cliente_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/obtener_historial_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_errors.dart';
 
 import '../../organizacion_providers.dart';
@@ -26,6 +33,7 @@ import 'widgets/servicio_auditoria_section.dart';
 import 'widgets/servicio_configuracion_comercial_section.dart';
 import 'widgets/servicio_datos_generales_section.dart';
 import 'widgets/servicio_direccion_operativa_section.dart';
+import 'widgets/servicio_historial_linea_comercial_dialog.dart';
 import 'widgets/servicio_referencias_section.dart';
 import 'widgets/servicio_vinculaciones_section.dart';
 
@@ -474,6 +482,207 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     }
   }
 
+  /// `true` si el usuario confirma continuar — usado antes de registrar
+  /// una vigencia retroactiva (Etapa 4G.2, Resolución H: permitido, pero
+  /// solo con confirmación explícita; nunca bloqueado desde el dominio
+  /// mientras no exista Configuración de cobro/Facturación).
+  Future<bool> _confirmarSiEsRetroactiva(DateTime? fechaInicioVigencia) async {
+    if (fechaInicioVigencia == null) return true;
+    if (!soloFecha(fechaInicioVigencia).isBefore(soloFecha(DateTime.now()))) return true;
+
+    final l10n = AppLocalizations.of(context)!;
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: l10n.servicioComercialRetroactivoConfirmacionTitulo,
+      message: l10n.servicioComercialRetroactivoConfirmacionMensaje,
+      confirmLabel: l10n.servicioComercialRetroactivoConfirmacionConfirmar,
+      cancelLabel: l10n.servicioComercialRetroactivoConfirmacionCancelar,
+    );
+    return confirmado == true;
+  }
+
+  Future<void> _nuevaVigencia(LineaComercialConVigencia linea) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final puestos = await ref.read(puestoRepositoryProvider).listarActivos();
+    final modalidades = await ref.read(catalogoRepositoryProvider).listarModalidadesTurno();
+    if (!mounted) return;
+
+    final vigenciaActual = linea.vigenciaActual;
+    var borrador = LineaComercialBorrador(
+      puestoId: vigenciaActual?.puestoId ?? '',
+      modalidadTurnoId: vigenciaActual?.modalidadTurnoId ?? '',
+      cantidadElementos: vigenciaActual?.cantidadElementos,
+      precioUnitario: vigenciaActual?.precioUnitario,
+      tratamientoIva: vigenciaActual == null ? null : TratamientoIva.values.byName(vigenciaActual.tratamientoIva),
+      fechaInicioVigencia: null,
+      descripcion: vigenciaActual?.descripcion,
+      observaciones: vigenciaActual?.observaciones,
+    );
+
+    final resultado = await RisegDialog.showForm<CambiarVigenciaLineaComercialResultado?>(
+      context: context,
+      title: l10n.servicioComercialNuevaVigenciaDialogoTitulo,
+      confirmLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (_) => ServicioLineaComercialForm(
+        puestos: puestos,
+        modalidadesTurno: modalidades,
+        valoresIniciales: vigenciaActual,
+        onCambio: (nuevo) => borrador = nuevo,
+      ),
+      onConfirm: () async {
+        if (!await _confirmarSiEsRetroactiva(borrador.fechaInicioVigencia)) return null;
+        if (!mounted) return null;
+        return _notifier.cambiarVigenciaLinea(linea.linea.id, borrador);
+      },
+    );
+
+    if (!mounted) return;
+    switch (resultado) {
+      case CambiarVigenciaLineaComercialExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioComercialNuevaVigenciaExito);
+      case CambiarVigenciaLineaComercialErroresValidacion():
+        RisegFeedback.showError(context, l10n.servicioComercialErrorValidacion);
+      case CambiarVigenciaLineaComercialServicioNoDisponible():
+        RisegFeedback.showError(context, l10n.servicioComercialNuevaVigenciaErrorServicioNoDisponible);
+      case CambiarVigenciaLineaComercialLineaNoExiste():
+        RisegFeedback.showError(context, l10n.servicioComercialNuevaVigenciaErrorInesperado);
+      case CambiarVigenciaLineaComercialErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioComercialNuevaVigenciaErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _cerrarLinea(LineaComercialConVigencia linea) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    var fechaEfectiva = DateTime.now();
+    final resultado = await RisegDialog.showForm<CerrarLineaComercialResultado?>(
+      context: context,
+      title: l10n.servicioComercialCerrarLineaDialogoTitulo,
+      confirmLabel: l10n.servicioComercialCerrarLineaBotonConfirmar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (_) => ServicioCerrarLineaForm(onCambio: (valor) => fechaEfectiva = valor),
+      onConfirm: () => _notifier.cerrarLineaComercial(linea.linea.id, fechaEfectiva),
+    );
+
+    if (!mounted) return;
+    switch (resultado) {
+      case CerrarLineaComercialExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioComercialCerrarLineaExito);
+      case CerrarLineaComercialSinCondicionVigente():
+        RisegFeedback.showError(context, l10n.servicioComercialCerrarLineaErrorSinCondicionVigente);
+      case CerrarLineaComercialTieneVigenciaProgramada():
+        RisegFeedback.showError(context, l10n.servicioComercialCerrarLineaErrorTieneProgramada);
+      case CerrarLineaComercialFechaAnteriorInicio():
+        RisegFeedback.showError(context, l10n.servicioComercialCerrarLineaErrorFechaAnterior);
+      case CerrarLineaComercialLineaNoExiste():
+        RisegFeedback.showError(context, l10n.servicioComercialCerrarLineaErrorInesperado);
+      case CerrarLineaComercialErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioComercialCerrarLineaErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _editarAnotacionesVigencia(VigenciaHistorial fila) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    String? descripcion = fila.vigencia.descripcion;
+    String? observaciones = fila.vigencia.observaciones;
+    final resultado = await RisegDialog.showForm<ActualizarAnotacionesVigenciaResultado?>(
+      context: context,
+      title: l10n.servicioComercialAnotacionesDialogoTitulo,
+      confirmLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (_) => ServicioAnotacionesForm(
+        vigencia: fila,
+        onCambio: (nuevaDescripcion, nuevasObservaciones) {
+          descripcion = nuevaDescripcion;
+          observaciones = nuevasObservaciones;
+        },
+      ),
+      onConfirm: () => _notifier.actualizarAnotacionesVigencia(
+        vigenciaId: fila.vigencia.id,
+        descripcion: descripcion,
+        observaciones: observaciones,
+      ),
+    );
+
+    if (!mounted) return;
+    switch (resultado) {
+      case ActualizarAnotacionesVigenciaExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioComercialAnotacionesGuardadoExito);
+      case ActualizarAnotacionesVigenciaNoEditable():
+        RisegFeedback.showError(context, l10n.servicioComercialAnotacionesErrorNoEditable);
+      case ActualizarAnotacionesVigenciaNoExiste():
+        RisegFeedback.showError(context, l10n.servicioComercialAnotacionesErrorInesperado);
+      case ActualizarAnotacionesVigenciaErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioComercialAnotacionesErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _cancelarVigenciaProgramada(VigenciaHistorial fila) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: l10n.servicioComercialCancelarProgramadaConfirmacionTitulo,
+      message: l10n.servicioComercialCancelarProgramadaConfirmacionMensaje,
+      confirmLabel: l10n.servicioComercialCancelarProgramadaConfirmacionConfirmar,
+      cancelLabel: l10n.servicioComercialCancelarProgramadaConfirmacionCancelar,
+      destructive: true,
+    );
+    if (confirmado != true) return;
+
+    final resultado = await _notifier.cancelarVigenciaProgramada(fila.vigencia.id);
+    if (!mounted) return;
+    switch (resultado) {
+      case CancelarVigenciaProgramadaExitoso():
+        RisegFeedback.showSuccess(context, l10n.servicioComercialCancelarProgramadaExito);
+      case CancelarVigenciaProgramadaNoEsProgramada():
+        RisegFeedback.showError(context, l10n.servicioComercialCancelarProgramadaErrorNoEsProgramada);
+      case CancelarVigenciaProgramadaNoExiste():
+        RisegFeedback.showError(context, l10n.servicioComercialCancelarProgramadaErrorInesperado);
+      case CancelarVigenciaProgramadaErrorInesperado():
+        RisegFeedback.showError(context, l10n.servicioComercialCancelarProgramadaErrorInesperado);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _verHistorial(LineaComercialConVigencia linea) async {
+    final l10n = AppLocalizations.of(context)!;
+    final historial = await ref.read(obtenerHistorialLineaComercialUseCaseProvider).ejecutar(linea.linea.id);
+    if (!mounted) return;
+
+    await RisegDialog.showForm<void>(
+      context: context,
+      title: l10n.servicioComercialHistorialDialogoTitulo,
+      confirmLabel: l10n.servicioComercialHistorialBotonCerrar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (dialogContext) => ServicioHistorialLineaComercialContent(
+        historial: historial,
+        onEditarAnotaciones: (fila) async {
+          Navigator.of(dialogContext).pop();
+          await _editarAnotacionesVigencia(fila);
+          if (!mounted) return;
+          await _verHistorial(linea);
+        },
+        onCancelarProgramada: (fila) async {
+          Navigator.of(dialogContext).pop();
+          await _cancelarVigenciaProgramada(fila);
+          if (!mounted) return;
+          await _verHistorial(linea);
+        },
+      ),
+    );
+  }
+
   String _nombreEstatus(AppLocalizations l10n, EstatusServicio estatus) {
     return switch (estatus) {
       EstatusServicio.activo => l10n.servicioEstatusActivo,
@@ -672,8 +881,15 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
                   lineas: datos.lineasComerciales,
                   subtotalComercial: datos.subtotalComercial,
                   ivaVariaPorLinea: datos.ivaVariaPorLinea,
+                  elementosComercialesVigentes: datos.elementosComercialesVigentes,
+                  elementosAutorizados: servicio.elementosAutorizados,
+                  elementosDifierenDeAutorizados: datos.elementosDifierenDeAutorizados,
+                  proximaFechaProgramada: datos.proximaFechaProgramada,
                   deshabilitado: state.operandoComercial,
                   onAgregarLinea: _agregarLineaComercial,
+                  onNuevaVigencia: _nuevaVigencia,
+                  onCerrarLinea: _cerrarLinea,
+                  onVerHistorial: _verHistorial,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),

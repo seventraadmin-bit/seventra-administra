@@ -16,10 +16,14 @@ import 'package:riseg_one/features/organizacion/data/repositories/servicio_repos
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_entidad_fiscal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
@@ -399,6 +403,135 @@ void main() {
 
       expect(resultado, isA<CrearLineaComercialErroresValidacion>());
       expect(container.read(servicioExpedienteControllerProvider(servicioId)).datos?.lineasComerciales, isEmpty);
+    });
+  });
+
+  group('cambiarVigenciaLinea / cerrarLineaComercial / cancelarVigenciaProgramada / actualizarAnotacionesVigencia', () {
+    Future<String> agregarLineaDePrueba(ServicioExpedienteController notifier, PuestoData puesto) async {
+      final resultado = await notifier.agregarLineaComercial(
+        LineaComercialBorrador(
+          puestoId: puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 2,
+          precioUnitario: 1500000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+      return (resultado as CrearLineaComercialExitoso).linea.id;
+    }
+
+    test('cambiarVigenciaLinea reemplaza la condición vigente de inmediato', () async {
+      await esperarCargaInicial();
+      final guardia = await PuestoRepositoryImpl(db).crear(
+        PuestoCompanion.insert(
+          codigo: 'PUE-0001',
+          nombre: 'Guardia',
+          areaId: SeedIds.areaOperaciones,
+          tipo: 'operativo',
+          nivelJerarquico: 5,
+        ),
+      );
+      final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+      final lineaId = await agregarLineaDePrueba(notifier, guardia);
+
+      final resultado = await notifier.cambiarVigenciaLinea(
+        lineaId,
+        LineaComercialBorrador(
+          puestoId: guardia.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 4,
+          precioUnitario: 1500000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime.now(),
+        ),
+      );
+
+      expect(resultado, isA<CambiarVigenciaLineaComercialExitoso>());
+      final state = container.read(servicioExpedienteControllerProvider(servicioId));
+      expect(state.datos?.lineasComerciales.single.vigenciaActual?.cantidadElementos, 4);
+      expect(state.operandoComercial, isFalse);
+    });
+
+    test('cerrarLineaComercial cierra la línea y ya no admite un segundo cierre sin condición vigente', () async {
+      await esperarCargaInicial();
+      final guardia = await PuestoRepositoryImpl(db).crear(
+        PuestoCompanion.insert(
+          codigo: 'PUE-0001',
+          nombre: 'Guardia',
+          areaId: SeedIds.areaOperaciones,
+          tipo: 'operativo',
+          nivelJerarquico: 5,
+        ),
+      );
+      final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+      final lineaId = await agregarLineaDePrueba(notifier, guardia);
+
+      final resultado = await notifier.cerrarLineaComercial(lineaId, DateTime.now());
+      expect(resultado, isA<CerrarLineaComercialExitoso>());
+    });
+
+    test('cancelarVigenciaProgramada cancela una programada y la retira de vigenciasProgramadas', () async {
+      await esperarCargaInicial();
+      final guardia = await PuestoRepositoryImpl(db).crear(
+        PuestoCompanion.insert(
+          codigo: 'PUE-0001',
+          nombre: 'Guardia',
+          areaId: SeedIds.areaOperaciones,
+          tipo: 'operativo',
+          nivelJerarquico: 5,
+        ),
+      );
+      final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+      final lineaId = await agregarLineaDePrueba(notifier, guardia);
+
+      final enUnAnio = DateTime.now().add(const Duration(days: 365));
+      final creada = await notifier.cambiarVigenciaLinea(
+        lineaId,
+        LineaComercialBorrador(
+          puestoId: guardia.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 2,
+          precioUnitario: 1600000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: enUnAnio,
+        ),
+      );
+      final programadaId = (creada as CambiarVigenciaLineaComercialExitoso).vigencia.id;
+
+      final resultado = await notifier.cancelarVigenciaProgramada(programadaId);
+      expect(resultado, isA<CancelarVigenciaProgramadaExitoso>());
+      final state = container.read(servicioExpedienteControllerProvider(servicioId));
+      expect(state.datos?.lineasComerciales.single.vigenciasProgramadas, isEmpty);
+    });
+
+    test('actualizarAnotacionesVigencia edita descripción/observaciones sin crear una nueva vigencia', () async {
+      await esperarCargaInicial();
+      final guardia = await PuestoRepositoryImpl(db).crear(
+        PuestoCompanion.insert(
+          codigo: 'PUE-0001',
+          nombre: 'Guardia',
+          areaId: SeedIds.areaOperaciones,
+          tipo: 'operativo',
+          nivelJerarquico: 5,
+        ),
+      );
+      final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+      final lineaId = await agregarLineaDePrueba(notifier, guardia);
+      final vigenciaId =
+          container.read(servicioExpedienteControllerProvider(servicioId)).datos!.lineasComerciales.single.vigenciaActual!.id;
+
+      final resultado = await notifier.actualizarAnotacionesVigencia(
+        vigenciaId: vigenciaId,
+        descripcion: 'Turno principal',
+        observaciones: null,
+      );
+
+      expect(resultado, isA<ActualizarAnotacionesVigenciaExitoso>());
+      final state = container.read(servicioExpedienteControllerProvider(servicioId));
+      expect(state.datos?.lineasComerciales.single.vigenciaActual?.descripcion, 'Turno principal');
+      expect(state.datos?.lineasComerciales, hasLength(1), reason: 'ninguna línea/vigencia nueva se crea');
+      expect(lineaId, isNotNull);
     });
   });
 }

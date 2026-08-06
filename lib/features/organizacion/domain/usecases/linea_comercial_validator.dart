@@ -1,15 +1,17 @@
+import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 
 import '../repositories/catalogo_repository.dart';
 import '../repositories/puesto_repository.dart';
 import '../repositories/servicio_repository.dart';
+import 'linea_comercial_con_vigencia.dart';
 import 'linea_comercial_errors.dart';
 
 /// Condiciones de una línea comercial tal como llegan del formulario de
-/// alta — sin validar. `fechaFinVigencia`/`descripcion`/`observaciones`
-/// son siempre opcionales; el resto es obligatorio para poder calcular
-/// un subtotal con sentido.
+/// alta o de nueva vigencia — sin validar. `fechaFinVigencia`/
+/// `descripcion`/`observaciones` son siempre opcionales; el resto es
+/// obligatorio para poder calcular un subtotal con sentido.
 class LineaComercialBorrador {
   const LineaComercialBorrador({
     required this.puestoId,
@@ -59,9 +61,9 @@ class LineaComercialValidada {
   final String? observaciones;
 }
 
-/// Validación compartida de una condición comercial (alta hoy;
-/// nueva-vigencia en la Etapa 4G.2 reutilizará esta misma clase, mismo
-/// motivo que `ServicioValidator`/`PuestoValidator`).
+/// Validación compartida de una condición comercial — usada tanto por
+/// el alta (Etapa 4G.1) como por la nueva vigencia (Etapa 4G.2), nunca
+/// duplicada (mismo motivo que `ServicioValidator`/`PuestoValidator`).
 class LineaComercialValidator {
   LineaComercialValidator(this._puestoRepository, this._catalogoRepository, this._servicioRepository);
 
@@ -69,10 +71,11 @@ class LineaComercialValidator {
   final CatalogoRepository _catalogoRepository;
   final ServicioRepository _servicioRepository;
 
-  Future<({LineaComercialValidada? resultado, List<ErrorLineaComercial> errores})> validar({
-    required String servicioId,
-    required LineaComercialBorrador borrador,
-  }) async {
+  /// Puesto/modalidad/cantidad/precio/IVA — idénticos entre alta y
+  /// nueva vigencia. Las reglas de fecha difieren (nueva vigencia
+  /// también debe evitar fechas duplicadas y solapamientos con
+  /// vigencias ya registradas), así que viven en cada método público.
+  Future<List<ErrorLineaComercial>> _validarCondicionesBase(LineaComercialBorrador borrador) async {
     final errores = <ErrorLineaComercial>[];
 
     final puestoId = borrador.puestoId.trim();
@@ -121,6 +124,34 @@ class LineaComercialValidator {
       );
     }
 
+    return errores;
+  }
+
+  String? _vacioANull(String? valor) {
+    final recortado = valor?.trim();
+    return (recortado == null || recortado.isEmpty) ? null : recortado;
+  }
+
+  LineaComercialValidada _normalizar(LineaComercialBorrador borrador) {
+    return LineaComercialValidada(
+      puestoId: borrador.puestoId.trim(),
+      modalidadTurnoId: borrador.modalidadTurnoId.trim(),
+      cantidadElementos: borrador.cantidadElementos!,
+      precioUnitario: borrador.precioUnitario!,
+      tratamientoIva: borrador.tratamientoIva!,
+      fechaInicioVigencia: borrador.fechaInicioVigencia!,
+      descripcion: _vacioANull(borrador.descripcion),
+      fechaFinVigencia: borrador.fechaFinVigencia,
+      observaciones: _vacioANull(borrador.observaciones),
+    );
+  }
+
+  Future<({LineaComercialValidada? resultado, List<ErrorLineaComercial> errores})> validar({
+    required String servicioId,
+    required LineaComercialBorrador borrador,
+  }) async {
+    final errores = await _validarCondicionesBase(borrador);
+
     final fechaInicioVigencia = borrador.fechaInicioVigencia;
     if (fechaInicioVigencia == null) {
       errores.add(
@@ -144,25 +175,79 @@ class LineaComercialValidator {
     if (errores.isNotEmpty) {
       return (resultado: null, errores: errores);
     }
+    return (resultado: _normalizar(borrador), errores: const <ErrorLineaComercial>[]);
+  }
 
-    String? vacioANull(String? valor) {
-      final recortado = valor?.trim();
-      return (recortado == null || recortado.isEmpty) ? null : recortado;
+  /// Validación de una nueva vigencia sobre una línea ya existente
+  /// (Etapa 4G.2) — mismas condiciones base que el alta, más las reglas
+  /// de encadenamiento: sin fecha retroactiva sin confirmar (esa
+  /// confirmación vive en la UI, no aquí — ver Resolución H), sin fecha
+  /// de inicio duplicada, y sin que una fecha de fin capturada a mano
+  /// se solape con una vigencia posterior ya registrada.
+  ///
+  /// Recibe `vigenciasExistentes` ya resueltas por el llamador (todas
+  /// las vigencias `activo` de la línea) para no acoplar este validador
+  /// a `ServicioComercialRepository` — el caso de uso ya las necesita de
+  /// todas formas para calcular la predecesora/sucesora.
+  Future<({LineaComercialValidada? resultado, List<ErrorLineaComercial> errores})> validarNuevaVigencia({
+    required String servicioId,
+    required LineaComercialBorrador borrador,
+    required List<ServicioLineaComercialVigenciaData> vigenciasExistentes,
+  }) async {
+    final errores = await _validarCondicionesBase(borrador);
+
+    final fechaInicioVigencia = borrador.fechaInicioVigencia;
+    if (fechaInicioVigencia == null) {
+      errores.add(
+        const ErrorLineaComercial(
+          campo: CampoLineaComercial.fechaInicioVigencia,
+          codigo: CodigoErrorLineaComercial.requerido,
+        ),
+      );
+    } else {
+      final servicio = await _servicioRepository.obtenerPorId(servicioId);
+      if (servicio != null && fechaInicioVigencia.isBefore(servicio.fechaInicio)) {
+        errores.add(
+          const ErrorLineaComercial(
+            campo: CampoLineaComercial.fechaInicioVigencia,
+            codigo: CodigoErrorLineaComercial.fechaAnteriorInicioServicio,
+          ),
+        );
+      } else if (vigenciasExistentes.any((v) => soloFecha(v.fechaInicioVigencia) == soloFecha(fechaInicioVigencia))) {
+        errores.add(
+          const ErrorLineaComercial(
+            campo: CampoLineaComercial.fechaInicioVigencia,
+            codigo: CodigoErrorLineaComercial.fechaDuplicada,
+          ),
+        );
+      }
+
+      final fechaFinVigencia = borrador.fechaFinVigencia;
+      if (fechaFinVigencia != null) {
+        final inicioSinHora = soloFecha(fechaInicioVigencia);
+        final sucesoraMasProxima = vigenciasExistentes
+            .where((v) => soloFecha(v.fechaInicioVigencia).isAfter(inicioSinHora))
+            .fold<ServicioLineaComercialVigenciaData?>(
+              null,
+              (masProxima, v) => masProxima == null || v.fechaInicioVigencia.isBefore(masProxima.fechaInicioVigencia)
+                  ? v
+                  : masProxima,
+            );
+        if (sucesoraMasProxima != null &&
+            !soloFecha(fechaFinVigencia).isBefore(soloFecha(sucesoraMasProxima.fechaInicioVigencia))) {
+          errores.add(
+            const ErrorLineaComercial(
+              campo: CampoLineaComercial.fechaFinVigencia,
+              codigo: CodigoErrorLineaComercial.solapamiento,
+            ),
+          );
+        }
+      }
     }
 
-    return (
-      resultado: LineaComercialValidada(
-        puestoId: puestoId,
-        modalidadTurnoId: modalidadTurnoId,
-        cantidadElementos: cantidad!,
-        precioUnitario: precio!,
-        tratamientoIva: borrador.tratamientoIva!,
-        fechaInicioVigencia: fechaInicioVigencia!,
-        descripcion: vacioANull(borrador.descripcion),
-        fechaFinVigencia: borrador.fechaFinVigencia,
-        observaciones: vacioANull(borrador.observaciones),
-      ),
-      errores: const <ErrorLineaComercial>[],
-    );
+    if (errores.isNotEmpty) {
+      return (resultado: null, errores: errores);
+    }
+    return (resultado: _normalizar(borrador), errores: const <ErrorLineaComercial>[]);
   }
 }

@@ -5,6 +5,7 @@ import '../config/env.dart';
 import '../database/app_database.dart';
 import '../logging/app_logger.dart';
 import '../permissions/permission_service.dart';
+import '../utils/clock.dart';
 
 /// Providers raíz de RISEG ONE.
 ///
@@ -34,3 +35,5 @@ final permissionServiceProvider = Provider<PermissionService>((ref) {
   final env = ref.watch(envProvider);
   return resolvePermissionService(env);
 });
+
+final clockProvider = Provider<Clock>((ref) => const SystemClock());
