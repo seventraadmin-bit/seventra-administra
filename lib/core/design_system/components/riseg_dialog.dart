@@ -256,7 +256,16 @@ class _RisegFormDialogState<T> extends State<_RisegFormDialog<T>> {
     }
     setState(() => _loading = true);
     final result = await widget.onConfirm!();
-    if (mounted) Navigator.of(context).pop(result);
+    if (!mounted) return;
+    // `null` significa "no válido, corrígelo" (ej. `errorNombres = ...;
+    // return null;`) — el diálogo debe permanecer abierto mostrando el
+    // error, nunca cerrarse en silencio. Solo un resultado no nulo
+    // confirma la operación y cierra.
+    if (result != null) {
+      Navigator.of(context).pop(result);
+    } else {
+      setState(() => _loading = false);
+    }
   }
 
   @override

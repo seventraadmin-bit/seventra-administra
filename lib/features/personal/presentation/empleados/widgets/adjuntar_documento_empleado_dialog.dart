@@ -9,7 +9,15 @@ import 'package:riseg_one/features/personal/domain/usecases/adjuntar_documento_e
 import '../../../personal_providers.dart';
 
 String categoriaDocumentoEmpleadoLabel(AppLocalizations l10n, String valor) {
-  return switch (CategoriaDocumentoEmpleado.values.byName(valor)) {
+  // `firstWhere` con `orElse` (no `.byName`) — un valor fuera de este
+  // enum (ej. `fotografia`, categoría de Attachment que vive aparte de
+  // `CategoriaDocumentoEmpleado`) no debe tronar toda la pantalla del
+  // expediente, solo mostrarse como "Otro".
+  final categoria = CategoriaDocumentoEmpleado.values.firstWhere(
+    (c) => c.name == valor,
+    orElse: () => CategoriaDocumentoEmpleado.otro,
+  );
+  return switch (categoria) {
     CategoriaDocumentoEmpleado.ine => l10n.categoriaDocumentoEmpleadoIne,
     CategoriaDocumentoEmpleado.curp => l10n.categoriaDocumentoEmpleadoCurp,
     CategoriaDocumentoEmpleado.rfc => l10n.categoriaDocumentoEmpleadoRfc,

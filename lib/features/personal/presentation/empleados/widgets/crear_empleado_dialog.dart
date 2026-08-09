@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,10 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
+import 'package:riseg_one/features/personal/domain/usecases/actualizar_fotografia_empleado_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/adjuntar_documento_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/crear_empleado_usecase.dart';
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../personal_providers.dart';
+import 'adjuntar_documento_empleado_dialog.dart' show categoriaDocumentoEmpleadoLabel;
 
 /// Tipo de adscripción capturada en la Alta (Etapa 5D) — Servicio *o*
 /// Sucursal, nunca ambas. Puramente de UI: nunca se persiste como tal,
@@ -16,6 +23,16 @@ import '../../../personal_providers.dart';
 /// columna de `Empleado`), `sucursalId` sigue siendo la columna ya
 /// existente desde 5A.
 enum _TipoAdscripcion { ninguna, servicio, sucursal }
+
+/// Documento del expediente elegido durante la Alta pero aún no subido
+/// — se sube después de crear el `Empleado` (Etapa 5D.1), reutilizando
+/// `AdjuntarDocumentoEmpleadoUseCase` tal cual, sin solución paralela.
+class _DocumentoPendiente {
+  _DocumentoPendiente({required this.categoria, required this.path, required this.nombre});
+  final CategoriaDocumentoEmpleado categoria;
+  final String path;
+  final String nombre;
+}
 
 String empleadoSexoLabel(AppLocalizations l10n, String valor) {
   return switch (SexoEmpleado.values.byName(valor)) {
@@ -90,11 +107,21 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   NivelEstudiosEmpleado? nivelEstudios;
   final observacionesEscolaridadController = TextEditingController();
 
-  final aniosExperienciaController = TextEditingController(text: '0');
+  // Vacío por defecto (no '0' precargado) — un campo vacío ya se
+  // interpreta como 0 al confirmar (`_enteroDesdeTexto(...) ?? 0`), pero
+  // precargado se sentía obligatorio. La Experiencia es información no
+  // esencial para el alta (Resolución de Marlon, Etapa 5D).
+  final aniosExperienciaController = TextEditingController();
   final mesesExperienciaController = TextEditingController();
   final ultimoPuestoController = TextEditingController();
   final resumenExperienciaController = TextEditingController();
   final observacionesExperienciaController = TextEditingController();
+
+  String? fotografiaPath;
+  String? fotografiaNombre;
+  String? fotografiaMimeType;
+  CategoriaDocumentoEmpleado categoriaDocumentoSeleccionada = CategoriaDocumentoEmpleado.otro;
+  final documentosPendientes = <_DocumentoPendiente>[];
 
   String? errorNombres;
   String? errorApellidoPaterno;
@@ -270,46 +297,72 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
                 errorAdscripcion = null;
               }),
             ),
-            if (tipoAdscripcion == _TipoAdscripcion.servicio) ...[
-              const SizedBox(height: AppSpacing.md),
-              RisegSelect<String?>(
-                label: l10n.empleadoCampoServicio,
-                value: servicioId,
-                errorText: errorAdscripcion,
-                items: [
-                  for (final item in servicios) RisegSelectItem(value: item.servicio.id, label: item.servicio.nombre),
-                ],
-                onChanged: (valor) => setState(() {
-                  servicioId = valor;
-                  errorAdscripcion = null;
-                }),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              RisegSelect<String?>(
-                label: l10n.empleadoCampoTurno,
-                value: turnoId,
-                items: [
-                  RisegSelectItem(value: null, label: l10n.empleadoCampoSinAsignar),
-                  for (final m in modalidadesTurno) RisegSelectItem(value: m.id, label: m.nombre),
-                ],
-                onChanged: (valor) => setState(() => turnoId = valor),
-              ),
-            ],
-            if (tipoAdscripcion == _TipoAdscripcion.sucursal) ...[
-              const SizedBox(height: AppSpacing.md),
-              RisegSelect<String?>(
-                label: l10n.empleadoCampoSucursal,
-                value: sucursalId,
-                errorText: errorAdscripcion,
-                items: [
-                  for (final s in sucursales) RisegSelectItem(value: s.id, label: s.nombre),
-                ],
-                onChanged: (valor) => setState(() {
-                  sucursalId = valor;
-                  errorAdscripcion = null;
-                }),
-              ),
-            ],
+            // `KeyedSubtree` con `ValueKey(tipoAdscripcion)` — sin esto,
+            // alternar entre Servicio/Sucursal/Ninguna inserta y quita
+            // `DropdownButtonFormField`s en medio de la lista de hijos del
+            // `Column` sin ninguna `Key`; Flutter reconcilia por posición y
+            // puede reutilizar el Element de un dropdown para otro
+            // completamente distinto (mismo tipo genérico `RisegSelect<String?>`
+            // en Servicio/Sucursal), corrompiendo su estado interno y
+            // provocando el crash "_dependents.isEmpty is not true" /
+            // "Tried to build dirty widget in the wrong build scope" al
+            // cambiar la selección. La `Key` obliga a Flutter a desmontar
+            // el subárbol anterior por completo antes de montar el nuevo.
+            KeyedSubtree(
+              key: ValueKey(tipoAdscripcion),
+              child: switch (tipoAdscripcion) {
+                _TipoAdscripcion.servicio => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: AppSpacing.md),
+                      RisegSelect<String?>(
+                        label: l10n.empleadoCampoServicio,
+                        value: servicioId,
+                        errorText: errorAdscripcion,
+                        items: [
+                          for (final item in servicios)
+                            RisegSelectItem(value: item.servicio.id, label: item.servicio.nombre),
+                        ],
+                        onChanged: (valor) => setState(() {
+                          servicioId = valor;
+                          errorAdscripcion = null;
+                        }),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      RisegSelect<String?>(
+                        label: l10n.empleadoCampoTurno,
+                        value: turnoId,
+                        items: [
+                          RisegSelectItem(value: null, label: l10n.empleadoCampoSinAsignar),
+                          for (final m in modalidadesTurno) RisegSelectItem(value: m.id, label: m.nombre),
+                        ],
+                        onChanged: (valor) => setState(() => turnoId = valor),
+                      ),
+                    ],
+                  ),
+                _TipoAdscripcion.sucursal => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: AppSpacing.md),
+                      RisegSelect<String?>(
+                        label: l10n.empleadoCampoSucursal,
+                        value: sucursalId,
+                        errorText: errorAdscripcion,
+                        items: [
+                          for (final s in sucursales) RisegSelectItem(value: s.id, label: s.nombre),
+                        ],
+                        onChanged: (valor) => setState(() {
+                          sucursalId = valor;
+                          errorAdscripcion = null;
+                        }),
+                      ),
+                    ],
+                  ),
+                _TipoAdscripcion.ninguna => const SizedBox.shrink(),
+              },
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text(l10n.empleadoSeccionEscolaridad, style: AppTypography.heading3),
             const SizedBox(height: AppSpacing.sm),
@@ -351,6 +404,110 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
               label: l10n.empleadoCampoObservacionesExperiencia,
               controller: observacionesExperienciaController,
             ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(l10n.empleadoSeccionFotografia, style: AppTypography.heading3),
+            const SizedBox(height: AppSpacing.sm),
+            // Misma protección de `Key` que la Adscripción de arriba —
+            // alternar entre el botón "Seleccionar imagen" y la vista
+            // previa cambia de tipo de widget en la misma posición.
+            KeyedSubtree(
+              key: ValueKey(fotografiaPath == null),
+              child: fotografiaPath == null
+                  ? RisegButton(
+                      label: l10n.crearEmpleadoBotonSeleccionarImagen,
+                      variant: RisegButtonVariant.secondary,
+                      icon: Icons.add_a_photo_outlined,
+                      onPressed: () async {
+                        final seleccion = await FilePicker.platform.pickFiles(type: FileType.image);
+                        final archivo = seleccion?.files.singleOrNull;
+                        if (archivo?.path == null) return;
+                        setState(() {
+                          fotografiaPath = archivo!.path;
+                          fotografiaNombre = archivo.name;
+                          fotografiaMimeType = 'image/${archivo.extension ?? 'jpeg'}';
+                        });
+                      },
+                    )
+                  : Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: AppRadius.mdRadius,
+                          child: Image.file(File(fotografiaPath!), width: 56, height: 56, fit: BoxFit.cover),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(child: Text(fotografiaNombre ?? '', overflow: TextOverflow.ellipsis)),
+                        RisegButton(
+                          label: l10n.crearEmpleadoBotonCambiarImagen,
+                          variant: RisegButtonVariant.ghost,
+                          onPressed: () async {
+                            final seleccion = await FilePicker.platform.pickFiles(type: FileType.image);
+                            final archivo = seleccion?.files.singleOrNull;
+                            if (archivo?.path == null) return;
+                            setState(() {
+                              fotografiaPath = archivo!.path;
+                              fotografiaNombre = archivo.name;
+                              fotografiaMimeType = 'image/${archivo.extension ?? 'jpeg'}';
+                            });
+                          },
+                        ),
+                        RisegButton(
+                          label: l10n.crearEmpleadoBotonQuitar,
+                          variant: RisegButtonVariant.ghost,
+                          onPressed: () => setState(() {
+                            fotografiaPath = null;
+                            fotografiaNombre = null;
+                            fotografiaMimeType = null;
+                          }),
+                        ),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(l10n.crearEmpleadoSeccionDocumentos, style: AppTypography.heading3),
+            const SizedBox(height: AppSpacing.sm),
+            RisegSelect<CategoriaDocumentoEmpleado>(
+              label: l10n.adjuntarDocumentoEmpleadoCampoCategoria,
+              value: categoriaDocumentoSeleccionada,
+              items: [
+                for (final c in CategoriaDocumentoEmpleado.values)
+                  RisegSelectItem(value: c, label: categoriaDocumentoEmpleadoLabel(l10n, c.name)),
+              ],
+              onChanged: (valor) => setState(() => categoriaDocumentoSeleccionada = valor ?? categoriaDocumentoSeleccionada),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            RisegButton(
+              label: l10n.crearEmpleadoBotonAgregarDocumento,
+              variant: RisegButtonVariant.secondary,
+              icon: Icons.attach_file,
+              onPressed: () async {
+                final seleccion = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
+                final archivo = seleccion?.files.singleOrNull;
+                if (archivo?.path == null) return;
+                setState(() {
+                  documentosPendientes.add(
+                    _DocumentoPendiente(categoria: categoriaDocumentoSeleccionada, path: archivo!.path!, nombre: archivo.name),
+                  );
+                });
+              },
+            ),
+            if (documentosPendientes.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              for (final doc in documentosPendientes)
+                Padding(
+                  key: ValueKey(doc),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text('${categoriaDocumentoEmpleadoLabel(l10n, doc.categoria.name)} · ${doc.nombre}')),
+                      RisegButton(
+                        label: l10n.crearEmpleadoBotonQuitar,
+                        variant: RisegButtonVariant.ghost,
+                        onPressed: () => setState(() => documentosPendientes.remove(doc)),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ],
         );
       },
@@ -420,8 +577,45 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
 
       switch (resultado) {
         case CrearEmpleadoExitoso():
-          RisegFeedback.showSuccess(context, l10n.crearEmpleadoExito);
-          return resultado.empleado.id;
+          final empleadoId = resultado.empleado.id;
+          // La fotografía y los documentos son opcionales y se suben
+          // DESPUÉS de crear el Empleado — no pueden participar en la
+          // misma transacción de BD porque son operaciones de archivo
+          // (mismo criterio que 5B). Un fallo aquí no deja un Empleado
+          // "a medias": el registro ya es válido y completo sin ellos,
+          // igual que si el usuario los hubiera omitido a propósito; solo
+          // se avisa para que puedan completarse después desde el
+          // expediente.
+          var huboAdvertencia = false;
+
+          if (fotografiaPath != null) {
+            final fotoResultado = await ref.read(actualizarFotografiaEmpleadoUseCaseProvider).ejecutar(
+                  empleadoId: empleadoId,
+                  sourceFilePath: fotografiaPath!,
+                  originalFileName: fotografiaNombre!,
+                  mimeType: fotografiaMimeType!,
+                );
+            if (fotoResultado is! ActualizarFotografiaEmpleadoExitoso) huboAdvertencia = true;
+          }
+
+          for (final doc in documentosPendientes) {
+            final docResultado = await ref.read(adjuntarDocumentoEmpleadoUseCaseProvider).ejecutar(
+                  empleadoId: empleadoId,
+                  categoria: doc.categoria,
+                  sourceFilePath: doc.path,
+                  originalFileName: doc.nombre,
+                  mimeType: 'application/pdf',
+                );
+            if (docResultado is! AdjuntarDocumentoEmpleadoExitoso) huboAdvertencia = true;
+          }
+
+          if (!context.mounted) return empleadoId;
+          if (huboAdvertencia) {
+            RisegFeedback.showError(context, l10n.crearEmpleadoAdvertenciaAdjuntos);
+          } else {
+            RisegFeedback.showSuccess(context, l10n.crearEmpleadoExito);
+          }
+          return empleadoId;
         case CrearEmpleadoNombresRequerido():
           errorNombres = l10n.empleadoErrorNombresRequerido;
           return null;
@@ -463,30 +657,44 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
     },
   );
 
-  for (final c in [
-    nombresController,
-    apellidoPaternoController,
-    apellidoMaternoController,
-    curpController,
-    rfcController,
-    codigoPostalFiscalController,
-    nssController,
-    nacionalidadController,
-    telefonoController,
-    correoController,
-    contactoEmergenciaNombreController,
-    telefonoEmergenciaController,
-    parentescoEmergenciaController,
-    observacionesController,
-    observacionesEscolaridadController,
-    aniosExperienciaController,
-    mesesExperienciaController,
-    ultimoPuestoController,
-    resumenExperienciaController,
-    observacionesExperienciaController,
-  ]) {
-    c.dispose();
-  }
+  // `RisegDialog.showForm` resuelve este `Future` en cuanto se llama a
+  // `Navigator.pop` — pero el diálogo sigue montado y visible unos
+  // instantes más mientras corre su animación de salida (el cursor
+  // parpadeante del campo con foco, por ejemplo, sigue "tickeando" ahí).
+  // Liberar los controllers de inmediato los deja usados-después-de-
+  // dispose apenas ese siguiente tick intenta reconstruir su `TextField`
+  // — el crash "A TextEditingController was used after being disposed"
+  // reportado por Marlon. Se difiere la liberación lo suficiente para
+  // que la transición del diálogo termine primero; no se espera aquí
+  // (no debe retrasar el valor ya devuelto al llamador).
+  unawaited(
+    Future.delayed(const Duration(milliseconds: 300), () {
+      for (final c in [
+        nombresController,
+        apellidoPaternoController,
+        apellidoMaternoController,
+        curpController,
+        rfcController,
+        codigoPostalFiscalController,
+        nssController,
+        nacionalidadController,
+        telefonoController,
+        correoController,
+        contactoEmergenciaNombreController,
+        telefonoEmergenciaController,
+        parentescoEmergenciaController,
+        observacionesController,
+        observacionesEscolaridadController,
+        aniosExperienciaController,
+        mesesExperienciaController,
+        ultimoPuestoController,
+        resumenExperienciaController,
+        observacionesExperienciaController,
+      ]) {
+        c.dispose();
+      }
+    }),
+  );
 
   return resultado;
 }

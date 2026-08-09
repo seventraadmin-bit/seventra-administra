@@ -75,7 +75,13 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     final empleadoRepo = ref.read(empleadoRepositoryProvider);
     final empleado = await empleadoRepo.obtenerPorId(widget.empleadoId);
     final domicilio = await empleadoRepo.obtenerDomicilio(widget.empleadoId);
-    final documentos = await ref.read(attachmentRepositoryProvider).listarActivosPorEmpleado(widget.empleadoId);
+    // La fotografía es un Attachment más (categoría `fotografia`, fuera
+    // de `CategoriaDocumentoEmpleado`) pero se muestra aparte, en el
+    // avatar — nunca debe listarse aquí como si fuera un documento del
+    // expediente.
+    final documentos = (await ref.read(attachmentRepositoryProvider).listarActivosPorEmpleado(widget.empleadoId))
+        .where((d) => d.categoria != 'fotografia')
+        .toList();
     final eventos = await empleadoRepo.listarEventos(widget.empleadoId);
     final periodosArchivados = await empleadoRepo.listarPeriodosLaboralesArchivados(widget.empleadoId);
 
