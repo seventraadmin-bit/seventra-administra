@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 15;
+const _currentSchemaVersion = 16;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -2948,6 +2948,330 @@ void main() {
           1700000000, 1700000000, 'activo'
         );
       '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test(
+      '16.json coincide con el esquema final de la Etapa 4J.3 (ComplementoPago/ComplementoPagoEvento, Attachment de 5 vías)',
+      () async {
+    final schema = await verifier.schemaAt(16);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+
+    expect(tablas, containsAll(<String>['complemento_pago', 'complemento_pago_evento']));
+
+    final sqlComplemento = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'complemento_pago'")
+        .single['sql'] as String;
+    expect(sqlComplemento, contains('"pago_id" TEXT NOT NULL UNIQUE REFERENCES pago (id) ON DELETE RESTRICT'));
+    expect(sqlComplemento, contains('"uuid" TEXT NOT NULL UNIQUE'));
+    expect(sqlComplemento, contains('CHECK (monto_total > 0)'));
+
+    final sqlComplementoEvento = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'complemento_pago_evento'")
+        .single['sql'] as String;
+    expect(sqlComplementoEvento, contains('REFERENCES complemento_pago (id) ON DELETE CASCADE'));
+
+    final sqlAttachment = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'attachment'")
+        .single['sql'] as String;
+    expect(sqlAttachment, contains('"complemento_pago_id" TEXT NULL'));
+    expect(sqlAttachment, contains('FOREIGN KEY (complemento_pago_id) REFERENCES complemento_pago (id) ON DELETE CASCADE'));
+    expect(
+      sqlAttachment,
+      contains(
+        '(CASE WHEN empresa_id IS NOT NULL THEN 1 ELSE 0 END + '
+        'CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END + '
+        'CASE WHEN documento_por_emitir_id IS NOT NULL THEN 1 ELSE 0 END + '
+        'CASE WHEN pago_id IS NOT NULL THEN 1 ELSE 0 END + '
+        'CASE WHEN complemento_pago_id IS NOT NULL THEN 1 ELSE 0 END) = 1',
+      ),
+    );
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 15 → 16 conserva un Pago real y crea las tablas de Complemento vacías (sin backfill)', () async {
+    final schemaV15 = await verifier.schemaAt(15);
+    final raw = schemaV15.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO pago (
+        id, folio_pago, cliente_id, monto_total, monto_aplicado, fecha_pago, forma_pago,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'pago-real', 'PAG-000001', 'cliente-real', 500000, 500000, 1700000000, 'transferencia',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV15.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final pagos = await db.select(db.pago).get();
+    expect(pagos, hasLength(1), reason: 'ningún Pago real debe perderse en una migración aditiva');
+
+    final complementos = await db.select(db.complementoPago).get();
+    expect(complementos, isEmpty, reason: 'ComplementoPago es tabla nueva en 4J.3, sin backfill');
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty);
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok']);
+
+    await db.close();
+  });
+
+  test('migración 12 → 16 conserva un Attachment real de Empresa y agrega complementoPagoId en NULL', () async {
+    final schemaV12 = await verifier.schemaAt(12);
+    final raw = schemaV12.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO empresa (id, codigo, nombre_comercial, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('empresa-real', 'RSG-01', 'RISEG', 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO attachment (
+        id, empresa_id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at
+      ) VALUES (
+        'attachment-real', 'empresa-real', 'logo.png', 'a1b2c3.png', '/attachments/a1b2c3.png',
+        'image/png', 12345, 1700000000
+      );
+    ''');
+
+    final db = AppDatabase(schemaV12.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final attachments = await db.select(db.attachment).get();
+    expect(attachments, hasLength(1), reason: 'ningún Attachment real debe perderse en una migración aditiva');
+    expect(attachments.single.complementoPagoId, isNull);
+    expect(attachments.single.empresaId, 'empresa-real');
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test('acepta un Complemento de pago con archivo adjunto (Attachment con complementoPagoId) tras la migración', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final pago = await db.into(db.pago).insertReturning(
+          PagoCompanion.insert(
+            folioPago: 'PAG-000001',
+            clienteId: cliente.id,
+            montoTotal: 500000,
+            fechaPago: DateTime(2026, 1, 20),
+            formaPago: 'transferencia',
+          ),
+        );
+    final complemento = await db.into(db.complementoPago).insertReturning(
+          ComplementoPagoCompanion.insert(
+            pagoId: pago.id,
+            uuid: '22222222-2222-2222-2222-222222222222',
+            fechaTimbrado: DateTime(2026, 1, 21),
+            montoTotal: 500000,
+          ),
+        );
+
+    final adjunto = await db.into(db.attachment).insertReturning(
+          AttachmentCompanion.insert(
+            id: 'attachment-complemento',
+            complementoPagoId: Value(complemento.id),
+            categoria: const Value('pdf'),
+            originalFileName: 'complemento.pdf',
+            storedFileName: 'x1y2z3.pdf',
+            path: '/attachments/${complemento.id}/pdf/x1y2z3.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 54321,
+          ),
+        );
+
+    expect(adjunto.complementoPagoId, complemento.id);
+    expect(complemento.estatus, 'registrado');
+
+    await db.close();
+  });
+
+  test('rechaza un Attachment con complementoPagoId y otro dueño a la vez (arco de 5 vías) tras la migración', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final pago = await db.into(db.pago).insertReturning(
+          PagoCompanion.insert(
+            folioPago: 'PAG-000001',
+            clienteId: cliente.id,
+            montoTotal: 500000,
+            fechaPago: DateTime(2026, 1, 20),
+            formaPago: 'transferencia',
+          ),
+        );
+    final complemento = await db.into(db.complementoPago).insertReturning(
+          ComplementoPagoCompanion.insert(
+            pagoId: pago.id,
+            uuid: '22222222-2222-2222-2222-222222222222',
+            fechaTimbrado: DateTime(2026, 1, 21),
+            montoTotal: 500000,
+          ),
+        );
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO attachment (
+          id, cliente_id, complemento_pago_id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at
+        ) VALUES (
+          'attachment-doble-dueno', '${cliente.id}', '${complemento.id}', 'a.pdf', 'x.pdf', '/x.pdf',
+          'application/pdf', 100, 1700000000
+        );
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('rechaza un ComplementoPago con Pago inexistente tras la migración', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO complemento_pago (
+          id, pago_id, uuid, fecha_timbrado, monto_total,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'complemento-invalido', 'pago-inexistente', '22222222-2222-2222-2222-222222222222', 1700000000, 500000,
+          1700000000, 1700000000, 'activo'
+        );
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('rechaza un segundo ComplementoPago para el mismo Pago tras la migración (relación 1:1)', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final pago = await db.into(db.pago).insertReturning(
+          PagoCompanion.insert(
+            folioPago: 'PAG-000001',
+            clienteId: cliente.id,
+            montoTotal: 500000,
+            fechaPago: DateTime(2026, 1, 20),
+            formaPago: 'transferencia',
+          ),
+        );
+    await db.into(db.complementoPago).insert(
+          ComplementoPagoCompanion.insert(
+            pagoId: pago.id,
+            uuid: '22222222-2222-2222-2222-222222222222',
+            fechaTimbrado: DateTime(2026, 1, 21),
+            montoTotal: 500000,
+          ),
+        );
+
+    expect(
+      () => db.into(db.complementoPago).insert(
+            ComplementoPagoCompanion.insert(
+              pagoId: pago.id,
+              uuid: '33333333-3333-3333-3333-333333333333',
+              fechaTimbrado: DateTime(2026, 1, 22),
+              montoTotal: 500000,
+            ),
+          ),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('rechaza dos ComplementoPago con el mismo UUID tras la migración', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final pagoA = await db.into(db.pago).insertReturning(
+          PagoCompanion.insert(
+            folioPago: 'PAG-000001',
+            clienteId: cliente.id,
+            montoTotal: 500000,
+            fechaPago: DateTime(2026, 1, 20),
+            formaPago: 'transferencia',
+          ),
+        );
+    final pagoB = await db.into(db.pago).insertReturning(
+          PagoCompanion.insert(
+            folioPago: 'PAG-000002',
+            clienteId: cliente.id,
+            montoTotal: 500000,
+            fechaPago: DateTime(2026, 1, 20),
+            formaPago: 'transferencia',
+          ),
+        );
+    await db.into(db.complementoPago).insert(
+          ComplementoPagoCompanion.insert(
+            pagoId: pagoA.id,
+            uuid: '22222222-2222-2222-2222-222222222222',
+            fechaTimbrado: DateTime(2026, 1, 21),
+            montoTotal: 500000,
+          ),
+        );
+
+    expect(
+      () => db.into(db.complementoPago).insert(
+            ComplementoPagoCompanion.insert(
+              pagoId: pagoB.id,
+              uuid: '22222222-2222-2222-2222-222222222222',
+              fechaTimbrado: DateTime(2026, 1, 21),
+              montoTotal: 500000,
+            ),
+          ),
       throwsA(anything),
     );
 

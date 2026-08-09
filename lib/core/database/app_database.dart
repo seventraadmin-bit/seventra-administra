@@ -20,6 +20,7 @@ import '../../features/organizacion/data/tables/servicio_linea_comercial_vigenci
 import '../../features/organizacion/data/tables/servicio_table.dart';
 import '../../features/organizacion/data/tables/sucursal_table.dart';
 import '../../features/organizacion/data/tables/ubicacion_table.dart';
+import '../../features/finanzas/data/tables/complemento_pago_table.dart';
 import '../../features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
 import '../../features/finanzas/data/tables/pago_table.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
@@ -27,6 +28,7 @@ import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
 import 'migrations/migrar_attachment_v13.dart';
 import 'migrations/migrar_attachment_v15.dart';
+import 'migrations/migrar_attachment_v16.dart';
 import 'migrations/migrar_cuenta_por_cobrar_v14.dart';
 import 'migrations/migrar_documento_por_emitir_v12.dart';
 import 'migrations/migrar_servicio_v6.dart';
@@ -98,12 +100,14 @@ class AppMetadata extends Table {
   Pago,
   AplicacionPago,
   PagoEvento,
+  ComplementoPago,
+  ComplementoPagoEvento,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -326,6 +330,26 @@ class AppDatabase extends _$AppDatabase {
         // que aquí es `from >= 2`, nunca sin acotar.
         if (to >= 15 && from >= 2 && from <= 14) {
           await migrarAttachmentV15(this, m);
+        }
+        // Aditiva (Etapa 4J.3): `ComplementoPago`/`ComplementoPagoEvento`
+        // — 2 tablas completamente nuevas, `from <= 15` es seguro sin
+        // acotar un origen exacto. Se crean *antes* de
+        // `migrarAttachmentV16` por el mismo motivo que `pago` antes de
+        // `migrarAttachmentV15`: esa migración agrega una FK hacia
+        // `complemento_pago` y corre `PRAGMA foreign_key_check` al final.
+        if (to >= 16 && from <= 15) {
+          await m.createTable(complementoPago);
+          await m.createTable(complementoPagoEvento);
+        }
+        // Estructural (Etapa 4J.3): Attachment gana el quinto brazo del
+        // arco exclusivo (`complementoPagoId`, PDF/XML del Complemento
+        // de pago) — mismo motivo de recreación que
+        // `migrarAttachmentV13`/`migrarAttachmentV15`. Mismo gotcha de
+        // siempre: `from == 1` ya crea `attachment` con la forma
+        // *actual* en `_createEtapa4ATables` (arriba en este mismo
+        // `onUpgrade`), así que aquí es `from >= 2`, nunca sin acotar.
+        if (to >= 16 && from >= 2 && from <= 15) {
+          await migrarAttachmentV16(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

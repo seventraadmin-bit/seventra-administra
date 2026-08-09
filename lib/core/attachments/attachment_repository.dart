@@ -54,6 +54,15 @@ class AttachmentRepository {
         .get();
   }
 
+  /// Adjuntos (PDF/XML) activos de un `ComplementoPago` (Etapa 4J.3) —
+  /// mismo criterio que los adjuntos de `DocumentoPorEmitir`/`Pago`.
+  Future<List<AttachmentData>> listarActivosPorComplementoPago(String complementoPagoId) {
+    return (_db.select(_db.attachment)
+          ..where((t) => t.complementoPagoId.equals(complementoPagoId) & t.estado.equals('activo'))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+
   Future<void> archivar(String id) {
     return (_db.update(_db.attachment)..where((t) => t.id.equals(id))).write(
       const AttachmentCompanion(estado: Value('archivado')),

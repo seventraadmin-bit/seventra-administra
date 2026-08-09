@@ -152,6 +152,13 @@ GoRouter createAppRouter() {
                         // criterio que Cuentas por cobrar/Agenda.
                         builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.pagos),
                       ),
+                      GoRoute(
+                        path: 'complementos',
+                        // Sin sub-ruta `:id` — el detalle de un
+                        // Complemento se muestra en un diálogo (Etapa
+                        // 4J.3), mismo criterio que Pagos/Agenda.
+                        builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.complementos),
+                      ),
                     ],
                   )
                 else

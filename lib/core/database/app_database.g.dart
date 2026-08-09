@@ -5802,6 +5802,18 @@ class $AttachmentTable extends Attachment
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _complementoPagoIdMeta = const VerificationMeta(
+    'complementoPagoId',
+  );
+  @override
+  late final GeneratedColumn<String> complementoPagoId =
+      GeneratedColumn<String>(
+        'complemento_pago_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _categoriaMeta = const VerificationMeta(
     'categoria',
   );
@@ -5904,6 +5916,7 @@ class $AttachmentTable extends Attachment
     clienteId,
     documentoPorEmitirId,
     pagoId,
+    complementoPagoId,
     categoria,
     originalFileName,
     storedFileName,
@@ -5956,6 +5969,15 @@ class $AttachmentTable extends Attachment
       context.handle(
         _pagoIdMeta,
         pagoId.isAcceptableOrUnknown(data['pago_id']!, _pagoIdMeta),
+      );
+    }
+    if (data.containsKey('complemento_pago_id')) {
+      context.handle(
+        _complementoPagoIdMeta,
+        complementoPagoId.isAcceptableOrUnknown(
+          data['complemento_pago_id']!,
+          _complementoPagoIdMeta,
+        ),
       );
     }
     if (data.containsKey('categoria')) {
@@ -6058,6 +6080,10 @@ class $AttachmentTable extends Attachment
         DriftSqlType.string,
         data['${effectivePrefix}pago_id'],
       ),
+      complementoPagoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}complemento_pago_id'],
+      ),
       categoria: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}categoria'],
@@ -6121,8 +6147,12 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   /// cualquier otro adjunto, sin campo dedicado dentro de `Pago`.
   final String? pagoId;
 
-  /// Solo aplica cuando `documentoPorEmitirId` no es nulo — `null` para
-  /// adjuntos de Empresa/Cliente/Pago (sin categorías propias todavía).
+  /// PDF/XML de un Complemento de pago (Etapa 4J.3).
+  final String? complementoPagoId;
+
+  /// Solo aplica cuando `documentoPorEmitirId`/`complementoPagoId` no
+  /// son nulos — `null` para adjuntos de Empresa/Cliente/Pago (sin
+  /// categorías propias todavía).
   final String? categoria;
   final String originalFileName;
   final String storedFileName;
@@ -6138,6 +6168,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     this.clienteId,
     this.documentoPorEmitirId,
     this.pagoId,
+    this.complementoPagoId,
     this.categoria,
     required this.originalFileName,
     required this.storedFileName,
@@ -6163,6 +6194,9 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     }
     if (!nullToAbsent || pagoId != null) {
       map['pago_id'] = Variable<String>(pagoId);
+    }
+    if (!nullToAbsent || complementoPagoId != null) {
+      map['complemento_pago_id'] = Variable<String>(complementoPagoId);
     }
     if (!nullToAbsent || categoria != null) {
       map['categoria'] = Variable<String>(categoria);
@@ -6197,6 +6231,10 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
               : Value(documentoPorEmitirId),
       pagoId:
           pagoId == null && nullToAbsent ? const Value.absent() : Value(pagoId),
+      complementoPagoId:
+          complementoPagoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(complementoPagoId),
       categoria:
           categoria == null && nullToAbsent
               ? const Value.absent()
@@ -6225,6 +6263,9 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
         json['documentoPorEmitirId'],
       ),
       pagoId: serializer.fromJson<String?>(json['pagoId']),
+      complementoPagoId: serializer.fromJson<String?>(
+        json['complementoPagoId'],
+      ),
       categoria: serializer.fromJson<String?>(json['categoria']),
       originalFileName: serializer.fromJson<String>(json['originalFileName']),
       storedFileName: serializer.fromJson<String>(json['storedFileName']),
@@ -6245,6 +6286,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       'clienteId': serializer.toJson<String?>(clienteId),
       'documentoPorEmitirId': serializer.toJson<String?>(documentoPorEmitirId),
       'pagoId': serializer.toJson<String?>(pagoId),
+      'complementoPagoId': serializer.toJson<String?>(complementoPagoId),
       'categoria': serializer.toJson<String?>(categoria),
       'originalFileName': serializer.toJson<String>(originalFileName),
       'storedFileName': serializer.toJson<String>(storedFileName),
@@ -6263,6 +6305,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     Value<String?> clienteId = const Value.absent(),
     Value<String?> documentoPorEmitirId = const Value.absent(),
     Value<String?> pagoId = const Value.absent(),
+    Value<String?> complementoPagoId = const Value.absent(),
     Value<String?> categoria = const Value.absent(),
     String? originalFileName,
     String? storedFileName,
@@ -6281,6 +6324,10 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
             ? documentoPorEmitirId.value
             : this.documentoPorEmitirId,
     pagoId: pagoId.present ? pagoId.value : this.pagoId,
+    complementoPagoId:
+        complementoPagoId.present
+            ? complementoPagoId.value
+            : this.complementoPagoId,
     categoria: categoria.present ? categoria.value : this.categoria,
     originalFileName: originalFileName ?? this.originalFileName,
     storedFileName: storedFileName ?? this.storedFileName,
@@ -6301,6 +6348,10 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
               ? data.documentoPorEmitirId.value
               : this.documentoPorEmitirId,
       pagoId: data.pagoId.present ? data.pagoId.value : this.pagoId,
+      complementoPagoId:
+          data.complementoPagoId.present
+              ? data.complementoPagoId.value
+              : this.complementoPagoId,
       categoria: data.categoria.present ? data.categoria.value : this.categoria,
       originalFileName:
           data.originalFileName.present
@@ -6327,6 +6378,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           ..write('clienteId: $clienteId, ')
           ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
           ..write('pagoId: $pagoId, ')
+          ..write('complementoPagoId: $complementoPagoId, ')
           ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
@@ -6347,6 +6399,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     clienteId,
     documentoPorEmitirId,
     pagoId,
+    complementoPagoId,
     categoria,
     originalFileName,
     storedFileName,
@@ -6366,6 +6419,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           other.clienteId == this.clienteId &&
           other.documentoPorEmitirId == this.documentoPorEmitirId &&
           other.pagoId == this.pagoId &&
+          other.complementoPagoId == this.complementoPagoId &&
           other.categoria == this.categoria &&
           other.originalFileName == this.originalFileName &&
           other.storedFileName == this.storedFileName &&
@@ -6383,6 +6437,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   final Value<String?> clienteId;
   final Value<String?> documentoPorEmitirId;
   final Value<String?> pagoId;
+  final Value<String?> complementoPagoId;
   final Value<String?> categoria;
   final Value<String> originalFileName;
   final Value<String> storedFileName;
@@ -6399,6 +6454,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     this.clienteId = const Value.absent(),
     this.documentoPorEmitirId = const Value.absent(),
     this.pagoId = const Value.absent(),
+    this.complementoPagoId = const Value.absent(),
     this.categoria = const Value.absent(),
     this.originalFileName = const Value.absent(),
     this.storedFileName = const Value.absent(),
@@ -6416,6 +6472,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     this.clienteId = const Value.absent(),
     this.documentoPorEmitirId = const Value.absent(),
     this.pagoId = const Value.absent(),
+    this.complementoPagoId = const Value.absent(),
     this.categoria = const Value.absent(),
     required String originalFileName,
     required String storedFileName,
@@ -6438,6 +6495,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     Expression<String>? clienteId,
     Expression<String>? documentoPorEmitirId,
     Expression<String>? pagoId,
+    Expression<String>? complementoPagoId,
     Expression<String>? categoria,
     Expression<String>? originalFileName,
     Expression<String>? storedFileName,
@@ -6456,6 +6514,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
       if (documentoPorEmitirId != null)
         'documento_por_emitir_id': documentoPorEmitirId,
       if (pagoId != null) 'pago_id': pagoId,
+      if (complementoPagoId != null) 'complemento_pago_id': complementoPagoId,
       if (categoria != null) 'categoria': categoria,
       if (originalFileName != null) 'original_file_name': originalFileName,
       if (storedFileName != null) 'stored_file_name': storedFileName,
@@ -6475,6 +6534,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     Value<String?>? clienteId,
     Value<String?>? documentoPorEmitirId,
     Value<String?>? pagoId,
+    Value<String?>? complementoPagoId,
     Value<String?>? categoria,
     Value<String>? originalFileName,
     Value<String>? storedFileName,
@@ -6492,6 +6552,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
       clienteId: clienteId ?? this.clienteId,
       documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
       pagoId: pagoId ?? this.pagoId,
+      complementoPagoId: complementoPagoId ?? this.complementoPagoId,
       categoria: categoria ?? this.categoria,
       originalFileName: originalFileName ?? this.originalFileName,
       storedFileName: storedFileName ?? this.storedFileName,
@@ -6524,6 +6585,9 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     }
     if (pagoId.present) {
       map['pago_id'] = Variable<String>(pagoId.value);
+    }
+    if (complementoPagoId.present) {
+      map['complemento_pago_id'] = Variable<String>(complementoPagoId.value);
     }
     if (categoria.present) {
       map['categoria'] = Variable<String>(categoria.value);
@@ -6566,6 +6630,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
           ..write('clienteId: $clienteId, ')
           ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
           ..write('pagoId: $pagoId, ')
+          ..write('complementoPagoId: $complementoPagoId, ')
           ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
@@ -25819,6 +25884,1418 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
   }
 }
 
+class $ComplementoPagoTable extends ComplementoPago
+    with TableInfo<$ComplementoPagoTable, ComplementoPagoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ComplementoPagoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _pagoIdMeta = const VerificationMeta('pagoId');
+  @override
+  late final GeneratedColumn<String> pagoId = GeneratedColumn<String>(
+    'pago_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'UNIQUE REFERENCES pago (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+    'uuid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _serieFiscalMeta = const VerificationMeta(
+    'serieFiscal',
+  );
+  @override
+  late final GeneratedColumn<String> serieFiscal = GeneratedColumn<String>(
+    'serie_fiscal',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _folioFiscalMeta = const VerificationMeta(
+    'folioFiscal',
+  );
+  @override
+  late final GeneratedColumn<String> folioFiscal = GeneratedColumn<String>(
+    'folio_fiscal',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaTimbradoMeta = const VerificationMeta(
+    'fechaTimbrado',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaTimbrado =
+      GeneratedColumn<DateTime>(
+        'fecha_timbrado',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _montoTotalMeta = const VerificationMeta(
+    'montoTotal',
+  );
+  @override
+  late final GeneratedColumn<int> montoTotal = GeneratedColumn<int>(
+    'monto_total',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('registrado'),
+  );
+  static const VerificationMeta _motivoCancelacionMeta = const VerificationMeta(
+    'motivoCancelacion',
+  );
+  @override
+  late final GeneratedColumn<String> motivoCancelacion =
+      GeneratedColumn<String>(
+        'motivo_cancelacion',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    pagoId,
+    uuid,
+    serieFiscal,
+    folioFiscal,
+    fechaTimbrado,
+    montoTotal,
+    estatus,
+    motivoCancelacion,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'complemento_pago';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ComplementoPagoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pago_id')) {
+      context.handle(
+        _pagoIdMeta,
+        pagoId.isAcceptableOrUnknown(data['pago_id']!, _pagoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pagoIdMeta);
+    }
+    if (data.containsKey('uuid')) {
+      context.handle(
+        _uuidMeta,
+        uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uuidMeta);
+    }
+    if (data.containsKey('serie_fiscal')) {
+      context.handle(
+        _serieFiscalMeta,
+        serieFiscal.isAcceptableOrUnknown(
+          data['serie_fiscal']!,
+          _serieFiscalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio_fiscal')) {
+      context.handle(
+        _folioFiscalMeta,
+        folioFiscal.isAcceptableOrUnknown(
+          data['folio_fiscal']!,
+          _folioFiscalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_timbrado')) {
+      context.handle(
+        _fechaTimbradoMeta,
+        fechaTimbrado.isAcceptableOrUnknown(
+          data['fecha_timbrado']!,
+          _fechaTimbradoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaTimbradoMeta);
+    }
+    if (data.containsKey('monto_total')) {
+      context.handle(
+        _montoTotalMeta,
+        montoTotal.isAcceptableOrUnknown(data['monto_total']!, _montoTotalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_montoTotalMeta);
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('motivo_cancelacion')) {
+      context.handle(
+        _motivoCancelacionMeta,
+        motivoCancelacion.isAcceptableOrUnknown(
+          data['motivo_cancelacion']!,
+          _motivoCancelacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ComplementoPagoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ComplementoPagoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      pagoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}pago_id'],
+          )!,
+      uuid:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}uuid'],
+          )!,
+      serieFiscal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serie_fiscal'],
+      ),
+      folioFiscal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folio_fiscal'],
+      ),
+      fechaTimbrado:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_timbrado'],
+          )!,
+      montoTotal:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}monto_total'],
+          )!,
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      motivoCancelacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_cancelacion'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $ComplementoPagoTable createAlias(String alias) {
+    return $ComplementoPagoTable(attachedDatabase, alias);
+  }
+}
+
+class ComplementoPagoData extends DataClass
+    implements Insertable<ComplementoPagoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String pagoId;
+
+  /// UUID del complemento en sí (CFDI distinto al de la factura
+  /// original) — se valida formato/longitud estándar y unicidad, pero
+  /// deliberadamente nunca la versión (Resolución de Marlon: "no
+  /// quiero acoplar el sistema a una versión específica del UUID
+  /// emitido por el PAC").
+  final String uuid;
+  final String? serieFiscal;
+  final String? folioFiscal;
+
+  /// Fecha real de timbrado externo — nunca sustituye `createdAt`
+  /// (Resolución de Marlon: la fecha de timbrado nunca reemplaza la
+  /// fecha de registro administrativo, que ya provee `AuditColumns`).
+  final DateTime fechaTimbrado;
+  final int montoTotal;
+  final String estatus;
+  final String? motivoCancelacion;
+  final String? observaciones;
+  const ComplementoPagoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.pagoId,
+    required this.uuid,
+    this.serieFiscal,
+    this.folioFiscal,
+    required this.fechaTimbrado,
+    required this.montoTotal,
+    required this.estatus,
+    this.motivoCancelacion,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['pago_id'] = Variable<String>(pagoId);
+    map['uuid'] = Variable<String>(uuid);
+    if (!nullToAbsent || serieFiscal != null) {
+      map['serie_fiscal'] = Variable<String>(serieFiscal);
+    }
+    if (!nullToAbsent || folioFiscal != null) {
+      map['folio_fiscal'] = Variable<String>(folioFiscal);
+    }
+    map['fecha_timbrado'] = Variable<DateTime>(fechaTimbrado);
+    map['monto_total'] = Variable<int>(montoTotal);
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || motivoCancelacion != null) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  ComplementoPagoCompanion toCompanion(bool nullToAbsent) {
+    return ComplementoPagoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      pagoId: Value(pagoId),
+      uuid: Value(uuid),
+      serieFiscal:
+          serieFiscal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(serieFiscal),
+      folioFiscal:
+          folioFiscal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(folioFiscal),
+      fechaTimbrado: Value(fechaTimbrado),
+      montoTotal: Value(montoTotal),
+      estatus: Value(estatus),
+      motivoCancelacion:
+          motivoCancelacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoCancelacion),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory ComplementoPagoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ComplementoPagoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      pagoId: serializer.fromJson<String>(json['pagoId']),
+      uuid: serializer.fromJson<String>(json['uuid']),
+      serieFiscal: serializer.fromJson<String?>(json['serieFiscal']),
+      folioFiscal: serializer.fromJson<String?>(json['folioFiscal']),
+      fechaTimbrado: serializer.fromJson<DateTime>(json['fechaTimbrado']),
+      montoTotal: serializer.fromJson<int>(json['montoTotal']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      motivoCancelacion: serializer.fromJson<String?>(
+        json['motivoCancelacion'],
+      ),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'pagoId': serializer.toJson<String>(pagoId),
+      'uuid': serializer.toJson<String>(uuid),
+      'serieFiscal': serializer.toJson<String?>(serieFiscal),
+      'folioFiscal': serializer.toJson<String?>(folioFiscal),
+      'fechaTimbrado': serializer.toJson<DateTime>(fechaTimbrado),
+      'montoTotal': serializer.toJson<int>(montoTotal),
+      'estatus': serializer.toJson<String>(estatus),
+      'motivoCancelacion': serializer.toJson<String?>(motivoCancelacion),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  ComplementoPagoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? pagoId,
+    String? uuid,
+    Value<String?> serieFiscal = const Value.absent(),
+    Value<String?> folioFiscal = const Value.absent(),
+    DateTime? fechaTimbrado,
+    int? montoTotal,
+    String? estatus,
+    Value<String?> motivoCancelacion = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => ComplementoPagoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    pagoId: pagoId ?? this.pagoId,
+    uuid: uuid ?? this.uuid,
+    serieFiscal: serieFiscal.present ? serieFiscal.value : this.serieFiscal,
+    folioFiscal: folioFiscal.present ? folioFiscal.value : this.folioFiscal,
+    fechaTimbrado: fechaTimbrado ?? this.fechaTimbrado,
+    montoTotal: montoTotal ?? this.montoTotal,
+    estatus: estatus ?? this.estatus,
+    motivoCancelacion:
+        motivoCancelacion.present
+            ? motivoCancelacion.value
+            : this.motivoCancelacion,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  ComplementoPagoData copyWithCompanion(ComplementoPagoCompanion data) {
+    return ComplementoPagoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      pagoId: data.pagoId.present ? data.pagoId.value : this.pagoId,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
+      serieFiscal:
+          data.serieFiscal.present ? data.serieFiscal.value : this.serieFiscal,
+      folioFiscal:
+          data.folioFiscal.present ? data.folioFiscal.value : this.folioFiscal,
+      fechaTimbrado:
+          data.fechaTimbrado.present
+              ? data.fechaTimbrado.value
+              : this.fechaTimbrado,
+      montoTotal:
+          data.montoTotal.present ? data.montoTotal.value : this.montoTotal,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      motivoCancelacion:
+          data.motivoCancelacion.present
+              ? data.motivoCancelacion.value
+              : this.motivoCancelacion,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComplementoPagoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('pagoId: $pagoId, ')
+          ..write('uuid: $uuid, ')
+          ..write('serieFiscal: $serieFiscal, ')
+          ..write('folioFiscal: $folioFiscal, ')
+          ..write('fechaTimbrado: $fechaTimbrado, ')
+          ..write('montoTotal: $montoTotal, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    pagoId,
+    uuid,
+    serieFiscal,
+    folioFiscal,
+    fechaTimbrado,
+    montoTotal,
+    estatus,
+    motivoCancelacion,
+    observaciones,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ComplementoPagoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.pagoId == this.pagoId &&
+          other.uuid == this.uuid &&
+          other.serieFiscal == this.serieFiscal &&
+          other.folioFiscal == this.folioFiscal &&
+          other.fechaTimbrado == this.fechaTimbrado &&
+          other.montoTotal == this.montoTotal &&
+          other.estatus == this.estatus &&
+          other.motivoCancelacion == this.motivoCancelacion &&
+          other.observaciones == this.observaciones);
+}
+
+class ComplementoPagoCompanion extends UpdateCompanion<ComplementoPagoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> pagoId;
+  final Value<String> uuid;
+  final Value<String?> serieFiscal;
+  final Value<String?> folioFiscal;
+  final Value<DateTime> fechaTimbrado;
+  final Value<int> montoTotal;
+  final Value<String> estatus;
+  final Value<String?> motivoCancelacion;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const ComplementoPagoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.pagoId = const Value.absent(),
+    this.uuid = const Value.absent(),
+    this.serieFiscal = const Value.absent(),
+    this.folioFiscal = const Value.absent(),
+    this.fechaTimbrado = const Value.absent(),
+    this.montoTotal = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ComplementoPagoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String pagoId,
+    required String uuid,
+    this.serieFiscal = const Value.absent(),
+    this.folioFiscal = const Value.absent(),
+    required DateTime fechaTimbrado,
+    required int montoTotal,
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : pagoId = Value(pagoId),
+       uuid = Value(uuid),
+       fechaTimbrado = Value(fechaTimbrado),
+       montoTotal = Value(montoTotal);
+  static Insertable<ComplementoPagoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? pagoId,
+    Expression<String>? uuid,
+    Expression<String>? serieFiscal,
+    Expression<String>? folioFiscal,
+    Expression<DateTime>? fechaTimbrado,
+    Expression<int>? montoTotal,
+    Expression<String>? estatus,
+    Expression<String>? motivoCancelacion,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (pagoId != null) 'pago_id': pagoId,
+      if (uuid != null) 'uuid': uuid,
+      if (serieFiscal != null) 'serie_fiscal': serieFiscal,
+      if (folioFiscal != null) 'folio_fiscal': folioFiscal,
+      if (fechaTimbrado != null) 'fecha_timbrado': fechaTimbrado,
+      if (montoTotal != null) 'monto_total': montoTotal,
+      if (estatus != null) 'estatus': estatus,
+      if (motivoCancelacion != null) 'motivo_cancelacion': motivoCancelacion,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ComplementoPagoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? pagoId,
+    Value<String>? uuid,
+    Value<String?>? serieFiscal,
+    Value<String?>? folioFiscal,
+    Value<DateTime>? fechaTimbrado,
+    Value<int>? montoTotal,
+    Value<String>? estatus,
+    Value<String?>? motivoCancelacion,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return ComplementoPagoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      pagoId: pagoId ?? this.pagoId,
+      uuid: uuid ?? this.uuid,
+      serieFiscal: serieFiscal ?? this.serieFiscal,
+      folioFiscal: folioFiscal ?? this.folioFiscal,
+      fechaTimbrado: fechaTimbrado ?? this.fechaTimbrado,
+      montoTotal: montoTotal ?? this.montoTotal,
+      estatus: estatus ?? this.estatus,
+      motivoCancelacion: motivoCancelacion ?? this.motivoCancelacion,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (pagoId.present) {
+      map['pago_id'] = Variable<String>(pagoId.value);
+    }
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
+    }
+    if (serieFiscal.present) {
+      map['serie_fiscal'] = Variable<String>(serieFiscal.value);
+    }
+    if (folioFiscal.present) {
+      map['folio_fiscal'] = Variable<String>(folioFiscal.value);
+    }
+    if (fechaTimbrado.present) {
+      map['fecha_timbrado'] = Variable<DateTime>(fechaTimbrado.value);
+    }
+    if (montoTotal.present) {
+      map['monto_total'] = Variable<int>(montoTotal.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (motivoCancelacion.present) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComplementoPagoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('pagoId: $pagoId, ')
+          ..write('uuid: $uuid, ')
+          ..write('serieFiscal: $serieFiscal, ')
+          ..write('folioFiscal: $folioFiscal, ')
+          ..write('fechaTimbrado: $fechaTimbrado, ')
+          ..write('montoTotal: $montoTotal, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ComplementoPagoEventoTable extends ComplementoPagoEvento
+    with TableInfo<$ComplementoPagoEventoTable, ComplementoPagoEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ComplementoPagoEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _complementoPagoIdMeta = const VerificationMeta(
+    'complementoPagoId',
+  );
+  @override
+  late final GeneratedColumn<String> complementoPagoId =
+      GeneratedColumn<String>(
+        'complemento_pago_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES complemento_pago (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoAnteriorMeta = const VerificationMeta(
+    'estadoAnterior',
+  );
+  @override
+  late final GeneratedColumn<String> estadoAnterior = GeneratedColumn<String>(
+    'estado_anterior',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estadoNuevoMeta = const VerificationMeta(
+    'estadoNuevo',
+  );
+  @override
+  late final GeneratedColumn<String> estadoNuevo = GeneratedColumn<String>(
+    'estado_nuevo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    complementoPagoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'complemento_pago_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ComplementoPagoEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('complemento_pago_id')) {
+      context.handle(
+        _complementoPagoIdMeta,
+        complementoPagoId.isAcceptableOrUnknown(
+          data['complemento_pago_id']!,
+          _complementoPagoIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_complementoPagoIdMeta);
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('estado_anterior')) {
+      context.handle(
+        _estadoAnteriorMeta,
+        estadoAnterior.isAcceptableOrUnknown(
+          data['estado_anterior']!,
+          _estadoAnteriorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estado_nuevo')) {
+      context.handle(
+        _estadoNuevoMeta,
+        estadoNuevo.isAcceptableOrUnknown(
+          data['estado_nuevo']!,
+          _estadoNuevoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ComplementoPagoEventoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ComplementoPagoEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      complementoPagoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}complemento_pago_id'],
+          )!,
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      estadoAnterior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_anterior'],
+      ),
+      estadoNuevo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_nuevo'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $ComplementoPagoEventoTable createAlias(String alias) {
+    return $ComplementoPagoEventoTable(attachedDatabase, alias);
+  }
+}
+
+class ComplementoPagoEventoData extends DataClass
+    implements Insertable<ComplementoPagoEventoData> {
+  final int id;
+  final String complementoPagoId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? estadoAnterior;
+  final String? estadoNuevo;
+  final String? observacion;
+  final String? actor;
+  final String? datosRelevantes;
+  const ComplementoPagoEventoData({
+    required this.id,
+    required this.complementoPagoId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.estadoAnterior,
+    this.estadoNuevo,
+    this.observacion,
+    this.actor,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['complemento_pago_id'] = Variable<String>(complementoPagoId);
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || estadoAnterior != null) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior);
+    }
+    if (!nullToAbsent || estadoNuevo != null) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  ComplementoPagoEventoCompanion toCompanion(bool nullToAbsent) {
+    return ComplementoPagoEventoCompanion(
+      id: Value(id),
+      complementoPagoId: Value(complementoPagoId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      estadoAnterior:
+          estadoAnterior == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoAnterior),
+      estadoNuevo:
+          estadoNuevo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoNuevo),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory ComplementoPagoEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ComplementoPagoEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      complementoPagoId: serializer.fromJson<String>(json['complementoPagoId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      estadoAnterior: serializer.fromJson<String?>(json['estadoAnterior']),
+      estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      actor: serializer.fromJson<String?>(json['actor']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'complementoPagoId': serializer.toJson<String>(complementoPagoId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'estadoAnterior': serializer.toJson<String?>(estadoAnterior),
+      'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
+      'observacion': serializer.toJson<String?>(observacion),
+      'actor': serializer.toJson<String?>(actor),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  ComplementoPagoEventoData copyWith({
+    int? id,
+    String? complementoPagoId,
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> estadoAnterior = const Value.absent(),
+    Value<String?> estadoNuevo = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => ComplementoPagoEventoData(
+    id: id ?? this.id,
+    complementoPagoId: complementoPagoId ?? this.complementoPagoId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    estadoAnterior:
+        estadoAnterior.present ? estadoAnterior.value : this.estadoAnterior,
+    estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    actor: actor.present ? actor.value : this.actor,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  ComplementoPagoEventoData copyWithCompanion(
+    ComplementoPagoEventoCompanion data,
+  ) {
+    return ComplementoPagoEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      complementoPagoId:
+          data.complementoPagoId.present
+              ? data.complementoPagoId.value
+              : this.complementoPagoId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      estadoAnterior:
+          data.estadoAnterior.present
+              ? data.estadoAnterior.value
+              : this.estadoAnterior,
+      estadoNuevo:
+          data.estadoNuevo.present ? data.estadoNuevo.value : this.estadoNuevo,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      actor: data.actor.present ? data.actor.value : this.actor,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComplementoPagoEventoData(')
+          ..write('id: $id, ')
+          ..write('complementoPagoId: $complementoPagoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    complementoPagoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ComplementoPagoEventoData &&
+          other.id == this.id &&
+          other.complementoPagoId == this.complementoPagoId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.estadoAnterior == this.estadoAnterior &&
+          other.estadoNuevo == this.estadoNuevo &&
+          other.observacion == this.observacion &&
+          other.actor == this.actor &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class ComplementoPagoEventoCompanion
+    extends UpdateCompanion<ComplementoPagoEventoData> {
+  final Value<int> id;
+  final Value<String> complementoPagoId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> estadoAnterior;
+  final Value<String?> estadoNuevo;
+  final Value<String?> observacion;
+  final Value<String?> actor;
+  final Value<String?> datosRelevantes;
+  const ComplementoPagoEventoCompanion({
+    this.id = const Value.absent(),
+    this.complementoPagoId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  ComplementoPagoEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String complementoPagoId,
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : complementoPagoId = Value(complementoPagoId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<ComplementoPagoEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? complementoPagoId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? estadoAnterior,
+    Expression<String>? estadoNuevo,
+    Expression<String>? observacion,
+    Expression<String>? actor,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (complementoPagoId != null) 'complemento_pago_id': complementoPagoId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (estadoAnterior != null) 'estado_anterior': estadoAnterior,
+      if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
+      if (observacion != null) 'observacion': observacion,
+      if (actor != null) 'actor': actor,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  ComplementoPagoEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? complementoPagoId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? estadoAnterior,
+    Value<String?>? estadoNuevo,
+    Value<String?>? observacion,
+    Value<String?>? actor,
+    Value<String?>? datosRelevantes,
+  }) {
+    return ComplementoPagoEventoCompanion(
+      id: id ?? this.id,
+      complementoPagoId: complementoPagoId ?? this.complementoPagoId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      estadoAnterior: estadoAnterior ?? this.estadoAnterior,
+      estadoNuevo: estadoNuevo ?? this.estadoNuevo,
+      observacion: observacion ?? this.observacion,
+      actor: actor ?? this.actor,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (complementoPagoId.present) {
+      map['complemento_pago_id'] = Variable<String>(complementoPagoId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (estadoAnterior.present) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior.value);
+    }
+    if (estadoNuevo.present) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComplementoPagoEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('complementoPagoId: $complementoPagoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -25881,6 +27358,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PagoTable pago = $PagoTable(this);
   late final $AplicacionPagoTable aplicacionPago = $AplicacionPagoTable(this);
   late final $PagoEventoTable pagoEvento = $PagoEventoTable(this);
+  late final $ComplementoPagoTable complementoPago = $ComplementoPagoTable(
+    this,
+  );
+  late final $ComplementoPagoEventoTable complementoPagoEvento =
+      $ComplementoPagoEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -25941,6 +27423,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pago,
     aplicacionPago,
     pagoEvento,
+    complementoPago,
+    complementoPagoEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -26051,6 +27535,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('pago_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'complemento_pago',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('complemento_pago_evento', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -29647,6 +31138,7 @@ typedef $$AttachmentTableCreateCompanionBuilder =
       Value<String?> clienteId,
       Value<String?> documentoPorEmitirId,
       Value<String?> pagoId,
+      Value<String?> complementoPagoId,
       Value<String?> categoria,
       required String originalFileName,
       required String storedFileName,
@@ -29665,6 +31157,7 @@ typedef $$AttachmentTableUpdateCompanionBuilder =
       Value<String?> clienteId,
       Value<String?> documentoPorEmitirId,
       Value<String?> pagoId,
+      Value<String?> complementoPagoId,
       Value<String?> categoria,
       Value<String> originalFileName,
       Value<String> storedFileName,
@@ -29733,6 +31226,11 @@ class $$AttachmentTableFilterComposer
 
   ColumnFilters<String> get pagoId => $composableBuilder(
     column: $table.pagoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get complementoPagoId => $composableBuilder(
+    column: $table.complementoPagoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -29841,6 +31339,11 @@ class $$AttachmentTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get complementoPagoId => $composableBuilder(
+    column: $table.complementoPagoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get categoria => $composableBuilder(
     column: $table.categoria,
     builder: (column) => ColumnOrderings(column),
@@ -29912,6 +31415,11 @@ class $$AttachmentTableAnnotationComposer
 
   GeneratedColumn<String> get pagoId =>
       $composableBuilder(column: $table.pagoId, builder: (column) => column);
+
+  GeneratedColumn<String> get complementoPagoId => $composableBuilder(
+    column: $table.complementoPagoId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get categoria =>
       $composableBuilder(column: $table.categoria, builder: (column) => column);
@@ -30003,6 +31511,7 @@ class $$AttachmentTableTableManager
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> documentoPorEmitirId = const Value.absent(),
                 Value<String?> pagoId = const Value.absent(),
+                Value<String?> complementoPagoId = const Value.absent(),
                 Value<String?> categoria = const Value.absent(),
                 Value<String> originalFileName = const Value.absent(),
                 Value<String> storedFileName = const Value.absent(),
@@ -30019,6 +31528,7 @@ class $$AttachmentTableTableManager
                 clienteId: clienteId,
                 documentoPorEmitirId: documentoPorEmitirId,
                 pagoId: pagoId,
+                complementoPagoId: complementoPagoId,
                 categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
@@ -30037,6 +31547,7 @@ class $$AttachmentTableTableManager
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> documentoPorEmitirId = const Value.absent(),
                 Value<String?> pagoId = const Value.absent(),
+                Value<String?> complementoPagoId = const Value.absent(),
                 Value<String?> categoria = const Value.absent(),
                 required String originalFileName,
                 required String storedFileName,
@@ -30053,6 +31564,7 @@ class $$AttachmentTableTableManager
                 clienteId: clienteId,
                 documentoPorEmitirId: documentoPorEmitirId,
                 pagoId: pagoId,
+                complementoPagoId: complementoPagoId,
                 categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
@@ -46582,6 +48094,26 @@ final class $$PagoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$ComplementoPagoTable, List<ComplementoPagoData>>
+  _complementoPagoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.complementoPago,
+    aliasName: $_aliasNameGenerator(db.pago.id, db.complementoPago.pagoId),
+  );
+
+  $$ComplementoPagoTableProcessedTableManager get complementoPagoRefs {
+    final manager = $$ComplementoPagoTableTableManager(
+      $_db,
+      $_db.complementoPago,
+    ).filter((f) => f.pagoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _complementoPagoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PagoTableFilterComposer extends Composer<_$AppDatabase, $PagoTable> {
@@ -46726,6 +48258,31 @@ class $$PagoTableFilterComposer extends Composer<_$AppDatabase, $PagoTable> {
           }) => $$PagoEventoTableFilterComposer(
             $db: $db,
             $table: $db.pagoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> complementoPagoRefs(
+    Expression<bool> Function($$ComplementoPagoTableFilterComposer f) f,
+  ) {
+    final $$ComplementoPagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.complementoPago,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComplementoPagoTableFilterComposer(
+            $db: $db,
+            $table: $db.complementoPago,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -46975,6 +48532,31 @@ class $$PagoTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> complementoPagoRefs<T extends Object>(
+    Expression<T> Function($$ComplementoPagoTableAnnotationComposer a) f,
+  ) {
+    final $$ComplementoPagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.complementoPago,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComplementoPagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.complementoPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PagoTableTableManager
@@ -46994,6 +48576,7 @@ class $$PagoTableTableManager
             bool clienteId,
             bool aplicacionPagoRefs,
             bool pagoEventoRefs,
+            bool complementoPagoRefs,
           })
         > {
   $$PagoTableTableManager(_$AppDatabase db, $PagoTable table)
@@ -47093,12 +48676,14 @@ class $$PagoTableTableManager
             clienteId = false,
             aplicacionPagoRefs = false,
             pagoEventoRefs = false,
+            complementoPagoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (aplicacionPagoRefs) db.aplicacionPago,
                 if (pagoEventoRefs) db.pagoEvento,
+                if (complementoPagoRefs) db.complementoPago,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -47174,6 +48759,27 @@ class $$PagoTableTableManager
                               referencedItems.where((e) => e.pagoId == item.id),
                       typedResults: items,
                     ),
+                  if (complementoPagoRefs)
+                    await $_getPrefetchedData<
+                      PagoData,
+                      $PagoTable,
+                      ComplementoPagoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PagoTableReferences
+                          ._complementoPagoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$PagoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).complementoPagoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) =>
+                              referencedItems.where((e) => e.pagoId == item.id),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -47198,6 +48804,7 @@ typedef $$PagoTableProcessedTableManager =
         bool clienteId,
         bool aplicacionPagoRefs,
         bool pagoEventoRefs,
+        bool complementoPagoRefs,
       })
     >;
 typedef $$AplicacionPagoTableCreateCompanionBuilder =
@@ -48147,6 +49754,1045 @@ typedef $$PagoEventoTableProcessedTableManager =
       PagoEventoData,
       PrefetchHooks Function({bool pagoId})
     >;
+typedef $$ComplementoPagoTableCreateCompanionBuilder =
+    ComplementoPagoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String pagoId,
+      required String uuid,
+      Value<String?> serieFiscal,
+      Value<String?> folioFiscal,
+      required DateTime fechaTimbrado,
+      required int montoTotal,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$ComplementoPagoTableUpdateCompanionBuilder =
+    ComplementoPagoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> pagoId,
+      Value<String> uuid,
+      Value<String?> serieFiscal,
+      Value<String?> folioFiscal,
+      Value<DateTime> fechaTimbrado,
+      Value<int> montoTotal,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$ComplementoPagoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ComplementoPagoTable,
+          ComplementoPagoData
+        > {
+  $$ComplementoPagoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PagoTable _pagoIdTable(_$AppDatabase db) => db.pago.createAlias(
+    $_aliasNameGenerator(db.complementoPago.pagoId, db.pago.id),
+  );
+
+  $$PagoTableProcessedTableManager get pagoId {
+    final $_column = $_itemColumn<String>('pago_id')!;
+
+    final manager = $$PagoTableTableManager(
+      $_db,
+      $_db.pago,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ComplementoPagoEventoTable,
+    List<ComplementoPagoEventoData>
+  >
+  _complementoPagoEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.complementoPagoEvento,
+        aliasName: $_aliasNameGenerator(
+          db.complementoPago.id,
+          db.complementoPagoEvento.complementoPagoId,
+        ),
+      );
+
+  $$ComplementoPagoEventoTableProcessedTableManager
+  get complementoPagoEventoRefs {
+    final manager = $$ComplementoPagoEventoTableTableManager(
+      $_db,
+      $_db.complementoPagoEvento,
+    ).filter(
+      (f) => f.complementoPagoId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _complementoPagoEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ComplementoPagoTableFilterComposer
+    extends Composer<_$AppDatabase, $ComplementoPagoTable> {
+  $$ComplementoPagoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uuid => $composableBuilder(
+    column: $table.uuid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serieFiscal => $composableBuilder(
+    column: $table.serieFiscal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folioFiscal => $composableBuilder(
+    column: $table.folioFiscal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaTimbrado => $composableBuilder(
+    column: $table.fechaTimbrado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get montoTotal => $composableBuilder(
+    column: $table.montoTotal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PagoTableFilterComposer get pagoId {
+    final $$PagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableFilterComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> complementoPagoEventoRefs(
+    Expression<bool> Function($$ComplementoPagoEventoTableFilterComposer f) f,
+  ) {
+    final $$ComplementoPagoEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.complementoPagoEvento,
+          getReferencedColumn: (t) => t.complementoPagoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ComplementoPagoEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.complementoPagoEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ComplementoPagoTableOrderingComposer
+    extends Composer<_$AppDatabase, $ComplementoPagoTable> {
+  $$ComplementoPagoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uuid => $composableBuilder(
+    column: $table.uuid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serieFiscal => $composableBuilder(
+    column: $table.serieFiscal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folioFiscal => $composableBuilder(
+    column: $table.folioFiscal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaTimbrado => $composableBuilder(
+    column: $table.fechaTimbrado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get montoTotal => $composableBuilder(
+    column: $table.montoTotal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PagoTableOrderingComposer get pagoId {
+    final $$PagoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableOrderingComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComplementoPagoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ComplementoPagoTable> {
+  $$ComplementoPagoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get uuid =>
+      $composableBuilder(column: $table.uuid, builder: (column) => column);
+
+  GeneratedColumn<String> get serieFiscal => $composableBuilder(
+    column: $table.serieFiscal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folioFiscal => $composableBuilder(
+    column: $table.folioFiscal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaTimbrado => $composableBuilder(
+    column: $table.fechaTimbrado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get montoTotal => $composableBuilder(
+    column: $table.montoTotal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  $$PagoTableAnnotationComposer get pagoId {
+    final $$PagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> complementoPagoEventoRefs<T extends Object>(
+    Expression<T> Function($$ComplementoPagoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$ComplementoPagoEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.complementoPagoEvento,
+          getReferencedColumn: (t) => t.complementoPagoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ComplementoPagoEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.complementoPagoEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ComplementoPagoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ComplementoPagoTable,
+          ComplementoPagoData,
+          $$ComplementoPagoTableFilterComposer,
+          $$ComplementoPagoTableOrderingComposer,
+          $$ComplementoPagoTableAnnotationComposer,
+          $$ComplementoPagoTableCreateCompanionBuilder,
+          $$ComplementoPagoTableUpdateCompanionBuilder,
+          (ComplementoPagoData, $$ComplementoPagoTableReferences),
+          ComplementoPagoData,
+          PrefetchHooks Function({bool pagoId, bool complementoPagoEventoRefs})
+        > {
+  $$ComplementoPagoTableTableManager(
+    _$AppDatabase db,
+    $ComplementoPagoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () =>
+                  $$ComplementoPagoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$ComplementoPagoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$ComplementoPagoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> pagoId = const Value.absent(),
+                Value<String> uuid = const Value.absent(),
+                Value<String?> serieFiscal = const Value.absent(),
+                Value<String?> folioFiscal = const Value.absent(),
+                Value<DateTime> fechaTimbrado = const Value.absent(),
+                Value<int> montoTotal = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ComplementoPagoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                pagoId: pagoId,
+                uuid: uuid,
+                serieFiscal: serieFiscal,
+                folioFiscal: folioFiscal,
+                fechaTimbrado: fechaTimbrado,
+                montoTotal: montoTotal,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String pagoId,
+                required String uuid,
+                Value<String?> serieFiscal = const Value.absent(),
+                Value<String?> folioFiscal = const Value.absent(),
+                required DateTime fechaTimbrado,
+                required int montoTotal,
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ComplementoPagoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                pagoId: pagoId,
+                uuid: uuid,
+                serieFiscal: serieFiscal,
+                folioFiscal: folioFiscal,
+                fechaTimbrado: fechaTimbrado,
+                montoTotal: montoTotal,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ComplementoPagoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            pagoId = false,
+            complementoPagoEventoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (complementoPagoEventoRefs) db.complementoPagoEvento,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (pagoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.pagoId,
+                            referencedTable: $$ComplementoPagoTableReferences
+                                ._pagoIdTable(db),
+                            referencedColumn:
+                                $$ComplementoPagoTableReferences
+                                    ._pagoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (complementoPagoEventoRefs)
+                    await $_getPrefetchedData<
+                      ComplementoPagoData,
+                      $ComplementoPagoTable,
+                      ComplementoPagoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ComplementoPagoTableReferences
+                          ._complementoPagoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ComplementoPagoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).complementoPagoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.complementoPagoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ComplementoPagoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ComplementoPagoTable,
+      ComplementoPagoData,
+      $$ComplementoPagoTableFilterComposer,
+      $$ComplementoPagoTableOrderingComposer,
+      $$ComplementoPagoTableAnnotationComposer,
+      $$ComplementoPagoTableCreateCompanionBuilder,
+      $$ComplementoPagoTableUpdateCompanionBuilder,
+      (ComplementoPagoData, $$ComplementoPagoTableReferences),
+      ComplementoPagoData,
+      PrefetchHooks Function({bool pagoId, bool complementoPagoEventoRefs})
+    >;
+typedef $$ComplementoPagoEventoTableCreateCompanionBuilder =
+    ComplementoPagoEventoCompanion Function({
+      Value<int> id,
+      required String complementoPagoId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+typedef $$ComplementoPagoEventoTableUpdateCompanionBuilder =
+    ComplementoPagoEventoCompanion Function({
+      Value<int> id,
+      Value<String> complementoPagoId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$ComplementoPagoEventoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ComplementoPagoEventoTable,
+          ComplementoPagoEventoData
+        > {
+  $$ComplementoPagoEventoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ComplementoPagoTable _complementoPagoIdTable(_$AppDatabase db) =>
+      db.complementoPago.createAlias(
+        $_aliasNameGenerator(
+          db.complementoPagoEvento.complementoPagoId,
+          db.complementoPago.id,
+        ),
+      );
+
+  $$ComplementoPagoTableProcessedTableManager get complementoPagoId {
+    final $_column = $_itemColumn<String>('complemento_pago_id')!;
+
+    final manager = $$ComplementoPagoTableTableManager(
+      $_db,
+      $_db.complementoPago,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_complementoPagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ComplementoPagoEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $ComplementoPagoEventoTable> {
+  $$ComplementoPagoEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ComplementoPagoTableFilterComposer get complementoPagoId {
+    final $$ComplementoPagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.complementoPagoId,
+      referencedTable: $db.complementoPago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComplementoPagoTableFilterComposer(
+            $db: $db,
+            $table: $db.complementoPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComplementoPagoEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $ComplementoPagoEventoTable> {
+  $$ComplementoPagoEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ComplementoPagoTableOrderingComposer get complementoPagoId {
+    final $$ComplementoPagoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.complementoPagoId,
+      referencedTable: $db.complementoPago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComplementoPagoTableOrderingComposer(
+            $db: $db,
+            $table: $db.complementoPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComplementoPagoEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ComplementoPagoEventoTable> {
+  $$ComplementoPagoEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$ComplementoPagoTableAnnotationComposer get complementoPagoId {
+    final $$ComplementoPagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.complementoPagoId,
+      referencedTable: $db.complementoPago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComplementoPagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.complementoPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComplementoPagoEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ComplementoPagoEventoTable,
+          ComplementoPagoEventoData,
+          $$ComplementoPagoEventoTableFilterComposer,
+          $$ComplementoPagoEventoTableOrderingComposer,
+          $$ComplementoPagoEventoTableAnnotationComposer,
+          $$ComplementoPagoEventoTableCreateCompanionBuilder,
+          $$ComplementoPagoEventoTableUpdateCompanionBuilder,
+          (ComplementoPagoEventoData, $$ComplementoPagoEventoTableReferences),
+          ComplementoPagoEventoData,
+          PrefetchHooks Function({bool complementoPagoId})
+        > {
+  $$ComplementoPagoEventoTableTableManager(
+    _$AppDatabase db,
+    $ComplementoPagoEventoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ComplementoPagoEventoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$ComplementoPagoEventoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$ComplementoPagoEventoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> complementoPagoId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => ComplementoPagoEventoCompanion(
+                id: id,
+                complementoPagoId: complementoPagoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String complementoPagoId,
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => ComplementoPagoEventoCompanion.insert(
+                id: id,
+                complementoPagoId: complementoPagoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ComplementoPagoEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({complementoPagoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (complementoPagoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.complementoPagoId,
+                            referencedTable:
+                                $$ComplementoPagoEventoTableReferences
+                                    ._complementoPagoIdTable(db),
+                            referencedColumn:
+                                $$ComplementoPagoEventoTableReferences
+                                    ._complementoPagoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ComplementoPagoEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ComplementoPagoEventoTable,
+      ComplementoPagoEventoData,
+      $$ComplementoPagoEventoTableFilterComposer,
+      $$ComplementoPagoEventoTableOrderingComposer,
+      $$ComplementoPagoEventoTableAnnotationComposer,
+      $$ComplementoPagoEventoTableCreateCompanionBuilder,
+      $$ComplementoPagoEventoTableUpdateCompanionBuilder,
+      (ComplementoPagoEventoData, $$ComplementoPagoEventoTableReferences),
+      ComplementoPagoEventoData,
+      PrefetchHooks Function({bool complementoPagoId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -48266,4 +50912,8 @@ class $AppDatabaseManager {
       $$AplicacionPagoTableTableManager(_db, _db.aplicacionPago);
   $$PagoEventoTableTableManager get pagoEvento =>
       $$PagoEventoTableTableManager(_db, _db.pagoEvento);
+  $$ComplementoPagoTableTableManager get complementoPago =>
+      $$ComplementoPagoTableTableManager(_db, _db.complementoPago);
+  $$ComplementoPagoEventoTableTableManager get complementoPagoEvento =>
+      $$ComplementoPagoEventoTableTableManager(_db, _db.complementoPagoEvento);
 }

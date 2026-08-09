@@ -8,6 +8,7 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_aplicacion_pago_usecase.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/complemento_pago_derivado.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cuenta_por_cobrar_antiguedad.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
@@ -42,6 +43,7 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
   List<CuentaPorCobrarEventoData> _eventos = const [];
   List<AplicacionPagoData> _aplicacionesPago = const [];
   final Map<String, String> _folioPagoPorAplicacion = {};
+  bool _algunPagoConComplementoPendiente = false;
   String? _clienteNombre;
   bool _cargando = true;
   bool _procesando = false;
@@ -71,11 +73,26 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
       if (pago != null) _folioPagoPorAplicacion[aplicacion.id] = pago.folioPago;
     }
 
+    // Cierre de cobranza (Etapa 4J.3): revisa, para cada aplicación
+    // activa, si el Pago de origen ya tiene su Complemento vigente —
+    // basta con que uno solo siga pendiente para que la Cuenta no
+    // cuente como fiscalmente cerrada.
+    var algunPendiente = false;
+    for (final aplicacion in aplicacionesPago) {
+      if (EstatusAplicacionPago.values.byName(aplicacion.estatus) != EstatusAplicacionPago.aplicada) continue;
+      final complemento = await ref.read(complementoPagoRepositoryProvider).obtenerPorPagoId(aplicacion.pagoId);
+      if (complementoPendiente(requiereComplemento: true, complemento: complemento)) {
+        algunPendiente = true;
+        break;
+      }
+    }
+
     if (!mounted) return;
     setState(() {
       _cuenta = cuenta;
       _eventos = eventos;
       _aplicacionesPago = aplicacionesPago;
+      _algunPagoConComplementoPendiente = algunPendiente;
       _clienteNombre = clienteNombre;
       _cargando = false;
     });
@@ -234,6 +251,17 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
                   ),
                 ),
                 RisegStatusBadge(label: _estatusLabel(l10n, c.estatus), tone: _estatusTono(c.estatus)),
+                if (cuentaRequiereComplemento(c)) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  RisegStatusBadge(
+                    label: cierreCobranzaCompleto(cuenta: c, algunPagoConComplementoPendiente: _algunPagoConComplementoPendiente)
+                        ? l10n.cuentaPorCobrarDetalleCierreCobranzaCompleto
+                        : l10n.cuentaPorCobrarDetalleCierreCobranzaPendiente,
+                    tone: cierreCobranzaCompleto(cuenta: c, algunPagoConComplementoPendiente: _algunPagoConComplementoPendiente)
+                        ? RisegStatusTone.success
+                        : RisegStatusTone.warning,
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: AppSpacing.sm),

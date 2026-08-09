@@ -19,16 +19,17 @@ enum CategoriaAdjuntoDocumentoPorEmitir { cfdiPdf, cfdiXml, reciboPdf, otroSopor
 /// Almacenamiento de archivos adjuntos — infraestructura compartida,
 /// no un módulo de Documentos propio.
 ///
-/// Arco exclusivo tipado de 4 vías (extendido en la Etapa 4J.2 con
-/// `pagoId` — comprobante de pago; Resolución 9 de Marlon en 4I.2.2:
-/// nunca un `entityType`/`entityId` genérico) — exactamente uno de
-/// `empresaId`/`clienteId`/`documentoPorEmitirId`/`pagoId` no nulo. Las
-/// FK se declaran como SQL crudo en `customConstraints` (no
-/// `.references()`) para no crear un import circular con
+/// Arco exclusivo tipado de 5 vías (extendido en la Etapa 4J.3 con
+/// `complementoPagoId` — PDF/XML del Complemento de pago; Resolución 9
+/// de Marlon en 4I.2.2: nunca un `entityType`/`entityId` genérico) —
+/// exactamente uno de
+/// `empresaId`/`clienteId`/`documentoPorEmitirId`/`pagoId`/`complementoPagoId`
+/// no nulo. Las FK se declaran como SQL crudo en `customConstraints`
+/// (no `.references()`) para no crear un import circular con
 /// `empresa_table.dart` (que ya importa este archivo para
-/// `logoAttachmentId`) — mismo motivo por el que `pagoId` tampoco
-/// importa la tabla `Pago` de `features/finanzas`: `core` nunca
-/// depende de una feature.
+/// `logoAttachmentId`) — mismo motivo por el que `pagoId`/
+/// `complementoPagoId` tampoco importan sus tablas de
+/// `features/finanzas`: `core` nunca depende de una feature.
 ///
 /// Deliberadamente sin `uploadedBy` (no hay Usuario todavía), sin
 /// `expiresAt`/`estadoFirma` (sin cumplimiento documental todavía).
@@ -49,8 +50,12 @@ class Attachment extends Table {
   /// cualquier otro adjunto, sin campo dedicado dentro de `Pago`.
   TextColumn get pagoId => text().nullable()();
 
-  /// Solo aplica cuando `documentoPorEmitirId` no es nulo — `null` para
-  /// adjuntos de Empresa/Cliente/Pago (sin categorías propias todavía).
+  /// PDF/XML de un Complemento de pago (Etapa 4J.3).
+  TextColumn get complementoPagoId => text().nullable()();
+
+  /// Solo aplica cuando `documentoPorEmitirId`/`complementoPagoId` no
+  /// son nulos — `null` para adjuntos de Empresa/Cliente/Pago (sin
+  /// categorías propias todavía).
   TextColumn get categoria => text().nullable()();
 
   TextColumn get originalFileName => text()();
@@ -78,11 +83,13 @@ class Attachment extends Table {
         'FOREIGN KEY (cliente_id) REFERENCES cliente (id) ON DELETE RESTRICT',
         'FOREIGN KEY (documento_por_emitir_id) REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
         'FOREIGN KEY (pago_id) REFERENCES pago (id) ON DELETE CASCADE',
+        'FOREIGN KEY (complemento_pago_id) REFERENCES complemento_pago (id) ON DELETE CASCADE',
         'CHECK ('
             '(CASE WHEN empresa_id IS NOT NULL THEN 1 ELSE 0 END + '
             'CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END + '
             'CASE WHEN documento_por_emitir_id IS NOT NULL THEN 1 ELSE 0 END + '
-            'CASE WHEN pago_id IS NOT NULL THEN 1 ELSE 0 END) = 1'
+            'CASE WHEN pago_id IS NOT NULL THEN 1 ELSE 0 END + '
+            'CASE WHEN complemento_pago_id IS NOT NULL THEN 1 ELSE 0 END) = 1'
             ')',
       ];
 }
