@@ -24,6 +24,8 @@ class CorregirEmpleadoFechaNacimientoInvalida extends CorregirEmpleadoResultado 
 
 class CorregirEmpleadoFechaIngresoInvalida extends CorregirEmpleadoResultado {}
 
+class CorregirEmpleadoCodigoPostalFiscalInvalido extends CorregirEmpleadoResultado {}
+
 class CorregirEmpleadoExperienciaInvalida extends CorregirEmpleadoResultado {}
 
 class CorregirEmpleadoErrorInesperado extends CorregirEmpleadoResultado {
@@ -58,6 +60,8 @@ class CorregirEmpleadoUseCase {
     DateTime? fechaNacimiento,
     String? curp,
     String? rfc,
+    String? codigoPostalFiscal,
+    bool limpiarCodigoPostalFiscal = false,
     String? nss,
     EstadoCivilEmpleado? estadoCivil,
     String? nacionalidad,
@@ -89,6 +93,11 @@ class CorregirEmpleadoUseCase {
 
     if (curp != null && !_validator.curpValido(curp)) return CorregirEmpleadoCurpInvalido();
     if (rfc != null && !_validator.rfcValido(rfc)) return CorregirEmpleadoRfcInvalido();
+    if (codigoPostalFiscal != null &&
+        codigoPostalFiscal.trim().isNotEmpty &&
+        !_validator.codigoPostalFiscalValido(codigoPostalFiscal)) {
+      return CorregirEmpleadoCodigoPostalFiscalInvalido();
+    }
     if (nss != null && !_validator.nssValido(nss)) return CorregirEmpleadoNssInvalido();
 
     final nacimientoEfectiva = fechaNacimiento ?? actual.fechaNacimiento;
@@ -114,6 +123,9 @@ class CorregirEmpleadoUseCase {
         fechaNacimiento: fechaNacimiento == null ? const Value.absent() : Value(fechaNacimiento),
         curp: curp == null ? const Value.absent() : Value(curp.trim().toUpperCase()),
         rfc: rfc == null ? const Value.absent() : Value(rfc.trim().toUpperCase()),
+        codigoPostalFiscal: limpiarCodigoPostalFiscal
+            ? const Value(null)
+            : (codigoPostalFiscal == null ? const Value.absent() : Value(_vacioANull(codigoPostalFiscal))),
         nss: nss == null ? const Value.absent() : Value(nss.trim()),
         estadoCivil: estadoCivil == null ? const Value.absent() : Value(estadoCivil.name),
         nacionalidad: nacionalidad == null ? const Value.absent() : Value(nacionalidad),

@@ -10,6 +10,7 @@ import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
@@ -36,7 +37,7 @@ void main() {
 
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     final clienteRepo = ClienteRepositoryImpl(db);
-    final servicioRepo = ServicioRepositoryImpl(db);
+    final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     final catalogoRepo = CatalogoRepositoryImpl(db);
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
     final crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);

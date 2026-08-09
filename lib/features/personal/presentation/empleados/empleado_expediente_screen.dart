@@ -19,13 +19,16 @@ import 'empleados_list_controller.dart';
 import 'empleados_list_screen.dart';
 import 'widgets/adjuntar_documento_empleado_dialog.dart';
 import 'widgets/antidoping_empleado_dialog.dart';
+import 'widgets/asignar_servicio_empleado_dialog.dart';
 import 'widgets/baja_laboral_empleado_dialog.dart';
+import 'widgets/cambiar_servicio_empleado_dialog.dart';
 import 'widgets/corregir_empleado_dialog.dart';
 import 'widgets/crear_empleado_dialog.dart';
 import 'widgets/domicilio_empleado_dialog.dart';
 import 'widgets/estudio_socioeconomico_empleado_dialog.dart';
 import 'widgets/perfil_psicologico_empleado_dialog.dart';
 import 'widgets/reingreso_empleado_dialog.dart';
+import 'widgets/retirar_servicio_empleado_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
@@ -51,6 +54,10 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   List<AttachmentData> _documentos = const [];
   List<EmpleadoEventoData> _eventos = const [];
   List<EmpleadoPeriodoLaboralData> _periodosArchivados = const [];
+  AsignacionServicioData? _asignacionVigente;
+  List<AsignacionServicioData> _historialAsignaciones = const [];
+  Map<String, String> _serviciosPorId = const {};
+  Map<String, String> _turnosPorId = const {};
   PuestoData? _puesto;
   EmpresaData? _empresa;
   SucursalData? _sucursal;
@@ -71,6 +78,27 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     final documentos = await ref.read(attachmentRepositoryProvider).listarActivosPorEmpleado(widget.empleadoId);
     final eventos = await empleadoRepo.listarEventos(widget.empleadoId);
     final periodosArchivados = await empleadoRepo.listarPeriodosLaboralesArchivados(widget.empleadoId);
+
+    // Asignación a Servicio (Etapa 5D) — solo consulta desde aquí, nunca
+    // duplica nombre de Servicio/Turno: se resuelve contra sus propios
+    // repositorios.
+    final asignacionRepo = ref.read(asignacionServicioRepositoryProvider);
+    final asignacionVigente = await asignacionRepo.obtenerActivaPorEmpleado(widget.empleadoId);
+    final historialAsignaciones = await asignacionRepo.listarPorEmpleado(widget.empleadoId);
+
+    final serviciosPorId = <String, String>{};
+    for (final servicioId in historialAsignaciones.map((a) => a.servicioId).toSet()) {
+      final servicio = await ref.read(servicioRepositoryProvider).obtenerPorId(servicioId);
+      if (servicio != null) serviciosPorId[servicioId] = servicio.nombre;
+    }
+    final turnosPorId = <String, String>{};
+    final turnoIds = historialAsignaciones.map((a) => a.turnoId).whereType<String>().toSet();
+    if (turnoIds.isNotEmpty) {
+      final modalidades = await ref.read(catalogoRepositoryProvider).listarModalidadesTurno();
+      for (final m in modalidades) {
+        if (turnoIds.contains(m.id)) turnosPorId[m.id] = m.nombre;
+      }
+    }
 
     PuestoData? puesto;
     if (empleado?.puestoId != null) {
@@ -93,6 +121,10 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       _documentos = documentos;
       _eventos = eventos;
       _periodosArchivados = periodosArchivados;
+      _asignacionVigente = asignacionVigente;
+      _historialAsignaciones = historialAsignaciones;
+      _serviciosPorId = serviciosPorId;
+      _turnosPorId = turnosPorId;
       _puesto = puesto;
       _empresa = empresa;
       _sucursal = sucursal;
@@ -114,6 +146,9 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       TipoEventoEmpleado.antidopingActualizado => l10n.empleadoDetalleHistorialEventoAntidopingActualizado,
       TipoEventoEmpleado.bajaLaboral => l10n.empleadoDetalleHistorialEventoBajaLaboral,
       TipoEventoEmpleado.reingreso => l10n.empleadoDetalleHistorialEventoReingreso,
+      TipoEventoEmpleado.asignacionServicio => l10n.empleadoDetalleHistorialEventoAsignacionServicio,
+      TipoEventoEmpleado.cambioServicio => l10n.empleadoDetalleHistorialEventoCambioServicio,
+      TipoEventoEmpleado.retiroServicio => l10n.empleadoDetalleHistorialEventoRetiroServicio,
     };
   }
 
@@ -188,6 +223,21 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       await _cargar();
       ref.read(empleadosListControllerProvider.notifier).recargar();
     }
+  }
+
+  Future<void> _asignarServicio() async {
+    final actualizo = await mostrarDialogoAsignarServicioEmpleado(context, ref, _empleado!);
+    if (actualizo) await _cargar();
+  }
+
+  Future<void> _cambiarServicio() async {
+    final actualizo = await mostrarDialogoCambiarServicioEmpleado(context, ref, _empleado!, _asignacionVigente!.servicioId);
+    if (actualizo) await _cargar();
+  }
+
+  Future<void> _retirarServicio() async {
+    final actualizo = await mostrarDialogoRetirarServicioEmpleado(context, ref, _empleado!);
+    if (actualizo) await _cargar();
   }
 
   @override
@@ -297,6 +347,8 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                       CampoConsulta(label: l10n.empleadoCampoCurp, value: empleado.curp),
                       const SizedBox(height: AppSpacing.sm),
                       CampoConsulta(label: l10n.empleadoCampoRfc, value: empleado.rfc),
+                      const SizedBox(height: AppSpacing.sm),
+                      CampoConsulta(label: l10n.empleadoCampoCodigoPostalFiscal, value: empleado.codigoPostalFiscal),
                       const SizedBox(height: AppSpacing.sm),
                       CampoConsulta(label: l10n.empleadoCampoNss, value: empleado.nss),
                       const SizedBox(height: AppSpacing.sm),
@@ -447,6 +499,76 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                             ],
                           ),
                         ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(l10n.empleadoSeccionAsignacionServicio, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+                          ),
+                          if (_asignacionVigente == null)
+                            RisegButton(
+                              label: l10n.empleadoBotonAsignarServicio,
+                              variant: RisegButtonVariant.ghost,
+                              onPressed: _asignarServicio,
+                            )
+                          else
+                            Wrap(
+                              spacing: AppSpacing.xs,
+                              children: [
+                                RisegButton(
+                                  label: l10n.empleadoBotonCambiarServicio,
+                                  variant: RisegButtonVariant.ghost,
+                                  onPressed: _cambiarServicio,
+                                ),
+                                RisegButton(
+                                  label: l10n.empleadoBotonRetirarServicio,
+                                  variant: RisegButtonVariant.ghost,
+                                  onPressed: _retirarServicio,
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      if (_asignacionVigente == null)
+                        Text(l10n.empleadoSinServicioAsignado, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      else ...[
+                        Text(
+                          _serviciosPorId[_asignacionVigente!.servicioId] ?? _asignacionVigente!.servicioId,
+                          style: AppTypography.label,
+                        ),
+                        Text(
+                          l10n.empleadoAsignacionDesde(_formatoFecha.format(_asignacionVigente!.fechaInicio)),
+                          style: AppTypography.body.copyWith(color: colors.textMuted),
+                        ),
+                        if (_asignacionVigente!.turnoId != null)
+                          Text(
+                            _turnosPorId[_asignacionVigente!.turnoId] ?? _asignacionVigente!.turnoId!,
+                            style: AppTypography.caption.copyWith(color: colors.textMuted),
+                          ),
+                      ],
+                      if (_historialAsignaciones.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Text(l10n.empleadoSeccionHistorialAsignaciones, style: AppTypography.label),
+                        const SizedBox(height: AppSpacing.xs),
+                        for (final asignacion in _historialAsignaciones)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                            child: Text(
+                              '${_serviciosPorId[asignacion.servicioId] ?? asignacion.servicioId} — '
+                              '${_formatoFecha.format(asignacion.fechaInicio)} '
+                              '${asignacion.fechaTermino == null ? l10n.empleadoAsignacionActual : 'al ${_formatoFecha.format(asignacion.fechaTermino!)}'}',
+                              style: AppTypography.body.copyWith(color: colors.textMuted),
+                            ),
+                          ),
+                      ],
                     ],
                   ),
                 ),

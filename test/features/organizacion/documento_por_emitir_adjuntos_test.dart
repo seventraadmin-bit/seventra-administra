@@ -18,6 +18,7 @@ import 'package:riseg_one/features/organizacion/data/repositories/documento_por_
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
@@ -42,7 +43,7 @@ void main() {
 
   Future<String> crearDocumentoDePrueba({TipoDocumentoCobro tipoDocumento = TipoDocumentoCobro.reciboDePago}) async {
     final clienteRepo = ClienteRepositoryImpl(db);
-    final servicioRepo = ServicioRepositoryImpl(db);
+    final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     final catalogoRepo = CatalogoRepositoryImpl(db);
     final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
     final comercialRepo = ServicioComercialRepositoryImpl(db);

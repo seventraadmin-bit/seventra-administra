@@ -9,6 +9,8 @@ import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/actualizar_fotografia_empleado_usecase.dart';
@@ -43,11 +45,13 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    empleadoRepo = EmpleadoRepositoryImpl(db);
+    final asignacionServicioRepo = AsignacionServicioRepositoryImpl(db);
+    empleadoRepo = EmpleadoRepositoryImpl(db, asignacionServicioRepo);
+    final servicioRepo = ServicioRepositoryImpl(db, asignacionServicioRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     const validator = EmpleadoValidator();
 
-    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarCodigo, validator);
+    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarCodigo, validator, servicioRepo);
     corregirEmpleado = CorregirEmpleadoUseCase(empleadoRepo, validator);
     registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, validator);
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, validator);
@@ -72,10 +76,13 @@ void main() {
     String apellidoPaterno = 'Pérez',
     String curp = 'PEXJ900101HDFXXX01',
     String rfc = 'PEXJ900101AB1',
+    String? codigoPostalFiscal,
     String nss = '12345678901',
     DateTime? fechaNacimiento,
     DateTime? fechaIngreso,
     int aniosExperienciaSeguridad = 3,
+    String? servicioId,
+    String? sucursalId,
   }) {
     return crearEmpleado.ejecutar(
       nombres: nombres,
@@ -84,10 +91,13 @@ void main() {
       fechaNacimiento: fechaNacimiento ?? DateTime(1990, 1, 1),
       curp: curp,
       rfc: rfc,
+      codigoPostalFiscal: codigoPostalFiscal,
       nss: nss,
       estadoCivil: EstadoCivilEmpleado.soltero,
       fechaIngreso: fechaIngreso ?? DateTime(2026, 1, 1),
       aniosExperienciaSeguridad: aniosExperienciaSeguridad,
+      servicioId: servicioId,
+      sucursalId: sucursalId,
     );
   }
 
@@ -157,6 +167,27 @@ void main() {
     test('rechaza años de experiencia negativos', () async {
       final resultado = await crearEmpleadoDePrueba(aniosExperienciaSeguridad: -1);
       expect(resultado, isA<CrearEmpleadoExperienciaInvalida>());
+    });
+
+    test('rechaza un código postal fiscal con formato inválido', () async {
+      final resultado = await crearEmpleadoDePrueba(codigoPostalFiscal: 'ABC');
+      expect(resultado, isA<CrearEmpleadoCodigoPostalFiscalInvalido>());
+    });
+
+    test('acepta un código postal fiscal válido, independiente del domicilio', () async {
+      final resultado = await crearEmpleadoDePrueba(codigoPostalFiscal: '50000');
+      expect(resultado, isA<CrearEmpleadoExitoso>());
+      expect((resultado as CrearEmpleadoExitoso).empleado.codigoPostalFiscal, '50000');
+    });
+
+    test('rechaza adscripción ambigua (Servicio y Sucursal a la vez)', () async {
+      final resultado = await crearEmpleadoDePrueba(servicioId: 'servicio-cualquiera', sucursalId: 'sucursal-cualquiera');
+      expect(resultado, isA<CrearEmpleadoAdscripcionAmbigua>());
+    });
+
+    test('rechaza una adscripción a un Servicio inexistente', () async {
+      final resultado = await crearEmpleadoDePrueba(servicioId: 'servicio-inexistente');
+      expect(resultado, isA<CrearEmpleadoServicioNoExiste>());
     });
   });
 

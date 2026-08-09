@@ -1581,6 +1581,7 @@
   "empleadoCampoFechaNacimiento": "Fecha de nacimiento",
   "empleadoCampoCurp": "CURP",
   "empleadoCampoRfc": "RFC",
+  "empleadoCampoCodigoPostalFiscal": "Código postal fiscal",
   "empleadoCampoNss": "NSS",
   "empleadoCampoEstadoCivil": "Estado civil",
   "empleadoCampoNacionalidad": "Nacionalidad",
@@ -1595,6 +1596,17 @@
   "empleadoCampoSucursal": "Sucursal",
   "empleadoCampoObservaciones": "Observaciones",
   "empleadoCampoSinAsignar": "Sin asignar",
+  "empleadoSeccionAdscripcion": "Adscripción",
+  "empleadoCampoTipoAdscripcion": "Tipo de adscripción",
+  "empleadoTipoAdscripcionNinguna": "Ninguna",
+  "empleadoTipoAdscripcionServicio": "Servicio",
+  "empleadoTipoAdscripcionSucursal": "Sucursal",
+  "empleadoCampoServicio": "Servicio",
+  "empleadoCampoServicioNuevo": "Nuevo servicio",
+  "empleadoCampoTurno": "Turno",
+  "empleadoErrorAdscripcionAmbigua": "Elige Servicio o Sucursal, no ambos.",
+  "empleadoErrorServicioNoActivo": "El Servicio no existe o no está activo.",
+  "empleadoErrorCodigoPostalFiscalInvalido": "El código postal fiscal debe tener 5 dígitos.",
   "empleadoCampoNivelEstudios": "Nivel de estudios",
   "empleadoCampoObservacionesEscolaridad": "Observaciones de escolaridad",
   "empleadoCampoAniosExperiencia": "Años de experiencia en seguridad privada",
@@ -1759,6 +1771,9 @@
   "empleadoDetalleHistorialEventoAntidopingActualizado": "Antidoping actualizado",
   "empleadoDetalleHistorialEventoBajaLaboral": "Baja laboral",
   "empleadoDetalleHistorialEventoReingreso": "Reingreso",
+  "empleadoDetalleHistorialEventoAsignacionServicio": "Asignación a Servicio",
+  "empleadoDetalleHistorialEventoCambioServicio": "Cambio de Servicio",
+  "empleadoDetalleHistorialEventoRetiroServicio": "Retiro de Servicio",
 
   "bajaLaboralEmpleadoDialogoTitulo": "Dar de baja",
   "bajaLaboralEmpleadoBotonConfirmar": "Confirmar",
@@ -1791,6 +1806,64 @@
   "reingresoEmpleadoExito": "Reingreso registrado correctamente.",
   "reingresoEmpleadoErrorInesperado": "No se pudo registrar el reingreso. Intenta de nuevo.",
   "reingresoEmpleadoErrorFechaInvalida": "Ingresa una fecha de ingreso válida (no anterior a la baja anterior, no futura).",
+
+  "empleadoSeccionAsignacionServicio": "Asignación a Servicio",
+  "empleadoBotonAsignarServicio": "Asignar a servicio",
+  "empleadoBotonCambiarServicio": "Cambiar de servicio",
+  "empleadoBotonRetirarServicio": "Retirar del servicio",
+  "empleadoSinServicioAsignado": "Sin servicio asignado",
+  "empleadoAsignacionDesde": "Desde: {fecha}",
+  "@empleadoAsignacionDesde": {
+    "placeholders": {
+      "fecha": {"type": "String"}
+    }
+  },
+  "empleadoAsignacionActual": "Actual",
+  "empleadoSeccionHistorialAsignaciones": "Historial de asignaciones",
+  "empleadoCampoFechaInicioAsignacion": "Fecha de inicio",
+  "empleadoCampoFechaTerminoAsignacion": "Fecha de término",
+  "empleadoCampoFechaCambioServicio": "Fecha del cambio",
+  "empleadoCampoMotivoTerminoAsignacion": "Motivo",
+
+  "asignarServicioEmpleadoDialogoTitulo": "Asignar a servicio",
+  "asignarServicioEmpleadoBotonConfirmar": "Confirmar",
+  "asignarServicioEmpleadoBotonCancelar": "Cancelar",
+  "asignarServicioEmpleadoExito": "Asignación registrada correctamente.",
+  "asignarServicioEmpleadoErrorInesperado": "No se pudo registrar la asignación. Intenta de nuevo.",
+  "asignarServicioEmpleadoErrorFechaInvalida": "Ingresa una fecha de inicio válida (no anterior al ingreso, no futura).",
+
+  "cambiarServicioEmpleadoDialogoTitulo": "Cambiar de servicio",
+  "cambiarServicioEmpleadoBotonConfirmar": "Confirmar",
+  "cambiarServicioEmpleadoBotonCancelar": "Cancelar",
+  "cambiarServicioEmpleadoExito": "Cambio de servicio registrado correctamente.",
+  "cambiarServicioEmpleadoErrorInesperado": "No se pudo registrar el cambio de servicio. Intenta de nuevo.",
+  "cambiarServicioEmpleadoErrorFechaInvalida": "Ingresa una fecha válida (no anterior al inicio de la asignación actual, no futura).",
+
+  "retirarServicioEmpleadoDialogoTitulo": "Retirar del servicio",
+  "retirarServicioEmpleadoBotonConfirmar": "Confirmar",
+  "retirarServicioEmpleadoBotonCancelar": "Cancelar",
+  "retirarServicioEmpleadoExito": "Retiro registrado correctamente.",
+  "retirarServicioEmpleadoErrorInesperado": "No se pudo registrar el retiro. Intenta de nuevo.",
+  "retirarServicioEmpleadoErrorFechaInvalida": "Ingresa una fecha de término válida (no anterior al inicio de la asignación, no futura).",
+  "retirarServicioEmpleadoErrorObservacionesRequeridas": "Las observaciones son obligatorias para el motivo \"Otro\".",
+
+  "motivoTerminoAsignacionSolicitudCliente": "Solicitud del cliente",
+  "motivoTerminoAsignacionReestructuracionOperativa": "Reestructuración operativa",
+  "motivoTerminoAsignacionBajoDesempeno": "Bajo desempeño",
+  "motivoTerminoAsignacionOtro": "Otro",
+  "motivoTerminoAsignacionCambioServicio": "Cambio de servicio",
+  "motivoTerminoAsignacionBajaEmpleado": "Baja del empleado",
+  "motivoTerminoAsignacionServicioTerminado": "Servicio terminado",
+
+  "servicioSeccionPersonalAsignado": "Personal asignado",
+  "servicioSeccionHistorialPersonal": "Historial",
+  "servicioPersonalAsignadoSinPersonal": "Sin personal asignado actualmente.",
+  "servicioPersonalAsignadoDesde": "Desde {fecha}",
+  "@servicioPersonalAsignadoDesde": {
+    "placeholders": {
+      "fecha": {"type": "String"}
+    }
+  },
 
   "actualizarFotografiaEmpleadoErrorInesperado": "No se pudo actualizar la fotografía. Intenta de nuevo.",
 

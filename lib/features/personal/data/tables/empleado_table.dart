@@ -69,6 +69,9 @@ enum TipoEventoEmpleado {
   antidopingActualizado,
   bajaLaboral,
   reingreso,
+  asignacionServicio,
+  cambioServicio,
+  retiroServicio,
 }
 
 /// Expediente del empleado (Etapa 5A) — la base sobre la que se
@@ -136,6 +139,14 @@ class Empleado extends Table with AuditColumns {
   TextColumn get curp => text()();
 
   TextColumn get rfc => text()();
+
+  /// Código postal de la Constancia de Situación Fiscal (Etapa 5D) —
+  /// deliberadamente independiente del código postal del domicilio
+  /// (vive en `Direccion`, arco exclusivo existente): son dos datos
+  /// distintos que pueden no coincidir. Único dato fiscal adicional que
+  /// se agrega en esta etapa — tiene un consumidor claro (Nómina, a
+  /// futuro), no se agregan otros campos fiscales sin ese mismo criterio.
+  TextColumn get codigoPostalFiscal => text().nullable()();
 
   TextColumn get nss => text()();
 

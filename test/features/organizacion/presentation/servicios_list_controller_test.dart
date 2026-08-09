@@ -10,6 +10,7 @@ import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
@@ -25,7 +26,7 @@ void main() {
 
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     final clienteRepo = ClienteRepositoryImpl(db);
-    final servicioRepo = ServicioRepositoryImpl(db);
+    final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     final validator = ServicioValidator(clienteRepo, CatalogoRepositoryImpl(db));
     final crearCliente = CrearClienteUseCase(clienteRepo, generarCodigo);
     final crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, validator);

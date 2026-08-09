@@ -16,8 +16,12 @@ abstract interface class EmpleadoRepository {
   Future<List<EmpleadoEventoData>> listarEventos(String empleadoId);
 
   /// El llamador ya generó `codigoEmpleado` (mismo criterio que
-  /// `PagoRepository.crear`).
-  Future<EmpleadoData> crear(EmpleadoCompanion datos);
+  /// `PagoRepository.crear`). `servicioIdAsignacion` (Etapa 5D) crea,
+  /// dentro de la misma transacción, la `AsignacionServicio` inicial —
+  /// `CrearEmpleadoUseCase` ya validó que el Servicio exista y esté
+  /// activo antes de llegar aquí. `Empleado` nunca gana una columna
+  /// `servicioId`.
+  Future<EmpleadoData> crear(EmpleadoCompanion datos, {String? servicioIdAsignacion, String? turnoIdAsignacion});
 
   /// `cambios` nunca debe incluir `codigoEmpleado` — inmutable después
   /// de creado (responsabilidad de `CorregirEmpleadoUseCase`, mismo

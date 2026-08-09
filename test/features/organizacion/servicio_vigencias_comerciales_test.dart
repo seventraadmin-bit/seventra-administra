@@ -12,6 +12,7 @@ import 'package:riseg_one/features/organizacion/data/repositories/configuracion_
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
@@ -66,7 +67,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     clienteRepo = ClienteRepositoryImpl(db);
-    servicioRepo = ServicioRepositoryImpl(db);
+    servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     puestoRepo = PuestoRepositoryImpl(db);
     catalogoRepo = CatalogoRepositoryImpl(db);
     clock = _RelojFijo(hoy);

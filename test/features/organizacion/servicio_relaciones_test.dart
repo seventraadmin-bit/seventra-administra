@@ -14,6 +14,8 @@ import 'package:riseg_one/features/organizacion/data/repositories/configuracion_
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
@@ -63,7 +65,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     clienteRepo = ClienteRepositoryImpl(db);
-    servicioRepo = ServicioRepositoryImpl(db);
+    servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
     sucursalRepo = SucursalRepositoryImpl(db);
     final catalogoRepo = CatalogoRepositoryImpl(db);
@@ -87,6 +89,8 @@ void main() {
       sucursalRepo,
       ServicioComercialRepositoryImpl(db),
       ConfiguracionCobroRepositoryImpl(db),
+      AsignacionServicioRepositoryImpl(db),
+      EmpleadoRepositoryImpl(db, AsignacionServicioRepositoryImpl(db)),
     );
   });
 

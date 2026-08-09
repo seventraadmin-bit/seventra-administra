@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
+import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
 import '../repositories/empleado_repository.dart';
@@ -29,6 +31,16 @@ class CrearEmpleadoFechaIngresoInvalida extends CrearEmpleadoResultado {}
 
 class CrearEmpleadoExperienciaInvalida extends CrearEmpleadoResultado {}
 
+class CrearEmpleadoCodigoPostalFiscalInvalido extends CrearEmpleadoResultado {}
+
+/// Se proporcionaron `servicioId` y `sucursalId` a la vez — la
+/// adscripción es Servicio *o* Sucursal, nunca ambas (Etapa 5D).
+class CrearEmpleadoAdscripcionAmbigua extends CrearEmpleadoResultado {}
+
+class CrearEmpleadoServicioNoExiste extends CrearEmpleadoResultado {}
+
+class CrearEmpleadoServicioNoActivo extends CrearEmpleadoResultado {}
+
 class CrearEmpleadoErrorInesperado extends CrearEmpleadoResultado {
   CrearEmpleadoErrorInesperado(this.mensaje);
   final String mensaje;
@@ -47,11 +59,12 @@ String? _vacioANull(String? valor) {
 /// `AdjuntarDocumentoEmpleadoUseCase`) — un expediente puede existir
 /// sin ninguno de los dos todavía.
 class CrearEmpleadoUseCase {
-  CrearEmpleadoUseCase(this._repository, this._generarCodigo, this._validator);
+  CrearEmpleadoUseCase(this._repository, this._generarCodigo, this._validator, this._servicioRepository);
 
   final EmpleadoRepository _repository;
   final GenerarCodigoUseCase _generarCodigo;
   final EmpleadoValidator _validator;
+  final ServicioRepository _servicioRepository;
 
   Future<CrearEmpleadoResultado> ejecutar({
     required String nombres,
@@ -61,6 +74,7 @@ class CrearEmpleadoUseCase {
     required DateTime fechaNacimiento,
     required String curp,
     required String rfc,
+    String? codigoPostalFiscal,
     required String nss,
     required EstadoCivilEmpleado estadoCivil,
     String nacionalidad = 'Mexicana',
@@ -72,6 +86,12 @@ class CrearEmpleadoUseCase {
     required DateTime fechaIngreso,
     String? puestoId,
     String? empresaId,
+    // --- Adscripción (Etapa 5D): Servicio *o* Sucursal, nunca ambas.
+    // `servicioId`/`turnoId` nunca se guardan en Empleado — crean la
+    // `AsignacionServicio` inicial dentro de la misma transacción
+    // (ver `EmpleadoRepositoryImpl.crear`). ---
+    String? servicioId,
+    String? turnoId,
     String? sucursalId,
     String? observaciones,
     NivelEstudiosEmpleado? nivelEstudios,
@@ -87,12 +107,26 @@ class CrearEmpleadoUseCase {
     if (apellidoPaterno.trim().isEmpty) return CrearEmpleadoApellidoPaternoRequerido();
     if (!_validator.curpValido(curp)) return CrearEmpleadoCurpInvalido();
     if (!_validator.rfcValido(rfc)) return CrearEmpleadoRfcInvalido();
+    if (codigoPostalFiscal != null &&
+        codigoPostalFiscal.trim().isNotEmpty &&
+        !_validator.codigoPostalFiscalValido(codigoPostalFiscal)) {
+      return CrearEmpleadoCodigoPostalFiscalInvalido();
+    }
     if (!_validator.nssValido(nss)) return CrearEmpleadoNssInvalido();
     if (!_validator.fechaNacimientoValida(fechaNacimiento)) return CrearEmpleadoFechaNacimientoInvalida();
     if (!_validator.fechaIngresoValida(fechaIngreso, fechaNacimiento)) return CrearEmpleadoFechaIngresoInvalida();
     if (aniosExperienciaSeguridad < 0) return CrearEmpleadoExperienciaInvalida();
     if (mesesExperienciaAdicionales != null && (mesesExperienciaAdicionales < 0 || mesesExperienciaAdicionales > 11)) {
       return CrearEmpleadoExperienciaInvalida();
+    }
+
+    if (servicioId != null && sucursalId != null) return CrearEmpleadoAdscripcionAmbigua();
+    if (servicioId != null) {
+      final servicio = await _servicioRepository.obtenerPorId(servicioId);
+      if (servicio == null) return CrearEmpleadoServicioNoExiste();
+      if (EstatusServicio.values.byName(servicio.estatus) != EstatusServicio.activo) {
+        return CrearEmpleadoServicioNoActivo();
+      }
     }
 
     try {
@@ -109,6 +143,7 @@ class CrearEmpleadoUseCase {
           fechaNacimiento: fechaNacimiento,
           curp: curp.trim().toUpperCase(),
           rfc: rfc.trim().toUpperCase(),
+          codigoPostalFiscal: Value(_vacioANull(codigoPostalFiscal)),
           nss: nss.trim(),
           estadoCivil: estadoCivil.name,
           nacionalidad: Value(nacionalidad),
@@ -130,6 +165,8 @@ class CrearEmpleadoUseCase {
           resumenExperiencia: Value(_vacioANull(resumenExperiencia)),
           observacionesExperiencia: Value(_vacioANull(observacionesExperiencia)),
         ),
+        servicioIdAsignacion: servicioId,
+        turnoIdAsignacion: turnoId,
       );
       return CrearEmpleadoExitoso(empleado);
     } catch (e) {

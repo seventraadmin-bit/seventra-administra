@@ -31064,6 +31064,17 @@ class $EmpleadoTable extends Empleado
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _codigoPostalFiscalMeta =
+      const VerificationMeta('codigoPostalFiscal');
+  @override
+  late final GeneratedColumn<String> codigoPostalFiscal =
+      GeneratedColumn<String>(
+        'codigo_postal_fiscal',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _nssMeta = const VerificationMeta('nss');
   @override
   late final GeneratedColumn<String> nss = GeneratedColumn<String>(
@@ -31498,6 +31509,7 @@ class $EmpleadoTable extends Empleado
     fechaNacimiento,
     curp,
     rfc,
+    codigoPostalFiscal,
     nss,
     estadoCivil,
     nacionalidad,
@@ -31654,6 +31666,15 @@ class $EmpleadoTable extends Empleado
       );
     } else if (isInserting) {
       context.missing(_rfcMeta);
+    }
+    if (data.containsKey('codigo_postal_fiscal')) {
+      context.handle(
+        _codigoPostalFiscalMeta,
+        codigoPostalFiscal.isAcceptableOrUnknown(
+          data['codigo_postal_fiscal']!,
+          _codigoPostalFiscalMeta,
+        ),
+      );
     }
     if (data.containsKey('nss')) {
       context.handle(
@@ -32044,6 +32065,10 @@ class $EmpleadoTable extends Empleado
             DriftSqlType.string,
             data['${effectivePrefix}rfc'],
           )!,
+      codigoPostalFiscal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}codigo_postal_fiscal'],
+      ),
       nss:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -32226,6 +32251,14 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
   final DateTime fechaNacimiento;
   final String curp;
   final String rfc;
+
+  /// Código postal de la Constancia de Situación Fiscal (Etapa 5D) —
+  /// deliberadamente independiente del código postal del domicilio
+  /// (vive en `Direccion`, arco exclusivo existente): son dos datos
+  /// distintos que pueden no coincidir. Único dato fiscal adicional que
+  /// se agrega en esta etapa — tiene un consumidor claro (Nómina, a
+  /// futuro), no se agregan otros campos fiscales sin ese mismo criterio.
+  final String? codigoPostalFiscal;
   final String nss;
   final String estadoCivil;
   final String nacionalidad;
@@ -32277,6 +32310,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     required this.fechaNacimiento,
     required this.curp,
     required this.rfc,
+    this.codigoPostalFiscal,
     required this.nss,
     required this.estadoCivil,
     required this.nacionalidad,
@@ -32337,6 +32371,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     map['fecha_nacimiento'] = Variable<DateTime>(fechaNacimiento);
     map['curp'] = Variable<String>(curp);
     map['rfc'] = Variable<String>(rfc);
+    if (!nullToAbsent || codigoPostalFiscal != null) {
+      map['codigo_postal_fiscal'] = Variable<String>(codigoPostalFiscal);
+    }
     map['nss'] = Variable<String>(nss);
     map['estado_civil'] = Variable<String>(estadoCivil);
     map['nacionalidad'] = Variable<String>(nacionalidad);
@@ -32484,6 +32521,10 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       fechaNacimiento: Value(fechaNacimiento),
       curp: Value(curp),
       rfc: Value(rfc),
+      codigoPostalFiscal:
+          codigoPostalFiscal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(codigoPostalFiscal),
       nss: Value(nss),
       estadoCivil: Value(estadoCivil),
       nacionalidad: Value(nacionalidad),
@@ -32638,6 +32679,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       fechaNacimiento: serializer.fromJson<DateTime>(json['fechaNacimiento']),
       curp: serializer.fromJson<String>(json['curp']),
       rfc: serializer.fromJson<String>(json['rfc']),
+      codigoPostalFiscal: serializer.fromJson<String?>(
+        json['codigoPostalFiscal'],
+      ),
       nss: serializer.fromJson<String>(json['nss']),
       estadoCivil: serializer.fromJson<String>(json['estadoCivil']),
       nacionalidad: serializer.fromJson<String>(json['nacionalidad']),
@@ -32732,6 +32776,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       'fechaNacimiento': serializer.toJson<DateTime>(fechaNacimiento),
       'curp': serializer.toJson<String>(curp),
       'rfc': serializer.toJson<String>(rfc),
+      'codigoPostalFiscal': serializer.toJson<String?>(codigoPostalFiscal),
       'nss': serializer.toJson<String>(nss),
       'estadoCivil': serializer.toJson<String>(estadoCivil),
       'nacionalidad': serializer.toJson<String>(nacionalidad),
@@ -32810,6 +32855,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     DateTime? fechaNacimiento,
     String? curp,
     String? rfc,
+    Value<String?> codigoPostalFiscal = const Value.absent(),
     String? nss,
     String? estadoCivil,
     String? nacionalidad,
@@ -32865,6 +32911,10 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     fechaNacimiento: fechaNacimiento ?? this.fechaNacimiento,
     curp: curp ?? this.curp,
     rfc: rfc ?? this.rfc,
+    codigoPostalFiscal:
+        codigoPostalFiscal.present
+            ? codigoPostalFiscal.value
+            : this.codigoPostalFiscal,
     nss: nss ?? this.nss,
     estadoCivil: estadoCivil ?? this.estadoCivil,
     nacionalidad: nacionalidad ?? this.nacionalidad,
@@ -32991,6 +33041,10 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
               : this.fechaNacimiento,
       curp: data.curp.present ? data.curp.value : this.curp,
       rfc: data.rfc.present ? data.rfc.value : this.rfc,
+      codigoPostalFiscal:
+          data.codigoPostalFiscal.present
+              ? data.codigoPostalFiscal.value
+              : this.codigoPostalFiscal,
       nss: data.nss.present ? data.nss.value : this.nss,
       estadoCivil:
           data.estadoCivil.present ? data.estadoCivil.value : this.estadoCivil,
@@ -33134,6 +33188,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           ..write('fechaNacimiento: $fechaNacimiento, ')
           ..write('curp: $curp, ')
           ..write('rfc: $rfc, ')
+          ..write('codigoPostalFiscal: $codigoPostalFiscal, ')
           ..write('nss: $nss, ')
           ..write('estadoCivil: $estadoCivil, ')
           ..write('nacionalidad: $nacionalidad, ')
@@ -33194,6 +33249,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     fechaNacimiento,
     curp,
     rfc,
+    codigoPostalFiscal,
     nss,
     estadoCivil,
     nacionalidad,
@@ -33249,6 +33305,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           other.fechaNacimiento == this.fechaNacimiento &&
           other.curp == this.curp &&
           other.rfc == this.rfc &&
+          other.codigoPostalFiscal == this.codigoPostalFiscal &&
           other.nss == this.nss &&
           other.estadoCivil == this.estadoCivil &&
           other.nacionalidad == this.nacionalidad &&
@@ -33305,6 +33362,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
   final Value<DateTime> fechaNacimiento;
   final Value<String> curp;
   final Value<String> rfc;
+  final Value<String?> codigoPostalFiscal;
   final Value<String> nss;
   final Value<String> estadoCivil;
   final Value<String> nacionalidad;
@@ -33357,6 +33415,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.fechaNacimiento = const Value.absent(),
     this.curp = const Value.absent(),
     this.rfc = const Value.absent(),
+    this.codigoPostalFiscal = const Value.absent(),
     this.nss = const Value.absent(),
     this.estadoCivil = const Value.absent(),
     this.nacionalidad = const Value.absent(),
@@ -33410,6 +33469,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     required DateTime fechaNacimiento,
     required String curp,
     required String rfc,
+    this.codigoPostalFiscal = const Value.absent(),
     required String nss,
     required String estadoCivil,
     this.nacionalidad = const Value.absent(),
@@ -33473,6 +33533,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Expression<DateTime>? fechaNacimiento,
     Expression<String>? curp,
     Expression<String>? rfc,
+    Expression<String>? codigoPostalFiscal,
     Expression<String>? nss,
     Expression<String>? estadoCivil,
     Expression<String>? nacionalidad,
@@ -33527,6 +33588,8 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       if (fechaNacimiento != null) 'fecha_nacimiento': fechaNacimiento,
       if (curp != null) 'curp': curp,
       if (rfc != null) 'rfc': rfc,
+      if (codigoPostalFiscal != null)
+        'codigo_postal_fiscal': codigoPostalFiscal,
       if (nss != null) 'nss': nss,
       if (estadoCivil != null) 'estado_civil': estadoCivil,
       if (nacionalidad != null) 'nacionalidad': nacionalidad,
@@ -33596,6 +33659,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Value<DateTime>? fechaNacimiento,
     Value<String>? curp,
     Value<String>? rfc,
+    Value<String?>? codigoPostalFiscal,
     Value<String>? nss,
     Value<String>? estadoCivil,
     Value<String>? nacionalidad,
@@ -33650,6 +33714,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       fechaNacimiento: fechaNacimiento ?? this.fechaNacimiento,
       curp: curp ?? this.curp,
       rfc: rfc ?? this.rfc,
+      codigoPostalFiscal: codigoPostalFiscal ?? this.codigoPostalFiscal,
       nss: nss ?? this.nss,
       estadoCivil: estadoCivil ?? this.estadoCivil,
       nacionalidad: nacionalidad ?? this.nacionalidad,
@@ -33747,6 +33812,9 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     }
     if (rfc.present) {
       map['rfc'] = Variable<String>(rfc.value);
+    }
+    if (codigoPostalFiscal.present) {
+      map['codigo_postal_fiscal'] = Variable<String>(codigoPostalFiscal.value);
     }
     if (nss.present) {
       map['nss'] = Variable<String>(nss.value);
@@ -33907,6 +33975,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
           ..write('fechaNacimiento: $fechaNacimiento, ')
           ..write('curp: $curp, ')
           ..write('rfc: $rfc, ')
+          ..write('codigoPostalFiscal: $codigoPostalFiscal, ')
           ..write('nss: $nss, ')
           ..write('estadoCivil: $estadoCivil, ')
           ..write('nacionalidad: $nacionalidad, ')
@@ -34980,6 +35049,783 @@ class EmpleadoPeriodoLaboralCompanion
           ..write('fechaBaja: $fechaBaja, ')
           ..write('motivoBaja: $motivoBaja, ')
           ..write('observacionesBaja: $observacionesBaja')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AsignacionServicioTable extends AsignacionServicio
+    with TableInfo<$AsignacionServicioTable, AsignacionServicioData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AsignacionServicioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empleado (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _turnoIdMeta = const VerificationMeta(
+    'turnoId',
+  );
+  @override
+  late final GeneratedColumn<String> turnoId = GeneratedColumn<String>(
+    'turno_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES tipo_modalidad_turno (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _fechaInicioMeta = const VerificationMeta(
+    'fechaInicio',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaInicio = GeneratedColumn<DateTime>(
+    'fecha_inicio',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaTerminoMeta = const VerificationMeta(
+    'fechaTermino',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaTermino = GeneratedColumn<DateTime>(
+    'fecha_termino',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _motivoTerminoMeta = const VerificationMeta(
+    'motivoTermino',
+  );
+  @override
+  late final GeneratedColumn<String> motivoTermino = GeneratedColumn<String>(
+    'motivo_termino',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesTerminoMeta =
+      const VerificationMeta('observacionesTermino');
+  @override
+  late final GeneratedColumn<String> observacionesTermino =
+      GeneratedColumn<String>(
+        'observaciones_termino',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    empleadoId,
+    servicioId,
+    turnoId,
+    fechaInicio,
+    fechaTermino,
+    motivoTermino,
+    observaciones,
+    observacionesTermino,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'asignacion_servicio';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AsignacionServicioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_empleadoIdMeta);
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_servicioIdMeta);
+    }
+    if (data.containsKey('turno_id')) {
+      context.handle(
+        _turnoIdMeta,
+        turnoId.isAcceptableOrUnknown(data['turno_id']!, _turnoIdMeta),
+      );
+    }
+    if (data.containsKey('fecha_inicio')) {
+      context.handle(
+        _fechaInicioMeta,
+        fechaInicio.isAcceptableOrUnknown(
+          data['fecha_inicio']!,
+          _fechaInicioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaInicioMeta);
+    }
+    if (data.containsKey('fecha_termino')) {
+      context.handle(
+        _fechaTerminoMeta,
+        fechaTermino.isAcceptableOrUnknown(
+          data['fecha_termino']!,
+          _fechaTerminoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('motivo_termino')) {
+      context.handle(
+        _motivoTerminoMeta,
+        motivoTermino.isAcceptableOrUnknown(
+          data['motivo_termino']!,
+          _motivoTerminoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones_termino')) {
+      context.handle(
+        _observacionesTerminoMeta,
+        observacionesTermino.isAcceptableOrUnknown(
+          data['observaciones_termino']!,
+          _observacionesTerminoMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AsignacionServicioData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AsignacionServicioData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      empleadoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}empleado_id'],
+          )!,
+      servicioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}servicio_id'],
+          )!,
+      turnoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}turno_id'],
+      ),
+      fechaInicio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_inicio'],
+          )!,
+      fechaTermino: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_termino'],
+      ),
+      motivoTermino: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_termino'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      observacionesTermino: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_termino'],
+      ),
+    );
+  }
+
+  @override
+  $AsignacionServicioTable createAlias(String alias) {
+    return $AsignacionServicioTable(attachedDatabase, alias);
+  }
+}
+
+class AsignacionServicioData extends DataClass
+    implements Insertable<AsignacionServicioData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String empleadoId;
+  final String servicioId;
+
+  /// Turno de esta asignación — reutiliza el catálogo de modalidades de
+  /// turno ya existente (`TipoModalidadTurno`, Etapa 4G.1, usado hoy por
+  /// `ServicioLineaComercialVigencia.modalidadTurnoId`): es el mismo
+  /// concepto real, evita duplicar catálogo. Vive aquí y no en
+  /// `Empleado` porque cambia cuando el Empleado cambia de Servicio.
+  final String? turnoId;
+  final DateTime fechaInicio;
+  final DateTime? fechaTermino;
+  final String? motivoTermino;
+  final String? observaciones;
+  final String? observacionesTermino;
+  const AsignacionServicioData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.empleadoId,
+    required this.servicioId,
+    this.turnoId,
+    required this.fechaInicio,
+    this.fechaTermino,
+    this.motivoTermino,
+    this.observaciones,
+    this.observacionesTermino,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['empleado_id'] = Variable<String>(empleadoId);
+    map['servicio_id'] = Variable<String>(servicioId);
+    if (!nullToAbsent || turnoId != null) {
+      map['turno_id'] = Variable<String>(turnoId);
+    }
+    map['fecha_inicio'] = Variable<DateTime>(fechaInicio);
+    if (!nullToAbsent || fechaTermino != null) {
+      map['fecha_termino'] = Variable<DateTime>(fechaTermino);
+    }
+    if (!nullToAbsent || motivoTermino != null) {
+      map['motivo_termino'] = Variable<String>(motivoTermino);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || observacionesTermino != null) {
+      map['observaciones_termino'] = Variable<String>(observacionesTermino);
+    }
+    return map;
+  }
+
+  AsignacionServicioCompanion toCompanion(bool nullToAbsent) {
+    return AsignacionServicioCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      empleadoId: Value(empleadoId),
+      servicioId: Value(servicioId),
+      turnoId:
+          turnoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(turnoId),
+      fechaInicio: Value(fechaInicio),
+      fechaTermino:
+          fechaTermino == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaTermino),
+      motivoTermino:
+          motivoTermino == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoTermino),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      observacionesTermino:
+          observacionesTermino == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesTermino),
+    );
+  }
+
+  factory AsignacionServicioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AsignacionServicioData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      empleadoId: serializer.fromJson<String>(json['empleadoId']),
+      servicioId: serializer.fromJson<String>(json['servicioId']),
+      turnoId: serializer.fromJson<String?>(json['turnoId']),
+      fechaInicio: serializer.fromJson<DateTime>(json['fechaInicio']),
+      fechaTermino: serializer.fromJson<DateTime?>(json['fechaTermino']),
+      motivoTermino: serializer.fromJson<String?>(json['motivoTermino']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      observacionesTermino: serializer.fromJson<String?>(
+        json['observacionesTermino'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'empleadoId': serializer.toJson<String>(empleadoId),
+      'servicioId': serializer.toJson<String>(servicioId),
+      'turnoId': serializer.toJson<String?>(turnoId),
+      'fechaInicio': serializer.toJson<DateTime>(fechaInicio),
+      'fechaTermino': serializer.toJson<DateTime?>(fechaTermino),
+      'motivoTermino': serializer.toJson<String?>(motivoTermino),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'observacionesTermino': serializer.toJson<String?>(observacionesTermino),
+    };
+  }
+
+  AsignacionServicioData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? empleadoId,
+    String? servicioId,
+    Value<String?> turnoId = const Value.absent(),
+    DateTime? fechaInicio,
+    Value<DateTime?> fechaTermino = const Value.absent(),
+    Value<String?> motivoTermino = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+    Value<String?> observacionesTermino = const Value.absent(),
+  }) => AsignacionServicioData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    empleadoId: empleadoId ?? this.empleadoId,
+    servicioId: servicioId ?? this.servicioId,
+    turnoId: turnoId.present ? turnoId.value : this.turnoId,
+    fechaInicio: fechaInicio ?? this.fechaInicio,
+    fechaTermino: fechaTermino.present ? fechaTermino.value : this.fechaTermino,
+    motivoTermino:
+        motivoTermino.present ? motivoTermino.value : this.motivoTermino,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    observacionesTermino:
+        observacionesTermino.present
+            ? observacionesTermino.value
+            : this.observacionesTermino,
+  );
+  AsignacionServicioData copyWithCompanion(AsignacionServicioCompanion data) {
+    return AsignacionServicioData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      turnoId: data.turnoId.present ? data.turnoId.value : this.turnoId,
+      fechaInicio:
+          data.fechaInicio.present ? data.fechaInicio.value : this.fechaInicio,
+      fechaTermino:
+          data.fechaTermino.present
+              ? data.fechaTermino.value
+              : this.fechaTermino,
+      motivoTermino:
+          data.motivoTermino.present
+              ? data.motivoTermino.value
+              : this.motivoTermino,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      observacionesTermino:
+          data.observacionesTermino.present
+              ? data.observacionesTermino.value
+              : this.observacionesTermino,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionServicioData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('turnoId: $turnoId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaTermino: $fechaTermino, ')
+          ..write('motivoTermino: $motivoTermino, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('observacionesTermino: $observacionesTermino')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    empleadoId,
+    servicioId,
+    turnoId,
+    fechaInicio,
+    fechaTermino,
+    motivoTermino,
+    observaciones,
+    observacionesTermino,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AsignacionServicioData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.empleadoId == this.empleadoId &&
+          other.servicioId == this.servicioId &&
+          other.turnoId == this.turnoId &&
+          other.fechaInicio == this.fechaInicio &&
+          other.fechaTermino == this.fechaTermino &&
+          other.motivoTermino == this.motivoTermino &&
+          other.observaciones == this.observaciones &&
+          other.observacionesTermino == this.observacionesTermino);
+}
+
+class AsignacionServicioCompanion
+    extends UpdateCompanion<AsignacionServicioData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> empleadoId;
+  final Value<String> servicioId;
+  final Value<String?> turnoId;
+  final Value<DateTime> fechaInicio;
+  final Value<DateTime?> fechaTermino;
+  final Value<String?> motivoTermino;
+  final Value<String?> observaciones;
+  final Value<String?> observacionesTermino;
+  final Value<int> rowid;
+  const AsignacionServicioCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.empleadoId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.turnoId = const Value.absent(),
+    this.fechaInicio = const Value.absent(),
+    this.fechaTermino = const Value.absent(),
+    this.motivoTermino = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.observacionesTermino = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AsignacionServicioCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String empleadoId,
+    required String servicioId,
+    this.turnoId = const Value.absent(),
+    required DateTime fechaInicio,
+    this.fechaTermino = const Value.absent(),
+    this.motivoTermino = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.observacionesTermino = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : empleadoId = Value(empleadoId),
+       servicioId = Value(servicioId),
+       fechaInicio = Value(fechaInicio);
+  static Insertable<AsignacionServicioData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? empleadoId,
+    Expression<String>? servicioId,
+    Expression<String>? turnoId,
+    Expression<DateTime>? fechaInicio,
+    Expression<DateTime>? fechaTermino,
+    Expression<String>? motivoTermino,
+    Expression<String>? observaciones,
+    Expression<String>? observacionesTermino,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (empleadoId != null) 'empleado_id': empleadoId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (turnoId != null) 'turno_id': turnoId,
+      if (fechaInicio != null) 'fecha_inicio': fechaInicio,
+      if (fechaTermino != null) 'fecha_termino': fechaTermino,
+      if (motivoTermino != null) 'motivo_termino': motivoTermino,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (observacionesTermino != null)
+        'observaciones_termino': observacionesTermino,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AsignacionServicioCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? empleadoId,
+    Value<String>? servicioId,
+    Value<String?>? turnoId,
+    Value<DateTime>? fechaInicio,
+    Value<DateTime?>? fechaTermino,
+    Value<String?>? motivoTermino,
+    Value<String?>? observaciones,
+    Value<String?>? observacionesTermino,
+    Value<int>? rowid,
+  }) {
+    return AsignacionServicioCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      empleadoId: empleadoId ?? this.empleadoId,
+      servicioId: servicioId ?? this.servicioId,
+      turnoId: turnoId ?? this.turnoId,
+      fechaInicio: fechaInicio ?? this.fechaInicio,
+      fechaTermino: fechaTermino ?? this.fechaTermino,
+      motivoTermino: motivoTermino ?? this.motivoTermino,
+      observaciones: observaciones ?? this.observaciones,
+      observacionesTermino: observacionesTermino ?? this.observacionesTermino,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (turnoId.present) {
+      map['turno_id'] = Variable<String>(turnoId.value);
+    }
+    if (fechaInicio.present) {
+      map['fecha_inicio'] = Variable<DateTime>(fechaInicio.value);
+    }
+    if (fechaTermino.present) {
+      map['fecha_termino'] = Variable<DateTime>(fechaTermino.value);
+    }
+    if (motivoTermino.present) {
+      map['motivo_termino'] = Variable<String>(motivoTermino.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (observacionesTermino.present) {
+      map['observaciones_termino'] = Variable<String>(
+        observacionesTermino.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionServicioCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('turnoId: $turnoId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaTermino: $fechaTermino, ')
+          ..write('motivoTermino: $motivoTermino, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('observacionesTermino: $observacionesTermino, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -36992,6 +37838,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $EmpleadoEventoTable empleadoEvento = $EmpleadoEventoTable(this);
   late final $EmpleadoPeriodoLaboralTable empleadoPeriodoLaboral =
       $EmpleadoPeriodoLaboralTable(this);
+  late final $AsignacionServicioTable asignacionServicio =
+      $AsignacionServicioTable(this);
   late final $EmpresaAttachmentTable empresaAttachment =
       $EmpresaAttachmentTable(this);
   late final $ClienteAttachmentTable clienteAttachment =
@@ -37023,6 +37871,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxContactoClienteTipoPrincipalActivo = Index(
     'idx_contacto_cliente_tipo_principal_activo',
     'CREATE UNIQUE INDEX idx_contacto_cliente_tipo_principal_activo ON contacto (cliente_id, tipo) WHERE es_principal = 1 AND ciclo_vida_registro = \'activo\'',
+  );
+  late final Index idxAsignacionServicioEmpleadoActiva = Index(
+    'idx_asignacion_servicio_empleado_activa',
+    'CREATE UNIQUE INDEX idx_asignacion_servicio_empleado_activa ON asignacion_servicio (empleado_id) WHERE fecha_termino IS NULL',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -37078,6 +37930,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     empleado,
     empleadoEvento,
     empleadoPeriodoLaboral,
+    asignacionServicio,
     empresaAttachment,
     clienteAttachment,
     documentoPorEmitirAttachment,
@@ -37090,6 +37943,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxDireccionCliente,
     idxEmpresaActivaUnica,
     idxContactoClienteTipoPrincipalActivo,
+    idxAsignacionServicioEmpleadoActiva,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -39517,6 +40371,33 @@ final class $$TipoModalidadTurnoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $AsignacionServicioTable,
+    List<AsignacionServicioData>
+  >
+  _asignacionServicioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.asignacionServicio,
+        aliasName: $_aliasNameGenerator(
+          db.tipoModalidadTurno.id,
+          db.asignacionServicio.turnoId,
+        ),
+      );
+
+  $$AsignacionServicioTableProcessedTableManager get asignacionServicioRefs {
+    final manager = $$AsignacionServicioTableTableManager(
+      $_db,
+      $_db.asignacionServicio,
+    ).filter((f) => f.turnoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _asignacionServicioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$TipoModalidadTurnoTableFilterComposer
@@ -39594,6 +40475,31 @@ class $$TipoModalidadTurnoTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionServicioRefs(
+    Expression<bool> Function($$AsignacionServicioTableFilterComposer f) f,
+  ) {
+    final $$AsignacionServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacionServicio,
+      getReferencedColumn: (t) => t.turnoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacionServicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -39711,6 +40617,32 @@ class $$TipoModalidadTurnoTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionServicioRefs<T extends Object>(
+    Expression<T> Function($$AsignacionServicioTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionServicioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionServicio,
+          getReferencedColumn: (t) => t.turnoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionServicioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.asignacionServicio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$TipoModalidadTurnoTableTableManager
@@ -39726,7 +40658,10 @@ class $$TipoModalidadTurnoTableTableManager
           $$TipoModalidadTurnoTableUpdateCompanionBuilder,
           (TipoModalidadTurnoData, $$TipoModalidadTurnoTableReferences),
           TipoModalidadTurnoData,
-          PrefetchHooks Function({bool servicioLineaComercialVigenciaRefs})
+          PrefetchHooks Function({
+            bool servicioLineaComercialVigenciaRefs,
+            bool asignacionServicioRefs,
+          })
         > {
   $$TipoModalidadTurnoTableTableManager(
     _$AppDatabase db,
@@ -39806,12 +40741,14 @@ class $$TipoModalidadTurnoTableTableManager
                       .toList(),
           prefetchHooksCallback: ({
             servicioLineaComercialVigenciaRefs = false,
+            asignacionServicioRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (servicioLineaComercialVigenciaRefs)
                   db.servicioLineaComercialVigencia,
+                if (asignacionServicioRefs) db.asignacionServicio,
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -39838,6 +40775,28 @@ class $$TipoModalidadTurnoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionServicioRefs)
+                    await $_getPrefetchedData<
+                      TipoModalidadTurnoData,
+                      $TipoModalidadTurnoTable,
+                      AsignacionServicioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$TipoModalidadTurnoTableReferences
+                          ._asignacionServicioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$TipoModalidadTurnoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionServicioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.turnoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -39858,7 +40817,10 @@ typedef $$TipoModalidadTurnoTableProcessedTableManager =
       $$TipoModalidadTurnoTableUpdateCompanionBuilder,
       (TipoModalidadTurnoData, $$TipoModalidadTurnoTableReferences),
       TipoModalidadTurnoData,
-      PrefetchHooks Function({bool servicioLineaComercialVigenciaRefs})
+      PrefetchHooks Function({
+        bool servicioLineaComercialVigenciaRefs,
+        bool asignacionServicioRefs,
+      })
     >;
 typedef $$TipoFrecuenciaCobroTableCreateCompanionBuilder =
     TipoFrecuenciaCobroCompanion Function({
@@ -47301,6 +48263,33 @@ final class $$ServicioTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $AsignacionServicioTable,
+    List<AsignacionServicioData>
+  >
+  _asignacionServicioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.asignacionServicio,
+        aliasName: $_aliasNameGenerator(
+          db.servicio.id,
+          db.asignacionServicio.servicioId,
+        ),
+      );
+
+  $$AsignacionServicioTableProcessedTableManager get asignacionServicioRefs {
+    final manager = $$AsignacionServicioTableTableManager(
+      $_db,
+      $_db.asignacionServicio,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _asignacionServicioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ServicioTableFilterComposer
@@ -47696,6 +48685,31 @@ class $$ServicioTableFilterComposer
           }) => $$EgresoTableFilterComposer(
             $db: $db,
             $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionServicioRefs(
+    Expression<bool> Function($$AsignacionServicioTableFilterComposer f) f,
+  ) {
+    final $$AsignacionServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacionServicio,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacionServicio,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -48294,6 +49308,32 @@ class $$ServicioTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> asignacionServicioRefs<T extends Object>(
+    Expression<T> Function($$AsignacionServicioTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionServicioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionServicio,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionServicioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.asignacionServicio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ServicioTableTableManager
@@ -48323,6 +49363,7 @@ class $$ServicioTableTableManager
             bool documentoPorEmitirLineaRefs,
             bool ingresoRefs,
             bool egresoRefs,
+            bool asignacionServicioRefs,
           })
         > {
   $$ServicioTableTableManager(_$AppDatabase db, $ServicioTable table)
@@ -48450,6 +49491,7 @@ class $$ServicioTableTableManager
             documentoPorEmitirLineaRefs = false,
             ingresoRefs = false,
             egresoRefs = false,
+            asignacionServicioRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -48464,6 +49506,7 @@ class $$ServicioTableTableManager
                 if (documentoPorEmitirLineaRefs) db.documentoPorEmitirLinea,
                 if (ingresoRefs) db.ingreso,
                 if (egresoRefs) db.egreso,
+                if (asignacionServicioRefs) db.asignacionServicio,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -48731,6 +49774,28 @@ class $$ServicioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionServicioRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      AsignacionServicioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._asignacionServicioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionServicioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -48765,6 +49830,7 @@ typedef $$ServicioTableProcessedTableManager =
         bool documentoPorEmitirLineaRefs,
         bool ingresoRefs,
         bool egresoRefs,
+        bool asignacionServicioRefs,
       })
     >;
 typedef $$UbicacionTableCreateCompanionBuilder =
@@ -66434,6 +67500,7 @@ typedef $$EmpleadoTableCreateCompanionBuilder =
       required DateTime fechaNacimiento,
       required String curp,
       required String rfc,
+      Value<String?> codigoPostalFiscal,
       required String nss,
       required String estadoCivil,
       Value<String> nacionalidad,
@@ -66488,6 +67555,7 @@ typedef $$EmpleadoTableUpdateCompanionBuilder =
       Value<DateTime> fechaNacimiento,
       Value<String> curp,
       Value<String> rfc,
+      Value<String?> codigoPostalFiscal,
       Value<String> nss,
       Value<String> estadoCivil,
       Value<String> nacionalidad,
@@ -66660,6 +67728,33 @@ final class $$EmpleadoTableReferences
   }
 
   static MultiTypedResultKey<
+    $AsignacionServicioTable,
+    List<AsignacionServicioData>
+  >
+  _asignacionServicioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.asignacionServicio,
+        aliasName: $_aliasNameGenerator(
+          db.empleado.id,
+          db.asignacionServicio.empleadoId,
+        ),
+      );
+
+  $$AsignacionServicioTableProcessedTableManager get asignacionServicioRefs {
+    final manager = $$AsignacionServicioTableTableManager(
+      $_db,
+      $_db.asignacionServicio,
+    ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _asignacionServicioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
     $EmpleadoAttachmentTable,
     List<EmpleadoAttachmentData>
   >
@@ -66753,6 +67848,11 @@ class $$EmpleadoTableFilterComposer
 
   ColumnFilters<String> get rfc => $composableBuilder(
     column: $table.rfc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigoPostalFiscal => $composableBuilder(
+    column: $table.codigoPostalFiscal,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -67070,6 +68170,31 @@ class $$EmpleadoTableFilterComposer
     return f(composer);
   }
 
+  Expression<bool> asignacionServicioRefs(
+    Expression<bool> Function($$AsignacionServicioTableFilterComposer f) f,
+  ) {
+    final $$AsignacionServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacionServicio,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacionServicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<bool> empleadoAttachmentRefs(
     Expression<bool> Function($$EmpleadoAttachmentTableFilterComposer f) f,
   ) {
@@ -67162,6 +68287,11 @@ class $$EmpleadoTableOrderingComposer
 
   ColumnOrderings<String> get rfc => $composableBuilder(
     column: $table.rfc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigoPostalFiscal => $composableBuilder(
+    column: $table.codigoPostalFiscal,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -67487,6 +68617,11 @@ class $$EmpleadoTableAnnotationComposer
   GeneratedColumn<String> get rfc =>
       $composableBuilder(column: $table.rfc, builder: (column) => column);
 
+  GeneratedColumn<String> get codigoPostalFiscal => $composableBuilder(
+    column: $table.codigoPostalFiscal,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get nss =>
       $composableBuilder(column: $table.nss, builder: (column) => column);
 
@@ -67796,6 +68931,32 @@ class $$EmpleadoTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> asignacionServicioRefs<T extends Object>(
+    Expression<T> Function($$AsignacionServicioTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionServicioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionServicio,
+          getReferencedColumn: (t) => t.empleadoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionServicioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.asignacionServicio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> empleadoAttachmentRefs<T extends Object>(
     Expression<T> Function($$EmpleadoAttachmentTableAnnotationComposer a) f,
   ) {
@@ -67843,6 +69004,7 @@ class $$EmpleadoTableTableManager
             bool sucursalId,
             bool empleadoEventoRefs,
             bool empleadoPeriodoLaboralRefs,
+            bool asignacionServicioRefs,
             bool empleadoAttachmentRefs,
           })
         > {
@@ -67872,6 +69034,7 @@ class $$EmpleadoTableTableManager
                 Value<DateTime> fechaNacimiento = const Value.absent(),
                 Value<String> curp = const Value.absent(),
                 Value<String> rfc = const Value.absent(),
+                Value<String?> codigoPostalFiscal = const Value.absent(),
                 Value<String> nss = const Value.absent(),
                 Value<String> estadoCivil = const Value.absent(),
                 Value<String> nacionalidad = const Value.absent(),
@@ -67928,6 +69091,7 @@ class $$EmpleadoTableTableManager
                 fechaNacimiento: fechaNacimiento,
                 curp: curp,
                 rfc: rfc,
+                codigoPostalFiscal: codigoPostalFiscal,
                 nss: nss,
                 estadoCivil: estadoCivil,
                 nacionalidad: nacionalidad,
@@ -67983,6 +69147,7 @@ class $$EmpleadoTableTableManager
                 required DateTime fechaNacimiento,
                 required String curp,
                 required String rfc,
+                Value<String?> codigoPostalFiscal = const Value.absent(),
                 required String nss,
                 required String estadoCivil,
                 Value<String> nacionalidad = const Value.absent(),
@@ -68039,6 +69204,7 @@ class $$EmpleadoTableTableManager
                 fechaNacimiento: fechaNacimiento,
                 curp: curp,
                 rfc: rfc,
+                codigoPostalFiscal: codigoPostalFiscal,
                 nss: nss,
                 estadoCivil: estadoCivil,
                 nacionalidad: nacionalidad,
@@ -68096,6 +69262,7 @@ class $$EmpleadoTableTableManager
             sucursalId = false,
             empleadoEventoRefs = false,
             empleadoPeriodoLaboralRefs = false,
+            asignacionServicioRefs = false,
             empleadoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
@@ -68103,6 +69270,7 @@ class $$EmpleadoTableTableManager
               explicitlyWatchedTables: [
                 if (empleadoEventoRefs) db.empleadoEvento,
                 if (empleadoPeriodoLaboralRefs) db.empleadoPeriodoLaboral,
+                if (asignacionServicioRefs) db.asignacionServicio,
                 if (empleadoAttachmentRefs) db.empleadoAttachment,
               ],
               addJoins: <
@@ -68223,6 +69391,28 @@ class $$EmpleadoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionServicioRefs)
+                    await $_getPrefetchedData<
+                      EmpleadoData,
+                      $EmpleadoTable,
+                      AsignacionServicioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpleadoTableReferences
+                          ._asignacionServicioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionServicioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                   if (empleadoAttachmentRefs)
                     await $_getPrefetchedData<
                       EmpleadoData,
@@ -68272,6 +69462,7 @@ typedef $$EmpleadoTableProcessedTableManager =
         bool sucursalId,
         bool empleadoEventoRefs,
         bool empleadoPeriodoLaboralRefs,
+        bool asignacionServicioRefs,
         bool empleadoAttachmentRefs,
       })
     >;
@@ -69054,6 +70245,682 @@ typedef $$EmpleadoPeriodoLaboralTableProcessedTableManager =
       (EmpleadoPeriodoLaboralData, $$EmpleadoPeriodoLaboralTableReferences),
       EmpleadoPeriodoLaboralData,
       PrefetchHooks Function({bool empleadoId})
+    >;
+typedef $$AsignacionServicioTableCreateCompanionBuilder =
+    AsignacionServicioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String empleadoId,
+      required String servicioId,
+      Value<String?> turnoId,
+      required DateTime fechaInicio,
+      Value<DateTime?> fechaTermino,
+      Value<String?> motivoTermino,
+      Value<String?> observaciones,
+      Value<String?> observacionesTermino,
+      Value<int> rowid,
+    });
+typedef $$AsignacionServicioTableUpdateCompanionBuilder =
+    AsignacionServicioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> empleadoId,
+      Value<String> servicioId,
+      Value<String?> turnoId,
+      Value<DateTime> fechaInicio,
+      Value<DateTime?> fechaTermino,
+      Value<String?> motivoTermino,
+      Value<String?> observaciones,
+      Value<String?> observacionesTermino,
+      Value<int> rowid,
+    });
+
+final class $$AsignacionServicioTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $AsignacionServicioTable,
+          AsignacionServicioData
+        > {
+  $$AsignacionServicioTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $EmpleadoTable _empleadoIdTable(_$AppDatabase db) =>
+      db.empleado.createAlias(
+        $_aliasNameGenerator(db.asignacionServicio.empleadoId, db.empleado.id),
+      );
+
+  $$EmpleadoTableProcessedTableManager get empleadoId {
+    final $_column = $_itemColumn<String>('empleado_id')!;
+
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(db.asignacionServicio.servicioId, db.servicio.id),
+      );
+
+  $$ServicioTableProcessedTableManager get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id')!;
+
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TipoModalidadTurnoTable _turnoIdTable(_$AppDatabase db) =>
+      db.tipoModalidadTurno.createAlias(
+        $_aliasNameGenerator(
+          db.asignacionServicio.turnoId,
+          db.tipoModalidadTurno.id,
+        ),
+      );
+
+  $$TipoModalidadTurnoTableProcessedTableManager? get turnoId {
+    final $_column = $_itemColumn<String>('turno_id');
+    if ($_column == null) return null;
+    final manager = $$TipoModalidadTurnoTableTableManager(
+      $_db,
+      $_db.tipoModalidadTurno,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_turnoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AsignacionServicioTableFilterComposer
+    extends Composer<_$AppDatabase, $AsignacionServicioTable> {
+  $$AsignacionServicioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaTermino => $composableBuilder(
+    column: $table.fechaTermino,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoTermino => $composableBuilder(
+    column: $table.motivoTermino,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesTermino => $composableBuilder(
+    column: $table.observacionesTermino,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$EmpleadoTableFilterComposer get empleadoId {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TipoModalidadTurnoTableFilterComposer get turnoId {
+    final $$TipoModalidadTurnoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.turnoId,
+      referencedTable: $db.tipoModalidadTurno,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TipoModalidadTurnoTableFilterComposer(
+            $db: $db,
+            $table: $db.tipoModalidadTurno,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AsignacionServicioTableOrderingComposer
+    extends Composer<_$AppDatabase, $AsignacionServicioTable> {
+  $$AsignacionServicioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaTermino => $composableBuilder(
+    column: $table.fechaTermino,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoTermino => $composableBuilder(
+    column: $table.motivoTermino,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesTermino => $composableBuilder(
+    column: $table.observacionesTermino,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$EmpleadoTableOrderingComposer get empleadoId {
+    final $$EmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TipoModalidadTurnoTableOrderingComposer get turnoId {
+    final $$TipoModalidadTurnoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.turnoId,
+      referencedTable: $db.tipoModalidadTurno,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TipoModalidadTurnoTableOrderingComposer(
+            $db: $db,
+            $table: $db.tipoModalidadTurno,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AsignacionServicioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AsignacionServicioTable> {
+  $$AsignacionServicioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaTermino => $composableBuilder(
+    column: $table.fechaTermino,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get motivoTermino => $composableBuilder(
+    column: $table.motivoTermino,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesTermino => $composableBuilder(
+    column: $table.observacionesTermino,
+    builder: (column) => column,
+  );
+
+  $$EmpleadoTableAnnotationComposer get empleadoId {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TipoModalidadTurnoTableAnnotationComposer get turnoId {
+    final $$TipoModalidadTurnoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.turnoId,
+          referencedTable: $db.tipoModalidadTurno,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$TipoModalidadTurnoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.tipoModalidadTurno,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$AsignacionServicioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AsignacionServicioTable,
+          AsignacionServicioData,
+          $$AsignacionServicioTableFilterComposer,
+          $$AsignacionServicioTableOrderingComposer,
+          $$AsignacionServicioTableAnnotationComposer,
+          $$AsignacionServicioTableCreateCompanionBuilder,
+          $$AsignacionServicioTableUpdateCompanionBuilder,
+          (AsignacionServicioData, $$AsignacionServicioTableReferences),
+          AsignacionServicioData,
+          PrefetchHooks Function({
+            bool empleadoId,
+            bool servicioId,
+            bool turnoId,
+          })
+        > {
+  $$AsignacionServicioTableTableManager(
+    _$AppDatabase db,
+    $AsignacionServicioTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$AsignacionServicioTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$AsignacionServicioTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$AsignacionServicioTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> empleadoId = const Value.absent(),
+                Value<String> servicioId = const Value.absent(),
+                Value<String?> turnoId = const Value.absent(),
+                Value<DateTime> fechaInicio = const Value.absent(),
+                Value<DateTime?> fechaTermino = const Value.absent(),
+                Value<String?> motivoTermino = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> observacionesTermino = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionServicioCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                empleadoId: empleadoId,
+                servicioId: servicioId,
+                turnoId: turnoId,
+                fechaInicio: fechaInicio,
+                fechaTermino: fechaTermino,
+                motivoTermino: motivoTermino,
+                observaciones: observaciones,
+                observacionesTermino: observacionesTermino,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String empleadoId,
+                required String servicioId,
+                Value<String?> turnoId = const Value.absent(),
+                required DateTime fechaInicio,
+                Value<DateTime?> fechaTermino = const Value.absent(),
+                Value<String?> motivoTermino = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> observacionesTermino = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionServicioCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                empleadoId: empleadoId,
+                servicioId: servicioId,
+                turnoId: turnoId,
+                fechaInicio: fechaInicio,
+                fechaTermino: fechaTermino,
+                motivoTermino: motivoTermino,
+                observaciones: observaciones,
+                observacionesTermino: observacionesTermino,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$AsignacionServicioTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            empleadoId = false,
+            servicioId = false,
+            turnoId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (empleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empleadoId,
+                            referencedTable: $$AsignacionServicioTableReferences
+                                ._empleadoIdTable(db),
+                            referencedColumn:
+                                $$AsignacionServicioTableReferences
+                                    ._empleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable: $$AsignacionServicioTableReferences
+                                ._servicioIdTable(db),
+                            referencedColumn:
+                                $$AsignacionServicioTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (turnoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.turnoId,
+                            referencedTable: $$AsignacionServicioTableReferences
+                                ._turnoIdTable(db),
+                            referencedColumn:
+                                $$AsignacionServicioTableReferences
+                                    ._turnoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AsignacionServicioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AsignacionServicioTable,
+      AsignacionServicioData,
+      $$AsignacionServicioTableFilterComposer,
+      $$AsignacionServicioTableOrderingComposer,
+      $$AsignacionServicioTableAnnotationComposer,
+      $$AsignacionServicioTableCreateCompanionBuilder,
+      $$AsignacionServicioTableUpdateCompanionBuilder,
+      (AsignacionServicioData, $$AsignacionServicioTableReferences),
+      AsignacionServicioData,
+      PrefetchHooks Function({bool empleadoId, bool servicioId, bool turnoId})
     >;
 typedef $$EmpresaAttachmentTableCreateCompanionBuilder =
     EmpresaAttachmentCompanion Function({
@@ -72233,6 +74100,8 @@ class $AppDatabaseManager {
         _db,
         _db.empleadoPeriodoLaboral,
       );
+  $$AsignacionServicioTableTableManager get asignacionServicio =>
+      $$AsignacionServicioTableTableManager(_db, _db.asignacionServicio);
   $$EmpresaAttachmentTableTableManager get empresaAttachment =>
       $$EmpresaAttachmentTableTableManager(_db, _db.empresaAttachment);
   $$ClienteAttachmentTableTableManager get clienteAttachment =>

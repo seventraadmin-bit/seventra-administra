@@ -3,11 +3,19 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/crear_empleado_usecase.dart';
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../personal_providers.dart';
+
+/// Tipo de adscripción capturada en la Alta (Etapa 5D) — Servicio *o*
+/// Sucursal, nunca ambas. Puramente de UI: nunca se persiste como tal,
+/// `servicioId` alimenta la `AsignacionServicio` inicial (nunca una
+/// columna de `Empleado`), `sucursalId` sigue siendo la columna ya
+/// existente desde 5A.
+enum _TipoAdscripcion { ninguna, servicio, sucursal }
 
 String empleadoSexoLabel(AppLocalizations l10n, String valor) {
   return switch (SexoEmpleado.values.byName(valor)) {
@@ -60,6 +68,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   DateTime? fechaNacimiento;
   final curpController = TextEditingController();
   final rfcController = TextEditingController();
+  final codigoPostalFiscalController = TextEditingController();
   final nssController = TextEditingController();
   EstadoCivilEmpleado estadoCivil = EstadoCivilEmpleado.soltero;
   final nacionalidadController = TextEditingController(text: 'Mexicana');
@@ -72,6 +81,9 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
 
   DateTime? fechaIngreso;
   String? puestoId;
+  _TipoAdscripcion tipoAdscripcion = _TipoAdscripcion.ninguna;
+  String? servicioId;
+  String? turnoId;
   String? sucursalId;
   final observacionesController = TextEditingController();
 
@@ -88,9 +100,11 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   String? errorApellidoPaterno;
   String? errorCurp;
   String? errorRfc;
+  String? errorCodigoPostalFiscal;
   String? errorNss;
   String? errorFechaNacimiento;
   String? errorFechaIngreso;
+  String? errorAdscripcion;
 
   final puestos = await ref.read(puestoRepositoryProvider).listarActivos();
   final sucursales = await ref.read(sucursalRepositoryProvider).listarActivas();
@@ -98,6 +112,16 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   // comment de `Empresa`) — se asigna directo, sin selector en el
   // formulario.
   final empresaActiva = await ref.read(empresaRepositoryProvider).obtenerActiva();
+  // Adscripción (Etapa 5D) — solo Servicios activos son elegibles
+  // (`AsignarEmpleadoServicioUseCase`/`CrearEmpleadoUseCase` ya
+  // rechazan cualquier otro estatus; se filtra aquí para no ofrecer una
+  // opción que de todas formas se rechazaría). Reutiliza el catálogo de
+  // modalidades de turno ya existente (Etapa 4G.1) — mismo concepto
+  // real que el Turno de una asignación.
+  final servicios = (await ref.read(servicioRepositoryProvider).listar())
+      .where((item) => item.servicio.estatus == EstatusServicio.activo.name)
+      .toList();
+  final modalidadesTurno = await ref.read(catalogoRepositoryProvider).listarModalidadesTurno();
   if (!context.mounted) return null;
 
   final resultado = await RisegDialog.showForm<String>(
@@ -164,6 +188,13 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
             ),
             const SizedBox(height: AppSpacing.md),
             RisegTextField(
+              label: l10n.empleadoCampoCodigoPostalFiscal,
+              controller: codigoPostalFiscalController,
+              errorText: errorCodigoPostalFiscal,
+              onChanged: (_) => setState(() => errorCodigoPostalFiscal = null),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RisegTextField(
               label: l10n.empleadoCampoNss,
               controller: nssController,
               errorText: errorNss,
@@ -219,17 +250,66 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
               onChanged: (valor) => setState(() => puestoId = valor),
             ),
             const SizedBox(height: AppSpacing.md),
-            RisegSelect<String?>(
-              label: l10n.empleadoCampoSucursal,
-              value: sucursalId,
-              items: [
-                RisegSelectItem(value: null, label: l10n.empleadoCampoSinAsignar),
-                for (final s in sucursales) RisegSelectItem(value: s.id, label: s.nombre),
-              ],
-              onChanged: (valor) => setState(() => sucursalId = valor),
-            ),
-            const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.empleadoCampoObservaciones, controller: observacionesController),
+            const SizedBox(height: AppSpacing.lg),
+            Text(l10n.empleadoSeccionAdscripcion, style: AppTypography.heading3),
+            const SizedBox(height: AppSpacing.sm),
+            RisegSelect<_TipoAdscripcion>(
+              label: l10n.empleadoCampoTipoAdscripcion,
+              value: tipoAdscripcion,
+              items: [
+                RisegSelectItem(value: _TipoAdscripcion.ninguna, label: l10n.empleadoTipoAdscripcionNinguna),
+                RisegSelectItem(value: _TipoAdscripcion.servicio, label: l10n.empleadoTipoAdscripcionServicio),
+                RisegSelectItem(value: _TipoAdscripcion.sucursal, label: l10n.empleadoTipoAdscripcionSucursal),
+              ],
+              onChanged: (valor) => setState(() {
+                tipoAdscripcion = valor ?? _TipoAdscripcion.ninguna;
+                servicioId = null;
+                turnoId = null;
+                sucursalId = null;
+                errorAdscripcion = null;
+              }),
+            ),
+            if (tipoAdscripcion == _TipoAdscripcion.servicio) ...[
+              const SizedBox(height: AppSpacing.md),
+              RisegSelect<String?>(
+                label: l10n.empleadoCampoServicio,
+                value: servicioId,
+                errorText: errorAdscripcion,
+                items: [
+                  for (final item in servicios) RisegSelectItem(value: item.servicio.id, label: item.servicio.nombre),
+                ],
+                onChanged: (valor) => setState(() {
+                  servicioId = valor;
+                  errorAdscripcion = null;
+                }),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              RisegSelect<String?>(
+                label: l10n.empleadoCampoTurno,
+                value: turnoId,
+                items: [
+                  RisegSelectItem(value: null, label: l10n.empleadoCampoSinAsignar),
+                  for (final m in modalidadesTurno) RisegSelectItem(value: m.id, label: m.nombre),
+                ],
+                onChanged: (valor) => setState(() => turnoId = valor),
+              ),
+            ],
+            if (tipoAdscripcion == _TipoAdscripcion.sucursal) ...[
+              const SizedBox(height: AppSpacing.md),
+              RisegSelect<String?>(
+                label: l10n.empleadoCampoSucursal,
+                value: sucursalId,
+                errorText: errorAdscripcion,
+                items: [
+                  for (final s in sucursales) RisegSelectItem(value: s.id, label: s.nombre),
+                ],
+                onChanged: (valor) => setState(() {
+                  sucursalId = valor;
+                  errorAdscripcion = null;
+                }),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             Text(l10n.empleadoSeccionEscolaridad, style: AppTypography.heading3),
             const SizedBox(height: AppSpacing.sm),
@@ -293,6 +373,14 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         errorFechaIngreso = l10n.empleadoCampoFechaIngreso;
         valido = false;
       }
+      if (tipoAdscripcion == _TipoAdscripcion.servicio && servicioId == null) {
+        errorAdscripcion = l10n.empleadoCampoServicio;
+        valido = false;
+      }
+      if (tipoAdscripcion == _TipoAdscripcion.sucursal && sucursalId == null) {
+        errorAdscripcion = l10n.empleadoCampoSucursal;
+        valido = false;
+      }
       if (!valido) return null;
 
       final resultado = await ref.read(crearEmpleadoUseCaseProvider).ejecutar(
@@ -303,6 +391,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
             fechaNacimiento: fechaNacimiento!,
             curp: curpController.text,
             rfc: rfcController.text,
+            codigoPostalFiscal: codigoPostalFiscalController.text,
             nss: nssController.text,
             estadoCivil: estadoCivil,
             nacionalidad: nacionalidadController.text.trim().isEmpty ? 'Mexicana' : nacionalidadController.text.trim(),
@@ -314,7 +403,9 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
             fechaIngreso: fechaIngreso!,
             puestoId: puestoId,
             empresaId: empresaActiva.id,
-            sucursalId: sucursalId,
+            servicioId: tipoAdscripcion == _TipoAdscripcion.servicio ? servicioId : null,
+            turnoId: tipoAdscripcion == _TipoAdscripcion.servicio ? turnoId : null,
+            sucursalId: tipoAdscripcion == _TipoAdscripcion.sucursal ? sucursalId : null,
             observaciones: observacionesController.text,
             nivelEstudios: nivelEstudios,
             observacionesEscolaridad: observacionesEscolaridadController.text,
@@ -343,6 +434,9 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         case CrearEmpleadoRfcInvalido():
           errorRfc = l10n.empleadoErrorRfcInvalido;
           return null;
+        case CrearEmpleadoCodigoPostalFiscalInvalido():
+          errorCodigoPostalFiscal = l10n.empleadoErrorCodigoPostalFiscalInvalido;
+          return null;
         case CrearEmpleadoNssInvalido():
           errorNss = l10n.empleadoErrorNssInvalido;
           return null;
@@ -354,6 +448,13 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
           return null;
         case CrearEmpleadoExperienciaInvalida():
           RisegFeedback.showError(context, l10n.empleadoErrorExperienciaInvalida);
+          return null;
+        case CrearEmpleadoAdscripcionAmbigua():
+          errorAdscripcion = l10n.empleadoErrorAdscripcionAmbigua;
+          return null;
+        case CrearEmpleadoServicioNoExiste():
+        case CrearEmpleadoServicioNoActivo():
+          errorAdscripcion = l10n.empleadoErrorServicioNoActivo;
           return null;
         case CrearEmpleadoErrorInesperado():
           RisegFeedback.showError(context, l10n.crearEmpleadoErrorInesperado);
@@ -368,6 +469,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
     apellidoMaternoController,
     curpController,
     rfcController,
+    codigoPostalFiscalController,
     nssController,
     nacionalidadController,
     telefonoController,

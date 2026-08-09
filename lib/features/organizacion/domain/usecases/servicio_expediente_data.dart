@@ -3,6 +3,7 @@ import 'package:riseg_one/core/database/tables/audit_columns.dart';
 
 import 'configuracion_cobro_con_vigencia.dart';
 import 'linea_comercial_con_vigencia.dart';
+import 'personal_asignado_servicio.dart';
 
 /// Servicio junto con todo lo que su expediente necesita mostrar: el
 /// Cliente propietario (solo lectura, relación inmutable), si ya tiene
@@ -30,6 +31,7 @@ class ServicioExpedienteData {
     this.responsableCliente,
     this.sucursalAdministrativa,
     this.configuracionCobro,
+    this.personalAsignado = const [],
   });
 
   final ServicioData servicio;
@@ -47,6 +49,17 @@ class ServicioExpedienteData {
   /// Configuración de cobro (Etapa 4H.1) — `null` si el Servicio todavía
   /// no tiene ninguna capturada.
   final ConfiguracionCobroConVigencia? configuracionCobro;
+
+  /// Historial completo de personal asignado a este Servicio (Etapa
+  /// 5D) — vigente + cerrado, orden descendente por fecha de inicio.
+  /// Solo consulta: `Servicio` nunca escribe aquí, todas las acciones
+  /// se disparan desde el expediente del Empleado.
+  final List<PersonalAsignadoServicio> personalAsignado;
+
+  /// Subconjunto vigente de `personalAsignado` — nunca una consulta
+  /// aparte, se deriva de la misma lista (Resolución explícita de
+  /// Marlon: "no duplicar información").
+  List<PersonalAsignadoServicio> get personalVigente => personalAsignado.where((p) => p.vigente).toList();
 
   /// Suma de `cantidad × precio` de la vigencia vigente de cada línea —
   /// nunca mezcla tratamientos de IVA distintos (Etapa 4G.1, Resolución

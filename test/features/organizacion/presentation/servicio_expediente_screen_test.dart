@@ -21,6 +21,7 @@ import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
@@ -44,7 +45,7 @@ Future<({String servicioId, String clienteId})> _crearServicio(AppDatabase db) a
   final clienteRepo = ClienteRepositoryImpl(db);
   final validator = ServicioValidator(clienteRepo, CatalogoRepositoryImpl(db));
   final crearCliente = CrearClienteUseCase(clienteRepo, generarCodigo);
-  final crearServicio = CrearServicioUseCase(ServicioRepositoryImpl(db), generarCodigo, validator);
+  final crearServicio = CrearServicioUseCase(ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db)), generarCodigo, validator);
 
   final cliente = await crearCliente.ejecutar(nombreComercial: 'Sportium');
   final clienteId = cliente.when(ok: (c) => c.id, failure: (_) => throw StateError('no debería fallar'));
@@ -96,7 +97,7 @@ Future<PuestoData> _crearPuesto(AppDatabase db) {
 }
 
 Future<String> _crearLineaComercial(AppDatabase db, String servicioId, String puestoId) async {
-  final servicioRepo = ServicioRepositoryImpl(db);
+  final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
   final catalogoRepo = CatalogoRepositoryImpl(db);
   final puestoRepo = PuestoRepositoryImpl(db);
   final comercialRepo = ServicioComercialRepositoryImpl(db);
@@ -118,7 +119,7 @@ Future<String> _crearLineaComercial(AppDatabase db, String servicioId, String pu
 }
 
 Future<String> _crearConfiguracionCobro(AppDatabase db, String servicioId) async {
-  final servicioRepo = ServicioRepositoryImpl(db);
+  final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
   final catalogoRepo = CatalogoRepositoryImpl(db);
   final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
   final comercialRepo = ServicioComercialRepositoryImpl(db);
@@ -289,7 +290,7 @@ void main() {
 
   testWidgets('quitar una Entidad fiscal ya asignada', (tester) async {
     final entidad = await _crearEntidadFiscal(db, clienteId);
-    await ServicioRepositoryImpl(db).asignarEntidadFiscal(servicioId: servicioId, entidadFiscalId: entidad.id);
+    await ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db)).asignarEntidadFiscal(servicioId: servicioId, entidadFiscalId: entidad.id);
     await _pumpScreen(tester, db, servicioId);
     final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 

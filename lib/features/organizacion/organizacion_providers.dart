@@ -6,6 +6,7 @@ import '../../core/codigos/codigo_secuencia_service.dart';
 import '../../core/codigos/generar_codigo_usecase.dart';
 import '../../core/di/providers.dart';
 import '../finanzas/finanzas_providers.dart';
+import '../personal/personal_providers.dart';
 import 'data/repositories/area_repository_impl.dart';
 import 'data/repositories/catalogo_repository_impl.dart';
 import 'data/repositories/cliente_repository_impl.dart';
@@ -141,7 +142,7 @@ final clienteRepositoryProvider = Provider<ClienteRepository>((ref) {
 });
 
 final servicioRepositoryProvider = Provider<ServicioRepository>((ref) {
-  return ServicioRepositoryImpl(ref.watch(appDatabaseProvider));
+  return ServicioRepositoryImpl(ref.watch(appDatabaseProvider), ref.watch(asignacionServicioRepositoryProvider));
 });
 
 final catalogoRepositoryProvider = Provider<CatalogoRepository>((ref) {
@@ -374,6 +375,8 @@ final obtenerExpedienteServicioUseCaseProvider = Provider<ObtenerExpedienteServi
     ref.watch(sucursalRepositoryProvider),
     ref.watch(servicioComercialRepositoryProvider),
     ref.watch(configuracionCobroRepositoryProvider),
+    ref.watch(asignacionServicioRepositoryProvider),
+    ref.watch(empleadoRepositoryProvider),
   );
 });
 

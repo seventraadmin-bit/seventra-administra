@@ -1,19 +1,20 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
 import 'package:riseg_one/features/organizacion/domain/shared/direccion_input.dart';
+import 'package:riseg_one/features/personal/domain/repositories/asignacion_servicio_repository.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/repositories/empleado_repository.dart';
 import '../tables/empleado_table.dart';
+import 'empleado_evento_writer.dart';
 
 class EmpleadoRepositoryImpl implements EmpleadoRepository {
-  EmpleadoRepositoryImpl(this._db);
+  EmpleadoRepositoryImpl(this._db, this._asignacionServicioRepository);
 
   final AppDatabase _db;
+  final AsignacionServicioRepository _asignacionServicioRepository;
 
   @override
   Future<EmpleadoData?> obtenerPorId(String id) {
@@ -53,22 +54,20 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     String? actor,
     Map<String, dynamic>? datosRelevantes,
   }) {
-    return _db.into(_db.empleadoEvento).insert(
-          EmpleadoEventoCompanion.insert(
-            empleadoId: empleadoId,
-            fechaHora: DateTime.now(),
-            tipoEvento: tipoEvento.name,
-            estadoAnterior: Value(estadoAnterior),
-            estadoNuevo: Value(estadoNuevo),
-            observacion: Value(observacion),
-            actor: Value(actor),
-            datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
-          ),
-        );
+    return registrarEventoEmpleado(
+      _db,
+      empleadoId: empleadoId,
+      tipoEvento: tipoEvento,
+      estadoAnterior: estadoAnterior,
+      estadoNuevo: estadoNuevo,
+      observacion: observacion,
+      actor: actor,
+      datosRelevantes: datosRelevantes,
+    );
   }
 
   @override
-  Future<EmpleadoData> crear(EmpleadoCompanion datos) {
+  Future<EmpleadoData> crear(EmpleadoCompanion datos, {String? servicioIdAsignacion, String? turnoIdAsignacion}) {
     return _db.transaction(() async {
       final empleado = await _db.into(_db.empleado).insertReturning(datos);
       await _registrarEvento(
@@ -76,6 +75,22 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
         tipoEvento: TipoEventoEmpleado.creado,
         estadoNuevo: empleado.estatus,
       );
+
+      // Adscripción a Servicio capturada en la misma alta (Etapa 5D) —
+      // compuesto aquí, en la misma transacción, para que "para el
+      // usuario parezca una sola captura" (Resolución explícita de
+      // Marlon) sin que Empleado gane una columna `servicioId`. La
+      // validación de que el Servicio exista y esté activo ya ocurrió
+      // en `CrearEmpleadoUseCase` antes de llegar aquí — este método
+      // solo escribe.
+      if (servicioIdAsignacion != null) {
+        await _asignacionServicioRepository.asignar(
+          empleadoId: empleado.id,
+          servicioId: servicioIdAsignacion,
+          fechaInicio: empleado.fechaIngreso,
+          turnoId: turnoIdAsignacion,
+        );
+      }
       return empleado;
     });
   }
@@ -134,6 +149,12 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
         actor: actor,
         datosRelevantes: {'motivo': motivo},
       );
+
+      // Nunca debe quedar "Empleado = Baja, Servicio = Todavía asignado"
+      // (Resolución explícita de Marlon, Etapa 5D) — se cierra en la
+      // misma transacción, con la misma fecha efectiva de la baja.
+      await _asignacionServicioRepository.cerrarPorBajaEmpleado(empleadoId: empleadoId, fecha: fechaBaja);
+
       return actualizado;
     });
   }

@@ -4,14 +4,26 @@ import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart';
+import 'package:riseg_one/features/personal/domain/repositories/asignacion_servicio_repository.dart';
 
 import '../../domain/repositories/servicio_repository.dart';
 import '../../domain/shared/direccion_input.dart';
 
+/// **Nota de arquitectura (Etapa 5D):** este repositorio, de
+/// `organizacion`, depende de `AsignacionServicioRepository`, del
+/// dominio `personal` — la única forma de garantizar que el cierre de
+/// las asignaciones vigentes ocurra en la *misma transacción* que el
+/// cambio de estatus a `terminado` (Resolución explícita de Marlon:
+/// "quiero evitar que después aparezcan empleados asignados a un
+/// Servicio terminado"). Mismo criterio de composición ya usado con
+/// `CuentaPorCobrarRepository` en `DocumentoPorEmitirRepositoryImpl`
+/// (Etapa 4J.1) — la interfaz `ServicioRepository` (capa de dominio) no
+/// sabe nada de `personal`, solo esta implementación.
 class ServicioRepositoryImpl implements ServicioRepository {
-  ServicioRepositoryImpl(this._db);
+  ServicioRepositoryImpl(this._db, this._asignacionServicioRepository);
 
   final AppDatabase _db;
+  final AsignacionServicioRepository _asignacionServicioRepository;
 
   @override
   Future<ServicioData> crear({
@@ -90,15 +102,27 @@ class ServicioRepositoryImpl implements ServicioRepository {
     required String id,
     required EstatusServicio nuevo,
     DateTime? fechaTermino,
-  }) async {
-    await (_db.update(_db.servicio)..where((t) => t.id.equals(id))).write(
-      ServicioCompanion(
-        estatus: Value(nuevo.name),
-        fechaTermino: Value(fechaTermino),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
-    return (_db.select(_db.servicio)..where((t) => t.id.equals(id))).getSingle();
+  }) {
+    return _db.transaction(() async {
+      await (_db.update(_db.servicio)..where((t) => t.id.equals(id))).write(
+        ServicioCompanion(
+          estatus: Value(nuevo.name),
+          fechaTermino: Value(fechaTermino),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      final actualizado = await (_db.select(_db.servicio)..where((t) => t.id.equals(id))).getSingle();
+
+      // Un Servicio suspendido conserva sus asignaciones vigentes (una
+      // suspensión puede ser temporal, Resolución explícita de Marlon)
+      // — solo `terminado` las cierra, y solo entonces, en la misma
+      // transacción, con la fecha efectiva de término.
+      if (nuevo == EstatusServicio.terminado && fechaTermino != null) {
+        await _asignacionServicioRepository.cerrarTodasPorServicioTerminado(servicioId: id, fecha: fechaTermino);
+      }
+
+      return actualizado;
+    });
   }
 
   @override

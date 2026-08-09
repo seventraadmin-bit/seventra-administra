@@ -33,6 +33,7 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
   DateTime? fechaNacimiento = empleado.fechaNacimiento;
   final curpController = TextEditingController(text: empleado.curp);
   final rfcController = TextEditingController(text: empleado.rfc);
+  final codigoPostalFiscalController = TextEditingController(text: empleado.codigoPostalFiscal ?? '');
   final nssController = TextEditingController(text: empleado.nss);
   EstadoCivilEmpleado estadoCivil = EstadoCivilEmpleado.values.byName(empleado.estadoCivil);
   final nacionalidadController = TextEditingController(text: empleado.nacionalidad);
@@ -62,6 +63,7 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
 
   String? errorCurp;
   String? errorRfc;
+  String? errorCodigoPostalFiscal;
   String? errorNss;
   String? errorFechaNacimiento;
   String? errorFechaIngreso;
@@ -120,6 +122,13 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
               controller: rfcController,
               errorText: errorRfc,
               onChanged: (_) => setState(() => errorRfc = null),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RisegTextField(
+              label: l10n.empleadoCampoCodigoPostalFiscal,
+              controller: codigoPostalFiscalController,
+              errorText: errorCodigoPostalFiscal,
+              onChanged: (_) => setState(() => errorCodigoPostalFiscal = null),
             ),
             const SizedBox(height: AppSpacing.md),
             RisegTextField(
@@ -246,6 +255,8 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
             fechaNacimiento: fechaNacimiento,
             curp: curpController.text,
             rfc: rfcController.text,
+            codigoPostalFiscal: codigoPostalFiscalController.text,
+            limpiarCodigoPostalFiscal: codigoPostalFiscalController.text.trim().isEmpty,
             nss: nssController.text,
             estadoCivil: estadoCivil,
             nacionalidad: nacionalidadController.text.trim().isEmpty ? null : nacionalidadController.text.trim(),
@@ -285,6 +296,9 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
         case CorregirEmpleadoRfcInvalido():
           errorRfc = l10n.empleadoErrorRfcInvalido;
           return false;
+        case CorregirEmpleadoCodigoPostalFiscalInvalido():
+          errorCodigoPostalFiscal = l10n.empleadoErrorCodigoPostalFiscalInvalido;
+          return false;
         case CorregirEmpleadoNssInvalido():
           errorNss = l10n.empleadoErrorNssInvalido;
           return false;
@@ -310,6 +324,7 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
     apellidoMaternoController,
     curpController,
     rfcController,
+    codigoPostalFiscalController,
     nssController,
     nacionalidadController,
     telefonoController,

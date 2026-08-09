@@ -41,6 +41,7 @@ import 'servicio_expediente_state.dart';
 import 'widgets/servicio_auditoria_section.dart';
 import 'widgets/servicio_configuracion_comercial_section.dart';
 import 'widgets/servicio_configuracion_cobro_section.dart';
+import 'widgets/servicio_personal_asignado_section.dart';
 import 'widgets/servicio_datos_generales_section.dart';
 import 'widgets/servicio_direccion_operativa_section.dart';
 import 'widgets/servicio_historial_configuracion_cobro_dialog.dart';
@@ -1167,6 +1168,11 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
                   onCerrar: _cerrarConfiguracionCobro,
                   onVerHistorial: _verHistorialConfiguracionCobro,
                 ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              ServicioPersonalAsignadoSection(
+                personalVigente: datos.personalVigente,
+                historialPersonal: datos.personalAsignado,
               ),
               const SizedBox(height: AppSpacing.xl),
               RisegCard(child: ServicioAuditoriaSection(servicio: servicio)),

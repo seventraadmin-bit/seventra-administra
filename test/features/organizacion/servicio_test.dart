@@ -10,6 +10,7 @@ import 'package:riseg_one/core/database/tables/direccion_table.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/ubicacion_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
@@ -36,7 +37,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     clienteRepo = ClienteRepositoryImpl(db);
-    servicioRepo = ServicioRepositoryImpl(db);
+    servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     ubicacionRepo = UbicacionRepositoryImpl(db);
     final catalogoRepo = CatalogoRepositoryImpl(db);
     final validator = ServicioValidator(clienteRepo, catalogoRepo);

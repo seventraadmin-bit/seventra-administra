@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 20;
+const _currentSchemaVersion = 21;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -5547,6 +5547,177 @@ void main() {
                 fechaBaja: DateTime(2026, 1, 1),
                 motivoBaja: 'renuncia',
               ),
+            ),
+        throwsA(anything),
+      );
+
+      await db.close();
+    },
+  );
+
+  test(
+    '21.json coincide con el esquema final de la Etapa 5D (tabla nueva AsignacionServicio + índice único parcial, codigoPostalFiscal en Empleado)',
+    () async {
+      final schema = await verifier.schemaAt(21);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, contains('asignacion_servicio'));
+
+      final columnaCp = schema.rawDatabase
+          .select('PRAGMA table_info(empleado)')
+          .firstWhere((c) => c['name'] == 'codigo_postal_fiscal', orElse: () => throw StateError('Falta codigo_postal_fiscal'));
+      expect(columnaCp['notnull'], 0, reason: 'codigo_postal_fiscal debe ser nullable');
+
+      final sqlAsignacion =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_servicio'")
+                  .single['sql']
+              as String;
+      expect(sqlAsignacion, contains('"empleado_id" TEXT NOT NULL REFERENCES empleado (id)'));
+      expect(sqlAsignacion, contains('"servicio_id" TEXT NOT NULL REFERENCES servicio (id)'));
+      expect(sqlAsignacion, contains('"turno_id" TEXT NULL REFERENCES tipo_modalidad_turno (id)'));
+      expect(sqlAsignacion, contains('"fecha_termino" INTEGER NULL'));
+      expect(sqlAsignacion, contains('CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)'));
+
+      final sqlIndice =
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_asignacion_servicio_empleado_activa'",
+                  )
+                  .single['sql']
+              as String;
+      expect(
+        sqlIndice,
+        'CREATE UNIQUE INDEX idx_asignacion_servicio_empleado_activa '
+        'ON asignacion_servicio (empleado_id) WHERE fecha_termino IS NULL',
+      );
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 20 → 21 conserva un Empleado y Servicio reales y crea AsignacionServicio vacía',
+    () async {
+      final schemaV20 = await verifier.schemaAt(20);
+      final raw = schemaV20.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO empleado (
+        id, codigo_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 'EMP-000001', 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1735689600, 3, 'activo',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('tipo-servicio-real', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-real', 'SER-000001', 'cliente-real', 'Vigilancia Sportium Toluca', 'tipo-servicio-real',
+        'activo', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV20.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleados = await db.select(db.empleado).get();
+      expect(empleados, hasLength(1), reason: 'ningún Empleado real debe perderse en una migración aditiva');
+      expect(empleados.single.codigoPostalFiscal, isNull);
+
+      final servicios = await db.select(db.servicio).get();
+      expect(servicios, hasLength(1), reason: 'ningún Servicio real debe perderse en una migración aditiva');
+
+      final asignaciones = await db.select(db.asignacionServicio).get();
+      expect(asignaciones, isEmpty, reason: 'AsignacionServicio es tabla nueva en 5D, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'el índice único parcial de AsignacionServicio rechaza una segunda asignación vigente para el mismo Empleado tras la migración',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
+            EmpleadoCompanion.insert(
+              codigoEmpleado: 'EMP-000001',
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+      final cliente = await db
+          .into(db.cliente)
+          .insertReturning(ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'));
+      final servicioA = await db.into(db.servicio).insertReturning(
+            ServicioCompanion.insert(
+              codigo: 'SER-000001',
+              clienteId: cliente.id,
+              nombre: 'Servicio A',
+              tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+              fechaInicio: DateTime(2026, 1, 1),
+            ),
+          );
+      final servicioB = await db.into(db.servicio).insertReturning(
+            ServicioCompanion.insert(
+              codigo: 'SER-000002',
+              clienteId: cliente.id,
+              nombre: 'Servicio B',
+              tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+              fechaInicio: DateTime(2026, 1, 1),
+            ),
+          );
+
+      await db.into(db.asignacionServicio).insert(
+            AsignacionServicioCompanion.insert(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2026, 1, 1)),
+          );
+
+      expect(
+        () => db.into(db.asignacionServicio).insert(
+              AsignacionServicioCompanion.insert(empleadoId: empleado.id, servicioId: servicioB.id, fechaInicio: DateTime(2026, 2, 1)),
             ),
         throwsA(anything),
       );

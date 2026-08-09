@@ -1,5 +1,7 @@
 import 'package:riseg_one/core/error/failure.dart';
 import 'package:riseg_one/core/error/result.dart';
+import 'package:riseg_one/features/personal/domain/repositories/asignacion_servicio_repository.dart';
+import 'package:riseg_one/features/personal/domain/repositories/empleado_repository.dart';
 
 import '../repositories/cliente_repository.dart';
 import '../repositories/configuracion_cobro_repository.dart';
@@ -7,6 +9,7 @@ import '../repositories/entidad_fiscal_repository.dart';
 import '../repositories/servicio_comercial_repository.dart';
 import '../repositories/servicio_repository.dart';
 import '../repositories/sucursal_repository.dart';
+import 'personal_asignado_servicio.dart';
 import 'servicio_expediente_data.dart';
 
 /// Ensambla el expediente completo de un Servicio (Servicio + Cliente +
@@ -26,6 +29,8 @@ class ObtenerExpedienteServicioUseCase {
     this._sucursalRepository,
     this._servicioComercialRepository,
     this._configuracionCobroRepository,
+    this._asignacionServicioRepository,
+    this._empleadoRepository,
   );
 
   final ServicioRepository _servicioRepository;
@@ -34,6 +39,13 @@ class ObtenerExpedienteServicioUseCase {
   final SucursalRepository _sucursalRepository;
   final ServicioComercialRepository _servicioComercialRepository;
   final ConfiguracionCobroRepository _configuracionCobroRepository;
+
+  /// Dependencias del dominio `personal` (Etapa 5D) — solo lectura,
+  /// para armar la sección "Personal asignado" del expediente. Primera
+  /// vez que `organizacion` lee de `personal`; la dirección inversa
+  /// (Personal leyendo Puesto/Empresa/Sucursal) ya existe desde 5A.
+  final AsignacionServicioRepository _asignacionServicioRepository;
+  final EmpleadoRepository _empleadoRepository;
 
   Future<Result<ServicioExpedienteData>> ejecutar(String servicioId) async {
     final servicio = await _servicioRepository.obtenerPorId(servicioId);
@@ -61,6 +73,17 @@ class ObtenerExpedienteServicioUseCase {
     final lineasComerciales = await _servicioComercialRepository.listarLineas(servicioId);
     final configuracionCobro = await _configuracionCobroRepository.obtenerConfiguracion(servicioId);
 
+    // Personal asignado (Etapa 5D) — solo consulta, nunca duplica
+    // nombre/puesto: cada fila se resuelve contra Empleado.
+    final asignaciones = await _asignacionServicioRepository.listarPorServicio(servicioId);
+    final personalAsignado = <PersonalAsignadoServicio>[];
+    for (final asignacion in asignaciones) {
+      final empleado = await _empleadoRepository.obtenerPorId(asignacion.empleadoId);
+      if (empleado != null) {
+        personalAsignado.add(PersonalAsignadoServicio(empleado: empleado, asignacion: asignacion));
+      }
+    }
+
     return Result.ok(
       ServicioExpedienteData(
         servicio: servicio,
@@ -72,6 +95,7 @@ class ObtenerExpedienteServicioUseCase {
         sucursalAdministrativa: sucursalAdministrativa,
         lineasComerciales: lineasComerciales,
         configuracionCobro: configuracionCobro,
+        personalAsignado: personalAsignado,
       ),
     );
   }

@@ -33,9 +33,12 @@ import '../../features/finanzas/data/tables/ingreso_attachment_table.dart';
 import '../../features/finanzas/data/tables/ingreso_table.dart';
 import '../../features/finanzas/data/tables/pago_attachment_table.dart';
 import '../../features/finanzas/data/tables/pago_table.dart';
+import '../../features/personal/data/tables/asignacion_servicio_table.dart';
 import '../../features/personal/data/tables/empleado_attachment_table.dart';
 import '../../features/personal/data/tables/empleado_table.dart';
+import 'migrations/migrar_asignacion_servicio_v21.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
+import 'migrations/migrar_empleado_v21.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
 import 'migrations/migrar_attachment_v13.dart';
@@ -127,6 +130,7 @@ class AppMetadata extends Table {
   Empleado,
   EmpleadoEvento,
   EmpleadoPeriodoLaboral,
+  AsignacionServicio,
   EmpresaAttachment,
   ClienteAttachment,
   DocumentoPorEmitirAttachment,
@@ -140,7 +144,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration {
@@ -480,6 +484,18 @@ class AppDatabase extends _$AppDatabase {
         // detalle completo.
         if (to >= 20 && from <= 19) {
           await migrarEmpleadoV20(this, m, from);
+        }
+        // Aditiva (Etapa 5D): tabla nueva `AsignacionServicio` (relación
+        // Personal↔Servicio) + su índice único parcial. Tabla enteramente
+        // nueva — segura para cualquier `from <= 20`, sin gotcha.
+        if (to >= 21 && from <= 20) {
+          await migrarAsignacionServicioV21(this, m);
+        }
+        // Aditiva (Etapa 5D): `codigoPostalFiscal` en `Empleado`. Gotcha
+        // de rango extendido a 3 valores — ver el doc comment de
+        // `migrarEmpleadoV21` para el detalle completo.
+        if (to >= 21 && from <= 20) {
+          await migrarEmpleadoV21(this, m, from);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,
