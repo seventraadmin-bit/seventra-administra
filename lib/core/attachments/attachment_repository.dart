@@ -3,9 +3,17 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 
 /// Acceso a `Attachment` — infraestructura compartida (Etapa 4A, arco
-/// exclusivo extendido en la 4I.2.2), no un módulo de Documentos
+/// exclusivo migrado a tablas puente por dominio en la Etapa 5A; ver el
+/// doc comment de `attachment_table.dart`), no un módulo de Documentos
 /// propio. Sin métodos de eliminación física: el reemplazo archiva la
 /// fila anterior (`estado = archivado`), nunca la borra.
+///
+/// `crear` inserta *solo* la fila de metadatos — desde la Etapa 5A, el
+/// llamador siempre debe insertar también la fila de unión (en la
+/// tabla puente del dueño correspondiente) en la misma transacción,
+/// justo después. Ningún método de este repositorio hace esa segunda
+/// inserción por sí mismo: cuál tabla puente usar depende del dominio
+/// dueño, algo que este repositorio compartido no conoce.
 class AttachmentRepository {
   AttachmentRepository(this._db);
 
@@ -25,58 +33,92 @@ class AttachmentRepository {
     String documentoPorEmitirId, {
     String? categoria,
   }) {
-    final query = _db.select(_db.attachment)
-      ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId) & t.estado.equals('activo'));
+    final query = _db.select(_db.attachment).join([
+      innerJoin(
+        _db.documentoPorEmitirAttachment,
+        _db.documentoPorEmitirAttachment.attachmentId.equalsExp(_db.attachment.id),
+      ),
+    ])
+      ..where(_db.documentoPorEmitirAttachment.documentoPorEmitirId.equals(documentoPorEmitirId) &
+          _db.attachment.estado.equals('activo'));
     if (categoria != null) {
-      query.where((t) => t.categoria.equals(categoria));
+      query.where(_db.attachment.categoria.equals(categoria));
     }
-    query.orderBy([(t) => OrderingTerm.asc(t.createdAt)]);
-    return query.get();
+    query.orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
   /// Solo `estado = archivado` — la vía explícita para consultar
   /// versiones anteriores desde el historial (Resolución 6 de Marlon:
   /// nunca se pierde la trazabilidad).
   Future<List<AttachmentData>> listarArchivadosPorDocumentoPorEmitir(String documentoPorEmitirId) {
-    return (_db.select(_db.attachment)
-          ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId) & t.estado.equals('archivado'))
-          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-        .get();
+    final query = _db.select(_db.attachment).join([
+      innerJoin(
+        _db.documentoPorEmitirAttachment,
+        _db.documentoPorEmitirAttachment.attachmentId.equalsExp(_db.attachment.id),
+      ),
+    ])
+      ..where(_db.documentoPorEmitirAttachment.documentoPorEmitirId.equals(documentoPorEmitirId) &
+          _db.attachment.estado.equals('archivado'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
   /// Comprobantes de pago activos de un `Pago` (Etapa 4J.2) — mismo
   /// criterio que los adjuntos de `DocumentoPorEmitir`: solo `estado =
   /// activo`.
   Future<List<AttachmentData>> listarActivosPorPago(String pagoId) {
-    return (_db.select(_db.attachment)
-          ..where((t) => t.pagoId.equals(pagoId) & t.estado.equals('activo'))
-          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-        .get();
+    final query = _db.select(_db.attachment).join([
+      innerJoin(_db.pagoAttachment, _db.pagoAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.pagoAttachment.pagoId.equals(pagoId) & _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
   /// Adjuntos (PDF/XML) activos de un `ComplementoPago` (Etapa 4J.3) —
   /// mismo criterio que los adjuntos de `DocumentoPorEmitir`/`Pago`.
   Future<List<AttachmentData>> listarActivosPorComplementoPago(String complementoPagoId) {
-    return (_db.select(_db.attachment)
-          ..where((t) => t.complementoPagoId.equals(complementoPagoId) & t.estado.equals('activo'))
-          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-        .get();
+    final query = _db.select(_db.attachment).join([
+      innerJoin(
+        _db.complementoPagoAttachment,
+        _db.complementoPagoAttachment.attachmentId.equalsExp(_db.attachment.id),
+      ),
+    ])
+      ..where(_db.complementoPagoAttachment.complementoPagoId.equals(complementoPagoId) &
+          _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
   /// Comprobantes activos de un Ingreso manual (Etapa 4K.1).
   Future<List<AttachmentData>> listarActivosPorIngreso(String ingresoId) {
-    return (_db.select(_db.attachment)
-          ..where((t) => t.ingresoId.equals(ingresoId) & t.estado.equals('activo'))
-          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-        .get();
+    final query = _db.select(_db.attachment).join([
+      innerJoin(_db.ingresoAttachment, _db.ingresoAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.ingresoAttachment.ingresoId.equals(ingresoId) & _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
   /// Comprobantes activos de un Egreso (Etapa 4K.1).
   Future<List<AttachmentData>> listarActivosPorEgreso(String egresoId) {
-    return (_db.select(_db.attachment)
-          ..where((t) => t.egresoId.equals(egresoId) & t.estado.equals('activo'))
-          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-        .get();
+    final query = _db.select(_db.attachment).join([
+      innerJoin(_db.egresoAttachment, _db.egresoAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.egresoAttachment.egresoId.equals(egresoId) & _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
+  }
+
+  /// Documentos activos del expediente de un Empleado (Etapa 5A).
+  Future<List<AttachmentData>> listarActivosPorEmpleado(String empleadoId) {
+    final query = _db.select(_db.attachment).join([
+      innerJoin(_db.empleadoAttachment, _db.empleadoAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.empleadoAttachment.empleadoId.equals(empleadoId) & _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
   Future<void> archivar(String id) {

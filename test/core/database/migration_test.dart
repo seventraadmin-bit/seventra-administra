@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 17;
+const _currentSchemaVersion = 18;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -157,7 +157,7 @@ void main() {
       expect(areas, hasLength(6));
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(12));
+      expect(codigosSecuencia, hasLength(13));
 
       await db.close();
     },
@@ -3350,13 +3350,18 @@ void main() {
         hasLength(1),
         reason: 'ningún Attachment real debe perderse en una migración aditiva',
       );
-      expect(attachments.single.documentoPorEmitirId, isNull);
-      expect(attachments.single.categoria, isNull);
       expect(
         attachments.single.estado,
         'activo',
         reason: 'las filas existentes deben quedar activas por defecto',
       );
+
+      // Desde la Etapa 5A, el dueño ya no es una columna de `attachment`
+      // — el backfill de la migración debió moverlo a `EmpresaAttachment`.
+      final empresaAttachments = await db.select(db.empresaAttachment).get();
+      expect(empresaAttachments, hasLength(1));
+      expect(empresaAttachments.single.attachmentId, attachments.single.id);
+      expect(empresaAttachments.single.empresaId, 'empresa-real');
 
       final violacionesFk =
           await db.customSelect('PRAGMA foreign_key_check').get();
@@ -3416,7 +3421,6 @@ void main() {
           .insertReturning(
             AttachmentCompanion.insert(
               id: 'attachment-nuevo',
-              documentoPorEmitirId: Value(documento.id),
               originalFileName: 'recibo enero.pdf',
               storedFileName: 'f1e2d3.pdf',
               path: '/attachments/${documento.id}/reciboPdf/f1e2d3.pdf',
@@ -3425,62 +3429,87 @@ void main() {
               categoria: const Value('reciboPdf'),
             ),
           );
+      await db
+          .into(db.documentoPorEmitirAttachment)
+          .insert(
+            DocumentoPorEmitirAttachmentCompanion.insert(
+              attachmentId: adjunto.id,
+              documentoPorEmitirId: documento.id,
+            ),
+          );
 
       expect(adjunto.estado, 'activo');
       expect(adjunto.categoria, 'reciboPdf');
-      expect(adjunto.documentoPorEmitirId, documento.id);
 
       await db.close();
     },
   );
 
+  // Desde la Etapa 5A, `attachment` ya no tiene columnas de dueño ni un
+  // `CHECK` de "arco exclusivo" — cada dueño vive en su propia tabla
+  // puente (ver el doc comment de `attachment_table.dart`). La
+  // exclusividad de "un Attachment pertenece a lo más a un dueño *dentro
+  // de una misma tabla puente*" ahora la garantiza la llave primaria
+  // (`attachmentId`) de esa tabla puente — lo que antes eran las
+  // pruebas "rechaza más de un dueño"/"rechaza sin dueño" del arco.
   test(
-    'rechaza un Attachment con más de un dueño (arco exclusivo de 3 vías) tras la migración',
+    'rechaza una segunda fila de unión para el mismo Attachment en la misma tabla puente (PK única)',
     () async {
-      final schemaV12 = await verifier.schemaAt(12);
-      final db = AppDatabase(schemaV12.newConnection());
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final cliente = await db
           .into(db.cliente)
           .insertReturning(
-            ClienteCompanion.insert(
-              codigo: 'CLI-000001',
-              nombreComercial: 'Sportium',
+            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+          );
+      final pagoA = await db
+          .into(db.pago)
+          .insertReturning(
+            PagoCompanion.insert(
+              folioPago: 'PAG-000001',
+              clienteId: cliente.id,
+              montoTotal: 100000,
+              fechaPago: DateTime(2026, 1, 20),
+              formaPago: 'efectivo',
             ),
           );
+      final pagoB = await db
+          .into(db.pago)
+          .insertReturning(
+            PagoCompanion.insert(
+              folioPago: 'PAG-000002',
+              clienteId: cliente.id,
+              montoTotal: 100000,
+              fechaPago: DateTime(2026, 1, 20),
+              formaPago: 'efectivo',
+            ),
+          );
+      final adjunto = await db
+          .into(db.attachment)
+          .insertReturning(
+            AttachmentCompanion.insert(
+              id: 'attachment-unico',
+              originalFileName: 'a.pdf',
+              storedFileName: 'x.pdf',
+              path: '/x.pdf',
+              mimeType: 'application/pdf',
+              sizeBytes: 100,
+            ),
+          );
+      await db.into(db.pagoAttachment).insert(PagoAttachmentCompanion.insert(attachmentId: adjunto.id, pagoId: pagoA.id));
 
       expect(
-        () => db.customStatement('''
-        INSERT INTO attachment (
-          id, cliente_id, documento_por_emitir_id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at
-        ) VALUES (
-          'attachment-doble-dueno', '${cliente.id}', 'documento-inexistente', 'a.pdf', 'x.pdf', '/x.pdf',
-          'application/pdf', 100, 1700000000
-        );
-      '''),
+        () => db
+            .into(db.pagoAttachment)
+            .insert(PagoAttachmentCompanion.insert(attachmentId: adjunto.id, pagoId: pagoB.id)),
         throwsA(anything),
       );
 
       await db.close();
     },
   );
-
-  test('rechaza un Attachment sin ningún dueño tras la migración', () async {
-    final schemaV12 = await verifier.schemaAt(12);
-    final db = AppDatabase(schemaV12.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
-
-    expect(
-      () => db.customStatement('''
-        INSERT INTO attachment (id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at)
-        VALUES ('attachment-sin-dueno', 'a.pdf', 'x.pdf', '/x.pdf', 'application/pdf', 100, 1700000000);
-      '''),
-      throwsA(anything),
-    );
-
-    await db.close();
-  });
 
   test(
     '14.json coincide con el esquema final de la Etapa 4J.1 (CuentaPorCobrar + CuentaPorCobrarEvento)',
@@ -4024,8 +4053,11 @@ void main() {
         hasLength(1),
         reason: 'ningún Attachment real debe perderse en una migración aditiva',
       );
-      expect(attachments.single.pagoId, isNull);
-      expect(attachments.single.empresaId, 'empresa-real');
+      // Desde la Etapa 5A, el dueño ya no es una columna de `attachment`
+      // — el backfill de la migración debió moverlo a `EmpresaAttachment`.
+      final empresaAttachments = await db.select(db.empresaAttachment).get();
+      expect(empresaAttachments, hasLength(1));
+      expect(empresaAttachments.single.attachmentId, attachments.single.id);
 
       final violacionesFk =
           await db.customSelect('PRAGMA foreign_key_check').get();
@@ -4049,7 +4081,7 @@ void main() {
   );
 
   test(
-    'acepta un comprobante de pago (Attachment con pagoId) tras la migración',
+    'acepta un comprobante de pago (Attachment unido vía PagoAttachment) tras la migración',
     () async {
       final schemaV1 = await verifier.schemaAt(1);
       final db = AppDatabase(schemaV1.newConnection());
@@ -4080,7 +4112,6 @@ void main() {
           .insertReturning(
             AttachmentCompanion.insert(
               id: 'attachment-comprobante',
-              pagoId: Value(pago.id),
               categoria: const Value('comprobante'),
               originalFileName: 'comprobante.pdf',
               storedFileName: 'x1y2z3.pdf',
@@ -4089,52 +4120,11 @@ void main() {
               sizeBytes: 54321,
             ),
           );
+      await db
+          .into(db.pagoAttachment)
+          .insert(PagoAttachmentCompanion.insert(attachmentId: adjunto.id, pagoId: pago.id));
 
-      expect(adjunto.pagoId, pago.id);
       expect(adjunto.categoria, 'comprobante');
-
-      await db.close();
-    },
-  );
-
-  test(
-    'rechaza un Attachment con pagoId y otro dueño a la vez (arco de 4 vías) tras la migración',
-    () async {
-      final schemaV1 = await verifier.schemaAt(1);
-      final db = AppDatabase(schemaV1.newConnection());
-      await verifier.migrateAndValidate(db, _currentSchemaVersion);
-
-      final cliente = await db
-          .into(db.cliente)
-          .insertReturning(
-            ClienteCompanion.insert(
-              codigo: 'CLI-000001',
-              nombreComercial: 'Sportium',
-            ),
-          );
-      final pago = await db
-          .into(db.pago)
-          .insertReturning(
-            PagoCompanion.insert(
-              folioPago: 'PAG-000001',
-              clienteId: cliente.id,
-              montoTotal: 500000,
-              fechaPago: DateTime(2026, 1, 20),
-              formaPago: 'transferencia',
-            ),
-          );
-
-      expect(
-        () => db.customStatement('''
-        INSERT INTO attachment (
-          id, cliente_id, pago_id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at
-        ) VALUES (
-          'attachment-doble-dueno', '${cliente.id}', '${pago.id}', 'a.pdf', 'x.pdf', '/x.pdf',
-          'application/pdf', 100, 1700000000
-        );
-      '''),
-        throwsA(anything),
-      );
 
       await db.close();
     },
@@ -4380,8 +4370,9 @@ void main() {
         hasLength(1),
         reason: 'ningún Attachment real debe perderse en una migración aditiva',
       );
-      expect(attachments.single.complementoPagoId, isNull);
-      expect(attachments.single.empresaId, 'empresa-real');
+      final empresaAttachments = await db.select(db.empresaAttachment).get();
+      expect(empresaAttachments, hasLength(1));
+      expect(empresaAttachments.single.attachmentId, attachments.single.id);
 
       final violacionesFk =
           await db.customSelect('PRAGMA foreign_key_check').get();
@@ -4405,7 +4396,7 @@ void main() {
   );
 
   test(
-    'acepta un Complemento de pago con archivo adjunto (Attachment con complementoPagoId) tras la migración',
+    'acepta un Complemento de pago con archivo adjunto (Attachment unido vía ComplementoPagoAttachment) tras la migración',
     () async {
       final schemaV1 = await verifier.schemaAt(1);
       final db = AppDatabase(schemaV1.newConnection());
@@ -4446,7 +4437,6 @@ void main() {
           .insertReturning(
             AttachmentCompanion.insert(
               id: 'attachment-complemento',
-              complementoPagoId: Value(complemento.id),
               categoria: const Value('pdf'),
               originalFileName: 'complemento.pdf',
               storedFileName: 'x1y2z3.pdf',
@@ -4455,62 +4445,13 @@ void main() {
               sizeBytes: 54321,
             ),
           );
+      await db
+          .into(db.complementoPagoAttachment)
+          .insert(
+            ComplementoPagoAttachmentCompanion.insert(attachmentId: adjunto.id, complementoPagoId: complemento.id),
+          );
 
-      expect(adjunto.complementoPagoId, complemento.id);
       expect(complemento.estatus, 'registrado');
-
-      await db.close();
-    },
-  );
-
-  test(
-    'rechaza un Attachment con complementoPagoId y otro dueño a la vez (arco de 5 vías) tras la migración',
-    () async {
-      final schemaV1 = await verifier.schemaAt(1);
-      final db = AppDatabase(schemaV1.newConnection());
-      await verifier.migrateAndValidate(db, _currentSchemaVersion);
-
-      final cliente = await db
-          .into(db.cliente)
-          .insertReturning(
-            ClienteCompanion.insert(
-              codigo: 'CLI-000001',
-              nombreComercial: 'Sportium',
-            ),
-          );
-      final pago = await db
-          .into(db.pago)
-          .insertReturning(
-            PagoCompanion.insert(
-              folioPago: 'PAG-000001',
-              clienteId: cliente.id,
-              montoTotal: 500000,
-              fechaPago: DateTime(2026, 1, 20),
-              formaPago: 'transferencia',
-            ),
-          );
-      final complemento = await db
-          .into(db.complementoPago)
-          .insertReturning(
-            ComplementoPagoCompanion.insert(
-              pagoId: pago.id,
-              uuid: '22222222-2222-2222-2222-222222222222',
-              fechaTimbrado: DateTime(2026, 1, 21),
-              montoTotal: 500000,
-            ),
-          );
-
-      expect(
-        () => db.customStatement('''
-        INSERT INTO attachment (
-          id, cliente_id, complemento_pago_id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at
-        ) VALUES (
-          'attachment-doble-dueno', '${cliente.id}', '${complemento.id}', 'a.pdf', 'x.pdf', '/x.pdf',
-          'application/pdf', 100, 1700000000
-        );
-      '''),
-        throwsA(anything),
-      );
 
       await db.close();
     },
@@ -4829,9 +4770,9 @@ void main() {
         hasLength(1),
         reason: 'ningún Attachment real debe perderse en una migración aditiva',
       );
-      expect(attachments.single.ingresoId, isNull);
-      expect(attachments.single.egresoId, isNull);
-      expect(attachments.single.empresaId, 'empresa-real');
+      final empresaAttachments = await db.select(db.empresaAttachment).get();
+      expect(empresaAttachments, hasLength(1));
+      expect(empresaAttachments.single.attachmentId, attachments.single.id);
 
       final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
       expect(
@@ -4854,7 +4795,7 @@ void main() {
   );
 
   test(
-    'acepta un Ingreso automático con comprobante adjunto (Attachment con ingresoId) tras la migración',
+    'acepta un Ingreso automático con comprobante adjunto (Attachment unido vía IngresoAttachment) tras la migración',
     () async {
       final schemaV1 = await verifier.schemaAt(1);
       final db = AppDatabase(schemaV1.newConnection());
@@ -4894,7 +4835,6 @@ void main() {
           .insertReturning(
             AttachmentCompanion.insert(
               id: 'attachment-ingreso',
-              ingresoId: Value(ingreso.id),
               categoria: const Value('comprobante'),
               originalFileName: 'comprobante.pdf',
               storedFileName: 'x1y2z3.pdf',
@@ -4903,49 +4843,11 @@ void main() {
               sizeBytes: 54321,
             ),
           );
+      await db
+          .into(db.ingresoAttachment)
+          .insert(IngresoAttachmentCompanion.insert(attachmentId: adjunto.id, ingresoId: ingreso.id));
 
-      expect(adjunto.ingresoId, ingreso.id);
       expect(ingreso.estatus, 'registrado');
-
-      await db.close();
-    },
-  );
-
-  test(
-    'rechaza un Attachment con ingresoId y otro dueño a la vez (arco de 7 vías) tras la migración',
-    () async {
-      final schemaV1 = await verifier.schemaAt(1);
-      final db = AppDatabase(schemaV1.newConnection());
-      await verifier.migrateAndValidate(db, _currentSchemaVersion);
-
-      final cliente = await db
-          .into(db.cliente)
-          .insertReturning(
-            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
-          );
-      final ingreso = await db
-          .into(db.ingreso)
-          .insertReturning(
-            IngresoCompanion.insert(
-              folioIngreso: 'ING-000001',
-              monto: 100000,
-              fecha: DateTime(2026, 1, 20),
-              formaPago: 'efectivo',
-              concepto: 'Ingreso manual',
-            ),
-          );
-
-      expect(
-        () => db.customStatement('''
-        INSERT INTO attachment (
-          id, cliente_id, ingreso_id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at
-        ) VALUES (
-          'attachment-doble-dueno', '${cliente.id}', '${ingreso.id}', 'a.pdf', 'x.pdf', '/x.pdf',
-          'application/pdf', 100, 1700000000
-        );
-      '''),
-        throwsA(anything),
-      );
 
       await db.close();
     },
@@ -5022,6 +4924,293 @@ void main() {
                 fecha: DateTime(2026, 1, 20),
                 formaPago: 'transferencia',
                 concepto: 'Duplicado',
+              ),
+            ),
+        throwsA(anything),
+      );
+
+      await db.close();
+    },
+  );
+
+  test(
+    '18.json coincide con el esquema final de la Etapa 5A (Empleado/EmpleadoEvento, Direccion de 6 vías, Attachment angosto + tablas puente)',
+    () async {
+      final schema = await verifier.schemaAt(18);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(
+        tablas,
+        containsAll(<String>[
+          'empleado',
+          'empleado_evento',
+          'empresa_attachment',
+          'cliente_attachment',
+          'documento_por_emitir_attachment',
+          'pago_attachment',
+          'complemento_pago_attachment',
+          'ingreso_attachment',
+          'egreso_attachment',
+          'empleado_attachment',
+        ]),
+      );
+
+      final sqlEmpleado =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado'")
+                  .single['sql']
+              as String;
+      expect(sqlEmpleado, contains('"codigo_empleado" TEXT NOT NULL UNIQUE'));
+      expect(sqlEmpleado, contains('CHECK (anios_experiencia_seguridad >= 0)'));
+      expect(
+        sqlEmpleado,
+        contains(
+          'CHECK (meses_experiencia_adicionales IS NULL OR '
+          '(meses_experiencia_adicionales >= 0 AND meses_experiencia_adicionales <= 11))',
+        ),
+      );
+
+      final sqlDireccion =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'direccion'")
+                  .single['sql']
+              as String;
+      expect(sqlDireccion, contains('"empleado_id" TEXT NULL UNIQUE'));
+      expect(sqlDireccion, contains('FOREIGN KEY (empleado_id) REFERENCES empleado (id) ON DELETE RESTRICT'));
+      expect(
+        sqlDireccion,
+        contains(
+          '(CASE WHEN empresa_id IS NOT NULL THEN 1 ELSE 0 END + '
+          'CASE WHEN sucursal_id IS NOT NULL THEN 1 ELSE 0 END + '
+          'CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END + '
+          'CASE WHEN servicio_id IS NOT NULL THEN 1 ELSE 0 END + '
+          'CASE WHEN entidad_fiscal_id IS NOT NULL THEN 1 ELSE 0 END + '
+          'CASE WHEN empleado_id IS NOT NULL THEN 1 ELSE 0 END) = 1',
+        ),
+      );
+      expect(sqlDireccion, contains("CHECK (empleado_id IS NULL OR tipo_direccion = 'domicilio')"));
+
+      final sqlAttachment =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'attachment'")
+                  .single['sql']
+              as String;
+      expect(sqlAttachment, isNot(contains('empresa_id')), reason: 'Attachment ya no tiene columnas de dueño');
+      expect(sqlAttachment, isNot(contains('CHECK')), reason: 'el arco exclusivo desapareció junto con las columnas');
+
+      final sqlPagoAttachment =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pago_attachment'")
+                  .single['sql']
+              as String;
+      expect(sqlPagoAttachment, contains('REFERENCES attachment (id) ON DELETE CASCADE'));
+      expect(sqlPagoAttachment, contains('REFERENCES pago (id) ON DELETE CASCADE'));
+      expect(sqlPagoAttachment, contains('PRIMARY KEY ("attachment_id")'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 17 → 18 conserva un Pago real y crea las tablas de Empleado vacías, Direccion con empleadoId en NULL (sin backfill)',
+    () async {
+      final schemaV17 = await verifier.schemaAt(17);
+      final raw = schemaV17.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO pago (
+        id, folio_pago, cliente_id, monto_total, monto_aplicado, fecha_pago, forma_pago,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'pago-real', 'PAG-000001', 'cliente-real', 500000, 500000, 1700000000, 'transferencia',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV17.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final pagos = await db.select(db.pago).get();
+      expect(pagos, hasLength(1), reason: 'ningún Pago real debe perderse en una migración aditiva');
+
+      final empleados = await db.select(db.empleado).get();
+      expect(empleados, isEmpty, reason: 'Empleado es tabla nueva en 5A, sin backfill');
+
+      final direcciones = await db.select(db.direccion).get();
+      for (final d in direcciones) {
+        expect(d.empleadoId, isNull);
+      }
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'acepta un Empleado con domicilio y documento adjunto (Direccion + EmpleadoAttachment) tras la migración',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
+            EmpleadoCompanion.insert(
+              codigoEmpleado: 'EMP-000001',
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+
+      final domicilio = await db
+          .into(db.direccion)
+          .insertReturning(
+            DireccionCompanion.insert(
+              empleadoId: Value(empleado.id),
+              tipoDireccion: 'domicilio',
+              calle: 'Calle Real',
+              numeroExterior: '10',
+              colonia: 'Centro',
+              municipioAlcaldia: 'Toluca',
+              estado: 'Estado de México',
+              codigoPostal: '50000',
+            ),
+          );
+      expect(domicilio.empleadoId, empleado.id);
+
+      final adjunto = await db
+          .into(db.attachment)
+          .insertReturning(
+            AttachmentCompanion.insert(
+              id: 'attachment-empleado',
+              categoria: const Value('ine'),
+              originalFileName: 'ine.pdf',
+              storedFileName: 'x1y2z3.pdf',
+              path: '/attachments/${empleado.id}/ine/x1y2z3.pdf',
+              mimeType: 'application/pdf',
+              sizeBytes: 12345,
+            ),
+          );
+      await db
+          .into(db.empleadoAttachment)
+          .insert(EmpleadoAttachmentCompanion.insert(attachmentId: adjunto.id, empleadoId: empleado.id));
+
+      final documentos = await db.select(db.empleadoAttachment).get();
+      expect(documentos, hasLength(1));
+      expect(documentos.single.empleadoId, empleado.id);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'rechaza un Empleado con Puesto inexistente tras la migración',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      expect(
+        () => db.into(db.empleado).insert(
+              EmpleadoCompanion.insert(
+                codigoEmpleado: 'EMP-000001',
+                nombres: 'Juan',
+                apellidoPaterno: 'Pérez',
+                sexo: 'masculino',
+                fechaNacimiento: DateTime(1990, 1, 1),
+                curp: 'PEXJ900101HDFXXX01',
+                rfc: 'PEXJ900101AB1',
+                nss: '12345678901',
+                estadoCivil: 'soltero',
+                fechaIngreso: DateTime(2026, 1, 1),
+                aniosExperienciaSeguridad: 3,
+                puestoId: const Value('puesto-inexistente'),
+              ),
+            ),
+        throwsA(anything),
+      );
+
+      await db.close();
+    },
+  );
+
+  test(
+    'rechaza una segunda Direccion de tipo domicilio para el mismo Empleado tras la migración (empleadoId UNIQUE)',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
+            EmpleadoCompanion.insert(
+              codigoEmpleado: 'EMP-000001',
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+      await db.into(db.direccion).insert(
+            DireccionCompanion.insert(
+              empleadoId: Value(empleado.id),
+              tipoDireccion: 'domicilio',
+              calle: 'Calle Real',
+              numeroExterior: '10',
+              colonia: 'Centro',
+              municipioAlcaldia: 'Toluca',
+              estado: 'Estado de México',
+              codigoPostal: '50000',
+            ),
+          );
+
+      expect(
+        () => db.into(db.direccion).insert(
+              DireccionCompanion.insert(
+                empleadoId: Value(empleado.id),
+                tipoDireccion: 'domicilio',
+                calle: 'Otra calle',
+                numeroExterior: '20',
+                colonia: 'Centro',
+                municipioAlcaldia: 'Toluca',
+                estado: 'Estado de México',
+                codigoPostal: '50000',
               ),
             ),
         throwsA(anything),

@@ -37,6 +37,7 @@ Future<void> _seedCodigoSecuencia(AppDatabase db) async {
     ('pago', 'PAG', 6),
     ('ingreso', 'ING', 6),
     ('egreso', 'EGR', 6),
+    ('empleado', 'EMP', 6),
   ];
 
   for (final (entityType, prefijo, digitos) in config) {

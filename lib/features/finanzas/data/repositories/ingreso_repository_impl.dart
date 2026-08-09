@@ -193,7 +193,6 @@ class IngresoRepositoryImpl implements IngresoRepository {
       final adjunto = await _db.into(_db.attachment).insertReturning(
             AttachmentCompanion.insert(
               id: const Uuid().v4(),
-              ingresoId: Value(ingresoId),
               categoria: const Value('comprobante'),
               originalFileName: originalFileName,
               storedFileName: storedFileName,
@@ -201,6 +200,9 @@ class IngresoRepositoryImpl implements IngresoRepository {
               mimeType: mimeType,
               sizeBytes: sizeBytes,
             ),
+          );
+      await _db.into(_db.ingresoAttachment).insert(
+            IngresoAttachmentCompanion.insert(attachmentId: adjunto.id, ingresoId: ingresoId),
           );
 
       await _registrarEvento(

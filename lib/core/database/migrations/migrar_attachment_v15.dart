@@ -37,9 +37,37 @@ Future<void> migrarAttachmentV15(AppDatabase db, Migrator m) async {
     await db.customStatement('PRAGMA legacy_alter_table = ON');
     await db.customStatement('ALTER TABLE attachment RENAME TO attachment_old');
 
-    // Crea `attachment` (nombre real, ya libre) con la forma *actual*
-    // de la clase Dart: la columna `pago_id` + el CHECK de 4 vías.
-    await m.createTable(db.attachment);
+    // Crea `attachment` (nombre real, ya libre) con la forma exacta que
+    // tenía en schemaVersion 15: la columna `pago_id` + el CHECK de 4
+    // vías. SQL fijo, no `m.createTable(db.attachment)` — ver la nota
+    // en `migrarAttachmentV13` (misma razón, agregada en la Etapa 5A).
+    await db.customStatement('''
+      CREATE TABLE "attachment" (
+        "id" TEXT NOT NULL,
+        "empresa_id" TEXT NULL,
+        "cliente_id" TEXT NULL,
+        "documento_por_emitir_id" TEXT NULL,
+        "pago_id" TEXT NULL,
+        "categoria" TEXT NULL,
+        "original_file_name" TEXT NOT NULL,
+        "stored_file_name" TEXT NOT NULL,
+        "path" TEXT NOT NULL,
+        "mime_type" TEXT NOT NULL,
+        "size_bytes" INTEGER NOT NULL,
+        "hash" TEXT NULL,
+        "estado" TEXT NOT NULL DEFAULT 'activo',
+        "created_at" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)),
+        PRIMARY KEY ("id"),
+        FOREIGN KEY (empresa_id) REFERENCES empresa (id) ON DELETE RESTRICT,
+        FOREIGN KEY (cliente_id) REFERENCES cliente (id) ON DELETE RESTRICT,
+        FOREIGN KEY (documento_por_emitir_id) REFERENCES documento_por_emitir (id) ON DELETE CASCADE,
+        FOREIGN KEY (pago_id) REFERENCES pago (id) ON DELETE CASCADE,
+        CHECK ((CASE WHEN empresa_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN documento_por_emitir_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN pago_id IS NOT NULL THEN 1 ELSE 0 END) = 1)
+      )
+    ''');
 
     final columnas = _columnasAttachmentAnteriores.join(', ');
     await db.customStatement(

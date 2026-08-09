@@ -19,19 +19,29 @@ enum CategoriaAdjuntoDocumentoPorEmitir { cfdiPdf, cfdiXml, reciboPdf, otroSopor
 /// Almacenamiento de archivos adjuntos — infraestructura compartida,
 /// no un módulo de Documentos propio.
 ///
-/// Arco exclusivo tipado de 7 vías (extendido en la Etapa 4K.1 con
-/// `ingresoId`/`egresoId`; Resolución 9 de Marlon en 4I.2.2: nunca un
-/// `entityType`/`entityId` genérico) — exactamente uno de
-/// `empresaId`/`clienteId`/`documentoPorEmitirId`/`pagoId`/`complementoPagoId`/`ingresoId`/`egresoId`
-/// no nulo. Cuarta extensión consecutiva de esta tabla (4I.2.2 → 4J.2
-/// → 4J.3 → 4K.1) — sigue siendo la decisión correcta por consistencia,
-/// pero vale la pena reconsiderar el diseño si aparece un octavo dueño.
-/// Las FK se declaran como SQL crudo en `customConstraints` (no
-/// `.references()`) para no crear un import circular con
-/// `empresa_table.dart` (que ya importa este archivo para
-/// `logoAttachmentId`) — mismo motivo por el que ningún otro dueño
-/// importa su tabla de `features/finanzas`: `core` nunca depende de
-/// una feature.
+/// Desde la Etapa 5A ya **no** declara ninguna columna de dueño. Nació
+/// como "arco exclusivo" (una columna nullable + FK por cada posible
+/// dueño, con un `CHECK` de "exactamente uno no nulo"), y se extendió
+/// así 4 veces seguidas (4I.2.2 → 4J.2 → 4J.3 → 4K.1, hasta 7 vías).
+/// Ante el roadmap completo de RISEG ONE (Personal, Inventario,
+/// Vehículos, Compras, Uniformes, Equipos, Credenciales...) — muchos
+/// más dueños futuros —, Marlon aprobó migrar a un diseño de tabla
+/// puente por dominio: cada dueño tiene su propia tabla de unión
+/// pequeña (ej. `PagoAttachment(attachmentId, pagoId)`, en
+/// `features/finanzas/data/tables/`), cada una con FK reales en ambos
+/// lados y `attachmentId` como llave primaria (equivalente a
+/// `UNIQUE(attachmentId)` — un Attachment pertenece a lo más a un dueño
+/// dentro de esa tabla puente). La exclusividad *entre* tablas puente
+/// distintas ya no es un único `CHECK` declarativo — es un invariante
+/// de aplicación: cada flujo de "adjuntar" inserta el `Attachment` y su
+/// única fila de unión dentro de la misma transacción, nunca en dos
+/// pasos independientes. A cambio, toda extensión futura (un dueño más)
+/// vuelve a ser una migración puramente aditiva (`m.createTable`) —
+/// nunca más una recreación estructural de esta tabla.
+///
+/// `Empresa.logoAttachmentId` sigue siendo la única referencia *hacia*
+/// esta tabla (un puntero directo, no una relación de dueño) — no se
+/// toca con este cambio.
 ///
 /// Deliberadamente sin `uploadedBy` (no hay Usuario todavía), sin
 /// `expiresAt`/`estadoFirma` (sin cumplimiento documental todavía).
@@ -41,29 +51,9 @@ enum CategoriaAdjuntoDocumentoPorEmitir { cfdiPdf, cfdiXml, reciboPdf, otroSopor
 class Attachment extends Table {
   TextColumn get id => text()();
 
-  TextColumn get empresaId => text().nullable()();
-
-  TextColumn get clienteId => text().nullable()();
-
-  TextColumn get documentoPorEmitirId => text().nullable()();
-
-  /// Comprobante de pago (Etapa 4J.2) — un Pago puede tener varios
-  /// comprobantes adjuntos (PDF/XML/JPG/PNG), mismo mecanismo que
-  /// cualquier otro adjunto, sin campo dedicado dentro de `Pago`.
-  TextColumn get pagoId => text().nullable()();
-
-  /// PDF/XML de un Complemento de pago (Etapa 4J.3).
-  TextColumn get complementoPagoId => text().nullable()();
-
-  /// Comprobante de un Ingreso manual (Etapa 4K.1).
-  TextColumn get ingresoId => text().nullable()();
-
-  /// Comprobante de un Egreso (Etapa 4K.1).
-  TextColumn get egresoId => text().nullable()();
-
-  /// Solo aplica cuando `documentoPorEmitirId`/`complementoPagoId` no
-  /// son nulos — `null` para adjuntos de Empresa/Cliente/Pago/Ingreso/
-  /// Egreso (sin categorías propias todavía).
+  /// Solo aplica cuando el dueño es `DocumentoPorEmitir`/
+  /// `ComplementoPago` — `null` para el resto (sin categorías propias
+  /// todavía).
   TextColumn get categoria => text().nullable()();
 
   TextColumn get originalFileName => text()();
@@ -84,24 +74,4 @@ class Attachment extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
-
-  @override
-  List<String> get customConstraints => [
-        'FOREIGN KEY (empresa_id) REFERENCES empresa (id) ON DELETE RESTRICT',
-        'FOREIGN KEY (cliente_id) REFERENCES cliente (id) ON DELETE RESTRICT',
-        'FOREIGN KEY (documento_por_emitir_id) REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
-        'FOREIGN KEY (pago_id) REFERENCES pago (id) ON DELETE CASCADE',
-        'FOREIGN KEY (complemento_pago_id) REFERENCES complemento_pago (id) ON DELETE CASCADE',
-        'FOREIGN KEY (ingreso_id) REFERENCES ingreso (id) ON DELETE CASCADE',
-        'FOREIGN KEY (egreso_id) REFERENCES egreso (id) ON DELETE CASCADE',
-        'CHECK ('
-            '(CASE WHEN empresa_id IS NOT NULL THEN 1 ELSE 0 END + '
-            'CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END + '
-            'CASE WHEN documento_por_emitir_id IS NOT NULL THEN 1 ELSE 0 END + '
-            'CASE WHEN pago_id IS NOT NULL THEN 1 ELSE 0 END + '
-            'CASE WHEN complemento_pago_id IS NOT NULL THEN 1 ELSE 0 END + '
-            'CASE WHEN ingreso_id IS NOT NULL THEN 1 ELSE 0 END + '
-            'CASE WHEN egreso_id IS NOT NULL THEN 1 ELSE 0 END) = 1'
-            ')',
-      ];
 }

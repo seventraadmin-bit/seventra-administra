@@ -190,7 +190,6 @@ class EgresoRepositoryImpl implements EgresoRepository {
       final adjunto = await _db.into(_db.attachment).insertReturning(
             AttachmentCompanion.insert(
               id: const Uuid().v4(),
-              egresoId: Value(egresoId),
               categoria: const Value('comprobante'),
               originalFileName: originalFileName,
               storedFileName: storedFileName,
@@ -198,6 +197,9 @@ class EgresoRepositoryImpl implements EgresoRepository {
               mimeType: mimeType,
               sizeBytes: sizeBytes,
             ),
+          );
+      await _db.into(_db.egresoAttachment).insert(
+            EgresoAttachmentCompanion.insert(attachmentId: adjunto.id, egresoId: egresoId),
           );
 
       await _registrarEvento(

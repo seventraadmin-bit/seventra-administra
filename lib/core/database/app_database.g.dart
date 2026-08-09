@@ -4018,6 +4018,18 @@ class $DireccionTable extends Direccion
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
   static const VerificationMeta _tipoDireccionMeta = const VerificationMeta(
     'tipoDireccion',
   );
@@ -4161,6 +4173,7 @@ class $DireccionTable extends Direccion
     clienteId,
     servicioId,
     entidadFiscalId,
+    empleadoId,
     tipoDireccion,
     esPrincipal,
     calle,
@@ -4241,6 +4254,12 @@ class $DireccionTable extends Direccion
           data['entidad_fiscal_id']!,
           _entidadFiscalIdMeta,
         ),
+      );
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
       );
     }
     if (data.containsKey('tipo_direccion')) {
@@ -4402,6 +4421,10 @@ class $DireccionTable extends Direccion
         DriftSqlType.string,
         data['${effectivePrefix}entidad_fiscal_id'],
       ),
+      empleadoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empleado_id'],
+      ),
       tipoDireccion:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -4478,6 +4501,11 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
   final String? clienteId;
   final String? servicioId;
   final String? entidadFiscalId;
+
+  /// Domicilio particular de un Empleado (Etapa 5A) — mismo criterio de
+  /// `.unique()` que empresa/sucursal/servicio/entidadFiscal (a lo más
+  /// una `Direccion` activa por Empleado).
+  final String? empleadoId;
   final String tipoDireccion;
   final bool esPrincipal;
   final String calle;
@@ -4500,6 +4528,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     this.clienteId,
     this.servicioId,
     this.entidadFiscalId,
+    this.empleadoId,
     required this.tipoDireccion,
     required this.esPrincipal,
     required this.calle,
@@ -4534,6 +4563,9 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     }
     if (!nullToAbsent || entidadFiscalId != null) {
       map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId);
+    }
+    if (!nullToAbsent || empleadoId != null) {
+      map['empleado_id'] = Variable<String>(empleadoId);
     }
     map['tipo_direccion'] = Variable<String>(tipoDireccion);
     map['es_principal'] = Variable<bool>(esPrincipal);
@@ -4582,6 +4614,10 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
           entidadFiscalId == null && nullToAbsent
               ? const Value.absent()
               : Value(entidadFiscalId),
+      empleadoId:
+          empleadoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(empleadoId),
       tipoDireccion: Value(tipoDireccion),
       esPrincipal: Value(esPrincipal),
       calle: Value(calle),
@@ -4621,6 +4657,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
       clienteId: serializer.fromJson<String?>(json['clienteId']),
       servicioId: serializer.fromJson<String?>(json['servicioId']),
       entidadFiscalId: serializer.fromJson<String?>(json['entidadFiscalId']),
+      empleadoId: serializer.fromJson<String?>(json['empleadoId']),
       tipoDireccion: serializer.fromJson<String>(json['tipoDireccion']),
       esPrincipal: serializer.fromJson<bool>(json['esPrincipal']),
       calle: serializer.fromJson<String>(json['calle']),
@@ -4648,6 +4685,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
       'clienteId': serializer.toJson<String?>(clienteId),
       'servicioId': serializer.toJson<String?>(servicioId),
       'entidadFiscalId': serializer.toJson<String?>(entidadFiscalId),
+      'empleadoId': serializer.toJson<String?>(empleadoId),
       'tipoDireccion': serializer.toJson<String>(tipoDireccion),
       'esPrincipal': serializer.toJson<bool>(esPrincipal),
       'calle': serializer.toJson<String>(calle),
@@ -4673,6 +4711,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     Value<String?> clienteId = const Value.absent(),
     Value<String?> servicioId = const Value.absent(),
     Value<String?> entidadFiscalId = const Value.absent(),
+    Value<String?> empleadoId = const Value.absent(),
     String? tipoDireccion,
     bool? esPrincipal,
     String? calle,
@@ -4696,6 +4735,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     servicioId: servicioId.present ? servicioId.value : this.servicioId,
     entidadFiscalId:
         entidadFiscalId.present ? entidadFiscalId.value : this.entidadFiscalId,
+    empleadoId: empleadoId.present ? empleadoId.value : this.empleadoId,
     tipoDireccion: tipoDireccion ?? this.tipoDireccion,
     esPrincipal: esPrincipal ?? this.esPrincipal,
     calle: calle ?? this.calle,
@@ -4730,6 +4770,8 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
           data.entidadFiscalId.present
               ? data.entidadFiscalId.value
               : this.entidadFiscalId,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
       tipoDireccion:
           data.tipoDireccion.present
               ? data.tipoDireccion.value
@@ -4777,6 +4819,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
           ..write('clienteId: $clienteId, ')
           ..write('servicioId: $servicioId, ')
           ..write('entidadFiscalId: $entidadFiscalId, ')
+          ..write('empleadoId: $empleadoId, ')
           ..write('tipoDireccion: $tipoDireccion, ')
           ..write('esPrincipal: $esPrincipal, ')
           ..write('calle: $calle, ')
@@ -4804,6 +4847,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
     clienteId,
     servicioId,
     entidadFiscalId,
+    empleadoId,
     tipoDireccion,
     esPrincipal,
     calle,
@@ -4830,6 +4874,7 @@ class DireccionData extends DataClass implements Insertable<DireccionData> {
           other.clienteId == this.clienteId &&
           other.servicioId == this.servicioId &&
           other.entidadFiscalId == this.entidadFiscalId &&
+          other.empleadoId == this.empleadoId &&
           other.tipoDireccion == this.tipoDireccion &&
           other.esPrincipal == this.esPrincipal &&
           other.calle == this.calle &&
@@ -4854,6 +4899,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
   final Value<String?> clienteId;
   final Value<String?> servicioId;
   final Value<String?> entidadFiscalId;
+  final Value<String?> empleadoId;
   final Value<String> tipoDireccion;
   final Value<bool> esPrincipal;
   final Value<String> calle;
@@ -4877,6 +4923,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     this.clienteId = const Value.absent(),
     this.servicioId = const Value.absent(),
     this.entidadFiscalId = const Value.absent(),
+    this.empleadoId = const Value.absent(),
     this.tipoDireccion = const Value.absent(),
     this.esPrincipal = const Value.absent(),
     this.calle = const Value.absent(),
@@ -4901,6 +4948,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     this.clienteId = const Value.absent(),
     this.servicioId = const Value.absent(),
     this.entidadFiscalId = const Value.absent(),
+    this.empleadoId = const Value.absent(),
     required String tipoDireccion,
     this.esPrincipal = const Value.absent(),
     required String calle,
@@ -4931,6 +4979,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     Expression<String>? clienteId,
     Expression<String>? servicioId,
     Expression<String>? entidadFiscalId,
+    Expression<String>? empleadoId,
     Expression<String>? tipoDireccion,
     Expression<bool>? esPrincipal,
     Expression<String>? calle,
@@ -4955,6 +5004,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
       if (clienteId != null) 'cliente_id': clienteId,
       if (servicioId != null) 'servicio_id': servicioId,
       if (entidadFiscalId != null) 'entidad_fiscal_id': entidadFiscalId,
+      if (empleadoId != null) 'empleado_id': empleadoId,
       if (tipoDireccion != null) 'tipo_direccion': tipoDireccion,
       if (esPrincipal != null) 'es_principal': esPrincipal,
       if (calle != null) 'calle': calle,
@@ -4981,6 +5031,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     Value<String?>? clienteId,
     Value<String?>? servicioId,
     Value<String?>? entidadFiscalId,
+    Value<String?>? empleadoId,
     Value<String>? tipoDireccion,
     Value<bool>? esPrincipal,
     Value<String>? calle,
@@ -5005,6 +5056,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
       clienteId: clienteId ?? this.clienteId,
       servicioId: servicioId ?? this.servicioId,
       entidadFiscalId: entidadFiscalId ?? this.entidadFiscalId,
+      empleadoId: empleadoId ?? this.empleadoId,
       tipoDireccion: tipoDireccion ?? this.tipoDireccion,
       esPrincipal: esPrincipal ?? this.esPrincipal,
       calle: calle ?? this.calle,
@@ -5050,6 +5102,9 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
     }
     if (entidadFiscalId.present) {
       map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
     }
     if (tipoDireccion.present) {
       map['tipo_direccion'] = Variable<String>(tipoDireccion.value);
@@ -5105,6 +5160,7 @@ class DireccionCompanion extends UpdateCompanion<DireccionData> {
           ..write('clienteId: $clienteId, ')
           ..write('servicioId: $servicioId, ')
           ..write('entidadFiscalId: $entidadFiscalId, ')
+          ..write('empleadoId: $empleadoId, ')
           ..write('tipoDireccion: $tipoDireccion, ')
           ..write('esPrincipal: $esPrincipal, ')
           ..write('calle: $calle, ')
@@ -5760,82 +5816,6 @@ class $AttachmentTable extends Attachment
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
-    'empresaId',
-  );
-  @override
-  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
-    'empresa_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _clienteIdMeta = const VerificationMeta(
-    'clienteId',
-  );
-  @override
-  late final GeneratedColumn<String> clienteId = GeneratedColumn<String>(
-    'cliente_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _documentoPorEmitirIdMeta =
-      const VerificationMeta('documentoPorEmitirId');
-  @override
-  late final GeneratedColumn<String> documentoPorEmitirId =
-      GeneratedColumn<String>(
-        'documento_por_emitir_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
-  static const VerificationMeta _pagoIdMeta = const VerificationMeta('pagoId');
-  @override
-  late final GeneratedColumn<String> pagoId = GeneratedColumn<String>(
-    'pago_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _complementoPagoIdMeta = const VerificationMeta(
-    'complementoPagoId',
-  );
-  @override
-  late final GeneratedColumn<String> complementoPagoId =
-      GeneratedColumn<String>(
-        'complemento_pago_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
-  static const VerificationMeta _ingresoIdMeta = const VerificationMeta(
-    'ingresoId',
-  );
-  @override
-  late final GeneratedColumn<String> ingresoId = GeneratedColumn<String>(
-    'ingreso_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _egresoIdMeta = const VerificationMeta(
-    'egresoId',
-  );
-  @override
-  late final GeneratedColumn<String> egresoId = GeneratedColumn<String>(
-    'egreso_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _categoriaMeta = const VerificationMeta(
     'categoria',
   );
@@ -5934,13 +5914,6 @@ class $AttachmentTable extends Attachment
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    empresaId,
-    clienteId,
-    documentoPorEmitirId,
-    pagoId,
-    complementoPagoId,
-    ingresoId,
-    egresoId,
     categoria,
     originalFileName,
     storedFileName,
@@ -5967,54 +5940,6 @@ class $AttachmentTable extends Attachment
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
-    }
-    if (data.containsKey('empresa_id')) {
-      context.handle(
-        _empresaIdMeta,
-        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
-      );
-    }
-    if (data.containsKey('cliente_id')) {
-      context.handle(
-        _clienteIdMeta,
-        clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
-      );
-    }
-    if (data.containsKey('documento_por_emitir_id')) {
-      context.handle(
-        _documentoPorEmitirIdMeta,
-        documentoPorEmitirId.isAcceptableOrUnknown(
-          data['documento_por_emitir_id']!,
-          _documentoPorEmitirIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('pago_id')) {
-      context.handle(
-        _pagoIdMeta,
-        pagoId.isAcceptableOrUnknown(data['pago_id']!, _pagoIdMeta),
-      );
-    }
-    if (data.containsKey('complemento_pago_id')) {
-      context.handle(
-        _complementoPagoIdMeta,
-        complementoPagoId.isAcceptableOrUnknown(
-          data['complemento_pago_id']!,
-          _complementoPagoIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('ingreso_id')) {
-      context.handle(
-        _ingresoIdMeta,
-        ingresoId.isAcceptableOrUnknown(data['ingreso_id']!, _ingresoIdMeta),
-      );
-    }
-    if (data.containsKey('egreso_id')) {
-      context.handle(
-        _egresoIdMeta,
-        egresoId.isAcceptableOrUnknown(data['egreso_id']!, _egresoIdMeta),
-      );
     }
     if (data.containsKey('categoria')) {
       context.handle(
@@ -6100,34 +6025,6 @@ class $AttachmentTable extends Attachment
             DriftSqlType.string,
             data['${effectivePrefix}id'],
           )!,
-      empresaId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}empresa_id'],
-      ),
-      clienteId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}cliente_id'],
-      ),
-      documentoPorEmitirId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}documento_por_emitir_id'],
-      ),
-      pagoId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}pago_id'],
-      ),
-      complementoPagoId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}complemento_pago_id'],
-      ),
-      ingresoId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}ingreso_id'],
-      ),
-      egresoId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}egreso_id'],
-      ),
       categoria: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}categoria'],
@@ -6182,27 +6079,10 @@ class $AttachmentTable extends Attachment
 
 class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   final String id;
-  final String? empresaId;
-  final String? clienteId;
-  final String? documentoPorEmitirId;
 
-  /// Comprobante de pago (Etapa 4J.2) — un Pago puede tener varios
-  /// comprobantes adjuntos (PDF/XML/JPG/PNG), mismo mecanismo que
-  /// cualquier otro adjunto, sin campo dedicado dentro de `Pago`.
-  final String? pagoId;
-
-  /// PDF/XML de un Complemento de pago (Etapa 4J.3).
-  final String? complementoPagoId;
-
-  /// Comprobante de un Ingreso manual (Etapa 4K.1).
-  final String? ingresoId;
-
-  /// Comprobante de un Egreso (Etapa 4K.1).
-  final String? egresoId;
-
-  /// Solo aplica cuando `documentoPorEmitirId`/`complementoPagoId` no
-  /// son nulos — `null` para adjuntos de Empresa/Cliente/Pago/Ingreso/
-  /// Egreso (sin categorías propias todavía).
+  /// Solo aplica cuando el dueño es `DocumentoPorEmitir`/
+  /// `ComplementoPago` — `null` para el resto (sin categorías propias
+  /// todavía).
   final String? categoria;
   final String originalFileName;
   final String storedFileName;
@@ -6214,13 +6094,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   final DateTime createdAt;
   const AttachmentData({
     required this.id,
-    this.empresaId,
-    this.clienteId,
-    this.documentoPorEmitirId,
-    this.pagoId,
-    this.complementoPagoId,
-    this.ingresoId,
-    this.egresoId,
     this.categoria,
     required this.originalFileName,
     required this.storedFileName,
@@ -6235,27 +6108,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    if (!nullToAbsent || empresaId != null) {
-      map['empresa_id'] = Variable<String>(empresaId);
-    }
-    if (!nullToAbsent || clienteId != null) {
-      map['cliente_id'] = Variable<String>(clienteId);
-    }
-    if (!nullToAbsent || documentoPorEmitirId != null) {
-      map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
-    }
-    if (!nullToAbsent || pagoId != null) {
-      map['pago_id'] = Variable<String>(pagoId);
-    }
-    if (!nullToAbsent || complementoPagoId != null) {
-      map['complemento_pago_id'] = Variable<String>(complementoPagoId);
-    }
-    if (!nullToAbsent || ingresoId != null) {
-      map['ingreso_id'] = Variable<String>(ingresoId);
-    }
-    if (!nullToAbsent || egresoId != null) {
-      map['egreso_id'] = Variable<String>(egresoId);
-    }
     if (!nullToAbsent || categoria != null) {
       map['categoria'] = Variable<String>(categoria);
     }
@@ -6275,32 +6127,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   AttachmentCompanion toCompanion(bool nullToAbsent) {
     return AttachmentCompanion(
       id: Value(id),
-      empresaId:
-          empresaId == null && nullToAbsent
-              ? const Value.absent()
-              : Value(empresaId),
-      clienteId:
-          clienteId == null && nullToAbsent
-              ? const Value.absent()
-              : Value(clienteId),
-      documentoPorEmitirId:
-          documentoPorEmitirId == null && nullToAbsent
-              ? const Value.absent()
-              : Value(documentoPorEmitirId),
-      pagoId:
-          pagoId == null && nullToAbsent ? const Value.absent() : Value(pagoId),
-      complementoPagoId:
-          complementoPagoId == null && nullToAbsent
-              ? const Value.absent()
-              : Value(complementoPagoId),
-      ingresoId:
-          ingresoId == null && nullToAbsent
-              ? const Value.absent()
-              : Value(ingresoId),
-      egresoId:
-          egresoId == null && nullToAbsent
-              ? const Value.absent()
-              : Value(egresoId),
       categoria:
           categoria == null && nullToAbsent
               ? const Value.absent()
@@ -6323,17 +6149,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AttachmentData(
       id: serializer.fromJson<String>(json['id']),
-      empresaId: serializer.fromJson<String?>(json['empresaId']),
-      clienteId: serializer.fromJson<String?>(json['clienteId']),
-      documentoPorEmitirId: serializer.fromJson<String?>(
-        json['documentoPorEmitirId'],
-      ),
-      pagoId: serializer.fromJson<String?>(json['pagoId']),
-      complementoPagoId: serializer.fromJson<String?>(
-        json['complementoPagoId'],
-      ),
-      ingresoId: serializer.fromJson<String?>(json['ingresoId']),
-      egresoId: serializer.fromJson<String?>(json['egresoId']),
       categoria: serializer.fromJson<String?>(json['categoria']),
       originalFileName: serializer.fromJson<String>(json['originalFileName']),
       storedFileName: serializer.fromJson<String>(json['storedFileName']),
@@ -6350,13 +6165,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'empresaId': serializer.toJson<String?>(empresaId),
-      'clienteId': serializer.toJson<String?>(clienteId),
-      'documentoPorEmitirId': serializer.toJson<String?>(documentoPorEmitirId),
-      'pagoId': serializer.toJson<String?>(pagoId),
-      'complementoPagoId': serializer.toJson<String?>(complementoPagoId),
-      'ingresoId': serializer.toJson<String?>(ingresoId),
-      'egresoId': serializer.toJson<String?>(egresoId),
       'categoria': serializer.toJson<String?>(categoria),
       'originalFileName': serializer.toJson<String>(originalFileName),
       'storedFileName': serializer.toJson<String>(storedFileName),
@@ -6371,13 +6179,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
 
   AttachmentData copyWith({
     String? id,
-    Value<String?> empresaId = const Value.absent(),
-    Value<String?> clienteId = const Value.absent(),
-    Value<String?> documentoPorEmitirId = const Value.absent(),
-    Value<String?> pagoId = const Value.absent(),
-    Value<String?> complementoPagoId = const Value.absent(),
-    Value<String?> ingresoId = const Value.absent(),
-    Value<String?> egresoId = const Value.absent(),
     Value<String?> categoria = const Value.absent(),
     String? originalFileName,
     String? storedFileName,
@@ -6389,19 +6190,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     DateTime? createdAt,
   }) => AttachmentData(
     id: id ?? this.id,
-    empresaId: empresaId.present ? empresaId.value : this.empresaId,
-    clienteId: clienteId.present ? clienteId.value : this.clienteId,
-    documentoPorEmitirId:
-        documentoPorEmitirId.present
-            ? documentoPorEmitirId.value
-            : this.documentoPorEmitirId,
-    pagoId: pagoId.present ? pagoId.value : this.pagoId,
-    complementoPagoId:
-        complementoPagoId.present
-            ? complementoPagoId.value
-            : this.complementoPagoId,
-    ingresoId: ingresoId.present ? ingresoId.value : this.ingresoId,
-    egresoId: egresoId.present ? egresoId.value : this.egresoId,
     categoria: categoria.present ? categoria.value : this.categoria,
     originalFileName: originalFileName ?? this.originalFileName,
     storedFileName: storedFileName ?? this.storedFileName,
@@ -6415,19 +6203,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   AttachmentData copyWithCompanion(AttachmentCompanion data) {
     return AttachmentData(
       id: data.id.present ? data.id.value : this.id,
-      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
-      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
-      documentoPorEmitirId:
-          data.documentoPorEmitirId.present
-              ? data.documentoPorEmitirId.value
-              : this.documentoPorEmitirId,
-      pagoId: data.pagoId.present ? data.pagoId.value : this.pagoId,
-      complementoPagoId:
-          data.complementoPagoId.present
-              ? data.complementoPagoId.value
-              : this.complementoPagoId,
-      ingresoId: data.ingresoId.present ? data.ingresoId.value : this.ingresoId,
-      egresoId: data.egresoId.present ? data.egresoId.value : this.egresoId,
       categoria: data.categoria.present ? data.categoria.value : this.categoria,
       originalFileName:
           data.originalFileName.present
@@ -6450,13 +6225,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   String toString() {
     return (StringBuffer('AttachmentData(')
           ..write('id: $id, ')
-          ..write('empresaId: $empresaId, ')
-          ..write('clienteId: $clienteId, ')
-          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
-          ..write('pagoId: $pagoId, ')
-          ..write('complementoPagoId: $complementoPagoId, ')
-          ..write('ingresoId: $ingresoId, ')
-          ..write('egresoId: $egresoId, ')
           ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
@@ -6473,13 +6241,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   @override
   int get hashCode => Object.hash(
     id,
-    empresaId,
-    clienteId,
-    documentoPorEmitirId,
-    pagoId,
-    complementoPagoId,
-    ingresoId,
-    egresoId,
     categoria,
     originalFileName,
     storedFileName,
@@ -6495,13 +6256,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       identical(this, other) ||
       (other is AttachmentData &&
           other.id == this.id &&
-          other.empresaId == this.empresaId &&
-          other.clienteId == this.clienteId &&
-          other.documentoPorEmitirId == this.documentoPorEmitirId &&
-          other.pagoId == this.pagoId &&
-          other.complementoPagoId == this.complementoPagoId &&
-          other.ingresoId == this.ingresoId &&
-          other.egresoId == this.egresoId &&
           other.categoria == this.categoria &&
           other.originalFileName == this.originalFileName &&
           other.storedFileName == this.storedFileName &&
@@ -6515,13 +6269,6 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
 
 class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   final Value<String> id;
-  final Value<String?> empresaId;
-  final Value<String?> clienteId;
-  final Value<String?> documentoPorEmitirId;
-  final Value<String?> pagoId;
-  final Value<String?> complementoPagoId;
-  final Value<String?> ingresoId;
-  final Value<String?> egresoId;
   final Value<String?> categoria;
   final Value<String> originalFileName;
   final Value<String> storedFileName;
@@ -6534,13 +6281,6 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   final Value<int> rowid;
   const AttachmentCompanion({
     this.id = const Value.absent(),
-    this.empresaId = const Value.absent(),
-    this.clienteId = const Value.absent(),
-    this.documentoPorEmitirId = const Value.absent(),
-    this.pagoId = const Value.absent(),
-    this.complementoPagoId = const Value.absent(),
-    this.ingresoId = const Value.absent(),
-    this.egresoId = const Value.absent(),
     this.categoria = const Value.absent(),
     this.originalFileName = const Value.absent(),
     this.storedFileName = const Value.absent(),
@@ -6554,13 +6294,6 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   });
   AttachmentCompanion.insert({
     required String id,
-    this.empresaId = const Value.absent(),
-    this.clienteId = const Value.absent(),
-    this.documentoPorEmitirId = const Value.absent(),
-    this.pagoId = const Value.absent(),
-    this.complementoPagoId = const Value.absent(),
-    this.ingresoId = const Value.absent(),
-    this.egresoId = const Value.absent(),
     this.categoria = const Value.absent(),
     required String originalFileName,
     required String storedFileName,
@@ -6579,13 +6312,6 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
        sizeBytes = Value(sizeBytes);
   static Insertable<AttachmentData> custom({
     Expression<String>? id,
-    Expression<String>? empresaId,
-    Expression<String>? clienteId,
-    Expression<String>? documentoPorEmitirId,
-    Expression<String>? pagoId,
-    Expression<String>? complementoPagoId,
-    Expression<String>? ingresoId,
-    Expression<String>? egresoId,
     Expression<String>? categoria,
     Expression<String>? originalFileName,
     Expression<String>? storedFileName,
@@ -6599,14 +6325,6 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (empresaId != null) 'empresa_id': empresaId,
-      if (clienteId != null) 'cliente_id': clienteId,
-      if (documentoPorEmitirId != null)
-        'documento_por_emitir_id': documentoPorEmitirId,
-      if (pagoId != null) 'pago_id': pagoId,
-      if (complementoPagoId != null) 'complemento_pago_id': complementoPagoId,
-      if (ingresoId != null) 'ingreso_id': ingresoId,
-      if (egresoId != null) 'egreso_id': egresoId,
       if (categoria != null) 'categoria': categoria,
       if (originalFileName != null) 'original_file_name': originalFileName,
       if (storedFileName != null) 'stored_file_name': storedFileName,
@@ -6622,13 +6340,6 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
 
   AttachmentCompanion copyWith({
     Value<String>? id,
-    Value<String?>? empresaId,
-    Value<String?>? clienteId,
-    Value<String?>? documentoPorEmitirId,
-    Value<String?>? pagoId,
-    Value<String?>? complementoPagoId,
-    Value<String?>? ingresoId,
-    Value<String?>? egresoId,
     Value<String?>? categoria,
     Value<String>? originalFileName,
     Value<String>? storedFileName,
@@ -6642,13 +6353,6 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   }) {
     return AttachmentCompanion(
       id: id ?? this.id,
-      empresaId: empresaId ?? this.empresaId,
-      clienteId: clienteId ?? this.clienteId,
-      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
-      pagoId: pagoId ?? this.pagoId,
-      complementoPagoId: complementoPagoId ?? this.complementoPagoId,
-      ingresoId: ingresoId ?? this.ingresoId,
-      egresoId: egresoId ?? this.egresoId,
       categoria: categoria ?? this.categoria,
       originalFileName: originalFileName ?? this.originalFileName,
       storedFileName: storedFileName ?? this.storedFileName,
@@ -6667,29 +6371,6 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
-    }
-    if (empresaId.present) {
-      map['empresa_id'] = Variable<String>(empresaId.value);
-    }
-    if (clienteId.present) {
-      map['cliente_id'] = Variable<String>(clienteId.value);
-    }
-    if (documentoPorEmitirId.present) {
-      map['documento_por_emitir_id'] = Variable<String>(
-        documentoPorEmitirId.value,
-      );
-    }
-    if (pagoId.present) {
-      map['pago_id'] = Variable<String>(pagoId.value);
-    }
-    if (complementoPagoId.present) {
-      map['complemento_pago_id'] = Variable<String>(complementoPagoId.value);
-    }
-    if (ingresoId.present) {
-      map['ingreso_id'] = Variable<String>(ingresoId.value);
-    }
-    if (egresoId.present) {
-      map['egreso_id'] = Variable<String>(egresoId.value);
     }
     if (categoria.present) {
       map['categoria'] = Variable<String>(categoria.value);
@@ -6728,13 +6409,6 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   String toString() {
     return (StringBuffer('AttachmentCompanion(')
           ..write('id: $id, ')
-          ..write('empresaId: $empresaId, ')
-          ..write('clienteId: $clienteId, ')
-          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
-          ..write('pagoId: $pagoId, ')
-          ..write('complementoPagoId: $complementoPagoId, ')
-          ..write('ingresoId: $ingresoId, ')
-          ..write('egresoId: $egresoId, ')
           ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
@@ -31239,6 +30913,4577 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
   }
 }
 
+class $EmpleadoTable extends Empleado
+    with TableInfo<$EmpleadoTable, EmpleadoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EmpleadoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _codigoEmpleadoMeta = const VerificationMeta(
+    'codigoEmpleado',
+  );
+  @override
+  late final GeneratedColumn<String> codigoEmpleado = GeneratedColumn<String>(
+    'codigo_empleado',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _fotografiaAttachmentIdMeta =
+      const VerificationMeta('fotografiaAttachmentId');
+  @override
+  late final GeneratedColumn<String> fotografiaAttachmentId =
+      GeneratedColumn<String>(
+        'fotografia_attachment_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES attachment (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _nombresMeta = const VerificationMeta(
+    'nombres',
+  );
+  @override
+  late final GeneratedColumn<String> nombres = GeneratedColumn<String>(
+    'nombres',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _apellidoPaternoMeta = const VerificationMeta(
+    'apellidoPaterno',
+  );
+  @override
+  late final GeneratedColumn<String> apellidoPaterno = GeneratedColumn<String>(
+    'apellido_paterno',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _apellidoMaternoMeta = const VerificationMeta(
+    'apellidoMaterno',
+  );
+  @override
+  late final GeneratedColumn<String> apellidoMaterno = GeneratedColumn<String>(
+    'apellido_materno',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sexoMeta = const VerificationMeta('sexo');
+  @override
+  late final GeneratedColumn<String> sexo = GeneratedColumn<String>(
+    'sexo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaNacimientoMeta = const VerificationMeta(
+    'fechaNacimiento',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaNacimiento =
+      GeneratedColumn<DateTime>(
+        'fecha_nacimiento',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _curpMeta = const VerificationMeta('curp');
+  @override
+  late final GeneratedColumn<String> curp = GeneratedColumn<String>(
+    'curp',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rfcMeta = const VerificationMeta('rfc');
+  @override
+  late final GeneratedColumn<String> rfc = GeneratedColumn<String>(
+    'rfc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nssMeta = const VerificationMeta('nss');
+  @override
+  late final GeneratedColumn<String> nss = GeneratedColumn<String>(
+    'nss',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoCivilMeta = const VerificationMeta(
+    'estadoCivil',
+  );
+  @override
+  late final GeneratedColumn<String> estadoCivil = GeneratedColumn<String>(
+    'estado_civil',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nacionalidadMeta = const VerificationMeta(
+    'nacionalidad',
+  );
+  @override
+  late final GeneratedColumn<String> nacionalidad = GeneratedColumn<String>(
+    'nacionalidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Mexicana'),
+  );
+  static const VerificationMeta _telefonoMeta = const VerificationMeta(
+    'telefono',
+  );
+  @override
+  late final GeneratedColumn<String> telefono = GeneratedColumn<String>(
+    'telefono',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _correoElectronicoMeta = const VerificationMeta(
+    'correoElectronico',
+  );
+  @override
+  late final GeneratedColumn<String> correoElectronico =
+      GeneratedColumn<String>(
+        'correo_electronico',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _contactoEmergenciaNombreMeta =
+      const VerificationMeta('contactoEmergenciaNombre');
+  @override
+  late final GeneratedColumn<String> contactoEmergenciaNombre =
+      GeneratedColumn<String>(
+        'contacto_emergencia_nombre',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _telefonoEmergenciaMeta =
+      const VerificationMeta('telefonoEmergencia');
+  @override
+  late final GeneratedColumn<String> telefonoEmergencia =
+      GeneratedColumn<String>(
+        'telefono_emergencia',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _parentescoEmergenciaMeta =
+      const VerificationMeta('parentescoEmergencia');
+  @override
+  late final GeneratedColumn<String> parentescoEmergencia =
+      GeneratedColumn<String>(
+        'parentesco_emergencia',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _fechaIngresoMeta = const VerificationMeta(
+    'fechaIngreso',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaIngreso = GeneratedColumn<DateTime>(
+    'fecha_ingreso',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('activo'),
+  );
+  static const VerificationMeta _puestoIdMeta = const VerificationMeta(
+    'puestoId',
+  );
+  @override
+  late final GeneratedColumn<String> puestoId = GeneratedColumn<String>(
+    'puesto_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES puesto (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empresa (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _sucursalIdMeta = const VerificationMeta(
+    'sucursalId',
+  );
+  @override
+  late final GeneratedColumn<String> sucursalId = GeneratedColumn<String>(
+    'sucursal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sucursal (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nivelEstudiosMeta = const VerificationMeta(
+    'nivelEstudios',
+  );
+  @override
+  late final GeneratedColumn<String> nivelEstudios = GeneratedColumn<String>(
+    'nivel_estudios',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesEscolaridadMeta =
+      const VerificationMeta('observacionesEscolaridad');
+  @override
+  late final GeneratedColumn<String> observacionesEscolaridad =
+      GeneratedColumn<String>(
+        'observaciones_escolaridad',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _aniosExperienciaSeguridadMeta =
+      const VerificationMeta('aniosExperienciaSeguridad');
+  @override
+  late final GeneratedColumn<int> aniosExperienciaSeguridad =
+      GeneratedColumn<int>(
+        'anios_experiencia_seguridad',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _mesesExperienciaAdicionalesMeta =
+      const VerificationMeta('mesesExperienciaAdicionales');
+  @override
+  late final GeneratedColumn<int> mesesExperienciaAdicionales =
+      GeneratedColumn<int>(
+        'meses_experiencia_adicionales',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _ultimoPuestoDesempenadoMeta =
+      const VerificationMeta('ultimoPuestoDesempenado');
+  @override
+  late final GeneratedColumn<String> ultimoPuestoDesempenado =
+      GeneratedColumn<String>(
+        'ultimo_puesto_desempenado',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _resumenExperienciaMeta =
+      const VerificationMeta('resumenExperiencia');
+  @override
+  late final GeneratedColumn<String> resumenExperiencia =
+      GeneratedColumn<String>(
+        'resumen_experiencia',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesExperienciaMeta =
+      const VerificationMeta('observacionesExperiencia');
+  @override
+  late final GeneratedColumn<String> observacionesExperiencia =
+      GeneratedColumn<String>(
+        'observaciones_experiencia',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigoEmpleado,
+    fotografiaAttachmentId,
+    nombres,
+    apellidoPaterno,
+    apellidoMaterno,
+    sexo,
+    fechaNacimiento,
+    curp,
+    rfc,
+    nss,
+    estadoCivil,
+    nacionalidad,
+    telefono,
+    correoElectronico,
+    contactoEmergenciaNombre,
+    telefonoEmergencia,
+    parentescoEmergencia,
+    fechaIngreso,
+    estatus,
+    puestoId,
+    empresaId,
+    sucursalId,
+    observaciones,
+    nivelEstudios,
+    observacionesEscolaridad,
+    aniosExperienciaSeguridad,
+    mesesExperienciaAdicionales,
+    ultimoPuestoDesempenado,
+    resumenExperiencia,
+    observacionesExperiencia,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'empleado';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EmpleadoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('codigo_empleado')) {
+      context.handle(
+        _codigoEmpleadoMeta,
+        codigoEmpleado.isAcceptableOrUnknown(
+          data['codigo_empleado']!,
+          _codigoEmpleadoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoEmpleadoMeta);
+    }
+    if (data.containsKey('fotografia_attachment_id')) {
+      context.handle(
+        _fotografiaAttachmentIdMeta,
+        fotografiaAttachmentId.isAcceptableOrUnknown(
+          data['fotografia_attachment_id']!,
+          _fotografiaAttachmentIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nombres')) {
+      context.handle(
+        _nombresMeta,
+        nombres.isAcceptableOrUnknown(data['nombres']!, _nombresMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombresMeta);
+    }
+    if (data.containsKey('apellido_paterno')) {
+      context.handle(
+        _apellidoPaternoMeta,
+        apellidoPaterno.isAcceptableOrUnknown(
+          data['apellido_paterno']!,
+          _apellidoPaternoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_apellidoPaternoMeta);
+    }
+    if (data.containsKey('apellido_materno')) {
+      context.handle(
+        _apellidoMaternoMeta,
+        apellidoMaterno.isAcceptableOrUnknown(
+          data['apellido_materno']!,
+          _apellidoMaternoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sexo')) {
+      context.handle(
+        _sexoMeta,
+        sexo.isAcceptableOrUnknown(data['sexo']!, _sexoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sexoMeta);
+    }
+    if (data.containsKey('fecha_nacimiento')) {
+      context.handle(
+        _fechaNacimientoMeta,
+        fechaNacimiento.isAcceptableOrUnknown(
+          data['fecha_nacimiento']!,
+          _fechaNacimientoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaNacimientoMeta);
+    }
+    if (data.containsKey('curp')) {
+      context.handle(
+        _curpMeta,
+        curp.isAcceptableOrUnknown(data['curp']!, _curpMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_curpMeta);
+    }
+    if (data.containsKey('rfc')) {
+      context.handle(
+        _rfcMeta,
+        rfc.isAcceptableOrUnknown(data['rfc']!, _rfcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rfcMeta);
+    }
+    if (data.containsKey('nss')) {
+      context.handle(
+        _nssMeta,
+        nss.isAcceptableOrUnknown(data['nss']!, _nssMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nssMeta);
+    }
+    if (data.containsKey('estado_civil')) {
+      context.handle(
+        _estadoCivilMeta,
+        estadoCivil.isAcceptableOrUnknown(
+          data['estado_civil']!,
+          _estadoCivilMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_estadoCivilMeta);
+    }
+    if (data.containsKey('nacionalidad')) {
+      context.handle(
+        _nacionalidadMeta,
+        nacionalidad.isAcceptableOrUnknown(
+          data['nacionalidad']!,
+          _nacionalidadMeta,
+        ),
+      );
+    }
+    if (data.containsKey('telefono')) {
+      context.handle(
+        _telefonoMeta,
+        telefono.isAcceptableOrUnknown(data['telefono']!, _telefonoMeta),
+      );
+    }
+    if (data.containsKey('correo_electronico')) {
+      context.handle(
+        _correoElectronicoMeta,
+        correoElectronico.isAcceptableOrUnknown(
+          data['correo_electronico']!,
+          _correoElectronicoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('contacto_emergencia_nombre')) {
+      context.handle(
+        _contactoEmergenciaNombreMeta,
+        contactoEmergenciaNombre.isAcceptableOrUnknown(
+          data['contacto_emergencia_nombre']!,
+          _contactoEmergenciaNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('telefono_emergencia')) {
+      context.handle(
+        _telefonoEmergenciaMeta,
+        telefonoEmergencia.isAcceptableOrUnknown(
+          data['telefono_emergencia']!,
+          _telefonoEmergenciaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('parentesco_emergencia')) {
+      context.handle(
+        _parentescoEmergenciaMeta,
+        parentescoEmergencia.isAcceptableOrUnknown(
+          data['parentesco_emergencia']!,
+          _parentescoEmergenciaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_ingreso')) {
+      context.handle(
+        _fechaIngresoMeta,
+        fechaIngreso.isAcceptableOrUnknown(
+          data['fecha_ingreso']!,
+          _fechaIngresoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaIngresoMeta);
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('puesto_id')) {
+      context.handle(
+        _puestoIdMeta,
+        puestoId.isAcceptableOrUnknown(data['puesto_id']!, _puestoIdMeta),
+      );
+    }
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('sucursal_id')) {
+      context.handle(
+        _sucursalIdMeta,
+        sucursalId.isAcceptableOrUnknown(data['sucursal_id']!, _sucursalIdMeta),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nivel_estudios')) {
+      context.handle(
+        _nivelEstudiosMeta,
+        nivelEstudios.isAcceptableOrUnknown(
+          data['nivel_estudios']!,
+          _nivelEstudiosMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones_escolaridad')) {
+      context.handle(
+        _observacionesEscolaridadMeta,
+        observacionesEscolaridad.isAcceptableOrUnknown(
+          data['observaciones_escolaridad']!,
+          _observacionesEscolaridadMeta,
+        ),
+      );
+    }
+    if (data.containsKey('anios_experiencia_seguridad')) {
+      context.handle(
+        _aniosExperienciaSeguridadMeta,
+        aniosExperienciaSeguridad.isAcceptableOrUnknown(
+          data['anios_experiencia_seguridad']!,
+          _aniosExperienciaSeguridadMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_aniosExperienciaSeguridadMeta);
+    }
+    if (data.containsKey('meses_experiencia_adicionales')) {
+      context.handle(
+        _mesesExperienciaAdicionalesMeta,
+        mesesExperienciaAdicionales.isAcceptableOrUnknown(
+          data['meses_experiencia_adicionales']!,
+          _mesesExperienciaAdicionalesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ultimo_puesto_desempenado')) {
+      context.handle(
+        _ultimoPuestoDesempenadoMeta,
+        ultimoPuestoDesempenado.isAcceptableOrUnknown(
+          data['ultimo_puesto_desempenado']!,
+          _ultimoPuestoDesempenadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resumen_experiencia')) {
+      context.handle(
+        _resumenExperienciaMeta,
+        resumenExperiencia.isAcceptableOrUnknown(
+          data['resumen_experiencia']!,
+          _resumenExperienciaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones_experiencia')) {
+      context.handle(
+        _observacionesExperienciaMeta,
+        observacionesExperiencia.isAcceptableOrUnknown(
+          data['observaciones_experiencia']!,
+          _observacionesExperienciaMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EmpleadoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EmpleadoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      codigoEmpleado:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}codigo_empleado'],
+          )!,
+      fotografiaAttachmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fotografia_attachment_id'],
+      ),
+      nombres:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombres'],
+          )!,
+      apellidoPaterno:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}apellido_paterno'],
+          )!,
+      apellidoMaterno: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}apellido_materno'],
+      ),
+      sexo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}sexo'],
+          )!,
+      fechaNacimiento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_nacimiento'],
+          )!,
+      curp:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}curp'],
+          )!,
+      rfc:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}rfc'],
+          )!,
+      nss:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nss'],
+          )!,
+      estadoCivil:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estado_civil'],
+          )!,
+      nacionalidad:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nacionalidad'],
+          )!,
+      telefono: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}telefono'],
+      ),
+      correoElectronico: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}correo_electronico'],
+      ),
+      contactoEmergenciaNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}contacto_emergencia_nombre'],
+      ),
+      telefonoEmergencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}telefono_emergencia'],
+      ),
+      parentescoEmergencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parentesco_emergencia'],
+      ),
+      fechaIngreso:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_ingreso'],
+          )!,
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      puestoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}puesto_id'],
+      ),
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      ),
+      sucursalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sucursal_id'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      nivelEstudios: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nivel_estudios'],
+      ),
+      observacionesEscolaridad: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_escolaridad'],
+      ),
+      aniosExperienciaSeguridad:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}anios_experiencia_seguridad'],
+          )!,
+      mesesExperienciaAdicionales: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}meses_experiencia_adicionales'],
+      ),
+      ultimoPuestoDesempenado: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ultimo_puesto_desempenado'],
+      ),
+      resumenExperiencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resumen_experiencia'],
+      ),
+      observacionesExperiencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_experiencia'],
+      ),
+    );
+  }
+
+  @override
+  $EmpleadoTable createAlias(String alias) {
+    return $EmpleadoTable(attachedDatabase, alias);
+  }
+}
+
+class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String codigoEmpleado;
+
+  /// Puntero directo a *la* fotografía vigente — mismo patrón que
+  /// `Empresa.logoAttachmentId`. La fotografía también existe como fila
+  /// en `EmpleadoAttachment` (categoría `fotografia`); este puntero es
+  /// solo para no tener que resolverla por consulta en cada listado.
+  final String? fotografiaAttachmentId;
+  final String nombres;
+  final String apellidoPaterno;
+  final String? apellidoMaterno;
+  final String sexo;
+  final DateTime fechaNacimiento;
+  final String curp;
+  final String rfc;
+  final String nss;
+  final String estadoCivil;
+  final String nacionalidad;
+  final String? telefono;
+  final String? correoElectronico;
+  final String? contactoEmergenciaNombre;
+  final String? telefonoEmergencia;
+  final String? parentescoEmergencia;
+  final DateTime fechaIngreso;
+  final String estatus;
+  final String? puestoId;
+  final String? empresaId;
+  final String? sucursalId;
+  final String? observaciones;
+  final String? nivelEstudios;
+  final String? observacionesEscolaridad;
+  final int aniosExperienciaSeguridad;
+  final int? mesesExperienciaAdicionales;
+  final String? ultimoPuestoDesempenado;
+  final String? resumenExperiencia;
+  final String? observacionesExperiencia;
+  const EmpleadoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.codigoEmpleado,
+    this.fotografiaAttachmentId,
+    required this.nombres,
+    required this.apellidoPaterno,
+    this.apellidoMaterno,
+    required this.sexo,
+    required this.fechaNacimiento,
+    required this.curp,
+    required this.rfc,
+    required this.nss,
+    required this.estadoCivil,
+    required this.nacionalidad,
+    this.telefono,
+    this.correoElectronico,
+    this.contactoEmergenciaNombre,
+    this.telefonoEmergencia,
+    this.parentescoEmergencia,
+    required this.fechaIngreso,
+    required this.estatus,
+    this.puestoId,
+    this.empresaId,
+    this.sucursalId,
+    this.observaciones,
+    this.nivelEstudios,
+    this.observacionesEscolaridad,
+    required this.aniosExperienciaSeguridad,
+    this.mesesExperienciaAdicionales,
+    this.ultimoPuestoDesempenado,
+    this.resumenExperiencia,
+    this.observacionesExperiencia,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['codigo_empleado'] = Variable<String>(codigoEmpleado);
+    if (!nullToAbsent || fotografiaAttachmentId != null) {
+      map['fotografia_attachment_id'] = Variable<String>(
+        fotografiaAttachmentId,
+      );
+    }
+    map['nombres'] = Variable<String>(nombres);
+    map['apellido_paterno'] = Variable<String>(apellidoPaterno);
+    if (!nullToAbsent || apellidoMaterno != null) {
+      map['apellido_materno'] = Variable<String>(apellidoMaterno);
+    }
+    map['sexo'] = Variable<String>(sexo);
+    map['fecha_nacimiento'] = Variable<DateTime>(fechaNacimiento);
+    map['curp'] = Variable<String>(curp);
+    map['rfc'] = Variable<String>(rfc);
+    map['nss'] = Variable<String>(nss);
+    map['estado_civil'] = Variable<String>(estadoCivil);
+    map['nacionalidad'] = Variable<String>(nacionalidad);
+    if (!nullToAbsent || telefono != null) {
+      map['telefono'] = Variable<String>(telefono);
+    }
+    if (!nullToAbsent || correoElectronico != null) {
+      map['correo_electronico'] = Variable<String>(correoElectronico);
+    }
+    if (!nullToAbsent || contactoEmergenciaNombre != null) {
+      map['contacto_emergencia_nombre'] = Variable<String>(
+        contactoEmergenciaNombre,
+      );
+    }
+    if (!nullToAbsent || telefonoEmergencia != null) {
+      map['telefono_emergencia'] = Variable<String>(telefonoEmergencia);
+    }
+    if (!nullToAbsent || parentescoEmergencia != null) {
+      map['parentesco_emergencia'] = Variable<String>(parentescoEmergencia);
+    }
+    map['fecha_ingreso'] = Variable<DateTime>(fechaIngreso);
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || puestoId != null) {
+      map['puesto_id'] = Variable<String>(puestoId);
+    }
+    if (!nullToAbsent || empresaId != null) {
+      map['empresa_id'] = Variable<String>(empresaId);
+    }
+    if (!nullToAbsent || sucursalId != null) {
+      map['sucursal_id'] = Variable<String>(sucursalId);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || nivelEstudios != null) {
+      map['nivel_estudios'] = Variable<String>(nivelEstudios);
+    }
+    if (!nullToAbsent || observacionesEscolaridad != null) {
+      map['observaciones_escolaridad'] = Variable<String>(
+        observacionesEscolaridad,
+      );
+    }
+    map['anios_experiencia_seguridad'] = Variable<int>(
+      aniosExperienciaSeguridad,
+    );
+    if (!nullToAbsent || mesesExperienciaAdicionales != null) {
+      map['meses_experiencia_adicionales'] = Variable<int>(
+        mesesExperienciaAdicionales,
+      );
+    }
+    if (!nullToAbsent || ultimoPuestoDesempenado != null) {
+      map['ultimo_puesto_desempenado'] = Variable<String>(
+        ultimoPuestoDesempenado,
+      );
+    }
+    if (!nullToAbsent || resumenExperiencia != null) {
+      map['resumen_experiencia'] = Variable<String>(resumenExperiencia);
+    }
+    if (!nullToAbsent || observacionesExperiencia != null) {
+      map['observaciones_experiencia'] = Variable<String>(
+        observacionesExperiencia,
+      );
+    }
+    return map;
+  }
+
+  EmpleadoCompanion toCompanion(bool nullToAbsent) {
+    return EmpleadoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      codigoEmpleado: Value(codigoEmpleado),
+      fotografiaAttachmentId:
+          fotografiaAttachmentId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fotografiaAttachmentId),
+      nombres: Value(nombres),
+      apellidoPaterno: Value(apellidoPaterno),
+      apellidoMaterno:
+          apellidoMaterno == null && nullToAbsent
+              ? const Value.absent()
+              : Value(apellidoMaterno),
+      sexo: Value(sexo),
+      fechaNacimiento: Value(fechaNacimiento),
+      curp: Value(curp),
+      rfc: Value(rfc),
+      nss: Value(nss),
+      estadoCivil: Value(estadoCivil),
+      nacionalidad: Value(nacionalidad),
+      telefono:
+          telefono == null && nullToAbsent
+              ? const Value.absent()
+              : Value(telefono),
+      correoElectronico:
+          correoElectronico == null && nullToAbsent
+              ? const Value.absent()
+              : Value(correoElectronico),
+      contactoEmergenciaNombre:
+          contactoEmergenciaNombre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(contactoEmergenciaNombre),
+      telefonoEmergencia:
+          telefonoEmergencia == null && nullToAbsent
+              ? const Value.absent()
+              : Value(telefonoEmergencia),
+      parentescoEmergencia:
+          parentescoEmergencia == null && nullToAbsent
+              ? const Value.absent()
+              : Value(parentescoEmergencia),
+      fechaIngreso: Value(fechaIngreso),
+      estatus: Value(estatus),
+      puestoId:
+          puestoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(puestoId),
+      empresaId:
+          empresaId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(empresaId),
+      sucursalId:
+          sucursalId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(sucursalId),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      nivelEstudios:
+          nivelEstudios == null && nullToAbsent
+              ? const Value.absent()
+              : Value(nivelEstudios),
+      observacionesEscolaridad:
+          observacionesEscolaridad == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesEscolaridad),
+      aniosExperienciaSeguridad: Value(aniosExperienciaSeguridad),
+      mesesExperienciaAdicionales:
+          mesesExperienciaAdicionales == null && nullToAbsent
+              ? const Value.absent()
+              : Value(mesesExperienciaAdicionales),
+      ultimoPuestoDesempenado:
+          ultimoPuestoDesempenado == null && nullToAbsent
+              ? const Value.absent()
+              : Value(ultimoPuestoDesempenado),
+      resumenExperiencia:
+          resumenExperiencia == null && nullToAbsent
+              ? const Value.absent()
+              : Value(resumenExperiencia),
+      observacionesExperiencia:
+          observacionesExperiencia == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesExperiencia),
+    );
+  }
+
+  factory EmpleadoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EmpleadoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      codigoEmpleado: serializer.fromJson<String>(json['codigoEmpleado']),
+      fotografiaAttachmentId: serializer.fromJson<String?>(
+        json['fotografiaAttachmentId'],
+      ),
+      nombres: serializer.fromJson<String>(json['nombres']),
+      apellidoPaterno: serializer.fromJson<String>(json['apellidoPaterno']),
+      apellidoMaterno: serializer.fromJson<String?>(json['apellidoMaterno']),
+      sexo: serializer.fromJson<String>(json['sexo']),
+      fechaNacimiento: serializer.fromJson<DateTime>(json['fechaNacimiento']),
+      curp: serializer.fromJson<String>(json['curp']),
+      rfc: serializer.fromJson<String>(json['rfc']),
+      nss: serializer.fromJson<String>(json['nss']),
+      estadoCivil: serializer.fromJson<String>(json['estadoCivil']),
+      nacionalidad: serializer.fromJson<String>(json['nacionalidad']),
+      telefono: serializer.fromJson<String?>(json['telefono']),
+      correoElectronico: serializer.fromJson<String?>(
+        json['correoElectronico'],
+      ),
+      contactoEmergenciaNombre: serializer.fromJson<String?>(
+        json['contactoEmergenciaNombre'],
+      ),
+      telefonoEmergencia: serializer.fromJson<String?>(
+        json['telefonoEmergencia'],
+      ),
+      parentescoEmergencia: serializer.fromJson<String?>(
+        json['parentescoEmergencia'],
+      ),
+      fechaIngreso: serializer.fromJson<DateTime>(json['fechaIngreso']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      puestoId: serializer.fromJson<String?>(json['puestoId']),
+      empresaId: serializer.fromJson<String?>(json['empresaId']),
+      sucursalId: serializer.fromJson<String?>(json['sucursalId']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      nivelEstudios: serializer.fromJson<String?>(json['nivelEstudios']),
+      observacionesEscolaridad: serializer.fromJson<String?>(
+        json['observacionesEscolaridad'],
+      ),
+      aniosExperienciaSeguridad: serializer.fromJson<int>(
+        json['aniosExperienciaSeguridad'],
+      ),
+      mesesExperienciaAdicionales: serializer.fromJson<int?>(
+        json['mesesExperienciaAdicionales'],
+      ),
+      ultimoPuestoDesempenado: serializer.fromJson<String?>(
+        json['ultimoPuestoDesempenado'],
+      ),
+      resumenExperiencia: serializer.fromJson<String?>(
+        json['resumenExperiencia'],
+      ),
+      observacionesExperiencia: serializer.fromJson<String?>(
+        json['observacionesExperiencia'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'codigoEmpleado': serializer.toJson<String>(codigoEmpleado),
+      'fotografiaAttachmentId': serializer.toJson<String?>(
+        fotografiaAttachmentId,
+      ),
+      'nombres': serializer.toJson<String>(nombres),
+      'apellidoPaterno': serializer.toJson<String>(apellidoPaterno),
+      'apellidoMaterno': serializer.toJson<String?>(apellidoMaterno),
+      'sexo': serializer.toJson<String>(sexo),
+      'fechaNacimiento': serializer.toJson<DateTime>(fechaNacimiento),
+      'curp': serializer.toJson<String>(curp),
+      'rfc': serializer.toJson<String>(rfc),
+      'nss': serializer.toJson<String>(nss),
+      'estadoCivil': serializer.toJson<String>(estadoCivil),
+      'nacionalidad': serializer.toJson<String>(nacionalidad),
+      'telefono': serializer.toJson<String?>(telefono),
+      'correoElectronico': serializer.toJson<String?>(correoElectronico),
+      'contactoEmergenciaNombre': serializer.toJson<String?>(
+        contactoEmergenciaNombre,
+      ),
+      'telefonoEmergencia': serializer.toJson<String?>(telefonoEmergencia),
+      'parentescoEmergencia': serializer.toJson<String?>(parentescoEmergencia),
+      'fechaIngreso': serializer.toJson<DateTime>(fechaIngreso),
+      'estatus': serializer.toJson<String>(estatus),
+      'puestoId': serializer.toJson<String?>(puestoId),
+      'empresaId': serializer.toJson<String?>(empresaId),
+      'sucursalId': serializer.toJson<String?>(sucursalId),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'nivelEstudios': serializer.toJson<String?>(nivelEstudios),
+      'observacionesEscolaridad': serializer.toJson<String?>(
+        observacionesEscolaridad,
+      ),
+      'aniosExperienciaSeguridad': serializer.toJson<int>(
+        aniosExperienciaSeguridad,
+      ),
+      'mesesExperienciaAdicionales': serializer.toJson<int?>(
+        mesesExperienciaAdicionales,
+      ),
+      'ultimoPuestoDesempenado': serializer.toJson<String?>(
+        ultimoPuestoDesempenado,
+      ),
+      'resumenExperiencia': serializer.toJson<String?>(resumenExperiencia),
+      'observacionesExperiencia': serializer.toJson<String?>(
+        observacionesExperiencia,
+      ),
+    };
+  }
+
+  EmpleadoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? codigoEmpleado,
+    Value<String?> fotografiaAttachmentId = const Value.absent(),
+    String? nombres,
+    String? apellidoPaterno,
+    Value<String?> apellidoMaterno = const Value.absent(),
+    String? sexo,
+    DateTime? fechaNacimiento,
+    String? curp,
+    String? rfc,
+    String? nss,
+    String? estadoCivil,
+    String? nacionalidad,
+    Value<String?> telefono = const Value.absent(),
+    Value<String?> correoElectronico = const Value.absent(),
+    Value<String?> contactoEmergenciaNombre = const Value.absent(),
+    Value<String?> telefonoEmergencia = const Value.absent(),
+    Value<String?> parentescoEmergencia = const Value.absent(),
+    DateTime? fechaIngreso,
+    String? estatus,
+    Value<String?> puestoId = const Value.absent(),
+    Value<String?> empresaId = const Value.absent(),
+    Value<String?> sucursalId = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+    Value<String?> nivelEstudios = const Value.absent(),
+    Value<String?> observacionesEscolaridad = const Value.absent(),
+    int? aniosExperienciaSeguridad,
+    Value<int?> mesesExperienciaAdicionales = const Value.absent(),
+    Value<String?> ultimoPuestoDesempenado = const Value.absent(),
+    Value<String?> resumenExperiencia = const Value.absent(),
+    Value<String?> observacionesExperiencia = const Value.absent(),
+  }) => EmpleadoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    codigoEmpleado: codigoEmpleado ?? this.codigoEmpleado,
+    fotografiaAttachmentId:
+        fotografiaAttachmentId.present
+            ? fotografiaAttachmentId.value
+            : this.fotografiaAttachmentId,
+    nombres: nombres ?? this.nombres,
+    apellidoPaterno: apellidoPaterno ?? this.apellidoPaterno,
+    apellidoMaterno:
+        apellidoMaterno.present ? apellidoMaterno.value : this.apellidoMaterno,
+    sexo: sexo ?? this.sexo,
+    fechaNacimiento: fechaNacimiento ?? this.fechaNacimiento,
+    curp: curp ?? this.curp,
+    rfc: rfc ?? this.rfc,
+    nss: nss ?? this.nss,
+    estadoCivil: estadoCivil ?? this.estadoCivil,
+    nacionalidad: nacionalidad ?? this.nacionalidad,
+    telefono: telefono.present ? telefono.value : this.telefono,
+    correoElectronico:
+        correoElectronico.present
+            ? correoElectronico.value
+            : this.correoElectronico,
+    contactoEmergenciaNombre:
+        contactoEmergenciaNombre.present
+            ? contactoEmergenciaNombre.value
+            : this.contactoEmergenciaNombre,
+    telefonoEmergencia:
+        telefonoEmergencia.present
+            ? telefonoEmergencia.value
+            : this.telefonoEmergencia,
+    parentescoEmergencia:
+        parentescoEmergencia.present
+            ? parentescoEmergencia.value
+            : this.parentescoEmergencia,
+    fechaIngreso: fechaIngreso ?? this.fechaIngreso,
+    estatus: estatus ?? this.estatus,
+    puestoId: puestoId.present ? puestoId.value : this.puestoId,
+    empresaId: empresaId.present ? empresaId.value : this.empresaId,
+    sucursalId: sucursalId.present ? sucursalId.value : this.sucursalId,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    nivelEstudios:
+        nivelEstudios.present ? nivelEstudios.value : this.nivelEstudios,
+    observacionesEscolaridad:
+        observacionesEscolaridad.present
+            ? observacionesEscolaridad.value
+            : this.observacionesEscolaridad,
+    aniosExperienciaSeguridad:
+        aniosExperienciaSeguridad ?? this.aniosExperienciaSeguridad,
+    mesesExperienciaAdicionales:
+        mesesExperienciaAdicionales.present
+            ? mesesExperienciaAdicionales.value
+            : this.mesesExperienciaAdicionales,
+    ultimoPuestoDesempenado:
+        ultimoPuestoDesempenado.present
+            ? ultimoPuestoDesempenado.value
+            : this.ultimoPuestoDesempenado,
+    resumenExperiencia:
+        resumenExperiencia.present
+            ? resumenExperiencia.value
+            : this.resumenExperiencia,
+    observacionesExperiencia:
+        observacionesExperiencia.present
+            ? observacionesExperiencia.value
+            : this.observacionesExperiencia,
+  );
+  EmpleadoData copyWithCompanion(EmpleadoCompanion data) {
+    return EmpleadoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      codigoEmpleado:
+          data.codigoEmpleado.present
+              ? data.codigoEmpleado.value
+              : this.codigoEmpleado,
+      fotografiaAttachmentId:
+          data.fotografiaAttachmentId.present
+              ? data.fotografiaAttachmentId.value
+              : this.fotografiaAttachmentId,
+      nombres: data.nombres.present ? data.nombres.value : this.nombres,
+      apellidoPaterno:
+          data.apellidoPaterno.present
+              ? data.apellidoPaterno.value
+              : this.apellidoPaterno,
+      apellidoMaterno:
+          data.apellidoMaterno.present
+              ? data.apellidoMaterno.value
+              : this.apellidoMaterno,
+      sexo: data.sexo.present ? data.sexo.value : this.sexo,
+      fechaNacimiento:
+          data.fechaNacimiento.present
+              ? data.fechaNacimiento.value
+              : this.fechaNacimiento,
+      curp: data.curp.present ? data.curp.value : this.curp,
+      rfc: data.rfc.present ? data.rfc.value : this.rfc,
+      nss: data.nss.present ? data.nss.value : this.nss,
+      estadoCivil:
+          data.estadoCivil.present ? data.estadoCivil.value : this.estadoCivil,
+      nacionalidad:
+          data.nacionalidad.present
+              ? data.nacionalidad.value
+              : this.nacionalidad,
+      telefono: data.telefono.present ? data.telefono.value : this.telefono,
+      correoElectronico:
+          data.correoElectronico.present
+              ? data.correoElectronico.value
+              : this.correoElectronico,
+      contactoEmergenciaNombre:
+          data.contactoEmergenciaNombre.present
+              ? data.contactoEmergenciaNombre.value
+              : this.contactoEmergenciaNombre,
+      telefonoEmergencia:
+          data.telefonoEmergencia.present
+              ? data.telefonoEmergencia.value
+              : this.telefonoEmergencia,
+      parentescoEmergencia:
+          data.parentescoEmergencia.present
+              ? data.parentescoEmergencia.value
+              : this.parentescoEmergencia,
+      fechaIngreso:
+          data.fechaIngreso.present
+              ? data.fechaIngreso.value
+              : this.fechaIngreso,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      puestoId: data.puestoId.present ? data.puestoId.value : this.puestoId,
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      sucursalId:
+          data.sucursalId.present ? data.sucursalId.value : this.sucursalId,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      nivelEstudios:
+          data.nivelEstudios.present
+              ? data.nivelEstudios.value
+              : this.nivelEstudios,
+      observacionesEscolaridad:
+          data.observacionesEscolaridad.present
+              ? data.observacionesEscolaridad.value
+              : this.observacionesEscolaridad,
+      aniosExperienciaSeguridad:
+          data.aniosExperienciaSeguridad.present
+              ? data.aniosExperienciaSeguridad.value
+              : this.aniosExperienciaSeguridad,
+      mesesExperienciaAdicionales:
+          data.mesesExperienciaAdicionales.present
+              ? data.mesesExperienciaAdicionales.value
+              : this.mesesExperienciaAdicionales,
+      ultimoPuestoDesempenado:
+          data.ultimoPuestoDesempenado.present
+              ? data.ultimoPuestoDesempenado.value
+              : this.ultimoPuestoDesempenado,
+      resumenExperiencia:
+          data.resumenExperiencia.present
+              ? data.resumenExperiencia.value
+              : this.resumenExperiencia,
+      observacionesExperiencia:
+          data.observacionesExperiencia.present
+              ? data.observacionesExperiencia.value
+              : this.observacionesExperiencia,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpleadoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigoEmpleado: $codigoEmpleado, ')
+          ..write('fotografiaAttachmentId: $fotografiaAttachmentId, ')
+          ..write('nombres: $nombres, ')
+          ..write('apellidoPaterno: $apellidoPaterno, ')
+          ..write('apellidoMaterno: $apellidoMaterno, ')
+          ..write('sexo: $sexo, ')
+          ..write('fechaNacimiento: $fechaNacimiento, ')
+          ..write('curp: $curp, ')
+          ..write('rfc: $rfc, ')
+          ..write('nss: $nss, ')
+          ..write('estadoCivil: $estadoCivil, ')
+          ..write('nacionalidad: $nacionalidad, ')
+          ..write('telefono: $telefono, ')
+          ..write('correoElectronico: $correoElectronico, ')
+          ..write('contactoEmergenciaNombre: $contactoEmergenciaNombre, ')
+          ..write('telefonoEmergencia: $telefonoEmergencia, ')
+          ..write('parentescoEmergencia: $parentescoEmergencia, ')
+          ..write('fechaIngreso: $fechaIngreso, ')
+          ..write('estatus: $estatus, ')
+          ..write('puestoId: $puestoId, ')
+          ..write('empresaId: $empresaId, ')
+          ..write('sucursalId: $sucursalId, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('nivelEstudios: $nivelEstudios, ')
+          ..write('observacionesEscolaridad: $observacionesEscolaridad, ')
+          ..write('aniosExperienciaSeguridad: $aniosExperienciaSeguridad, ')
+          ..write('mesesExperienciaAdicionales: $mesesExperienciaAdicionales, ')
+          ..write('ultimoPuestoDesempenado: $ultimoPuestoDesempenado, ')
+          ..write('resumenExperiencia: $resumenExperiencia, ')
+          ..write('observacionesExperiencia: $observacionesExperiencia')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigoEmpleado,
+    fotografiaAttachmentId,
+    nombres,
+    apellidoPaterno,
+    apellidoMaterno,
+    sexo,
+    fechaNacimiento,
+    curp,
+    rfc,
+    nss,
+    estadoCivil,
+    nacionalidad,
+    telefono,
+    correoElectronico,
+    contactoEmergenciaNombre,
+    telefonoEmergencia,
+    parentescoEmergencia,
+    fechaIngreso,
+    estatus,
+    puestoId,
+    empresaId,
+    sucursalId,
+    observaciones,
+    nivelEstudios,
+    observacionesEscolaridad,
+    aniosExperienciaSeguridad,
+    mesesExperienciaAdicionales,
+    ultimoPuestoDesempenado,
+    resumenExperiencia,
+    observacionesExperiencia,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EmpleadoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.codigoEmpleado == this.codigoEmpleado &&
+          other.fotografiaAttachmentId == this.fotografiaAttachmentId &&
+          other.nombres == this.nombres &&
+          other.apellidoPaterno == this.apellidoPaterno &&
+          other.apellidoMaterno == this.apellidoMaterno &&
+          other.sexo == this.sexo &&
+          other.fechaNacimiento == this.fechaNacimiento &&
+          other.curp == this.curp &&
+          other.rfc == this.rfc &&
+          other.nss == this.nss &&
+          other.estadoCivil == this.estadoCivil &&
+          other.nacionalidad == this.nacionalidad &&
+          other.telefono == this.telefono &&
+          other.correoElectronico == this.correoElectronico &&
+          other.contactoEmergenciaNombre == this.contactoEmergenciaNombre &&
+          other.telefonoEmergencia == this.telefonoEmergencia &&
+          other.parentescoEmergencia == this.parentescoEmergencia &&
+          other.fechaIngreso == this.fechaIngreso &&
+          other.estatus == this.estatus &&
+          other.puestoId == this.puestoId &&
+          other.empresaId == this.empresaId &&
+          other.sucursalId == this.sucursalId &&
+          other.observaciones == this.observaciones &&
+          other.nivelEstudios == this.nivelEstudios &&
+          other.observacionesEscolaridad == this.observacionesEscolaridad &&
+          other.aniosExperienciaSeguridad == this.aniosExperienciaSeguridad &&
+          other.mesesExperienciaAdicionales ==
+              this.mesesExperienciaAdicionales &&
+          other.ultimoPuestoDesempenado == this.ultimoPuestoDesempenado &&
+          other.resumenExperiencia == this.resumenExperiencia &&
+          other.observacionesExperiencia == this.observacionesExperiencia);
+}
+
+class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> codigoEmpleado;
+  final Value<String?> fotografiaAttachmentId;
+  final Value<String> nombres;
+  final Value<String> apellidoPaterno;
+  final Value<String?> apellidoMaterno;
+  final Value<String> sexo;
+  final Value<DateTime> fechaNacimiento;
+  final Value<String> curp;
+  final Value<String> rfc;
+  final Value<String> nss;
+  final Value<String> estadoCivil;
+  final Value<String> nacionalidad;
+  final Value<String?> telefono;
+  final Value<String?> correoElectronico;
+  final Value<String?> contactoEmergenciaNombre;
+  final Value<String?> telefonoEmergencia;
+  final Value<String?> parentescoEmergencia;
+  final Value<DateTime> fechaIngreso;
+  final Value<String> estatus;
+  final Value<String?> puestoId;
+  final Value<String?> empresaId;
+  final Value<String?> sucursalId;
+  final Value<String?> observaciones;
+  final Value<String?> nivelEstudios;
+  final Value<String?> observacionesEscolaridad;
+  final Value<int> aniosExperienciaSeguridad;
+  final Value<int?> mesesExperienciaAdicionales;
+  final Value<String?> ultimoPuestoDesempenado;
+  final Value<String?> resumenExperiencia;
+  final Value<String?> observacionesExperiencia;
+  final Value<int> rowid;
+  const EmpleadoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.codigoEmpleado = const Value.absent(),
+    this.fotografiaAttachmentId = const Value.absent(),
+    this.nombres = const Value.absent(),
+    this.apellidoPaterno = const Value.absent(),
+    this.apellidoMaterno = const Value.absent(),
+    this.sexo = const Value.absent(),
+    this.fechaNacimiento = const Value.absent(),
+    this.curp = const Value.absent(),
+    this.rfc = const Value.absent(),
+    this.nss = const Value.absent(),
+    this.estadoCivil = const Value.absent(),
+    this.nacionalidad = const Value.absent(),
+    this.telefono = const Value.absent(),
+    this.correoElectronico = const Value.absent(),
+    this.contactoEmergenciaNombre = const Value.absent(),
+    this.telefonoEmergencia = const Value.absent(),
+    this.parentescoEmergencia = const Value.absent(),
+    this.fechaIngreso = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.puestoId = const Value.absent(),
+    this.empresaId = const Value.absent(),
+    this.sucursalId = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.nivelEstudios = const Value.absent(),
+    this.observacionesEscolaridad = const Value.absent(),
+    this.aniosExperienciaSeguridad = const Value.absent(),
+    this.mesesExperienciaAdicionales = const Value.absent(),
+    this.ultimoPuestoDesempenado = const Value.absent(),
+    this.resumenExperiencia = const Value.absent(),
+    this.observacionesExperiencia = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EmpleadoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String codigoEmpleado,
+    this.fotografiaAttachmentId = const Value.absent(),
+    required String nombres,
+    required String apellidoPaterno,
+    this.apellidoMaterno = const Value.absent(),
+    required String sexo,
+    required DateTime fechaNacimiento,
+    required String curp,
+    required String rfc,
+    required String nss,
+    required String estadoCivil,
+    this.nacionalidad = const Value.absent(),
+    this.telefono = const Value.absent(),
+    this.correoElectronico = const Value.absent(),
+    this.contactoEmergenciaNombre = const Value.absent(),
+    this.telefonoEmergencia = const Value.absent(),
+    this.parentescoEmergencia = const Value.absent(),
+    required DateTime fechaIngreso,
+    this.estatus = const Value.absent(),
+    this.puestoId = const Value.absent(),
+    this.empresaId = const Value.absent(),
+    this.sucursalId = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.nivelEstudios = const Value.absent(),
+    this.observacionesEscolaridad = const Value.absent(),
+    required int aniosExperienciaSeguridad,
+    this.mesesExperienciaAdicionales = const Value.absent(),
+    this.ultimoPuestoDesempenado = const Value.absent(),
+    this.resumenExperiencia = const Value.absent(),
+    this.observacionesExperiencia = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : codigoEmpleado = Value(codigoEmpleado),
+       nombres = Value(nombres),
+       apellidoPaterno = Value(apellidoPaterno),
+       sexo = Value(sexo),
+       fechaNacimiento = Value(fechaNacimiento),
+       curp = Value(curp),
+       rfc = Value(rfc),
+       nss = Value(nss),
+       estadoCivil = Value(estadoCivil),
+       fechaIngreso = Value(fechaIngreso),
+       aniosExperienciaSeguridad = Value(aniosExperienciaSeguridad);
+  static Insertable<EmpleadoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? codigoEmpleado,
+    Expression<String>? fotografiaAttachmentId,
+    Expression<String>? nombres,
+    Expression<String>? apellidoPaterno,
+    Expression<String>? apellidoMaterno,
+    Expression<String>? sexo,
+    Expression<DateTime>? fechaNacimiento,
+    Expression<String>? curp,
+    Expression<String>? rfc,
+    Expression<String>? nss,
+    Expression<String>? estadoCivil,
+    Expression<String>? nacionalidad,
+    Expression<String>? telefono,
+    Expression<String>? correoElectronico,
+    Expression<String>? contactoEmergenciaNombre,
+    Expression<String>? telefonoEmergencia,
+    Expression<String>? parentescoEmergencia,
+    Expression<DateTime>? fechaIngreso,
+    Expression<String>? estatus,
+    Expression<String>? puestoId,
+    Expression<String>? empresaId,
+    Expression<String>? sucursalId,
+    Expression<String>? observaciones,
+    Expression<String>? nivelEstudios,
+    Expression<String>? observacionesEscolaridad,
+    Expression<int>? aniosExperienciaSeguridad,
+    Expression<int>? mesesExperienciaAdicionales,
+    Expression<String>? ultimoPuestoDesempenado,
+    Expression<String>? resumenExperiencia,
+    Expression<String>? observacionesExperiencia,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (codigoEmpleado != null) 'codigo_empleado': codigoEmpleado,
+      if (fotografiaAttachmentId != null)
+        'fotografia_attachment_id': fotografiaAttachmentId,
+      if (nombres != null) 'nombres': nombres,
+      if (apellidoPaterno != null) 'apellido_paterno': apellidoPaterno,
+      if (apellidoMaterno != null) 'apellido_materno': apellidoMaterno,
+      if (sexo != null) 'sexo': sexo,
+      if (fechaNacimiento != null) 'fecha_nacimiento': fechaNacimiento,
+      if (curp != null) 'curp': curp,
+      if (rfc != null) 'rfc': rfc,
+      if (nss != null) 'nss': nss,
+      if (estadoCivil != null) 'estado_civil': estadoCivil,
+      if (nacionalidad != null) 'nacionalidad': nacionalidad,
+      if (telefono != null) 'telefono': telefono,
+      if (correoElectronico != null) 'correo_electronico': correoElectronico,
+      if (contactoEmergenciaNombre != null)
+        'contacto_emergencia_nombre': contactoEmergenciaNombre,
+      if (telefonoEmergencia != null) 'telefono_emergencia': telefonoEmergencia,
+      if (parentescoEmergencia != null)
+        'parentesco_emergencia': parentescoEmergencia,
+      if (fechaIngreso != null) 'fecha_ingreso': fechaIngreso,
+      if (estatus != null) 'estatus': estatus,
+      if (puestoId != null) 'puesto_id': puestoId,
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (sucursalId != null) 'sucursal_id': sucursalId,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (nivelEstudios != null) 'nivel_estudios': nivelEstudios,
+      if (observacionesEscolaridad != null)
+        'observaciones_escolaridad': observacionesEscolaridad,
+      if (aniosExperienciaSeguridad != null)
+        'anios_experiencia_seguridad': aniosExperienciaSeguridad,
+      if (mesesExperienciaAdicionales != null)
+        'meses_experiencia_adicionales': mesesExperienciaAdicionales,
+      if (ultimoPuestoDesempenado != null)
+        'ultimo_puesto_desempenado': ultimoPuestoDesempenado,
+      if (resumenExperiencia != null) 'resumen_experiencia': resumenExperiencia,
+      if (observacionesExperiencia != null)
+        'observaciones_experiencia': observacionesExperiencia,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EmpleadoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? codigoEmpleado,
+    Value<String?>? fotografiaAttachmentId,
+    Value<String>? nombres,
+    Value<String>? apellidoPaterno,
+    Value<String?>? apellidoMaterno,
+    Value<String>? sexo,
+    Value<DateTime>? fechaNacimiento,
+    Value<String>? curp,
+    Value<String>? rfc,
+    Value<String>? nss,
+    Value<String>? estadoCivil,
+    Value<String>? nacionalidad,
+    Value<String?>? telefono,
+    Value<String?>? correoElectronico,
+    Value<String?>? contactoEmergenciaNombre,
+    Value<String?>? telefonoEmergencia,
+    Value<String?>? parentescoEmergencia,
+    Value<DateTime>? fechaIngreso,
+    Value<String>? estatus,
+    Value<String?>? puestoId,
+    Value<String?>? empresaId,
+    Value<String?>? sucursalId,
+    Value<String?>? observaciones,
+    Value<String?>? nivelEstudios,
+    Value<String?>? observacionesEscolaridad,
+    Value<int>? aniosExperienciaSeguridad,
+    Value<int?>? mesesExperienciaAdicionales,
+    Value<String?>? ultimoPuestoDesempenado,
+    Value<String?>? resumenExperiencia,
+    Value<String?>? observacionesExperiencia,
+    Value<int>? rowid,
+  }) {
+    return EmpleadoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      codigoEmpleado: codigoEmpleado ?? this.codigoEmpleado,
+      fotografiaAttachmentId:
+          fotografiaAttachmentId ?? this.fotografiaAttachmentId,
+      nombres: nombres ?? this.nombres,
+      apellidoPaterno: apellidoPaterno ?? this.apellidoPaterno,
+      apellidoMaterno: apellidoMaterno ?? this.apellidoMaterno,
+      sexo: sexo ?? this.sexo,
+      fechaNacimiento: fechaNacimiento ?? this.fechaNacimiento,
+      curp: curp ?? this.curp,
+      rfc: rfc ?? this.rfc,
+      nss: nss ?? this.nss,
+      estadoCivil: estadoCivil ?? this.estadoCivil,
+      nacionalidad: nacionalidad ?? this.nacionalidad,
+      telefono: telefono ?? this.telefono,
+      correoElectronico: correoElectronico ?? this.correoElectronico,
+      contactoEmergenciaNombre:
+          contactoEmergenciaNombre ?? this.contactoEmergenciaNombre,
+      telefonoEmergencia: telefonoEmergencia ?? this.telefonoEmergencia,
+      parentescoEmergencia: parentescoEmergencia ?? this.parentescoEmergencia,
+      fechaIngreso: fechaIngreso ?? this.fechaIngreso,
+      estatus: estatus ?? this.estatus,
+      puestoId: puestoId ?? this.puestoId,
+      empresaId: empresaId ?? this.empresaId,
+      sucursalId: sucursalId ?? this.sucursalId,
+      observaciones: observaciones ?? this.observaciones,
+      nivelEstudios: nivelEstudios ?? this.nivelEstudios,
+      observacionesEscolaridad:
+          observacionesEscolaridad ?? this.observacionesEscolaridad,
+      aniosExperienciaSeguridad:
+          aniosExperienciaSeguridad ?? this.aniosExperienciaSeguridad,
+      mesesExperienciaAdicionales:
+          mesesExperienciaAdicionales ?? this.mesesExperienciaAdicionales,
+      ultimoPuestoDesempenado:
+          ultimoPuestoDesempenado ?? this.ultimoPuestoDesempenado,
+      resumenExperiencia: resumenExperiencia ?? this.resumenExperiencia,
+      observacionesExperiencia:
+          observacionesExperiencia ?? this.observacionesExperiencia,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (codigoEmpleado.present) {
+      map['codigo_empleado'] = Variable<String>(codigoEmpleado.value);
+    }
+    if (fotografiaAttachmentId.present) {
+      map['fotografia_attachment_id'] = Variable<String>(
+        fotografiaAttachmentId.value,
+      );
+    }
+    if (nombres.present) {
+      map['nombres'] = Variable<String>(nombres.value);
+    }
+    if (apellidoPaterno.present) {
+      map['apellido_paterno'] = Variable<String>(apellidoPaterno.value);
+    }
+    if (apellidoMaterno.present) {
+      map['apellido_materno'] = Variable<String>(apellidoMaterno.value);
+    }
+    if (sexo.present) {
+      map['sexo'] = Variable<String>(sexo.value);
+    }
+    if (fechaNacimiento.present) {
+      map['fecha_nacimiento'] = Variable<DateTime>(fechaNacimiento.value);
+    }
+    if (curp.present) {
+      map['curp'] = Variable<String>(curp.value);
+    }
+    if (rfc.present) {
+      map['rfc'] = Variable<String>(rfc.value);
+    }
+    if (nss.present) {
+      map['nss'] = Variable<String>(nss.value);
+    }
+    if (estadoCivil.present) {
+      map['estado_civil'] = Variable<String>(estadoCivil.value);
+    }
+    if (nacionalidad.present) {
+      map['nacionalidad'] = Variable<String>(nacionalidad.value);
+    }
+    if (telefono.present) {
+      map['telefono'] = Variable<String>(telefono.value);
+    }
+    if (correoElectronico.present) {
+      map['correo_electronico'] = Variable<String>(correoElectronico.value);
+    }
+    if (contactoEmergenciaNombre.present) {
+      map['contacto_emergencia_nombre'] = Variable<String>(
+        contactoEmergenciaNombre.value,
+      );
+    }
+    if (telefonoEmergencia.present) {
+      map['telefono_emergencia'] = Variable<String>(telefonoEmergencia.value);
+    }
+    if (parentescoEmergencia.present) {
+      map['parentesco_emergencia'] = Variable<String>(
+        parentescoEmergencia.value,
+      );
+    }
+    if (fechaIngreso.present) {
+      map['fecha_ingreso'] = Variable<DateTime>(fechaIngreso.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (puestoId.present) {
+      map['puesto_id'] = Variable<String>(puestoId.value);
+    }
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (sucursalId.present) {
+      map['sucursal_id'] = Variable<String>(sucursalId.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (nivelEstudios.present) {
+      map['nivel_estudios'] = Variable<String>(nivelEstudios.value);
+    }
+    if (observacionesEscolaridad.present) {
+      map['observaciones_escolaridad'] = Variable<String>(
+        observacionesEscolaridad.value,
+      );
+    }
+    if (aniosExperienciaSeguridad.present) {
+      map['anios_experiencia_seguridad'] = Variable<int>(
+        aniosExperienciaSeguridad.value,
+      );
+    }
+    if (mesesExperienciaAdicionales.present) {
+      map['meses_experiencia_adicionales'] = Variable<int>(
+        mesesExperienciaAdicionales.value,
+      );
+    }
+    if (ultimoPuestoDesempenado.present) {
+      map['ultimo_puesto_desempenado'] = Variable<String>(
+        ultimoPuestoDesempenado.value,
+      );
+    }
+    if (resumenExperiencia.present) {
+      map['resumen_experiencia'] = Variable<String>(resumenExperiencia.value);
+    }
+    if (observacionesExperiencia.present) {
+      map['observaciones_experiencia'] = Variable<String>(
+        observacionesExperiencia.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpleadoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigoEmpleado: $codigoEmpleado, ')
+          ..write('fotografiaAttachmentId: $fotografiaAttachmentId, ')
+          ..write('nombres: $nombres, ')
+          ..write('apellidoPaterno: $apellidoPaterno, ')
+          ..write('apellidoMaterno: $apellidoMaterno, ')
+          ..write('sexo: $sexo, ')
+          ..write('fechaNacimiento: $fechaNacimiento, ')
+          ..write('curp: $curp, ')
+          ..write('rfc: $rfc, ')
+          ..write('nss: $nss, ')
+          ..write('estadoCivil: $estadoCivil, ')
+          ..write('nacionalidad: $nacionalidad, ')
+          ..write('telefono: $telefono, ')
+          ..write('correoElectronico: $correoElectronico, ')
+          ..write('contactoEmergenciaNombre: $contactoEmergenciaNombre, ')
+          ..write('telefonoEmergencia: $telefonoEmergencia, ')
+          ..write('parentescoEmergencia: $parentescoEmergencia, ')
+          ..write('fechaIngreso: $fechaIngreso, ')
+          ..write('estatus: $estatus, ')
+          ..write('puestoId: $puestoId, ')
+          ..write('empresaId: $empresaId, ')
+          ..write('sucursalId: $sucursalId, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('nivelEstudios: $nivelEstudios, ')
+          ..write('observacionesEscolaridad: $observacionesEscolaridad, ')
+          ..write('aniosExperienciaSeguridad: $aniosExperienciaSeguridad, ')
+          ..write('mesesExperienciaAdicionales: $mesesExperienciaAdicionales, ')
+          ..write('ultimoPuestoDesempenado: $ultimoPuestoDesempenado, ')
+          ..write('resumenExperiencia: $resumenExperiencia, ')
+          ..write('observacionesExperiencia: $observacionesExperiencia, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EmpleadoEventoTable extends EmpleadoEvento
+    with TableInfo<$EmpleadoEventoTable, EmpleadoEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EmpleadoEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empleado (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoAnteriorMeta = const VerificationMeta(
+    'estadoAnterior',
+  );
+  @override
+  late final GeneratedColumn<String> estadoAnterior = GeneratedColumn<String>(
+    'estado_anterior',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estadoNuevoMeta = const VerificationMeta(
+    'estadoNuevo',
+  );
+  @override
+  late final GeneratedColumn<String> estadoNuevo = GeneratedColumn<String>(
+    'estado_nuevo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    empleadoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'empleado_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EmpleadoEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_empleadoIdMeta);
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('estado_anterior')) {
+      context.handle(
+        _estadoAnteriorMeta,
+        estadoAnterior.isAcceptableOrUnknown(
+          data['estado_anterior']!,
+          _estadoAnteriorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estado_nuevo')) {
+      context.handle(
+        _estadoNuevoMeta,
+        estadoNuevo.isAcceptableOrUnknown(
+          data['estado_nuevo']!,
+          _estadoNuevoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EmpleadoEventoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EmpleadoEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      empleadoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}empleado_id'],
+          )!,
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      estadoAnterior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_anterior'],
+      ),
+      estadoNuevo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_nuevo'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $EmpleadoEventoTable createAlias(String alias) {
+    return $EmpleadoEventoTable(attachedDatabase, alias);
+  }
+}
+
+class EmpleadoEventoData extends DataClass
+    implements Insertable<EmpleadoEventoData> {
+  final int id;
+  final String empleadoId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? estadoAnterior;
+  final String? estadoNuevo;
+  final String? observacion;
+  final String? actor;
+  final String? datosRelevantes;
+  const EmpleadoEventoData({
+    required this.id,
+    required this.empleadoId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.estadoAnterior,
+    this.estadoNuevo,
+    this.observacion,
+    this.actor,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['empleado_id'] = Variable<String>(empleadoId);
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || estadoAnterior != null) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior);
+    }
+    if (!nullToAbsent || estadoNuevo != null) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  EmpleadoEventoCompanion toCompanion(bool nullToAbsent) {
+    return EmpleadoEventoCompanion(
+      id: Value(id),
+      empleadoId: Value(empleadoId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      estadoAnterior:
+          estadoAnterior == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoAnterior),
+      estadoNuevo:
+          estadoNuevo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoNuevo),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory EmpleadoEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EmpleadoEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      empleadoId: serializer.fromJson<String>(json['empleadoId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      estadoAnterior: serializer.fromJson<String?>(json['estadoAnterior']),
+      estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      actor: serializer.fromJson<String?>(json['actor']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'empleadoId': serializer.toJson<String>(empleadoId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'estadoAnterior': serializer.toJson<String?>(estadoAnterior),
+      'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
+      'observacion': serializer.toJson<String?>(observacion),
+      'actor': serializer.toJson<String?>(actor),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  EmpleadoEventoData copyWith({
+    int? id,
+    String? empleadoId,
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> estadoAnterior = const Value.absent(),
+    Value<String?> estadoNuevo = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => EmpleadoEventoData(
+    id: id ?? this.id,
+    empleadoId: empleadoId ?? this.empleadoId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    estadoAnterior:
+        estadoAnterior.present ? estadoAnterior.value : this.estadoAnterior,
+    estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    actor: actor.present ? actor.value : this.actor,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  EmpleadoEventoData copyWithCompanion(EmpleadoEventoCompanion data) {
+    return EmpleadoEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      estadoAnterior:
+          data.estadoAnterior.present
+              ? data.estadoAnterior.value
+              : this.estadoAnterior,
+      estadoNuevo:
+          data.estadoNuevo.present ? data.estadoNuevo.value : this.estadoNuevo,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      actor: data.actor.present ? data.actor.value : this.actor,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpleadoEventoData(')
+          ..write('id: $id, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    empleadoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EmpleadoEventoData &&
+          other.id == this.id &&
+          other.empleadoId == this.empleadoId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.estadoAnterior == this.estadoAnterior &&
+          other.estadoNuevo == this.estadoNuevo &&
+          other.observacion == this.observacion &&
+          other.actor == this.actor &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
+  final Value<int> id;
+  final Value<String> empleadoId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> estadoAnterior;
+  final Value<String?> estadoNuevo;
+  final Value<String?> observacion;
+  final Value<String?> actor;
+  final Value<String?> datosRelevantes;
+  const EmpleadoEventoCompanion({
+    this.id = const Value.absent(),
+    this.empleadoId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  EmpleadoEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String empleadoId,
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : empleadoId = Value(empleadoId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<EmpleadoEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? empleadoId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? estadoAnterior,
+    Expression<String>? estadoNuevo,
+    Expression<String>? observacion,
+    Expression<String>? actor,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (empleadoId != null) 'empleado_id': empleadoId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (estadoAnterior != null) 'estado_anterior': estadoAnterior,
+      if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
+      if (observacion != null) 'observacion': observacion,
+      if (actor != null) 'actor': actor,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  EmpleadoEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? empleadoId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? estadoAnterior,
+    Value<String?>? estadoNuevo,
+    Value<String?>? observacion,
+    Value<String?>? actor,
+    Value<String?>? datosRelevantes,
+  }) {
+    return EmpleadoEventoCompanion(
+      id: id ?? this.id,
+      empleadoId: empleadoId ?? this.empleadoId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      estadoAnterior: estadoAnterior ?? this.estadoAnterior,
+      estadoNuevo: estadoNuevo ?? this.estadoNuevo,
+      observacion: observacion ?? this.observacion,
+      actor: actor ?? this.actor,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (estadoAnterior.present) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior.value);
+    }
+    if (estadoNuevo.present) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpleadoEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EmpresaAttachmentTable extends EmpresaAttachment
+    with TableInfo<$EmpresaAttachmentTable, EmpresaAttachmentData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EmpresaAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empresa (id) ON DELETE RESTRICT',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, empresaId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'empresa_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EmpresaAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_empresaIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  EmpresaAttachmentData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EmpresaAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      empresaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}empresa_id'],
+          )!,
+    );
+  }
+
+  @override
+  $EmpresaAttachmentTable createAlias(String alias) {
+    return $EmpresaAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class EmpresaAttachmentData extends DataClass
+    implements Insertable<EmpresaAttachmentData> {
+  final String attachmentId;
+  final String empresaId;
+  const EmpresaAttachmentData({
+    required this.attachmentId,
+    required this.empresaId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['empresa_id'] = Variable<String>(empresaId);
+    return map;
+  }
+
+  EmpresaAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return EmpresaAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      empresaId: Value(empresaId),
+    );
+  }
+
+  factory EmpresaAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EmpresaAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'empresaId': serializer.toJson<String>(empresaId),
+    };
+  }
+
+  EmpresaAttachmentData copyWith({String? attachmentId, String? empresaId}) =>
+      EmpresaAttachmentData(
+        attachmentId: attachmentId ?? this.attachmentId,
+        empresaId: empresaId ?? this.empresaId,
+      );
+  EmpresaAttachmentData copyWithCompanion(EmpresaAttachmentCompanion data) {
+    return EmpresaAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpresaAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('empresaId: $empresaId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, empresaId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EmpresaAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.empresaId == this.empresaId);
+}
+
+class EmpresaAttachmentCompanion
+    extends UpdateCompanion<EmpresaAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> empresaId;
+  final Value<int> rowid;
+  const EmpresaAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.empresaId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EmpresaAttachmentCompanion.insert({
+    required String attachmentId,
+    required String empresaId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       empresaId = Value(empresaId);
+  static Insertable<EmpresaAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? empresaId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EmpresaAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? empresaId,
+    Value<int>? rowid,
+  }) {
+    return EmpresaAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      empresaId: empresaId ?? this.empresaId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpresaAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('empresaId: $empresaId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ClienteAttachmentTable extends ClienteAttachment
+    with TableInfo<$ClienteAttachmentTable, ClienteAttachmentData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ClienteAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _clienteIdMeta = const VerificationMeta(
+    'clienteId',
+  );
+  @override
+  late final GeneratedColumn<String> clienteId = GeneratedColumn<String>(
+    'cliente_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cliente (id) ON DELETE RESTRICT',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, clienteId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cliente_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ClienteAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('cliente_id')) {
+      context.handle(
+        _clienteIdMeta,
+        clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_clienteIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  ClienteAttachmentData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ClienteAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      clienteId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}cliente_id'],
+          )!,
+    );
+  }
+
+  @override
+  $ClienteAttachmentTable createAlias(String alias) {
+    return $ClienteAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class ClienteAttachmentData extends DataClass
+    implements Insertable<ClienteAttachmentData> {
+  final String attachmentId;
+  final String clienteId;
+  const ClienteAttachmentData({
+    required this.attachmentId,
+    required this.clienteId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['cliente_id'] = Variable<String>(clienteId);
+    return map;
+  }
+
+  ClienteAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return ClienteAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      clienteId: Value(clienteId),
+    );
+  }
+
+  factory ClienteAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ClienteAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      clienteId: serializer.fromJson<String>(json['clienteId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'clienteId': serializer.toJson<String>(clienteId),
+    };
+  }
+
+  ClienteAttachmentData copyWith({String? attachmentId, String? clienteId}) =>
+      ClienteAttachmentData(
+        attachmentId: attachmentId ?? this.attachmentId,
+        clienteId: clienteId ?? this.clienteId,
+      );
+  ClienteAttachmentData copyWithCompanion(ClienteAttachmentCompanion data) {
+    return ClienteAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClienteAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('clienteId: $clienteId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, clienteId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ClienteAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.clienteId == this.clienteId);
+}
+
+class ClienteAttachmentCompanion
+    extends UpdateCompanion<ClienteAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> clienteId;
+  final Value<int> rowid;
+  const ClienteAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.clienteId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ClienteAttachmentCompanion.insert({
+    required String attachmentId,
+    required String clienteId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       clienteId = Value(clienteId);
+  static Insertable<ClienteAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? clienteId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (clienteId != null) 'cliente_id': clienteId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ClienteAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? clienteId,
+    Value<int>? rowid,
+  }) {
+    return ClienteAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      clienteId: clienteId ?? this.clienteId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (clienteId.present) {
+      map['cliente_id'] = Variable<String>(clienteId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClienteAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DocumentoPorEmitirAttachmentTable extends DocumentoPorEmitirAttachment
+    with
+        TableInfo<
+          $DocumentoPorEmitirAttachmentTable,
+          DocumentoPorEmitirAttachmentData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentoPorEmitirAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, documentoPorEmitirId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento_por_emitir_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentoPorEmitirAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentoPorEmitirIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  DocumentoPorEmitirAttachmentData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentoPorEmitirAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      documentoPorEmitirId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}documento_por_emitir_id'],
+          )!,
+    );
+  }
+
+  @override
+  $DocumentoPorEmitirAttachmentTable createAlias(String alias) {
+    return $DocumentoPorEmitirAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentoPorEmitirAttachmentData extends DataClass
+    implements Insertable<DocumentoPorEmitirAttachmentData> {
+  final String attachmentId;
+  final String documentoPorEmitirId;
+  const DocumentoPorEmitirAttachmentData({
+    required this.attachmentId,
+    required this.documentoPorEmitirId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    return map;
+  }
+
+  DocumentoPorEmitirAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return DocumentoPorEmitirAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      documentoPorEmitirId: Value(documentoPorEmitirId),
+    );
+  }
+
+  factory DocumentoPorEmitirAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentoPorEmitirAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      documentoPorEmitirId: serializer.fromJson<String>(
+        json['documentoPorEmitirId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'documentoPorEmitirId': serializer.toJson<String>(documentoPorEmitirId),
+    };
+  }
+
+  DocumentoPorEmitirAttachmentData copyWith({
+    String? attachmentId,
+    String? documentoPorEmitirId,
+  }) => DocumentoPorEmitirAttachmentData(
+    attachmentId: attachmentId ?? this.attachmentId,
+    documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+  );
+  DocumentoPorEmitirAttachmentData copyWithCompanion(
+    DocumentoPorEmitirAttachmentCompanion data,
+  ) {
+    return DocumentoPorEmitirAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, documentoPorEmitirId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentoPorEmitirAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId);
+}
+
+class DocumentoPorEmitirAttachmentCompanion
+    extends UpdateCompanion<DocumentoPorEmitirAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> documentoPorEmitirId;
+  final Value<int> rowid;
+  const DocumentoPorEmitirAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DocumentoPorEmitirAttachmentCompanion.insert({
+    required String attachmentId,
+    required String documentoPorEmitirId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       documentoPorEmitirId = Value(documentoPorEmitirId);
+  static Insertable<DocumentoPorEmitirAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? documentoPorEmitirId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DocumentoPorEmitirAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? documentoPorEmitirId,
+    Value<int>? rowid,
+  }) {
+    return DocumentoPorEmitirAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PagoAttachmentTable extends PagoAttachment
+    with TableInfo<$PagoAttachmentTable, PagoAttachmentData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PagoAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _pagoIdMeta = const VerificationMeta('pagoId');
+  @override
+  late final GeneratedColumn<String> pagoId = GeneratedColumn<String>(
+    'pago_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES pago (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, pagoId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pago_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PagoAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('pago_id')) {
+      context.handle(
+        _pagoIdMeta,
+        pagoId.isAcceptableOrUnknown(data['pago_id']!, _pagoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pagoIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  PagoAttachmentData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PagoAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      pagoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}pago_id'],
+          )!,
+    );
+  }
+
+  @override
+  $PagoAttachmentTable createAlias(String alias) {
+    return $PagoAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class PagoAttachmentData extends DataClass
+    implements Insertable<PagoAttachmentData> {
+  final String attachmentId;
+  final String pagoId;
+  const PagoAttachmentData({required this.attachmentId, required this.pagoId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['pago_id'] = Variable<String>(pagoId);
+    return map;
+  }
+
+  PagoAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return PagoAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      pagoId: Value(pagoId),
+    );
+  }
+
+  factory PagoAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PagoAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      pagoId: serializer.fromJson<String>(json['pagoId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'pagoId': serializer.toJson<String>(pagoId),
+    };
+  }
+
+  PagoAttachmentData copyWith({String? attachmentId, String? pagoId}) =>
+      PagoAttachmentData(
+        attachmentId: attachmentId ?? this.attachmentId,
+        pagoId: pagoId ?? this.pagoId,
+      );
+  PagoAttachmentData copyWithCompanion(PagoAttachmentCompanion data) {
+    return PagoAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      pagoId: data.pagoId.present ? data.pagoId.value : this.pagoId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PagoAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('pagoId: $pagoId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, pagoId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PagoAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.pagoId == this.pagoId);
+}
+
+class PagoAttachmentCompanion extends UpdateCompanion<PagoAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> pagoId;
+  final Value<int> rowid;
+  const PagoAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.pagoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PagoAttachmentCompanion.insert({
+    required String attachmentId,
+    required String pagoId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       pagoId = Value(pagoId);
+  static Insertable<PagoAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? pagoId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (pagoId != null) 'pago_id': pagoId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PagoAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? pagoId,
+    Value<int>? rowid,
+  }) {
+    return PagoAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      pagoId: pagoId ?? this.pagoId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (pagoId.present) {
+      map['pago_id'] = Variable<String>(pagoId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PagoAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('pagoId: $pagoId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ComplementoPagoAttachmentTable extends ComplementoPagoAttachment
+    with
+        TableInfo<
+          $ComplementoPagoAttachmentTable,
+          ComplementoPagoAttachmentData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ComplementoPagoAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _complementoPagoIdMeta = const VerificationMeta(
+    'complementoPagoId',
+  );
+  @override
+  late final GeneratedColumn<String> complementoPagoId =
+      GeneratedColumn<String>(
+        'complemento_pago_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES complemento_pago (id) ON DELETE CASCADE',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, complementoPagoId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'complemento_pago_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ComplementoPagoAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('complemento_pago_id')) {
+      context.handle(
+        _complementoPagoIdMeta,
+        complementoPagoId.isAcceptableOrUnknown(
+          data['complemento_pago_id']!,
+          _complementoPagoIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_complementoPagoIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  ComplementoPagoAttachmentData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ComplementoPagoAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      complementoPagoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}complemento_pago_id'],
+          )!,
+    );
+  }
+
+  @override
+  $ComplementoPagoAttachmentTable createAlias(String alias) {
+    return $ComplementoPagoAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class ComplementoPagoAttachmentData extends DataClass
+    implements Insertable<ComplementoPagoAttachmentData> {
+  final String attachmentId;
+  final String complementoPagoId;
+  const ComplementoPagoAttachmentData({
+    required this.attachmentId,
+    required this.complementoPagoId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['complemento_pago_id'] = Variable<String>(complementoPagoId);
+    return map;
+  }
+
+  ComplementoPagoAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return ComplementoPagoAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      complementoPagoId: Value(complementoPagoId),
+    );
+  }
+
+  factory ComplementoPagoAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ComplementoPagoAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      complementoPagoId: serializer.fromJson<String>(json['complementoPagoId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'complementoPagoId': serializer.toJson<String>(complementoPagoId),
+    };
+  }
+
+  ComplementoPagoAttachmentData copyWith({
+    String? attachmentId,
+    String? complementoPagoId,
+  }) => ComplementoPagoAttachmentData(
+    attachmentId: attachmentId ?? this.attachmentId,
+    complementoPagoId: complementoPagoId ?? this.complementoPagoId,
+  );
+  ComplementoPagoAttachmentData copyWithCompanion(
+    ComplementoPagoAttachmentCompanion data,
+  ) {
+    return ComplementoPagoAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      complementoPagoId:
+          data.complementoPagoId.present
+              ? data.complementoPagoId.value
+              : this.complementoPagoId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComplementoPagoAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('complementoPagoId: $complementoPagoId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, complementoPagoId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ComplementoPagoAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.complementoPagoId == this.complementoPagoId);
+}
+
+class ComplementoPagoAttachmentCompanion
+    extends UpdateCompanion<ComplementoPagoAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> complementoPagoId;
+  final Value<int> rowid;
+  const ComplementoPagoAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.complementoPagoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ComplementoPagoAttachmentCompanion.insert({
+    required String attachmentId,
+    required String complementoPagoId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       complementoPagoId = Value(complementoPagoId);
+  static Insertable<ComplementoPagoAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? complementoPagoId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (complementoPagoId != null) 'complemento_pago_id': complementoPagoId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ComplementoPagoAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? complementoPagoId,
+    Value<int>? rowid,
+  }) {
+    return ComplementoPagoAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      complementoPagoId: complementoPagoId ?? this.complementoPagoId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (complementoPagoId.present) {
+      map['complemento_pago_id'] = Variable<String>(complementoPagoId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComplementoPagoAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('complementoPagoId: $complementoPagoId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $IngresoAttachmentTable extends IngresoAttachment
+    with TableInfo<$IngresoAttachmentTable, IngresoAttachmentData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IngresoAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _ingresoIdMeta = const VerificationMeta(
+    'ingresoId',
+  );
+  @override
+  late final GeneratedColumn<String> ingresoId = GeneratedColumn<String>(
+    'ingreso_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES ingreso (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, ingresoId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ingreso_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IngresoAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('ingreso_id')) {
+      context.handle(
+        _ingresoIdMeta,
+        ingresoId.isAcceptableOrUnknown(data['ingreso_id']!, _ingresoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ingresoIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  IngresoAttachmentData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IngresoAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      ingresoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ingreso_id'],
+          )!,
+    );
+  }
+
+  @override
+  $IngresoAttachmentTable createAlias(String alias) {
+    return $IngresoAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class IngresoAttachmentData extends DataClass
+    implements Insertable<IngresoAttachmentData> {
+  final String attachmentId;
+  final String ingresoId;
+  const IngresoAttachmentData({
+    required this.attachmentId,
+    required this.ingresoId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['ingreso_id'] = Variable<String>(ingresoId);
+    return map;
+  }
+
+  IngresoAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return IngresoAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      ingresoId: Value(ingresoId),
+    );
+  }
+
+  factory IngresoAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IngresoAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      ingresoId: serializer.fromJson<String>(json['ingresoId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'ingresoId': serializer.toJson<String>(ingresoId),
+    };
+  }
+
+  IngresoAttachmentData copyWith({String? attachmentId, String? ingresoId}) =>
+      IngresoAttachmentData(
+        attachmentId: attachmentId ?? this.attachmentId,
+        ingresoId: ingresoId ?? this.ingresoId,
+      );
+  IngresoAttachmentData copyWithCompanion(IngresoAttachmentCompanion data) {
+    return IngresoAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      ingresoId: data.ingresoId.present ? data.ingresoId.value : this.ingresoId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngresoAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('ingresoId: $ingresoId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, ingresoId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IngresoAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.ingresoId == this.ingresoId);
+}
+
+class IngresoAttachmentCompanion
+    extends UpdateCompanion<IngresoAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> ingresoId;
+  final Value<int> rowid;
+  const IngresoAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.ingresoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  IngresoAttachmentCompanion.insert({
+    required String attachmentId,
+    required String ingresoId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       ingresoId = Value(ingresoId);
+  static Insertable<IngresoAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? ingresoId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (ingresoId != null) 'ingreso_id': ingresoId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  IngresoAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? ingresoId,
+    Value<int>? rowid,
+  }) {
+    return IngresoAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      ingresoId: ingresoId ?? this.ingresoId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (ingresoId.present) {
+      map['ingreso_id'] = Variable<String>(ingresoId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngresoAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('ingresoId: $ingresoId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EgresoAttachmentTable extends EgresoAttachment
+    with TableInfo<$EgresoAttachmentTable, EgresoAttachmentData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EgresoAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _egresoIdMeta = const VerificationMeta(
+    'egresoId',
+  );
+  @override
+  late final GeneratedColumn<String> egresoId = GeneratedColumn<String>(
+    'egreso_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES egreso (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, egresoId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'egreso_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EgresoAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('egreso_id')) {
+      context.handle(
+        _egresoIdMeta,
+        egresoId.isAcceptableOrUnknown(data['egreso_id']!, _egresoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_egresoIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  EgresoAttachmentData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EgresoAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      egresoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}egreso_id'],
+          )!,
+    );
+  }
+
+  @override
+  $EgresoAttachmentTable createAlias(String alias) {
+    return $EgresoAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class EgresoAttachmentData extends DataClass
+    implements Insertable<EgresoAttachmentData> {
+  final String attachmentId;
+  final String egresoId;
+  const EgresoAttachmentData({
+    required this.attachmentId,
+    required this.egresoId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['egreso_id'] = Variable<String>(egresoId);
+    return map;
+  }
+
+  EgresoAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return EgresoAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      egresoId: Value(egresoId),
+    );
+  }
+
+  factory EgresoAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EgresoAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      egresoId: serializer.fromJson<String>(json['egresoId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'egresoId': serializer.toJson<String>(egresoId),
+    };
+  }
+
+  EgresoAttachmentData copyWith({String? attachmentId, String? egresoId}) =>
+      EgresoAttachmentData(
+        attachmentId: attachmentId ?? this.attachmentId,
+        egresoId: egresoId ?? this.egresoId,
+      );
+  EgresoAttachmentData copyWithCompanion(EgresoAttachmentCompanion data) {
+    return EgresoAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      egresoId: data.egresoId.present ? data.egresoId.value : this.egresoId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EgresoAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('egresoId: $egresoId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, egresoId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EgresoAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.egresoId == this.egresoId);
+}
+
+class EgresoAttachmentCompanion extends UpdateCompanion<EgresoAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> egresoId;
+  final Value<int> rowid;
+  const EgresoAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.egresoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EgresoAttachmentCompanion.insert({
+    required String attachmentId,
+    required String egresoId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       egresoId = Value(egresoId);
+  static Insertable<EgresoAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? egresoId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (egresoId != null) 'egreso_id': egresoId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EgresoAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? egresoId,
+    Value<int>? rowid,
+  }) {
+    return EgresoAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      egresoId: egresoId ?? this.egresoId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (egresoId.present) {
+      map['egreso_id'] = Variable<String>(egresoId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EgresoAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('egresoId: $egresoId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EmpleadoAttachmentTable extends EmpleadoAttachment
+    with TableInfo<$EmpleadoAttachmentTable, EmpleadoAttachmentData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EmpleadoAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empleado (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, empleadoId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'empleado_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EmpleadoAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_empleadoIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  EmpleadoAttachmentData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EmpleadoAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      empleadoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}empleado_id'],
+          )!,
+    );
+  }
+
+  @override
+  $EmpleadoAttachmentTable createAlias(String alias) {
+    return $EmpleadoAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class EmpleadoAttachmentData extends DataClass
+    implements Insertable<EmpleadoAttachmentData> {
+  final String attachmentId;
+  final String empleadoId;
+  const EmpleadoAttachmentData({
+    required this.attachmentId,
+    required this.empleadoId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['empleado_id'] = Variable<String>(empleadoId);
+    return map;
+  }
+
+  EmpleadoAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return EmpleadoAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      empleadoId: Value(empleadoId),
+    );
+  }
+
+  factory EmpleadoAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EmpleadoAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      empleadoId: serializer.fromJson<String>(json['empleadoId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'empleadoId': serializer.toJson<String>(empleadoId),
+    };
+  }
+
+  EmpleadoAttachmentData copyWith({String? attachmentId, String? empleadoId}) =>
+      EmpleadoAttachmentData(
+        attachmentId: attachmentId ?? this.attachmentId,
+        empleadoId: empleadoId ?? this.empleadoId,
+      );
+  EmpleadoAttachmentData copyWithCompanion(EmpleadoAttachmentCompanion data) {
+    return EmpleadoAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpleadoAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('empleadoId: $empleadoId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, empleadoId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EmpleadoAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.empleadoId == this.empleadoId);
+}
+
+class EmpleadoAttachmentCompanion
+    extends UpdateCompanion<EmpleadoAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> empleadoId;
+  final Value<int> rowid;
+  const EmpleadoAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.empleadoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EmpleadoAttachmentCompanion.insert({
+    required String attachmentId,
+    required String empleadoId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       empleadoId = Value(empleadoId);
+  static Insertable<EmpleadoAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? empleadoId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (empleadoId != null) 'empleado_id': empleadoId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EmpleadoAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? empleadoId,
+    Value<int>? rowid,
+  }) {
+    return EmpleadoAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      empleadoId: empleadoId ?? this.empleadoId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpleadoAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -31312,6 +35557,24 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $IngresoEventoTable ingresoEvento = $IngresoEventoTable(this);
   late final $EgresoTable egreso = $EgresoTable(this);
   late final $EgresoEventoTable egresoEvento = $EgresoEventoTable(this);
+  late final $EmpleadoTable empleado = $EmpleadoTable(this);
+  late final $EmpleadoEventoTable empleadoEvento = $EmpleadoEventoTable(this);
+  late final $EmpresaAttachmentTable empresaAttachment =
+      $EmpresaAttachmentTable(this);
+  late final $ClienteAttachmentTable clienteAttachment =
+      $ClienteAttachmentTable(this);
+  late final $DocumentoPorEmitirAttachmentTable documentoPorEmitirAttachment =
+      $DocumentoPorEmitirAttachmentTable(this);
+  late final $PagoAttachmentTable pagoAttachment = $PagoAttachmentTable(this);
+  late final $ComplementoPagoAttachmentTable complementoPagoAttachment =
+      $ComplementoPagoAttachmentTable(this);
+  late final $IngresoAttachmentTable ingresoAttachment =
+      $IngresoAttachmentTable(this);
+  late final $EgresoAttachmentTable egresoAttachment = $EgresoAttachmentTable(
+    this,
+  );
+  late final $EmpleadoAttachmentTable empleadoAttachment =
+      $EmpleadoAttachmentTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -31379,6 +35642,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ingresoEvento,
     egreso,
     egresoEvento,
+    empleado,
+    empleadoEvento,
+    empresaAttachment,
+    clienteAttachment,
+    documentoPorEmitirAttachment,
+    pagoAttachment,
+    complementoPagoAttachment,
+    ingresoAttachment,
+    egresoAttachment,
+    empleadoAttachment,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -31510,6 +35783,119 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('egreso_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'empleado',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('empleado_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('empresa_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('cliente_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('documento_por_emitir_attachment', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'documento_por_emitir',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('documento_por_emitir_attachment', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('pago_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'pago',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('pago_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('complemento_pago_attachment', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'complemento_pago',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('complemento_pago_attachment', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('ingreso_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'ingreso',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('ingreso_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('egreso_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'egreso',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('egreso_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('empleado_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'empleado',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('empleado_attachment', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -34446,6 +38832,7 @@ typedef $$DireccionTableCreateCompanionBuilder =
       Value<String?> clienteId,
       Value<String?> servicioId,
       Value<String?> entidadFiscalId,
+      Value<String?> empleadoId,
       required String tipoDireccion,
       Value<bool> esPrincipal,
       required String calle,
@@ -34471,6 +38858,7 @@ typedef $$DireccionTableUpdateCompanionBuilder =
       Value<String?> clienteId,
       Value<String?> servicioId,
       Value<String?> entidadFiscalId,
+      Value<String?> empleadoId,
       Value<String> tipoDireccion,
       Value<bool> esPrincipal,
       Value<String> calle,
@@ -34537,6 +38925,11 @@ class $$DireccionTableFilterComposer
 
   ColumnFilters<String> get entidadFiscalId => $composableBuilder(
     column: $table.entidadFiscalId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get empleadoId => $composableBuilder(
+    column: $table.empleadoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -34655,6 +39048,11 @@ class $$DireccionTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get empleadoId => $composableBuilder(
+    column: $table.empleadoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get tipoDireccion => $composableBuilder(
     column: $table.tipoDireccion,
     builder: (column) => ColumnOrderings(column),
@@ -34760,6 +39158,11 @@ class $$DireccionTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get empleadoId => $composableBuilder(
+    column: $table.empleadoId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get tipoDireccion => $composableBuilder(
     column: $table.tipoDireccion,
     builder: (column) => column,
@@ -34853,6 +39256,7 @@ class $$DireccionTableTableManager
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> servicioId = const Value.absent(),
                 Value<String?> entidadFiscalId = const Value.absent(),
+                Value<String?> empleadoId = const Value.absent(),
                 Value<String> tipoDireccion = const Value.absent(),
                 Value<bool> esPrincipal = const Value.absent(),
                 Value<String> calle = const Value.absent(),
@@ -34876,6 +39280,7 @@ class $$DireccionTableTableManager
                 clienteId: clienteId,
                 servicioId: servicioId,
                 entidadFiscalId: entidadFiscalId,
+                empleadoId: empleadoId,
                 tipoDireccion: tipoDireccion,
                 esPrincipal: esPrincipal,
                 calle: calle,
@@ -34901,6 +39306,7 @@ class $$DireccionTableTableManager
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> servicioId = const Value.absent(),
                 Value<String?> entidadFiscalId = const Value.absent(),
+                Value<String?> empleadoId = const Value.absent(),
                 required String tipoDireccion,
                 Value<bool> esPrincipal = const Value.absent(),
                 required String calle,
@@ -34924,6 +39330,7 @@ class $$DireccionTableTableManager
                 clienteId: clienteId,
                 servicioId: servicioId,
                 entidadFiscalId: entidadFiscalId,
+                empleadoId: empleadoId,
                 tipoDireccion: tipoDireccion,
                 esPrincipal: esPrincipal,
                 calle: calle,
@@ -35287,13 +39694,6 @@ typedef $$MedioContactoTableProcessedTableManager =
 typedef $$AttachmentTableCreateCompanionBuilder =
     AttachmentCompanion Function({
       required String id,
-      Value<String?> empresaId,
-      Value<String?> clienteId,
-      Value<String?> documentoPorEmitirId,
-      Value<String?> pagoId,
-      Value<String?> complementoPagoId,
-      Value<String?> ingresoId,
-      Value<String?> egresoId,
       Value<String?> categoria,
       required String originalFileName,
       required String storedFileName,
@@ -35308,13 +39708,6 @@ typedef $$AttachmentTableCreateCompanionBuilder =
 typedef $$AttachmentTableUpdateCompanionBuilder =
     AttachmentCompanion Function({
       Value<String> id,
-      Value<String?> empresaId,
-      Value<String?> clienteId,
-      Value<String?> documentoPorEmitirId,
-      Value<String?> pagoId,
-      Value<String?> complementoPagoId,
-      Value<String?> ingresoId,
-      Value<String?> egresoId,
       Value<String?> categoria,
       Value<String> originalFileName,
       Value<String> storedFileName,
@@ -35350,6 +39743,234 @@ final class $$AttachmentTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$EmpleadoTable, List<EmpleadoData>>
+  _empleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.empleado,
+    aliasName: $_aliasNameGenerator(
+      db.attachment.id,
+      db.empleado.fotografiaAttachmentId,
+    ),
+  );
+
+  $$EmpleadoTableProcessedTableManager get empleadoRefs {
+    final manager = $$EmpleadoTableTableManager($_db, $_db.empleado).filter(
+      (f) => f.fotografiaAttachmentId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(_empleadoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $EmpresaAttachmentTable,
+    List<EmpresaAttachmentData>
+  >
+  _empresaAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.empresaAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.empresaAttachment.attachmentId,
+        ),
+      );
+
+  $$EmpresaAttachmentTableProcessedTableManager get empresaAttachmentRefs {
+    final manager = $$EmpresaAttachmentTableTableManager(
+      $_db,
+      $_db.empresaAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _empresaAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ClienteAttachmentTable,
+    List<ClienteAttachmentData>
+  >
+  _clienteAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.clienteAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.clienteAttachment.attachmentId,
+        ),
+      );
+
+  $$ClienteAttachmentTableProcessedTableManager get clienteAttachmentRefs {
+    final manager = $$ClienteAttachmentTableTableManager(
+      $_db,
+      $_db.clienteAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _clienteAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirAttachmentTable,
+    List<DocumentoPorEmitirAttachmentData>
+  >
+  _documentoPorEmitirAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.documentoPorEmitirAttachment.attachmentId,
+        ),
+      );
+
+  $$DocumentoPorEmitirAttachmentTableProcessedTableManager
+  get documentoPorEmitirAttachmentRefs {
+    final manager = $$DocumentoPorEmitirAttachmentTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PagoAttachmentTable, List<PagoAttachmentData>>
+  _pagoAttachmentRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pagoAttachment,
+    aliasName: $_aliasNameGenerator(
+      db.attachment.id,
+      db.pagoAttachment.attachmentId,
+    ),
+  );
+
+  $$PagoAttachmentTableProcessedTableManager get pagoAttachmentRefs {
+    final manager = $$PagoAttachmentTableTableManager(
+      $_db,
+      $_db.pagoAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pagoAttachmentRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ComplementoPagoAttachmentTable,
+    List<ComplementoPagoAttachmentData>
+  >
+  _complementoPagoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.complementoPagoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.complementoPagoAttachment.attachmentId,
+        ),
+      );
+
+  $$ComplementoPagoAttachmentTableProcessedTableManager
+  get complementoPagoAttachmentRefs {
+    final manager = $$ComplementoPagoAttachmentTableTableManager(
+      $_db,
+      $_db.complementoPagoAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _complementoPagoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $IngresoAttachmentTable,
+    List<IngresoAttachmentData>
+  >
+  _ingresoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.ingresoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.ingresoAttachment.attachmentId,
+        ),
+      );
+
+  $$IngresoAttachmentTableProcessedTableManager get ingresoAttachmentRefs {
+    final manager = $$IngresoAttachmentTableTableManager(
+      $_db,
+      $_db.ingresoAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _ingresoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$EgresoAttachmentTable, List<EgresoAttachmentData>>
+  _egresoAttachmentRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.egresoAttachment,
+    aliasName: $_aliasNameGenerator(
+      db.attachment.id,
+      db.egresoAttachment.attachmentId,
+    ),
+  );
+
+  $$EgresoAttachmentTableProcessedTableManager get egresoAttachmentRefs {
+    final manager = $$EgresoAttachmentTableTableManager(
+      $_db,
+      $_db.egresoAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _egresoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $EmpleadoAttachmentTable,
+    List<EmpleadoAttachmentData>
+  >
+  _empleadoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.empleadoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.empleadoAttachment.attachmentId,
+        ),
+      );
+
+  $$EmpleadoAttachmentTableProcessedTableManager get empleadoAttachmentRefs {
+    final manager = $$EmpleadoAttachmentTableTableManager(
+      $_db,
+      $_db.empleadoAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _empleadoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AttachmentTableFilterComposer
@@ -35363,41 +39984,6 @@ class $$AttachmentTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get empresaId => $composableBuilder(
-    column: $table.empresaId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get clienteId => $composableBuilder(
-    column: $table.clienteId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get documentoPorEmitirId => $composableBuilder(
-    column: $table.documentoPorEmitirId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get pagoId => $composableBuilder(
-    column: $table.pagoId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get complementoPagoId => $composableBuilder(
-    column: $table.complementoPagoId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get ingresoId => $composableBuilder(
-    column: $table.ingresoId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get egresoId => $composableBuilder(
-    column: $table.egresoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -35470,6 +40056,237 @@ class $$AttachmentTableFilterComposer
     );
     return f(composer);
   }
+
+  Expression<bool> empleadoRefs(
+    Expression<bool> Function($$EmpleadoTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.fotografiaAttachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> empresaAttachmentRefs(
+    Expression<bool> Function($$EmpresaAttachmentTableFilterComposer f) f,
+  ) {
+    final $$EmpresaAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empresaAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpresaAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.empresaAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> clienteAttachmentRefs(
+    Expression<bool> Function($$ClienteAttachmentTableFilterComposer f) f,
+  ) {
+    final $$ClienteAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.clienteAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.clienteAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirAttachmentRefs(
+    Expression<bool> Function(
+      $$DocumentoPorEmitirAttachmentTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirAttachmentTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirAttachmentTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> pagoAttachmentRefs(
+    Expression<bool> Function($$PagoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$PagoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.pagoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> complementoPagoAttachmentRefs(
+    Expression<bool> Function($$ComplementoPagoAttachmentTableFilterComposer f)
+    f,
+  ) {
+    final $$ComplementoPagoAttachmentTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.complementoPagoAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ComplementoPagoAttachmentTableFilterComposer(
+                $db: $db,
+                $table: $db.complementoPagoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> ingresoAttachmentRefs(
+    Expression<bool> Function($$IngresoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$IngresoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingresoAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.ingresoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> egresoAttachmentRefs(
+    Expression<bool> Function($$EgresoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$EgresoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egresoAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.egresoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> empleadoAttachmentRefs(
+    Expression<bool> Function($$EmpleadoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleadoAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.empleadoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$AttachmentTableOrderingComposer
@@ -35483,41 +40300,6 @@ class $$AttachmentTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get empresaId => $composableBuilder(
-    column: $table.empresaId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get clienteId => $composableBuilder(
-    column: $table.clienteId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get documentoPorEmitirId => $composableBuilder(
-    column: $table.documentoPorEmitirId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get pagoId => $composableBuilder(
-    column: $table.pagoId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get complementoPagoId => $composableBuilder(
-    column: $table.complementoPagoId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get ingresoId => $composableBuilder(
-    column: $table.ingresoId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get egresoId => $composableBuilder(
-    column: $table.egresoId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -35579,31 +40361,6 @@ class $$AttachmentTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get empresaId =>
-      $composableBuilder(column: $table.empresaId, builder: (column) => column);
-
-  GeneratedColumn<String> get clienteId =>
-      $composableBuilder(column: $table.clienteId, builder: (column) => column);
-
-  GeneratedColumn<String> get documentoPorEmitirId => $composableBuilder(
-    column: $table.documentoPorEmitirId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get pagoId =>
-      $composableBuilder(column: $table.pagoId, builder: (column) => column);
-
-  GeneratedColumn<String> get complementoPagoId => $composableBuilder(
-    column: $table.complementoPagoId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get ingresoId =>
-      $composableBuilder(column: $table.ingresoId, builder: (column) => column);
-
-  GeneratedColumn<String> get egresoId =>
-      $composableBuilder(column: $table.egresoId, builder: (column) => column);
-
   GeneratedColumn<String> get categoria =>
       $composableBuilder(column: $table.categoria, builder: (column) => column);
 
@@ -35659,6 +40416,241 @@ class $$AttachmentTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> empleadoRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.fotografiaAttachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> empresaAttachmentRefs<T extends Object>(
+    Expression<T> Function($$EmpresaAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$EmpresaAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.empresaAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EmpresaAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.empresaAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> clienteAttachmentRefs<T extends Object>(
+    Expression<T> Function($$ClienteAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$ClienteAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.clienteAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ClienteAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.clienteAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> documentoPorEmitirAttachmentRefs<T extends Object>(
+    Expression<T> Function(
+      $$DocumentoPorEmitirAttachmentTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> pagoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$PagoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$PagoAttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoAttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pagoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> complementoPagoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$ComplementoPagoAttachmentTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ComplementoPagoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.complementoPagoAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ComplementoPagoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.complementoPagoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> ingresoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$IngresoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$IngresoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.ingresoAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$IngresoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.ingresoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> egresoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$EgresoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$EgresoAttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egresoAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoAttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egresoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> empleadoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.empleadoAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EmpleadoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.empleadoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AttachmentTableTableManager
@@ -35674,7 +40666,18 @@ class $$AttachmentTableTableManager
           $$AttachmentTableUpdateCompanionBuilder,
           (AttachmentData, $$AttachmentTableReferences),
           AttachmentData,
-          PrefetchHooks Function({bool empresaRefs})
+          PrefetchHooks Function({
+            bool empresaRefs,
+            bool empleadoRefs,
+            bool empresaAttachmentRefs,
+            bool clienteAttachmentRefs,
+            bool documentoPorEmitirAttachmentRefs,
+            bool pagoAttachmentRefs,
+            bool complementoPagoAttachmentRefs,
+            bool ingresoAttachmentRefs,
+            bool egresoAttachmentRefs,
+            bool empleadoAttachmentRefs,
+          })
         > {
   $$AttachmentTableTableManager(_$AppDatabase db, $AttachmentTable table)
     : super(
@@ -35690,13 +40693,6 @@ class $$AttachmentTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String?> empresaId = const Value.absent(),
-                Value<String?> clienteId = const Value.absent(),
-                Value<String?> documentoPorEmitirId = const Value.absent(),
-                Value<String?> pagoId = const Value.absent(),
-                Value<String?> complementoPagoId = const Value.absent(),
-                Value<String?> ingresoId = const Value.absent(),
-                Value<String?> egresoId = const Value.absent(),
                 Value<String?> categoria = const Value.absent(),
                 Value<String> originalFileName = const Value.absent(),
                 Value<String> storedFileName = const Value.absent(),
@@ -35709,13 +40705,6 @@ class $$AttachmentTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => AttachmentCompanion(
                 id: id,
-                empresaId: empresaId,
-                clienteId: clienteId,
-                documentoPorEmitirId: documentoPorEmitirId,
-                pagoId: pagoId,
-                complementoPagoId: complementoPagoId,
-                ingresoId: ingresoId,
-                egresoId: egresoId,
                 categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
@@ -35730,13 +40719,6 @@ class $$AttachmentTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                Value<String?> empresaId = const Value.absent(),
-                Value<String?> clienteId = const Value.absent(),
-                Value<String?> documentoPorEmitirId = const Value.absent(),
-                Value<String?> pagoId = const Value.absent(),
-                Value<String?> complementoPagoId = const Value.absent(),
-                Value<String?> ingresoId = const Value.absent(),
-                Value<String?> egresoId = const Value.absent(),
                 Value<String?> categoria = const Value.absent(),
                 required String originalFileName,
                 required String storedFileName,
@@ -35749,13 +40731,6 @@ class $$AttachmentTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => AttachmentCompanion.insert(
                 id: id,
-                empresaId: empresaId,
-                clienteId: clienteId,
-                documentoPorEmitirId: documentoPorEmitirId,
-                pagoId: pagoId,
-                complementoPagoId: complementoPagoId,
-                ingresoId: ingresoId,
-                egresoId: egresoId,
                 categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
@@ -35777,10 +40752,33 @@ class $$AttachmentTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({empresaRefs = false}) {
+          prefetchHooksCallback: ({
+            empresaRefs = false,
+            empleadoRefs = false,
+            empresaAttachmentRefs = false,
+            clienteAttachmentRefs = false,
+            documentoPorEmitirAttachmentRefs = false,
+            pagoAttachmentRefs = false,
+            complementoPagoAttachmentRefs = false,
+            ingresoAttachmentRefs = false,
+            egresoAttachmentRefs = false,
+            empleadoAttachmentRefs = false,
+          }) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (empresaRefs) db.empresa],
+              explicitlyWatchedTables: [
+                if (empresaRefs) db.empresa,
+                if (empleadoRefs) db.empleado,
+                if (empresaAttachmentRefs) db.empresaAttachment,
+                if (clienteAttachmentRefs) db.clienteAttachment,
+                if (documentoPorEmitirAttachmentRefs)
+                  db.documentoPorEmitirAttachment,
+                if (pagoAttachmentRefs) db.pagoAttachment,
+                if (complementoPagoAttachmentRefs) db.complementoPagoAttachment,
+                if (ingresoAttachmentRefs) db.ingresoAttachment,
+                if (egresoAttachmentRefs) db.egresoAttachment,
+                if (empleadoAttachmentRefs) db.empleadoAttachment,
+              ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
@@ -35806,6 +40804,204 @@ class $$AttachmentTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (empleadoRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      EmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._empleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.fotografiaAttachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (empresaAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      EmpresaAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._empresaAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empresaAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (clienteAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      ClienteAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._clienteAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).clienteAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      DocumentoPorEmitirAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._documentoPorEmitirAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (pagoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      PagoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._pagoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pagoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (complementoPagoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      ComplementoPagoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._complementoPagoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).complementoPagoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (ingresoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      IngresoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._ingresoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).ingresoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (egresoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      EgresoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._egresoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).egresoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (empleadoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      EmpleadoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._empleadoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -35826,7 +41022,18 @@ typedef $$AttachmentTableProcessedTableManager =
       $$AttachmentTableUpdateCompanionBuilder,
       (AttachmentData, $$AttachmentTableReferences),
       AttachmentData,
-      PrefetchHooks Function({bool empresaRefs})
+      PrefetchHooks Function({
+        bool empresaRefs,
+        bool empleadoRefs,
+        bool empresaAttachmentRefs,
+        bool clienteAttachmentRefs,
+        bool documentoPorEmitirAttachmentRefs,
+        bool pagoAttachmentRefs,
+        bool complementoPagoAttachmentRefs,
+        bool ingresoAttachmentRefs,
+        bool egresoAttachmentRefs,
+        bool empleadoAttachmentRefs,
+      })
     >;
 typedef $$HorarioTableCreateCompanionBuilder =
     HorarioCompanion Function({
@@ -36586,6 +41793,51 @@ final class $$EmpresaTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$EmpleadoTable, List<EmpleadoData>>
+  _empleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.empleado,
+    aliasName: $_aliasNameGenerator(db.empresa.id, db.empleado.empresaId),
+  );
+
+  $$EmpleadoTableProcessedTableManager get empleadoRefs {
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.empresaId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_empleadoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $EmpresaAttachmentTable,
+    List<EmpresaAttachmentData>
+  >
+  _empresaAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.empresaAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.empresa.id,
+          db.empresaAttachment.empresaId,
+        ),
+      );
+
+  $$EmpresaAttachmentTableProcessedTableManager get empresaAttachmentRefs {
+    final manager = $$EmpresaAttachmentTableTableManager(
+      $_db,
+      $_db.empresaAttachment,
+    ).filter((f) => f.empresaId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _empresaAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$EmpresaTableFilterComposer
@@ -36668,6 +41920,56 @@ class $$EmpresaTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> empleadoRefs(
+    Expression<bool> Function($$EmpleadoTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.empresaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> empresaAttachmentRefs(
+    Expression<bool> Function($$EmpresaAttachmentTableFilterComposer f) f,
+  ) {
+    final $$EmpresaAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empresaAttachment,
+      getReferencedColumn: (t) => t.empresaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpresaAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.empresaAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -36823,6 +42125,57 @@ class $$EmpresaTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> empleadoRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.empresaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> empresaAttachmentRefs<T extends Object>(
+    Expression<T> Function($$EmpresaAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$EmpresaAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.empresaAttachment,
+          getReferencedColumn: (t) => t.empresaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EmpresaAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.empresaAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$EmpresaTableTableManager
@@ -36838,7 +42191,11 @@ class $$EmpresaTableTableManager
           $$EmpresaTableUpdateCompanionBuilder,
           (EmpresaData, $$EmpresaTableReferences),
           EmpresaData,
-          PrefetchHooks Function({bool logoAttachmentId})
+          PrefetchHooks Function({
+            bool logoAttachmentId,
+            bool empleadoRefs,
+            bool empresaAttachmentRefs,
+          })
         > {
   $$EmpresaTableTableManager(_$AppDatabase db, $EmpresaTable table)
     : super(
@@ -36917,10 +42274,17 @@ class $$EmpresaTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({logoAttachmentId = false}) {
+          prefetchHooksCallback: ({
+            logoAttachmentId = false,
+            empleadoRefs = false,
+            empresaAttachmentRefs = false,
+          }) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [
+                if (empleadoRefs) db.empleado,
+                if (empresaAttachmentRefs) db.empresaAttachment,
+              ],
               addJoins: <
                 T extends TableManagerState<
                   dynamic,
@@ -36954,7 +42318,52 @@ class $$EmpresaTableTableManager
                 return state;
               },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (empleadoRefs)
+                    await $_getPrefetchedData<
+                      EmpresaData,
+                      $EmpresaTable,
+                      EmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpresaTableReferences
+                          ._empleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpresaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empresaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (empresaAttachmentRefs)
+                    await $_getPrefetchedData<
+                      EmpresaData,
+                      $EmpresaTable,
+                      EmpresaAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpresaTableReferences
+                          ._empresaAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpresaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empresaAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empresaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
               },
             );
           },
@@ -36974,7 +42383,11 @@ typedef $$EmpresaTableProcessedTableManager =
       $$EmpresaTableUpdateCompanionBuilder,
       (EmpresaData, $$EmpresaTableReferences),
       EmpresaData,
-      PrefetchHooks Function({bool logoAttachmentId})
+      PrefetchHooks Function({
+        bool logoAttachmentId,
+        bool empleadoRefs,
+        bool empresaAttachmentRefs,
+      })
     >;
 typedef $$SucursalTableCreateCompanionBuilder =
     SucursalCompanion Function({
@@ -37095,6 +42508,24 @@ final class $$SucursalTableReferences
     ).filter((f) => f.sucursalId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_egresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$EmpleadoTable, List<EmpleadoData>>
+  _empleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.empleado,
+    aliasName: $_aliasNameGenerator(db.sucursal.id, db.empleado.sucursalId),
+  );
+
+  $$EmpleadoTableProcessedTableManager get empleadoRefs {
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.sucursalId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_empleadoRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -37259,6 +42690,31 @@ class $$SucursalTableFilterComposer
           }) => $$EgresoTableFilterComposer(
             $db: $db,
             $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> empleadoRefs(
+    Expression<bool> Function($$EmpleadoTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.sucursalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -37493,6 +42949,31 @@ class $$SucursalTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> empleadoRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.sucursalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$SucursalTableTableManager
@@ -37514,6 +42995,7 @@ class $$SucursalTableTableManager
             bool ubicacionRefs,
             bool ingresoRefs,
             bool egresoRefs,
+            bool empleadoRefs,
           })
         > {
   $$SucursalTableTableManager(_$AppDatabase db, $SucursalTable table)
@@ -37587,6 +43069,7 @@ class $$SucursalTableTableManager
             ubicacionRefs = false,
             ingresoRefs = false,
             egresoRefs = false,
+            empleadoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -37595,6 +43078,7 @@ class $$SucursalTableTableManager
                 if (ubicacionRefs) db.ubicacion,
                 if (ingresoRefs) db.ingreso,
                 if (egresoRefs) db.egreso,
+                if (empleadoRefs) db.empleado,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -37718,6 +43202,28 @@ class $$SucursalTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (empleadoRefs)
+                    await $_getPrefetchedData<
+                      SucursalData,
+                      $SucursalTable,
+                      EmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$SucursalTableReferences
+                          ._empleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$SucursalTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.sucursalId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -37744,6 +43250,7 @@ typedef $$SucursalTableProcessedTableManager =
         bool ubicacionRefs,
         bool ingresoRefs,
         bool egresoRefs,
+        bool empleadoRefs,
       })
     >;
 typedef $$ClienteTableCreateCompanionBuilder =
@@ -37893,6 +43400,33 @@ final class $$ClienteTableReferences
     ).filter((f) => f.clienteId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_pagoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ClienteAttachmentTable,
+    List<ClienteAttachmentData>
+  >
+  _clienteAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.clienteAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.cliente.id,
+          db.clienteAttachment.clienteId,
+        ),
+      );
+
+  $$ClienteAttachmentTableProcessedTableManager get clienteAttachmentRefs {
+    final manager = $$ClienteAttachmentTableTableManager(
+      $_db,
+      $_db.clienteAttachment,
+    ).filter((f) => f.clienteId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _clienteAttachmentRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -38092,6 +43626,31 @@ class $$ClienteTableFilterComposer
           }) => $$PagoTableFilterComposer(
             $db: $db,
             $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> clienteAttachmentRefs(
+    Expression<bool> Function($$ClienteAttachmentTableFilterComposer f) f,
+  ) {
+    final $$ClienteAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.clienteAttachment,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.clienteAttachment,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -38370,6 +43929,32 @@ class $$ClienteTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> clienteAttachmentRefs<T extends Object>(
+    Expression<T> Function($$ClienteAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$ClienteAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.clienteAttachment,
+          getReferencedColumn: (t) => t.clienteId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ClienteAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.clienteAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ClienteTableTableManager
@@ -38392,6 +43977,7 @@ class $$ClienteTableTableManager
             bool servicioRefs,
             bool documentoPorEmitirRefs,
             bool pagoRefs,
+            bool clienteAttachmentRefs,
           })
         > {
   $$ClienteTableTableManager(_$AppDatabase db, $ClienteTable table)
@@ -38474,6 +44060,7 @@ class $$ClienteTableTableManager
             servicioRefs = false,
             documentoPorEmitirRefs = false,
             pagoRefs = false,
+            clienteAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -38483,6 +44070,7 @@ class $$ClienteTableTableManager
                 if (servicioRefs) db.servicio,
                 if (documentoPorEmitirRefs) db.documentoPorEmitir,
                 if (pagoRefs) db.pago,
+                if (clienteAttachmentRefs) db.clienteAttachment,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -38625,6 +44213,28 @@ class $$ClienteTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (clienteAttachmentRefs)
+                    await $_getPrefetchedData<
+                      ClienteData,
+                      $ClienteTable,
+                      ClienteAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ClienteTableReferences
+                          ._clienteAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ClienteTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).clienteAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.clienteId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -38652,6 +44262,7 @@ typedef $$ClienteTableProcessedTableManager =
         bool servicioRefs,
         bool documentoPorEmitirRefs,
         bool pagoRefs,
+        bool clienteAttachmentRefs,
       })
     >;
 typedef $$ContactoTableCreateCompanionBuilder =
@@ -42396,6 +48007,24 @@ final class $$PuestoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$EmpleadoTable, List<EmpleadoData>>
+  _empleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.empleado,
+    aliasName: $_aliasNameGenerator(db.puesto.id, db.empleado.puestoId),
+  );
+
+  $$EmpleadoTableProcessedTableManager get empleadoRefs {
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.puestoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_empleadoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PuestoTableFilterComposer
@@ -42501,6 +48130,31 @@ class $$PuestoTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> empleadoRefs(
+    Expression<bool> Function($$EmpleadoTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.puestoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -42676,6 +48330,31 @@ class $$PuestoTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> empleadoRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.puestoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PuestoTableTableManager
@@ -42694,6 +48373,7 @@ class $$PuestoTableTableManager
           PrefetchHooks Function({
             bool areaId,
             bool servicioLineaComercialVigenciaRefs,
+            bool empleadoRefs,
           })
         > {
   $$PuestoTableTableManager(_$AppDatabase db, $PuestoTable table)
@@ -42772,12 +48452,14 @@ class $$PuestoTableTableManager
           prefetchHooksCallback: ({
             areaId = false,
             servicioLineaComercialVigenciaRefs = false,
+            empleadoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (servicioLineaComercialVigenciaRefs)
                   db.servicioLineaComercialVigencia,
+                if (empleadoRefs) db.empleado,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -42833,6 +48515,28 @@ class $$PuestoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (empleadoRefs)
+                    await $_getPrefetchedData<
+                      PuestoData,
+                      $PuestoTable,
+                      EmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PuestoTableReferences
+                          ._empleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$PuestoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.puestoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -42856,6 +48560,7 @@ typedef $$PuestoTableProcessedTableManager =
       PrefetchHooks Function({
         bool areaId,
         bool servicioLineaComercialVigenciaRefs,
+        bool empleadoRefs,
       })
     >;
 typedef $$ServicioLineaComercialTableCreateCompanionBuilder =
@@ -47006,6 +52711,36 @@ final class $$DocumentoPorEmitirTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirAttachmentTable,
+    List<DocumentoPorEmitirAttachmentData>
+  >
+  _documentoPorEmitirAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.documentoPorEmitir.id,
+          db.documentoPorEmitirAttachment.documentoPorEmitirId,
+        ),
+      );
+
+  $$DocumentoPorEmitirAttachmentTableProcessedTableManager
+  get documentoPorEmitirAttachmentRefs {
+    final manager = $$DocumentoPorEmitirAttachmentTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirAttachment,
+    ).filter(
+      (f) => f.documentoPorEmitirId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$DocumentoPorEmitirTableFilterComposer
@@ -47406,6 +53141,35 @@ class $$DocumentoPorEmitirTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirAttachmentRefs(
+    Expression<bool> Function(
+      $$DocumentoPorEmitirAttachmentTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirAttachmentTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirAttachment,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirAttachmentTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -48013,6 +53777,35 @@ class $$DocumentoPorEmitirTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> documentoPorEmitirAttachmentRefs<T extends Object>(
+    Expression<T> Function(
+      $$DocumentoPorEmitirAttachmentTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirAttachment,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$DocumentoPorEmitirTableTableManager
@@ -48038,6 +53831,7 @@ class $$DocumentoPorEmitirTableTableManager
             bool documentoPorEmitirCorreoEnvioRefs,
             bool documentoPorEmitirEventoRefs,
             bool cuentaPorCobrarRefs,
+            bool documentoPorEmitirAttachmentRefs,
           })
         > {
   $$DocumentoPorEmitirTableTableManager(
@@ -48230,6 +54024,7 @@ class $$DocumentoPorEmitirTableTableManager
             documentoPorEmitirCorreoEnvioRefs = false,
             documentoPorEmitirEventoRefs = false,
             cuentaPorCobrarRefs = false,
+            documentoPorEmitirAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -48244,6 +54039,8 @@ class $$DocumentoPorEmitirTableTableManager
                   db.documentoPorEmitirCorreoEnvio,
                 if (documentoPorEmitirEventoRefs) db.documentoPorEmitirEvento,
                 if (cuentaPorCobrarRefs) db.cuentaPorCobrar,
+                if (documentoPorEmitirAttachmentRefs)
+                  db.documentoPorEmitirAttachment,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -48447,6 +54244,28 @@ class $$DocumentoPorEmitirTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (documentoPorEmitirAttachmentRefs)
+                    await $_getPrefetchedData<
+                      DocumentoPorEmitirData,
+                      $DocumentoPorEmitirTable,
+                      DocumentoPorEmitirAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$DocumentoPorEmitirTableReferences
+                          ._documentoPorEmitirAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$DocumentoPorEmitirTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.documentoPorEmitirId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -48477,6 +54296,7 @@ typedef $$DocumentoPorEmitirTableProcessedTableManager =
         bool documentoPorEmitirCorreoEnvioRefs,
         bool documentoPorEmitirEventoRefs,
         bool cuentaPorCobrarRefs,
+        bool documentoPorEmitirAttachmentRefs,
       })
     >;
 typedef $$DocumentoPorEmitirServicioTableCreateCompanionBuilder =
@@ -52701,6 +58521,24 @@ final class $$PagoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$PagoAttachmentTable, List<PagoAttachmentData>>
+  _pagoAttachmentRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pagoAttachment,
+    aliasName: $_aliasNameGenerator(db.pago.id, db.pagoAttachment.pagoId),
+  );
+
+  $$PagoAttachmentTableProcessedTableManager get pagoAttachmentRefs {
+    final manager = $$PagoAttachmentTableTableManager(
+      $_db,
+      $_db.pagoAttachment,
+    ).filter((f) => f.pagoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pagoAttachmentRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PagoTableFilterComposer extends Composer<_$AppDatabase, $PagoTable> {
@@ -52895,6 +58733,31 @@ class $$PagoTableFilterComposer extends Composer<_$AppDatabase, $PagoTable> {
           }) => $$IngresoTableFilterComposer(
             $db: $db,
             $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> pagoAttachmentRefs(
+    Expression<bool> Function($$PagoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$PagoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoAttachment,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.pagoAttachment,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -53194,6 +59057,31 @@ class $$PagoTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> pagoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$PagoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$PagoAttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoAttachment,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoAttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pagoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PagoTableTableManager
@@ -53215,6 +59103,7 @@ class $$PagoTableTableManager
             bool pagoEventoRefs,
             bool complementoPagoRefs,
             bool ingresoRefs,
+            bool pagoAttachmentRefs,
           })
         > {
   $$PagoTableTableManager(_$AppDatabase db, $PagoTable table)
@@ -53316,6 +59205,7 @@ class $$PagoTableTableManager
             pagoEventoRefs = false,
             complementoPagoRefs = false,
             ingresoRefs = false,
+            pagoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -53324,6 +59214,7 @@ class $$PagoTableTableManager
                 if (pagoEventoRefs) db.pagoEvento,
                 if (complementoPagoRefs) db.complementoPago,
                 if (ingresoRefs) db.ingreso,
+                if (pagoAttachmentRefs) db.pagoAttachment,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -53438,6 +59329,27 @@ class $$PagoTableTableManager
                               referencedItems.where((e) => e.pagoId == item.id),
                       typedResults: items,
                     ),
+                  if (pagoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      PagoData,
+                      $PagoTable,
+                      PagoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PagoTableReferences
+                          ._pagoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$PagoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pagoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) =>
+                              referencedItems.where((e) => e.pagoId == item.id),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -53464,6 +59376,7 @@ typedef $$PagoTableProcessedTableManager =
         bool pagoEventoRefs,
         bool complementoPagoRefs,
         bool ingresoRefs,
+        bool pagoAttachmentRefs,
       })
     >;
 typedef $$AplicacionPagoTableCreateCompanionBuilder =
@@ -54508,6 +60421,36 @@ final class $$ComplementoPagoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $ComplementoPagoAttachmentTable,
+    List<ComplementoPagoAttachmentData>
+  >
+  _complementoPagoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.complementoPagoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.complementoPago.id,
+          db.complementoPagoAttachment.complementoPagoId,
+        ),
+      );
+
+  $$ComplementoPagoAttachmentTableProcessedTableManager
+  get complementoPagoAttachmentRefs {
+    final manager = $$ComplementoPagoAttachmentTableTableManager(
+      $_db,
+      $_db.complementoPagoAttachment,
+    ).filter(
+      (f) => f.complementoPagoId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _complementoPagoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ComplementoPagoTableFilterComposer
@@ -54619,6 +60562,33 @@ class $$ComplementoPagoTableFilterComposer
               }) => $$ComplementoPagoEventoTableFilterComposer(
                 $db: $db,
                 $table: $db.complementoPagoEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> complementoPagoAttachmentRefs(
+    Expression<bool> Function($$ComplementoPagoAttachmentTableFilterComposer f)
+    f,
+  ) {
+    final $$ComplementoPagoAttachmentTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.complementoPagoAttachment,
+          getReferencedColumn: (t) => t.complementoPagoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ComplementoPagoAttachmentTableFilterComposer(
+                $db: $db,
+                $table: $db.complementoPagoAttachment,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -54829,6 +60799,33 @@ class $$ComplementoPagoTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> complementoPagoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$ComplementoPagoAttachmentTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ComplementoPagoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.complementoPagoAttachment,
+          getReferencedColumn: (t) => t.complementoPagoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ComplementoPagoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.complementoPagoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ComplementoPagoTableTableManager
@@ -54844,7 +60841,11 @@ class $$ComplementoPagoTableTableManager
           $$ComplementoPagoTableUpdateCompanionBuilder,
           (ComplementoPagoData, $$ComplementoPagoTableReferences),
           ComplementoPagoData,
-          PrefetchHooks Function({bool pagoId, bool complementoPagoEventoRefs})
+          PrefetchHooks Function({
+            bool pagoId,
+            bool complementoPagoEventoRefs,
+            bool complementoPagoAttachmentRefs,
+          })
         > {
   $$ComplementoPagoTableTableManager(
     _$AppDatabase db,
@@ -54943,11 +60944,13 @@ class $$ComplementoPagoTableTableManager
           prefetchHooksCallback: ({
             pagoId = false,
             complementoPagoEventoRefs = false,
+            complementoPagoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (complementoPagoEventoRefs) db.complementoPagoEvento,
+                if (complementoPagoAttachmentRefs) db.complementoPagoAttachment,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -55005,6 +61008,28 @@ class $$ComplementoPagoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (complementoPagoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      ComplementoPagoData,
+                      $ComplementoPagoTable,
+                      ComplementoPagoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ComplementoPagoTableReferences
+                          ._complementoPagoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ComplementoPagoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).complementoPagoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.complementoPagoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -55025,7 +61050,11 @@ typedef $$ComplementoPagoTableProcessedTableManager =
       $$ComplementoPagoTableUpdateCompanionBuilder,
       (ComplementoPagoData, $$ComplementoPagoTableReferences),
       ComplementoPagoData,
-      PrefetchHooks Function({bool pagoId, bool complementoPagoEventoRefs})
+      PrefetchHooks Function({
+        bool pagoId,
+        bool complementoPagoEventoRefs,
+        bool complementoPagoAttachmentRefs,
+      })
     >;
 typedef $$ComplementoPagoEventoTableCreateCompanionBuilder =
     ComplementoPagoEventoCompanion Function({
@@ -56096,6 +62125,33 @@ final class $$IngresoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $IngresoAttachmentTable,
+    List<IngresoAttachmentData>
+  >
+  _ingresoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.ingresoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.ingreso.id,
+          db.ingresoAttachment.ingresoId,
+        ),
+      );
+
+  $$IngresoAttachmentTableProcessedTableManager get ingresoAttachmentRefs {
+    final manager = $$IngresoAttachmentTableTableManager(
+      $_db,
+      $_db.ingresoAttachment,
+    ).filter((f) => f.ingresoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _ingresoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$IngresoTableFilterComposer
@@ -56303,6 +62359,31 @@ class $$IngresoTableFilterComposer
           }) => $$IngresoEventoTableFilterComposer(
             $db: $db,
             $table: $db.ingresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> ingresoAttachmentRefs(
+    Expression<bool> Function($$IngresoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$IngresoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingresoAttachment,
+      getReferencedColumn: (t) => t.ingresoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.ingresoAttachment,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -56702,6 +62783,32 @@ class $$IngresoTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> ingresoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$IngresoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$IngresoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.ingresoAttachment,
+          getReferencedColumn: (t) => t.ingresoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$IngresoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.ingresoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$IngresoTableTableManager
@@ -56724,6 +62831,7 @@ class $$IngresoTableTableManager
             bool sucursalId,
             bool areaId,
             bool ingresoEventoRefs,
+            bool ingresoAttachmentRefs,
           })
         > {
   $$IngresoTableTableManager(_$AppDatabase db, $IngresoTable table)
@@ -56838,11 +62946,13 @@ class $$IngresoTableTableManager
             sucursalId = false,
             areaId = false,
             ingresoEventoRefs = false,
+            ingresoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (ingresoEventoRefs) db.ingresoEvento,
+                if (ingresoAttachmentRefs) db.ingresoAttachment,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -56952,6 +63062,28 @@ class $$IngresoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (ingresoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      IngresoData,
+                      $IngresoTable,
+                      IngresoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$IngresoTableReferences
+                          ._ingresoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$IngresoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).ingresoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.ingresoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -56979,6 +63111,7 @@ typedef $$IngresoTableProcessedTableManager =
         bool sucursalId,
         bool areaId,
         bool ingresoEventoRefs,
+        bool ingresoAttachmentRefs,
       })
     >;
 typedef $$IngresoEventoTableCreateCompanionBuilder =
@@ -57533,6 +63666,26 @@ final class $$EgresoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$EgresoAttachmentTable, List<EgresoAttachmentData>>
+  _egresoAttachmentRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.egresoAttachment,
+    aliasName: $_aliasNameGenerator(db.egreso.id, db.egresoAttachment.egresoId),
+  );
+
+  $$EgresoAttachmentTableProcessedTableManager get egresoAttachmentRefs {
+    final manager = $$EgresoAttachmentTableTableManager(
+      $_db,
+      $_db.egresoAttachment,
+    ).filter((f) => f.egresoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _egresoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$EgresoTableFilterComposer
@@ -57722,6 +63875,31 @@ class $$EgresoTableFilterComposer
           }) => $$EgresoEventoTableFilterComposer(
             $db: $db,
             $table: $db.egresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> egresoAttachmentRefs(
+    Expression<bool> Function($$EgresoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$EgresoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egresoAttachment,
+      getReferencedColumn: (t) => t.egresoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.egresoAttachment,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -58085,6 +64263,31 @@ class $$EgresoTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> egresoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$EgresoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$EgresoAttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egresoAttachment,
+      getReferencedColumn: (t) => t.egresoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoAttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egresoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$EgresoTableTableManager
@@ -58106,6 +64309,7 @@ class $$EgresoTableTableManager
             bool sucursalId,
             bool areaId,
             bool egresoEventoRefs,
+            bool egresoAttachmentRefs,
           })
         > {
   $$EgresoTableTableManager(_$AppDatabase db, $EgresoTable table)
@@ -58219,10 +64423,14 @@ class $$EgresoTableTableManager
             sucursalId = false,
             areaId = false,
             egresoEventoRefs = false,
+            egresoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (egresoEventoRefs) db.egresoEvento],
+              explicitlyWatchedTables: [
+                if (egresoEventoRefs) db.egresoEvento,
+                if (egresoAttachmentRefs) db.egresoAttachment,
+              ],
               addJoins: <
                 T extends TableManagerState<
                   dynamic,
@@ -58315,6 +64523,28 @@ class $$EgresoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (egresoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      EgresoData,
+                      $EgresoTable,
+                      EgresoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EgresoTableReferences
+                          ._egresoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EgresoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).egresoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.egresoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -58341,6 +64571,7 @@ typedef $$EgresoTableProcessedTableManager =
         bool sucursalId,
         bool areaId,
         bool egresoEventoRefs,
+        bool egresoAttachmentRefs,
       })
     >;
 typedef $$EgresoEventoTableCreateCompanionBuilder =
@@ -58745,6 +64976,4855 @@ typedef $$EgresoEventoTableProcessedTableManager =
       EgresoEventoData,
       PrefetchHooks Function({bool egresoId})
     >;
+typedef $$EmpleadoTableCreateCompanionBuilder =
+    EmpleadoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String codigoEmpleado,
+      Value<String?> fotografiaAttachmentId,
+      required String nombres,
+      required String apellidoPaterno,
+      Value<String?> apellidoMaterno,
+      required String sexo,
+      required DateTime fechaNacimiento,
+      required String curp,
+      required String rfc,
+      required String nss,
+      required String estadoCivil,
+      Value<String> nacionalidad,
+      Value<String?> telefono,
+      Value<String?> correoElectronico,
+      Value<String?> contactoEmergenciaNombre,
+      Value<String?> telefonoEmergencia,
+      Value<String?> parentescoEmergencia,
+      required DateTime fechaIngreso,
+      Value<String> estatus,
+      Value<String?> puestoId,
+      Value<String?> empresaId,
+      Value<String?> sucursalId,
+      Value<String?> observaciones,
+      Value<String?> nivelEstudios,
+      Value<String?> observacionesEscolaridad,
+      required int aniosExperienciaSeguridad,
+      Value<int?> mesesExperienciaAdicionales,
+      Value<String?> ultimoPuestoDesempenado,
+      Value<String?> resumenExperiencia,
+      Value<String?> observacionesExperiencia,
+      Value<int> rowid,
+    });
+typedef $$EmpleadoTableUpdateCompanionBuilder =
+    EmpleadoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> codigoEmpleado,
+      Value<String?> fotografiaAttachmentId,
+      Value<String> nombres,
+      Value<String> apellidoPaterno,
+      Value<String?> apellidoMaterno,
+      Value<String> sexo,
+      Value<DateTime> fechaNacimiento,
+      Value<String> curp,
+      Value<String> rfc,
+      Value<String> nss,
+      Value<String> estadoCivil,
+      Value<String> nacionalidad,
+      Value<String?> telefono,
+      Value<String?> correoElectronico,
+      Value<String?> contactoEmergenciaNombre,
+      Value<String?> telefonoEmergencia,
+      Value<String?> parentescoEmergencia,
+      Value<DateTime> fechaIngreso,
+      Value<String> estatus,
+      Value<String?> puestoId,
+      Value<String?> empresaId,
+      Value<String?> sucursalId,
+      Value<String?> observaciones,
+      Value<String?> nivelEstudios,
+      Value<String?> observacionesEscolaridad,
+      Value<int> aniosExperienciaSeguridad,
+      Value<int?> mesesExperienciaAdicionales,
+      Value<String?> ultimoPuestoDesempenado,
+      Value<String?> resumenExperiencia,
+      Value<String?> observacionesExperiencia,
+      Value<int> rowid,
+    });
+
+final class $$EmpleadoTableReferences
+    extends BaseReferences<_$AppDatabase, $EmpleadoTable, EmpleadoData> {
+  $$EmpleadoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $AttachmentTable _fotografiaAttachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.empleado.fotografiaAttachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager? get fotografiaAttachmentId {
+    final $_column = $_itemColumn<String>('fotografia_attachment_id');
+    if ($_column == null) return null;
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _fotografiaAttachmentIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $PuestoTable _puestoIdTable(_$AppDatabase db) => db.puesto.createAlias(
+    $_aliasNameGenerator(db.empleado.puestoId, db.puesto.id),
+  );
+
+  $$PuestoTableProcessedTableManager? get puestoId {
+    final $_column = $_itemColumn<String>('puesto_id');
+    if ($_column == null) return null;
+    final manager = $$PuestoTableTableManager(
+      $_db,
+      $_db.puesto,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_puestoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EmpresaTable _empresaIdTable(_$AppDatabase db) => db.empresa
+      .createAlias($_aliasNameGenerator(db.empleado.empresaId, db.empresa.id));
+
+  $$EmpresaTableProcessedTableManager? get empresaId {
+    final $_column = $_itemColumn<String>('empresa_id');
+    if ($_column == null) return null;
+    final manager = $$EmpresaTableTableManager(
+      $_db,
+      $_db.empresa,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empresaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $SucursalTable _sucursalIdTable(_$AppDatabase db) =>
+      db.sucursal.createAlias(
+        $_aliasNameGenerator(db.empleado.sucursalId, db.sucursal.id),
+      );
+
+  $$SucursalTableProcessedTableManager? get sucursalId {
+    final $_column = $_itemColumn<String>('sucursal_id');
+    if ($_column == null) return null;
+    final manager = $$SucursalTableTableManager(
+      $_db,
+      $_db.sucursal,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sucursalIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$EmpleadoEventoTable, List<EmpleadoEventoData>>
+  _empleadoEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.empleadoEvento,
+    aliasName: $_aliasNameGenerator(
+      db.empleado.id,
+      db.empleadoEvento.empleadoId,
+    ),
+  );
+
+  $$EmpleadoEventoTableProcessedTableManager get empleadoEventoRefs {
+    final manager = $$EmpleadoEventoTableTableManager(
+      $_db,
+      $_db.empleadoEvento,
+    ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_empleadoEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $EmpleadoAttachmentTable,
+    List<EmpleadoAttachmentData>
+  >
+  _empleadoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.empleadoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.empleado.id,
+          db.empleadoAttachment.empleadoId,
+        ),
+      );
+
+  $$EmpleadoAttachmentTableProcessedTableManager get empleadoAttachmentRefs {
+    final manager = $$EmpleadoAttachmentTableTableManager(
+      $_db,
+      $_db.empleadoAttachment,
+    ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _empleadoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$EmpleadoTableFilterComposer
+    extends Composer<_$AppDatabase, $EmpleadoTable> {
+  $$EmpleadoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigoEmpleado => $composableBuilder(
+    column: $table.codigoEmpleado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombres => $composableBuilder(
+    column: $table.nombres,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get apellidoPaterno => $composableBuilder(
+    column: $table.apellidoPaterno,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get apellidoMaterno => $composableBuilder(
+    column: $table.apellidoMaterno,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sexo => $composableBuilder(
+    column: $table.sexo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaNacimiento => $composableBuilder(
+    column: $table.fechaNacimiento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get curp => $composableBuilder(
+    column: $table.curp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rfc => $composableBuilder(
+    column: $table.rfc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nss => $composableBuilder(
+    column: $table.nss,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoCivil => $composableBuilder(
+    column: $table.estadoCivil,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nacionalidad => $composableBuilder(
+    column: $table.nacionalidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get telefono => $composableBuilder(
+    column: $table.telefono,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get correoElectronico => $composableBuilder(
+    column: $table.correoElectronico,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contactoEmergenciaNombre => $composableBuilder(
+    column: $table.contactoEmergenciaNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get telefonoEmergencia => $composableBuilder(
+    column: $table.telefonoEmergencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentescoEmergencia => $composableBuilder(
+    column: $table.parentescoEmergencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaIngreso => $composableBuilder(
+    column: $table.fechaIngreso,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nivelEstudios => $composableBuilder(
+    column: $table.nivelEstudios,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesEscolaridad => $composableBuilder(
+    column: $table.observacionesEscolaridad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get aniosExperienciaSeguridad => $composableBuilder(
+    column: $table.aniosExperienciaSeguridad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get mesesExperienciaAdicionales => $composableBuilder(
+    column: $table.mesesExperienciaAdicionales,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ultimoPuestoDesempenado => $composableBuilder(
+    column: $table.ultimoPuestoDesempenado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resumenExperiencia => $composableBuilder(
+    column: $table.resumenExperiencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesExperiencia => $composableBuilder(
+    column: $table.observacionesExperiencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AttachmentTableFilterComposer get fotografiaAttachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fotografiaAttachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PuestoTableFilterComposer get puestoId {
+    final $$PuestoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.puestoId,
+      referencedTable: $db.puesto,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PuestoTableFilterComposer(
+            $db: $db,
+            $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpresaTableFilterComposer get empresaId {
+    final $$EmpresaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empresaId,
+      referencedTable: $db.empresa,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpresaTableFilterComposer(
+            $db: $db,
+            $table: $db.empresa,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SucursalTableFilterComposer get sucursalId {
+    final $$SucursalTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sucursalId,
+      referencedTable: $db.sucursal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SucursalTableFilterComposer(
+            $db: $db,
+            $table: $db.sucursal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> empleadoEventoRefs(
+    Expression<bool> Function($$EmpleadoEventoTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleadoEvento,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleadoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> empleadoAttachmentRefs(
+    Expression<bool> Function($$EmpleadoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleadoAttachment,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.empleadoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$EmpleadoTableOrderingComposer
+    extends Composer<_$AppDatabase, $EmpleadoTable> {
+  $$EmpleadoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigoEmpleado => $composableBuilder(
+    column: $table.codigoEmpleado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombres => $composableBuilder(
+    column: $table.nombres,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get apellidoPaterno => $composableBuilder(
+    column: $table.apellidoPaterno,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get apellidoMaterno => $composableBuilder(
+    column: $table.apellidoMaterno,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sexo => $composableBuilder(
+    column: $table.sexo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaNacimiento => $composableBuilder(
+    column: $table.fechaNacimiento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get curp => $composableBuilder(
+    column: $table.curp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rfc => $composableBuilder(
+    column: $table.rfc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nss => $composableBuilder(
+    column: $table.nss,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoCivil => $composableBuilder(
+    column: $table.estadoCivil,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nacionalidad => $composableBuilder(
+    column: $table.nacionalidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get telefono => $composableBuilder(
+    column: $table.telefono,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get correoElectronico => $composableBuilder(
+    column: $table.correoElectronico,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contactoEmergenciaNombre => $composableBuilder(
+    column: $table.contactoEmergenciaNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get telefonoEmergencia => $composableBuilder(
+    column: $table.telefonoEmergencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parentescoEmergencia => $composableBuilder(
+    column: $table.parentescoEmergencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaIngreso => $composableBuilder(
+    column: $table.fechaIngreso,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nivelEstudios => $composableBuilder(
+    column: $table.nivelEstudios,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesEscolaridad => $composableBuilder(
+    column: $table.observacionesEscolaridad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get aniosExperienciaSeguridad => $composableBuilder(
+    column: $table.aniosExperienciaSeguridad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get mesesExperienciaAdicionales => $composableBuilder(
+    column: $table.mesesExperienciaAdicionales,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ultimoPuestoDesempenado => $composableBuilder(
+    column: $table.ultimoPuestoDesempenado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get resumenExperiencia => $composableBuilder(
+    column: $table.resumenExperiencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesExperiencia => $composableBuilder(
+    column: $table.observacionesExperiencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AttachmentTableOrderingComposer get fotografiaAttachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fotografiaAttachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PuestoTableOrderingComposer get puestoId {
+    final $$PuestoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.puestoId,
+      referencedTable: $db.puesto,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PuestoTableOrderingComposer(
+            $db: $db,
+            $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpresaTableOrderingComposer get empresaId {
+    final $$EmpresaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empresaId,
+      referencedTable: $db.empresa,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpresaTableOrderingComposer(
+            $db: $db,
+            $table: $db.empresa,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SucursalTableOrderingComposer get sucursalId {
+    final $$SucursalTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sucursalId,
+      referencedTable: $db.sucursal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SucursalTableOrderingComposer(
+            $db: $db,
+            $table: $db.sucursal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EmpleadoTable> {
+  $$EmpleadoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get codigoEmpleado => $composableBuilder(
+    column: $table.codigoEmpleado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nombres =>
+      $composableBuilder(column: $table.nombres, builder: (column) => column);
+
+  GeneratedColumn<String> get apellidoPaterno => $composableBuilder(
+    column: $table.apellidoPaterno,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get apellidoMaterno => $composableBuilder(
+    column: $table.apellidoMaterno,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sexo =>
+      $composableBuilder(column: $table.sexo, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaNacimiento => $composableBuilder(
+    column: $table.fechaNacimiento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get curp =>
+      $composableBuilder(column: $table.curp, builder: (column) => column);
+
+  GeneratedColumn<String> get rfc =>
+      $composableBuilder(column: $table.rfc, builder: (column) => column);
+
+  GeneratedColumn<String> get nss =>
+      $composableBuilder(column: $table.nss, builder: (column) => column);
+
+  GeneratedColumn<String> get estadoCivil => $composableBuilder(
+    column: $table.estadoCivil,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nacionalidad => $composableBuilder(
+    column: $table.nacionalidad,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get telefono =>
+      $composableBuilder(column: $table.telefono, builder: (column) => column);
+
+  GeneratedColumn<String> get correoElectronico => $composableBuilder(
+    column: $table.correoElectronico,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get contactoEmergenciaNombre => $composableBuilder(
+    column: $table.contactoEmergenciaNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get telefonoEmergencia => $composableBuilder(
+    column: $table.telefonoEmergencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get parentescoEmergencia => $composableBuilder(
+    column: $table.parentescoEmergencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaIngreso => $composableBuilder(
+    column: $table.fechaIngreso,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nivelEstudios => $composableBuilder(
+    column: $table.nivelEstudios,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesEscolaridad => $composableBuilder(
+    column: $table.observacionesEscolaridad,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get aniosExperienciaSeguridad => $composableBuilder(
+    column: $table.aniosExperienciaSeguridad,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get mesesExperienciaAdicionales => $composableBuilder(
+    column: $table.mesesExperienciaAdicionales,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get ultimoPuestoDesempenado => $composableBuilder(
+    column: $table.ultimoPuestoDesempenado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get resumenExperiencia => $composableBuilder(
+    column: $table.resumenExperiencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesExperiencia => $composableBuilder(
+    column: $table.observacionesExperiencia,
+    builder: (column) => column,
+  );
+
+  $$AttachmentTableAnnotationComposer get fotografiaAttachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fotografiaAttachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PuestoTableAnnotationComposer get puestoId {
+    final $$PuestoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.puestoId,
+      referencedTable: $db.puesto,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PuestoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpresaTableAnnotationComposer get empresaId {
+    final $$EmpresaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empresaId,
+      referencedTable: $db.empresa,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpresaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empresa,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SucursalTableAnnotationComposer get sucursalId {
+    final $$SucursalTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sucursalId,
+      referencedTable: $db.sucursal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SucursalTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sucursal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> empleadoEventoRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleadoEvento,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleadoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> empleadoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.empleadoAttachment,
+          getReferencedColumn: (t) => t.empleadoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EmpleadoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.empleadoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$EmpleadoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EmpleadoTable,
+          EmpleadoData,
+          $$EmpleadoTableFilterComposer,
+          $$EmpleadoTableOrderingComposer,
+          $$EmpleadoTableAnnotationComposer,
+          $$EmpleadoTableCreateCompanionBuilder,
+          $$EmpleadoTableUpdateCompanionBuilder,
+          (EmpleadoData, $$EmpleadoTableReferences),
+          EmpleadoData,
+          PrefetchHooks Function({
+            bool fotografiaAttachmentId,
+            bool puestoId,
+            bool empresaId,
+            bool sucursalId,
+            bool empleadoEventoRefs,
+            bool empleadoAttachmentRefs,
+          })
+        > {
+  $$EmpleadoTableTableManager(_$AppDatabase db, $EmpleadoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$EmpleadoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$EmpleadoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$EmpleadoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> codigoEmpleado = const Value.absent(),
+                Value<String?> fotografiaAttachmentId = const Value.absent(),
+                Value<String> nombres = const Value.absent(),
+                Value<String> apellidoPaterno = const Value.absent(),
+                Value<String?> apellidoMaterno = const Value.absent(),
+                Value<String> sexo = const Value.absent(),
+                Value<DateTime> fechaNacimiento = const Value.absent(),
+                Value<String> curp = const Value.absent(),
+                Value<String> rfc = const Value.absent(),
+                Value<String> nss = const Value.absent(),
+                Value<String> estadoCivil = const Value.absent(),
+                Value<String> nacionalidad = const Value.absent(),
+                Value<String?> telefono = const Value.absent(),
+                Value<String?> correoElectronico = const Value.absent(),
+                Value<String?> contactoEmergenciaNombre = const Value.absent(),
+                Value<String?> telefonoEmergencia = const Value.absent(),
+                Value<String?> parentescoEmergencia = const Value.absent(),
+                Value<DateTime> fechaIngreso = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> puestoId = const Value.absent(),
+                Value<String?> empresaId = const Value.absent(),
+                Value<String?> sucursalId = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> nivelEstudios = const Value.absent(),
+                Value<String?> observacionesEscolaridad = const Value.absent(),
+                Value<int> aniosExperienciaSeguridad = const Value.absent(),
+                Value<int?> mesesExperienciaAdicionales = const Value.absent(),
+                Value<String?> ultimoPuestoDesempenado = const Value.absent(),
+                Value<String?> resumenExperiencia = const Value.absent(),
+                Value<String?> observacionesExperiencia = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EmpleadoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigoEmpleado: codigoEmpleado,
+                fotografiaAttachmentId: fotografiaAttachmentId,
+                nombres: nombres,
+                apellidoPaterno: apellidoPaterno,
+                apellidoMaterno: apellidoMaterno,
+                sexo: sexo,
+                fechaNacimiento: fechaNacimiento,
+                curp: curp,
+                rfc: rfc,
+                nss: nss,
+                estadoCivil: estadoCivil,
+                nacionalidad: nacionalidad,
+                telefono: telefono,
+                correoElectronico: correoElectronico,
+                contactoEmergenciaNombre: contactoEmergenciaNombre,
+                telefonoEmergencia: telefonoEmergencia,
+                parentescoEmergencia: parentescoEmergencia,
+                fechaIngreso: fechaIngreso,
+                estatus: estatus,
+                puestoId: puestoId,
+                empresaId: empresaId,
+                sucursalId: sucursalId,
+                observaciones: observaciones,
+                nivelEstudios: nivelEstudios,
+                observacionesEscolaridad: observacionesEscolaridad,
+                aniosExperienciaSeguridad: aniosExperienciaSeguridad,
+                mesesExperienciaAdicionales: mesesExperienciaAdicionales,
+                ultimoPuestoDesempenado: ultimoPuestoDesempenado,
+                resumenExperiencia: resumenExperiencia,
+                observacionesExperiencia: observacionesExperiencia,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String codigoEmpleado,
+                Value<String?> fotografiaAttachmentId = const Value.absent(),
+                required String nombres,
+                required String apellidoPaterno,
+                Value<String?> apellidoMaterno = const Value.absent(),
+                required String sexo,
+                required DateTime fechaNacimiento,
+                required String curp,
+                required String rfc,
+                required String nss,
+                required String estadoCivil,
+                Value<String> nacionalidad = const Value.absent(),
+                Value<String?> telefono = const Value.absent(),
+                Value<String?> correoElectronico = const Value.absent(),
+                Value<String?> contactoEmergenciaNombre = const Value.absent(),
+                Value<String?> telefonoEmergencia = const Value.absent(),
+                Value<String?> parentescoEmergencia = const Value.absent(),
+                required DateTime fechaIngreso,
+                Value<String> estatus = const Value.absent(),
+                Value<String?> puestoId = const Value.absent(),
+                Value<String?> empresaId = const Value.absent(),
+                Value<String?> sucursalId = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> nivelEstudios = const Value.absent(),
+                Value<String?> observacionesEscolaridad = const Value.absent(),
+                required int aniosExperienciaSeguridad,
+                Value<int?> mesesExperienciaAdicionales = const Value.absent(),
+                Value<String?> ultimoPuestoDesempenado = const Value.absent(),
+                Value<String?> resumenExperiencia = const Value.absent(),
+                Value<String?> observacionesExperiencia = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EmpleadoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigoEmpleado: codigoEmpleado,
+                fotografiaAttachmentId: fotografiaAttachmentId,
+                nombres: nombres,
+                apellidoPaterno: apellidoPaterno,
+                apellidoMaterno: apellidoMaterno,
+                sexo: sexo,
+                fechaNacimiento: fechaNacimiento,
+                curp: curp,
+                rfc: rfc,
+                nss: nss,
+                estadoCivil: estadoCivil,
+                nacionalidad: nacionalidad,
+                telefono: telefono,
+                correoElectronico: correoElectronico,
+                contactoEmergenciaNombre: contactoEmergenciaNombre,
+                telefonoEmergencia: telefonoEmergencia,
+                parentescoEmergencia: parentescoEmergencia,
+                fechaIngreso: fechaIngreso,
+                estatus: estatus,
+                puestoId: puestoId,
+                empresaId: empresaId,
+                sucursalId: sucursalId,
+                observaciones: observaciones,
+                nivelEstudios: nivelEstudios,
+                observacionesEscolaridad: observacionesEscolaridad,
+                aniosExperienciaSeguridad: aniosExperienciaSeguridad,
+                mesesExperienciaAdicionales: mesesExperienciaAdicionales,
+                ultimoPuestoDesempenado: ultimoPuestoDesempenado,
+                resumenExperiencia: resumenExperiencia,
+                observacionesExperiencia: observacionesExperiencia,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EmpleadoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            fotografiaAttachmentId = false,
+            puestoId = false,
+            empresaId = false,
+            sucursalId = false,
+            empleadoEventoRefs = false,
+            empleadoAttachmentRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (empleadoEventoRefs) db.empleadoEvento,
+                if (empleadoAttachmentRefs) db.empleadoAttachment,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (fotografiaAttachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.fotografiaAttachmentId,
+                            referencedTable: $$EmpleadoTableReferences
+                                ._fotografiaAttachmentIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoTableReferences
+                                    ._fotografiaAttachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (puestoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.puestoId,
+                            referencedTable: $$EmpleadoTableReferences
+                                ._puestoIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoTableReferences._puestoIdTable(db).id,
+                          )
+                          as T;
+                }
+                if (empresaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empresaId,
+                            referencedTable: $$EmpleadoTableReferences
+                                ._empresaIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoTableReferences
+                                    ._empresaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (sucursalId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.sucursalId,
+                            referencedTable: $$EmpleadoTableReferences
+                                ._sucursalIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoTableReferences
+                                    ._sucursalIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (empleadoEventoRefs)
+                    await $_getPrefetchedData<
+                      EmpleadoData,
+                      $EmpleadoTable,
+                      EmpleadoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpleadoTableReferences
+                          ._empleadoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (empleadoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      EmpleadoData,
+                      $EmpleadoTable,
+                      EmpleadoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpleadoTableReferences
+                          ._empleadoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EmpleadoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EmpleadoTable,
+      EmpleadoData,
+      $$EmpleadoTableFilterComposer,
+      $$EmpleadoTableOrderingComposer,
+      $$EmpleadoTableAnnotationComposer,
+      $$EmpleadoTableCreateCompanionBuilder,
+      $$EmpleadoTableUpdateCompanionBuilder,
+      (EmpleadoData, $$EmpleadoTableReferences),
+      EmpleadoData,
+      PrefetchHooks Function({
+        bool fotografiaAttachmentId,
+        bool puestoId,
+        bool empresaId,
+        bool sucursalId,
+        bool empleadoEventoRefs,
+        bool empleadoAttachmentRefs,
+      })
+    >;
+typedef $$EmpleadoEventoTableCreateCompanionBuilder =
+    EmpleadoEventoCompanion Function({
+      Value<int> id,
+      required String empleadoId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+typedef $$EmpleadoEventoTableUpdateCompanionBuilder =
+    EmpleadoEventoCompanion Function({
+      Value<int> id,
+      Value<String> empleadoId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$EmpleadoEventoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $EmpleadoEventoTable,
+          EmpleadoEventoData
+        > {
+  $$EmpleadoEventoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $EmpleadoTable _empleadoIdTable(_$AppDatabase db) =>
+      db.empleado.createAlias(
+        $_aliasNameGenerator(db.empleadoEvento.empleadoId, db.empleado.id),
+      );
+
+  $$EmpleadoTableProcessedTableManager get empleadoId {
+    final $_column = $_itemColumn<String>('empleado_id')!;
+
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$EmpleadoEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $EmpleadoEventoTable> {
+  $$EmpleadoEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$EmpleadoTableFilterComposer get empleadoId {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $EmpleadoEventoTable> {
+  $$EmpleadoEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$EmpleadoTableOrderingComposer get empleadoId {
+    final $$EmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EmpleadoEventoTable> {
+  $$EmpleadoEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$EmpleadoTableAnnotationComposer get empleadoId {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EmpleadoEventoTable,
+          EmpleadoEventoData,
+          $$EmpleadoEventoTableFilterComposer,
+          $$EmpleadoEventoTableOrderingComposer,
+          $$EmpleadoEventoTableAnnotationComposer,
+          $$EmpleadoEventoTableCreateCompanionBuilder,
+          $$EmpleadoEventoTableUpdateCompanionBuilder,
+          (EmpleadoEventoData, $$EmpleadoEventoTableReferences),
+          EmpleadoEventoData,
+          PrefetchHooks Function({bool empleadoId})
+        > {
+  $$EmpleadoEventoTableTableManager(
+    _$AppDatabase db,
+    $EmpleadoEventoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$EmpleadoEventoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$EmpleadoEventoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$EmpleadoEventoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> empleadoId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => EmpleadoEventoCompanion(
+                id: id,
+                empleadoId: empleadoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String empleadoId,
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => EmpleadoEventoCompanion.insert(
+                id: id,
+                empleadoId: empleadoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EmpleadoEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({empleadoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (empleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empleadoId,
+                            referencedTable: $$EmpleadoEventoTableReferences
+                                ._empleadoIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoEventoTableReferences
+                                    ._empleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EmpleadoEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EmpleadoEventoTable,
+      EmpleadoEventoData,
+      $$EmpleadoEventoTableFilterComposer,
+      $$EmpleadoEventoTableOrderingComposer,
+      $$EmpleadoEventoTableAnnotationComposer,
+      $$EmpleadoEventoTableCreateCompanionBuilder,
+      $$EmpleadoEventoTableUpdateCompanionBuilder,
+      (EmpleadoEventoData, $$EmpleadoEventoTableReferences),
+      EmpleadoEventoData,
+      PrefetchHooks Function({bool empleadoId})
+    >;
+typedef $$EmpresaAttachmentTableCreateCompanionBuilder =
+    EmpresaAttachmentCompanion Function({
+      required String attachmentId,
+      required String empresaId,
+      Value<int> rowid,
+    });
+typedef $$EmpresaAttachmentTableUpdateCompanionBuilder =
+    EmpresaAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> empresaId,
+      Value<int> rowid,
+    });
+
+final class $$EmpresaAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $EmpresaAttachmentTable,
+          EmpresaAttachmentData
+        > {
+  $$EmpresaAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.empresaAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EmpresaTable _empresaIdTable(_$AppDatabase db) =>
+      db.empresa.createAlias(
+        $_aliasNameGenerator(db.empresaAttachment.empresaId, db.empresa.id),
+      );
+
+  $$EmpresaTableProcessedTableManager get empresaId {
+    final $_column = $_itemColumn<String>('empresa_id')!;
+
+    final manager = $$EmpresaTableTableManager(
+      $_db,
+      $_db.empresa,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empresaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$EmpresaAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $EmpresaAttachmentTable> {
+  $$EmpresaAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpresaTableFilterComposer get empresaId {
+    final $$EmpresaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empresaId,
+      referencedTable: $db.empresa,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpresaTableFilterComposer(
+            $db: $db,
+            $table: $db.empresa,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpresaAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $EmpresaAttachmentTable> {
+  $$EmpresaAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpresaTableOrderingComposer get empresaId {
+    final $$EmpresaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empresaId,
+      referencedTable: $db.empresa,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpresaTableOrderingComposer(
+            $db: $db,
+            $table: $db.empresa,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpresaAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EmpresaAttachmentTable> {
+  $$EmpresaAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpresaTableAnnotationComposer get empresaId {
+    final $$EmpresaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empresaId,
+      referencedTable: $db.empresa,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpresaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empresa,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpresaAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EmpresaAttachmentTable,
+          EmpresaAttachmentData,
+          $$EmpresaAttachmentTableFilterComposer,
+          $$EmpresaAttachmentTableOrderingComposer,
+          $$EmpresaAttachmentTableAnnotationComposer,
+          $$EmpresaAttachmentTableCreateCompanionBuilder,
+          $$EmpresaAttachmentTableUpdateCompanionBuilder,
+          (EmpresaAttachmentData, $$EmpresaAttachmentTableReferences),
+          EmpresaAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool empresaId})
+        > {
+  $$EmpresaAttachmentTableTableManager(
+    _$AppDatabase db,
+    $EmpresaAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$EmpresaAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$EmpresaAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$EmpresaAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> empresaId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EmpresaAttachmentCompanion(
+                attachmentId: attachmentId,
+                empresaId: empresaId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String empresaId,
+                Value<int> rowid = const Value.absent(),
+              }) => EmpresaAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                empresaId: empresaId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EmpresaAttachmentTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({attachmentId = false, empresaId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable: $$EmpresaAttachmentTableReferences
+                                ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$EmpresaAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (empresaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empresaId,
+                            referencedTable: $$EmpresaAttachmentTableReferences
+                                ._empresaIdTable(db),
+                            referencedColumn:
+                                $$EmpresaAttachmentTableReferences
+                                    ._empresaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EmpresaAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EmpresaAttachmentTable,
+      EmpresaAttachmentData,
+      $$EmpresaAttachmentTableFilterComposer,
+      $$EmpresaAttachmentTableOrderingComposer,
+      $$EmpresaAttachmentTableAnnotationComposer,
+      $$EmpresaAttachmentTableCreateCompanionBuilder,
+      $$EmpresaAttachmentTableUpdateCompanionBuilder,
+      (EmpresaAttachmentData, $$EmpresaAttachmentTableReferences),
+      EmpresaAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool empresaId})
+    >;
+typedef $$ClienteAttachmentTableCreateCompanionBuilder =
+    ClienteAttachmentCompanion Function({
+      required String attachmentId,
+      required String clienteId,
+      Value<int> rowid,
+    });
+typedef $$ClienteAttachmentTableUpdateCompanionBuilder =
+    ClienteAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> clienteId,
+      Value<int> rowid,
+    });
+
+final class $$ClienteAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ClienteAttachmentTable,
+          ClienteAttachmentData
+        > {
+  $$ClienteAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.clienteAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ClienteTable _clienteIdTable(_$AppDatabase db) =>
+      db.cliente.createAlias(
+        $_aliasNameGenerator(db.clienteAttachment.clienteId, db.cliente.id),
+      );
+
+  $$ClienteTableProcessedTableManager get clienteId {
+    final $_column = $_itemColumn<String>('cliente_id')!;
+
+    final manager = $$ClienteTableTableManager(
+      $_db,
+      $_db.cliente,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_clienteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ClienteAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $ClienteAttachmentTable> {
+  $$ClienteAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ClienteTableFilterComposer get clienteId {
+    final $$ClienteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableFilterComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ClienteAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $ClienteAttachmentTable> {
+  $$ClienteAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ClienteTableOrderingComposer get clienteId {
+    final $$ClienteTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableOrderingComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ClienteAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ClienteAttachmentTable> {
+  $$ClienteAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ClienteTableAnnotationComposer get clienteId {
+    final $$ClienteTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ClienteAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ClienteAttachmentTable,
+          ClienteAttachmentData,
+          $$ClienteAttachmentTableFilterComposer,
+          $$ClienteAttachmentTableOrderingComposer,
+          $$ClienteAttachmentTableAnnotationComposer,
+          $$ClienteAttachmentTableCreateCompanionBuilder,
+          $$ClienteAttachmentTableUpdateCompanionBuilder,
+          (ClienteAttachmentData, $$ClienteAttachmentTableReferences),
+          ClienteAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool clienteId})
+        > {
+  $$ClienteAttachmentTableTableManager(
+    _$AppDatabase db,
+    $ClienteAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ClienteAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$ClienteAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$ClienteAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> clienteId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ClienteAttachmentCompanion(
+                attachmentId: attachmentId,
+                clienteId: clienteId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String clienteId,
+                Value<int> rowid = const Value.absent(),
+              }) => ClienteAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                clienteId: clienteId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ClienteAttachmentTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({attachmentId = false, clienteId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable: $$ClienteAttachmentTableReferences
+                                ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$ClienteAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (clienteId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.clienteId,
+                            referencedTable: $$ClienteAttachmentTableReferences
+                                ._clienteIdTable(db),
+                            referencedColumn:
+                                $$ClienteAttachmentTableReferences
+                                    ._clienteIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ClienteAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ClienteAttachmentTable,
+      ClienteAttachmentData,
+      $$ClienteAttachmentTableFilterComposer,
+      $$ClienteAttachmentTableOrderingComposer,
+      $$ClienteAttachmentTableAnnotationComposer,
+      $$ClienteAttachmentTableCreateCompanionBuilder,
+      $$ClienteAttachmentTableUpdateCompanionBuilder,
+      (ClienteAttachmentData, $$ClienteAttachmentTableReferences),
+      ClienteAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool clienteId})
+    >;
+typedef $$DocumentoPorEmitirAttachmentTableCreateCompanionBuilder =
+    DocumentoPorEmitirAttachmentCompanion Function({
+      required String attachmentId,
+      required String documentoPorEmitirId,
+      Value<int> rowid,
+    });
+typedef $$DocumentoPorEmitirAttachmentTableUpdateCompanionBuilder =
+    DocumentoPorEmitirAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> documentoPorEmitirId,
+      Value<int> rowid,
+    });
+
+final class $$DocumentoPorEmitirAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentoPorEmitirAttachmentTable,
+          DocumentoPorEmitirAttachmentData
+        > {
+  $$DocumentoPorEmitirAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.documentoPorEmitirAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $DocumentoPorEmitirTable _documentoPorEmitirIdTable(
+    _$AppDatabase db,
+  ) => db.documentoPorEmitir.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirAttachment.documentoPorEmitirId,
+      db.documentoPorEmitir.id,
+    ),
+  );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirId {
+    final $_column = $_itemColumn<String>('documento_por_emitir_id')!;
+
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _documentoPorEmitirIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DocumentoPorEmitirAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirAttachmentTable> {
+  $$DocumentoPorEmitirAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$DocumentoPorEmitirTableFilterComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirAttachmentTable> {
+  $$DocumentoPorEmitirAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$DocumentoPorEmitirTableOrderingComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableOrderingComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirAttachmentTable> {
+  $$DocumentoPorEmitirAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$DocumentoPorEmitirTableAnnotationComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.documentoPorEmitirId,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentoPorEmitirAttachmentTable,
+          DocumentoPorEmitirAttachmentData,
+          $$DocumentoPorEmitirAttachmentTableFilterComposer,
+          $$DocumentoPorEmitirAttachmentTableOrderingComposer,
+          $$DocumentoPorEmitirAttachmentTableAnnotationComposer,
+          $$DocumentoPorEmitirAttachmentTableCreateCompanionBuilder,
+          $$DocumentoPorEmitirAttachmentTableUpdateCompanionBuilder,
+          (
+            DocumentoPorEmitirAttachmentData,
+            $$DocumentoPorEmitirAttachmentTableReferences,
+          ),
+          DocumentoPorEmitirAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool documentoPorEmitirId})
+        > {
+  $$DocumentoPorEmitirAttachmentTableTableManager(
+    _$AppDatabase db,
+    $DocumentoPorEmitirAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DocumentoPorEmitirAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DocumentoPorEmitirAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DocumentoPorEmitirAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> documentoPorEmitirId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DocumentoPorEmitirAttachmentCompanion(
+                attachmentId: attachmentId,
+                documentoPorEmitirId: documentoPorEmitirId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String documentoPorEmitirId,
+                Value<int> rowid = const Value.absent(),
+              }) => DocumentoPorEmitirAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                documentoPorEmitirId: documentoPorEmitirId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DocumentoPorEmitirAttachmentTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            attachmentId = false,
+            documentoPorEmitirId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable:
+                                $$DocumentoPorEmitirAttachmentTableReferences
+                                    ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (documentoPorEmitirId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.documentoPorEmitirId,
+                            referencedTable:
+                                $$DocumentoPorEmitirAttachmentTableReferences
+                                    ._documentoPorEmitirIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirAttachmentTableReferences
+                                    ._documentoPorEmitirIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DocumentoPorEmitirAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentoPorEmitirAttachmentTable,
+      DocumentoPorEmitirAttachmentData,
+      $$DocumentoPorEmitirAttachmentTableFilterComposer,
+      $$DocumentoPorEmitirAttachmentTableOrderingComposer,
+      $$DocumentoPorEmitirAttachmentTableAnnotationComposer,
+      $$DocumentoPorEmitirAttachmentTableCreateCompanionBuilder,
+      $$DocumentoPorEmitirAttachmentTableUpdateCompanionBuilder,
+      (
+        DocumentoPorEmitirAttachmentData,
+        $$DocumentoPorEmitirAttachmentTableReferences,
+      ),
+      DocumentoPorEmitirAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool documentoPorEmitirId})
+    >;
+typedef $$PagoAttachmentTableCreateCompanionBuilder =
+    PagoAttachmentCompanion Function({
+      required String attachmentId,
+      required String pagoId,
+      Value<int> rowid,
+    });
+typedef $$PagoAttachmentTableUpdateCompanionBuilder =
+    PagoAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> pagoId,
+      Value<int> rowid,
+    });
+
+final class $$PagoAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PagoAttachmentTable,
+          PagoAttachmentData
+        > {
+  $$PagoAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(db.pagoAttachment.attachmentId, db.attachment.id),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $PagoTable _pagoIdTable(_$AppDatabase db) => db.pago.createAlias(
+    $_aliasNameGenerator(db.pagoAttachment.pagoId, db.pago.id),
+  );
+
+  $$PagoTableProcessedTableManager get pagoId {
+    final $_column = $_itemColumn<String>('pago_id')!;
+
+    final manager = $$PagoTableTableManager(
+      $_db,
+      $_db.pago,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PagoAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $PagoAttachmentTable> {
+  $$PagoAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PagoTableFilterComposer get pagoId {
+    final $$PagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableFilterComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PagoAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $PagoAttachmentTable> {
+  $$PagoAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PagoTableOrderingComposer get pagoId {
+    final $$PagoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableOrderingComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PagoAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PagoAttachmentTable> {
+  $$PagoAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PagoTableAnnotationComposer get pagoId {
+    final $$PagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PagoAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PagoAttachmentTable,
+          PagoAttachmentData,
+          $$PagoAttachmentTableFilterComposer,
+          $$PagoAttachmentTableOrderingComposer,
+          $$PagoAttachmentTableAnnotationComposer,
+          $$PagoAttachmentTableCreateCompanionBuilder,
+          $$PagoAttachmentTableUpdateCompanionBuilder,
+          (PagoAttachmentData, $$PagoAttachmentTableReferences),
+          PagoAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool pagoId})
+        > {
+  $$PagoAttachmentTableTableManager(
+    _$AppDatabase db,
+    $PagoAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$PagoAttachmentTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$PagoAttachmentTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$PagoAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> pagoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PagoAttachmentCompanion(
+                attachmentId: attachmentId,
+                pagoId: pagoId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String pagoId,
+                Value<int> rowid = const Value.absent(),
+              }) => PagoAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                pagoId: pagoId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$PagoAttachmentTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({attachmentId = false, pagoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable: $$PagoAttachmentTableReferences
+                                ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$PagoAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (pagoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.pagoId,
+                            referencedTable: $$PagoAttachmentTableReferences
+                                ._pagoIdTable(db),
+                            referencedColumn:
+                                $$PagoAttachmentTableReferences
+                                    ._pagoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PagoAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PagoAttachmentTable,
+      PagoAttachmentData,
+      $$PagoAttachmentTableFilterComposer,
+      $$PagoAttachmentTableOrderingComposer,
+      $$PagoAttachmentTableAnnotationComposer,
+      $$PagoAttachmentTableCreateCompanionBuilder,
+      $$PagoAttachmentTableUpdateCompanionBuilder,
+      (PagoAttachmentData, $$PagoAttachmentTableReferences),
+      PagoAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool pagoId})
+    >;
+typedef $$ComplementoPagoAttachmentTableCreateCompanionBuilder =
+    ComplementoPagoAttachmentCompanion Function({
+      required String attachmentId,
+      required String complementoPagoId,
+      Value<int> rowid,
+    });
+typedef $$ComplementoPagoAttachmentTableUpdateCompanionBuilder =
+    ComplementoPagoAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> complementoPagoId,
+      Value<int> rowid,
+    });
+
+final class $$ComplementoPagoAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ComplementoPagoAttachmentTable,
+          ComplementoPagoAttachmentData
+        > {
+  $$ComplementoPagoAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.complementoPagoAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ComplementoPagoTable _complementoPagoIdTable(_$AppDatabase db) =>
+      db.complementoPago.createAlias(
+        $_aliasNameGenerator(
+          db.complementoPagoAttachment.complementoPagoId,
+          db.complementoPago.id,
+        ),
+      );
+
+  $$ComplementoPagoTableProcessedTableManager get complementoPagoId {
+    final $_column = $_itemColumn<String>('complemento_pago_id')!;
+
+    final manager = $$ComplementoPagoTableTableManager(
+      $_db,
+      $_db.complementoPago,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_complementoPagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ComplementoPagoAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $ComplementoPagoAttachmentTable> {
+  $$ComplementoPagoAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ComplementoPagoTableFilterComposer get complementoPagoId {
+    final $$ComplementoPagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.complementoPagoId,
+      referencedTable: $db.complementoPago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComplementoPagoTableFilterComposer(
+            $db: $db,
+            $table: $db.complementoPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComplementoPagoAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $ComplementoPagoAttachmentTable> {
+  $$ComplementoPagoAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ComplementoPagoTableOrderingComposer get complementoPagoId {
+    final $$ComplementoPagoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.complementoPagoId,
+      referencedTable: $db.complementoPago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComplementoPagoTableOrderingComposer(
+            $db: $db,
+            $table: $db.complementoPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComplementoPagoAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ComplementoPagoAttachmentTable> {
+  $$ComplementoPagoAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ComplementoPagoTableAnnotationComposer get complementoPagoId {
+    final $$ComplementoPagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.complementoPagoId,
+      referencedTable: $db.complementoPago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComplementoPagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.complementoPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComplementoPagoAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ComplementoPagoAttachmentTable,
+          ComplementoPagoAttachmentData,
+          $$ComplementoPagoAttachmentTableFilterComposer,
+          $$ComplementoPagoAttachmentTableOrderingComposer,
+          $$ComplementoPagoAttachmentTableAnnotationComposer,
+          $$ComplementoPagoAttachmentTableCreateCompanionBuilder,
+          $$ComplementoPagoAttachmentTableUpdateCompanionBuilder,
+          (
+            ComplementoPagoAttachmentData,
+            $$ComplementoPagoAttachmentTableReferences,
+          ),
+          ComplementoPagoAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool complementoPagoId})
+        > {
+  $$ComplementoPagoAttachmentTableTableManager(
+    _$AppDatabase db,
+    $ComplementoPagoAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ComplementoPagoAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$ComplementoPagoAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$ComplementoPagoAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> complementoPagoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ComplementoPagoAttachmentCompanion(
+                attachmentId: attachmentId,
+                complementoPagoId: complementoPagoId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String complementoPagoId,
+                Value<int> rowid = const Value.absent(),
+              }) => ComplementoPagoAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                complementoPagoId: complementoPagoId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ComplementoPagoAttachmentTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            attachmentId = false,
+            complementoPagoId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable:
+                                $$ComplementoPagoAttachmentTableReferences
+                                    ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$ComplementoPagoAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (complementoPagoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.complementoPagoId,
+                            referencedTable:
+                                $$ComplementoPagoAttachmentTableReferences
+                                    ._complementoPagoIdTable(db),
+                            referencedColumn:
+                                $$ComplementoPagoAttachmentTableReferences
+                                    ._complementoPagoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ComplementoPagoAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ComplementoPagoAttachmentTable,
+      ComplementoPagoAttachmentData,
+      $$ComplementoPagoAttachmentTableFilterComposer,
+      $$ComplementoPagoAttachmentTableOrderingComposer,
+      $$ComplementoPagoAttachmentTableAnnotationComposer,
+      $$ComplementoPagoAttachmentTableCreateCompanionBuilder,
+      $$ComplementoPagoAttachmentTableUpdateCompanionBuilder,
+      (
+        ComplementoPagoAttachmentData,
+        $$ComplementoPagoAttachmentTableReferences,
+      ),
+      ComplementoPagoAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool complementoPagoId})
+    >;
+typedef $$IngresoAttachmentTableCreateCompanionBuilder =
+    IngresoAttachmentCompanion Function({
+      required String attachmentId,
+      required String ingresoId,
+      Value<int> rowid,
+    });
+typedef $$IngresoAttachmentTableUpdateCompanionBuilder =
+    IngresoAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> ingresoId,
+      Value<int> rowid,
+    });
+
+final class $$IngresoAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $IngresoAttachmentTable,
+          IngresoAttachmentData
+        > {
+  $$IngresoAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.ingresoAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $IngresoTable _ingresoIdTable(_$AppDatabase db) =>
+      db.ingreso.createAlias(
+        $_aliasNameGenerator(db.ingresoAttachment.ingresoId, db.ingreso.id),
+      );
+
+  $$IngresoTableProcessedTableManager get ingresoId {
+    final $_column = $_itemColumn<String>('ingreso_id')!;
+
+    final manager = $$IngresoTableTableManager(
+      $_db,
+      $_db.ingreso,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_ingresoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$IngresoAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $IngresoAttachmentTable> {
+  $$IngresoAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$IngresoTableFilterComposer get ingresoId {
+    final $$IngresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ingresoId,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableFilterComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngresoAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $IngresoAttachmentTable> {
+  $$IngresoAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$IngresoTableOrderingComposer get ingresoId {
+    final $$IngresoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ingresoId,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableOrderingComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngresoAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IngresoAttachmentTable> {
+  $$IngresoAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$IngresoTableAnnotationComposer get ingresoId {
+    final $$IngresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ingresoId,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngresoAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IngresoAttachmentTable,
+          IngresoAttachmentData,
+          $$IngresoAttachmentTableFilterComposer,
+          $$IngresoAttachmentTableOrderingComposer,
+          $$IngresoAttachmentTableAnnotationComposer,
+          $$IngresoAttachmentTableCreateCompanionBuilder,
+          $$IngresoAttachmentTableUpdateCompanionBuilder,
+          (IngresoAttachmentData, $$IngresoAttachmentTableReferences),
+          IngresoAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool ingresoId})
+        > {
+  $$IngresoAttachmentTableTableManager(
+    _$AppDatabase db,
+    $IngresoAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$IngresoAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$IngresoAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$IngresoAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> ingresoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IngresoAttachmentCompanion(
+                attachmentId: attachmentId,
+                ingresoId: ingresoId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String ingresoId,
+                Value<int> rowid = const Value.absent(),
+              }) => IngresoAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                ingresoId: ingresoId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$IngresoAttachmentTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({attachmentId = false, ingresoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable: $$IngresoAttachmentTableReferences
+                                ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$IngresoAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (ingresoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.ingresoId,
+                            referencedTable: $$IngresoAttachmentTableReferences
+                                ._ingresoIdTable(db),
+                            referencedColumn:
+                                $$IngresoAttachmentTableReferences
+                                    ._ingresoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$IngresoAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IngresoAttachmentTable,
+      IngresoAttachmentData,
+      $$IngresoAttachmentTableFilterComposer,
+      $$IngresoAttachmentTableOrderingComposer,
+      $$IngresoAttachmentTableAnnotationComposer,
+      $$IngresoAttachmentTableCreateCompanionBuilder,
+      $$IngresoAttachmentTableUpdateCompanionBuilder,
+      (IngresoAttachmentData, $$IngresoAttachmentTableReferences),
+      IngresoAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool ingresoId})
+    >;
+typedef $$EgresoAttachmentTableCreateCompanionBuilder =
+    EgresoAttachmentCompanion Function({
+      required String attachmentId,
+      required String egresoId,
+      Value<int> rowid,
+    });
+typedef $$EgresoAttachmentTableUpdateCompanionBuilder =
+    EgresoAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> egresoId,
+      Value<int> rowid,
+    });
+
+final class $$EgresoAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $EgresoAttachmentTable,
+          EgresoAttachmentData
+        > {
+  $$EgresoAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.egresoAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EgresoTable _egresoIdTable(_$AppDatabase db) => db.egreso.createAlias(
+    $_aliasNameGenerator(db.egresoAttachment.egresoId, db.egreso.id),
+  );
+
+  $$EgresoTableProcessedTableManager get egresoId {
+    final $_column = $_itemColumn<String>('egreso_id')!;
+
+    final manager = $$EgresoTableTableManager(
+      $_db,
+      $_db.egreso,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_egresoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$EgresoAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $EgresoAttachmentTable> {
+  $$EgresoAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EgresoTableFilterComposer get egresoId {
+    final $$EgresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.egresoId,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableFilterComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EgresoAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $EgresoAttachmentTable> {
+  $$EgresoAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EgresoTableOrderingComposer get egresoId {
+    final $$EgresoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.egresoId,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableOrderingComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EgresoAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EgresoAttachmentTable> {
+  $$EgresoAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EgresoTableAnnotationComposer get egresoId {
+    final $$EgresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.egresoId,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EgresoAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EgresoAttachmentTable,
+          EgresoAttachmentData,
+          $$EgresoAttachmentTableFilterComposer,
+          $$EgresoAttachmentTableOrderingComposer,
+          $$EgresoAttachmentTableAnnotationComposer,
+          $$EgresoAttachmentTableCreateCompanionBuilder,
+          $$EgresoAttachmentTableUpdateCompanionBuilder,
+          (EgresoAttachmentData, $$EgresoAttachmentTableReferences),
+          EgresoAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool egresoId})
+        > {
+  $$EgresoAttachmentTableTableManager(
+    _$AppDatabase db,
+    $EgresoAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () =>
+                  $$EgresoAttachmentTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$EgresoAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$EgresoAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> egresoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EgresoAttachmentCompanion(
+                attachmentId: attachmentId,
+                egresoId: egresoId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String egresoId,
+                Value<int> rowid = const Value.absent(),
+              }) => EgresoAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                egresoId: egresoId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EgresoAttachmentTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({attachmentId = false, egresoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable: $$EgresoAttachmentTableReferences
+                                ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$EgresoAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (egresoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.egresoId,
+                            referencedTable: $$EgresoAttachmentTableReferences
+                                ._egresoIdTable(db),
+                            referencedColumn:
+                                $$EgresoAttachmentTableReferences
+                                    ._egresoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EgresoAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EgresoAttachmentTable,
+      EgresoAttachmentData,
+      $$EgresoAttachmentTableFilterComposer,
+      $$EgresoAttachmentTableOrderingComposer,
+      $$EgresoAttachmentTableAnnotationComposer,
+      $$EgresoAttachmentTableCreateCompanionBuilder,
+      $$EgresoAttachmentTableUpdateCompanionBuilder,
+      (EgresoAttachmentData, $$EgresoAttachmentTableReferences),
+      EgresoAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool egresoId})
+    >;
+typedef $$EmpleadoAttachmentTableCreateCompanionBuilder =
+    EmpleadoAttachmentCompanion Function({
+      required String attachmentId,
+      required String empleadoId,
+      Value<int> rowid,
+    });
+typedef $$EmpleadoAttachmentTableUpdateCompanionBuilder =
+    EmpleadoAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> empleadoId,
+      Value<int> rowid,
+    });
+
+final class $$EmpleadoAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $EmpleadoAttachmentTable,
+          EmpleadoAttachmentData
+        > {
+  $$EmpleadoAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.empleadoAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EmpleadoTable _empleadoIdTable(_$AppDatabase db) =>
+      db.empleado.createAlias(
+        $_aliasNameGenerator(db.empleadoAttachment.empleadoId, db.empleado.id),
+      );
+
+  $$EmpleadoTableProcessedTableManager get empleadoId {
+    final $_column = $_itemColumn<String>('empleado_id')!;
+
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$EmpleadoAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $EmpleadoAttachmentTable> {
+  $$EmpleadoAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableFilterComposer get empleadoId {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $EmpleadoAttachmentTable> {
+  $$EmpleadoAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableOrderingComposer get empleadoId {
+    final $$EmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EmpleadoAttachmentTable> {
+  $$EmpleadoAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableAnnotationComposer get empleadoId {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EmpleadoAttachmentTable,
+          EmpleadoAttachmentData,
+          $$EmpleadoAttachmentTableFilterComposer,
+          $$EmpleadoAttachmentTableOrderingComposer,
+          $$EmpleadoAttachmentTableAnnotationComposer,
+          $$EmpleadoAttachmentTableCreateCompanionBuilder,
+          $$EmpleadoAttachmentTableUpdateCompanionBuilder,
+          (EmpleadoAttachmentData, $$EmpleadoAttachmentTableReferences),
+          EmpleadoAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool empleadoId})
+        > {
+  $$EmpleadoAttachmentTableTableManager(
+    _$AppDatabase db,
+    $EmpleadoAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$EmpleadoAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$EmpleadoAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$EmpleadoAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> empleadoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EmpleadoAttachmentCompanion(
+                attachmentId: attachmentId,
+                empleadoId: empleadoId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String empleadoId,
+                Value<int> rowid = const Value.absent(),
+              }) => EmpleadoAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                empleadoId: empleadoId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EmpleadoAttachmentTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({attachmentId = false, empleadoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable: $$EmpleadoAttachmentTableReferences
+                                ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (empleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empleadoId,
+                            referencedTable: $$EmpleadoAttachmentTableReferences
+                                ._empleadoIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoAttachmentTableReferences
+                                    ._empleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EmpleadoAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EmpleadoAttachmentTable,
+      EmpleadoAttachmentData,
+      $$EmpleadoAttachmentTableFilterComposer,
+      $$EmpleadoAttachmentTableOrderingComposer,
+      $$EmpleadoAttachmentTableAnnotationComposer,
+      $$EmpleadoAttachmentTableCreateCompanionBuilder,
+      $$EmpleadoAttachmentTableUpdateCompanionBuilder,
+      (EmpleadoAttachmentData, $$EmpleadoAttachmentTableReferences),
+      EmpleadoAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool empleadoId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -58878,4 +69958,31 @@ class $AppDatabaseManager {
       $$EgresoTableTableManager(_db, _db.egreso);
   $$EgresoEventoTableTableManager get egresoEvento =>
       $$EgresoEventoTableTableManager(_db, _db.egresoEvento);
+  $$EmpleadoTableTableManager get empleado =>
+      $$EmpleadoTableTableManager(_db, _db.empleado);
+  $$EmpleadoEventoTableTableManager get empleadoEvento =>
+      $$EmpleadoEventoTableTableManager(_db, _db.empleadoEvento);
+  $$EmpresaAttachmentTableTableManager get empresaAttachment =>
+      $$EmpresaAttachmentTableTableManager(_db, _db.empresaAttachment);
+  $$ClienteAttachmentTableTableManager get clienteAttachment =>
+      $$ClienteAttachmentTableTableManager(_db, _db.clienteAttachment);
+  $$DocumentoPorEmitirAttachmentTableTableManager
+  get documentoPorEmitirAttachment =>
+      $$DocumentoPorEmitirAttachmentTableTableManager(
+        _db,
+        _db.documentoPorEmitirAttachment,
+      );
+  $$PagoAttachmentTableTableManager get pagoAttachment =>
+      $$PagoAttachmentTableTableManager(_db, _db.pagoAttachment);
+  $$ComplementoPagoAttachmentTableTableManager get complementoPagoAttachment =>
+      $$ComplementoPagoAttachmentTableTableManager(
+        _db,
+        _db.complementoPagoAttachment,
+      );
+  $$IngresoAttachmentTableTableManager get ingresoAttachment =>
+      $$IngresoAttachmentTableTableManager(_db, _db.ingresoAttachment);
+  $$EgresoAttachmentTableTableManager get egresoAttachment =>
+      $$EgresoAttachmentTableTableManager(_db, _db.egresoAttachment);
+  $$EmpleadoAttachmentTableTableManager get empleadoAttachment =>
+      $$EmpleadoAttachmentTableTableManager(_db, _db.empleadoAttachment);
 }

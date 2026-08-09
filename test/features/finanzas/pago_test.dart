@@ -651,11 +651,11 @@ void main() {
 
       expect(resultado, isA<AdjuntarComprobantePagoExitoso>());
       final adjunto = (resultado as AdjuntarComprobantePagoExitoso).adjunto;
-      expect(adjunto.pagoId, pago.id);
       expect(adjunto.categoria, 'comprobante');
 
       final comprobantes = await AttachmentRepository(db).listarActivosPorPago(pago.id);
       expect(comprobantes, hasLength(1));
+      expect(comprobantes.single.id, adjunto.id, reason: 'el comprobante debe quedar unido al Pago vía PagoAttachment');
 
       final eventos = await pagoRepo.listarEventos(pago.id);
       expect(eventos.last.tipoEvento, 'comprobanteAdjuntado');

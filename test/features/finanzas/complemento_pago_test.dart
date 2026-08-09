@@ -573,8 +573,7 @@ void main() {
       expect(resultadoXml, isA<AdjuntarArchivoComplementoPagoExitoso>());
 
       final archivos = await AttachmentRepository(db).listarActivosPorComplementoPago(complemento.id);
-      expect(archivos, hasLength(2));
-      expect(archivos.every((a) => a.complementoPagoId == complemento.id), isTrue);
+      expect(archivos, hasLength(2), reason: 'ambos deben quedar unidos al Complemento vía ComplementoPagoAttachment');
 
       final eventos = await complementoRepo.listarEventos(complemento.id);
       expect(eventos.where((e) => e.tipoEvento == 'archivoAdjuntado'), hasLength(2));

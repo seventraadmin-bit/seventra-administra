@@ -511,7 +511,6 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
       final adjunto = await _attachmentRepository.crear(
         AttachmentCompanion.insert(
           id: const Uuid().v4(),
-          documentoPorEmitirId: Value(documentoPorEmitirId),
           categoria: Value(categoria),
           originalFileName: originalFileName,
           storedFileName: storedFileName,
@@ -520,6 +519,12 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
           sizeBytes: sizeBytes,
         ),
       );
+      await _db.into(_db.documentoPorEmitirAttachment).insert(
+            DocumentoPorEmitirAttachmentCompanion.insert(
+              attachmentId: adjunto.id,
+              documentoPorEmitirId: documentoPorEmitirId,
+            ),
+          );
 
       await _registrarEvento(
         documentoPorEmitirId: documentoPorEmitirId,
@@ -557,7 +562,6 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
       final nuevo = await _attachmentRepository.crear(
         AttachmentCompanion.insert(
           id: const Uuid().v4(),
-          documentoPorEmitirId: Value(documentoPorEmitirId),
           categoria: Value(categoria),
           originalFileName: originalFileName,
           storedFileName: storedFileName,
@@ -566,6 +570,12 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
           sizeBytes: sizeBytes,
         ),
       );
+      await _db.into(_db.documentoPorEmitirAttachment).insert(
+            DocumentoPorEmitirAttachmentCompanion.insert(
+              attachmentId: nuevo.id,
+              documentoPorEmitirId: documentoPorEmitirId,
+            ),
+          );
       await _attachmentRepository.archivar(attachmentAnteriorId);
 
       await _registrarEvento(

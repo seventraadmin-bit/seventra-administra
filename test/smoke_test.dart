@@ -59,14 +59,14 @@ void main() {
   testWidgets('Navegar a otra rama cambia el contenido sin reconstruir el shell', (tester) async {
     await _pumpApp(tester);
 
-    // Personal sigue siendo un placeholder genérico — Organización ya
-    // no lo es desde la Etapa 4B (ver prueba dedicada más abajo).
+    // Personal ya no es un placeholder genérico desde la Etapa 5A
+    // (Empleados) — mismo criterio que Organización desde la 4B.
     await tester.tap(find.byKey(const Key('nav_item_personal')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('app_shell')), findsOneWidget);
     expect(find.byKey(const Key('app_sidebar')), findsOneWidget);
-    expect(find.byKey(const Key('module_placeholder_personal')), findsOneWidget);
+    expect(find.byKey(const Key('empleados_boton_registrar')), findsOneWidget);
     expect(find.byKey(const Key('dashboard_welcome')), findsNothing);
   });
 

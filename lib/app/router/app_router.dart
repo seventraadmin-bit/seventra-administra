@@ -9,6 +9,8 @@ import '../../features/organizacion/presentation/organizacion_shell_screen.dart'
 import '../../features/organizacion/presentation/puestos/puesto_expediente_screen.dart';
 import '../../features/organizacion/presentation/servicios/servicio_expediente_screen.dart';
 import '../../features/organizacion/presentation/sucursales/sucursal_expediente_screen.dart';
+import '../../features/personal/presentation/empleados/empleado_expediente_screen.dart';
+import '../../features/personal/presentation/empleados/empleados_list_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
 import '../shell/app_shell_screen.dart';
 import '../shell/dashboard_welcome_screen.dart';
@@ -179,6 +181,34 @@ GoRouter createAppRouter() {
                         // financieras (Etapa 4K.1) — alta/archivado vía
                         // diálogo, sin sub-ruta `:id`.
                         builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.categorias),
+                      ),
+                    ],
+                  )
+                else if (def.path == '/personal')
+                  // Personal es un dominio propio, nuevo, separado de
+                  // Organización/Comercial/Finanzas (Etapa 5A, mismo
+                  // criterio que la Resolución B de Marlon para
+                  // Finanzas en 4J.1). `/personal` en sí redirige a
+                  // `/personal/empleados` — mismo patrón que
+                  // `/comercial`/`/finanzas`. Sin subnavegación de
+                  // pestañas todavía: Empleados es la única sección de
+                  // esta etapa (Nómina y las demás llegarán en etapas
+                  // futuras, cada una con su propia pestaña).
+                  GoRoute(
+                    path: def.path,
+                    redirect: (context, state) =>
+                        state.uri.path == '/personal' ? '/personal/empleados' : null,
+                    routes: [
+                      GoRoute(
+                        path: 'empleados',
+                        builder: (context, state) => const EmpleadosListScreen(),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                EmpleadoExpedienteScreen(empleadoId: state.pathParameters['id']!),
+                          ),
+                        ],
                       ),
                     ],
                   )

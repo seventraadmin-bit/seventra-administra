@@ -5,13 +5,16 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../features/organizacion/data/tables/cliente_attachment_table.dart';
 import '../../features/organizacion/data/tables/cliente_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_correo_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import '../../features/organizacion/data/tables/contacto_table.dart';
+import '../../features/organizacion/data/tables/documento_por_emitir_attachment_table.dart';
 import '../../features/organizacion/data/tables/documento_por_emitir_table.dart';
+import '../../features/organizacion/data/tables/empresa_attachment_table.dart';
 import '../../features/organizacion/data/tables/empresa_table.dart';
 import '../../features/organizacion/data/tables/entidad_fiscal_table.dart';
 import '../../features/organizacion/data/tables/puesto_table.dart';
@@ -21,11 +24,17 @@ import '../../features/organizacion/data/tables/servicio_table.dart';
 import '../../features/organizacion/data/tables/sucursal_table.dart';
 import '../../features/organizacion/data/tables/ubicacion_table.dart';
 import '../../features/finanzas/data/tables/categoria_financiera_table.dart';
+import '../../features/finanzas/data/tables/complemento_pago_attachment_table.dart';
 import '../../features/finanzas/data/tables/complemento_pago_table.dart';
 import '../../features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
+import '../../features/finanzas/data/tables/egreso_attachment_table.dart';
 import '../../features/finanzas/data/tables/egreso_table.dart';
+import '../../features/finanzas/data/tables/ingreso_attachment_table.dart';
 import '../../features/finanzas/data/tables/ingreso_table.dart';
+import '../../features/finanzas/data/tables/pago_attachment_table.dart';
 import '../../features/finanzas/data/tables/pago_table.dart';
+import '../../features/personal/data/tables/empleado_attachment_table.dart';
+import '../../features/personal/data/tables/empleado_table.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
@@ -33,7 +42,9 @@ import 'migrations/migrar_attachment_v13.dart';
 import 'migrations/migrar_attachment_v15.dart';
 import 'migrations/migrar_attachment_v16.dart';
 import 'migrations/migrar_attachment_v17.dart';
+import 'migrations/migrar_attachment_v18.dart';
 import 'migrations/migrar_cuenta_por_cobrar_v14.dart';
+import 'migrations/migrar_direccion_v18.dart';
 import 'migrations/migrar_documento_por_emitir_v12.dart';
 import 'migrations/migrar_servicio_v6.dart';
 import 'migrations/migrar_servicio_v7.dart';
@@ -111,12 +122,22 @@ class AppMetadata extends Table {
   IngresoEvento,
   Egreso,
   EgresoEvento,
+  Empleado,
+  EmpleadoEvento,
+  EmpresaAttachment,
+  ClienteAttachment,
+  DocumentoPorEmitirAttachment,
+  PagoAttachment,
+  ComplementoPagoAttachment,
+  IngresoAttachment,
+  EgresoAttachment,
+  EmpleadoAttachment,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration {
@@ -383,6 +404,54 @@ class AppDatabase extends _$AppDatabase {
         // acotar.
         if (to >= 17 && from >= 2 && from <= 16) {
           await migrarAttachmentV17(this, m);
+        }
+        // Aditiva (Etapa 5A): `Empleado`/`EmpleadoEvento` — el
+        // expediente del empleado, tablas raíz completamente nuevas,
+        // `from <= 17` es seguro sin acotar un origen exacto. Se crean
+        // *antes* de `migrarDireccionV18` (agrega una FK hacia
+        // `empleado`) y de crear las tablas puente de Attachment (una
+        // de ellas, `EmpleadoAttachment`, también la referencia).
+        if (to >= 18 && from <= 17) {
+          await m.createTable(empleado);
+          await m.createTable(empleadoEvento);
+        }
+        // Estructural (Etapa 5A): Direccion gana la sexta pata del arco
+        // exclusivo (`empleadoId`, domicilio del Empleado) — mismo
+        // motivo de recreación que `migrarDireccionV5` (el CHECK no se
+        // puede ampliar vía `ADD COLUMN`). Mismo gotcha de siempre:
+        // `from == 1` ya crea `direccion` con la forma *actual* en
+        // `_createEtapa4ATables`, así que aquí es `from >= 2`, nunca
+        // sin acotar.
+        if (to >= 18 && from >= 2 && from <= 17) {
+          await migrarDireccionV18(this, m);
+        }
+        // Aditiva (Etapa 5A): las 8 tablas puente de Attachment — 7
+        // para los dueños que antes vivían como columna directa
+        // (Empresa/Cliente/DocumentoPorEmitir/Pago/ComplementoPago/
+        // Ingreso/Egreso) + `EmpleadoAttachment`, nueva. Todas
+        // completamente nuevas, `from <= 17` es seguro sin acotar un
+        // origen exacto. Se crean *antes* de `migrarAttachmentV18`
+        // (hace el backfill hacia ellas y corre `PRAGMA
+        // foreign_key_check` al final) — mismo motivo que cada
+        // extensión anterior del arco.
+        if (to >= 18 && from <= 17) {
+          await m.createTable(empresaAttachment);
+          await m.createTable(clienteAttachment);
+          await m.createTable(documentoPorEmitirAttachment);
+          await m.createTable(pagoAttachment);
+          await m.createTable(complementoPagoAttachment);
+          await m.createTable(ingresoAttachment);
+          await m.createTable(egresoAttachment);
+          await m.createTable(empleadoAttachment);
+        }
+        // Estructural (Etapa 5A): Attachment deja de tener columnas de
+        // dueño — cada uno migra a su tabla puente (ver el doc comment
+        // de esa tabla y de `migrarAttachmentV18`). Mismo gotcha de
+        // siempre: `from == 1` ya crea `attachment` angosta en
+        // `_createEtapa4ATables`, así que aquí es `from >= 2`, nunca
+        // sin acotar.
+        if (to >= 18 && from >= 2 && from <= 17) {
+          await migrarAttachmentV18(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

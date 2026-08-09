@@ -4,10 +4,10 @@ import 'audit_columns.dart';
 
 /// Tipo de una [Direccion] — determina qué dueño puede usarla (ver los
 /// `CHECK` de la tabla) y, para Cliente, permite varias por tipo distinto.
-enum TipoDireccion { fiscal, administrativa, operativa, entrega, otra, referencia }
+enum TipoDireccion { fiscal, administrativa, operativa, entrega, otra, referencia, domicilio }
 
-/// Dirección física, compartida por Empresa, Sucursal, Cliente, Servicio
-/// y (desde la Etapa 4E.2) Entidad fiscal.
+/// Dirección física, compartida por Empresa, Sucursal, Cliente, Servicio,
+/// Entidad fiscal (Etapa 4E.2) y (desde la Etapa 5A) Empleado.
 ///
 /// En vez de una tabla polimórfica (`ownerType`/`ownerId`, sin FK real),
 /// cada posible dueño tiene su propia columna nullable con una FK real —
@@ -51,6 +51,11 @@ class Direccion extends Table with AuditColumns {
 
   TextColumn get entidadFiscalId => text().nullable().unique()();
 
+  /// Domicilio particular de un Empleado (Etapa 5A) — mismo criterio de
+  /// `.unique()` que empresa/sucursal/servicio/entidadFiscal (a lo más
+  /// una `Direccion` activa por Empleado).
+  TextColumn get empleadoId => text().nullable().unique()();
+
   TextColumn get tipoDireccion => text()();
 
   BoolColumn get esPrincipal => boolean().withDefault(const Constant(true))();
@@ -82,18 +87,23 @@ class Direccion extends Table with AuditColumns {
         'FOREIGN KEY (cliente_id) REFERENCES cliente (id) ON DELETE RESTRICT',
         'FOREIGN KEY (servicio_id) REFERENCES servicio (id) ON DELETE RESTRICT',
         'FOREIGN KEY (entidad_fiscal_id) REFERENCES entidad_fiscal (id) ON DELETE RESTRICT',
+        // `empleado` vive en `features/personal`, misma razón que el resto
+        // de estas FK: SQL crudo para no invertir la dependencia core→feature.
+        'FOREIGN KEY (empleado_id) REFERENCES empleado (id) ON DELETE RESTRICT',
         // Arco exclusivo: exactamente un dueño por fila.
         'CHECK ('
             '(CASE WHEN empresa_id IS NOT NULL THEN 1 ELSE 0 END + '
             'CASE WHEN sucursal_id IS NOT NULL THEN 1 ELSE 0 END + '
             'CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END + '
             'CASE WHEN servicio_id IS NOT NULL THEN 1 ELSE 0 END + '
-            'CASE WHEN entidad_fiscal_id IS NOT NULL THEN 1 ELSE 0 END) = 1'
+            'CASE WHEN entidad_fiscal_id IS NOT NULL THEN 1 ELSE 0 END + '
+            'CASE WHEN empleado_id IS NOT NULL THEN 1 ELSE 0 END) = 1'
             ')',
         // Reglas de tipo por dueño, ya acordadas.
         "CHECK (empresa_id IS NULL OR tipo_direccion = 'fiscal')",
         "CHECK (servicio_id IS NULL OR tipo_direccion = 'operativa')",
         "CHECK (sucursal_id IS NULL OR tipo_direccion IN ('administrativa', 'operativa'))",
         "CHECK (entidad_fiscal_id IS NULL OR tipo_direccion = 'fiscal')",
+        "CHECK (empleado_id IS NULL OR tipo_direccion = 'domicilio')",
       ];
 }

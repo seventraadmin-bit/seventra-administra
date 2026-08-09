@@ -45,12 +45,57 @@ Future<void> migrarDireccionV5(AppDatabase db, Migrator m) async {
 
     await db.customStatement('ALTER TABLE direccion RENAME TO direccion_old');
 
-    // Crea `direccion` (nombre real, ya libre) con la forma *actual* de
-    // la clase Dart: incluye `entidad_fiscal_id`, su `UNIQUE` implícito,
-    // su FK hacia `entidad_fiscal` (que ya existe — se crea antes de
-    // llamar a esta función) y el `CHECK` de arco exclusivo ya sumando
-    // 5 columnas en vez de 4.
-    await m.createTable(db.direccion);
+    // Crea `direccion` (nombre real, ya libre) con la forma exacta que
+    // tenía en schemaVersion 5: incluye `entidad_fiscal_id`, su
+    // `UNIQUE` implícito, su FK hacia `entidad_fiscal` y el `CHECK` de
+    // arco exclusivo ya sumando 5 columnas en vez de 4. SQL fijo, no
+    // `m.createTable(db.direccion)` — desde la Etapa 5A, `db.direccion`
+    // refleja la forma *actual* (6 vías, con `empleado_id`), no la
+    // forma histórica de esta migración; a diferencia de las
+    // migraciones de `Attachment` (que sí fallarían por columnas
+    // faltantes), aquí el riesgo es más sutil: pruebas que validan
+    // contra el objetivo nominal exacto (`schemaVersion` 5, no
+    // `_currentSchemaVersion`) detectan la columna de más y fallan.
+    await db.customStatement('''
+      CREATE TABLE "direccion" (
+        "id" TEXT NOT NULL,
+        "created_at" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)),
+        "updated_at" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)),
+        "ciclo_vida_registro" TEXT NOT NULL DEFAULT 'activo',
+        "empresa_id" TEXT NULL UNIQUE,
+        "sucursal_id" TEXT NULL UNIQUE,
+        "cliente_id" TEXT NULL,
+        "servicio_id" TEXT NULL UNIQUE,
+        "entidad_fiscal_id" TEXT NULL UNIQUE,
+        "tipo_direccion" TEXT NOT NULL,
+        "es_principal" INTEGER NOT NULL DEFAULT 1 CHECK ("es_principal" IN (0, 1)),
+        "calle" TEXT NOT NULL,
+        "numero_exterior" TEXT NOT NULL,
+        "numero_interior" TEXT NULL,
+        "colonia" TEXT NOT NULL,
+        "municipio_alcaldia" TEXT NOT NULL,
+        "ciudad_localidad" TEXT NULL,
+        "estado" TEXT NOT NULL,
+        "codigo_postal" TEXT NOT NULL,
+        "pais" TEXT NOT NULL DEFAULT 'México',
+        "referencias" TEXT NULL,
+        PRIMARY KEY ("id"),
+        FOREIGN KEY (empresa_id) REFERENCES empresa (id) ON DELETE RESTRICT,
+        FOREIGN KEY (sucursal_id) REFERENCES sucursal (id) ON DELETE RESTRICT,
+        FOREIGN KEY (cliente_id) REFERENCES cliente (id) ON DELETE RESTRICT,
+        FOREIGN KEY (servicio_id) REFERENCES servicio (id) ON DELETE RESTRICT,
+        FOREIGN KEY (entidad_fiscal_id) REFERENCES entidad_fiscal (id) ON DELETE RESTRICT,
+        CHECK ((CASE WHEN empresa_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN sucursal_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN servicio_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN entidad_fiscal_id IS NOT NULL THEN 1 ELSE 0 END) = 1),
+        CHECK (empresa_id IS NULL OR tipo_direccion = 'fiscal'),
+        CHECK (servicio_id IS NULL OR tipo_direccion = 'operativa'),
+        CHECK (sucursal_id IS NULL OR tipo_direccion IN ('administrativa', 'operativa')),
+        CHECK (entidad_fiscal_id IS NULL OR tipo_direccion = 'fiscal')
+      )
+    ''');
 
     final columnas = _columnasDireccionAnteriores.join(', ');
     await db.customStatement(

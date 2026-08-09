@@ -499,7 +499,6 @@ class PagoRepositoryImpl implements PagoRepository {
       final adjunto = await _db.into(_db.attachment).insertReturning(
             AttachmentCompanion.insert(
               id: const Uuid().v4(),
-              pagoId: Value(pagoId),
               categoria: const Value('comprobante'),
               originalFileName: originalFileName,
               storedFileName: storedFileName,
@@ -507,6 +506,9 @@ class PagoRepositoryImpl implements PagoRepository {
               mimeType: mimeType,
               sizeBytes: sizeBytes,
             ),
+          );
+      await _db.into(_db.pagoAttachment).insert(
+            PagoAttachmentCompanion.insert(attachmentId: adjunto.id, pagoId: pagoId),
           );
 
       await _registrarEventoPago(

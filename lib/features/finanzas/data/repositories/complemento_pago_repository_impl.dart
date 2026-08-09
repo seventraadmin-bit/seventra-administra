@@ -186,7 +186,6 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
       final adjunto = await _db.into(_db.attachment).insertReturning(
             AttachmentCompanion.insert(
               id: const Uuid().v4(),
-              complementoPagoId: Value(complementoPagoId),
               categoria: Value(categoria),
               originalFileName: originalFileName,
               storedFileName: storedFileName,
@@ -194,6 +193,9 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
               mimeType: mimeType,
               sizeBytes: sizeBytes,
             ),
+          );
+      await _db.into(_db.complementoPagoAttachment).insert(
+            ComplementoPagoAttachmentCompanion.insert(attachmentId: adjunto.id, complementoPagoId: complementoPagoId),
           );
 
       await _registrarEvento(

@@ -40,9 +40,39 @@ Future<void> migrarAttachmentV13(AppDatabase db, Migrator m) async {
     await db.customStatement('PRAGMA legacy_alter_table = ON');
     await db.customStatement('ALTER TABLE attachment RENAME TO attachment_old');
 
-    // Crea `attachment` (nombre real, ya libre) con la forma *actual*
-    // de la clase Dart: las 3 columnas nuevas + el CHECK de 3 vías.
-    await m.createTable(db.attachment);
+    // Crea `attachment` (nombre real, ya libre) con la forma exacta que
+    // tenía en schemaVersion 13: las 3 columnas nuevas + el CHECK de 3
+    // vías. SQL fijo, no `m.createTable(db.attachment)` — desde la
+    // Etapa 5A, `db.attachment` refleja la forma *actual y angosta* de
+    // la tabla (sin columnas de dueño), no la forma histórica de esta
+    // migración; delegar a `m.createTable` aquí recrearía la tabla ya
+    // angosta demasiado pronto, perdiendo los dueños que
+    // `migrarAttachmentV18` todavía necesita leer más adelante en la
+    // misma cadena de `onUpgrade`.
+    await db.customStatement('''
+      CREATE TABLE "attachment" (
+        "id" TEXT NOT NULL,
+        "empresa_id" TEXT NULL,
+        "cliente_id" TEXT NULL,
+        "documento_por_emitir_id" TEXT NULL,
+        "categoria" TEXT NULL,
+        "original_file_name" TEXT NOT NULL,
+        "stored_file_name" TEXT NOT NULL,
+        "path" TEXT NOT NULL,
+        "mime_type" TEXT NOT NULL,
+        "size_bytes" INTEGER NOT NULL,
+        "hash" TEXT NULL,
+        "estado" TEXT NOT NULL DEFAULT 'activo',
+        "created_at" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)),
+        PRIMARY KEY ("id"),
+        FOREIGN KEY (empresa_id) REFERENCES empresa (id) ON DELETE RESTRICT,
+        FOREIGN KEY (cliente_id) REFERENCES cliente (id) ON DELETE RESTRICT,
+        FOREIGN KEY (documento_por_emitir_id) REFERENCES documento_por_emitir (id) ON DELETE CASCADE,
+        CHECK ((CASE WHEN empresa_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN documento_por_emitir_id IS NOT NULL THEN 1 ELSE 0 END) = 1)
+      )
+    ''');
 
     final columnas = _columnasAttachmentAnteriores.join(', ');
     await db.customStatement(
