@@ -2,6 +2,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
+import '../../features/finanzas/presentation/finanzas_shell_screen.dart';
 import '../../features/organizacion/presentation/clientes/cliente_expediente_screen.dart';
 import '../../features/organizacion/presentation/comercial_shell_screen.dart';
 import '../../features/organizacion/presentation/organizacion_shell_screen.dart';
@@ -23,7 +24,7 @@ import '../shell/shell_destinations.dart';
 /// [createAppRouter].
 ///
 /// Un `StatefulShellRoute.indexedStack` con una rama por cada uno de los
-/// 11 destinos del Shell — cada rama conserva su propia navegación interna
+/// 12 destinos del Shell — cada rama conserva su propia navegación interna
 /// y queda preparada para rutas anidadas (hoy solo tiene el placeholder).
 GoRouter createAppRouter() {
   return GoRouter(
@@ -122,6 +123,27 @@ GoRouter createAppRouter() {
                         // DocumentoPorEmitir se muestra en un diálogo, no
                         // en su propia pantalla (Etapa 4I.1).
                         builder: (context, state) => const ComercialShellScreen(tab: ComercialTab.agenda),
+                      ),
+                    ],
+                  )
+                else if (def.path == '/finanzas')
+                  // Finanzas es un dominio propio, nuevo, separado de
+                  // Organización/Comercial (Etapa 4J.1, Resolución B de
+                  // Marlon). `/finanzas` en sí redirige a
+                  // `/finanzas/cuentas-por-cobrar` — mismo patrón que
+                  // `/comercial`.
+                  GoRoute(
+                    path: def.path,
+                    redirect: (context, state) =>
+                        state.uri.path == '/finanzas' ? '/finanzas/cuentas-por-cobrar' : null,
+                    routes: [
+                      GoRoute(
+                        path: 'cuentas-por-cobrar',
+                        // Sin sub-ruta `:id` — el detalle de una Cuenta
+                        // por cobrar se muestra en un diálogo, no en su
+                        // propia pantalla (mismo criterio que la Agenda).
+                        builder: (context, state) =>
+                            const FinanzasShellScreen(tab: FinanzasTab.cuentasPorCobrar),
                       ),
                     ],
                   )

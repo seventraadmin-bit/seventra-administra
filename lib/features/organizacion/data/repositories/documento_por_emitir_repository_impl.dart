@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/finanzas/domain/repositories/cuenta_por_cobrar_repository.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/repositories/documento_por_emitir_repository.dart';
@@ -10,11 +11,23 @@ import '../../domain/usecases/documento_por_emitir_armado.dart';
 import '../../domain/usecases/documento_por_emitir_detalle.dart';
 import '../tables/documento_por_emitir_table.dart';
 
+/// **Nota de arquitectura (Etapa 4J.1):** este repositorio, de
+/// `organizacion`, depende de `CuentaPorCobrarRepository`, del dominio
+/// `finanzas` — la única forma de garantizar que la generación de la
+/// Cuenta por cobrar ocurra en la *misma transacción* que el cambio de
+/// estatus a `procesadoAceptado` (Resolución A de Marlon, explícita:
+/// "nunca debe existir un documento aceptado sin su Cuenta por
+/// cobrar"). Es una dependencia deliberada solo en la capa de datos
+/// (el `DocumentoPorEmitirRepository` — la interfaz, capa de dominio —
+/// no sabe nada de `finanzas`); mismo criterio de composición ya usado
+/// con `AttachmentRepository` en 4I.2.2, aplicado aquí entre dos
+/// dominios de features en vez de entre un dominio y `core`.
 class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
-  DocumentoPorEmitirRepositoryImpl(this._db, this._attachmentRepository);
+  DocumentoPorEmitirRepositoryImpl(this._db, this._attachmentRepository, this._cuentaPorCobrarRepository);
 
   final AppDatabase _db;
   final AttachmentRepository _attachmentRepository;
+  final CuentaPorCobrarRepository _cuentaPorCobrarRepository;
 
   @override
   Future<DocumentoPorEmitirData?> obtenerPorGenerationKey(String generationKey) {
@@ -248,7 +261,35 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         actor: actor,
       );
 
-      return (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+      final actualizado =
+          await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+
+      // Etapa 4J.1, Resolución A de Marlon: la Cuenta por cobrar nace
+      // en la misma transacción que la transición a
+      // `procesadoAceptado` — nunca un paso manual, nunca puede
+      // quedar un documento aceptado sin la suya. `fechaEmisionReal`/
+      // `importeEmitido` son garantizados no nulos por la máquina de
+      // estados (un documento solo llega aquí después de pasar por
+      // `RegistrarEmisionDocumentoPorEmitirUseCase`, que los exige).
+      if (nuevoEstatus == 'procesadoAceptado') {
+        await _cuentaPorCobrarRepository.crear(
+          documentoPorEmitirId: actualizado.id,
+          clienteId: actualizado.clienteId,
+          tipoDocumento: actualizado.tipoDocumento,
+          metodo: actualizado.metodo,
+          requiereComplemento: actualizado.requiereComplemento,
+          folioDocumento: actualizado.folioDocumento,
+          serieFiscal: actualizado.serieFiscal,
+          folioFiscal: actualizado.folioFiscal,
+          uuid: actualizado.uuid,
+          fechaEmisionReal: actualizado.fechaEmisionReal!,
+          importeEmitido: actualizado.importeEmitido!,
+          fechaVencimiento: actualizado.fechaPagoEsperadoProgramada,
+          actor: actor,
+        );
+      }
+
+      return actualizado;
     });
   }
 

@@ -5,6 +5,7 @@ import '../../core/attachments/attachment_storage.dart';
 import '../../core/codigos/codigo_secuencia_service.dart';
 import '../../core/codigos/generar_codigo_usecase.dart';
 import '../../core/di/providers.dart';
+import '../finanzas/finanzas_providers.dart';
 import 'data/repositories/area_repository_impl.dart';
 import 'data/repositories/catalogo_repository_impl.dart';
 import 'data/repositories/cliente_repository_impl.dart';
@@ -513,7 +514,11 @@ final attachmentStorageProvider = Provider<AttachmentStorage>((ref) {
 });
 
 final documentoPorEmitirRepositoryProvider = Provider<DocumentoPorEmitirRepository>((ref) {
-  return DocumentoPorEmitirRepositoryImpl(ref.watch(appDatabaseProvider), ref.watch(attachmentRepositoryProvider));
+  return DocumentoPorEmitirRepositoryImpl(
+    ref.watch(appDatabaseProvider),
+    ref.watch(attachmentRepositoryProvider),
+    ref.watch(cuentaPorCobrarRepositoryProvider),
+  );
 });
 
 final ensamblarDocumentoPorEmitirUseCaseProvider = Provider<EnsamblarDocumentoPorEmitirUseCase>((ref) {

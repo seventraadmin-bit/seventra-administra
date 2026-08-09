@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/cuenta_por_cobrar_repository_impl.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
@@ -110,7 +111,7 @@ void main() {
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     attachmentRepo = AttachmentRepository(db);
-    documentoRepo = DocumentoPorEmitirRepositoryImpl(db, attachmentRepo);
+    documentoRepo = DocumentoPorEmitirRepositoryImpl(db, attachmentRepo, CuentaPorCobrarRepositoryImpl(db));
     final comercialRepo = ServicioComercialRepositoryImpl(db);
     final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);

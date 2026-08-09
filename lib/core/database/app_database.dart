@@ -20,10 +20,12 @@ import '../../features/organizacion/data/tables/servicio_linea_comercial_vigenci
 import '../../features/organizacion/data/tables/servicio_table.dart';
 import '../../features/organizacion/data/tables/sucursal_table.dart';
 import '../../features/organizacion/data/tables/ubicacion_table.dart';
+import '../../features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
 import 'migrations/migrar_attachment_v13.dart';
+import 'migrations/migrar_cuenta_por_cobrar_v14.dart';
 import 'migrations/migrar_documento_por_emitir_v12.dart';
 import 'migrations/migrar_servicio_v6.dart';
 import 'migrations/migrar_servicio_v7.dart';
@@ -89,12 +91,14 @@ class AppMetadata extends Table {
   DocumentoPorEmitirCorreo,
   DocumentoPorEmitirCorreoEnvio,
   DocumentoPorEmitirEvento,
+  CuentaPorCobrar,
+  CuentaPorCobrarEvento,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
@@ -283,6 +287,18 @@ class AppDatabase extends _$AppDatabase {
         // que aquí es `from >= 2`, nunca sin acotar.
         if (to >= 13 && from >= 2 && from <= 12) {
           await migrarAttachmentV13(this, m);
+        }
+        // Aditiva (Etapa 4J.1): `CuentaPorCobrar`/`CuentaPorCobrarEvento`
+        // — 2 tablas completamente nuevas, `from <= 13` es seguro sin
+        // acotar un origen exacto (nunca existieron antes de esta
+        // etapa). El backfill (Resolución F de Marlon) corre después de
+        // crear las tablas, en su propia transacción — genera una
+        // Cuenta por cobrar para cualquier `DocumentoPorEmitir` que ya
+        // esté en `procesadoAceptado` sin una.
+        if (to >= 14 && from <= 13) {
+          await m.createTable(cuentaPorCobrar);
+          await m.createTable(cuentaPorCobrarEvento);
+          await migrarCuentaPorCobrarV14(this);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

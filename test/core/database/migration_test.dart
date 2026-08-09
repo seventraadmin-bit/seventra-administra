@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/migrations/migrar_cuenta_por_cobrar_v14.dart';
 import 'package:riseg_one/core/database/seed/seed_data.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 
@@ -21,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 13;
+const _currentSchemaVersion = 14;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -2405,6 +2406,268 @@ void main() {
         INSERT INTO attachment (id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at)
         VALUES ('attachment-sin-dueno', 'a.pdf', 'x.pdf', '/x.pdf', 'application/pdf', 100, 1700000000);
       '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('14.json coincide con el esquema final de la Etapa 4J.1 (CuentaPorCobrar + CuentaPorCobrarEvento)', () async {
+    final schema = await verifier.schemaAt(14);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+
+    expect(tablas, containsAll(<String>['cuenta_por_cobrar', 'cuenta_por_cobrar_evento']));
+
+    final sqlCuenta = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'cuenta_por_cobrar'")
+        .single['sql'] as String;
+    // La Cuenta por cobrar nunca puede existir sin su DocumentoPorEmitir
+    // (FK) y un DocumentoPorEmitir nunca puede tener más de una (UNIQUE)
+    // — regla de integridad exigida tanto en dominio como en base de
+    // datos (requisito explícito de Marlon en la aprobación de 4J.1).
+    expect(sqlCuenta, contains('"documento_por_emitir_id" TEXT NOT NULL UNIQUE REFERENCES documento_por_emitir (id)'));
+    expect(sqlCuenta, contains('CHECK (saldo_original >= 0)'));
+    expect(sqlCuenta, contains('CHECK (saldo_pendiente >= 0 AND saldo_pendiente <= saldo_original)'));
+    expect(sqlCuenta, contains('CHECK (importe_emitido >= 0)'));
+    expect(sqlCuenta, contains('"moneda" TEXT NOT NULL DEFAULT \'MXN\''));
+    expect(sqlCuenta, contains('"estatus" TEXT NOT NULL DEFAULT \'pendiente\''));
+    expect(sqlCuenta, contains('"fecha_vencimiento" INTEGER NULL'));
+
+    final sqlEvento = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'cuenta_por_cobrar_evento'")
+        .single['sql'] as String;
+    expect(sqlEvento, contains('REFERENCES cuenta_por_cobrar (id) ON DELETE CASCADE'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 13 → 14 no crea ninguna Cuenta por cobrar cuando no hay Documentos Procesados/Aceptados', () async {
+    final schemaV13 = await verifier.schemaAt(13);
+    final raw = schemaV13.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    // Documento real, pero todavía en `emitido` — no debe generar
+    // ninguna Cuenta por cobrar (la Resolución A de Marlon solo aplica
+    // en `procesadoAceptado`).
+    raw.execute('''
+      INSERT INTO documento_por_emitir (
+        id, codigo, cliente_id, tipo_documento, agrupacion, metodo, requiere_complemento,
+        periodo_inicio, periodo_fin, generation_key, importe_base_esperado, importe_final_esperado,
+        estatus, folio_documento, fecha_emision_real, importe_emitido,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'documento-emitido', 'DOC-000001', 'cliente-real', 'reciboDePago', 'porServicio', 'noAplica', 0,
+        1700000000, 1701000000, 'clave-emitido', 500000, 500000,
+        'emitido', 'FOL-001', 1700500000, 500000,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV13.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cuentas = await db.select(db.cuentaPorCobrar).get();
+    expect(cuentas, isEmpty, reason: 'un documento en emitido (no procesadoAceptado) no genera Cuenta por cobrar');
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty);
+
+    await db.close();
+  });
+
+  test(
+      'migración 13 → 14 hace backfill automático de la Cuenta por cobrar de un DocumentoPorEmitir ya Procesado/Aceptado '
+      '(Resolución F de Marlon)', () async {
+    final schemaV13 = await verifier.schemaAt(13);
+    final raw = schemaV13.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO documento_por_emitir (
+        id, codigo, cliente_id, tipo_documento, agrupacion, metodo, requiere_complemento,
+        periodo_inicio, periodo_fin, fecha_pago_esperado_programada, generation_key,
+        importe_base_esperado, importe_final_esperado,
+        estatus, folio_documento, serie_fiscal, folio_fiscal, uuid, fecha_emision_real, importe_emitido,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'documento-aceptado', 'DOC-000002', 'cliente-real', 'cfdi', 'porServicio', 'pue', 0,
+        1700000000, 1701000000, 1701500000, 'clave-aceptado',
+        620000, 620000,
+        'procesadoAceptado', 'A-001', 'A', '001', '11111111-1111-1111-1111-111111111111', 1700500000, 620000,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV13.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cuentas = await db.select(db.cuentaPorCobrar).get();
+    expect(cuentas, hasLength(1), reason: 'el backfill debe generar exactamente una Cuenta por cobrar');
+    final cuenta = cuentas.single;
+    expect(cuenta.documentoPorEmitirId, 'documento-aceptado');
+    expect(cuenta.clienteId, 'cliente-real');
+    expect(cuenta.tipoDocumento, 'cfdi');
+    expect(cuenta.metodo, 'pue');
+    expect(cuenta.folioDocumento, 'A-001');
+    expect(cuenta.serieFiscal, 'A');
+    expect(cuenta.folioFiscal, '001');
+    expect(cuenta.uuid, '11111111-1111-1111-1111-111111111111');
+    expect(cuenta.importeEmitido, 620000);
+    expect(cuenta.saldoOriginal, 620000);
+    expect(cuenta.saldoPendiente, 620000);
+    expect(cuenta.moneda, 'MXN');
+    expect(cuenta.estatus, 'pendiente');
+    expect(cuenta.fechaVencimiento, DateTime.fromMillisecondsSinceEpoch(1701500000 * 1000));
+
+    final eventos = await db.select(db.cuentaPorCobrarEvento).get();
+    expect(eventos, hasLength(1));
+    expect(eventos.single.tipoEvento, 'creada');
+    expect(eventos.single.observacion, contains('backfill'));
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras el backfill');
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras el backfill');
+
+    await db.close();
+  });
+
+  test('migración 13 → 14 no duplica la Cuenta por cobrar de un DocumentoPorEmitir que ya tenía una', () async {
+    final schemaV13 = await verifier.schemaAt(13);
+    final raw = schemaV13.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO documento_por_emitir (
+        id, codigo, cliente_id, tipo_documento, agrupacion, metodo, requiere_complemento,
+        periodo_inicio, periodo_fin, generation_key, importe_base_esperado, importe_final_esperado,
+        estatus, folio_documento, fecha_emision_real, importe_emitido,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'documento-aceptado', 'DOC-000003', 'cliente-real', 'reciboDePago', 'porServicio', 'noAplica', 0,
+        1700000000, 1701000000, 'clave-ya-tenia', 500000, 500000,
+        'procesadoAceptado', 'REC-001', 1700500000, 500000,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+    // Nota: en la práctica esto no puede ocurrir en schemaVersion 13
+    // (la tabla `cuenta_por_cobrar` no existe todavía) — esta prueba
+    // simula la migración corriendo dos veces sobre la misma base
+    // (el escenario real de idempotencia que la comprobación
+    // `yaExiste` en `migrarCuentaPorCobrarV14` protege).
+
+    final db = AppDatabase(schemaV13.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    // Ejecutar el backfill una segunda vez a mano no debe duplicar
+    // nada — mismo criterio de idempotencia que `runSeed`.
+    await migrarCuentaPorCobrarV14(db);
+    await migrarCuentaPorCobrarV14(db);
+
+    final cuentas = await db.select(db.cuentaPorCobrar).get();
+    expect(cuentas, hasLength(1), reason: 'correr el backfill varias veces no debe duplicar la Cuenta por cobrar');
+
+    await db.close();
+  });
+
+  test('rechaza una Cuenta por cobrar con DocumentoPorEmitir inexistente tras la migración', () async {
+    final schemaV13 = await verifier.schemaAt(13);
+    final db = AppDatabase(schemaV13.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO cuenta_por_cobrar (
+          id, documento_por_emitir_id, cliente_id, tipo_documento, metodo,
+          fecha_emision_real, importe_emitido, saldo_original, saldo_pendiente,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'cxc-huerfana', 'documento-inexistente', 'cliente-cualquiera', 'reciboDePago', 'noAplica',
+          1700000000, 500000, 500000, 500000,
+          1700000000, 1700000000, 'activo'
+        );
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('rechaza una segunda Cuenta por cobrar para el mismo DocumentoPorEmitir tras la migración (UNIQUE)', () async {
+    final schemaV13 = await verifier.schemaAt(13);
+    final db = AppDatabase(schemaV13.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final documento = await db.into(db.documentoPorEmitir).insertReturning(
+          DocumentoPorEmitirCompanion.insert(
+            codigo: 'DOC-000001',
+            clienteId: cliente.id,
+            tipoDocumento: 'reciboDePago',
+            agrupacion: 'porServicio',
+            metodo: 'noAplica',
+            periodoInicio: DateTime(2026, 1, 1),
+            periodoFin: DateTime(2026, 1, 31),
+            generationKey: 'clave-unica-cxc',
+            importeBaseEsperado: 500000,
+            importeFinalEsperado: 500000,
+            estatus: const Value('procesadoAceptado'),
+            fechaEmisionReal: Value(DateTime(2026, 1, 5)),
+            importeEmitido: const Value(500000),
+          ),
+        );
+    await db.into(db.cuentaPorCobrar).insert(
+          CuentaPorCobrarCompanion.insert(
+            documentoPorEmitirId: documento.id,
+            clienteId: cliente.id,
+            tipoDocumento: 'reciboDePago',
+            metodo: 'noAplica',
+            fechaEmisionReal: DateTime(2026, 1, 5),
+            importeEmitido: 500000,
+            saldoOriginal: 500000,
+            saldoPendiente: 500000,
+          ),
+        );
+
+    expect(
+      () => db.into(db.cuentaPorCobrar).insert(
+            CuentaPorCobrarCompanion.insert(
+              documentoPorEmitirId: documento.id,
+              clienteId: cliente.id,
+              tipoDocumento: 'reciboDePago',
+              metodo: 'noAplica',
+              fechaEmisionReal: DateTime(2026, 1, 5),
+              importeEmitido: 500000,
+              saldoOriginal: 500000,
+              saldoPendiente: 500000,
+            ),
+          ),
       throwsA(anything),
     );
 

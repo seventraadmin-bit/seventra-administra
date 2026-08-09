@@ -21722,6 +21722,1855 @@ class DocumentoPorEmitirEventoCompanion
   }
 }
 
+class $CuentaPorCobrarTable extends CuentaPorCobrar
+    with TableInfo<$CuentaPorCobrarTable, CuentaPorCobrarData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CuentaPorCobrarTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'UNIQUE REFERENCES documento_por_emitir (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _clienteIdMeta = const VerificationMeta(
+    'clienteId',
+  );
+  @override
+  late final GeneratedColumn<String> clienteId = GeneratedColumn<String>(
+    'cliente_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoDocumentoMeta = const VerificationMeta(
+    'tipoDocumento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoDocumento = GeneratedColumn<String>(
+    'tipo_documento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _metodoMeta = const VerificationMeta('metodo');
+  @override
+  late final GeneratedColumn<String> metodo = GeneratedColumn<String>(
+    'metodo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _requiereComplementoMeta =
+      const VerificationMeta('requiereComplemento');
+  @override
+  late final GeneratedColumn<bool> requiereComplemento = GeneratedColumn<bool>(
+    'requiere_complemento',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("requiere_complemento" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _folioDocumentoMeta = const VerificationMeta(
+    'folioDocumento',
+  );
+  @override
+  late final GeneratedColumn<String> folioDocumento = GeneratedColumn<String>(
+    'folio_documento',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serieFiscalMeta = const VerificationMeta(
+    'serieFiscal',
+  );
+  @override
+  late final GeneratedColumn<String> serieFiscal = GeneratedColumn<String>(
+    'serie_fiscal',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _folioFiscalMeta = const VerificationMeta(
+    'folioFiscal',
+  );
+  @override
+  late final GeneratedColumn<String> folioFiscal = GeneratedColumn<String>(
+    'folio_fiscal',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+    'uuid',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaEmisionRealMeta = const VerificationMeta(
+    'fechaEmisionReal',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaEmisionReal =
+      GeneratedColumn<DateTime>(
+        'fecha_emision_real',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _importeEmitidoMeta = const VerificationMeta(
+    'importeEmitido',
+  );
+  @override
+  late final GeneratedColumn<int> importeEmitido = GeneratedColumn<int>(
+    'importe_emitido',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _saldoOriginalMeta = const VerificationMeta(
+    'saldoOriginal',
+  );
+  @override
+  late final GeneratedColumn<int> saldoOriginal = GeneratedColumn<int>(
+    'saldo_original',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _saldoPendienteMeta = const VerificationMeta(
+    'saldoPendiente',
+  );
+  @override
+  late final GeneratedColumn<int> saldoPendiente = GeneratedColumn<int>(
+    'saldo_pendiente',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _monedaMeta = const VerificationMeta('moneda');
+  @override
+  late final GeneratedColumn<String> moneda = GeneratedColumn<String>(
+    'moneda',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('MXN'),
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pendiente'),
+  );
+  static const VerificationMeta _fechaVencimientoMeta = const VerificationMeta(
+    'fechaVencimiento',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaVencimiento =
+      GeneratedColumn<DateTime>(
+        'fecha_vencimiento',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    documentoPorEmitirId,
+    clienteId,
+    tipoDocumento,
+    metodo,
+    requiereComplemento,
+    folioDocumento,
+    serieFiscal,
+    folioFiscal,
+    uuid,
+    fechaEmisionReal,
+    importeEmitido,
+    saldoOriginal,
+    saldoPendiente,
+    moneda,
+    estatus,
+    fechaVencimiento,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cuenta_por_cobrar';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CuentaPorCobrarData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentoPorEmitirIdMeta);
+    }
+    if (data.containsKey('cliente_id')) {
+      context.handle(
+        _clienteIdMeta,
+        clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_clienteIdMeta);
+    }
+    if (data.containsKey('tipo_documento')) {
+      context.handle(
+        _tipoDocumentoMeta,
+        tipoDocumento.isAcceptableOrUnknown(
+          data['tipo_documento']!,
+          _tipoDocumentoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoDocumentoMeta);
+    }
+    if (data.containsKey('metodo')) {
+      context.handle(
+        _metodoMeta,
+        metodo.isAcceptableOrUnknown(data['metodo']!, _metodoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_metodoMeta);
+    }
+    if (data.containsKey('requiere_complemento')) {
+      context.handle(
+        _requiereComplementoMeta,
+        requiereComplemento.isAcceptableOrUnknown(
+          data['requiere_complemento']!,
+          _requiereComplementoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio_documento')) {
+      context.handle(
+        _folioDocumentoMeta,
+        folioDocumento.isAcceptableOrUnknown(
+          data['folio_documento']!,
+          _folioDocumentoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('serie_fiscal')) {
+      context.handle(
+        _serieFiscalMeta,
+        serieFiscal.isAcceptableOrUnknown(
+          data['serie_fiscal']!,
+          _serieFiscalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio_fiscal')) {
+      context.handle(
+        _folioFiscalMeta,
+        folioFiscal.isAcceptableOrUnknown(
+          data['folio_fiscal']!,
+          _folioFiscalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('uuid')) {
+      context.handle(
+        _uuidMeta,
+        uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta),
+      );
+    }
+    if (data.containsKey('fecha_emision_real')) {
+      context.handle(
+        _fechaEmisionRealMeta,
+        fechaEmisionReal.isAcceptableOrUnknown(
+          data['fecha_emision_real']!,
+          _fechaEmisionRealMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaEmisionRealMeta);
+    }
+    if (data.containsKey('importe_emitido')) {
+      context.handle(
+        _importeEmitidoMeta,
+        importeEmitido.isAcceptableOrUnknown(
+          data['importe_emitido']!,
+          _importeEmitidoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_importeEmitidoMeta);
+    }
+    if (data.containsKey('saldo_original')) {
+      context.handle(
+        _saldoOriginalMeta,
+        saldoOriginal.isAcceptableOrUnknown(
+          data['saldo_original']!,
+          _saldoOriginalMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_saldoOriginalMeta);
+    }
+    if (data.containsKey('saldo_pendiente')) {
+      context.handle(
+        _saldoPendienteMeta,
+        saldoPendiente.isAcceptableOrUnknown(
+          data['saldo_pendiente']!,
+          _saldoPendienteMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_saldoPendienteMeta);
+    }
+    if (data.containsKey('moneda')) {
+      context.handle(
+        _monedaMeta,
+        moneda.isAcceptableOrUnknown(data['moneda']!, _monedaMeta),
+      );
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('fecha_vencimiento')) {
+      context.handle(
+        _fechaVencimientoMeta,
+        fechaVencimiento.isAcceptableOrUnknown(
+          data['fecha_vencimiento']!,
+          _fechaVencimientoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CuentaPorCobrarData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CuentaPorCobrarData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      documentoPorEmitirId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}documento_por_emitir_id'],
+          )!,
+      clienteId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}cliente_id'],
+          )!,
+      tipoDocumento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_documento'],
+          )!,
+      metodo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}metodo'],
+          )!,
+      requiereComplemento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}requiere_complemento'],
+          )!,
+      folioDocumento: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folio_documento'],
+      ),
+      serieFiscal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serie_fiscal'],
+      ),
+      folioFiscal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folio_fiscal'],
+      ),
+      uuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uuid'],
+      ),
+      fechaEmisionReal:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_emision_real'],
+          )!,
+      importeEmitido:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}importe_emitido'],
+          )!,
+      saldoOriginal:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}saldo_original'],
+          )!,
+      saldoPendiente:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}saldo_pendiente'],
+          )!,
+      moneda:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}moneda'],
+          )!,
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      fechaVencimiento: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_vencimiento'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $CuentaPorCobrarTable createAlias(String alias) {
+    return $CuentaPorCobrarTable(attachedDatabase, alias);
+  }
+}
+
+class CuentaPorCobrarData extends DataClass
+    implements Insertable<CuentaPorCobrarData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String documentoPorEmitirId;
+  final String clienteId;
+  final String tipoDocumento;
+  final String metodo;
+  final bool requiereComplemento;
+  final String? folioDocumento;
+  final String? serieFiscal;
+  final String? folioFiscal;
+  final String? uuid;
+  final DateTime fechaEmisionReal;
+  final int importeEmitido;
+  final int saldoOriginal;
+  final int saldoPendiente;
+  final String moneda;
+  final String estatus;
+
+  /// `null` mientras el documento de origen no tenga una fecha de
+  /// pago esperado calculable (caso Mirabilia) — se completa después
+  /// vía la acción administrativa "Definir fecha de vencimiento"
+  /// (Resolución E de Marlon), nunca inventada al crear la cuenta.
+  final DateTime? fechaVencimiento;
+  final String? observaciones;
+  const CuentaPorCobrarData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.documentoPorEmitirId,
+    required this.clienteId,
+    required this.tipoDocumento,
+    required this.metodo,
+    required this.requiereComplemento,
+    this.folioDocumento,
+    this.serieFiscal,
+    this.folioFiscal,
+    this.uuid,
+    required this.fechaEmisionReal,
+    required this.importeEmitido,
+    required this.saldoOriginal,
+    required this.saldoPendiente,
+    required this.moneda,
+    required this.estatus,
+    this.fechaVencimiento,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    map['cliente_id'] = Variable<String>(clienteId);
+    map['tipo_documento'] = Variable<String>(tipoDocumento);
+    map['metodo'] = Variable<String>(metodo);
+    map['requiere_complemento'] = Variable<bool>(requiereComplemento);
+    if (!nullToAbsent || folioDocumento != null) {
+      map['folio_documento'] = Variable<String>(folioDocumento);
+    }
+    if (!nullToAbsent || serieFiscal != null) {
+      map['serie_fiscal'] = Variable<String>(serieFiscal);
+    }
+    if (!nullToAbsent || folioFiscal != null) {
+      map['folio_fiscal'] = Variable<String>(folioFiscal);
+    }
+    if (!nullToAbsent || uuid != null) {
+      map['uuid'] = Variable<String>(uuid);
+    }
+    map['fecha_emision_real'] = Variable<DateTime>(fechaEmisionReal);
+    map['importe_emitido'] = Variable<int>(importeEmitido);
+    map['saldo_original'] = Variable<int>(saldoOriginal);
+    map['saldo_pendiente'] = Variable<int>(saldoPendiente);
+    map['moneda'] = Variable<String>(moneda);
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || fechaVencimiento != null) {
+      map['fecha_vencimiento'] = Variable<DateTime>(fechaVencimiento);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  CuentaPorCobrarCompanion toCompanion(bool nullToAbsent) {
+    return CuentaPorCobrarCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      documentoPorEmitirId: Value(documentoPorEmitirId),
+      clienteId: Value(clienteId),
+      tipoDocumento: Value(tipoDocumento),
+      metodo: Value(metodo),
+      requiereComplemento: Value(requiereComplemento),
+      folioDocumento:
+          folioDocumento == null && nullToAbsent
+              ? const Value.absent()
+              : Value(folioDocumento),
+      serieFiscal:
+          serieFiscal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(serieFiscal),
+      folioFiscal:
+          folioFiscal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(folioFiscal),
+      uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
+      fechaEmisionReal: Value(fechaEmisionReal),
+      importeEmitido: Value(importeEmitido),
+      saldoOriginal: Value(saldoOriginal),
+      saldoPendiente: Value(saldoPendiente),
+      moneda: Value(moneda),
+      estatus: Value(estatus),
+      fechaVencimiento:
+          fechaVencimiento == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaVencimiento),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory CuentaPorCobrarData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CuentaPorCobrarData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      documentoPorEmitirId: serializer.fromJson<String>(
+        json['documentoPorEmitirId'],
+      ),
+      clienteId: serializer.fromJson<String>(json['clienteId']),
+      tipoDocumento: serializer.fromJson<String>(json['tipoDocumento']),
+      metodo: serializer.fromJson<String>(json['metodo']),
+      requiereComplemento: serializer.fromJson<bool>(
+        json['requiereComplemento'],
+      ),
+      folioDocumento: serializer.fromJson<String?>(json['folioDocumento']),
+      serieFiscal: serializer.fromJson<String?>(json['serieFiscal']),
+      folioFiscal: serializer.fromJson<String?>(json['folioFiscal']),
+      uuid: serializer.fromJson<String?>(json['uuid']),
+      fechaEmisionReal: serializer.fromJson<DateTime>(json['fechaEmisionReal']),
+      importeEmitido: serializer.fromJson<int>(json['importeEmitido']),
+      saldoOriginal: serializer.fromJson<int>(json['saldoOriginal']),
+      saldoPendiente: serializer.fromJson<int>(json['saldoPendiente']),
+      moneda: serializer.fromJson<String>(json['moneda']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      fechaVencimiento: serializer.fromJson<DateTime?>(
+        json['fechaVencimiento'],
+      ),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'documentoPorEmitirId': serializer.toJson<String>(documentoPorEmitirId),
+      'clienteId': serializer.toJson<String>(clienteId),
+      'tipoDocumento': serializer.toJson<String>(tipoDocumento),
+      'metodo': serializer.toJson<String>(metodo),
+      'requiereComplemento': serializer.toJson<bool>(requiereComplemento),
+      'folioDocumento': serializer.toJson<String?>(folioDocumento),
+      'serieFiscal': serializer.toJson<String?>(serieFiscal),
+      'folioFiscal': serializer.toJson<String?>(folioFiscal),
+      'uuid': serializer.toJson<String?>(uuid),
+      'fechaEmisionReal': serializer.toJson<DateTime>(fechaEmisionReal),
+      'importeEmitido': serializer.toJson<int>(importeEmitido),
+      'saldoOriginal': serializer.toJson<int>(saldoOriginal),
+      'saldoPendiente': serializer.toJson<int>(saldoPendiente),
+      'moneda': serializer.toJson<String>(moneda),
+      'estatus': serializer.toJson<String>(estatus),
+      'fechaVencimiento': serializer.toJson<DateTime?>(fechaVencimiento),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  CuentaPorCobrarData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? documentoPorEmitirId,
+    String? clienteId,
+    String? tipoDocumento,
+    String? metodo,
+    bool? requiereComplemento,
+    Value<String?> folioDocumento = const Value.absent(),
+    Value<String?> serieFiscal = const Value.absent(),
+    Value<String?> folioFiscal = const Value.absent(),
+    Value<String?> uuid = const Value.absent(),
+    DateTime? fechaEmisionReal,
+    int? importeEmitido,
+    int? saldoOriginal,
+    int? saldoPendiente,
+    String? moneda,
+    String? estatus,
+    Value<DateTime?> fechaVencimiento = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => CuentaPorCobrarData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+    clienteId: clienteId ?? this.clienteId,
+    tipoDocumento: tipoDocumento ?? this.tipoDocumento,
+    metodo: metodo ?? this.metodo,
+    requiereComplemento: requiereComplemento ?? this.requiereComplemento,
+    folioDocumento:
+        folioDocumento.present ? folioDocumento.value : this.folioDocumento,
+    serieFiscal: serieFiscal.present ? serieFiscal.value : this.serieFiscal,
+    folioFiscal: folioFiscal.present ? folioFiscal.value : this.folioFiscal,
+    uuid: uuid.present ? uuid.value : this.uuid,
+    fechaEmisionReal: fechaEmisionReal ?? this.fechaEmisionReal,
+    importeEmitido: importeEmitido ?? this.importeEmitido,
+    saldoOriginal: saldoOriginal ?? this.saldoOriginal,
+    saldoPendiente: saldoPendiente ?? this.saldoPendiente,
+    moneda: moneda ?? this.moneda,
+    estatus: estatus ?? this.estatus,
+    fechaVencimiento:
+        fechaVencimiento.present
+            ? fechaVencimiento.value
+            : this.fechaVencimiento,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  CuentaPorCobrarData copyWithCompanion(CuentaPorCobrarCompanion data) {
+    return CuentaPorCobrarData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+      tipoDocumento:
+          data.tipoDocumento.present
+              ? data.tipoDocumento.value
+              : this.tipoDocumento,
+      metodo: data.metodo.present ? data.metodo.value : this.metodo,
+      requiereComplemento:
+          data.requiereComplemento.present
+              ? data.requiereComplemento.value
+              : this.requiereComplemento,
+      folioDocumento:
+          data.folioDocumento.present
+              ? data.folioDocumento.value
+              : this.folioDocumento,
+      serieFiscal:
+          data.serieFiscal.present ? data.serieFiscal.value : this.serieFiscal,
+      folioFiscal:
+          data.folioFiscal.present ? data.folioFiscal.value : this.folioFiscal,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
+      fechaEmisionReal:
+          data.fechaEmisionReal.present
+              ? data.fechaEmisionReal.value
+              : this.fechaEmisionReal,
+      importeEmitido:
+          data.importeEmitido.present
+              ? data.importeEmitido.value
+              : this.importeEmitido,
+      saldoOriginal:
+          data.saldoOriginal.present
+              ? data.saldoOriginal.value
+              : this.saldoOriginal,
+      saldoPendiente:
+          data.saldoPendiente.present
+              ? data.saldoPendiente.value
+              : this.saldoPendiente,
+      moneda: data.moneda.present ? data.moneda.value : this.moneda,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      fechaVencimiento:
+          data.fechaVencimiento.present
+              ? data.fechaVencimiento.value
+              : this.fechaVencimiento,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CuentaPorCobrarData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('tipoDocumento: $tipoDocumento, ')
+          ..write('metodo: $metodo, ')
+          ..write('requiereComplemento: $requiereComplemento, ')
+          ..write('folioDocumento: $folioDocumento, ')
+          ..write('serieFiscal: $serieFiscal, ')
+          ..write('folioFiscal: $folioFiscal, ')
+          ..write('uuid: $uuid, ')
+          ..write('fechaEmisionReal: $fechaEmisionReal, ')
+          ..write('importeEmitido: $importeEmitido, ')
+          ..write('saldoOriginal: $saldoOriginal, ')
+          ..write('saldoPendiente: $saldoPendiente, ')
+          ..write('moneda: $moneda, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaVencimiento: $fechaVencimiento, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    documentoPorEmitirId,
+    clienteId,
+    tipoDocumento,
+    metodo,
+    requiereComplemento,
+    folioDocumento,
+    serieFiscal,
+    folioFiscal,
+    uuid,
+    fechaEmisionReal,
+    importeEmitido,
+    saldoOriginal,
+    saldoPendiente,
+    moneda,
+    estatus,
+    fechaVencimiento,
+    observaciones,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CuentaPorCobrarData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.clienteId == this.clienteId &&
+          other.tipoDocumento == this.tipoDocumento &&
+          other.metodo == this.metodo &&
+          other.requiereComplemento == this.requiereComplemento &&
+          other.folioDocumento == this.folioDocumento &&
+          other.serieFiscal == this.serieFiscal &&
+          other.folioFiscal == this.folioFiscal &&
+          other.uuid == this.uuid &&
+          other.fechaEmisionReal == this.fechaEmisionReal &&
+          other.importeEmitido == this.importeEmitido &&
+          other.saldoOriginal == this.saldoOriginal &&
+          other.saldoPendiente == this.saldoPendiente &&
+          other.moneda == this.moneda &&
+          other.estatus == this.estatus &&
+          other.fechaVencimiento == this.fechaVencimiento &&
+          other.observaciones == this.observaciones);
+}
+
+class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> documentoPorEmitirId;
+  final Value<String> clienteId;
+  final Value<String> tipoDocumento;
+  final Value<String> metodo;
+  final Value<bool> requiereComplemento;
+  final Value<String?> folioDocumento;
+  final Value<String?> serieFiscal;
+  final Value<String?> folioFiscal;
+  final Value<String?> uuid;
+  final Value<DateTime> fechaEmisionReal;
+  final Value<int> importeEmitido;
+  final Value<int> saldoOriginal;
+  final Value<int> saldoPendiente;
+  final Value<String> moneda;
+  final Value<String> estatus;
+  final Value<DateTime?> fechaVencimiento;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const CuentaPorCobrarCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.clienteId = const Value.absent(),
+    this.tipoDocumento = const Value.absent(),
+    this.metodo = const Value.absent(),
+    this.requiereComplemento = const Value.absent(),
+    this.folioDocumento = const Value.absent(),
+    this.serieFiscal = const Value.absent(),
+    this.folioFiscal = const Value.absent(),
+    this.uuid = const Value.absent(),
+    this.fechaEmisionReal = const Value.absent(),
+    this.importeEmitido = const Value.absent(),
+    this.saldoOriginal = const Value.absent(),
+    this.saldoPendiente = const Value.absent(),
+    this.moneda = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.fechaVencimiento = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CuentaPorCobrarCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String documentoPorEmitirId,
+    required String clienteId,
+    required String tipoDocumento,
+    required String metodo,
+    this.requiereComplemento = const Value.absent(),
+    this.folioDocumento = const Value.absent(),
+    this.serieFiscal = const Value.absent(),
+    this.folioFiscal = const Value.absent(),
+    this.uuid = const Value.absent(),
+    required DateTime fechaEmisionReal,
+    required int importeEmitido,
+    required int saldoOriginal,
+    required int saldoPendiente,
+    this.moneda = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.fechaVencimiento = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : documentoPorEmitirId = Value(documentoPorEmitirId),
+       clienteId = Value(clienteId),
+       tipoDocumento = Value(tipoDocumento),
+       metodo = Value(metodo),
+       fechaEmisionReal = Value(fechaEmisionReal),
+       importeEmitido = Value(importeEmitido),
+       saldoOriginal = Value(saldoOriginal),
+       saldoPendiente = Value(saldoPendiente);
+  static Insertable<CuentaPorCobrarData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? documentoPorEmitirId,
+    Expression<String>? clienteId,
+    Expression<String>? tipoDocumento,
+    Expression<String>? metodo,
+    Expression<bool>? requiereComplemento,
+    Expression<String>? folioDocumento,
+    Expression<String>? serieFiscal,
+    Expression<String>? folioFiscal,
+    Expression<String>? uuid,
+    Expression<DateTime>? fechaEmisionReal,
+    Expression<int>? importeEmitido,
+    Expression<int>? saldoOriginal,
+    Expression<int>? saldoPendiente,
+    Expression<String>? moneda,
+    Expression<String>? estatus,
+    Expression<DateTime>? fechaVencimiento,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (clienteId != null) 'cliente_id': clienteId,
+      if (tipoDocumento != null) 'tipo_documento': tipoDocumento,
+      if (metodo != null) 'metodo': metodo,
+      if (requiereComplemento != null)
+        'requiere_complemento': requiereComplemento,
+      if (folioDocumento != null) 'folio_documento': folioDocumento,
+      if (serieFiscal != null) 'serie_fiscal': serieFiscal,
+      if (folioFiscal != null) 'folio_fiscal': folioFiscal,
+      if (uuid != null) 'uuid': uuid,
+      if (fechaEmisionReal != null) 'fecha_emision_real': fechaEmisionReal,
+      if (importeEmitido != null) 'importe_emitido': importeEmitido,
+      if (saldoOriginal != null) 'saldo_original': saldoOriginal,
+      if (saldoPendiente != null) 'saldo_pendiente': saldoPendiente,
+      if (moneda != null) 'moneda': moneda,
+      if (estatus != null) 'estatus': estatus,
+      if (fechaVencimiento != null) 'fecha_vencimiento': fechaVencimiento,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CuentaPorCobrarCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? documentoPorEmitirId,
+    Value<String>? clienteId,
+    Value<String>? tipoDocumento,
+    Value<String>? metodo,
+    Value<bool>? requiereComplemento,
+    Value<String?>? folioDocumento,
+    Value<String?>? serieFiscal,
+    Value<String?>? folioFiscal,
+    Value<String?>? uuid,
+    Value<DateTime>? fechaEmisionReal,
+    Value<int>? importeEmitido,
+    Value<int>? saldoOriginal,
+    Value<int>? saldoPendiente,
+    Value<String>? moneda,
+    Value<String>? estatus,
+    Value<DateTime?>? fechaVencimiento,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return CuentaPorCobrarCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      clienteId: clienteId ?? this.clienteId,
+      tipoDocumento: tipoDocumento ?? this.tipoDocumento,
+      metodo: metodo ?? this.metodo,
+      requiereComplemento: requiereComplemento ?? this.requiereComplemento,
+      folioDocumento: folioDocumento ?? this.folioDocumento,
+      serieFiscal: serieFiscal ?? this.serieFiscal,
+      folioFiscal: folioFiscal ?? this.folioFiscal,
+      uuid: uuid ?? this.uuid,
+      fechaEmisionReal: fechaEmisionReal ?? this.fechaEmisionReal,
+      importeEmitido: importeEmitido ?? this.importeEmitido,
+      saldoOriginal: saldoOriginal ?? this.saldoOriginal,
+      saldoPendiente: saldoPendiente ?? this.saldoPendiente,
+      moneda: moneda ?? this.moneda,
+      estatus: estatus ?? this.estatus,
+      fechaVencimiento: fechaVencimiento ?? this.fechaVencimiento,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (clienteId.present) {
+      map['cliente_id'] = Variable<String>(clienteId.value);
+    }
+    if (tipoDocumento.present) {
+      map['tipo_documento'] = Variable<String>(tipoDocumento.value);
+    }
+    if (metodo.present) {
+      map['metodo'] = Variable<String>(metodo.value);
+    }
+    if (requiereComplemento.present) {
+      map['requiere_complemento'] = Variable<bool>(requiereComplemento.value);
+    }
+    if (folioDocumento.present) {
+      map['folio_documento'] = Variable<String>(folioDocumento.value);
+    }
+    if (serieFiscal.present) {
+      map['serie_fiscal'] = Variable<String>(serieFiscal.value);
+    }
+    if (folioFiscal.present) {
+      map['folio_fiscal'] = Variable<String>(folioFiscal.value);
+    }
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
+    }
+    if (fechaEmisionReal.present) {
+      map['fecha_emision_real'] = Variable<DateTime>(fechaEmisionReal.value);
+    }
+    if (importeEmitido.present) {
+      map['importe_emitido'] = Variable<int>(importeEmitido.value);
+    }
+    if (saldoOriginal.present) {
+      map['saldo_original'] = Variable<int>(saldoOriginal.value);
+    }
+    if (saldoPendiente.present) {
+      map['saldo_pendiente'] = Variable<int>(saldoPendiente.value);
+    }
+    if (moneda.present) {
+      map['moneda'] = Variable<String>(moneda.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (fechaVencimiento.present) {
+      map['fecha_vencimiento'] = Variable<DateTime>(fechaVencimiento.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CuentaPorCobrarCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('tipoDocumento: $tipoDocumento, ')
+          ..write('metodo: $metodo, ')
+          ..write('requiereComplemento: $requiereComplemento, ')
+          ..write('folioDocumento: $folioDocumento, ')
+          ..write('serieFiscal: $serieFiscal, ')
+          ..write('folioFiscal: $folioFiscal, ')
+          ..write('uuid: $uuid, ')
+          ..write('fechaEmisionReal: $fechaEmisionReal, ')
+          ..write('importeEmitido: $importeEmitido, ')
+          ..write('saldoOriginal: $saldoOriginal, ')
+          ..write('saldoPendiente: $saldoPendiente, ')
+          ..write('moneda: $moneda, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaVencimiento: $fechaVencimiento, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CuentaPorCobrarEventoTable extends CuentaPorCobrarEvento
+    with TableInfo<$CuentaPorCobrarEventoTable, CuentaPorCobrarEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CuentaPorCobrarEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _cuentaPorCobrarIdMeta = const VerificationMeta(
+    'cuentaPorCobrarId',
+  );
+  @override
+  late final GeneratedColumn<String> cuentaPorCobrarId =
+      GeneratedColumn<String>(
+        'cuenta_por_cobrar_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES cuenta_por_cobrar (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoAnteriorMeta = const VerificationMeta(
+    'estadoAnterior',
+  );
+  @override
+  late final GeneratedColumn<String> estadoAnterior = GeneratedColumn<String>(
+    'estado_anterior',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estadoNuevoMeta = const VerificationMeta(
+    'estadoNuevo',
+  );
+  @override
+  late final GeneratedColumn<String> estadoNuevo = GeneratedColumn<String>(
+    'estado_nuevo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    cuentaPorCobrarId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cuenta_por_cobrar_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CuentaPorCobrarEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('cuenta_por_cobrar_id')) {
+      context.handle(
+        _cuentaPorCobrarIdMeta,
+        cuentaPorCobrarId.isAcceptableOrUnknown(
+          data['cuenta_por_cobrar_id']!,
+          _cuentaPorCobrarIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_cuentaPorCobrarIdMeta);
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('estado_anterior')) {
+      context.handle(
+        _estadoAnteriorMeta,
+        estadoAnterior.isAcceptableOrUnknown(
+          data['estado_anterior']!,
+          _estadoAnteriorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estado_nuevo')) {
+      context.handle(
+        _estadoNuevoMeta,
+        estadoNuevo.isAcceptableOrUnknown(
+          data['estado_nuevo']!,
+          _estadoNuevoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CuentaPorCobrarEventoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CuentaPorCobrarEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      cuentaPorCobrarId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}cuenta_por_cobrar_id'],
+          )!,
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      estadoAnterior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_anterior'],
+      ),
+      estadoNuevo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_nuevo'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $CuentaPorCobrarEventoTable createAlias(String alias) {
+    return $CuentaPorCobrarEventoTable(attachedDatabase, alias);
+  }
+}
+
+class CuentaPorCobrarEventoData extends DataClass
+    implements Insertable<CuentaPorCobrarEventoData> {
+  final int id;
+  final String cuentaPorCobrarId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? estadoAnterior;
+  final String? estadoNuevo;
+  final String? observacion;
+
+  /// `null` mientras no exista autenticación real — mismo criterio
+  /// que `DocumentoPorEmitirEvento.actor`.
+  final String? actor;
+
+  /// JSON libre con el snapshot de lo que cambió — mismo criterio que
+  /// `DocumentoPorEmitirEvento.datosRelevantes`.
+  final String? datosRelevantes;
+  const CuentaPorCobrarEventoData({
+    required this.id,
+    required this.cuentaPorCobrarId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.estadoAnterior,
+    this.estadoNuevo,
+    this.observacion,
+    this.actor,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['cuenta_por_cobrar_id'] = Variable<String>(cuentaPorCobrarId);
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || estadoAnterior != null) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior);
+    }
+    if (!nullToAbsent || estadoNuevo != null) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  CuentaPorCobrarEventoCompanion toCompanion(bool nullToAbsent) {
+    return CuentaPorCobrarEventoCompanion(
+      id: Value(id),
+      cuentaPorCobrarId: Value(cuentaPorCobrarId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      estadoAnterior:
+          estadoAnterior == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoAnterior),
+      estadoNuevo:
+          estadoNuevo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoNuevo),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory CuentaPorCobrarEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CuentaPorCobrarEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      cuentaPorCobrarId: serializer.fromJson<String>(json['cuentaPorCobrarId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      estadoAnterior: serializer.fromJson<String?>(json['estadoAnterior']),
+      estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      actor: serializer.fromJson<String?>(json['actor']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'cuentaPorCobrarId': serializer.toJson<String>(cuentaPorCobrarId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'estadoAnterior': serializer.toJson<String?>(estadoAnterior),
+      'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
+      'observacion': serializer.toJson<String?>(observacion),
+      'actor': serializer.toJson<String?>(actor),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  CuentaPorCobrarEventoData copyWith({
+    int? id,
+    String? cuentaPorCobrarId,
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> estadoAnterior = const Value.absent(),
+    Value<String?> estadoNuevo = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => CuentaPorCobrarEventoData(
+    id: id ?? this.id,
+    cuentaPorCobrarId: cuentaPorCobrarId ?? this.cuentaPorCobrarId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    estadoAnterior:
+        estadoAnterior.present ? estadoAnterior.value : this.estadoAnterior,
+    estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    actor: actor.present ? actor.value : this.actor,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  CuentaPorCobrarEventoData copyWithCompanion(
+    CuentaPorCobrarEventoCompanion data,
+  ) {
+    return CuentaPorCobrarEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      cuentaPorCobrarId:
+          data.cuentaPorCobrarId.present
+              ? data.cuentaPorCobrarId.value
+              : this.cuentaPorCobrarId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      estadoAnterior:
+          data.estadoAnterior.present
+              ? data.estadoAnterior.value
+              : this.estadoAnterior,
+      estadoNuevo:
+          data.estadoNuevo.present ? data.estadoNuevo.value : this.estadoNuevo,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      actor: data.actor.present ? data.actor.value : this.actor,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CuentaPorCobrarEventoData(')
+          ..write('id: $id, ')
+          ..write('cuentaPorCobrarId: $cuentaPorCobrarId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    cuentaPorCobrarId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CuentaPorCobrarEventoData &&
+          other.id == this.id &&
+          other.cuentaPorCobrarId == this.cuentaPorCobrarId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.estadoAnterior == this.estadoAnterior &&
+          other.estadoNuevo == this.estadoNuevo &&
+          other.observacion == this.observacion &&
+          other.actor == this.actor &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class CuentaPorCobrarEventoCompanion
+    extends UpdateCompanion<CuentaPorCobrarEventoData> {
+  final Value<int> id;
+  final Value<String> cuentaPorCobrarId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> estadoAnterior;
+  final Value<String?> estadoNuevo;
+  final Value<String?> observacion;
+  final Value<String?> actor;
+  final Value<String?> datosRelevantes;
+  const CuentaPorCobrarEventoCompanion({
+    this.id = const Value.absent(),
+    this.cuentaPorCobrarId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  CuentaPorCobrarEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String cuentaPorCobrarId,
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : cuentaPorCobrarId = Value(cuentaPorCobrarId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<CuentaPorCobrarEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? cuentaPorCobrarId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? estadoAnterior,
+    Expression<String>? estadoNuevo,
+    Expression<String>? observacion,
+    Expression<String>? actor,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (cuentaPorCobrarId != null) 'cuenta_por_cobrar_id': cuentaPorCobrarId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (estadoAnterior != null) 'estado_anterior': estadoAnterior,
+      if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
+      if (observacion != null) 'observacion': observacion,
+      if (actor != null) 'actor': actor,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  CuentaPorCobrarEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? cuentaPorCobrarId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? estadoAnterior,
+    Value<String?>? estadoNuevo,
+    Value<String?>? observacion,
+    Value<String?>? actor,
+    Value<String?>? datosRelevantes,
+  }) {
+    return CuentaPorCobrarEventoCompanion(
+      id: id ?? this.id,
+      cuentaPorCobrarId: cuentaPorCobrarId ?? this.cuentaPorCobrarId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      estadoAnterior: estadoAnterior ?? this.estadoAnterior,
+      estadoNuevo: estadoNuevo ?? this.estadoNuevo,
+      observacion: observacion ?? this.observacion,
+      actor: actor ?? this.actor,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (cuentaPorCobrarId.present) {
+      map['cuenta_por_cobrar_id'] = Variable<String>(cuentaPorCobrarId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (estadoAnterior.present) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior.value);
+    }
+    if (estadoNuevo.present) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CuentaPorCobrarEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('cuentaPorCobrarId: $cuentaPorCobrarId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -21776,6 +23625,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $DocumentoPorEmitirCorreoEnvioTable(this);
   late final $DocumentoPorEmitirEventoTable documentoPorEmitirEvento =
       $DocumentoPorEmitirEventoTable(this);
+  late final $CuentaPorCobrarTable cuentaPorCobrar = $CuentaPorCobrarTable(
+    this,
+  );
+  late final $CuentaPorCobrarEventoTable cuentaPorCobrarEvento =
+      $CuentaPorCobrarEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -21831,6 +23685,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     documentoPorEmitirCorreo,
     documentoPorEmitirCorreoEnvio,
     documentoPorEmitirEvento,
+    cuentaPorCobrar,
+    cuentaPorCobrarEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -21924,6 +23780,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ),
       result: [
         TableUpdate('documento_por_emitir_evento', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'cuenta_por_cobrar',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('cuenta_por_cobrar_evento', kind: UpdateKind.delete),
       ],
     ),
   ]);
@@ -36663,6 +38528,31 @@ final class $$DocumentoPorEmitirTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$CuentaPorCobrarTable, List<CuentaPorCobrarData>>
+  _cuentaPorCobrarRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.cuentaPorCobrar,
+    aliasName: $_aliasNameGenerator(
+      db.documentoPorEmitir.id,
+      db.cuentaPorCobrar.documentoPorEmitirId,
+    ),
+  );
+
+  $$CuentaPorCobrarTableProcessedTableManager get cuentaPorCobrarRefs {
+    final manager = $$CuentaPorCobrarTableTableManager(
+      $_db,
+      $_db.cuentaPorCobrar,
+    ).filter(
+      (f) => f.documentoPorEmitirId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _cuentaPorCobrarRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$DocumentoPorEmitirTableFilterComposer
@@ -37038,6 +38928,31 @@ class $$DocumentoPorEmitirTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> cuentaPorCobrarRefs(
+    Expression<bool> Function($$CuentaPorCobrarTableFilterComposer f) f,
+  ) {
+    final $$CuentaPorCobrarTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cuentaPorCobrar,
+      getReferencedColumn: (t) => t.documentoPorEmitirId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CuentaPorCobrarTableFilterComposer(
+            $db: $db,
+            $table: $db.cuentaPorCobrar,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -37620,6 +39535,31 @@ class $$DocumentoPorEmitirTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> cuentaPorCobrarRefs<T extends Object>(
+    Expression<T> Function($$CuentaPorCobrarTableAnnotationComposer a) f,
+  ) {
+    final $$CuentaPorCobrarTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cuentaPorCobrar,
+      getReferencedColumn: (t) => t.documentoPorEmitirId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CuentaPorCobrarTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cuentaPorCobrar,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$DocumentoPorEmitirTableTableManager
@@ -37644,6 +39584,7 @@ class $$DocumentoPorEmitirTableTableManager
             bool documentoPorEmitirCorreoRefs,
             bool documentoPorEmitirCorreoEnvioRefs,
             bool documentoPorEmitirEventoRefs,
+            bool cuentaPorCobrarRefs,
           })
         > {
   $$DocumentoPorEmitirTableTableManager(
@@ -37835,6 +39776,7 @@ class $$DocumentoPorEmitirTableTableManager
             documentoPorEmitirCorreoRefs = false,
             documentoPorEmitirCorreoEnvioRefs = false,
             documentoPorEmitirEventoRefs = false,
+            cuentaPorCobrarRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -37848,6 +39790,7 @@ class $$DocumentoPorEmitirTableTableManager
                 if (documentoPorEmitirCorreoEnvioRefs)
                   db.documentoPorEmitirCorreoEnvio,
                 if (documentoPorEmitirEventoRefs) db.documentoPorEmitirEvento,
+                if (cuentaPorCobrarRefs) db.cuentaPorCobrar,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -38029,6 +39972,28 @@ class $$DocumentoPorEmitirTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (cuentaPorCobrarRefs)
+                    await $_getPrefetchedData<
+                      DocumentoPorEmitirData,
+                      $DocumentoPorEmitirTable,
+                      CuentaPorCobrarData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$DocumentoPorEmitirTableReferences
+                          ._cuentaPorCobrarRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$DocumentoPorEmitirTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).cuentaPorCobrarRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.documentoPorEmitirId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -38058,6 +40023,7 @@ typedef $$DocumentoPorEmitirTableProcessedTableManager =
         bool documentoPorEmitirCorreoRefs,
         bool documentoPorEmitirCorreoEnvioRefs,
         bool documentoPorEmitirEventoRefs,
+        bool cuentaPorCobrarRefs,
       })
     >;
 typedef $$DocumentoPorEmitirServicioTableCreateCompanionBuilder =
@@ -40835,6 +42801,1221 @@ typedef $$DocumentoPorEmitirEventoTableProcessedTableManager =
       DocumentoPorEmitirEventoData,
       PrefetchHooks Function({bool documentoPorEmitirId})
     >;
+typedef $$CuentaPorCobrarTableCreateCompanionBuilder =
+    CuentaPorCobrarCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String documentoPorEmitirId,
+      required String clienteId,
+      required String tipoDocumento,
+      required String metodo,
+      Value<bool> requiereComplemento,
+      Value<String?> folioDocumento,
+      Value<String?> serieFiscal,
+      Value<String?> folioFiscal,
+      Value<String?> uuid,
+      required DateTime fechaEmisionReal,
+      required int importeEmitido,
+      required int saldoOriginal,
+      required int saldoPendiente,
+      Value<String> moneda,
+      Value<String> estatus,
+      Value<DateTime?> fechaVencimiento,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$CuentaPorCobrarTableUpdateCompanionBuilder =
+    CuentaPorCobrarCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> documentoPorEmitirId,
+      Value<String> clienteId,
+      Value<String> tipoDocumento,
+      Value<String> metodo,
+      Value<bool> requiereComplemento,
+      Value<String?> folioDocumento,
+      Value<String?> serieFiscal,
+      Value<String?> folioFiscal,
+      Value<String?> uuid,
+      Value<DateTime> fechaEmisionReal,
+      Value<int> importeEmitido,
+      Value<int> saldoOriginal,
+      Value<int> saldoPendiente,
+      Value<String> moneda,
+      Value<String> estatus,
+      Value<DateTime?> fechaVencimiento,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$CuentaPorCobrarTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CuentaPorCobrarTable,
+          CuentaPorCobrarData
+        > {
+  $$CuentaPorCobrarTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $DocumentoPorEmitirTable _documentoPorEmitirIdTable(
+    _$AppDatabase db,
+  ) => db.documentoPorEmitir.createAlias(
+    $_aliasNameGenerator(
+      db.cuentaPorCobrar.documentoPorEmitirId,
+      db.documentoPorEmitir.id,
+    ),
+  );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirId {
+    final $_column = $_itemColumn<String>('documento_por_emitir_id')!;
+
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _documentoPorEmitirIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CuentaPorCobrarEventoTable,
+    List<CuentaPorCobrarEventoData>
+  >
+  _cuentaPorCobrarEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.cuentaPorCobrarEvento,
+        aliasName: $_aliasNameGenerator(
+          db.cuentaPorCobrar.id,
+          db.cuentaPorCobrarEvento.cuentaPorCobrarId,
+        ),
+      );
+
+  $$CuentaPorCobrarEventoTableProcessedTableManager
+  get cuentaPorCobrarEventoRefs {
+    final manager = $$CuentaPorCobrarEventoTableTableManager(
+      $_db,
+      $_db.cuentaPorCobrarEvento,
+    ).filter(
+      (f) => f.cuentaPorCobrarId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _cuentaPorCobrarEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CuentaPorCobrarTableFilterComposer
+    extends Composer<_$AppDatabase, $CuentaPorCobrarTable> {
+  $$CuentaPorCobrarTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clienteId => $composableBuilder(
+    column: $table.clienteId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoDocumento => $composableBuilder(
+    column: $table.tipoDocumento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metodo => $composableBuilder(
+    column: $table.metodo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get requiereComplemento => $composableBuilder(
+    column: $table.requiereComplemento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folioDocumento => $composableBuilder(
+    column: $table.folioDocumento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serieFiscal => $composableBuilder(
+    column: $table.serieFiscal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folioFiscal => $composableBuilder(
+    column: $table.folioFiscal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uuid => $composableBuilder(
+    column: $table.uuid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaEmisionReal => $composableBuilder(
+    column: $table.fechaEmisionReal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importeEmitido => $composableBuilder(
+    column: $table.importeEmitido,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get saldoOriginal => $composableBuilder(
+    column: $table.saldoOriginal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get saldoPendiente => $composableBuilder(
+    column: $table.saldoPendiente,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get moneda => $composableBuilder(
+    column: $table.moneda,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaVencimiento => $composableBuilder(
+    column: $table.fechaVencimiento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$DocumentoPorEmitirTableFilterComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> cuentaPorCobrarEventoRefs(
+    Expression<bool> Function($$CuentaPorCobrarEventoTableFilterComposer f) f,
+  ) {
+    final $$CuentaPorCobrarEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.cuentaPorCobrarEvento,
+          getReferencedColumn: (t) => t.cuentaPorCobrarId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CuentaPorCobrarEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.cuentaPorCobrarEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$CuentaPorCobrarTableOrderingComposer
+    extends Composer<_$AppDatabase, $CuentaPorCobrarTable> {
+  $$CuentaPorCobrarTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clienteId => $composableBuilder(
+    column: $table.clienteId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoDocumento => $composableBuilder(
+    column: $table.tipoDocumento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metodo => $composableBuilder(
+    column: $table.metodo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get requiereComplemento => $composableBuilder(
+    column: $table.requiereComplemento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folioDocumento => $composableBuilder(
+    column: $table.folioDocumento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serieFiscal => $composableBuilder(
+    column: $table.serieFiscal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folioFiscal => $composableBuilder(
+    column: $table.folioFiscal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uuid => $composableBuilder(
+    column: $table.uuid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaEmisionReal => $composableBuilder(
+    column: $table.fechaEmisionReal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importeEmitido => $composableBuilder(
+    column: $table.importeEmitido,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get saldoOriginal => $composableBuilder(
+    column: $table.saldoOriginal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get saldoPendiente => $composableBuilder(
+    column: $table.saldoPendiente,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get moneda => $composableBuilder(
+    column: $table.moneda,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaVencimiento => $composableBuilder(
+    column: $table.fechaVencimiento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$DocumentoPorEmitirTableOrderingComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableOrderingComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CuentaPorCobrarTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CuentaPorCobrarTable> {
+  $$CuentaPorCobrarTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get clienteId =>
+      $composableBuilder(column: $table.clienteId, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoDocumento => $composableBuilder(
+    column: $table.tipoDocumento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get metodo =>
+      $composableBuilder(column: $table.metodo, builder: (column) => column);
+
+  GeneratedColumn<bool> get requiereComplemento => $composableBuilder(
+    column: $table.requiereComplemento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folioDocumento => $composableBuilder(
+    column: $table.folioDocumento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serieFiscal => $composableBuilder(
+    column: $table.serieFiscal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folioFiscal => $composableBuilder(
+    column: $table.folioFiscal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get uuid =>
+      $composableBuilder(column: $table.uuid, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaEmisionReal => $composableBuilder(
+    column: $table.fechaEmisionReal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get importeEmitido => $composableBuilder(
+    column: $table.importeEmitido,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get saldoOriginal => $composableBuilder(
+    column: $table.saldoOriginal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get saldoPendiente => $composableBuilder(
+    column: $table.saldoPendiente,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get moneda =>
+      $composableBuilder(column: $table.moneda, builder: (column) => column);
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaVencimiento => $composableBuilder(
+    column: $table.fechaVencimiento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  $$DocumentoPorEmitirTableAnnotationComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.documentoPorEmitirId,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  Expression<T> cuentaPorCobrarEventoRefs<T extends Object>(
+    Expression<T> Function($$CuentaPorCobrarEventoTableAnnotationComposer a) f,
+  ) {
+    final $$CuentaPorCobrarEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.cuentaPorCobrarEvento,
+          getReferencedColumn: (t) => t.cuentaPorCobrarId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CuentaPorCobrarEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.cuentaPorCobrarEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$CuentaPorCobrarTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CuentaPorCobrarTable,
+          CuentaPorCobrarData,
+          $$CuentaPorCobrarTableFilterComposer,
+          $$CuentaPorCobrarTableOrderingComposer,
+          $$CuentaPorCobrarTableAnnotationComposer,
+          $$CuentaPorCobrarTableCreateCompanionBuilder,
+          $$CuentaPorCobrarTableUpdateCompanionBuilder,
+          (CuentaPorCobrarData, $$CuentaPorCobrarTableReferences),
+          CuentaPorCobrarData,
+          PrefetchHooks Function({
+            bool documentoPorEmitirId,
+            bool cuentaPorCobrarEventoRefs,
+          })
+        > {
+  $$CuentaPorCobrarTableTableManager(
+    _$AppDatabase db,
+    $CuentaPorCobrarTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () =>
+                  $$CuentaPorCobrarTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$CuentaPorCobrarTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$CuentaPorCobrarTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> documentoPorEmitirId = const Value.absent(),
+                Value<String> clienteId = const Value.absent(),
+                Value<String> tipoDocumento = const Value.absent(),
+                Value<String> metodo = const Value.absent(),
+                Value<bool> requiereComplemento = const Value.absent(),
+                Value<String?> folioDocumento = const Value.absent(),
+                Value<String?> serieFiscal = const Value.absent(),
+                Value<String?> folioFiscal = const Value.absent(),
+                Value<String?> uuid = const Value.absent(),
+                Value<DateTime> fechaEmisionReal = const Value.absent(),
+                Value<int> importeEmitido = const Value.absent(),
+                Value<int> saldoOriginal = const Value.absent(),
+                Value<int> saldoPendiente = const Value.absent(),
+                Value<String> moneda = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaVencimiento = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CuentaPorCobrarCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                documentoPorEmitirId: documentoPorEmitirId,
+                clienteId: clienteId,
+                tipoDocumento: tipoDocumento,
+                metodo: metodo,
+                requiereComplemento: requiereComplemento,
+                folioDocumento: folioDocumento,
+                serieFiscal: serieFiscal,
+                folioFiscal: folioFiscal,
+                uuid: uuid,
+                fechaEmisionReal: fechaEmisionReal,
+                importeEmitido: importeEmitido,
+                saldoOriginal: saldoOriginal,
+                saldoPendiente: saldoPendiente,
+                moneda: moneda,
+                estatus: estatus,
+                fechaVencimiento: fechaVencimiento,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String documentoPorEmitirId,
+                required String clienteId,
+                required String tipoDocumento,
+                required String metodo,
+                Value<bool> requiereComplemento = const Value.absent(),
+                Value<String?> folioDocumento = const Value.absent(),
+                Value<String?> serieFiscal = const Value.absent(),
+                Value<String?> folioFiscal = const Value.absent(),
+                Value<String?> uuid = const Value.absent(),
+                required DateTime fechaEmisionReal,
+                required int importeEmitido,
+                required int saldoOriginal,
+                required int saldoPendiente,
+                Value<String> moneda = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaVencimiento = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CuentaPorCobrarCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                documentoPorEmitirId: documentoPorEmitirId,
+                clienteId: clienteId,
+                tipoDocumento: tipoDocumento,
+                metodo: metodo,
+                requiereComplemento: requiereComplemento,
+                folioDocumento: folioDocumento,
+                serieFiscal: serieFiscal,
+                folioFiscal: folioFiscal,
+                uuid: uuid,
+                fechaEmisionReal: fechaEmisionReal,
+                importeEmitido: importeEmitido,
+                saldoOriginal: saldoOriginal,
+                saldoPendiente: saldoPendiente,
+                moneda: moneda,
+                estatus: estatus,
+                fechaVencimiento: fechaVencimiento,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$CuentaPorCobrarTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            documentoPorEmitirId = false,
+            cuentaPorCobrarEventoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (cuentaPorCobrarEventoRefs) db.cuentaPorCobrarEvento,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (documentoPorEmitirId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.documentoPorEmitirId,
+                            referencedTable: $$CuentaPorCobrarTableReferences
+                                ._documentoPorEmitirIdTable(db),
+                            referencedColumn:
+                                $$CuentaPorCobrarTableReferences
+                                    ._documentoPorEmitirIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (cuentaPorCobrarEventoRefs)
+                    await $_getPrefetchedData<
+                      CuentaPorCobrarData,
+                      $CuentaPorCobrarTable,
+                      CuentaPorCobrarEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CuentaPorCobrarTableReferences
+                          ._cuentaPorCobrarEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$CuentaPorCobrarTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).cuentaPorCobrarEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.cuentaPorCobrarId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CuentaPorCobrarTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CuentaPorCobrarTable,
+      CuentaPorCobrarData,
+      $$CuentaPorCobrarTableFilterComposer,
+      $$CuentaPorCobrarTableOrderingComposer,
+      $$CuentaPorCobrarTableAnnotationComposer,
+      $$CuentaPorCobrarTableCreateCompanionBuilder,
+      $$CuentaPorCobrarTableUpdateCompanionBuilder,
+      (CuentaPorCobrarData, $$CuentaPorCobrarTableReferences),
+      CuentaPorCobrarData,
+      PrefetchHooks Function({
+        bool documentoPorEmitirId,
+        bool cuentaPorCobrarEventoRefs,
+      })
+    >;
+typedef $$CuentaPorCobrarEventoTableCreateCompanionBuilder =
+    CuentaPorCobrarEventoCompanion Function({
+      Value<int> id,
+      required String cuentaPorCobrarId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+typedef $$CuentaPorCobrarEventoTableUpdateCompanionBuilder =
+    CuentaPorCobrarEventoCompanion Function({
+      Value<int> id,
+      Value<String> cuentaPorCobrarId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$CuentaPorCobrarEventoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CuentaPorCobrarEventoTable,
+          CuentaPorCobrarEventoData
+        > {
+  $$CuentaPorCobrarEventoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CuentaPorCobrarTable _cuentaPorCobrarIdTable(_$AppDatabase db) =>
+      db.cuentaPorCobrar.createAlias(
+        $_aliasNameGenerator(
+          db.cuentaPorCobrarEvento.cuentaPorCobrarId,
+          db.cuentaPorCobrar.id,
+        ),
+      );
+
+  $$CuentaPorCobrarTableProcessedTableManager get cuentaPorCobrarId {
+    final $_column = $_itemColumn<String>('cuenta_por_cobrar_id')!;
+
+    final manager = $$CuentaPorCobrarTableTableManager(
+      $_db,
+      $_db.cuentaPorCobrar,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_cuentaPorCobrarIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CuentaPorCobrarEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $CuentaPorCobrarEventoTable> {
+  $$CuentaPorCobrarEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CuentaPorCobrarTableFilterComposer get cuentaPorCobrarId {
+    final $$CuentaPorCobrarTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cuentaPorCobrarId,
+      referencedTable: $db.cuentaPorCobrar,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CuentaPorCobrarTableFilterComposer(
+            $db: $db,
+            $table: $db.cuentaPorCobrar,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CuentaPorCobrarEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $CuentaPorCobrarEventoTable> {
+  $$CuentaPorCobrarEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CuentaPorCobrarTableOrderingComposer get cuentaPorCobrarId {
+    final $$CuentaPorCobrarTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cuentaPorCobrarId,
+      referencedTable: $db.cuentaPorCobrar,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CuentaPorCobrarTableOrderingComposer(
+            $db: $db,
+            $table: $db.cuentaPorCobrar,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CuentaPorCobrarEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CuentaPorCobrarEventoTable> {
+  $$CuentaPorCobrarEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$CuentaPorCobrarTableAnnotationComposer get cuentaPorCobrarId {
+    final $$CuentaPorCobrarTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cuentaPorCobrarId,
+      referencedTable: $db.cuentaPorCobrar,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CuentaPorCobrarTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cuentaPorCobrar,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CuentaPorCobrarEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CuentaPorCobrarEventoTable,
+          CuentaPorCobrarEventoData,
+          $$CuentaPorCobrarEventoTableFilterComposer,
+          $$CuentaPorCobrarEventoTableOrderingComposer,
+          $$CuentaPorCobrarEventoTableAnnotationComposer,
+          $$CuentaPorCobrarEventoTableCreateCompanionBuilder,
+          $$CuentaPorCobrarEventoTableUpdateCompanionBuilder,
+          (CuentaPorCobrarEventoData, $$CuentaPorCobrarEventoTableReferences),
+          CuentaPorCobrarEventoData,
+          PrefetchHooks Function({bool cuentaPorCobrarId})
+        > {
+  $$CuentaPorCobrarEventoTableTableManager(
+    _$AppDatabase db,
+    $CuentaPorCobrarEventoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$CuentaPorCobrarEventoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$CuentaPorCobrarEventoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$CuentaPorCobrarEventoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> cuentaPorCobrarId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => CuentaPorCobrarEventoCompanion(
+                id: id,
+                cuentaPorCobrarId: cuentaPorCobrarId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String cuentaPorCobrarId,
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => CuentaPorCobrarEventoCompanion.insert(
+                id: id,
+                cuentaPorCobrarId: cuentaPorCobrarId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$CuentaPorCobrarEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({cuentaPorCobrarId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (cuentaPorCobrarId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.cuentaPorCobrarId,
+                            referencedTable:
+                                $$CuentaPorCobrarEventoTableReferences
+                                    ._cuentaPorCobrarIdTable(db),
+                            referencedColumn:
+                                $$CuentaPorCobrarEventoTableReferences
+                                    ._cuentaPorCobrarIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CuentaPorCobrarEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CuentaPorCobrarEventoTable,
+      CuentaPorCobrarEventoData,
+      $$CuentaPorCobrarEventoTableFilterComposer,
+      $$CuentaPorCobrarEventoTableOrderingComposer,
+      $$CuentaPorCobrarEventoTableAnnotationComposer,
+      $$CuentaPorCobrarEventoTableCreateCompanionBuilder,
+      $$CuentaPorCobrarEventoTableUpdateCompanionBuilder,
+      (CuentaPorCobrarEventoData, $$CuentaPorCobrarEventoTableReferences),
+      CuentaPorCobrarEventoData,
+      PrefetchHooks Function({bool cuentaPorCobrarId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -40945,4 +44126,8 @@ class $AppDatabaseManager {
         _db,
         _db.documentoPorEmitirEvento,
       );
+  $$CuentaPorCobrarTableTableManager get cuentaPorCobrar =>
+      $$CuentaPorCobrarTableTableManager(_db, _db.cuentaPorCobrar);
+  $$CuentaPorCobrarEventoTableTableManager get cuentaPorCobrarEvento =>
+      $$CuentaPorCobrarEventoTableTableManager(_db, _db.cuentaPorCobrarEvento);
 }

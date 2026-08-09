@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/cuenta_por_cobrar_repository_impl.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
@@ -61,7 +62,7 @@ void main() {
     final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
     comercialRepo = ServicioComercialRepositoryImpl(db);
     configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
-    documentoRepo = DocumentoPorEmitirRepositoryImpl(db, AttachmentRepository(db));
+    documentoRepo = DocumentoPorEmitirRepositoryImpl(db, AttachmentRepository(db), CuentaPorCobrarRepositoryImpl(db));
 
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
     final lineaComercialValidator = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, configuracionCobroRepo);
