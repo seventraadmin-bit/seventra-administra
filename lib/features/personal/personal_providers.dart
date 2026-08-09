@@ -11,6 +11,9 @@ import 'domain/usecases/corregir_empleado_usecase.dart';
 import 'domain/usecases/crear_empleado_usecase.dart';
 import 'domain/usecases/empleado_validator.dart';
 import 'domain/usecases/guardar_domicilio_empleado_usecase.dart';
+import 'domain/usecases/registrar_antidoping_usecase.dart';
+import 'domain/usecases/registrar_estudio_socioeconomico_usecase.dart';
+import 'domain/usecases/registrar_perfil_psicologico_usecase.dart';
 
 /// Providers del dominio Personal (Etapa 5A) — nace aquí, separado de
 /// `organizacion`/`comercial`/`finanzas` (mismo criterio que la
@@ -53,4 +56,28 @@ final guardarDomicilioEmpleadoUseCaseProvider = Provider<GuardarDomicilioEmplead
 
 final adjuntarDocumentoEmpleadoUseCaseProvider = Provider<AdjuntarDocumentoEmpleadoUseCase>((ref) {
   return AdjuntarDocumentoEmpleadoUseCase(ref.watch(empleadoRepositoryProvider), ref.watch(attachmentStorageProvider));
+});
+
+final registrarPerfilPsicologicoUseCaseProvider = Provider<RegistrarPerfilPsicologicoUseCase>((ref) {
+  return RegistrarPerfilPsicologicoUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(empleadoValidatorProvider),
+  );
+});
+
+final registrarEstudioSocioeconomicoUseCaseProvider = Provider<RegistrarEstudioSocioeconomicoUseCase>((ref) {
+  return RegistrarEstudioSocioeconomicoUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(empleadoValidatorProvider),
+  );
+});
+
+final registrarAntidopingUseCaseProvider = Provider<RegistrarAntidopingUseCase>((ref) {
+  return RegistrarAntidopingUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(empleadoValidatorProvider),
+  );
 });

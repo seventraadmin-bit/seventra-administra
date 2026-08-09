@@ -19,6 +19,9 @@ enum CategoriaDocumentoEmpleado {
   certificado,
   constancia,
   contrato,
+  perfilPsicologico,
+  estudioSocioeconomico,
+  antidoping,
   otro,
 }
 

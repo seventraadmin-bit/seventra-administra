@@ -267,4 +267,96 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       return adjunto;
     });
   }
+
+  @override
+  Future<EmpleadoData> actualizarPerfilPsicologico({
+    required String empleadoId,
+    required DateTime fecha,
+    String? resumen,
+    String? observaciones,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
+        EmpleadoCompanion(
+          fechaEvaluacionPsicologica: Value(fecha),
+          resumenPsicologico: Value(resumen),
+          observacionesPsicologico: Value(observaciones),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      final actualizado = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
+
+      await _registrarEvento(
+        empleadoId: empleadoId,
+        tipoEvento: TipoEventoEmpleado.perfilPsicologicoActualizado,
+        actor: actor,
+      );
+      return actualizado;
+    });
+  }
+
+  @override
+  Future<EmpleadoData> actualizarEstudioSocioeconomico({
+    required String empleadoId,
+    required DateTime fecha,
+    String? resumen,
+    String? observaciones,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
+        EmpleadoCompanion(
+          fechaEstudioSocioeconomico: Value(fecha),
+          resumenEstudioSocioeconomico: Value(resumen),
+          observacionesEstudioSocioeconomico: Value(observaciones),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      final actualizado = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
+
+      await _registrarEvento(
+        empleadoId: empleadoId,
+        tipoEvento: TipoEventoEmpleado.estudioSocioeconomicoActualizado,
+        actor: actor,
+      );
+      return actualizado;
+    });
+  }
+
+  @override
+  Future<EmpleadoData> actualizarAntidoping({
+    required String empleadoId,
+    required DateTime fecha,
+    required ResultadoSustanciaAntidoping amp,
+    required ResultadoSustanciaAntidoping bzd,
+    required ResultadoSustanciaAntidoping coc,
+    required ResultadoSustanciaAntidoping met,
+    required ResultadoSustanciaAntidoping opi,
+    String? observaciones,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
+        EmpleadoCompanion(
+          fechaAntidoping: Value(fecha),
+          resultadoAmp: Value(amp.name),
+          resultadoBzd: Value(bzd.name),
+          resultadoCoc: Value(coc.name),
+          resultadoMet: Value(met.name),
+          resultadoOpi: Value(opi.name),
+          observacionesAntidoping: Value(observaciones),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      final actualizado = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
+
+      await _registrarEvento(
+        empleadoId: empleadoId,
+        tipoEvento: TipoEventoEmpleado.antidopingActualizado,
+        actor: actor,
+      );
+      return actualizado;
+    });
+  }
 }

@@ -16,8 +16,12 @@ import 'package:riseg_one/features/personal/domain/usecases/adjuntar_documento_e
 import 'package:riseg_one/features/personal/domain/usecases/cambiar_estatus_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/corregir_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/crear_empleado_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/empleado_alertas.dart';
 import 'package:riseg_one/features/personal/domain/usecases/empleado_validator.dart';
 import 'package:riseg_one/features/personal/domain/usecases/guardar_domicilio_empleado_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/registrar_antidoping_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/registrar_estudio_socioeconomico_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/registrar_perfil_psicologico_usecase.dart';
 
 void main() {
   late AppDatabase db;
@@ -28,6 +32,9 @@ void main() {
   late ActualizarFotografiaEmpleadoUseCase actualizarFotografia;
   late GuardarDomicilioEmpleadoUseCase guardarDomicilio;
   late AdjuntarDocumentoEmpleadoUseCase adjuntarDocumento;
+  late RegistrarPerfilPsicologicoUseCase registrarPerfilPsicologico;
+  late RegistrarEstudioSocioeconomicoUseCase registrarEstudioSocioeconomico;
+  late RegistrarAntidopingUseCase registrarAntidoping;
   late Directory tempDir;
 
   setUp(() async {
@@ -45,6 +52,9 @@ void main() {
     final storage = AttachmentStorage(tempDir.path);
     actualizarFotografia = ActualizarFotografiaEmpleadoUseCase(empleadoRepo, AttachmentRepository(db), storage);
     adjuntarDocumento = AdjuntarDocumentoEmpleadoUseCase(empleadoRepo, storage);
+    registrarPerfilPsicologico = RegistrarPerfilPsicologicoUseCase(empleadoRepo, storage, validator);
+    registrarEstudioSocioeconomico = RegistrarEstudioSocioeconomicoUseCase(empleadoRepo, storage, validator);
+    registrarAntidoping = RegistrarAntidopingUseCase(empleadoRepo, storage, validator);
   });
 
   tearDown(() async {
@@ -353,6 +363,210 @@ void main() {
         mimeType: 'application/pdf',
       );
       expect(resultado, isA<AdjuntarDocumentoEmpleadoNoExiste>());
+    });
+  });
+
+  group('RegistrarPerfilPsicologicoUseCase', () {
+    test('guarda fecha/resumen/observaciones sin PDF y registra el evento', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await registrarPerfilPsicologico.ejecutar(
+        empleadoId: empleado.id,
+        fecha: DateTime(2026, 1, 15),
+        resumen: 'Resumen de la evaluación',
+        observaciones: 'Sin observaciones adicionales',
+      );
+
+      expect(resultado, isA<RegistrarPerfilPsicologicoExitoso>());
+      final actualizado = (resultado as RegistrarPerfilPsicologicoExitoso).empleado;
+      expect(actualizado.fechaEvaluacionPsicologica, DateTime(2026, 1, 15));
+      expect(actualizado.resumenPsicologico, 'Resumen de la evaluación');
+
+      final eventos = await empleadoRepo.listarEventos(empleado.id);
+      expect(eventos.last.tipoEvento, 'perfilPsicologicoActualizado');
+    });
+
+    test('con PDF adjunta el documento en categoría perfilPsicologico', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final archivo = '${tempDir.path}/perfil.pdf';
+      File(archivo).writeAsStringSync('contenido de prueba');
+
+      final resultado = await registrarPerfilPsicologico.ejecutar(
+        empleadoId: empleado.id,
+        fecha: DateTime(2026, 1, 15),
+        sourceFilePath: archivo,
+        originalFileName: 'perfil.pdf',
+        mimeType: 'application/pdf',
+      );
+
+      expect(resultado, isA<RegistrarPerfilPsicologicoExitoso>());
+      final documentos = await AttachmentRepository(db).listarActivosPorEmpleado(empleado.id);
+      expect(documentos, hasLength(1));
+      expect(documentos.single.categoria, 'perfilPsicologico');
+    });
+
+    test('rechaza una fecha futura', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await registrarPerfilPsicologico.ejecutar(
+        empleadoId: empleado.id,
+        fecha: DateTime.now().add(const Duration(days: 1)),
+      );
+      expect(resultado, isA<RegistrarPerfilPsicologicoFechaInvalida>());
+    });
+
+    test('rechaza un Empleado inexistente', () async {
+      final resultado = await registrarPerfilPsicologico.ejecutar(empleadoId: 'no-existe', fecha: DateTime(2026, 1, 15));
+      expect(resultado, isA<RegistrarPerfilPsicologicoNoExiste>());
+    });
+  });
+
+  group('RegistrarEstudioSocioeconomicoUseCase', () {
+    test('guarda fecha/resumen/observaciones y registra el evento', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await registrarEstudioSocioeconomico.ejecutar(
+        empleadoId: empleado.id,
+        fecha: DateTime(2026, 1, 20),
+        resumen: 'Resumen del estudio',
+      );
+
+      expect(resultado, isA<RegistrarEstudioSocioeconomicoExitoso>());
+      final actualizado = (resultado as RegistrarEstudioSocioeconomicoExitoso).empleado;
+      expect(actualizado.fechaEstudioSocioeconomico, DateTime(2026, 1, 20));
+      expect(actualizado.resumenEstudioSocioeconomico, 'Resumen del estudio');
+
+      final eventos = await empleadoRepo.listarEventos(empleado.id);
+      expect(eventos.last.tipoEvento, 'estudioSocioeconomicoActualizado');
+    });
+
+    test('rechaza una fecha futura', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await registrarEstudioSocioeconomico.ejecutar(
+        empleadoId: empleado.id,
+        fecha: DateTime.now().add(const Duration(days: 1)),
+      );
+      expect(resultado, isA<RegistrarEstudioSocioeconomicoFechaInvalida>());
+    });
+
+    test('rechaza un Empleado inexistente', () async {
+      final resultado = await registrarEstudioSocioeconomico.ejecutar(empleadoId: 'no-existe', fecha: DateTime(2026, 1, 20));
+      expect(resultado, isA<RegistrarEstudioSocioeconomicoNoExiste>());
+    });
+  });
+
+  group('RegistrarAntidopingUseCase', () {
+    test('guarda un resultado por sustancia y registra el evento', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await registrarAntidoping.ejecutar(
+        empleadoId: empleado.id,
+        fecha: DateTime(2026, 1, 25),
+        amp: ResultadoSustanciaAntidoping.negativo,
+        bzd: ResultadoSustanciaAntidoping.negativo,
+        coc: ResultadoSustanciaAntidoping.positivo,
+        met: ResultadoSustanciaAntidoping.noAplica,
+        opi: ResultadoSustanciaAntidoping.noAplica,
+        observaciones: 'Panel reducido',
+      );
+
+      expect(resultado, isA<RegistrarAntidopingExitoso>());
+      final actualizado = (resultado as RegistrarAntidopingExitoso).empleado;
+      expect(actualizado.fechaAntidoping, DateTime(2026, 1, 25));
+      expect(actualizado.resultadoAmp, 'negativo');
+      expect(actualizado.resultadoCoc, 'positivo');
+      expect(actualizado.resultadoMet, 'noAplica');
+
+      final eventos = await empleadoRepo.listarEventos(empleado.id);
+      expect(eventos.last.tipoEvento, 'antidopingActualizado');
+    });
+
+    test('un Antidoping capturado con todas las sustancias en noAplica no es "no realizado"', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await registrarAntidoping.ejecutar(
+        empleadoId: empleado.id,
+        fecha: DateTime(2026, 1, 25),
+        amp: ResultadoSustanciaAntidoping.noAplica,
+        bzd: ResultadoSustanciaAntidoping.noAplica,
+        coc: ResultadoSustanciaAntidoping.noAplica,
+        met: ResultadoSustanciaAntidoping.noAplica,
+        opi: ResultadoSustanciaAntidoping.noAplica,
+      );
+
+      final actualizado = (resultado as RegistrarAntidopingExitoso).empleado;
+      expect(calcularAlertasEmpleado(actualizado).antidopingPendiente, isFalse);
+    });
+
+    test('rechaza una fecha futura', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await registrarAntidoping.ejecutar(
+        empleadoId: empleado.id,
+        fecha: DateTime.now().add(const Duration(days: 1)),
+        amp: ResultadoSustanciaAntidoping.noAplica,
+        bzd: ResultadoSustanciaAntidoping.noAplica,
+        coc: ResultadoSustanciaAntidoping.noAplica,
+        met: ResultadoSustanciaAntidoping.noAplica,
+        opi: ResultadoSustanciaAntidoping.noAplica,
+      );
+      expect(resultado, isA<RegistrarAntidopingFechaInvalida>());
+    });
+
+    test('rechaza un Empleado inexistente', () async {
+      final resultado = await registrarAntidoping.ejecutar(
+        empleadoId: 'no-existe',
+        fecha: DateTime(2026, 1, 25),
+        amp: ResultadoSustanciaAntidoping.noAplica,
+        bzd: ResultadoSustanciaAntidoping.noAplica,
+        coc: ResultadoSustanciaAntidoping.noAplica,
+        met: ResultadoSustanciaAntidoping.noAplica,
+        opi: ResultadoSustanciaAntidoping.noAplica,
+      );
+      expect(resultado, isA<RegistrarAntidopingNoExiste>());
+    });
+  });
+
+  group('EmpleadoAlertas', () {
+    test('las 3 evaluaciones nunca capturadas quedan pendientes', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final alertas = calcularAlertasEmpleado(empleado);
+      expect(alertas.perfilPsicologicoPendiente, isTrue);
+      expect(alertas.estudioSocioeconomicoPendiente, isTrue);
+      expect(alertas.antidopingPendiente, isTrue);
+      expect(alertas.tieneAlertas, isTrue);
+    });
+
+    test('capturar las 3 evaluaciones elimina todas las alertas', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      await registrarPerfilPsicologico.ejecutar(empleadoId: empleado.id, fecha: DateTime(2026, 1, 15));
+      await registrarEstudioSocioeconomico.ejecutar(empleadoId: empleado.id, fecha: DateTime(2026, 1, 20));
+      final ultimo = await registrarAntidoping.ejecutar(
+        empleadoId: empleado.id,
+        fecha: DateTime(2026, 1, 25),
+        amp: ResultadoSustanciaAntidoping.negativo,
+        bzd: ResultadoSustanciaAntidoping.negativo,
+        coc: ResultadoSustanciaAntidoping.negativo,
+        met: ResultadoSustanciaAntidoping.negativo,
+        opi: ResultadoSustanciaAntidoping.negativo,
+      );
+
+      final actualizado = (ultimo as RegistrarAntidopingExitoso).empleado;
+      expect(calcularAlertasEmpleado(actualizado).tieneAlertas, isFalse);
     });
   });
 }

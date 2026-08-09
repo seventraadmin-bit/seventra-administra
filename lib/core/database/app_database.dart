@@ -45,6 +45,7 @@ import 'migrations/migrar_attachment_v17.dart';
 import 'migrations/migrar_attachment_v18.dart';
 import 'migrations/migrar_cuenta_por_cobrar_v14.dart';
 import 'migrations/migrar_direccion_v18.dart';
+import 'migrations/migrar_empleado_v19.dart';
 import 'migrations/migrar_documento_por_emitir_v12.dart';
 import 'migrations/migrar_servicio_v6.dart';
 import 'migrations/migrar_servicio_v7.dart';
@@ -137,7 +138,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration {
@@ -452,6 +453,19 @@ class AppDatabase extends _$AppDatabase {
         // sin acotar.
         if (to >= 18 && from >= 2 && from <= 17) {
           await migrarAttachmentV18(this, m);
+        }
+        // Aditiva (Etapa 5B): 13 columnas nullable de Perfil
+        // psicológico/Estudio socioeconómico/Antidoping en `Empleado`
+        // — sin `CHECK`/`UNIQUE`, así que `ALTER TABLE ADD COLUMN`
+        // basta, sin recrear la tabla. Mismo gotcha exacto de siempre,
+        // pero en su variante estricta: `from == 18`, **nunca** `from
+        // <= 18` — cualquier origen `from <= 17` ya crea `empleado` vía
+        // `m.createTable(empleado)` (bloque `to >= 18` arriba), que
+        // para cuando existe este bloque ya lee la forma *actual* de
+        // la clase Dart, la cual YA incluye estas 13 columnas. Ver el
+        // doc comment de `migrarEmpleadoV19` para el detalle completo.
+        if (to >= 19 && from == 18) {
+          await migrarEmpleadoV19(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

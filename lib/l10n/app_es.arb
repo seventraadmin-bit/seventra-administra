@@ -1569,6 +1569,10 @@
   "empleadoSeccionDomicilio": "Domicilio",
   "empleadoSeccionDocumentacion": "Documentación",
   "empleadoSeccionHistorial": "Historial administrativo",
+  "empleadoSeccionEvaluaciones": "Evaluaciones",
+  "empleadoSeccionPerfilPsicologico": "Perfil psicológico",
+  "empleadoSeccionEstudioSocioeconomico": "Estudio socioeconómico",
+  "empleadoSeccionAntidoping": "Antidoping",
 
   "empleadoCampoNombres": "Nombre(s)",
   "empleadoCampoApellidoPaterno": "Apellido paterno",
@@ -1670,6 +1674,9 @@
   "categoriaDocumentoEmpleadoCertificado": "Certificado",
   "categoriaDocumentoEmpleadoConstancia": "Constancia",
   "categoriaDocumentoEmpleadoContrato": "Contrato",
+  "categoriaDocumentoEmpleadoPerfilPsicologico": "Perfil psicológico",
+  "categoriaDocumentoEmpleadoEstudioSocioeconomico": "Estudio socioeconómico",
+  "categoriaDocumentoEmpleadoAntidoping": "Antidoping",
   "categoriaDocumentoEmpleadoOtro": "Otro",
 
   "empleadosListadoCargaErrorTitulo": "No se pudo cargar el expediente de Empleados",
@@ -1687,6 +1694,8 @@
   "empleadosColumnaNombre": "Nombre",
   "empleadosColumnaPuesto": "Puesto",
   "empleadosColumnaEstatus": "Estatus",
+  "empleadosColumnaEvaluaciones": "Evaluaciones",
+  "empleadosColumnaEvaluacionesPendientes": "Pendiente",
 
   "empleadoExpedienteTitulo": "Expediente del empleado",
   "empleadoDetalleBotonCorregir": "Corregir",
@@ -1724,6 +1733,9 @@
   "empleadoDetalleHistorialEventoFotografiaActualizada": "Fotografía actualizada",
   "empleadoDetalleHistorialEventoDocumentoAdjuntado": "Documento adjuntado",
   "empleadoDetalleHistorialEventoDocumentoArchivado": "Documento archivado",
+  "empleadoDetalleHistorialEventoPerfilPsicologicoActualizado": "Perfil psicológico actualizado",
+  "empleadoDetalleHistorialEventoEstudioSocioeconomicoActualizado": "Estudio socioeconómico actualizado",
+  "empleadoDetalleHistorialEventoAntidopingActualizado": "Antidoping actualizado",
 
   "cambiarEstatusEmpleadoDialogoTitulo": "Cambiar estatus",
   "cambiarEstatusEmpleadoBotonConfirmar": "Confirmar",
@@ -1734,5 +1746,42 @@
   "cambiarEstatusEmpleadoExito": "Estatus actualizado correctamente.",
   "cambiarEstatusEmpleadoErrorInesperado": "No se pudo cambiar el estatus. Intenta de nuevo.",
 
-  "actualizarFotografiaEmpleadoErrorInesperado": "No se pudo actualizar la fotografía. Intenta de nuevo."
+  "actualizarFotografiaEmpleadoErrorInesperado": "No se pudo actualizar la fotografía. Intenta de nuevo.",
+
+  "evaluacionEmpleadoBotonRegistrar": "Registrar",
+  "evaluacionEmpleadoPendiente": "Pendiente",
+  "evaluacionEmpleadoCampoFecha": "Fecha",
+  "evaluacionEmpleadoCampoObservaciones": "Observaciones",
+  "evaluacionEmpleadoSinPdf": "Sin PDF adjunto",
+  "evaluacionEmpleadoBotonSeleccionarPdf": "Adjuntar PDF",
+  "evaluacionEmpleadoErrorFechaInvalida": "Ingresa una fecha válida (no futura).",
+
+  "perfilPsicologicoEmpleadoDialogoTitulo": "Perfil psicológico",
+  "perfilPsicologicoEmpleadoBotonConfirmar": "Guardar",
+  "perfilPsicologicoEmpleadoBotonCancelar": "Cancelar",
+  "perfilPsicologicoEmpleadoCampoResumen": "Resumen",
+  "perfilPsicologicoEmpleadoExito": "Perfil psicológico guardado correctamente.",
+  "perfilPsicologicoEmpleadoErrorInesperado": "No se pudo guardar el perfil psicológico. Intenta de nuevo.",
+
+  "estudioSocioeconomicoEmpleadoDialogoTitulo": "Estudio socioeconómico",
+  "estudioSocioeconomicoEmpleadoBotonConfirmar": "Guardar",
+  "estudioSocioeconomicoEmpleadoBotonCancelar": "Cancelar",
+  "estudioSocioeconomicoEmpleadoCampoResumen": "Resumen",
+  "estudioSocioeconomicoEmpleadoExito": "Estudio socioeconómico guardado correctamente.",
+  "estudioSocioeconomicoEmpleadoErrorInesperado": "No se pudo guardar el estudio socioeconómico. Intenta de nuevo.",
+
+  "antidopingEmpleadoDialogoTitulo": "Antidoping",
+  "antidopingEmpleadoBotonConfirmar": "Guardar",
+  "antidopingEmpleadoBotonCancelar": "Cancelar",
+  "antidopingEmpleadoCampoAmp": "AMP (Anfetaminas)",
+  "antidopingEmpleadoCampoBzd": "BZD (Benzodiacepinas)",
+  "antidopingEmpleadoCampoCoc": "COC (Cocaína)",
+  "antidopingEmpleadoCampoMet": "MET (Metanfetaminas)",
+  "antidopingEmpleadoCampoOpi": "OPI (Opiáceos)",
+  "antidopingEmpleadoExito": "Antidoping guardado correctamente.",
+  "antidopingEmpleadoErrorInesperado": "No se pudo guardar el antidoping. Intenta de nuevo.",
+
+  "resultadoSustanciaAntidopingNegativo": "Negativo",
+  "resultadoSustanciaAntidopingPositivo": "Positivo",
+  "resultadoSustanciaAntidopingNoAplica": "No aplica"
 }

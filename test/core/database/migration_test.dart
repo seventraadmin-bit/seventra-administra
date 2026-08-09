@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 18;
+const _currentSchemaVersion = 19;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -5215,6 +5215,144 @@ void main() {
             ),
         throwsA(anything),
       );
+
+      await db.close();
+    },
+  );
+
+  test(
+    '19.json coincide con el esquema final de la Etapa 5B (13 columnas nuevas nullable en Empleado, sin tablas nuevas)',
+    () async {
+      final schema = await verifier.schemaAt(19);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      // Sin tablas nuevas — 5B solo agrega columnas a Empleado.
+      expect(tablas, contains('empleado'));
+      expect(tablas, isNot(contains('empleado_evaluacion')), reason: 'sin tablas satélite, sin historial de evaluaciones');
+
+      final columnasNuevas = [
+        'fecha_evaluacion_psicologica',
+        'resumen_psicologico',
+        'observaciones_psicologico',
+        'fecha_estudio_socioeconomico',
+        'resumen_estudio_socioeconomico',
+        'observaciones_estudio_socioeconomico',
+        'fecha_antidoping',
+        'resultado_amp',
+        'resultado_bzd',
+        'resultado_coc',
+        'resultado_met',
+        'resultado_opi',
+        'observaciones_antidoping',
+      ];
+      final columnasEmpleado = schema.rawDatabase.select('PRAGMA table_info(empleado)').toList();
+      for (final nombre in columnasNuevas) {
+        final columna = columnasEmpleado.firstWhere(
+          (c) => c['name'] == nombre,
+          orElse: () => throw StateError('Falta la columna $nombre en empleado (19.json)'),
+        );
+        expect(columna['notnull'], 0, reason: '$nombre debe ser nullable');
+      }
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 18 → 19 conserva un Empleado real y deja las 13 columnas nuevas en NULL (sin backfill)',
+    () async {
+      final schemaV18 = await verifier.schemaAt(18);
+      final raw = schemaV18.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO empleado (
+        id, codigo_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 'EMP-000001', 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1735689600, 3, 'activo',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV18.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleados = await db.select(db.empleado).get();
+      expect(empleados, hasLength(1), reason: 'ningún Empleado real debe perderse en una migración aditiva');
+      final empleado = empleados.single;
+      expect(empleado.codigoEmpleado, 'EMP-000001');
+      expect(empleado.fechaEvaluacionPsicologica, isNull);
+      expect(empleado.resumenPsicologico, isNull);
+      expect(empleado.fechaEstudioSocioeconomico, isNull);
+      expect(empleado.fechaAntidoping, isNull);
+      expect(empleado.resultadoAmp, isNull);
+      expect(empleado.resultadoOpi, isNull);
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'acepta un Empleado con Perfil psicológico/Estudio socioeconómico/Antidoping capturados tras la migración',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
+            EmpleadoCompanion.insert(
+              codigoEmpleado: 'EMP-000001',
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+              fechaEvaluacionPsicologica: const Value(null),
+            ),
+          );
+
+      final actualizado = await (db.update(db.empleado)..where((t) => t.id.equals(empleado.id))).writeReturning(
+        EmpleadoCompanion(
+          fechaEvaluacionPsicologica: Value(DateTime(2026, 1, 15)),
+          resumenPsicologico: const Value('Resumen'),
+          fechaEstudioSocioeconomico: Value(DateTime(2026, 1, 20)),
+          fechaAntidoping: Value(DateTime(2026, 1, 25)),
+          resultadoAmp: const Value('negativo'),
+          resultadoBzd: const Value('negativo'),
+          resultadoCoc: const Value('positivo'),
+          resultadoMet: const Value('noAplica'),
+          resultadoOpi: const Value('noAplica'),
+        ),
+      );
+
+      expect(actualizado.single.resultadoCoc, 'positivo');
+      expect(actualizado.single.resultadoMet, 'noAplica');
 
       await db.close();
     },

@@ -17,9 +17,12 @@ import '../../personal_providers.dart';
 import 'empleados_list_controller.dart';
 import 'empleados_list_screen.dart';
 import 'widgets/adjuntar_documento_empleado_dialog.dart';
+import 'widgets/antidoping_empleado_dialog.dart';
 import 'widgets/corregir_empleado_dialog.dart';
 import 'widgets/crear_empleado_dialog.dart';
 import 'widgets/domicilio_empleado_dialog.dart';
+import 'widgets/estudio_socioeconomico_empleado_dialog.dart';
+import 'widgets/perfil_psicologico_empleado_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
@@ -100,6 +103,9 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       TipoEventoEmpleado.fotografiaActualizada => l10n.empleadoDetalleHistorialEventoFotografiaActualizada,
       TipoEventoEmpleado.documentoAdjuntado => l10n.empleadoDetalleHistorialEventoDocumentoAdjuntado,
       TipoEventoEmpleado.documentoArchivado => l10n.empleadoDetalleHistorialEventoDocumentoArchivado,
+      TipoEventoEmpleado.perfilPsicologicoActualizado => l10n.empleadoDetalleHistorialEventoPerfilPsicologicoActualizado,
+      TipoEventoEmpleado.estudioSocioeconomicoActualizado => l10n.empleadoDetalleHistorialEventoEstudioSocioeconomicoActualizado,
+      TipoEventoEmpleado.antidopingActualizado => l10n.empleadoDetalleHistorialEventoAntidopingActualizado,
     };
   }
 
@@ -116,6 +122,21 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   Future<void> _adjuntarDocumento() async {
     final adjunto = await mostrarDialogoAdjuntarDocumentoEmpleado(context, ref, widget.empleadoId);
     if (adjunto) await _cargar();
+  }
+
+  Future<void> _registrarPerfilPsicologico() async {
+    final actualizo = await mostrarDialogoPerfilPsicologicoEmpleado(context, ref, _empleado!);
+    if (actualizo) await _cargar();
+  }
+
+  Future<void> _registrarEstudioSocioeconomico() async {
+    final actualizo = await mostrarDialogoEstudioSocioeconomicoEmpleado(context, ref, _empleado!);
+    if (actualizo) await _cargar();
+  }
+
+  Future<void> _registrarAntidoping() async {
+    final actualizo = await mostrarDialogoAntidopingEmpleado(context, ref, _empleado!);
+    if (actualizo) await _cargar();
   }
 
   Future<void> _actualizarFotografia() async {
@@ -408,6 +429,132 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                       CampoConsulta(label: l10n.empleadoCampoResumenExperiencia, value: empleado.resumenExperiencia),
                       const SizedBox(height: AppSpacing.sm),
                       CampoConsulta(label: l10n.empleadoCampoObservacionesExperiencia, value: empleado.observacionesExperiencia),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.empleadoSeccionEvaluaciones, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(l10n.empleadoSeccionPerfilPsicologico, style: AppTypography.label),
+                          ),
+                          RisegButton(
+                            label: empleado.fechaEvaluacionPsicologica == null
+                                ? l10n.evaluacionEmpleadoBotonRegistrar
+                                : l10n.empleadoDetalleBotonEditar,
+                            variant: RisegButtonVariant.ghost,
+                            onPressed: _registrarPerfilPsicologico,
+                          ),
+                        ],
+                      ),
+                      if (empleado.fechaEvaluacionPsicologica == null)
+                        RisegStatusBadge(label: l10n.evaluacionEmpleadoPendiente, tone: RisegStatusTone.warning)
+                      else ...[
+                        CampoConsulta(
+                          label: l10n.evaluacionEmpleadoCampoFecha,
+                          value: _formatoFecha.format(empleado.fechaEvaluacionPsicologica!),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(label: l10n.perfilPsicologicoEmpleadoCampoResumen, value: empleado.resumenPsicologico),
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(label: l10n.evaluacionEmpleadoCampoObservaciones, value: empleado.observacionesPsicologico),
+                      ],
+                      const SizedBox(height: AppSpacing.lg),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(l10n.empleadoSeccionEstudioSocioeconomico, style: AppTypography.label),
+                          ),
+                          RisegButton(
+                            label: empleado.fechaEstudioSocioeconomico == null
+                                ? l10n.evaluacionEmpleadoBotonRegistrar
+                                : l10n.empleadoDetalleBotonEditar,
+                            variant: RisegButtonVariant.ghost,
+                            onPressed: _registrarEstudioSocioeconomico,
+                          ),
+                        ],
+                      ),
+                      if (empleado.fechaEstudioSocioeconomico == null)
+                        RisegStatusBadge(label: l10n.evaluacionEmpleadoPendiente, tone: RisegStatusTone.warning)
+                      else ...[
+                        CampoConsulta(
+                          label: l10n.evaluacionEmpleadoCampoFecha,
+                          value: _formatoFecha.format(empleado.fechaEstudioSocioeconomico!),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(
+                          label: l10n.estudioSocioeconomicoEmpleadoCampoResumen,
+                          value: empleado.resumenEstudioSocioeconomico,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(
+                          label: l10n.evaluacionEmpleadoCampoObservaciones,
+                          value: empleado.observacionesEstudioSocioeconomico,
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.lg),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(l10n.empleadoSeccionAntidoping, style: AppTypography.label),
+                          ),
+                          RisegButton(
+                            label: empleado.fechaAntidoping == null
+                                ? l10n.evaluacionEmpleadoBotonRegistrar
+                                : l10n.empleadoDetalleBotonEditar,
+                            variant: RisegButtonVariant.ghost,
+                            onPressed: _registrarAntidoping,
+                          ),
+                        ],
+                      ),
+                      if (empleado.fechaAntidoping == null)
+                        RisegStatusBadge(label: l10n.evaluacionEmpleadoPendiente, tone: RisegStatusTone.warning)
+                      else ...[
+                        CampoConsulta(
+                          label: l10n.evaluacionEmpleadoCampoFecha,
+                          value: _formatoFecha.format(empleado.fechaAntidoping!),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Wrap(
+                          spacing: AppSpacing.xs,
+                          runSpacing: AppSpacing.xs,
+                          children: [
+                            if (empleado.resultadoAmp != null)
+                              RisegStatusBadge(
+                                label: '${l10n.antidopingEmpleadoCampoAmp}: ${resultadoSustanciaAntidopingLabel(l10n, empleado.resultadoAmp!)}',
+                                tone: resultadoSustanciaAntidopingTono(empleado.resultadoAmp!),
+                              ),
+                            if (empleado.resultadoBzd != null)
+                              RisegStatusBadge(
+                                label: '${l10n.antidopingEmpleadoCampoBzd}: ${resultadoSustanciaAntidopingLabel(l10n, empleado.resultadoBzd!)}',
+                                tone: resultadoSustanciaAntidopingTono(empleado.resultadoBzd!),
+                              ),
+                            if (empleado.resultadoCoc != null)
+                              RisegStatusBadge(
+                                label: '${l10n.antidopingEmpleadoCampoCoc}: ${resultadoSustanciaAntidopingLabel(l10n, empleado.resultadoCoc!)}',
+                                tone: resultadoSustanciaAntidopingTono(empleado.resultadoCoc!),
+                              ),
+                            if (empleado.resultadoMet != null)
+                              RisegStatusBadge(
+                                label: '${l10n.antidopingEmpleadoCampoMet}: ${resultadoSustanciaAntidopingLabel(l10n, empleado.resultadoMet!)}',
+                                tone: resultadoSustanciaAntidopingTono(empleado.resultadoMet!),
+                              ),
+                            if (empleado.resultadoOpi != null)
+                              RisegStatusBadge(
+                                label: '${l10n.antidopingEmpleadoCampoOpi}: ${resultadoSustanciaAntidopingLabel(l10n, empleado.resultadoOpi!)}',
+                                tone: resultadoSustanciaAntidopingTono(empleado.resultadoOpi!),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(label: l10n.evaluacionEmpleadoCampoObservaciones, value: empleado.observacionesAntidoping),
+                      ],
                     ],
                   ),
                 ),

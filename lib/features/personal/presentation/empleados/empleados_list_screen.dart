@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
+import 'package:riseg_one/features/personal/domain/usecases/empleado_alertas.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import 'empleados_list_controller.dart';
@@ -156,6 +157,18 @@ class _EmpleadosListScreenState extends ConsumerState<EmpleadosListScreen> {
                   width: 130,
                   cellBuilder: (e) =>
                       RisegStatusBadge(label: empleadoEstatusLabel(l10n, e.estatus), tone: empleadoEstatusTono(e.estatus)),
+                ),
+                RisegColumn<EmpleadoData>(
+                  label: l10n.empleadosColumnaEvaluaciones,
+                  width: 150,
+                  cellBuilder: (e) {
+                    final alertas = calcularAlertasEmpleado(e);
+                    if (!alertas.tieneAlertas) return const SizedBox.shrink();
+                    return RisegStatusBadge(
+                      label: l10n.empleadosColumnaEvaluacionesPendientes,
+                      tone: RisegStatusTone.warning,
+                    );
+                  },
                 ),
               ],
             ),

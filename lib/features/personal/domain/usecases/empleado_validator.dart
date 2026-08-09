@@ -35,4 +35,12 @@ class EmpleadoValidator {
     final edadAlIngresar = calcularEdad(fechaNacimiento, hoy: fechaIngreso);
     return edadAlIngresar >= 15;
   }
+
+  /// Regla mínima compartida por las 3 fechas de evaluación (Perfil
+  /// psicológico, Estudio socioeconómico, Antidoping, Etapa 5B): nunca
+  /// futuras. Sin reglas de vigencia/vencimiento — fuera de alcance
+  /// explícito de esta etapa.
+  bool fechaEvaluacionValida(DateTime fecha, {DateTime? hoy}) {
+    return !fecha.isAfter(hoy ?? DateTime.now());
+  }
 }

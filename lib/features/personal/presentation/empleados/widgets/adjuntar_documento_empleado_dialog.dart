@@ -21,6 +21,9 @@ String categoriaDocumentoEmpleadoLabel(AppLocalizations l10n, String valor) {
     CategoriaDocumentoEmpleado.certificado => l10n.categoriaDocumentoEmpleadoCertificado,
     CategoriaDocumentoEmpleado.constancia => l10n.categoriaDocumentoEmpleadoConstancia,
     CategoriaDocumentoEmpleado.contrato => l10n.categoriaDocumentoEmpleadoContrato,
+    CategoriaDocumentoEmpleado.perfilPsicologico => l10n.categoriaDocumentoEmpleadoPerfilPsicologico,
+    CategoriaDocumentoEmpleado.estudioSocioeconomico => l10n.categoriaDocumentoEmpleadoEstudioSocioeconomico,
+    CategoriaDocumentoEmpleado.antidoping => l10n.categoriaDocumentoEmpleadoAntidoping,
     CategoriaDocumentoEmpleado.otro => l10n.categoriaDocumentoEmpleadoOtro,
   };
 }

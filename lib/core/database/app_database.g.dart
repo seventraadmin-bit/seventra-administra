@@ -31305,6 +31305,150 @@ class $EmpleadoTable extends Empleado
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _fechaEvaluacionPsicologicaMeta =
+      const VerificationMeta('fechaEvaluacionPsicologica');
+  @override
+  late final GeneratedColumn<DateTime> fechaEvaluacionPsicologica =
+      GeneratedColumn<DateTime>(
+        'fecha_evaluacion_psicologica',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _resumenPsicologicoMeta =
+      const VerificationMeta('resumenPsicologico');
+  @override
+  late final GeneratedColumn<String> resumenPsicologico =
+      GeneratedColumn<String>(
+        'resumen_psicologico',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesPsicologicoMeta =
+      const VerificationMeta('observacionesPsicologico');
+  @override
+  late final GeneratedColumn<String> observacionesPsicologico =
+      GeneratedColumn<String>(
+        'observaciones_psicologico',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _fechaEstudioSocioeconomicoMeta =
+      const VerificationMeta('fechaEstudioSocioeconomico');
+  @override
+  late final GeneratedColumn<DateTime> fechaEstudioSocioeconomico =
+      GeneratedColumn<DateTime>(
+        'fecha_estudio_socioeconomico',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _resumenEstudioSocioeconomicoMeta =
+      const VerificationMeta('resumenEstudioSocioeconomico');
+  @override
+  late final GeneratedColumn<String> resumenEstudioSocioeconomico =
+      GeneratedColumn<String>(
+        'resumen_estudio_socioeconomico',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesEstudioSocioeconomicoMeta =
+      const VerificationMeta('observacionesEstudioSocioeconomico');
+  @override
+  late final GeneratedColumn<String> observacionesEstudioSocioeconomico =
+      GeneratedColumn<String>(
+        'observaciones_estudio_socioeconomico',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _fechaAntidopingMeta = const VerificationMeta(
+    'fechaAntidoping',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaAntidoping =
+      GeneratedColumn<DateTime>(
+        'fecha_antidoping',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _resultadoAmpMeta = const VerificationMeta(
+    'resultadoAmp',
+  );
+  @override
+  late final GeneratedColumn<String> resultadoAmp = GeneratedColumn<String>(
+    'resultado_amp',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resultadoBzdMeta = const VerificationMeta(
+    'resultadoBzd',
+  );
+  @override
+  late final GeneratedColumn<String> resultadoBzd = GeneratedColumn<String>(
+    'resultado_bzd',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resultadoCocMeta = const VerificationMeta(
+    'resultadoCoc',
+  );
+  @override
+  late final GeneratedColumn<String> resultadoCoc = GeneratedColumn<String>(
+    'resultado_coc',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resultadoMetMeta = const VerificationMeta(
+    'resultadoMet',
+  );
+  @override
+  late final GeneratedColumn<String> resultadoMet = GeneratedColumn<String>(
+    'resultado_met',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resultadoOpiMeta = const VerificationMeta(
+    'resultadoOpi',
+  );
+  @override
+  late final GeneratedColumn<String> resultadoOpi = GeneratedColumn<String>(
+    'resultado_opi',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesAntidopingMeta =
+      const VerificationMeta('observacionesAntidoping');
+  @override
+  late final GeneratedColumn<String> observacionesAntidoping =
+      GeneratedColumn<String>(
+        'observaciones_antidoping',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -31341,6 +31485,19 @@ class $EmpleadoTable extends Empleado
     ultimoPuestoDesempenado,
     resumenExperiencia,
     observacionesExperiencia,
+    fechaEvaluacionPsicologica,
+    resumenPsicologico,
+    observacionesPsicologico,
+    fechaEstudioSocioeconomico,
+    resumenEstudioSocioeconomico,
+    observacionesEstudioSocioeconomico,
+    fechaAntidoping,
+    resultadoAmp,
+    resultadoBzd,
+    resultadoCoc,
+    resultadoMet,
+    resultadoOpi,
+    observacionesAntidoping,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -31640,6 +31797,123 @@ class $EmpleadoTable extends Empleado
         ),
       );
     }
+    if (data.containsKey('fecha_evaluacion_psicologica')) {
+      context.handle(
+        _fechaEvaluacionPsicologicaMeta,
+        fechaEvaluacionPsicologica.isAcceptableOrUnknown(
+          data['fecha_evaluacion_psicologica']!,
+          _fechaEvaluacionPsicologicaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resumen_psicologico')) {
+      context.handle(
+        _resumenPsicologicoMeta,
+        resumenPsicologico.isAcceptableOrUnknown(
+          data['resumen_psicologico']!,
+          _resumenPsicologicoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones_psicologico')) {
+      context.handle(
+        _observacionesPsicologicoMeta,
+        observacionesPsicologico.isAcceptableOrUnknown(
+          data['observaciones_psicologico']!,
+          _observacionesPsicologicoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_estudio_socioeconomico')) {
+      context.handle(
+        _fechaEstudioSocioeconomicoMeta,
+        fechaEstudioSocioeconomico.isAcceptableOrUnknown(
+          data['fecha_estudio_socioeconomico']!,
+          _fechaEstudioSocioeconomicoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resumen_estudio_socioeconomico')) {
+      context.handle(
+        _resumenEstudioSocioeconomicoMeta,
+        resumenEstudioSocioeconomico.isAcceptableOrUnknown(
+          data['resumen_estudio_socioeconomico']!,
+          _resumenEstudioSocioeconomicoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones_estudio_socioeconomico')) {
+      context.handle(
+        _observacionesEstudioSocioeconomicoMeta,
+        observacionesEstudioSocioeconomico.isAcceptableOrUnknown(
+          data['observaciones_estudio_socioeconomico']!,
+          _observacionesEstudioSocioeconomicoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_antidoping')) {
+      context.handle(
+        _fechaAntidopingMeta,
+        fechaAntidoping.isAcceptableOrUnknown(
+          data['fecha_antidoping']!,
+          _fechaAntidopingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resultado_amp')) {
+      context.handle(
+        _resultadoAmpMeta,
+        resultadoAmp.isAcceptableOrUnknown(
+          data['resultado_amp']!,
+          _resultadoAmpMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resultado_bzd')) {
+      context.handle(
+        _resultadoBzdMeta,
+        resultadoBzd.isAcceptableOrUnknown(
+          data['resultado_bzd']!,
+          _resultadoBzdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resultado_coc')) {
+      context.handle(
+        _resultadoCocMeta,
+        resultadoCoc.isAcceptableOrUnknown(
+          data['resultado_coc']!,
+          _resultadoCocMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resultado_met')) {
+      context.handle(
+        _resultadoMetMeta,
+        resultadoMet.isAcceptableOrUnknown(
+          data['resultado_met']!,
+          _resultadoMetMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resultado_opi')) {
+      context.handle(
+        _resultadoOpiMeta,
+        resultadoOpi.isAcceptableOrUnknown(
+          data['resultado_opi']!,
+          _resultadoOpiMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones_antidoping')) {
+      context.handle(
+        _observacionesAntidopingMeta,
+        observacionesAntidoping.isAcceptableOrUnknown(
+          data['observaciones_antidoping']!,
+          _observacionesAntidopingMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -31802,6 +32076,58 @@ class $EmpleadoTable extends Empleado
         DriftSqlType.string,
         data['${effectivePrefix}observaciones_experiencia'],
       ),
+      fechaEvaluacionPsicologica: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_evaluacion_psicologica'],
+      ),
+      resumenPsicologico: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resumen_psicologico'],
+      ),
+      observacionesPsicologico: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_psicologico'],
+      ),
+      fechaEstudioSocioeconomico: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_estudio_socioeconomico'],
+      ),
+      resumenEstudioSocioeconomico: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resumen_estudio_socioeconomico'],
+      ),
+      observacionesEstudioSocioeconomico: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_estudio_socioeconomico'],
+      ),
+      fechaAntidoping: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_antidoping'],
+      ),
+      resultadoAmp: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resultado_amp'],
+      ),
+      resultadoBzd: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resultado_bzd'],
+      ),
+      resultadoCoc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resultado_coc'],
+      ),
+      resultadoMet: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resultado_met'],
+      ),
+      resultadoOpi: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resultado_opi'],
+      ),
+      observacionesAntidoping: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_antidoping'],
+      ),
     );
   }
 
@@ -31851,6 +32177,19 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
   final String? ultimoPuestoDesempenado;
   final String? resumenExperiencia;
   final String? observacionesExperiencia;
+  final DateTime? fechaEvaluacionPsicologica;
+  final String? resumenPsicologico;
+  final String? observacionesPsicologico;
+  final DateTime? fechaEstudioSocioeconomico;
+  final String? resumenEstudioSocioeconomico;
+  final String? observacionesEstudioSocioeconomico;
+  final DateTime? fechaAntidoping;
+  final String? resultadoAmp;
+  final String? resultadoBzd;
+  final String? resultadoCoc;
+  final String? resultadoMet;
+  final String? resultadoOpi;
+  final String? observacionesAntidoping;
   const EmpleadoData({
     required this.id,
     required this.createdAt,
@@ -31886,6 +32225,19 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     this.ultimoPuestoDesempenado,
     this.resumenExperiencia,
     this.observacionesExperiencia,
+    this.fechaEvaluacionPsicologica,
+    this.resumenPsicologico,
+    this.observacionesPsicologico,
+    this.fechaEstudioSocioeconomico,
+    this.resumenEstudioSocioeconomico,
+    this.observacionesEstudioSocioeconomico,
+    this.fechaAntidoping,
+    this.resultadoAmp,
+    this.resultadoBzd,
+    this.resultadoCoc,
+    this.resultadoMet,
+    this.resultadoOpi,
+    this.observacionesAntidoping,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -31970,6 +32322,57 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     if (!nullToAbsent || observacionesExperiencia != null) {
       map['observaciones_experiencia'] = Variable<String>(
         observacionesExperiencia,
+      );
+    }
+    if (!nullToAbsent || fechaEvaluacionPsicologica != null) {
+      map['fecha_evaluacion_psicologica'] = Variable<DateTime>(
+        fechaEvaluacionPsicologica,
+      );
+    }
+    if (!nullToAbsent || resumenPsicologico != null) {
+      map['resumen_psicologico'] = Variable<String>(resumenPsicologico);
+    }
+    if (!nullToAbsent || observacionesPsicologico != null) {
+      map['observaciones_psicologico'] = Variable<String>(
+        observacionesPsicologico,
+      );
+    }
+    if (!nullToAbsent || fechaEstudioSocioeconomico != null) {
+      map['fecha_estudio_socioeconomico'] = Variable<DateTime>(
+        fechaEstudioSocioeconomico,
+      );
+    }
+    if (!nullToAbsent || resumenEstudioSocioeconomico != null) {
+      map['resumen_estudio_socioeconomico'] = Variable<String>(
+        resumenEstudioSocioeconomico,
+      );
+    }
+    if (!nullToAbsent || observacionesEstudioSocioeconomico != null) {
+      map['observaciones_estudio_socioeconomico'] = Variable<String>(
+        observacionesEstudioSocioeconomico,
+      );
+    }
+    if (!nullToAbsent || fechaAntidoping != null) {
+      map['fecha_antidoping'] = Variable<DateTime>(fechaAntidoping);
+    }
+    if (!nullToAbsent || resultadoAmp != null) {
+      map['resultado_amp'] = Variable<String>(resultadoAmp);
+    }
+    if (!nullToAbsent || resultadoBzd != null) {
+      map['resultado_bzd'] = Variable<String>(resultadoBzd);
+    }
+    if (!nullToAbsent || resultadoCoc != null) {
+      map['resultado_coc'] = Variable<String>(resultadoCoc);
+    }
+    if (!nullToAbsent || resultadoMet != null) {
+      map['resultado_met'] = Variable<String>(resultadoMet);
+    }
+    if (!nullToAbsent || resultadoOpi != null) {
+      map['resultado_opi'] = Variable<String>(resultadoOpi);
+    }
+    if (!nullToAbsent || observacionesAntidoping != null) {
+      map['observaciones_antidoping'] = Variable<String>(
+        observacionesAntidoping,
       );
     }
     return map;
@@ -32062,6 +32465,58 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           observacionesExperiencia == null && nullToAbsent
               ? const Value.absent()
               : Value(observacionesExperiencia),
+      fechaEvaluacionPsicologica:
+          fechaEvaluacionPsicologica == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaEvaluacionPsicologica),
+      resumenPsicologico:
+          resumenPsicologico == null && nullToAbsent
+              ? const Value.absent()
+              : Value(resumenPsicologico),
+      observacionesPsicologico:
+          observacionesPsicologico == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesPsicologico),
+      fechaEstudioSocioeconomico:
+          fechaEstudioSocioeconomico == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaEstudioSocioeconomico),
+      resumenEstudioSocioeconomico:
+          resumenEstudioSocioeconomico == null && nullToAbsent
+              ? const Value.absent()
+              : Value(resumenEstudioSocioeconomico),
+      observacionesEstudioSocioeconomico:
+          observacionesEstudioSocioeconomico == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesEstudioSocioeconomico),
+      fechaAntidoping:
+          fechaAntidoping == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaAntidoping),
+      resultadoAmp:
+          resultadoAmp == null && nullToAbsent
+              ? const Value.absent()
+              : Value(resultadoAmp),
+      resultadoBzd:
+          resultadoBzd == null && nullToAbsent
+              ? const Value.absent()
+              : Value(resultadoBzd),
+      resultadoCoc:
+          resultadoCoc == null && nullToAbsent
+              ? const Value.absent()
+              : Value(resultadoCoc),
+      resultadoMet:
+          resultadoMet == null && nullToAbsent
+              ? const Value.absent()
+              : Value(resultadoMet),
+      resultadoOpi:
+          resultadoOpi == null && nullToAbsent
+              ? const Value.absent()
+              : Value(resultadoOpi),
+      observacionesAntidoping:
+          observacionesAntidoping == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesAntidoping),
     );
   }
 
@@ -32127,6 +32582,33 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       observacionesExperiencia: serializer.fromJson<String?>(
         json['observacionesExperiencia'],
       ),
+      fechaEvaluacionPsicologica: serializer.fromJson<DateTime?>(
+        json['fechaEvaluacionPsicologica'],
+      ),
+      resumenPsicologico: serializer.fromJson<String?>(
+        json['resumenPsicologico'],
+      ),
+      observacionesPsicologico: serializer.fromJson<String?>(
+        json['observacionesPsicologico'],
+      ),
+      fechaEstudioSocioeconomico: serializer.fromJson<DateTime?>(
+        json['fechaEstudioSocioeconomico'],
+      ),
+      resumenEstudioSocioeconomico: serializer.fromJson<String?>(
+        json['resumenEstudioSocioeconomico'],
+      ),
+      observacionesEstudioSocioeconomico: serializer.fromJson<String?>(
+        json['observacionesEstudioSocioeconomico'],
+      ),
+      fechaAntidoping: serializer.fromJson<DateTime?>(json['fechaAntidoping']),
+      resultadoAmp: serializer.fromJson<String?>(json['resultadoAmp']),
+      resultadoBzd: serializer.fromJson<String?>(json['resultadoBzd']),
+      resultadoCoc: serializer.fromJson<String?>(json['resultadoCoc']),
+      resultadoMet: serializer.fromJson<String?>(json['resultadoMet']),
+      resultadoOpi: serializer.fromJson<String?>(json['resultadoOpi']),
+      observacionesAntidoping: serializer.fromJson<String?>(
+        json['observacionesAntidoping'],
+      ),
     );
   }
   @override
@@ -32181,6 +32663,31 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       'observacionesExperiencia': serializer.toJson<String?>(
         observacionesExperiencia,
       ),
+      'fechaEvaluacionPsicologica': serializer.toJson<DateTime?>(
+        fechaEvaluacionPsicologica,
+      ),
+      'resumenPsicologico': serializer.toJson<String?>(resumenPsicologico),
+      'observacionesPsicologico': serializer.toJson<String?>(
+        observacionesPsicologico,
+      ),
+      'fechaEstudioSocioeconomico': serializer.toJson<DateTime?>(
+        fechaEstudioSocioeconomico,
+      ),
+      'resumenEstudioSocioeconomico': serializer.toJson<String?>(
+        resumenEstudioSocioeconomico,
+      ),
+      'observacionesEstudioSocioeconomico': serializer.toJson<String?>(
+        observacionesEstudioSocioeconomico,
+      ),
+      'fechaAntidoping': serializer.toJson<DateTime?>(fechaAntidoping),
+      'resultadoAmp': serializer.toJson<String?>(resultadoAmp),
+      'resultadoBzd': serializer.toJson<String?>(resultadoBzd),
+      'resultadoCoc': serializer.toJson<String?>(resultadoCoc),
+      'resultadoMet': serializer.toJson<String?>(resultadoMet),
+      'resultadoOpi': serializer.toJson<String?>(resultadoOpi),
+      'observacionesAntidoping': serializer.toJson<String?>(
+        observacionesAntidoping,
+      ),
     };
   }
 
@@ -32219,6 +32726,19 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     Value<String?> ultimoPuestoDesempenado = const Value.absent(),
     Value<String?> resumenExperiencia = const Value.absent(),
     Value<String?> observacionesExperiencia = const Value.absent(),
+    Value<DateTime?> fechaEvaluacionPsicologica = const Value.absent(),
+    Value<String?> resumenPsicologico = const Value.absent(),
+    Value<String?> observacionesPsicologico = const Value.absent(),
+    Value<DateTime?> fechaEstudioSocioeconomico = const Value.absent(),
+    Value<String?> resumenEstudioSocioeconomico = const Value.absent(),
+    Value<String?> observacionesEstudioSocioeconomico = const Value.absent(),
+    Value<DateTime?> fechaAntidoping = const Value.absent(),
+    Value<String?> resultadoAmp = const Value.absent(),
+    Value<String?> resultadoBzd = const Value.absent(),
+    Value<String?> resultadoCoc = const Value.absent(),
+    Value<String?> resultadoMet = const Value.absent(),
+    Value<String?> resultadoOpi = const Value.absent(),
+    Value<String?> observacionesAntidoping = const Value.absent(),
   }) => EmpleadoData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -32288,6 +32808,41 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
         observacionesExperiencia.present
             ? observacionesExperiencia.value
             : this.observacionesExperiencia,
+    fechaEvaluacionPsicologica:
+        fechaEvaluacionPsicologica.present
+            ? fechaEvaluacionPsicologica.value
+            : this.fechaEvaluacionPsicologica,
+    resumenPsicologico:
+        resumenPsicologico.present
+            ? resumenPsicologico.value
+            : this.resumenPsicologico,
+    observacionesPsicologico:
+        observacionesPsicologico.present
+            ? observacionesPsicologico.value
+            : this.observacionesPsicologico,
+    fechaEstudioSocioeconomico:
+        fechaEstudioSocioeconomico.present
+            ? fechaEstudioSocioeconomico.value
+            : this.fechaEstudioSocioeconomico,
+    resumenEstudioSocioeconomico:
+        resumenEstudioSocioeconomico.present
+            ? resumenEstudioSocioeconomico.value
+            : this.resumenEstudioSocioeconomico,
+    observacionesEstudioSocioeconomico:
+        observacionesEstudioSocioeconomico.present
+            ? observacionesEstudioSocioeconomico.value
+            : this.observacionesEstudioSocioeconomico,
+    fechaAntidoping:
+        fechaAntidoping.present ? fechaAntidoping.value : this.fechaAntidoping,
+    resultadoAmp: resultadoAmp.present ? resultadoAmp.value : this.resultadoAmp,
+    resultadoBzd: resultadoBzd.present ? resultadoBzd.value : this.resultadoBzd,
+    resultadoCoc: resultadoCoc.present ? resultadoCoc.value : this.resultadoCoc,
+    resultadoMet: resultadoMet.present ? resultadoMet.value : this.resultadoMet,
+    resultadoOpi: resultadoOpi.present ? resultadoOpi.value : this.resultadoOpi,
+    observacionesAntidoping:
+        observacionesAntidoping.present
+            ? observacionesAntidoping.value
+            : this.observacionesAntidoping,
   );
   EmpleadoData copyWithCompanion(EmpleadoCompanion data) {
     return EmpleadoData(
@@ -32387,6 +32942,58 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           data.observacionesExperiencia.present
               ? data.observacionesExperiencia.value
               : this.observacionesExperiencia,
+      fechaEvaluacionPsicologica:
+          data.fechaEvaluacionPsicologica.present
+              ? data.fechaEvaluacionPsicologica.value
+              : this.fechaEvaluacionPsicologica,
+      resumenPsicologico:
+          data.resumenPsicologico.present
+              ? data.resumenPsicologico.value
+              : this.resumenPsicologico,
+      observacionesPsicologico:
+          data.observacionesPsicologico.present
+              ? data.observacionesPsicologico.value
+              : this.observacionesPsicologico,
+      fechaEstudioSocioeconomico:
+          data.fechaEstudioSocioeconomico.present
+              ? data.fechaEstudioSocioeconomico.value
+              : this.fechaEstudioSocioeconomico,
+      resumenEstudioSocioeconomico:
+          data.resumenEstudioSocioeconomico.present
+              ? data.resumenEstudioSocioeconomico.value
+              : this.resumenEstudioSocioeconomico,
+      observacionesEstudioSocioeconomico:
+          data.observacionesEstudioSocioeconomico.present
+              ? data.observacionesEstudioSocioeconomico.value
+              : this.observacionesEstudioSocioeconomico,
+      fechaAntidoping:
+          data.fechaAntidoping.present
+              ? data.fechaAntidoping.value
+              : this.fechaAntidoping,
+      resultadoAmp:
+          data.resultadoAmp.present
+              ? data.resultadoAmp.value
+              : this.resultadoAmp,
+      resultadoBzd:
+          data.resultadoBzd.present
+              ? data.resultadoBzd.value
+              : this.resultadoBzd,
+      resultadoCoc:
+          data.resultadoCoc.present
+              ? data.resultadoCoc.value
+              : this.resultadoCoc,
+      resultadoMet:
+          data.resultadoMet.present
+              ? data.resultadoMet.value
+              : this.resultadoMet,
+      resultadoOpi:
+          data.resultadoOpi.present
+              ? data.resultadoOpi.value
+              : this.resultadoOpi,
+      observacionesAntidoping:
+          data.observacionesAntidoping.present
+              ? data.observacionesAntidoping.value
+              : this.observacionesAntidoping,
     );
   }
 
@@ -32426,7 +33033,24 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           ..write('mesesExperienciaAdicionales: $mesesExperienciaAdicionales, ')
           ..write('ultimoPuestoDesempenado: $ultimoPuestoDesempenado, ')
           ..write('resumenExperiencia: $resumenExperiencia, ')
-          ..write('observacionesExperiencia: $observacionesExperiencia')
+          ..write('observacionesExperiencia: $observacionesExperiencia, ')
+          ..write('fechaEvaluacionPsicologica: $fechaEvaluacionPsicologica, ')
+          ..write('resumenPsicologico: $resumenPsicologico, ')
+          ..write('observacionesPsicologico: $observacionesPsicologico, ')
+          ..write('fechaEstudioSocioeconomico: $fechaEstudioSocioeconomico, ')
+          ..write(
+            'resumenEstudioSocioeconomico: $resumenEstudioSocioeconomico, ',
+          )
+          ..write(
+            'observacionesEstudioSocioeconomico: $observacionesEstudioSocioeconomico, ',
+          )
+          ..write('fechaAntidoping: $fechaAntidoping, ')
+          ..write('resultadoAmp: $resultadoAmp, ')
+          ..write('resultadoBzd: $resultadoBzd, ')
+          ..write('resultadoCoc: $resultadoCoc, ')
+          ..write('resultadoMet: $resultadoMet, ')
+          ..write('resultadoOpi: $resultadoOpi, ')
+          ..write('observacionesAntidoping: $observacionesAntidoping')
           ..write(')'))
         .toString();
   }
@@ -32467,6 +33091,19 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     ultimoPuestoDesempenado,
     resumenExperiencia,
     observacionesExperiencia,
+    fechaEvaluacionPsicologica,
+    resumenPsicologico,
+    observacionesPsicologico,
+    fechaEstudioSocioeconomico,
+    resumenEstudioSocioeconomico,
+    observacionesEstudioSocioeconomico,
+    fechaAntidoping,
+    resultadoAmp,
+    resultadoBzd,
+    resultadoCoc,
+    resultadoMet,
+    resultadoOpi,
+    observacionesAntidoping,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -32506,7 +33143,22 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
               this.mesesExperienciaAdicionales &&
           other.ultimoPuestoDesempenado == this.ultimoPuestoDesempenado &&
           other.resumenExperiencia == this.resumenExperiencia &&
-          other.observacionesExperiencia == this.observacionesExperiencia);
+          other.observacionesExperiencia == this.observacionesExperiencia &&
+          other.fechaEvaluacionPsicologica == this.fechaEvaluacionPsicologica &&
+          other.resumenPsicologico == this.resumenPsicologico &&
+          other.observacionesPsicologico == this.observacionesPsicologico &&
+          other.fechaEstudioSocioeconomico == this.fechaEstudioSocioeconomico &&
+          other.resumenEstudioSocioeconomico ==
+              this.resumenEstudioSocioeconomico &&
+          other.observacionesEstudioSocioeconomico ==
+              this.observacionesEstudioSocioeconomico &&
+          other.fechaAntidoping == this.fechaAntidoping &&
+          other.resultadoAmp == this.resultadoAmp &&
+          other.resultadoBzd == this.resultadoBzd &&
+          other.resultadoCoc == this.resultadoCoc &&
+          other.resultadoMet == this.resultadoMet &&
+          other.resultadoOpi == this.resultadoOpi &&
+          other.observacionesAntidoping == this.observacionesAntidoping);
 }
 
 class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
@@ -32544,6 +33196,19 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
   final Value<String?> ultimoPuestoDesempenado;
   final Value<String?> resumenExperiencia;
   final Value<String?> observacionesExperiencia;
+  final Value<DateTime?> fechaEvaluacionPsicologica;
+  final Value<String?> resumenPsicologico;
+  final Value<String?> observacionesPsicologico;
+  final Value<DateTime?> fechaEstudioSocioeconomico;
+  final Value<String?> resumenEstudioSocioeconomico;
+  final Value<String?> observacionesEstudioSocioeconomico;
+  final Value<DateTime?> fechaAntidoping;
+  final Value<String?> resultadoAmp;
+  final Value<String?> resultadoBzd;
+  final Value<String?> resultadoCoc;
+  final Value<String?> resultadoMet;
+  final Value<String?> resultadoOpi;
+  final Value<String?> observacionesAntidoping;
   final Value<int> rowid;
   const EmpleadoCompanion({
     this.id = const Value.absent(),
@@ -32580,6 +33245,19 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.ultimoPuestoDesempenado = const Value.absent(),
     this.resumenExperiencia = const Value.absent(),
     this.observacionesExperiencia = const Value.absent(),
+    this.fechaEvaluacionPsicologica = const Value.absent(),
+    this.resumenPsicologico = const Value.absent(),
+    this.observacionesPsicologico = const Value.absent(),
+    this.fechaEstudioSocioeconomico = const Value.absent(),
+    this.resumenEstudioSocioeconomico = const Value.absent(),
+    this.observacionesEstudioSocioeconomico = const Value.absent(),
+    this.fechaAntidoping = const Value.absent(),
+    this.resultadoAmp = const Value.absent(),
+    this.resultadoBzd = const Value.absent(),
+    this.resultadoCoc = const Value.absent(),
+    this.resultadoMet = const Value.absent(),
+    this.resultadoOpi = const Value.absent(),
+    this.observacionesAntidoping = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   EmpleadoCompanion.insert({
@@ -32617,6 +33295,19 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.ultimoPuestoDesempenado = const Value.absent(),
     this.resumenExperiencia = const Value.absent(),
     this.observacionesExperiencia = const Value.absent(),
+    this.fechaEvaluacionPsicologica = const Value.absent(),
+    this.resumenPsicologico = const Value.absent(),
+    this.observacionesPsicologico = const Value.absent(),
+    this.fechaEstudioSocioeconomico = const Value.absent(),
+    this.resumenEstudioSocioeconomico = const Value.absent(),
+    this.observacionesEstudioSocioeconomico = const Value.absent(),
+    this.fechaAntidoping = const Value.absent(),
+    this.resultadoAmp = const Value.absent(),
+    this.resultadoBzd = const Value.absent(),
+    this.resultadoCoc = const Value.absent(),
+    this.resultadoMet = const Value.absent(),
+    this.resultadoOpi = const Value.absent(),
+    this.observacionesAntidoping = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : codigoEmpleado = Value(codigoEmpleado),
        nombres = Value(nombres),
@@ -32664,6 +33355,19 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Expression<String>? ultimoPuestoDesempenado,
     Expression<String>? resumenExperiencia,
     Expression<String>? observacionesExperiencia,
+    Expression<DateTime>? fechaEvaluacionPsicologica,
+    Expression<String>? resumenPsicologico,
+    Expression<String>? observacionesPsicologico,
+    Expression<DateTime>? fechaEstudioSocioeconomico,
+    Expression<String>? resumenEstudioSocioeconomico,
+    Expression<String>? observacionesEstudioSocioeconomico,
+    Expression<DateTime>? fechaAntidoping,
+    Expression<String>? resultadoAmp,
+    Expression<String>? resultadoBzd,
+    Expression<String>? resultadoCoc,
+    Expression<String>? resultadoMet,
+    Expression<String>? resultadoOpi,
+    Expression<String>? observacionesAntidoping,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -32709,6 +33413,26 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       if (resumenExperiencia != null) 'resumen_experiencia': resumenExperiencia,
       if (observacionesExperiencia != null)
         'observaciones_experiencia': observacionesExperiencia,
+      if (fechaEvaluacionPsicologica != null)
+        'fecha_evaluacion_psicologica': fechaEvaluacionPsicologica,
+      if (resumenPsicologico != null) 'resumen_psicologico': resumenPsicologico,
+      if (observacionesPsicologico != null)
+        'observaciones_psicologico': observacionesPsicologico,
+      if (fechaEstudioSocioeconomico != null)
+        'fecha_estudio_socioeconomico': fechaEstudioSocioeconomico,
+      if (resumenEstudioSocioeconomico != null)
+        'resumen_estudio_socioeconomico': resumenEstudioSocioeconomico,
+      if (observacionesEstudioSocioeconomico != null)
+        'observaciones_estudio_socioeconomico':
+            observacionesEstudioSocioeconomico,
+      if (fechaAntidoping != null) 'fecha_antidoping': fechaAntidoping,
+      if (resultadoAmp != null) 'resultado_amp': resultadoAmp,
+      if (resultadoBzd != null) 'resultado_bzd': resultadoBzd,
+      if (resultadoCoc != null) 'resultado_coc': resultadoCoc,
+      if (resultadoMet != null) 'resultado_met': resultadoMet,
+      if (resultadoOpi != null) 'resultado_opi': resultadoOpi,
+      if (observacionesAntidoping != null)
+        'observaciones_antidoping': observacionesAntidoping,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -32748,6 +33472,19 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Value<String?>? ultimoPuestoDesempenado,
     Value<String?>? resumenExperiencia,
     Value<String?>? observacionesExperiencia,
+    Value<DateTime?>? fechaEvaluacionPsicologica,
+    Value<String?>? resumenPsicologico,
+    Value<String?>? observacionesPsicologico,
+    Value<DateTime?>? fechaEstudioSocioeconomico,
+    Value<String?>? resumenEstudioSocioeconomico,
+    Value<String?>? observacionesEstudioSocioeconomico,
+    Value<DateTime?>? fechaAntidoping,
+    Value<String?>? resultadoAmp,
+    Value<String?>? resultadoBzd,
+    Value<String?>? resultadoCoc,
+    Value<String?>? resultadoMet,
+    Value<String?>? resultadoOpi,
+    Value<String?>? observacionesAntidoping,
     Value<int>? rowid,
   }) {
     return EmpleadoCompanion(
@@ -32792,6 +33529,26 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       resumenExperiencia: resumenExperiencia ?? this.resumenExperiencia,
       observacionesExperiencia:
           observacionesExperiencia ?? this.observacionesExperiencia,
+      fechaEvaluacionPsicologica:
+          fechaEvaluacionPsicologica ?? this.fechaEvaluacionPsicologica,
+      resumenPsicologico: resumenPsicologico ?? this.resumenPsicologico,
+      observacionesPsicologico:
+          observacionesPsicologico ?? this.observacionesPsicologico,
+      fechaEstudioSocioeconomico:
+          fechaEstudioSocioeconomico ?? this.fechaEstudioSocioeconomico,
+      resumenEstudioSocioeconomico:
+          resumenEstudioSocioeconomico ?? this.resumenEstudioSocioeconomico,
+      observacionesEstudioSocioeconomico:
+          observacionesEstudioSocioeconomico ??
+          this.observacionesEstudioSocioeconomico,
+      fechaAntidoping: fechaAntidoping ?? this.fechaAntidoping,
+      resultadoAmp: resultadoAmp ?? this.resultadoAmp,
+      resultadoBzd: resultadoBzd ?? this.resultadoBzd,
+      resultadoCoc: resultadoCoc ?? this.resultadoCoc,
+      resultadoMet: resultadoMet ?? this.resultadoMet,
+      resultadoOpi: resultadoOpi ?? this.resultadoOpi,
+      observacionesAntidoping:
+          observacionesAntidoping ?? this.observacionesAntidoping,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -32917,6 +33674,57 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
         observacionesExperiencia.value,
       );
     }
+    if (fechaEvaluacionPsicologica.present) {
+      map['fecha_evaluacion_psicologica'] = Variable<DateTime>(
+        fechaEvaluacionPsicologica.value,
+      );
+    }
+    if (resumenPsicologico.present) {
+      map['resumen_psicologico'] = Variable<String>(resumenPsicologico.value);
+    }
+    if (observacionesPsicologico.present) {
+      map['observaciones_psicologico'] = Variable<String>(
+        observacionesPsicologico.value,
+      );
+    }
+    if (fechaEstudioSocioeconomico.present) {
+      map['fecha_estudio_socioeconomico'] = Variable<DateTime>(
+        fechaEstudioSocioeconomico.value,
+      );
+    }
+    if (resumenEstudioSocioeconomico.present) {
+      map['resumen_estudio_socioeconomico'] = Variable<String>(
+        resumenEstudioSocioeconomico.value,
+      );
+    }
+    if (observacionesEstudioSocioeconomico.present) {
+      map['observaciones_estudio_socioeconomico'] = Variable<String>(
+        observacionesEstudioSocioeconomico.value,
+      );
+    }
+    if (fechaAntidoping.present) {
+      map['fecha_antidoping'] = Variable<DateTime>(fechaAntidoping.value);
+    }
+    if (resultadoAmp.present) {
+      map['resultado_amp'] = Variable<String>(resultadoAmp.value);
+    }
+    if (resultadoBzd.present) {
+      map['resultado_bzd'] = Variable<String>(resultadoBzd.value);
+    }
+    if (resultadoCoc.present) {
+      map['resultado_coc'] = Variable<String>(resultadoCoc.value);
+    }
+    if (resultadoMet.present) {
+      map['resultado_met'] = Variable<String>(resultadoMet.value);
+    }
+    if (resultadoOpi.present) {
+      map['resultado_opi'] = Variable<String>(resultadoOpi.value);
+    }
+    if (observacionesAntidoping.present) {
+      map['observaciones_antidoping'] = Variable<String>(
+        observacionesAntidoping.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -32960,6 +33768,23 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
           ..write('ultimoPuestoDesempenado: $ultimoPuestoDesempenado, ')
           ..write('resumenExperiencia: $resumenExperiencia, ')
           ..write('observacionesExperiencia: $observacionesExperiencia, ')
+          ..write('fechaEvaluacionPsicologica: $fechaEvaluacionPsicologica, ')
+          ..write('resumenPsicologico: $resumenPsicologico, ')
+          ..write('observacionesPsicologico: $observacionesPsicologico, ')
+          ..write('fechaEstudioSocioeconomico: $fechaEstudioSocioeconomico, ')
+          ..write(
+            'resumenEstudioSocioeconomico: $resumenEstudioSocioeconomico, ',
+          )
+          ..write(
+            'observacionesEstudioSocioeconomico: $observacionesEstudioSocioeconomico, ',
+          )
+          ..write('fechaAntidoping: $fechaAntidoping, ')
+          ..write('resultadoAmp: $resultadoAmp, ')
+          ..write('resultadoBzd: $resultadoBzd, ')
+          ..write('resultadoCoc: $resultadoCoc, ')
+          ..write('resultadoMet: $resultadoMet, ')
+          ..write('resultadoOpi: $resultadoOpi, ')
+          ..write('observacionesAntidoping: $observacionesAntidoping, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -65012,6 +65837,19 @@ typedef $$EmpleadoTableCreateCompanionBuilder =
       Value<String?> ultimoPuestoDesempenado,
       Value<String?> resumenExperiencia,
       Value<String?> observacionesExperiencia,
+      Value<DateTime?> fechaEvaluacionPsicologica,
+      Value<String?> resumenPsicologico,
+      Value<String?> observacionesPsicologico,
+      Value<DateTime?> fechaEstudioSocioeconomico,
+      Value<String?> resumenEstudioSocioeconomico,
+      Value<String?> observacionesEstudioSocioeconomico,
+      Value<DateTime?> fechaAntidoping,
+      Value<String?> resultadoAmp,
+      Value<String?> resultadoBzd,
+      Value<String?> resultadoCoc,
+      Value<String?> resultadoMet,
+      Value<String?> resultadoOpi,
+      Value<String?> observacionesAntidoping,
       Value<int> rowid,
     });
 typedef $$EmpleadoTableUpdateCompanionBuilder =
@@ -65050,6 +65888,19 @@ typedef $$EmpleadoTableUpdateCompanionBuilder =
       Value<String?> ultimoPuestoDesempenado,
       Value<String?> resumenExperiencia,
       Value<String?> observacionesExperiencia,
+      Value<DateTime?> fechaEvaluacionPsicologica,
+      Value<String?> resumenPsicologico,
+      Value<String?> observacionesPsicologico,
+      Value<DateTime?> fechaEstudioSocioeconomico,
+      Value<String?> resumenEstudioSocioeconomico,
+      Value<String?> observacionesEstudioSocioeconomico,
+      Value<DateTime?> fechaAntidoping,
+      Value<String?> resultadoAmp,
+      Value<String?> resultadoBzd,
+      Value<String?> resultadoCoc,
+      Value<String?> resultadoMet,
+      Value<String?> resultadoOpi,
+      Value<String?> observacionesAntidoping,
       Value<int> rowid,
     });
 
@@ -65340,6 +66191,72 @@ class $$EmpleadoTableFilterComposer
 
   ColumnFilters<String> get observacionesExperiencia => $composableBuilder(
     column: $table.observacionesExperiencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaEvaluacionPsicologica => $composableBuilder(
+    column: $table.fechaEvaluacionPsicologica,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resumenPsicologico => $composableBuilder(
+    column: $table.resumenPsicologico,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesPsicologico => $composableBuilder(
+    column: $table.observacionesPsicologico,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaEstudioSocioeconomico => $composableBuilder(
+    column: $table.fechaEstudioSocioeconomico,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resumenEstudioSocioeconomico => $composableBuilder(
+    column: $table.resumenEstudioSocioeconomico,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesEstudioSocioeconomico =>
+      $composableBuilder(
+        column: $table.observacionesEstudioSocioeconomico,
+        builder: (column) => ColumnFilters(column),
+      );
+
+  ColumnFilters<DateTime> get fechaAntidoping => $composableBuilder(
+    column: $table.fechaAntidoping,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resultadoAmp => $composableBuilder(
+    column: $table.resultadoAmp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resultadoBzd => $composableBuilder(
+    column: $table.resultadoBzd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resultadoCoc => $composableBuilder(
+    column: $table.resultadoCoc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resultadoMet => $composableBuilder(
+    column: $table.resultadoMet,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resultadoOpi => $composableBuilder(
+    column: $table.resultadoOpi,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesAntidoping => $composableBuilder(
+    column: $table.observacionesAntidoping,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -65645,6 +66562,75 @@ class $$EmpleadoTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get fechaEvaluacionPsicologica =>
+      $composableBuilder(
+        column: $table.fechaEvaluacionPsicologica,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  ColumnOrderings<String> get resumenPsicologico => $composableBuilder(
+    column: $table.resumenPsicologico,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesPsicologico => $composableBuilder(
+    column: $table.observacionesPsicologico,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaEstudioSocioeconomico =>
+      $composableBuilder(
+        column: $table.fechaEstudioSocioeconomico,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  ColumnOrderings<String> get resumenEstudioSocioeconomico =>
+      $composableBuilder(
+        column: $table.resumenEstudioSocioeconomico,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  ColumnOrderings<String> get observacionesEstudioSocioeconomico =>
+      $composableBuilder(
+        column: $table.observacionesEstudioSocioeconomico,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  ColumnOrderings<DateTime> get fechaAntidoping => $composableBuilder(
+    column: $table.fechaAntidoping,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get resultadoAmp => $composableBuilder(
+    column: $table.resultadoAmp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get resultadoBzd => $composableBuilder(
+    column: $table.resultadoBzd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get resultadoCoc => $composableBuilder(
+    column: $table.resultadoCoc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get resultadoMet => $composableBuilder(
+    column: $table.resultadoMet,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get resultadoOpi => $composableBuilder(
+    column: $table.resultadoOpi,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesAntidoping => $composableBuilder(
+    column: $table.observacionesAntidoping,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$AttachmentTableOrderingComposer get fotografiaAttachmentId {
     final $$AttachmentTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -65877,6 +66863,75 @@ class $$EmpleadoTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<DateTime> get fechaEvaluacionPsicologica =>
+      $composableBuilder(
+        column: $table.fechaEvaluacionPsicologica,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get resumenPsicologico => $composableBuilder(
+    column: $table.resumenPsicologico,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesPsicologico => $composableBuilder(
+    column: $table.observacionesPsicologico,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaEstudioSocioeconomico =>
+      $composableBuilder(
+        column: $table.fechaEstudioSocioeconomico,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get resumenEstudioSocioeconomico =>
+      $composableBuilder(
+        column: $table.resumenEstudioSocioeconomico,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get observacionesEstudioSocioeconomico =>
+      $composableBuilder(
+        column: $table.observacionesEstudioSocioeconomico,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<DateTime> get fechaAntidoping => $composableBuilder(
+    column: $table.fechaAntidoping,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get resultadoAmp => $composableBuilder(
+    column: $table.resultadoAmp,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get resultadoBzd => $composableBuilder(
+    column: $table.resultadoBzd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get resultadoCoc => $composableBuilder(
+    column: $table.resultadoCoc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get resultadoMet => $composableBuilder(
+    column: $table.resultadoMet,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get resultadoOpi => $composableBuilder(
+    column: $table.resultadoOpi,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesAntidoping => $composableBuilder(
+    column: $table.observacionesAntidoping,
+    builder: (column) => column,
+  );
+
   $$AttachmentTableAnnotationComposer get fotografiaAttachmentId {
     final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -66090,6 +67145,23 @@ class $$EmpleadoTableTableManager
                 Value<String?> ultimoPuestoDesempenado = const Value.absent(),
                 Value<String?> resumenExperiencia = const Value.absent(),
                 Value<String?> observacionesExperiencia = const Value.absent(),
+                Value<DateTime?> fechaEvaluacionPsicologica =
+                    const Value.absent(),
+                Value<String?> resumenPsicologico = const Value.absent(),
+                Value<String?> observacionesPsicologico = const Value.absent(),
+                Value<DateTime?> fechaEstudioSocioeconomico =
+                    const Value.absent(),
+                Value<String?> resumenEstudioSocioeconomico =
+                    const Value.absent(),
+                Value<String?> observacionesEstudioSocioeconomico =
+                    const Value.absent(),
+                Value<DateTime?> fechaAntidoping = const Value.absent(),
+                Value<String?> resultadoAmp = const Value.absent(),
+                Value<String?> resultadoBzd = const Value.absent(),
+                Value<String?> resultadoCoc = const Value.absent(),
+                Value<String?> resultadoMet = const Value.absent(),
+                Value<String?> resultadoOpi = const Value.absent(),
+                Value<String?> observacionesAntidoping = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EmpleadoCompanion(
                 id: id,
@@ -66126,6 +67198,20 @@ class $$EmpleadoTableTableManager
                 ultimoPuestoDesempenado: ultimoPuestoDesempenado,
                 resumenExperiencia: resumenExperiencia,
                 observacionesExperiencia: observacionesExperiencia,
+                fechaEvaluacionPsicologica: fechaEvaluacionPsicologica,
+                resumenPsicologico: resumenPsicologico,
+                observacionesPsicologico: observacionesPsicologico,
+                fechaEstudioSocioeconomico: fechaEstudioSocioeconomico,
+                resumenEstudioSocioeconomico: resumenEstudioSocioeconomico,
+                observacionesEstudioSocioeconomico:
+                    observacionesEstudioSocioeconomico,
+                fechaAntidoping: fechaAntidoping,
+                resultadoAmp: resultadoAmp,
+                resultadoBzd: resultadoBzd,
+                resultadoCoc: resultadoCoc,
+                resultadoMet: resultadoMet,
+                resultadoOpi: resultadoOpi,
+                observacionesAntidoping: observacionesAntidoping,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -66164,6 +67250,23 @@ class $$EmpleadoTableTableManager
                 Value<String?> ultimoPuestoDesempenado = const Value.absent(),
                 Value<String?> resumenExperiencia = const Value.absent(),
                 Value<String?> observacionesExperiencia = const Value.absent(),
+                Value<DateTime?> fechaEvaluacionPsicologica =
+                    const Value.absent(),
+                Value<String?> resumenPsicologico = const Value.absent(),
+                Value<String?> observacionesPsicologico = const Value.absent(),
+                Value<DateTime?> fechaEstudioSocioeconomico =
+                    const Value.absent(),
+                Value<String?> resumenEstudioSocioeconomico =
+                    const Value.absent(),
+                Value<String?> observacionesEstudioSocioeconomico =
+                    const Value.absent(),
+                Value<DateTime?> fechaAntidoping = const Value.absent(),
+                Value<String?> resultadoAmp = const Value.absent(),
+                Value<String?> resultadoBzd = const Value.absent(),
+                Value<String?> resultadoCoc = const Value.absent(),
+                Value<String?> resultadoMet = const Value.absent(),
+                Value<String?> resultadoOpi = const Value.absent(),
+                Value<String?> observacionesAntidoping = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EmpleadoCompanion.insert(
                 id: id,
@@ -66200,6 +67303,20 @@ class $$EmpleadoTableTableManager
                 ultimoPuestoDesempenado: ultimoPuestoDesempenado,
                 resumenExperiencia: resumenExperiencia,
                 observacionesExperiencia: observacionesExperiencia,
+                fechaEvaluacionPsicologica: fechaEvaluacionPsicologica,
+                resumenPsicologico: resumenPsicologico,
+                observacionesPsicologico: observacionesPsicologico,
+                fechaEstudioSocioeconomico: fechaEstudioSocioeconomico,
+                resumenEstudioSocioeconomico: resumenEstudioSocioeconomico,
+                observacionesEstudioSocioeconomico:
+                    observacionesEstudioSocioeconomico,
+                fechaAntidoping: fechaAntidoping,
+                resultadoAmp: resultadoAmp,
+                resultadoBzd: resultadoBzd,
+                resultadoCoc: resultadoCoc,
+                resultadoMet: resultadoMet,
+                resultadoOpi: resultadoOpi,
+                observacionesAntidoping: observacionesAntidoping,
                 rowid: rowid,
               ),
           withReferenceMapper:

@@ -14,6 +14,15 @@ enum EstatusEmpleado { activo, baja }
 
 enum NivelEstudiosEmpleado { sinEstudios, primaria, secundaria, bachillerato, tecnico, licenciatura, posgrado }
 
+/// Resultado de una sustancia evaluada en un Antidoping (Etapa 5B) —
+/// `noAplica` significa que esa sustancia no se incluyó en la prueba,
+/// nunca "no realizado" a nivel de todo el Antidoping (ese estado ya
+/// no existe: si nunca se captura un Antidoping, el Empleado
+/// simplemente queda "pendiente" — ver `EmpleadoAlertas`). Deliberado
+/// así para adaptarse a distintos paneles comerciales de laboratorio
+/// sin complicar el modelo (Resolución explícita de Marlon).
+enum ResultadoSustanciaAntidoping { negativo, positivo, noAplica }
+
 /// Tipos de evento del historial administrativo de un Empleado — mismo
 /// criterio *append-only* que `PagoEvento`/`IngresoEvento`/
 /// `ComplementoPagoEvento`. `corregido` cubre cualquier edición de
@@ -28,6 +37,9 @@ enum TipoEventoEmpleado {
   fotografiaActualizada,
   documentoAdjuntado,
   documentoArchivado,
+  perfilPsicologicoActualizado,
+  estudioSocioeconomicoActualizado,
+  antidopingActualizado,
 }
 
 /// Expediente del empleado (Etapa 5A) — la base sobre la que se
@@ -50,7 +62,15 @@ enum TipoEventoEmpleado {
 /// `fechaNacimiento` en tiempo de consulta (`calcularEdad`), mismo
 /// criterio que `estaVencida`/`calcularRangoAntiguedad` (4J.1) y
 /// `complementoPendiente` (4J.3): nunca almacenar lo que se puede
-/// derivar.
+/// derivar. `antigüedad` tampoco vive aquí todavía — llegará en la
+/// Etapa 5C junto con el modelo de periodos laborales (un reingreso
+/// reinicia la antigüedad desde cero, algo que este expediente por sí
+/// solo no puede expresar).
+///
+/// Perfil psicológico, Estudio socioeconómico y Antidoping (Etapa 5B)
+/// también viven aquí como columnas directas — mismo criterio que
+/// Escolaridad/Experiencia: solo el valor vigente, nunca un historial
+/// de evaluaciones repetidas.
 class Empleado extends Table with AuditColumns {
   TextColumn get codigoEmpleado => text().unique()();
 
@@ -127,6 +147,46 @@ class Empleado extends Table with AuditColumns {
   TextColumn get resumenExperiencia => text().nullable()();
 
   TextColumn get observacionesExperiencia => text().nullable()();
+
+  // --- Perfil psicológico (Etapa 5B) — solo el valor vigente, sin
+  // historial de evaluaciones (Resolución explícita de Marlon: "no
+  // quiero tablas satélite ni historiales de evaluaciones en esta
+  // etapa"). El PDF opcional vive en `EmpleadoAttachment` (categoría
+  // `perfilPsicologico`), no aquí. ---
+
+  DateTimeColumn get fechaEvaluacionPsicologica => dateTime().nullable()();
+
+  TextColumn get resumenPsicologico => text().nullable()();
+
+  TextColumn get observacionesPsicologico => text().nullable()();
+
+  // --- Estudio socioeconómico (Etapa 5B) — mismo criterio que Perfil
+  // psicológico: solo el valor vigente. ---
+
+  DateTimeColumn get fechaEstudioSocioeconomico => dateTime().nullable()();
+
+  TextColumn get resumenEstudioSocioeconomico => text().nullable()();
+
+  TextColumn get observacionesEstudioSocioeconomico => text().nullable()();
+
+  // --- Antidoping (Etapa 5B) — un resultado por sustancia evaluada,
+  // no un resultado único general (Resolución explícita de Marlon).
+  // `fechaAntidoping == null` es la señal de "pendiente" — ver
+  // `EmpleadoAlertas`. ---
+
+  DateTimeColumn get fechaAntidoping => dateTime().nullable()();
+
+  TextColumn get resultadoAmp => text().nullable()();
+
+  TextColumn get resultadoBzd => text().nullable()();
+
+  TextColumn get resultadoCoc => text().nullable()();
+
+  TextColumn get resultadoMet => text().nullable()();
+
+  TextColumn get resultadoOpi => text().nullable()();
+
+  TextColumn get observacionesAntidoping => text().nullable()();
 
   @override
   List<String> get customConstraints => [

@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/domain/shared/direccion_input.dart';
+import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
 /// Expediente del empleado (Etapa 5A) — la base de Personal.
 abstract interface class EmpleadoRepository {
@@ -63,6 +64,43 @@ abstract interface class EmpleadoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
+    String? actor,
+  });
+
+  /// Registra/actualiza el Perfil psicológico vigente (Etapa 5B) — solo
+  /// el valor actual, nunca un historial (upsert implícito: siempre
+  /// sobreescribe). `motivo` es opcional a propósito — a diferencia de
+  /// `corregir`, esta es la captura normal de la evaluación, no una
+  /// corrección administrativa de un dato ya correcto.
+  Future<EmpleadoData> actualizarPerfilPsicologico({
+    required String empleadoId,
+    required DateTime fecha,
+    String? resumen,
+    String? observaciones,
+    String? actor,
+  });
+
+  Future<EmpleadoData> actualizarEstudioSocioeconomico({
+    required String empleadoId,
+    required DateTime fecha,
+    String? resumen,
+    String? observaciones,
+    String? actor,
+  });
+
+  /// Un resultado por sustancia — `null` deja esa sustancia sin tocar
+  /// (mismo valor que ya tenía); el caso de uso siempre manda las 5
+  /// explícitas, así que en la práctica nunca llega `null` aquí salvo
+  /// que el llamador lo decida a propósito.
+  Future<EmpleadoData> actualizarAntidoping({
+    required String empleadoId,
+    required DateTime fecha,
+    required ResultadoSustanciaAntidoping amp,
+    required ResultadoSustanciaAntidoping bzd,
+    required ResultadoSustanciaAntidoping coc,
+    required ResultadoSustanciaAntidoping met,
+    required ResultadoSustanciaAntidoping opi,
+    String? observaciones,
     String? actor,
   });
 }
