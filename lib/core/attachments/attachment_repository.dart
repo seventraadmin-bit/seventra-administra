@@ -63,6 +63,22 @@ class AttachmentRepository {
         .get();
   }
 
+  /// Comprobantes activos de un Ingreso manual (Etapa 4K.1).
+  Future<List<AttachmentData>> listarActivosPorIngreso(String ingresoId) {
+    return (_db.select(_db.attachment)
+          ..where((t) => t.ingresoId.equals(ingresoId) & t.estado.equals('activo'))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+
+  /// Comprobantes activos de un Egreso (Etapa 4K.1).
+  Future<List<AttachmentData>> listarActivosPorEgreso(String egresoId) {
+    return (_db.select(_db.attachment)
+          ..where((t) => t.egresoId.equals(egresoId) & t.estado.equals('activo'))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+
   Future<void> archivar(String id) {
     return (_db.update(_db.attachment)..where((t) => t.id.equals(id))).write(
       const AttachmentCompanion(estado: Value('archivado')),

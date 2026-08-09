@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
+import 'package:riseg_one/features/finanzas/data/tables/ingreso_table.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart';
 import 'package:uuid/uuid.dart';
 
@@ -16,10 +18,21 @@ import '../../domain/repositories/pago_repository.dart';
 /// interfaz `CuentaPorCobrarRepository` — `Pago` y `CuentaPorCobrar`
 /// viven en el mismo dominio (`finanzas`), no hay frontera de feature
 /// que cruzar.
+///
+/// Desde la Etapa 4K.1, `_crear`/`cancelar` componen también el
+/// `Ingreso` automático de este Pago (mismo criterio de "misma
+/// transacción lógica" que ya rige CxC/Complemento) escribiendo
+/// directo sobre `_db.ingreso`/`_db.ingresoEvento` — Resolución 4 de
+/// Marlon, explícita: mantener la composición aquí por ahora. **Si
+/// esta cadena de composiciones (CxC → Complemento → Ingreso) sigue
+/// creciendo en etapas futuras, extraerla a un servicio de aplicación
+/// dedicado no rompería el dominio** — las firmas públicas de
+/// `PagoRepository` no cambiarían, solo la implementación interna.
 class PagoRepositoryImpl implements PagoRepository {
   PagoRepositoryImpl(this._db);
 
   final AppDatabase _db;
+  late final _codigoSecuencia = CodigoSecuenciaService(_db);
 
   @override
   Future<PagoData?> obtenerPorId(String id) {
@@ -135,7 +148,69 @@ class PagoRepositoryImpl implements PagoRepository {
       datosRelevantes: {'folioPago': folioPago, 'montoTotal': montoTotal},
     );
 
+    await _crearIngresoAutomatico(pago, actor: actor);
+
     return pago;
+  }
+
+  /// Ingreso reconocido en la misma transacción que el Pago (Etapa
+  /// 4K.1, Resolución 3 de Marlon: confirmado, siempre automático) —
+  /// el dinero se reconoce como ingreso cuando se recibe (criterio de
+  /// caja), no cuando se aplica a una Cuenta por cobrar, así que corre
+  /// aquí, no en `_aplicar`. Relación 1:1 con el Pago, mismo criterio
+  /// que `ComplementoPago`.
+  Future<void> _crearIngresoAutomatico(PagoData pago, {String? actor}) async {
+    final folioIngreso = await _codigoSecuencia.siguienteCodigo('ingreso');
+    final ingreso = await _db.into(_db.ingreso).insertReturning(
+          IngresoCompanion.insert(
+            pagoId: Value(pago.id),
+            folioIngreso: folioIngreso,
+            monto: pago.montoTotal,
+            fecha: pago.fechaPago,
+            cuentaCaja: Value(pago.cuentaBancariaDestino),
+            formaPago: pago.formaPago,
+            concepto: 'Pago ${pago.folioPago}',
+          ),
+        );
+
+    await _db.into(_db.ingresoEvento).insert(
+          IngresoEventoCompanion.insert(
+            ingresoId: ingreso.id,
+            fechaHora: DateTime.now(),
+            tipoEvento: TipoEventoIngreso.registrado.name,
+            estadoNuevo: Value(ingreso.estatus),
+            actor: Value(actor),
+            datosRelevantes: Value(jsonEncode({'folioIngreso': folioIngreso, 'pagoId': pago.id})),
+          ),
+        );
+  }
+
+  /// Reversión del `_crearIngresoAutomatico` correspondiente — llamada
+  /// desde `cancelar()`, nunca deja un Ingreso vigente para un Pago ya
+  /// cancelado.
+  Future<void> _cancelarIngresoAutomatico(String pagoId, {required String motivo, String? actor}) async {
+    final ingreso = await (_db.select(_db.ingreso)..where((t) => t.pagoId.equals(pagoId))).getSingleOrNull();
+    if (ingreso == null || EstatusIngreso.values.byName(ingreso.estatus) == EstatusIngreso.cancelado) return;
+
+    await (_db.update(_db.ingreso)..where((t) => t.id.equals(ingreso.id))).write(
+      IngresoCompanion(
+        estatus: Value(EstatusIngreso.cancelado.name),
+        motivoCancelacion: Value(motivo),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    await _db.into(_db.ingresoEvento).insert(
+          IngresoEventoCompanion.insert(
+            ingresoId: ingreso.id,
+            fechaHora: DateTime.now(),
+            tipoEvento: TipoEventoIngreso.cancelado.name,
+            estadoAnterior: Value(ingreso.estatus),
+            estadoNuevo: Value(EstatusIngreso.cancelado.name),
+            observacion: Value(motivo),
+            actor: Value(actor),
+          ),
+        );
   }
 
   @override
@@ -403,6 +478,8 @@ class PagoRepositoryImpl implements PagoRepository {
         actor: actor,
         datosRelevantes: {'aplicacionesCanceladas': aplicacionesActivas.length},
       );
+
+      await _cancelarIngresoAutomatico(pagoId, motivo: motivo, actor: actor);
 
       return (_db.select(_db.pago)..where((t) => t.id.equals(pagoId))).getSingle();
     });

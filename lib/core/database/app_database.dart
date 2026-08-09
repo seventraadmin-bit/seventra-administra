@@ -20,8 +20,11 @@ import '../../features/organizacion/data/tables/servicio_linea_comercial_vigenci
 import '../../features/organizacion/data/tables/servicio_table.dart';
 import '../../features/organizacion/data/tables/sucursal_table.dart';
 import '../../features/organizacion/data/tables/ubicacion_table.dart';
+import '../../features/finanzas/data/tables/categoria_financiera_table.dart';
 import '../../features/finanzas/data/tables/complemento_pago_table.dart';
 import '../../features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
+import '../../features/finanzas/data/tables/egreso_table.dart';
+import '../../features/finanzas/data/tables/ingreso_table.dart';
 import '../../features/finanzas/data/tables/pago_table.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
@@ -29,6 +32,7 @@ import 'migrations/migrar_direccion_v5.dart';
 import 'migrations/migrar_attachment_v13.dart';
 import 'migrations/migrar_attachment_v15.dart';
 import 'migrations/migrar_attachment_v16.dart';
+import 'migrations/migrar_attachment_v17.dart';
 import 'migrations/migrar_cuenta_por_cobrar_v14.dart';
 import 'migrations/migrar_documento_por_emitir_v12.dart';
 import 'migrations/migrar_servicio_v6.dart';
@@ -102,12 +106,17 @@ class AppMetadata extends Table {
   PagoEvento,
   ComplementoPago,
   ComplementoPagoEvento,
+  CategoriaFinanciera,
+  Ingreso,
+  IngresoEvento,
+  Egreso,
+  EgresoEvento,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration {
@@ -350,6 +359,30 @@ class AppDatabase extends _$AppDatabase {
         // `onUpgrade`), así que aquí es `from >= 2`, nunca sin acotar.
         if (to >= 16 && from >= 2 && from <= 15) {
           await migrarAttachmentV16(this, m);
+        }
+        // Aditiva (Etapa 4K.1): `CategoriaFinanciera`/`Ingreso`/
+        // `IngresoEvento`/`Egreso`/`EgresoEvento` — 5 tablas
+        // completamente nuevas, `from <= 16` es seguro sin acotar un
+        // origen exacto. Se crean *antes* de `migrarAttachmentV17` por
+        // el mismo motivo que en 4J.2/4J.3: esa migración agrega FKs
+        // hacia `ingreso`/`egreso` y corre `PRAGMA foreign_key_check`
+        // al final.
+        if (to >= 17 && from <= 16) {
+          await m.createTable(categoriaFinanciera);
+          await m.createTable(ingreso);
+          await m.createTable(ingresoEvento);
+          await m.createTable(egreso);
+          await m.createTable(egresoEvento);
+        }
+        // Estructural (Etapa 4K.1): Attachment gana el sexto y séptimo
+        // brazo del arco exclusivo (`ingresoId`/`egresoId`) — mismo
+        // motivo de recreación que las tres veces anteriores. Mismo
+        // gotcha de siempre: `from == 1` ya crea `attachment` con la
+        // forma *actual* en `_createEtapa4ATables` (arriba en este
+        // mismo `onUpgrade`), así que aquí es `from >= 2`, nunca sin
+        // acotar.
+        if (to >= 17 && from >= 2 && from <= 16) {
+          await migrarAttachmentV17(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

@@ -5814,6 +5814,28 @@ class $AttachmentTable extends Attachment
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _ingresoIdMeta = const VerificationMeta(
+    'ingresoId',
+  );
+  @override
+  late final GeneratedColumn<String> ingresoId = GeneratedColumn<String>(
+    'ingreso_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _egresoIdMeta = const VerificationMeta(
+    'egresoId',
+  );
+  @override
+  late final GeneratedColumn<String> egresoId = GeneratedColumn<String>(
+    'egreso_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _categoriaMeta = const VerificationMeta(
     'categoria',
   );
@@ -5917,6 +5939,8 @@ class $AttachmentTable extends Attachment
     documentoPorEmitirId,
     pagoId,
     complementoPagoId,
+    ingresoId,
+    egresoId,
     categoria,
     originalFileName,
     storedFileName,
@@ -5978,6 +6002,18 @@ class $AttachmentTable extends Attachment
           data['complemento_pago_id']!,
           _complementoPagoIdMeta,
         ),
+      );
+    }
+    if (data.containsKey('ingreso_id')) {
+      context.handle(
+        _ingresoIdMeta,
+        ingresoId.isAcceptableOrUnknown(data['ingreso_id']!, _ingresoIdMeta),
+      );
+    }
+    if (data.containsKey('egreso_id')) {
+      context.handle(
+        _egresoIdMeta,
+        egresoId.isAcceptableOrUnknown(data['egreso_id']!, _egresoIdMeta),
       );
     }
     if (data.containsKey('categoria')) {
@@ -6084,6 +6120,14 @@ class $AttachmentTable extends Attachment
         DriftSqlType.string,
         data['${effectivePrefix}complemento_pago_id'],
       ),
+      ingresoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ingreso_id'],
+      ),
+      egresoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}egreso_id'],
+      ),
       categoria: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}categoria'],
@@ -6150,9 +6194,15 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   /// PDF/XML de un Complemento de pago (Etapa 4J.3).
   final String? complementoPagoId;
 
+  /// Comprobante de un Ingreso manual (Etapa 4K.1).
+  final String? ingresoId;
+
+  /// Comprobante de un Egreso (Etapa 4K.1).
+  final String? egresoId;
+
   /// Solo aplica cuando `documentoPorEmitirId`/`complementoPagoId` no
-  /// son nulos — `null` para adjuntos de Empresa/Cliente/Pago (sin
-  /// categorías propias todavía).
+  /// son nulos — `null` para adjuntos de Empresa/Cliente/Pago/Ingreso/
+  /// Egreso (sin categorías propias todavía).
   final String? categoria;
   final String originalFileName;
   final String storedFileName;
@@ -6169,6 +6219,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     this.documentoPorEmitirId,
     this.pagoId,
     this.complementoPagoId,
+    this.ingresoId,
+    this.egresoId,
     this.categoria,
     required this.originalFileName,
     required this.storedFileName,
@@ -6197,6 +6249,12 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     }
     if (!nullToAbsent || complementoPagoId != null) {
       map['complemento_pago_id'] = Variable<String>(complementoPagoId);
+    }
+    if (!nullToAbsent || ingresoId != null) {
+      map['ingreso_id'] = Variable<String>(ingresoId);
+    }
+    if (!nullToAbsent || egresoId != null) {
+      map['egreso_id'] = Variable<String>(egresoId);
     }
     if (!nullToAbsent || categoria != null) {
       map['categoria'] = Variable<String>(categoria);
@@ -6235,6 +6293,14 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           complementoPagoId == null && nullToAbsent
               ? const Value.absent()
               : Value(complementoPagoId),
+      ingresoId:
+          ingresoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(ingresoId),
+      egresoId:
+          egresoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(egresoId),
       categoria:
           categoria == null && nullToAbsent
               ? const Value.absent()
@@ -6266,6 +6332,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       complementoPagoId: serializer.fromJson<String?>(
         json['complementoPagoId'],
       ),
+      ingresoId: serializer.fromJson<String?>(json['ingresoId']),
+      egresoId: serializer.fromJson<String?>(json['egresoId']),
       categoria: serializer.fromJson<String?>(json['categoria']),
       originalFileName: serializer.fromJson<String>(json['originalFileName']),
       storedFileName: serializer.fromJson<String>(json['storedFileName']),
@@ -6287,6 +6355,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       'documentoPorEmitirId': serializer.toJson<String?>(documentoPorEmitirId),
       'pagoId': serializer.toJson<String?>(pagoId),
       'complementoPagoId': serializer.toJson<String?>(complementoPagoId),
+      'ingresoId': serializer.toJson<String?>(ingresoId),
+      'egresoId': serializer.toJson<String?>(egresoId),
       'categoria': serializer.toJson<String?>(categoria),
       'originalFileName': serializer.toJson<String>(originalFileName),
       'storedFileName': serializer.toJson<String>(storedFileName),
@@ -6306,6 +6376,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     Value<String?> documentoPorEmitirId = const Value.absent(),
     Value<String?> pagoId = const Value.absent(),
     Value<String?> complementoPagoId = const Value.absent(),
+    Value<String?> ingresoId = const Value.absent(),
+    Value<String?> egresoId = const Value.absent(),
     Value<String?> categoria = const Value.absent(),
     String? originalFileName,
     String? storedFileName,
@@ -6328,6 +6400,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
         complementoPagoId.present
             ? complementoPagoId.value
             : this.complementoPagoId,
+    ingresoId: ingresoId.present ? ingresoId.value : this.ingresoId,
+    egresoId: egresoId.present ? egresoId.value : this.egresoId,
     categoria: categoria.present ? categoria.value : this.categoria,
     originalFileName: originalFileName ?? this.originalFileName,
     storedFileName: storedFileName ?? this.storedFileName,
@@ -6352,6 +6426,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           data.complementoPagoId.present
               ? data.complementoPagoId.value
               : this.complementoPagoId,
+      ingresoId: data.ingresoId.present ? data.ingresoId.value : this.ingresoId,
+      egresoId: data.egresoId.present ? data.egresoId.value : this.egresoId,
       categoria: data.categoria.present ? data.categoria.value : this.categoria,
       originalFileName:
           data.originalFileName.present
@@ -6379,6 +6455,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
           ..write('pagoId: $pagoId, ')
           ..write('complementoPagoId: $complementoPagoId, ')
+          ..write('ingresoId: $ingresoId, ')
+          ..write('egresoId: $egresoId, ')
           ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
@@ -6400,6 +6478,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     documentoPorEmitirId,
     pagoId,
     complementoPagoId,
+    ingresoId,
+    egresoId,
     categoria,
     originalFileName,
     storedFileName,
@@ -6420,6 +6500,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           other.documentoPorEmitirId == this.documentoPorEmitirId &&
           other.pagoId == this.pagoId &&
           other.complementoPagoId == this.complementoPagoId &&
+          other.ingresoId == this.ingresoId &&
+          other.egresoId == this.egresoId &&
           other.categoria == this.categoria &&
           other.originalFileName == this.originalFileName &&
           other.storedFileName == this.storedFileName &&
@@ -6438,6 +6520,8 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   final Value<String?> documentoPorEmitirId;
   final Value<String?> pagoId;
   final Value<String?> complementoPagoId;
+  final Value<String?> ingresoId;
+  final Value<String?> egresoId;
   final Value<String?> categoria;
   final Value<String> originalFileName;
   final Value<String> storedFileName;
@@ -6455,6 +6539,8 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     this.documentoPorEmitirId = const Value.absent(),
     this.pagoId = const Value.absent(),
     this.complementoPagoId = const Value.absent(),
+    this.ingresoId = const Value.absent(),
+    this.egresoId = const Value.absent(),
     this.categoria = const Value.absent(),
     this.originalFileName = const Value.absent(),
     this.storedFileName = const Value.absent(),
@@ -6473,6 +6559,8 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     this.documentoPorEmitirId = const Value.absent(),
     this.pagoId = const Value.absent(),
     this.complementoPagoId = const Value.absent(),
+    this.ingresoId = const Value.absent(),
+    this.egresoId = const Value.absent(),
     this.categoria = const Value.absent(),
     required String originalFileName,
     required String storedFileName,
@@ -6496,6 +6584,8 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     Expression<String>? documentoPorEmitirId,
     Expression<String>? pagoId,
     Expression<String>? complementoPagoId,
+    Expression<String>? ingresoId,
+    Expression<String>? egresoId,
     Expression<String>? categoria,
     Expression<String>? originalFileName,
     Expression<String>? storedFileName,
@@ -6515,6 +6605,8 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
         'documento_por_emitir_id': documentoPorEmitirId,
       if (pagoId != null) 'pago_id': pagoId,
       if (complementoPagoId != null) 'complemento_pago_id': complementoPagoId,
+      if (ingresoId != null) 'ingreso_id': ingresoId,
+      if (egresoId != null) 'egreso_id': egresoId,
       if (categoria != null) 'categoria': categoria,
       if (originalFileName != null) 'original_file_name': originalFileName,
       if (storedFileName != null) 'stored_file_name': storedFileName,
@@ -6535,6 +6627,8 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     Value<String?>? documentoPorEmitirId,
     Value<String?>? pagoId,
     Value<String?>? complementoPagoId,
+    Value<String?>? ingresoId,
+    Value<String?>? egresoId,
     Value<String?>? categoria,
     Value<String>? originalFileName,
     Value<String>? storedFileName,
@@ -6553,6 +6647,8 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
       documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
       pagoId: pagoId ?? this.pagoId,
       complementoPagoId: complementoPagoId ?? this.complementoPagoId,
+      ingresoId: ingresoId ?? this.ingresoId,
+      egresoId: egresoId ?? this.egresoId,
       categoria: categoria ?? this.categoria,
       originalFileName: originalFileName ?? this.originalFileName,
       storedFileName: storedFileName ?? this.storedFileName,
@@ -6588,6 +6684,12 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     }
     if (complementoPagoId.present) {
       map['complemento_pago_id'] = Variable<String>(complementoPagoId.value);
+    }
+    if (ingresoId.present) {
+      map['ingreso_id'] = Variable<String>(ingresoId.value);
+    }
+    if (egresoId.present) {
+      map['egreso_id'] = Variable<String>(egresoId.value);
     }
     if (categoria.present) {
       map['categoria'] = Variable<String>(categoria.value);
@@ -6631,6 +6733,8 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
           ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
           ..write('pagoId: $pagoId, ')
           ..write('complementoPagoId: $complementoPagoId, ')
+          ..write('ingresoId: $ingresoId, ')
+          ..write('egresoId: $egresoId, ')
           ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
@@ -27296,6 +27400,3845 @@ class ComplementoPagoEventoCompanion
   }
 }
 
+class $CategoriaFinancieraTable extends CategoriaFinanciera
+    with TableInfo<$CategoriaFinancieraTable, CategoriaFinancieraData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CategoriaFinancieraTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMovimientoMeta = const VerificationMeta(
+    'tipoMovimiento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoMovimiento = GeneratedColumn<String>(
+    'tipo_movimiento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    nombre,
+    tipo,
+    tipoMovimiento,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'categoria_financiera';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CategoriaFinancieraData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('tipo_movimiento')) {
+      context.handle(
+        _tipoMovimientoMeta,
+        tipoMovimiento.isAcceptableOrUnknown(
+          data['tipo_movimiento']!,
+          _tipoMovimientoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMovimientoMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CategoriaFinancieraData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CategoriaFinancieraData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      codigo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}codigo'],
+          )!,
+      nombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre'],
+          )!,
+      tipo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo'],
+          )!,
+      tipoMovimiento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_movimiento'],
+          )!,
+    );
+  }
+
+  @override
+  $CategoriaFinancieraTable createAlias(String alias) {
+    return $CategoriaFinancieraTable(attachedDatabase, alias);
+  }
+}
+
+class CategoriaFinancieraData extends DataClass
+    implements Insertable<CategoriaFinancieraData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String codigo;
+  final String nombre;
+  final String tipo;
+  final String tipoMovimiento;
+  const CategoriaFinancieraData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.codigo,
+    required this.nombre,
+    required this.tipo,
+    required this.tipoMovimiento,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['codigo'] = Variable<String>(codigo);
+    map['nombre'] = Variable<String>(nombre);
+    map['tipo'] = Variable<String>(tipo);
+    map['tipo_movimiento'] = Variable<String>(tipoMovimiento);
+    return map;
+  }
+
+  CategoriaFinancieraCompanion toCompanion(bool nullToAbsent) {
+    return CategoriaFinancieraCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      codigo: Value(codigo),
+      nombre: Value(nombre),
+      tipo: Value(tipo),
+      tipoMovimiento: Value(tipoMovimiento),
+    );
+  }
+
+  factory CategoriaFinancieraData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CategoriaFinancieraData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      codigo: serializer.fromJson<String>(json['codigo']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      tipoMovimiento: serializer.fromJson<String>(json['tipoMovimiento']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'codigo': serializer.toJson<String>(codigo),
+      'nombre': serializer.toJson<String>(nombre),
+      'tipo': serializer.toJson<String>(tipo),
+      'tipoMovimiento': serializer.toJson<String>(tipoMovimiento),
+    };
+  }
+
+  CategoriaFinancieraData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? codigo,
+    String? nombre,
+    String? tipo,
+    String? tipoMovimiento,
+  }) => CategoriaFinancieraData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    codigo: codigo ?? this.codigo,
+    nombre: nombre ?? this.nombre,
+    tipo: tipo ?? this.tipo,
+    tipoMovimiento: tipoMovimiento ?? this.tipoMovimiento,
+  );
+  CategoriaFinancieraData copyWithCompanion(CategoriaFinancieraCompanion data) {
+    return CategoriaFinancieraData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      tipoMovimiento:
+          data.tipoMovimiento.present
+              ? data.tipoMovimiento.value
+              : this.tipoMovimiento,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CategoriaFinancieraData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('nombre: $nombre, ')
+          ..write('tipo: $tipo, ')
+          ..write('tipoMovimiento: $tipoMovimiento')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    nombre,
+    tipo,
+    tipoMovimiento,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CategoriaFinancieraData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.codigo == this.codigo &&
+          other.nombre == this.nombre &&
+          other.tipo == this.tipo &&
+          other.tipoMovimiento == this.tipoMovimiento);
+}
+
+class CategoriaFinancieraCompanion
+    extends UpdateCompanion<CategoriaFinancieraData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> codigo;
+  final Value<String> nombre;
+  final Value<String> tipo;
+  final Value<String> tipoMovimiento;
+  final Value<int> rowid;
+  const CategoriaFinancieraCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.tipoMovimiento = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CategoriaFinancieraCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String codigo,
+    required String nombre,
+    required String tipo,
+    required String tipoMovimiento,
+    this.rowid = const Value.absent(),
+  }) : codigo = Value(codigo),
+       nombre = Value(nombre),
+       tipo = Value(tipo),
+       tipoMovimiento = Value(tipoMovimiento);
+  static Insertable<CategoriaFinancieraData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? codigo,
+    Expression<String>? nombre,
+    Expression<String>? tipo,
+    Expression<String>? tipoMovimiento,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (codigo != null) 'codigo': codigo,
+      if (nombre != null) 'nombre': nombre,
+      if (tipo != null) 'tipo': tipo,
+      if (tipoMovimiento != null) 'tipo_movimiento': tipoMovimiento,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CategoriaFinancieraCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? codigo,
+    Value<String>? nombre,
+    Value<String>? tipo,
+    Value<String>? tipoMovimiento,
+    Value<int>? rowid,
+  }) {
+    return CategoriaFinancieraCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      codigo: codigo ?? this.codigo,
+      nombre: nombre ?? this.nombre,
+      tipo: tipo ?? this.tipo,
+      tipoMovimiento: tipoMovimiento ?? this.tipoMovimiento,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (tipoMovimiento.present) {
+      map['tipo_movimiento'] = Variable<String>(tipoMovimiento.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CategoriaFinancieraCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('nombre: $nombre, ')
+          ..write('tipo: $tipo, ')
+          ..write('tipoMovimiento: $tipoMovimiento, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $IngresoTable extends Ingreso with TableInfo<$IngresoTable, IngresoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IngresoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _pagoIdMeta = const VerificationMeta('pagoId');
+  @override
+  late final GeneratedColumn<String> pagoId = GeneratedColumn<String>(
+    'pago_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'UNIQUE REFERENCES pago (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _folioIngresoMeta = const VerificationMeta(
+    'folioIngreso',
+  );
+  @override
+  late final GeneratedColumn<String> folioIngreso = GeneratedColumn<String>(
+    'folio_ingreso',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _montoMeta = const VerificationMeta('monto');
+  @override
+  late final GeneratedColumn<int> monto = GeneratedColumn<int>(
+    'monto',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
+    'fecha',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoriaFinancieraIdMeta =
+      const VerificationMeta('categoriaFinancieraId');
+  @override
+  late final GeneratedColumn<String> categoriaFinancieraId =
+      GeneratedColumn<String>(
+        'categoria_financiera_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES categoria_financiera (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _sucursalIdMeta = const VerificationMeta(
+    'sucursalId',
+  );
+  @override
+  late final GeneratedColumn<String> sucursalId = GeneratedColumn<String>(
+    'sucursal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sucursal (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _areaIdMeta = const VerificationMeta('areaId');
+  @override
+  late final GeneratedColumn<String> areaId = GeneratedColumn<String>(
+    'area_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES area (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _cuentaCajaMeta = const VerificationMeta(
+    'cuentaCaja',
+  );
+  @override
+  late final GeneratedColumn<String> cuentaCaja = GeneratedColumn<String>(
+    'cuenta_caja',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _formaPagoMeta = const VerificationMeta(
+    'formaPago',
+  );
+  @override
+  late final GeneratedColumn<String> formaPago = GeneratedColumn<String>(
+    'forma_pago',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conceptoMeta = const VerificationMeta(
+    'concepto',
+  );
+  @override
+  late final GeneratedColumn<String> concepto = GeneratedColumn<String>(
+    'concepto',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('registrado'),
+  );
+  static const VerificationMeta _motivoCancelacionMeta = const VerificationMeta(
+    'motivoCancelacion',
+  );
+  @override
+  late final GeneratedColumn<String> motivoCancelacion =
+      GeneratedColumn<String>(
+        'motivo_cancelacion',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    pagoId,
+    folioIngreso,
+    monto,
+    fecha,
+    categoriaFinancieraId,
+    servicioId,
+    sucursalId,
+    areaId,
+    cuentaCaja,
+    formaPago,
+    concepto,
+    observaciones,
+    estatus,
+    motivoCancelacion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ingreso';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IngresoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pago_id')) {
+      context.handle(
+        _pagoIdMeta,
+        pagoId.isAcceptableOrUnknown(data['pago_id']!, _pagoIdMeta),
+      );
+    }
+    if (data.containsKey('folio_ingreso')) {
+      context.handle(
+        _folioIngresoMeta,
+        folioIngreso.isAcceptableOrUnknown(
+          data['folio_ingreso']!,
+          _folioIngresoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_folioIngresoMeta);
+    }
+    if (data.containsKey('monto')) {
+      context.handle(
+        _montoMeta,
+        monto.isAcceptableOrUnknown(data['monto']!, _montoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_montoMeta);
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('categoria_financiera_id')) {
+      context.handle(
+        _categoriaFinancieraIdMeta,
+        categoriaFinancieraId.isAcceptableOrUnknown(
+          data['categoria_financiera_id']!,
+          _categoriaFinancieraIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    }
+    if (data.containsKey('sucursal_id')) {
+      context.handle(
+        _sucursalIdMeta,
+        sucursalId.isAcceptableOrUnknown(data['sucursal_id']!, _sucursalIdMeta),
+      );
+    }
+    if (data.containsKey('area_id')) {
+      context.handle(
+        _areaIdMeta,
+        areaId.isAcceptableOrUnknown(data['area_id']!, _areaIdMeta),
+      );
+    }
+    if (data.containsKey('cuenta_caja')) {
+      context.handle(
+        _cuentaCajaMeta,
+        cuentaCaja.isAcceptableOrUnknown(data['cuenta_caja']!, _cuentaCajaMeta),
+      );
+    }
+    if (data.containsKey('forma_pago')) {
+      context.handle(
+        _formaPagoMeta,
+        formaPago.isAcceptableOrUnknown(data['forma_pago']!, _formaPagoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_formaPagoMeta);
+    }
+    if (data.containsKey('concepto')) {
+      context.handle(
+        _conceptoMeta,
+        concepto.isAcceptableOrUnknown(data['concepto']!, _conceptoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_conceptoMeta);
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('motivo_cancelacion')) {
+      context.handle(
+        _motivoCancelacionMeta,
+        motivoCancelacion.isAcceptableOrUnknown(
+          data['motivo_cancelacion']!,
+          _motivoCancelacionMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  IngresoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IngresoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      pagoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pago_id'],
+      ),
+      folioIngreso:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}folio_ingreso'],
+          )!,
+      monto:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}monto'],
+          )!,
+      fecha:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha'],
+          )!,
+      categoriaFinancieraId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}categoria_financiera_id'],
+      ),
+      servicioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servicio_id'],
+      ),
+      sucursalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sucursal_id'],
+      ),
+      areaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}area_id'],
+      ),
+      cuentaCaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cuenta_caja'],
+      ),
+      formaPago:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}forma_pago'],
+          )!,
+      concepto:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}concepto'],
+          )!,
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      motivoCancelacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_cancelacion'],
+      ),
+    );
+  }
+
+  @override
+  $IngresoTable createAlias(String alias) {
+    return $IngresoTable(attachedDatabase, alias);
+  }
+}
+
+class IngresoData extends DataClass implements Insertable<IngresoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String? pagoId;
+  final String folioIngreso;
+  final int monto;
+  final DateTime fecha;
+  final String? categoriaFinancieraId;
+  final String? servicioId;
+  final String? sucursalId;
+  final String? areaId;
+
+  /// Texto libre — mismo criterio que `Pago.cuentaBancariaDestino`, sin
+  /// catálogo de Bancos todavía.
+  final String? cuentaCaja;
+
+  /// Reutiliza el enum `FormaPago` de `Pago` (Etapa 4J.2) — nunca un
+  /// enum paralelo para el mismo concepto.
+  final String formaPago;
+  final String concepto;
+  final String? observaciones;
+  final String estatus;
+  final String? motivoCancelacion;
+  const IngresoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    this.pagoId,
+    required this.folioIngreso,
+    required this.monto,
+    required this.fecha,
+    this.categoriaFinancieraId,
+    this.servicioId,
+    this.sucursalId,
+    this.areaId,
+    this.cuentaCaja,
+    required this.formaPago,
+    required this.concepto,
+    this.observaciones,
+    required this.estatus,
+    this.motivoCancelacion,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    if (!nullToAbsent || pagoId != null) {
+      map['pago_id'] = Variable<String>(pagoId);
+    }
+    map['folio_ingreso'] = Variable<String>(folioIngreso);
+    map['monto'] = Variable<int>(monto);
+    map['fecha'] = Variable<DateTime>(fecha);
+    if (!nullToAbsent || categoriaFinancieraId != null) {
+      map['categoria_financiera_id'] = Variable<String>(categoriaFinancieraId);
+    }
+    if (!nullToAbsent || servicioId != null) {
+      map['servicio_id'] = Variable<String>(servicioId);
+    }
+    if (!nullToAbsent || sucursalId != null) {
+      map['sucursal_id'] = Variable<String>(sucursalId);
+    }
+    if (!nullToAbsent || areaId != null) {
+      map['area_id'] = Variable<String>(areaId);
+    }
+    if (!nullToAbsent || cuentaCaja != null) {
+      map['cuenta_caja'] = Variable<String>(cuentaCaja);
+    }
+    map['forma_pago'] = Variable<String>(formaPago);
+    map['concepto'] = Variable<String>(concepto);
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || motivoCancelacion != null) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion);
+    }
+    return map;
+  }
+
+  IngresoCompanion toCompanion(bool nullToAbsent) {
+    return IngresoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      pagoId:
+          pagoId == null && nullToAbsent ? const Value.absent() : Value(pagoId),
+      folioIngreso: Value(folioIngreso),
+      monto: Value(monto),
+      fecha: Value(fecha),
+      categoriaFinancieraId:
+          categoriaFinancieraId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(categoriaFinancieraId),
+      servicioId:
+          servicioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(servicioId),
+      sucursalId:
+          sucursalId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(sucursalId),
+      areaId:
+          areaId == null && nullToAbsent ? const Value.absent() : Value(areaId),
+      cuentaCaja:
+          cuentaCaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(cuentaCaja),
+      formaPago: Value(formaPago),
+      concepto: Value(concepto),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      estatus: Value(estatus),
+      motivoCancelacion:
+          motivoCancelacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoCancelacion),
+    );
+  }
+
+  factory IngresoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IngresoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      pagoId: serializer.fromJson<String?>(json['pagoId']),
+      folioIngreso: serializer.fromJson<String>(json['folioIngreso']),
+      monto: serializer.fromJson<int>(json['monto']),
+      fecha: serializer.fromJson<DateTime>(json['fecha']),
+      categoriaFinancieraId: serializer.fromJson<String?>(
+        json['categoriaFinancieraId'],
+      ),
+      servicioId: serializer.fromJson<String?>(json['servicioId']),
+      sucursalId: serializer.fromJson<String?>(json['sucursalId']),
+      areaId: serializer.fromJson<String?>(json['areaId']),
+      cuentaCaja: serializer.fromJson<String?>(json['cuentaCaja']),
+      formaPago: serializer.fromJson<String>(json['formaPago']),
+      concepto: serializer.fromJson<String>(json['concepto']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      motivoCancelacion: serializer.fromJson<String?>(
+        json['motivoCancelacion'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'pagoId': serializer.toJson<String?>(pagoId),
+      'folioIngreso': serializer.toJson<String>(folioIngreso),
+      'monto': serializer.toJson<int>(monto),
+      'fecha': serializer.toJson<DateTime>(fecha),
+      'categoriaFinancieraId': serializer.toJson<String?>(
+        categoriaFinancieraId,
+      ),
+      'servicioId': serializer.toJson<String?>(servicioId),
+      'sucursalId': serializer.toJson<String?>(sucursalId),
+      'areaId': serializer.toJson<String?>(areaId),
+      'cuentaCaja': serializer.toJson<String?>(cuentaCaja),
+      'formaPago': serializer.toJson<String>(formaPago),
+      'concepto': serializer.toJson<String>(concepto),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'estatus': serializer.toJson<String>(estatus),
+      'motivoCancelacion': serializer.toJson<String?>(motivoCancelacion),
+    };
+  }
+
+  IngresoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    Value<String?> pagoId = const Value.absent(),
+    String? folioIngreso,
+    int? monto,
+    DateTime? fecha,
+    Value<String?> categoriaFinancieraId = const Value.absent(),
+    Value<String?> servicioId = const Value.absent(),
+    Value<String?> sucursalId = const Value.absent(),
+    Value<String?> areaId = const Value.absent(),
+    Value<String?> cuentaCaja = const Value.absent(),
+    String? formaPago,
+    String? concepto,
+    Value<String?> observaciones = const Value.absent(),
+    String? estatus,
+    Value<String?> motivoCancelacion = const Value.absent(),
+  }) => IngresoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    pagoId: pagoId.present ? pagoId.value : this.pagoId,
+    folioIngreso: folioIngreso ?? this.folioIngreso,
+    monto: monto ?? this.monto,
+    fecha: fecha ?? this.fecha,
+    categoriaFinancieraId:
+        categoriaFinancieraId.present
+            ? categoriaFinancieraId.value
+            : this.categoriaFinancieraId,
+    servicioId: servicioId.present ? servicioId.value : this.servicioId,
+    sucursalId: sucursalId.present ? sucursalId.value : this.sucursalId,
+    areaId: areaId.present ? areaId.value : this.areaId,
+    cuentaCaja: cuentaCaja.present ? cuentaCaja.value : this.cuentaCaja,
+    formaPago: formaPago ?? this.formaPago,
+    concepto: concepto ?? this.concepto,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    estatus: estatus ?? this.estatus,
+    motivoCancelacion:
+        motivoCancelacion.present
+            ? motivoCancelacion.value
+            : this.motivoCancelacion,
+  );
+  IngresoData copyWithCompanion(IngresoCompanion data) {
+    return IngresoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      pagoId: data.pagoId.present ? data.pagoId.value : this.pagoId,
+      folioIngreso:
+          data.folioIngreso.present
+              ? data.folioIngreso.value
+              : this.folioIngreso,
+      monto: data.monto.present ? data.monto.value : this.monto,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      categoriaFinancieraId:
+          data.categoriaFinancieraId.present
+              ? data.categoriaFinancieraId.value
+              : this.categoriaFinancieraId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      sucursalId:
+          data.sucursalId.present ? data.sucursalId.value : this.sucursalId,
+      areaId: data.areaId.present ? data.areaId.value : this.areaId,
+      cuentaCaja:
+          data.cuentaCaja.present ? data.cuentaCaja.value : this.cuentaCaja,
+      formaPago: data.formaPago.present ? data.formaPago.value : this.formaPago,
+      concepto: data.concepto.present ? data.concepto.value : this.concepto,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      motivoCancelacion:
+          data.motivoCancelacion.present
+              ? data.motivoCancelacion.value
+              : this.motivoCancelacion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngresoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('pagoId: $pagoId, ')
+          ..write('folioIngreso: $folioIngreso, ')
+          ..write('monto: $monto, ')
+          ..write('fecha: $fecha, ')
+          ..write('categoriaFinancieraId: $categoriaFinancieraId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('sucursalId: $sucursalId, ')
+          ..write('areaId: $areaId, ')
+          ..write('cuentaCaja: $cuentaCaja, ')
+          ..write('formaPago: $formaPago, ')
+          ..write('concepto: $concepto, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    pagoId,
+    folioIngreso,
+    monto,
+    fecha,
+    categoriaFinancieraId,
+    servicioId,
+    sucursalId,
+    areaId,
+    cuentaCaja,
+    formaPago,
+    concepto,
+    observaciones,
+    estatus,
+    motivoCancelacion,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IngresoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.pagoId == this.pagoId &&
+          other.folioIngreso == this.folioIngreso &&
+          other.monto == this.monto &&
+          other.fecha == this.fecha &&
+          other.categoriaFinancieraId == this.categoriaFinancieraId &&
+          other.servicioId == this.servicioId &&
+          other.sucursalId == this.sucursalId &&
+          other.areaId == this.areaId &&
+          other.cuentaCaja == this.cuentaCaja &&
+          other.formaPago == this.formaPago &&
+          other.concepto == this.concepto &&
+          other.observaciones == this.observaciones &&
+          other.estatus == this.estatus &&
+          other.motivoCancelacion == this.motivoCancelacion);
+}
+
+class IngresoCompanion extends UpdateCompanion<IngresoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String?> pagoId;
+  final Value<String> folioIngreso;
+  final Value<int> monto;
+  final Value<DateTime> fecha;
+  final Value<String?> categoriaFinancieraId;
+  final Value<String?> servicioId;
+  final Value<String?> sucursalId;
+  final Value<String?> areaId;
+  final Value<String?> cuentaCaja;
+  final Value<String> formaPago;
+  final Value<String> concepto;
+  final Value<String?> observaciones;
+  final Value<String> estatus;
+  final Value<String?> motivoCancelacion;
+  final Value<int> rowid;
+  const IngresoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.pagoId = const Value.absent(),
+    this.folioIngreso = const Value.absent(),
+    this.monto = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.categoriaFinancieraId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.sucursalId = const Value.absent(),
+    this.areaId = const Value.absent(),
+    this.cuentaCaja = const Value.absent(),
+    this.formaPago = const Value.absent(),
+    this.concepto = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  IngresoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.pagoId = const Value.absent(),
+    required String folioIngreso,
+    required int monto,
+    required DateTime fecha,
+    this.categoriaFinancieraId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.sucursalId = const Value.absent(),
+    this.areaId = const Value.absent(),
+    this.cuentaCaja = const Value.absent(),
+    required String formaPago,
+    required String concepto,
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : folioIngreso = Value(folioIngreso),
+       monto = Value(monto),
+       fecha = Value(fecha),
+       formaPago = Value(formaPago),
+       concepto = Value(concepto);
+  static Insertable<IngresoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? pagoId,
+    Expression<String>? folioIngreso,
+    Expression<int>? monto,
+    Expression<DateTime>? fecha,
+    Expression<String>? categoriaFinancieraId,
+    Expression<String>? servicioId,
+    Expression<String>? sucursalId,
+    Expression<String>? areaId,
+    Expression<String>? cuentaCaja,
+    Expression<String>? formaPago,
+    Expression<String>? concepto,
+    Expression<String>? observaciones,
+    Expression<String>? estatus,
+    Expression<String>? motivoCancelacion,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (pagoId != null) 'pago_id': pagoId,
+      if (folioIngreso != null) 'folio_ingreso': folioIngreso,
+      if (monto != null) 'monto': monto,
+      if (fecha != null) 'fecha': fecha,
+      if (categoriaFinancieraId != null)
+        'categoria_financiera_id': categoriaFinancieraId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (sucursalId != null) 'sucursal_id': sucursalId,
+      if (areaId != null) 'area_id': areaId,
+      if (cuentaCaja != null) 'cuenta_caja': cuentaCaja,
+      if (formaPago != null) 'forma_pago': formaPago,
+      if (concepto != null) 'concepto': concepto,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (estatus != null) 'estatus': estatus,
+      if (motivoCancelacion != null) 'motivo_cancelacion': motivoCancelacion,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  IngresoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String?>? pagoId,
+    Value<String>? folioIngreso,
+    Value<int>? monto,
+    Value<DateTime>? fecha,
+    Value<String?>? categoriaFinancieraId,
+    Value<String?>? servicioId,
+    Value<String?>? sucursalId,
+    Value<String?>? areaId,
+    Value<String?>? cuentaCaja,
+    Value<String>? formaPago,
+    Value<String>? concepto,
+    Value<String?>? observaciones,
+    Value<String>? estatus,
+    Value<String?>? motivoCancelacion,
+    Value<int>? rowid,
+  }) {
+    return IngresoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      pagoId: pagoId ?? this.pagoId,
+      folioIngreso: folioIngreso ?? this.folioIngreso,
+      monto: monto ?? this.monto,
+      fecha: fecha ?? this.fecha,
+      categoriaFinancieraId:
+          categoriaFinancieraId ?? this.categoriaFinancieraId,
+      servicioId: servicioId ?? this.servicioId,
+      sucursalId: sucursalId ?? this.sucursalId,
+      areaId: areaId ?? this.areaId,
+      cuentaCaja: cuentaCaja ?? this.cuentaCaja,
+      formaPago: formaPago ?? this.formaPago,
+      concepto: concepto ?? this.concepto,
+      observaciones: observaciones ?? this.observaciones,
+      estatus: estatus ?? this.estatus,
+      motivoCancelacion: motivoCancelacion ?? this.motivoCancelacion,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (pagoId.present) {
+      map['pago_id'] = Variable<String>(pagoId.value);
+    }
+    if (folioIngreso.present) {
+      map['folio_ingreso'] = Variable<String>(folioIngreso.value);
+    }
+    if (monto.present) {
+      map['monto'] = Variable<int>(monto.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (categoriaFinancieraId.present) {
+      map['categoria_financiera_id'] = Variable<String>(
+        categoriaFinancieraId.value,
+      );
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (sucursalId.present) {
+      map['sucursal_id'] = Variable<String>(sucursalId.value);
+    }
+    if (areaId.present) {
+      map['area_id'] = Variable<String>(areaId.value);
+    }
+    if (cuentaCaja.present) {
+      map['cuenta_caja'] = Variable<String>(cuentaCaja.value);
+    }
+    if (formaPago.present) {
+      map['forma_pago'] = Variable<String>(formaPago.value);
+    }
+    if (concepto.present) {
+      map['concepto'] = Variable<String>(concepto.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (motivoCancelacion.present) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngresoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('pagoId: $pagoId, ')
+          ..write('folioIngreso: $folioIngreso, ')
+          ..write('monto: $monto, ')
+          ..write('fecha: $fecha, ')
+          ..write('categoriaFinancieraId: $categoriaFinancieraId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('sucursalId: $sucursalId, ')
+          ..write('areaId: $areaId, ')
+          ..write('cuentaCaja: $cuentaCaja, ')
+          ..write('formaPago: $formaPago, ')
+          ..write('concepto: $concepto, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $IngresoEventoTable extends IngresoEvento
+    with TableInfo<$IngresoEventoTable, IngresoEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IngresoEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _ingresoIdMeta = const VerificationMeta(
+    'ingresoId',
+  );
+  @override
+  late final GeneratedColumn<String> ingresoId = GeneratedColumn<String>(
+    'ingreso_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES ingreso (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoAnteriorMeta = const VerificationMeta(
+    'estadoAnterior',
+  );
+  @override
+  late final GeneratedColumn<String> estadoAnterior = GeneratedColumn<String>(
+    'estado_anterior',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estadoNuevoMeta = const VerificationMeta(
+    'estadoNuevo',
+  );
+  @override
+  late final GeneratedColumn<String> estadoNuevo = GeneratedColumn<String>(
+    'estado_nuevo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    ingresoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ingreso_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IngresoEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('ingreso_id')) {
+      context.handle(
+        _ingresoIdMeta,
+        ingresoId.isAcceptableOrUnknown(data['ingreso_id']!, _ingresoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ingresoIdMeta);
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('estado_anterior')) {
+      context.handle(
+        _estadoAnteriorMeta,
+        estadoAnterior.isAcceptableOrUnknown(
+          data['estado_anterior']!,
+          _estadoAnteriorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estado_nuevo')) {
+      context.handle(
+        _estadoNuevoMeta,
+        estadoNuevo.isAcceptableOrUnknown(
+          data['estado_nuevo']!,
+          _estadoNuevoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  IngresoEventoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IngresoEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      ingresoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ingreso_id'],
+          )!,
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      estadoAnterior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_anterior'],
+      ),
+      estadoNuevo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_nuevo'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $IngresoEventoTable createAlias(String alias) {
+    return $IngresoEventoTable(attachedDatabase, alias);
+  }
+}
+
+class IngresoEventoData extends DataClass
+    implements Insertable<IngresoEventoData> {
+  final int id;
+  final String ingresoId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? estadoAnterior;
+  final String? estadoNuevo;
+  final String? observacion;
+  final String? actor;
+  final String? datosRelevantes;
+  const IngresoEventoData({
+    required this.id,
+    required this.ingresoId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.estadoAnterior,
+    this.estadoNuevo,
+    this.observacion,
+    this.actor,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['ingreso_id'] = Variable<String>(ingresoId);
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || estadoAnterior != null) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior);
+    }
+    if (!nullToAbsent || estadoNuevo != null) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  IngresoEventoCompanion toCompanion(bool nullToAbsent) {
+    return IngresoEventoCompanion(
+      id: Value(id),
+      ingresoId: Value(ingresoId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      estadoAnterior:
+          estadoAnterior == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoAnterior),
+      estadoNuevo:
+          estadoNuevo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoNuevo),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory IngresoEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IngresoEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      ingresoId: serializer.fromJson<String>(json['ingresoId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      estadoAnterior: serializer.fromJson<String?>(json['estadoAnterior']),
+      estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      actor: serializer.fromJson<String?>(json['actor']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'ingresoId': serializer.toJson<String>(ingresoId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'estadoAnterior': serializer.toJson<String?>(estadoAnterior),
+      'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
+      'observacion': serializer.toJson<String?>(observacion),
+      'actor': serializer.toJson<String?>(actor),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  IngresoEventoData copyWith({
+    int? id,
+    String? ingresoId,
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> estadoAnterior = const Value.absent(),
+    Value<String?> estadoNuevo = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => IngresoEventoData(
+    id: id ?? this.id,
+    ingresoId: ingresoId ?? this.ingresoId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    estadoAnterior:
+        estadoAnterior.present ? estadoAnterior.value : this.estadoAnterior,
+    estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    actor: actor.present ? actor.value : this.actor,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  IngresoEventoData copyWithCompanion(IngresoEventoCompanion data) {
+    return IngresoEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      ingresoId: data.ingresoId.present ? data.ingresoId.value : this.ingresoId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      estadoAnterior:
+          data.estadoAnterior.present
+              ? data.estadoAnterior.value
+              : this.estadoAnterior,
+      estadoNuevo:
+          data.estadoNuevo.present ? data.estadoNuevo.value : this.estadoNuevo,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      actor: data.actor.present ? data.actor.value : this.actor,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngresoEventoData(')
+          ..write('id: $id, ')
+          ..write('ingresoId: $ingresoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    ingresoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IngresoEventoData &&
+          other.id == this.id &&
+          other.ingresoId == this.ingresoId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.estadoAnterior == this.estadoAnterior &&
+          other.estadoNuevo == this.estadoNuevo &&
+          other.observacion == this.observacion &&
+          other.actor == this.actor &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
+  final Value<int> id;
+  final Value<String> ingresoId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> estadoAnterior;
+  final Value<String?> estadoNuevo;
+  final Value<String?> observacion;
+  final Value<String?> actor;
+  final Value<String?> datosRelevantes;
+  const IngresoEventoCompanion({
+    this.id = const Value.absent(),
+    this.ingresoId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  IngresoEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String ingresoId,
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : ingresoId = Value(ingresoId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<IngresoEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? ingresoId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? estadoAnterior,
+    Expression<String>? estadoNuevo,
+    Expression<String>? observacion,
+    Expression<String>? actor,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ingresoId != null) 'ingreso_id': ingresoId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (estadoAnterior != null) 'estado_anterior': estadoAnterior,
+      if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
+      if (observacion != null) 'observacion': observacion,
+      if (actor != null) 'actor': actor,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  IngresoEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? ingresoId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? estadoAnterior,
+    Value<String?>? estadoNuevo,
+    Value<String?>? observacion,
+    Value<String?>? actor,
+    Value<String?>? datosRelevantes,
+  }) {
+    return IngresoEventoCompanion(
+      id: id ?? this.id,
+      ingresoId: ingresoId ?? this.ingresoId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      estadoAnterior: estadoAnterior ?? this.estadoAnterior,
+      estadoNuevo: estadoNuevo ?? this.estadoNuevo,
+      observacion: observacion ?? this.observacion,
+      actor: actor ?? this.actor,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (ingresoId.present) {
+      map['ingreso_id'] = Variable<String>(ingresoId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (estadoAnterior.present) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior.value);
+    }
+    if (estadoNuevo.present) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngresoEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('ingresoId: $ingresoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EgresoTable extends Egreso with TableInfo<$EgresoTable, EgresoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EgresoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _folioEgresoMeta = const VerificationMeta(
+    'folioEgreso',
+  );
+  @override
+  late final GeneratedColumn<String> folioEgreso = GeneratedColumn<String>(
+    'folio_egreso',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _montoMeta = const VerificationMeta('monto');
+  @override
+  late final GeneratedColumn<int> monto = GeneratedColumn<int>(
+    'monto',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
+    'fecha',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoriaFinancieraIdMeta =
+      const VerificationMeta('categoriaFinancieraId');
+  @override
+  late final GeneratedColumn<String> categoriaFinancieraId =
+      GeneratedColumn<String>(
+        'categoria_financiera_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES categoria_financiera (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _sucursalIdMeta = const VerificationMeta(
+    'sucursalId',
+  );
+  @override
+  late final GeneratedColumn<String> sucursalId = GeneratedColumn<String>(
+    'sucursal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sucursal (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _areaIdMeta = const VerificationMeta('areaId');
+  @override
+  late final GeneratedColumn<String> areaId = GeneratedColumn<String>(
+    'area_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES area (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _cuentaCajaMeta = const VerificationMeta(
+    'cuentaCaja',
+  );
+  @override
+  late final GeneratedColumn<String> cuentaCaja = GeneratedColumn<String>(
+    'cuenta_caja',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _formaPagoMeta = const VerificationMeta(
+    'formaPago',
+  );
+  @override
+  late final GeneratedColumn<String> formaPago = GeneratedColumn<String>(
+    'forma_pago',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _beneficiarioMeta = const VerificationMeta(
+    'beneficiario',
+  );
+  @override
+  late final GeneratedColumn<String> beneficiario = GeneratedColumn<String>(
+    'beneficiario',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _conceptoMeta = const VerificationMeta(
+    'concepto',
+  );
+  @override
+  late final GeneratedColumn<String> concepto = GeneratedColumn<String>(
+    'concepto',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('registrado'),
+  );
+  static const VerificationMeta _motivoCancelacionMeta = const VerificationMeta(
+    'motivoCancelacion',
+  );
+  @override
+  late final GeneratedColumn<String> motivoCancelacion =
+      GeneratedColumn<String>(
+        'motivo_cancelacion',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folioEgreso,
+    monto,
+    fecha,
+    categoriaFinancieraId,
+    servicioId,
+    sucursalId,
+    areaId,
+    cuentaCaja,
+    formaPago,
+    beneficiario,
+    concepto,
+    observaciones,
+    estatus,
+    motivoCancelacion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'egreso';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EgresoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio_egreso')) {
+      context.handle(
+        _folioEgresoMeta,
+        folioEgreso.isAcceptableOrUnknown(
+          data['folio_egreso']!,
+          _folioEgresoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_folioEgresoMeta);
+    }
+    if (data.containsKey('monto')) {
+      context.handle(
+        _montoMeta,
+        monto.isAcceptableOrUnknown(data['monto']!, _montoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_montoMeta);
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('categoria_financiera_id')) {
+      context.handle(
+        _categoriaFinancieraIdMeta,
+        categoriaFinancieraId.isAcceptableOrUnknown(
+          data['categoria_financiera_id']!,
+          _categoriaFinancieraIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    }
+    if (data.containsKey('sucursal_id')) {
+      context.handle(
+        _sucursalIdMeta,
+        sucursalId.isAcceptableOrUnknown(data['sucursal_id']!, _sucursalIdMeta),
+      );
+    }
+    if (data.containsKey('area_id')) {
+      context.handle(
+        _areaIdMeta,
+        areaId.isAcceptableOrUnknown(data['area_id']!, _areaIdMeta),
+      );
+    }
+    if (data.containsKey('cuenta_caja')) {
+      context.handle(
+        _cuentaCajaMeta,
+        cuentaCaja.isAcceptableOrUnknown(data['cuenta_caja']!, _cuentaCajaMeta),
+      );
+    }
+    if (data.containsKey('forma_pago')) {
+      context.handle(
+        _formaPagoMeta,
+        formaPago.isAcceptableOrUnknown(data['forma_pago']!, _formaPagoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_formaPagoMeta);
+    }
+    if (data.containsKey('beneficiario')) {
+      context.handle(
+        _beneficiarioMeta,
+        beneficiario.isAcceptableOrUnknown(
+          data['beneficiario']!,
+          _beneficiarioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('concepto')) {
+      context.handle(
+        _conceptoMeta,
+        concepto.isAcceptableOrUnknown(data['concepto']!, _conceptoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_conceptoMeta);
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('motivo_cancelacion')) {
+      context.handle(
+        _motivoCancelacionMeta,
+        motivoCancelacion.isAcceptableOrUnknown(
+          data['motivo_cancelacion']!,
+          _motivoCancelacionMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EgresoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EgresoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      folioEgreso:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}folio_egreso'],
+          )!,
+      monto:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}monto'],
+          )!,
+      fecha:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha'],
+          )!,
+      categoriaFinancieraId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}categoria_financiera_id'],
+      ),
+      servicioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servicio_id'],
+      ),
+      sucursalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sucursal_id'],
+      ),
+      areaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}area_id'],
+      ),
+      cuentaCaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cuenta_caja'],
+      ),
+      formaPago:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}forma_pago'],
+          )!,
+      beneficiario: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}beneficiario'],
+      ),
+      concepto:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}concepto'],
+          )!,
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      motivoCancelacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_cancelacion'],
+      ),
+    );
+  }
+
+  @override
+  $EgresoTable createAlias(String alias) {
+    return $EgresoTable(attachedDatabase, alias);
+  }
+}
+
+class EgresoData extends DataClass implements Insertable<EgresoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String folioEgreso;
+  final int monto;
+  final DateTime fecha;
+  final String? categoriaFinancieraId;
+  final String? servicioId;
+  final String? sucursalId;
+  final String? areaId;
+  final String? cuentaCaja;
+  final String formaPago;
+
+  /// Texto libre — sin catálogo de Proveedores todavía, mismo criterio
+  /// que `cuentaCaja`.
+  final String? beneficiario;
+  final String concepto;
+  final String? observaciones;
+  final String estatus;
+  final String? motivoCancelacion;
+  const EgresoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.folioEgreso,
+    required this.monto,
+    required this.fecha,
+    this.categoriaFinancieraId,
+    this.servicioId,
+    this.sucursalId,
+    this.areaId,
+    this.cuentaCaja,
+    required this.formaPago,
+    this.beneficiario,
+    required this.concepto,
+    this.observaciones,
+    required this.estatus,
+    this.motivoCancelacion,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['folio_egreso'] = Variable<String>(folioEgreso);
+    map['monto'] = Variable<int>(monto);
+    map['fecha'] = Variable<DateTime>(fecha);
+    if (!nullToAbsent || categoriaFinancieraId != null) {
+      map['categoria_financiera_id'] = Variable<String>(categoriaFinancieraId);
+    }
+    if (!nullToAbsent || servicioId != null) {
+      map['servicio_id'] = Variable<String>(servicioId);
+    }
+    if (!nullToAbsent || sucursalId != null) {
+      map['sucursal_id'] = Variable<String>(sucursalId);
+    }
+    if (!nullToAbsent || areaId != null) {
+      map['area_id'] = Variable<String>(areaId);
+    }
+    if (!nullToAbsent || cuentaCaja != null) {
+      map['cuenta_caja'] = Variable<String>(cuentaCaja);
+    }
+    map['forma_pago'] = Variable<String>(formaPago);
+    if (!nullToAbsent || beneficiario != null) {
+      map['beneficiario'] = Variable<String>(beneficiario);
+    }
+    map['concepto'] = Variable<String>(concepto);
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || motivoCancelacion != null) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion);
+    }
+    return map;
+  }
+
+  EgresoCompanion toCompanion(bool nullToAbsent) {
+    return EgresoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      folioEgreso: Value(folioEgreso),
+      monto: Value(monto),
+      fecha: Value(fecha),
+      categoriaFinancieraId:
+          categoriaFinancieraId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(categoriaFinancieraId),
+      servicioId:
+          servicioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(servicioId),
+      sucursalId:
+          sucursalId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(sucursalId),
+      areaId:
+          areaId == null && nullToAbsent ? const Value.absent() : Value(areaId),
+      cuentaCaja:
+          cuentaCaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(cuentaCaja),
+      formaPago: Value(formaPago),
+      beneficiario:
+          beneficiario == null && nullToAbsent
+              ? const Value.absent()
+              : Value(beneficiario),
+      concepto: Value(concepto),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      estatus: Value(estatus),
+      motivoCancelacion:
+          motivoCancelacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoCancelacion),
+    );
+  }
+
+  factory EgresoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EgresoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      folioEgreso: serializer.fromJson<String>(json['folioEgreso']),
+      monto: serializer.fromJson<int>(json['monto']),
+      fecha: serializer.fromJson<DateTime>(json['fecha']),
+      categoriaFinancieraId: serializer.fromJson<String?>(
+        json['categoriaFinancieraId'],
+      ),
+      servicioId: serializer.fromJson<String?>(json['servicioId']),
+      sucursalId: serializer.fromJson<String?>(json['sucursalId']),
+      areaId: serializer.fromJson<String?>(json['areaId']),
+      cuentaCaja: serializer.fromJson<String?>(json['cuentaCaja']),
+      formaPago: serializer.fromJson<String>(json['formaPago']),
+      beneficiario: serializer.fromJson<String?>(json['beneficiario']),
+      concepto: serializer.fromJson<String>(json['concepto']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      motivoCancelacion: serializer.fromJson<String?>(
+        json['motivoCancelacion'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'folioEgreso': serializer.toJson<String>(folioEgreso),
+      'monto': serializer.toJson<int>(monto),
+      'fecha': serializer.toJson<DateTime>(fecha),
+      'categoriaFinancieraId': serializer.toJson<String?>(
+        categoriaFinancieraId,
+      ),
+      'servicioId': serializer.toJson<String?>(servicioId),
+      'sucursalId': serializer.toJson<String?>(sucursalId),
+      'areaId': serializer.toJson<String?>(areaId),
+      'cuentaCaja': serializer.toJson<String?>(cuentaCaja),
+      'formaPago': serializer.toJson<String>(formaPago),
+      'beneficiario': serializer.toJson<String?>(beneficiario),
+      'concepto': serializer.toJson<String>(concepto),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'estatus': serializer.toJson<String>(estatus),
+      'motivoCancelacion': serializer.toJson<String?>(motivoCancelacion),
+    };
+  }
+
+  EgresoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? folioEgreso,
+    int? monto,
+    DateTime? fecha,
+    Value<String?> categoriaFinancieraId = const Value.absent(),
+    Value<String?> servicioId = const Value.absent(),
+    Value<String?> sucursalId = const Value.absent(),
+    Value<String?> areaId = const Value.absent(),
+    Value<String?> cuentaCaja = const Value.absent(),
+    String? formaPago,
+    Value<String?> beneficiario = const Value.absent(),
+    String? concepto,
+    Value<String?> observaciones = const Value.absent(),
+    String? estatus,
+    Value<String?> motivoCancelacion = const Value.absent(),
+  }) => EgresoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    folioEgreso: folioEgreso ?? this.folioEgreso,
+    monto: monto ?? this.monto,
+    fecha: fecha ?? this.fecha,
+    categoriaFinancieraId:
+        categoriaFinancieraId.present
+            ? categoriaFinancieraId.value
+            : this.categoriaFinancieraId,
+    servicioId: servicioId.present ? servicioId.value : this.servicioId,
+    sucursalId: sucursalId.present ? sucursalId.value : this.sucursalId,
+    areaId: areaId.present ? areaId.value : this.areaId,
+    cuentaCaja: cuentaCaja.present ? cuentaCaja.value : this.cuentaCaja,
+    formaPago: formaPago ?? this.formaPago,
+    beneficiario: beneficiario.present ? beneficiario.value : this.beneficiario,
+    concepto: concepto ?? this.concepto,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    estatus: estatus ?? this.estatus,
+    motivoCancelacion:
+        motivoCancelacion.present
+            ? motivoCancelacion.value
+            : this.motivoCancelacion,
+  );
+  EgresoData copyWithCompanion(EgresoCompanion data) {
+    return EgresoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      folioEgreso:
+          data.folioEgreso.present ? data.folioEgreso.value : this.folioEgreso,
+      monto: data.monto.present ? data.monto.value : this.monto,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      categoriaFinancieraId:
+          data.categoriaFinancieraId.present
+              ? data.categoriaFinancieraId.value
+              : this.categoriaFinancieraId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      sucursalId:
+          data.sucursalId.present ? data.sucursalId.value : this.sucursalId,
+      areaId: data.areaId.present ? data.areaId.value : this.areaId,
+      cuentaCaja:
+          data.cuentaCaja.present ? data.cuentaCaja.value : this.cuentaCaja,
+      formaPago: data.formaPago.present ? data.formaPago.value : this.formaPago,
+      beneficiario:
+          data.beneficiario.present
+              ? data.beneficiario.value
+              : this.beneficiario,
+      concepto: data.concepto.present ? data.concepto.value : this.concepto,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      motivoCancelacion:
+          data.motivoCancelacion.present
+              ? data.motivoCancelacion.value
+              : this.motivoCancelacion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EgresoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folioEgreso: $folioEgreso, ')
+          ..write('monto: $monto, ')
+          ..write('fecha: $fecha, ')
+          ..write('categoriaFinancieraId: $categoriaFinancieraId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('sucursalId: $sucursalId, ')
+          ..write('areaId: $areaId, ')
+          ..write('cuentaCaja: $cuentaCaja, ')
+          ..write('formaPago: $formaPago, ')
+          ..write('beneficiario: $beneficiario, ')
+          ..write('concepto: $concepto, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folioEgreso,
+    monto,
+    fecha,
+    categoriaFinancieraId,
+    servicioId,
+    sucursalId,
+    areaId,
+    cuentaCaja,
+    formaPago,
+    beneficiario,
+    concepto,
+    observaciones,
+    estatus,
+    motivoCancelacion,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EgresoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.folioEgreso == this.folioEgreso &&
+          other.monto == this.monto &&
+          other.fecha == this.fecha &&
+          other.categoriaFinancieraId == this.categoriaFinancieraId &&
+          other.servicioId == this.servicioId &&
+          other.sucursalId == this.sucursalId &&
+          other.areaId == this.areaId &&
+          other.cuentaCaja == this.cuentaCaja &&
+          other.formaPago == this.formaPago &&
+          other.beneficiario == this.beneficiario &&
+          other.concepto == this.concepto &&
+          other.observaciones == this.observaciones &&
+          other.estatus == this.estatus &&
+          other.motivoCancelacion == this.motivoCancelacion);
+}
+
+class EgresoCompanion extends UpdateCompanion<EgresoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> folioEgreso;
+  final Value<int> monto;
+  final Value<DateTime> fecha;
+  final Value<String?> categoriaFinancieraId;
+  final Value<String?> servicioId;
+  final Value<String?> sucursalId;
+  final Value<String?> areaId;
+  final Value<String?> cuentaCaja;
+  final Value<String> formaPago;
+  final Value<String?> beneficiario;
+  final Value<String> concepto;
+  final Value<String?> observaciones;
+  final Value<String> estatus;
+  final Value<String?> motivoCancelacion;
+  final Value<int> rowid;
+  const EgresoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.folioEgreso = const Value.absent(),
+    this.monto = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.categoriaFinancieraId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.sucursalId = const Value.absent(),
+    this.areaId = const Value.absent(),
+    this.cuentaCaja = const Value.absent(),
+    this.formaPago = const Value.absent(),
+    this.beneficiario = const Value.absent(),
+    this.concepto = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EgresoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String folioEgreso,
+    required int monto,
+    required DateTime fecha,
+    this.categoriaFinancieraId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.sucursalId = const Value.absent(),
+    this.areaId = const Value.absent(),
+    this.cuentaCaja = const Value.absent(),
+    required String formaPago,
+    this.beneficiario = const Value.absent(),
+    required String concepto,
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : folioEgreso = Value(folioEgreso),
+       monto = Value(monto),
+       fecha = Value(fecha),
+       formaPago = Value(formaPago),
+       concepto = Value(concepto);
+  static Insertable<EgresoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? folioEgreso,
+    Expression<int>? monto,
+    Expression<DateTime>? fecha,
+    Expression<String>? categoriaFinancieraId,
+    Expression<String>? servicioId,
+    Expression<String>? sucursalId,
+    Expression<String>? areaId,
+    Expression<String>? cuentaCaja,
+    Expression<String>? formaPago,
+    Expression<String>? beneficiario,
+    Expression<String>? concepto,
+    Expression<String>? observaciones,
+    Expression<String>? estatus,
+    Expression<String>? motivoCancelacion,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (folioEgreso != null) 'folio_egreso': folioEgreso,
+      if (monto != null) 'monto': monto,
+      if (fecha != null) 'fecha': fecha,
+      if (categoriaFinancieraId != null)
+        'categoria_financiera_id': categoriaFinancieraId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (sucursalId != null) 'sucursal_id': sucursalId,
+      if (areaId != null) 'area_id': areaId,
+      if (cuentaCaja != null) 'cuenta_caja': cuentaCaja,
+      if (formaPago != null) 'forma_pago': formaPago,
+      if (beneficiario != null) 'beneficiario': beneficiario,
+      if (concepto != null) 'concepto': concepto,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (estatus != null) 'estatus': estatus,
+      if (motivoCancelacion != null) 'motivo_cancelacion': motivoCancelacion,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EgresoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? folioEgreso,
+    Value<int>? monto,
+    Value<DateTime>? fecha,
+    Value<String?>? categoriaFinancieraId,
+    Value<String?>? servicioId,
+    Value<String?>? sucursalId,
+    Value<String?>? areaId,
+    Value<String?>? cuentaCaja,
+    Value<String>? formaPago,
+    Value<String?>? beneficiario,
+    Value<String>? concepto,
+    Value<String?>? observaciones,
+    Value<String>? estatus,
+    Value<String?>? motivoCancelacion,
+    Value<int>? rowid,
+  }) {
+    return EgresoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      folioEgreso: folioEgreso ?? this.folioEgreso,
+      monto: monto ?? this.monto,
+      fecha: fecha ?? this.fecha,
+      categoriaFinancieraId:
+          categoriaFinancieraId ?? this.categoriaFinancieraId,
+      servicioId: servicioId ?? this.servicioId,
+      sucursalId: sucursalId ?? this.sucursalId,
+      areaId: areaId ?? this.areaId,
+      cuentaCaja: cuentaCaja ?? this.cuentaCaja,
+      formaPago: formaPago ?? this.formaPago,
+      beneficiario: beneficiario ?? this.beneficiario,
+      concepto: concepto ?? this.concepto,
+      observaciones: observaciones ?? this.observaciones,
+      estatus: estatus ?? this.estatus,
+      motivoCancelacion: motivoCancelacion ?? this.motivoCancelacion,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (folioEgreso.present) {
+      map['folio_egreso'] = Variable<String>(folioEgreso.value);
+    }
+    if (monto.present) {
+      map['monto'] = Variable<int>(monto.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (categoriaFinancieraId.present) {
+      map['categoria_financiera_id'] = Variable<String>(
+        categoriaFinancieraId.value,
+      );
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (sucursalId.present) {
+      map['sucursal_id'] = Variable<String>(sucursalId.value);
+    }
+    if (areaId.present) {
+      map['area_id'] = Variable<String>(areaId.value);
+    }
+    if (cuentaCaja.present) {
+      map['cuenta_caja'] = Variable<String>(cuentaCaja.value);
+    }
+    if (formaPago.present) {
+      map['forma_pago'] = Variable<String>(formaPago.value);
+    }
+    if (beneficiario.present) {
+      map['beneficiario'] = Variable<String>(beneficiario.value);
+    }
+    if (concepto.present) {
+      map['concepto'] = Variable<String>(concepto.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (motivoCancelacion.present) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EgresoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folioEgreso: $folioEgreso, ')
+          ..write('monto: $monto, ')
+          ..write('fecha: $fecha, ')
+          ..write('categoriaFinancieraId: $categoriaFinancieraId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('sucursalId: $sucursalId, ')
+          ..write('areaId: $areaId, ')
+          ..write('cuentaCaja: $cuentaCaja, ')
+          ..write('formaPago: $formaPago, ')
+          ..write('beneficiario: $beneficiario, ')
+          ..write('concepto: $concepto, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EgresoEventoTable extends EgresoEvento
+    with TableInfo<$EgresoEventoTable, EgresoEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EgresoEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _egresoIdMeta = const VerificationMeta(
+    'egresoId',
+  );
+  @override
+  late final GeneratedColumn<String> egresoId = GeneratedColumn<String>(
+    'egreso_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES egreso (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoAnteriorMeta = const VerificationMeta(
+    'estadoAnterior',
+  );
+  @override
+  late final GeneratedColumn<String> estadoAnterior = GeneratedColumn<String>(
+    'estado_anterior',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estadoNuevoMeta = const VerificationMeta(
+    'estadoNuevo',
+  );
+  @override
+  late final GeneratedColumn<String> estadoNuevo = GeneratedColumn<String>(
+    'estado_nuevo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    egresoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'egreso_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EgresoEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('egreso_id')) {
+      context.handle(
+        _egresoIdMeta,
+        egresoId.isAcceptableOrUnknown(data['egreso_id']!, _egresoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_egresoIdMeta);
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('estado_anterior')) {
+      context.handle(
+        _estadoAnteriorMeta,
+        estadoAnterior.isAcceptableOrUnknown(
+          data['estado_anterior']!,
+          _estadoAnteriorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estado_nuevo')) {
+      context.handle(
+        _estadoNuevoMeta,
+        estadoNuevo.isAcceptableOrUnknown(
+          data['estado_nuevo']!,
+          _estadoNuevoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EgresoEventoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EgresoEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      egresoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}egreso_id'],
+          )!,
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      estadoAnterior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_anterior'],
+      ),
+      estadoNuevo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_nuevo'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $EgresoEventoTable createAlias(String alias) {
+    return $EgresoEventoTable(attachedDatabase, alias);
+  }
+}
+
+class EgresoEventoData extends DataClass
+    implements Insertable<EgresoEventoData> {
+  final int id;
+  final String egresoId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? estadoAnterior;
+  final String? estadoNuevo;
+  final String? observacion;
+  final String? actor;
+  final String? datosRelevantes;
+  const EgresoEventoData({
+    required this.id,
+    required this.egresoId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.estadoAnterior,
+    this.estadoNuevo,
+    this.observacion,
+    this.actor,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['egreso_id'] = Variable<String>(egresoId);
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || estadoAnterior != null) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior);
+    }
+    if (!nullToAbsent || estadoNuevo != null) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  EgresoEventoCompanion toCompanion(bool nullToAbsent) {
+    return EgresoEventoCompanion(
+      id: Value(id),
+      egresoId: Value(egresoId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      estadoAnterior:
+          estadoAnterior == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoAnterior),
+      estadoNuevo:
+          estadoNuevo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoNuevo),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory EgresoEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EgresoEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      egresoId: serializer.fromJson<String>(json['egresoId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      estadoAnterior: serializer.fromJson<String?>(json['estadoAnterior']),
+      estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      actor: serializer.fromJson<String?>(json['actor']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'egresoId': serializer.toJson<String>(egresoId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'estadoAnterior': serializer.toJson<String?>(estadoAnterior),
+      'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
+      'observacion': serializer.toJson<String?>(observacion),
+      'actor': serializer.toJson<String?>(actor),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  EgresoEventoData copyWith({
+    int? id,
+    String? egresoId,
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> estadoAnterior = const Value.absent(),
+    Value<String?> estadoNuevo = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => EgresoEventoData(
+    id: id ?? this.id,
+    egresoId: egresoId ?? this.egresoId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    estadoAnterior:
+        estadoAnterior.present ? estadoAnterior.value : this.estadoAnterior,
+    estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    actor: actor.present ? actor.value : this.actor,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  EgresoEventoData copyWithCompanion(EgresoEventoCompanion data) {
+    return EgresoEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      egresoId: data.egresoId.present ? data.egresoId.value : this.egresoId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      estadoAnterior:
+          data.estadoAnterior.present
+              ? data.estadoAnterior.value
+              : this.estadoAnterior,
+      estadoNuevo:
+          data.estadoNuevo.present ? data.estadoNuevo.value : this.estadoNuevo,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      actor: data.actor.present ? data.actor.value : this.actor,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EgresoEventoData(')
+          ..write('id: $id, ')
+          ..write('egresoId: $egresoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    egresoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EgresoEventoData &&
+          other.id == this.id &&
+          other.egresoId == this.egresoId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.estadoAnterior == this.estadoAnterior &&
+          other.estadoNuevo == this.estadoNuevo &&
+          other.observacion == this.observacion &&
+          other.actor == this.actor &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
+  final Value<int> id;
+  final Value<String> egresoId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> estadoAnterior;
+  final Value<String?> estadoNuevo;
+  final Value<String?> observacion;
+  final Value<String?> actor;
+  final Value<String?> datosRelevantes;
+  const EgresoEventoCompanion({
+    this.id = const Value.absent(),
+    this.egresoId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  EgresoEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String egresoId,
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : egresoId = Value(egresoId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<EgresoEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? egresoId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? estadoAnterior,
+    Expression<String>? estadoNuevo,
+    Expression<String>? observacion,
+    Expression<String>? actor,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (egresoId != null) 'egreso_id': egresoId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (estadoAnterior != null) 'estado_anterior': estadoAnterior,
+      if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
+      if (observacion != null) 'observacion': observacion,
+      if (actor != null) 'actor': actor,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  EgresoEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? egresoId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? estadoAnterior,
+    Value<String?>? estadoNuevo,
+    Value<String?>? observacion,
+    Value<String?>? actor,
+    Value<String?>? datosRelevantes,
+  }) {
+    return EgresoEventoCompanion(
+      id: id ?? this.id,
+      egresoId: egresoId ?? this.egresoId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      estadoAnterior: estadoAnterior ?? this.estadoAnterior,
+      estadoNuevo: estadoNuevo ?? this.estadoNuevo,
+      observacion: observacion ?? this.observacion,
+      actor: actor ?? this.actor,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (egresoId.present) {
+      map['egreso_id'] = Variable<String>(egresoId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (estadoAnterior.present) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior.value);
+    }
+    if (estadoNuevo.present) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EgresoEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('egresoId: $egresoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -27363,6 +31306,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $ComplementoPagoEventoTable complementoPagoEvento =
       $ComplementoPagoEventoTable(this);
+  late final $CategoriaFinancieraTable categoriaFinanciera =
+      $CategoriaFinancieraTable(this);
+  late final $IngresoTable ingreso = $IngresoTable(this);
+  late final $IngresoEventoTable ingresoEvento = $IngresoEventoTable(this);
+  late final $EgresoTable egreso = $EgresoTable(this);
+  late final $EgresoEventoTable egresoEvento = $EgresoEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -27425,6 +31374,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pagoEvento,
     complementoPago,
     complementoPagoEvento,
+    categoriaFinanciera,
+    ingreso,
+    ingresoEvento,
+    egreso,
+    egresoEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -27542,6 +31496,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('complemento_pago_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'ingreso',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('ingreso_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'egreso',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('egreso_evento', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -29159,6 +33127,43 @@ final class $$AreaTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$IngresoTable, List<IngresoData>>
+  _ingresoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.ingreso,
+    aliasName: $_aliasNameGenerator(db.area.id, db.ingreso.areaId),
+  );
+
+  $$IngresoTableProcessedTableManager get ingresoRefs {
+    final manager = $$IngresoTableTableManager(
+      $_db,
+      $_db.ingreso,
+    ).filter((f) => f.areaId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_ingresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$EgresoTable, List<EgresoData>> _egresoRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.egreso,
+    aliasName: $_aliasNameGenerator(db.area.id, db.egreso.areaId),
+  );
+
+  $$EgresoTableProcessedTableManager get egresoRefs {
+    final manager = $$EgresoTableTableManager(
+      $_db,
+      $_db.egreso,
+    ).filter((f) => f.areaId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_egresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AreaTableFilterComposer extends Composer<_$AppDatabase, $AreaTable> {
@@ -29225,6 +33230,56 @@ class $$AreaTableFilterComposer extends Composer<_$AppDatabase, $AreaTable> {
           }) => $$PuestoTableFilterComposer(
             $db: $db,
             $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> ingresoRefs(
+    Expression<bool> Function($$IngresoTableFilterComposer f) f,
+  ) {
+    final $$IngresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.areaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableFilterComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> egresoRefs(
+    Expression<bool> Function($$EgresoTableFilterComposer f) f,
+  ) {
+    final $$EgresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.areaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableFilterComposer(
+            $db: $db,
+            $table: $db.egreso,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -29343,6 +33398,56 @@ class $$AreaTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> ingresoRefs<T extends Object>(
+    Expression<T> Function($$IngresoTableAnnotationComposer a) f,
+  ) {
+    final $$IngresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.areaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> egresoRefs<T extends Object>(
+    Expression<T> Function($$EgresoTableAnnotationComposer a) f,
+  ) {
+    final $$EgresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.areaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$AreaTableTableManager
@@ -29358,7 +33463,11 @@ class $$AreaTableTableManager
           $$AreaTableUpdateCompanionBuilder,
           (AreaData, $$AreaTableReferences),
           AreaData,
-          PrefetchHooks Function({bool puestoRefs})
+          PrefetchHooks Function({
+            bool puestoRefs,
+            bool ingresoRefs,
+            bool egresoRefs,
+          })
         > {
   $$AreaTableTableManager(_$AppDatabase db, $AreaTable table)
     : super(
@@ -29425,10 +33534,18 @@ class $$AreaTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({puestoRefs = false}) {
+          prefetchHooksCallback: ({
+            puestoRefs = false,
+            ingresoRefs = false,
+            egresoRefs = false,
+          }) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (puestoRefs) db.puesto],
+              explicitlyWatchedTables: [
+                if (puestoRefs) db.puesto,
+                if (ingresoRefs) db.ingreso,
+                if (egresoRefs) db.egreso,
+              ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
@@ -29441,6 +33558,38 @@ class $$AreaTableTableManager
                       managerFromTypedResult:
                           (p0) =>
                               $$AreaTableReferences(db, table, p0).puestoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) =>
+                              referencedItems.where((e) => e.areaId == item.id),
+                      typedResults: items,
+                    ),
+                  if (ingresoRefs)
+                    await $_getPrefetchedData<
+                      AreaData,
+                      $AreaTable,
+                      IngresoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AreaTableReferences._ingresoRefsTable(
+                        db,
+                      ),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AreaTableReferences(db, table, p0).ingresoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) =>
+                              referencedItems.where((e) => e.areaId == item.id),
+                      typedResults: items,
+                    ),
+                  if (egresoRefs)
+                    await $_getPrefetchedData<AreaData, $AreaTable, EgresoData>(
+                      currentTable: table,
+                      referencedTable: $$AreaTableReferences._egresoRefsTable(
+                        db,
+                      ),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AreaTableReferences(db, table, p0).egresoRefs,
                       referencedItemsForCurrentItem:
                           (item, referencedItems) =>
                               referencedItems.where((e) => e.areaId == item.id),
@@ -29466,7 +33615,11 @@ typedef $$AreaTableProcessedTableManager =
       $$AreaTableUpdateCompanionBuilder,
       (AreaData, $$AreaTableReferences),
       AreaData,
-      PrefetchHooks Function({bool puestoRefs})
+      PrefetchHooks Function({
+        bool puestoRefs,
+        bool ingresoRefs,
+        bool egresoRefs,
+      })
     >;
 typedef $$TipoModalidadTurnoTableCreateCompanionBuilder =
     TipoModalidadTurnoCompanion Function({
@@ -31139,6 +35292,8 @@ typedef $$AttachmentTableCreateCompanionBuilder =
       Value<String?> documentoPorEmitirId,
       Value<String?> pagoId,
       Value<String?> complementoPagoId,
+      Value<String?> ingresoId,
+      Value<String?> egresoId,
       Value<String?> categoria,
       required String originalFileName,
       required String storedFileName,
@@ -31158,6 +35313,8 @@ typedef $$AttachmentTableUpdateCompanionBuilder =
       Value<String?> documentoPorEmitirId,
       Value<String?> pagoId,
       Value<String?> complementoPagoId,
+      Value<String?> ingresoId,
+      Value<String?> egresoId,
       Value<String?> categoria,
       Value<String> originalFileName,
       Value<String> storedFileName,
@@ -31231,6 +35388,16 @@ class $$AttachmentTableFilterComposer
 
   ColumnFilters<String> get complementoPagoId => $composableBuilder(
     column: $table.complementoPagoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ingresoId => $composableBuilder(
+    column: $table.ingresoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get egresoId => $composableBuilder(
+    column: $table.egresoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -31344,6 +35511,16 @@ class $$AttachmentTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get ingresoId => $composableBuilder(
+    column: $table.ingresoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get egresoId => $composableBuilder(
+    column: $table.egresoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get categoria => $composableBuilder(
     column: $table.categoria,
     builder: (column) => ColumnOrderings(column),
@@ -31420,6 +35597,12 @@ class $$AttachmentTableAnnotationComposer
     column: $table.complementoPagoId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get ingresoId =>
+      $composableBuilder(column: $table.ingresoId, builder: (column) => column);
+
+  GeneratedColumn<String> get egresoId =>
+      $composableBuilder(column: $table.egresoId, builder: (column) => column);
 
   GeneratedColumn<String> get categoria =>
       $composableBuilder(column: $table.categoria, builder: (column) => column);
@@ -31512,6 +35695,8 @@ class $$AttachmentTableTableManager
                 Value<String?> documentoPorEmitirId = const Value.absent(),
                 Value<String?> pagoId = const Value.absent(),
                 Value<String?> complementoPagoId = const Value.absent(),
+                Value<String?> ingresoId = const Value.absent(),
+                Value<String?> egresoId = const Value.absent(),
                 Value<String?> categoria = const Value.absent(),
                 Value<String> originalFileName = const Value.absent(),
                 Value<String> storedFileName = const Value.absent(),
@@ -31529,6 +35714,8 @@ class $$AttachmentTableTableManager
                 documentoPorEmitirId: documentoPorEmitirId,
                 pagoId: pagoId,
                 complementoPagoId: complementoPagoId,
+                ingresoId: ingresoId,
+                egresoId: egresoId,
                 categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
@@ -31548,6 +35735,8 @@ class $$AttachmentTableTableManager
                 Value<String?> documentoPorEmitirId = const Value.absent(),
                 Value<String?> pagoId = const Value.absent(),
                 Value<String?> complementoPagoId = const Value.absent(),
+                Value<String?> ingresoId = const Value.absent(),
+                Value<String?> egresoId = const Value.absent(),
                 Value<String?> categoria = const Value.absent(),
                 required String originalFileName,
                 required String storedFileName,
@@ -31565,6 +35754,8 @@ class $$AttachmentTableTableManager
                 documentoPorEmitirId: documentoPorEmitirId,
                 pagoId: pagoId,
                 complementoPagoId: complementoPagoId,
+                ingresoId: ingresoId,
+                egresoId: egresoId,
                 categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
@@ -32871,6 +37062,43 @@ final class $$SucursalTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$IngresoTable, List<IngresoData>>
+  _ingresoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.ingreso,
+    aliasName: $_aliasNameGenerator(db.sucursal.id, db.ingreso.sucursalId),
+  );
+
+  $$IngresoTableProcessedTableManager get ingresoRefs {
+    final manager = $$IngresoTableTableManager(
+      $_db,
+      $_db.ingreso,
+    ).filter((f) => f.sucursalId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_ingresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$EgresoTable, List<EgresoData>> _egresoRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.egreso,
+    aliasName: $_aliasNameGenerator(db.sucursal.id, db.egreso.sucursalId),
+  );
+
+  $$EgresoTableProcessedTableManager get egresoRefs {
+    final manager = $$EgresoTableTableManager(
+      $_db,
+      $_db.egreso,
+    ).filter((f) => f.sucursalId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_egresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$SucursalTableFilterComposer
@@ -32981,6 +37209,56 @@ class $$SucursalTableFilterComposer
           }) => $$UbicacionTableFilterComposer(
             $db: $db,
             $table: $db.ubicacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> ingresoRefs(
+    Expression<bool> Function($$IngresoTableFilterComposer f) f,
+  ) {
+    final $$IngresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.sucursalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableFilterComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> egresoRefs(
+    Expression<bool> Function($$EgresoTableFilterComposer f) f,
+  ) {
+    final $$EgresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.sucursalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableFilterComposer(
+            $db: $db,
+            $table: $db.egreso,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -33165,6 +37443,56 @@ class $$SucursalTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> ingresoRefs<T extends Object>(
+    Expression<T> Function($$IngresoTableAnnotationComposer a) f,
+  ) {
+    final $$IngresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.sucursalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> egresoRefs<T extends Object>(
+    Expression<T> Function($$EgresoTableAnnotationComposer a) f,
+  ) {
+    final $$EgresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.sucursalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$SucursalTableTableManager
@@ -33184,6 +37512,8 @@ class $$SucursalTableTableManager
             bool tipoSucursalId,
             bool servicioRefs,
             bool ubicacionRefs,
+            bool ingresoRefs,
+            bool egresoRefs,
           })
         > {
   $$SucursalTableTableManager(_$AppDatabase db, $SucursalTable table)
@@ -33255,12 +37585,16 @@ class $$SucursalTableTableManager
             tipoSucursalId = false,
             servicioRefs = false,
             ubicacionRefs = false,
+            ingresoRefs = false,
+            egresoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (servicioRefs) db.servicio,
                 if (ubicacionRefs) db.ubicacion,
+                if (ingresoRefs) db.ingreso,
+                if (egresoRefs) db.egreso,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -33340,6 +37674,50 @@ class $$SucursalTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (ingresoRefs)
+                    await $_getPrefetchedData<
+                      SucursalData,
+                      $SucursalTable,
+                      IngresoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$SucursalTableReferences
+                          ._ingresoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$SucursalTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).ingresoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.sucursalId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (egresoRefs)
+                    await $_getPrefetchedData<
+                      SucursalData,
+                      $SucursalTable,
+                      EgresoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$SucursalTableReferences
+                          ._egresoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$SucursalTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).egresoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.sucursalId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -33364,6 +37742,8 @@ typedef $$SucursalTableProcessedTableManager =
         bool tipoSucursalId,
         bool servicioRefs,
         bool ubicacionRefs,
+        bool ingresoRefs,
+        bool egresoRefs,
       })
     >;
 typedef $$ClienteTableCreateCompanionBuilder =
@@ -35830,6 +40210,43 @@ final class $$ServicioTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$IngresoTable, List<IngresoData>>
+  _ingresoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.ingreso,
+    aliasName: $_aliasNameGenerator(db.servicio.id, db.ingreso.servicioId),
+  );
+
+  $$IngresoTableProcessedTableManager get ingresoRefs {
+    final manager = $$IngresoTableTableManager(
+      $_db,
+      $_db.ingreso,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_ingresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$EgresoTable, List<EgresoData>> _egresoRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.egreso,
+    aliasName: $_aliasNameGenerator(db.servicio.id, db.egreso.servicioId),
+  );
+
+  $$EgresoTableProcessedTableManager get egresoRefs {
+    final manager = $$EgresoTableTableManager(
+      $_db,
+      $_db.egreso,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_egresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ServicioTableFilterComposer
@@ -36181,6 +40598,56 @@ class $$ServicioTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> ingresoRefs(
+    Expression<bool> Function($$IngresoTableFilterComposer f) f,
+  ) {
+    final $$IngresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableFilterComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> egresoRefs(
+    Expression<bool> Function($$EgresoTableFilterComposer f) f,
+  ) {
+    final $$EgresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableFilterComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -36723,6 +41190,56 @@ class $$ServicioTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> ingresoRefs<T extends Object>(
+    Expression<T> Function($$IngresoTableAnnotationComposer a) f,
+  ) {
+    final $$IngresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> egresoRefs<T extends Object>(
+    Expression<T> Function($$EgresoTableAnnotationComposer a) f,
+  ) {
+    final $$EgresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ServicioTableTableManager
@@ -36750,6 +41267,8 @@ class $$ServicioTableTableManager
             bool documentoPorEmitirServicioRefs,
             bool documentoPorEmitirConfiguracionRefs,
             bool documentoPorEmitirLineaRefs,
+            bool ingresoRefs,
+            bool egresoRefs,
           })
         > {
   $$ServicioTableTableManager(_$AppDatabase db, $ServicioTable table)
@@ -36875,6 +41394,8 @@ class $$ServicioTableTableManager
             documentoPorEmitirServicioRefs = false,
             documentoPorEmitirConfiguracionRefs = false,
             documentoPorEmitirLineaRefs = false,
+            ingresoRefs = false,
+            egresoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -36887,6 +41408,8 @@ class $$ServicioTableTableManager
                 if (documentoPorEmitirConfiguracionRefs)
                   db.documentoPorEmitirConfiguracion,
                 if (documentoPorEmitirLineaRefs) db.documentoPorEmitirLinea,
+                if (ingresoRefs) db.ingreso,
+                if (egresoRefs) db.egreso,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -37110,6 +41633,50 @@ class $$ServicioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (ingresoRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      IngresoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._ingresoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).ingresoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (egresoRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      EgresoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._egresoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).egresoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -37142,6 +41709,8 @@ typedef $$ServicioTableProcessedTableManager =
         bool documentoPorEmitirServicioRefs,
         bool documentoPorEmitirConfiguracionRefs,
         bool documentoPorEmitirLineaRefs,
+        bool ingresoRefs,
+        bool egresoRefs,
       })
     >;
 typedef $$UbicacionTableCreateCompanionBuilder =
@@ -48114,6 +52683,24 @@ final class $$PagoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$IngresoTable, List<IngresoData>>
+  _ingresoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.ingreso,
+    aliasName: $_aliasNameGenerator(db.pago.id, db.ingreso.pagoId),
+  );
+
+  $$IngresoTableProcessedTableManager get ingresoRefs {
+    final manager = $$IngresoTableTableManager(
+      $_db,
+      $_db.ingreso,
+    ).filter((f) => f.pagoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_ingresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PagoTableFilterComposer extends Composer<_$AppDatabase, $PagoTable> {
@@ -48283,6 +52870,31 @@ class $$PagoTableFilterComposer extends Composer<_$AppDatabase, $PagoTable> {
           }) => $$ComplementoPagoTableFilterComposer(
             $db: $db,
             $table: $db.complementoPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> ingresoRefs(
+    Expression<bool> Function($$IngresoTableFilterComposer f) f,
+  ) {
+    final $$IngresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableFilterComposer(
+            $db: $db,
+            $table: $db.ingreso,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -48557,6 +53169,31 @@ class $$PagoTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> ingresoRefs<T extends Object>(
+    Expression<T> Function($$IngresoTableAnnotationComposer a) f,
+  ) {
+    final $$IngresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PagoTableTableManager
@@ -48577,6 +53214,7 @@ class $$PagoTableTableManager
             bool aplicacionPagoRefs,
             bool pagoEventoRefs,
             bool complementoPagoRefs,
+            bool ingresoRefs,
           })
         > {
   $$PagoTableTableManager(_$AppDatabase db, $PagoTable table)
@@ -48677,6 +53315,7 @@ class $$PagoTableTableManager
             aplicacionPagoRefs = false,
             pagoEventoRefs = false,
             complementoPagoRefs = false,
+            ingresoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -48684,6 +53323,7 @@ class $$PagoTableTableManager
                 if (aplicacionPagoRefs) db.aplicacionPago,
                 if (pagoEventoRefs) db.pagoEvento,
                 if (complementoPagoRefs) db.complementoPago,
+                if (ingresoRefs) db.ingreso,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -48780,6 +53420,24 @@ class $$PagoTableTableManager
                               referencedItems.where((e) => e.pagoId == item.id),
                       typedResults: items,
                     ),
+                  if (ingresoRefs)
+                    await $_getPrefetchedData<
+                      PagoData,
+                      $PagoTable,
+                      IngresoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PagoTableReferences._ingresoRefsTable(
+                        db,
+                      ),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$PagoTableReferences(db, table, p0).ingresoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) =>
+                              referencedItems.where((e) => e.pagoId == item.id),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -48805,6 +53463,7 @@ typedef $$PagoTableProcessedTableManager =
         bool aplicacionPagoRefs,
         bool pagoEventoRefs,
         bool complementoPagoRefs,
+        bool ingresoRefs,
       })
     >;
 typedef $$AplicacionPagoTableCreateCompanionBuilder =
@@ -50793,6 +55452,3299 @@ typedef $$ComplementoPagoEventoTableProcessedTableManager =
       ComplementoPagoEventoData,
       PrefetchHooks Function({bool complementoPagoId})
     >;
+typedef $$CategoriaFinancieraTableCreateCompanionBuilder =
+    CategoriaFinancieraCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String codigo,
+      required String nombre,
+      required String tipo,
+      required String tipoMovimiento,
+      Value<int> rowid,
+    });
+typedef $$CategoriaFinancieraTableUpdateCompanionBuilder =
+    CategoriaFinancieraCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> codigo,
+      Value<String> nombre,
+      Value<String> tipo,
+      Value<String> tipoMovimiento,
+      Value<int> rowid,
+    });
+
+final class $$CategoriaFinancieraTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CategoriaFinancieraTable,
+          CategoriaFinancieraData
+        > {
+  $$CategoriaFinancieraTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$IngresoTable, List<IngresoData>>
+  _ingresoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.ingreso,
+    aliasName: $_aliasNameGenerator(
+      db.categoriaFinanciera.id,
+      db.ingreso.categoriaFinancieraId,
+    ),
+  );
+
+  $$IngresoTableProcessedTableManager get ingresoRefs {
+    final manager = $$IngresoTableTableManager($_db, $_db.ingreso).filter(
+      (f) => f.categoriaFinancieraId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(_ingresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$EgresoTable, List<EgresoData>> _egresoRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.egreso,
+    aliasName: $_aliasNameGenerator(
+      db.categoriaFinanciera.id,
+      db.egreso.categoriaFinancieraId,
+    ),
+  );
+
+  $$EgresoTableProcessedTableManager get egresoRefs {
+    final manager = $$EgresoTableTableManager($_db, $_db.egreso).filter(
+      (f) => f.categoriaFinancieraId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(_egresoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CategoriaFinancieraTableFilterComposer
+    extends Composer<_$AppDatabase, $CategoriaFinancieraTable> {
+  $$CategoriaFinancieraTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoMovimiento => $composableBuilder(
+    column: $table.tipoMovimiento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> ingresoRefs(
+    Expression<bool> Function($$IngresoTableFilterComposer f) f,
+  ) {
+    final $$IngresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.categoriaFinancieraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableFilterComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> egresoRefs(
+    Expression<bool> Function($$EgresoTableFilterComposer f) f,
+  ) {
+    final $$EgresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.categoriaFinancieraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableFilterComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CategoriaFinancieraTableOrderingComposer
+    extends Composer<_$AppDatabase, $CategoriaFinancieraTable> {
+  $$CategoriaFinancieraTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoMovimiento => $composableBuilder(
+    column: $table.tipoMovimiento,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CategoriaFinancieraTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CategoriaFinancieraTable> {
+  $$CategoriaFinancieraTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoMovimiento => $composableBuilder(
+    column: $table.tipoMovimiento,
+    builder: (column) => column,
+  );
+
+  Expression<T> ingresoRefs<T extends Object>(
+    Expression<T> Function($$IngresoTableAnnotationComposer a) f,
+  ) {
+    final $$IngresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.categoriaFinancieraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> egresoRefs<T extends Object>(
+    Expression<T> Function($$EgresoTableAnnotationComposer a) f,
+  ) {
+    final $$EgresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.categoriaFinancieraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CategoriaFinancieraTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CategoriaFinancieraTable,
+          CategoriaFinancieraData,
+          $$CategoriaFinancieraTableFilterComposer,
+          $$CategoriaFinancieraTableOrderingComposer,
+          $$CategoriaFinancieraTableAnnotationComposer,
+          $$CategoriaFinancieraTableCreateCompanionBuilder,
+          $$CategoriaFinancieraTableUpdateCompanionBuilder,
+          (CategoriaFinancieraData, $$CategoriaFinancieraTableReferences),
+          CategoriaFinancieraData,
+          PrefetchHooks Function({bool ingresoRefs, bool egresoRefs})
+        > {
+  $$CategoriaFinancieraTableTableManager(
+    _$AppDatabase db,
+    $CategoriaFinancieraTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$CategoriaFinancieraTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$CategoriaFinancieraTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$CategoriaFinancieraTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> codigo = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String> tipoMovimiento = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CategoriaFinancieraCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                nombre: nombre,
+                tipo: tipo,
+                tipoMovimiento: tipoMovimiento,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String codigo,
+                required String nombre,
+                required String tipo,
+                required String tipoMovimiento,
+                Value<int> rowid = const Value.absent(),
+              }) => CategoriaFinancieraCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                nombre: nombre,
+                tipo: tipo,
+                tipoMovimiento: tipoMovimiento,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$CategoriaFinancieraTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({ingresoRefs = false, egresoRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (ingresoRefs) db.ingreso,
+                if (egresoRefs) db.egreso,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (ingresoRefs)
+                    await $_getPrefetchedData<
+                      CategoriaFinancieraData,
+                      $CategoriaFinancieraTable,
+                      IngresoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CategoriaFinancieraTableReferences
+                          ._ingresoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$CategoriaFinancieraTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).ingresoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.categoriaFinancieraId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (egresoRefs)
+                    await $_getPrefetchedData<
+                      CategoriaFinancieraData,
+                      $CategoriaFinancieraTable,
+                      EgresoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CategoriaFinancieraTableReferences
+                          ._egresoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$CategoriaFinancieraTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).egresoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.categoriaFinancieraId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CategoriaFinancieraTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CategoriaFinancieraTable,
+      CategoriaFinancieraData,
+      $$CategoriaFinancieraTableFilterComposer,
+      $$CategoriaFinancieraTableOrderingComposer,
+      $$CategoriaFinancieraTableAnnotationComposer,
+      $$CategoriaFinancieraTableCreateCompanionBuilder,
+      $$CategoriaFinancieraTableUpdateCompanionBuilder,
+      (CategoriaFinancieraData, $$CategoriaFinancieraTableReferences),
+      CategoriaFinancieraData,
+      PrefetchHooks Function({bool ingresoRefs, bool egresoRefs})
+    >;
+typedef $$IngresoTableCreateCompanionBuilder =
+    IngresoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String?> pagoId,
+      required String folioIngreso,
+      required int monto,
+      required DateTime fecha,
+      Value<String?> categoriaFinancieraId,
+      Value<String?> servicioId,
+      Value<String?> sucursalId,
+      Value<String?> areaId,
+      Value<String?> cuentaCaja,
+      required String formaPago,
+      required String concepto,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<int> rowid,
+    });
+typedef $$IngresoTableUpdateCompanionBuilder =
+    IngresoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String?> pagoId,
+      Value<String> folioIngreso,
+      Value<int> monto,
+      Value<DateTime> fecha,
+      Value<String?> categoriaFinancieraId,
+      Value<String?> servicioId,
+      Value<String?> sucursalId,
+      Value<String?> areaId,
+      Value<String?> cuentaCaja,
+      Value<String> formaPago,
+      Value<String> concepto,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<int> rowid,
+    });
+
+final class $$IngresoTableReferences
+    extends BaseReferences<_$AppDatabase, $IngresoTable, IngresoData> {
+  $$IngresoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PagoTable _pagoIdTable(_$AppDatabase db) =>
+      db.pago.createAlias($_aliasNameGenerator(db.ingreso.pagoId, db.pago.id));
+
+  $$PagoTableProcessedTableManager? get pagoId {
+    final $_column = $_itemColumn<String>('pago_id');
+    if ($_column == null) return null;
+    final manager = $$PagoTableTableManager(
+      $_db,
+      $_db.pago,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CategoriaFinancieraTable _categoriaFinancieraIdTable(
+    _$AppDatabase db,
+  ) => db.categoriaFinanciera.createAlias(
+    $_aliasNameGenerator(
+      db.ingreso.categoriaFinancieraId,
+      db.categoriaFinanciera.id,
+    ),
+  );
+
+  $$CategoriaFinancieraTableProcessedTableManager? get categoriaFinancieraId {
+    final $_column = $_itemColumn<String>('categoria_financiera_id');
+    if ($_column == null) return null;
+    final manager = $$CategoriaFinancieraTableTableManager(
+      $_db,
+      $_db.categoriaFinanciera,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _categoriaFinancieraIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) => db.servicio
+      .createAlias($_aliasNameGenerator(db.ingreso.servicioId, db.servicio.id));
+
+  $$ServicioTableProcessedTableManager? get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id');
+    if ($_column == null) return null;
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $SucursalTable _sucursalIdTable(_$AppDatabase db) => db.sucursal
+      .createAlias($_aliasNameGenerator(db.ingreso.sucursalId, db.sucursal.id));
+
+  $$SucursalTableProcessedTableManager? get sucursalId {
+    final $_column = $_itemColumn<String>('sucursal_id');
+    if ($_column == null) return null;
+    final manager = $$SucursalTableTableManager(
+      $_db,
+      $_db.sucursal,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sucursalIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AreaTable _areaIdTable(_$AppDatabase db) =>
+      db.area.createAlias($_aliasNameGenerator(db.ingreso.areaId, db.area.id));
+
+  $$AreaTableProcessedTableManager? get areaId {
+    final $_column = $_itemColumn<String>('area_id');
+    if ($_column == null) return null;
+    final manager = $$AreaTableTableManager(
+      $_db,
+      $_db.area,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_areaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$IngresoEventoTable, List<IngresoEventoData>>
+  _ingresoEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.ingresoEvento,
+    aliasName: $_aliasNameGenerator(db.ingreso.id, db.ingresoEvento.ingresoId),
+  );
+
+  $$IngresoEventoTableProcessedTableManager get ingresoEventoRefs {
+    final manager = $$IngresoEventoTableTableManager(
+      $_db,
+      $_db.ingresoEvento,
+    ).filter((f) => f.ingresoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_ingresoEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$IngresoTableFilterComposer
+    extends Composer<_$AppDatabase, $IngresoTable> {
+  $$IngresoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folioIngreso => $composableBuilder(
+    column: $table.folioIngreso,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cuentaCaja => $composableBuilder(
+    column: $table.cuentaCaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formaPago => $composableBuilder(
+    column: $table.formaPago,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PagoTableFilterComposer get pagoId {
+    final $$PagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableFilterComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CategoriaFinancieraTableFilterComposer get categoriaFinancieraId {
+    final $$CategoriaFinancieraTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoriaFinancieraId,
+      referencedTable: $db.categoriaFinanciera,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CategoriaFinancieraTableFilterComposer(
+            $db: $db,
+            $table: $db.categoriaFinanciera,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SucursalTableFilterComposer get sucursalId {
+    final $$SucursalTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sucursalId,
+      referencedTable: $db.sucursal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SucursalTableFilterComposer(
+            $db: $db,
+            $table: $db.sucursal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AreaTableFilterComposer get areaId {
+    final $$AreaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.areaId,
+      referencedTable: $db.area,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AreaTableFilterComposer(
+            $db: $db,
+            $table: $db.area,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> ingresoEventoRefs(
+    Expression<bool> Function($$IngresoEventoTableFilterComposer f) f,
+  ) {
+    final $$IngresoEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingresoEvento,
+      getReferencedColumn: (t) => t.ingresoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.ingresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$IngresoTableOrderingComposer
+    extends Composer<_$AppDatabase, $IngresoTable> {
+  $$IngresoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folioIngreso => $composableBuilder(
+    column: $table.folioIngreso,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cuentaCaja => $composableBuilder(
+    column: $table.cuentaCaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formaPago => $composableBuilder(
+    column: $table.formaPago,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PagoTableOrderingComposer get pagoId {
+    final $$PagoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableOrderingComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CategoriaFinancieraTableOrderingComposer get categoriaFinancieraId {
+    final $$CategoriaFinancieraTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.categoriaFinancieraId,
+          referencedTable: $db.categoriaFinanciera,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CategoriaFinancieraTableOrderingComposer(
+                $db: $db,
+                $table: $db.categoriaFinanciera,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SucursalTableOrderingComposer get sucursalId {
+    final $$SucursalTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sucursalId,
+      referencedTable: $db.sucursal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SucursalTableOrderingComposer(
+            $db: $db,
+            $table: $db.sucursal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AreaTableOrderingComposer get areaId {
+    final $$AreaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.areaId,
+      referencedTable: $db.area,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AreaTableOrderingComposer(
+            $db: $db,
+            $table: $db.area,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngresoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IngresoTable> {
+  $$IngresoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folioIngreso => $composableBuilder(
+    column: $table.folioIngreso,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get monto =>
+      $composableBuilder(column: $table.monto, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get cuentaCaja => $composableBuilder(
+    column: $table.cuentaCaja,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get formaPago =>
+      $composableBuilder(column: $table.formaPago, builder: (column) => column);
+
+  GeneratedColumn<String> get concepto =>
+      $composableBuilder(column: $table.concepto, builder: (column) => column);
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => column,
+  );
+
+  $$PagoTableAnnotationComposer get pagoId {
+    final $$PagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CategoriaFinancieraTableAnnotationComposer get categoriaFinancieraId {
+    final $$CategoriaFinancieraTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.categoriaFinancieraId,
+          referencedTable: $db.categoriaFinanciera,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CategoriaFinancieraTableAnnotationComposer(
+                $db: $db,
+                $table: $db.categoriaFinanciera,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SucursalTableAnnotationComposer get sucursalId {
+    final $$SucursalTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sucursalId,
+      referencedTable: $db.sucursal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SucursalTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sucursal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AreaTableAnnotationComposer get areaId {
+    final $$AreaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.areaId,
+      referencedTable: $db.area,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AreaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.area,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> ingresoEventoRefs<T extends Object>(
+    Expression<T> Function($$IngresoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$IngresoEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingresoEvento,
+      getReferencedColumn: (t) => t.ingresoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$IngresoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IngresoTable,
+          IngresoData,
+          $$IngresoTableFilterComposer,
+          $$IngresoTableOrderingComposer,
+          $$IngresoTableAnnotationComposer,
+          $$IngresoTableCreateCompanionBuilder,
+          $$IngresoTableUpdateCompanionBuilder,
+          (IngresoData, $$IngresoTableReferences),
+          IngresoData,
+          PrefetchHooks Function({
+            bool pagoId,
+            bool categoriaFinancieraId,
+            bool servicioId,
+            bool sucursalId,
+            bool areaId,
+            bool ingresoEventoRefs,
+          })
+        > {
+  $$IngresoTableTableManager(_$AppDatabase db, $IngresoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$IngresoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$IngresoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$IngresoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String?> pagoId = const Value.absent(),
+                Value<String> folioIngreso = const Value.absent(),
+                Value<int> monto = const Value.absent(),
+                Value<DateTime> fecha = const Value.absent(),
+                Value<String?> categoriaFinancieraId = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<String?> sucursalId = const Value.absent(),
+                Value<String?> areaId = const Value.absent(),
+                Value<String?> cuentaCaja = const Value.absent(),
+                Value<String> formaPago = const Value.absent(),
+                Value<String> concepto = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IngresoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                pagoId: pagoId,
+                folioIngreso: folioIngreso,
+                monto: monto,
+                fecha: fecha,
+                categoriaFinancieraId: categoriaFinancieraId,
+                servicioId: servicioId,
+                sucursalId: sucursalId,
+                areaId: areaId,
+                cuentaCaja: cuentaCaja,
+                formaPago: formaPago,
+                concepto: concepto,
+                observaciones: observaciones,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String?> pagoId = const Value.absent(),
+                required String folioIngreso,
+                required int monto,
+                required DateTime fecha,
+                Value<String?> categoriaFinancieraId = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<String?> sucursalId = const Value.absent(),
+                Value<String?> areaId = const Value.absent(),
+                Value<String?> cuentaCaja = const Value.absent(),
+                required String formaPago,
+                required String concepto,
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IngresoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                pagoId: pagoId,
+                folioIngreso: folioIngreso,
+                monto: monto,
+                fecha: fecha,
+                categoriaFinancieraId: categoriaFinancieraId,
+                servicioId: servicioId,
+                sucursalId: sucursalId,
+                areaId: areaId,
+                cuentaCaja: cuentaCaja,
+                formaPago: formaPago,
+                concepto: concepto,
+                observaciones: observaciones,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$IngresoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            pagoId = false,
+            categoriaFinancieraId = false,
+            servicioId = false,
+            sucursalId = false,
+            areaId = false,
+            ingresoEventoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (ingresoEventoRefs) db.ingresoEvento,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (pagoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.pagoId,
+                            referencedTable: $$IngresoTableReferences
+                                ._pagoIdTable(db),
+                            referencedColumn:
+                                $$IngresoTableReferences._pagoIdTable(db).id,
+                          )
+                          as T;
+                }
+                if (categoriaFinancieraId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.categoriaFinancieraId,
+                            referencedTable: $$IngresoTableReferences
+                                ._categoriaFinancieraIdTable(db),
+                            referencedColumn:
+                                $$IngresoTableReferences
+                                    ._categoriaFinancieraIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable: $$IngresoTableReferences
+                                ._servicioIdTable(db),
+                            referencedColumn:
+                                $$IngresoTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (sucursalId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.sucursalId,
+                            referencedTable: $$IngresoTableReferences
+                                ._sucursalIdTable(db),
+                            referencedColumn:
+                                $$IngresoTableReferences
+                                    ._sucursalIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (areaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.areaId,
+                            referencedTable: $$IngresoTableReferences
+                                ._areaIdTable(db),
+                            referencedColumn:
+                                $$IngresoTableReferences._areaIdTable(db).id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (ingresoEventoRefs)
+                    await $_getPrefetchedData<
+                      IngresoData,
+                      $IngresoTable,
+                      IngresoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$IngresoTableReferences
+                          ._ingresoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$IngresoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).ingresoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.ingresoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$IngresoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IngresoTable,
+      IngresoData,
+      $$IngresoTableFilterComposer,
+      $$IngresoTableOrderingComposer,
+      $$IngresoTableAnnotationComposer,
+      $$IngresoTableCreateCompanionBuilder,
+      $$IngresoTableUpdateCompanionBuilder,
+      (IngresoData, $$IngresoTableReferences),
+      IngresoData,
+      PrefetchHooks Function({
+        bool pagoId,
+        bool categoriaFinancieraId,
+        bool servicioId,
+        bool sucursalId,
+        bool areaId,
+        bool ingresoEventoRefs,
+      })
+    >;
+typedef $$IngresoEventoTableCreateCompanionBuilder =
+    IngresoEventoCompanion Function({
+      Value<int> id,
+      required String ingresoId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+typedef $$IngresoEventoTableUpdateCompanionBuilder =
+    IngresoEventoCompanion Function({
+      Value<int> id,
+      Value<String> ingresoId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$IngresoEventoTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $IngresoEventoTable, IngresoEventoData> {
+  $$IngresoEventoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $IngresoTable _ingresoIdTable(_$AppDatabase db) =>
+      db.ingreso.createAlias(
+        $_aliasNameGenerator(db.ingresoEvento.ingresoId, db.ingreso.id),
+      );
+
+  $$IngresoTableProcessedTableManager get ingresoId {
+    final $_column = $_itemColumn<String>('ingreso_id')!;
+
+    final manager = $$IngresoTableTableManager(
+      $_db,
+      $_db.ingreso,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_ingresoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$IngresoEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $IngresoEventoTable> {
+  $$IngresoEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$IngresoTableFilterComposer get ingresoId {
+    final $$IngresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ingresoId,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableFilterComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngresoEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $IngresoEventoTable> {
+  $$IngresoEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$IngresoTableOrderingComposer get ingresoId {
+    final $$IngresoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ingresoId,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableOrderingComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngresoEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IngresoEventoTable> {
+  $$IngresoEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$IngresoTableAnnotationComposer get ingresoId {
+    final $$IngresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ingresoId,
+      referencedTable: $db.ingreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngresoEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IngresoEventoTable,
+          IngresoEventoData,
+          $$IngresoEventoTableFilterComposer,
+          $$IngresoEventoTableOrderingComposer,
+          $$IngresoEventoTableAnnotationComposer,
+          $$IngresoEventoTableCreateCompanionBuilder,
+          $$IngresoEventoTableUpdateCompanionBuilder,
+          (IngresoEventoData, $$IngresoEventoTableReferences),
+          IngresoEventoData,
+          PrefetchHooks Function({bool ingresoId})
+        > {
+  $$IngresoEventoTableTableManager(_$AppDatabase db, $IngresoEventoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$IngresoEventoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$IngresoEventoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$IngresoEventoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> ingresoId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => IngresoEventoCompanion(
+                id: id,
+                ingresoId: ingresoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String ingresoId,
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => IngresoEventoCompanion.insert(
+                id: id,
+                ingresoId: ingresoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$IngresoEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({ingresoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (ingresoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.ingresoId,
+                            referencedTable: $$IngresoEventoTableReferences
+                                ._ingresoIdTable(db),
+                            referencedColumn:
+                                $$IngresoEventoTableReferences
+                                    ._ingresoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$IngresoEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IngresoEventoTable,
+      IngresoEventoData,
+      $$IngresoEventoTableFilterComposer,
+      $$IngresoEventoTableOrderingComposer,
+      $$IngresoEventoTableAnnotationComposer,
+      $$IngresoEventoTableCreateCompanionBuilder,
+      $$IngresoEventoTableUpdateCompanionBuilder,
+      (IngresoEventoData, $$IngresoEventoTableReferences),
+      IngresoEventoData,
+      PrefetchHooks Function({bool ingresoId})
+    >;
+typedef $$EgresoTableCreateCompanionBuilder =
+    EgresoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String folioEgreso,
+      required int monto,
+      required DateTime fecha,
+      Value<String?> categoriaFinancieraId,
+      Value<String?> servicioId,
+      Value<String?> sucursalId,
+      Value<String?> areaId,
+      Value<String?> cuentaCaja,
+      required String formaPago,
+      Value<String?> beneficiario,
+      required String concepto,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<int> rowid,
+    });
+typedef $$EgresoTableUpdateCompanionBuilder =
+    EgresoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> folioEgreso,
+      Value<int> monto,
+      Value<DateTime> fecha,
+      Value<String?> categoriaFinancieraId,
+      Value<String?> servicioId,
+      Value<String?> sucursalId,
+      Value<String?> areaId,
+      Value<String?> cuentaCaja,
+      Value<String> formaPago,
+      Value<String?> beneficiario,
+      Value<String> concepto,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<int> rowid,
+    });
+
+final class $$EgresoTableReferences
+    extends BaseReferences<_$AppDatabase, $EgresoTable, EgresoData> {
+  $$EgresoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CategoriaFinancieraTable _categoriaFinancieraIdTable(
+    _$AppDatabase db,
+  ) => db.categoriaFinanciera.createAlias(
+    $_aliasNameGenerator(
+      db.egreso.categoriaFinancieraId,
+      db.categoriaFinanciera.id,
+    ),
+  );
+
+  $$CategoriaFinancieraTableProcessedTableManager? get categoriaFinancieraId {
+    final $_column = $_itemColumn<String>('categoria_financiera_id');
+    if ($_column == null) return null;
+    final manager = $$CategoriaFinancieraTableTableManager(
+      $_db,
+      $_db.categoriaFinanciera,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _categoriaFinancieraIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) => db.servicio
+      .createAlias($_aliasNameGenerator(db.egreso.servicioId, db.servicio.id));
+
+  $$ServicioTableProcessedTableManager? get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id');
+    if ($_column == null) return null;
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $SucursalTable _sucursalIdTable(_$AppDatabase db) => db.sucursal
+      .createAlias($_aliasNameGenerator(db.egreso.sucursalId, db.sucursal.id));
+
+  $$SucursalTableProcessedTableManager? get sucursalId {
+    final $_column = $_itemColumn<String>('sucursal_id');
+    if ($_column == null) return null;
+    final manager = $$SucursalTableTableManager(
+      $_db,
+      $_db.sucursal,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sucursalIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AreaTable _areaIdTable(_$AppDatabase db) =>
+      db.area.createAlias($_aliasNameGenerator(db.egreso.areaId, db.area.id));
+
+  $$AreaTableProcessedTableManager? get areaId {
+    final $_column = $_itemColumn<String>('area_id');
+    if ($_column == null) return null;
+    final manager = $$AreaTableTableManager(
+      $_db,
+      $_db.area,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_areaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$EgresoEventoTable, List<EgresoEventoData>>
+  _egresoEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.egresoEvento,
+    aliasName: $_aliasNameGenerator(db.egreso.id, db.egresoEvento.egresoId),
+  );
+
+  $$EgresoEventoTableProcessedTableManager get egresoEventoRefs {
+    final manager = $$EgresoEventoTableTableManager(
+      $_db,
+      $_db.egresoEvento,
+    ).filter((f) => f.egresoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_egresoEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$EgresoTableFilterComposer
+    extends Composer<_$AppDatabase, $EgresoTable> {
+  $$EgresoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folioEgreso => $composableBuilder(
+    column: $table.folioEgreso,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cuentaCaja => $composableBuilder(
+    column: $table.cuentaCaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formaPago => $composableBuilder(
+    column: $table.formaPago,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get beneficiario => $composableBuilder(
+    column: $table.beneficiario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CategoriaFinancieraTableFilterComposer get categoriaFinancieraId {
+    final $$CategoriaFinancieraTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoriaFinancieraId,
+      referencedTable: $db.categoriaFinanciera,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CategoriaFinancieraTableFilterComposer(
+            $db: $db,
+            $table: $db.categoriaFinanciera,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SucursalTableFilterComposer get sucursalId {
+    final $$SucursalTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sucursalId,
+      referencedTable: $db.sucursal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SucursalTableFilterComposer(
+            $db: $db,
+            $table: $db.sucursal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AreaTableFilterComposer get areaId {
+    final $$AreaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.areaId,
+      referencedTable: $db.area,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AreaTableFilterComposer(
+            $db: $db,
+            $table: $db.area,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> egresoEventoRefs(
+    Expression<bool> Function($$EgresoEventoTableFilterComposer f) f,
+  ) {
+    final $$EgresoEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egresoEvento,
+      getReferencedColumn: (t) => t.egresoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.egresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$EgresoTableOrderingComposer
+    extends Composer<_$AppDatabase, $EgresoTable> {
+  $$EgresoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folioEgreso => $composableBuilder(
+    column: $table.folioEgreso,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cuentaCaja => $composableBuilder(
+    column: $table.cuentaCaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formaPago => $composableBuilder(
+    column: $table.formaPago,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get beneficiario => $composableBuilder(
+    column: $table.beneficiario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CategoriaFinancieraTableOrderingComposer get categoriaFinancieraId {
+    final $$CategoriaFinancieraTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.categoriaFinancieraId,
+          referencedTable: $db.categoriaFinanciera,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CategoriaFinancieraTableOrderingComposer(
+                $db: $db,
+                $table: $db.categoriaFinanciera,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SucursalTableOrderingComposer get sucursalId {
+    final $$SucursalTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sucursalId,
+      referencedTable: $db.sucursal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SucursalTableOrderingComposer(
+            $db: $db,
+            $table: $db.sucursal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AreaTableOrderingComposer get areaId {
+    final $$AreaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.areaId,
+      referencedTable: $db.area,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AreaTableOrderingComposer(
+            $db: $db,
+            $table: $db.area,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EgresoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EgresoTable> {
+  $$EgresoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folioEgreso => $composableBuilder(
+    column: $table.folioEgreso,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get monto =>
+      $composableBuilder(column: $table.monto, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get cuentaCaja => $composableBuilder(
+    column: $table.cuentaCaja,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get formaPago =>
+      $composableBuilder(column: $table.formaPago, builder: (column) => column);
+
+  GeneratedColumn<String> get beneficiario => $composableBuilder(
+    column: $table.beneficiario,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get concepto =>
+      $composableBuilder(column: $table.concepto, builder: (column) => column);
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => column,
+  );
+
+  $$CategoriaFinancieraTableAnnotationComposer get categoriaFinancieraId {
+    final $$CategoriaFinancieraTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.categoriaFinancieraId,
+          referencedTable: $db.categoriaFinanciera,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CategoriaFinancieraTableAnnotationComposer(
+                $db: $db,
+                $table: $db.categoriaFinanciera,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SucursalTableAnnotationComposer get sucursalId {
+    final $$SucursalTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sucursalId,
+      referencedTable: $db.sucursal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SucursalTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sucursal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AreaTableAnnotationComposer get areaId {
+    final $$AreaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.areaId,
+      referencedTable: $db.area,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AreaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.area,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> egresoEventoRefs<T extends Object>(
+    Expression<T> Function($$EgresoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$EgresoEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egresoEvento,
+      getReferencedColumn: (t) => t.egresoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$EgresoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EgresoTable,
+          EgresoData,
+          $$EgresoTableFilterComposer,
+          $$EgresoTableOrderingComposer,
+          $$EgresoTableAnnotationComposer,
+          $$EgresoTableCreateCompanionBuilder,
+          $$EgresoTableUpdateCompanionBuilder,
+          (EgresoData, $$EgresoTableReferences),
+          EgresoData,
+          PrefetchHooks Function({
+            bool categoriaFinancieraId,
+            bool servicioId,
+            bool sucursalId,
+            bool areaId,
+            bool egresoEventoRefs,
+          })
+        > {
+  $$EgresoTableTableManager(_$AppDatabase db, $EgresoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$EgresoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$EgresoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$EgresoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> folioEgreso = const Value.absent(),
+                Value<int> monto = const Value.absent(),
+                Value<DateTime> fecha = const Value.absent(),
+                Value<String?> categoriaFinancieraId = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<String?> sucursalId = const Value.absent(),
+                Value<String?> areaId = const Value.absent(),
+                Value<String?> cuentaCaja = const Value.absent(),
+                Value<String> formaPago = const Value.absent(),
+                Value<String?> beneficiario = const Value.absent(),
+                Value<String> concepto = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EgresoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folioEgreso: folioEgreso,
+                monto: monto,
+                fecha: fecha,
+                categoriaFinancieraId: categoriaFinancieraId,
+                servicioId: servicioId,
+                sucursalId: sucursalId,
+                areaId: areaId,
+                cuentaCaja: cuentaCaja,
+                formaPago: formaPago,
+                beneficiario: beneficiario,
+                concepto: concepto,
+                observaciones: observaciones,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String folioEgreso,
+                required int monto,
+                required DateTime fecha,
+                Value<String?> categoriaFinancieraId = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<String?> sucursalId = const Value.absent(),
+                Value<String?> areaId = const Value.absent(),
+                Value<String?> cuentaCaja = const Value.absent(),
+                required String formaPago,
+                Value<String?> beneficiario = const Value.absent(),
+                required String concepto,
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EgresoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folioEgreso: folioEgreso,
+                monto: monto,
+                fecha: fecha,
+                categoriaFinancieraId: categoriaFinancieraId,
+                servicioId: servicioId,
+                sucursalId: sucursalId,
+                areaId: areaId,
+                cuentaCaja: cuentaCaja,
+                formaPago: formaPago,
+                beneficiario: beneficiario,
+                concepto: concepto,
+                observaciones: observaciones,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EgresoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            categoriaFinancieraId = false,
+            servicioId = false,
+            sucursalId = false,
+            areaId = false,
+            egresoEventoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (egresoEventoRefs) db.egresoEvento],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (categoriaFinancieraId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.categoriaFinancieraId,
+                            referencedTable: $$EgresoTableReferences
+                                ._categoriaFinancieraIdTable(db),
+                            referencedColumn:
+                                $$EgresoTableReferences
+                                    ._categoriaFinancieraIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable: $$EgresoTableReferences
+                                ._servicioIdTable(db),
+                            referencedColumn:
+                                $$EgresoTableReferences._servicioIdTable(db).id,
+                          )
+                          as T;
+                }
+                if (sucursalId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.sucursalId,
+                            referencedTable: $$EgresoTableReferences
+                                ._sucursalIdTable(db),
+                            referencedColumn:
+                                $$EgresoTableReferences._sucursalIdTable(db).id,
+                          )
+                          as T;
+                }
+                if (areaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.areaId,
+                            referencedTable: $$EgresoTableReferences
+                                ._areaIdTable(db),
+                            referencedColumn:
+                                $$EgresoTableReferences._areaIdTable(db).id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (egresoEventoRefs)
+                    await $_getPrefetchedData<
+                      EgresoData,
+                      $EgresoTable,
+                      EgresoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EgresoTableReferences
+                          ._egresoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EgresoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).egresoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.egresoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EgresoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EgresoTable,
+      EgresoData,
+      $$EgresoTableFilterComposer,
+      $$EgresoTableOrderingComposer,
+      $$EgresoTableAnnotationComposer,
+      $$EgresoTableCreateCompanionBuilder,
+      $$EgresoTableUpdateCompanionBuilder,
+      (EgresoData, $$EgresoTableReferences),
+      EgresoData,
+      PrefetchHooks Function({
+        bool categoriaFinancieraId,
+        bool servicioId,
+        bool sucursalId,
+        bool areaId,
+        bool egresoEventoRefs,
+      })
+    >;
+typedef $$EgresoEventoTableCreateCompanionBuilder =
+    EgresoEventoCompanion Function({
+      Value<int> id,
+      required String egresoId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+typedef $$EgresoEventoTableUpdateCompanionBuilder =
+    EgresoEventoCompanion Function({
+      Value<int> id,
+      Value<String> egresoId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$EgresoEventoTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $EgresoEventoTable, EgresoEventoData> {
+  $$EgresoEventoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $EgresoTable _egresoIdTable(_$AppDatabase db) => db.egreso.createAlias(
+    $_aliasNameGenerator(db.egresoEvento.egresoId, db.egreso.id),
+  );
+
+  $$EgresoTableProcessedTableManager get egresoId {
+    final $_column = $_itemColumn<String>('egreso_id')!;
+
+    final manager = $$EgresoTableTableManager(
+      $_db,
+      $_db.egreso,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_egresoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$EgresoEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $EgresoEventoTable> {
+  $$EgresoEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$EgresoTableFilterComposer get egresoId {
+    final $$EgresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.egresoId,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableFilterComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EgresoEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $EgresoEventoTable> {
+  $$EgresoEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$EgresoTableOrderingComposer get egresoId {
+    final $$EgresoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.egresoId,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableOrderingComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EgresoEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EgresoEventoTable> {
+  $$EgresoEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$EgresoTableAnnotationComposer get egresoId {
+    final $$EgresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.egresoId,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EgresoEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EgresoEventoTable,
+          EgresoEventoData,
+          $$EgresoEventoTableFilterComposer,
+          $$EgresoEventoTableOrderingComposer,
+          $$EgresoEventoTableAnnotationComposer,
+          $$EgresoEventoTableCreateCompanionBuilder,
+          $$EgresoEventoTableUpdateCompanionBuilder,
+          (EgresoEventoData, $$EgresoEventoTableReferences),
+          EgresoEventoData,
+          PrefetchHooks Function({bool egresoId})
+        > {
+  $$EgresoEventoTableTableManager(_$AppDatabase db, $EgresoEventoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$EgresoEventoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$EgresoEventoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () =>
+                  $$EgresoEventoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> egresoId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => EgresoEventoCompanion(
+                id: id,
+                egresoId: egresoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String egresoId,
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => EgresoEventoCompanion.insert(
+                id: id,
+                egresoId: egresoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EgresoEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({egresoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (egresoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.egresoId,
+                            referencedTable: $$EgresoEventoTableReferences
+                                ._egresoIdTable(db),
+                            referencedColumn:
+                                $$EgresoEventoTableReferences
+                                    ._egresoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EgresoEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EgresoEventoTable,
+      EgresoEventoData,
+      $$EgresoEventoTableFilterComposer,
+      $$EgresoEventoTableOrderingComposer,
+      $$EgresoEventoTableAnnotationComposer,
+      $$EgresoEventoTableCreateCompanionBuilder,
+      $$EgresoEventoTableUpdateCompanionBuilder,
+      (EgresoEventoData, $$EgresoEventoTableReferences),
+      EgresoEventoData,
+      PrefetchHooks Function({bool egresoId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -50916,4 +58868,14 @@ class $AppDatabaseManager {
       $$ComplementoPagoTableTableManager(_db, _db.complementoPago);
   $$ComplementoPagoEventoTableTableManager get complementoPagoEvento =>
       $$ComplementoPagoEventoTableTableManager(_db, _db.complementoPagoEvento);
+  $$CategoriaFinancieraTableTableManager get categoriaFinanciera =>
+      $$CategoriaFinancieraTableTableManager(_db, _db.categoriaFinanciera);
+  $$IngresoTableTableManager get ingreso =>
+      $$IngresoTableTableManager(_db, _db.ingreso);
+  $$IngresoEventoTableTableManager get ingresoEvento =>
+      $$IngresoEventoTableTableManager(_db, _db.ingresoEvento);
+  $$EgresoTableTableManager get egreso =>
+      $$EgresoTableTableManager(_db, _db.egreso);
+  $$EgresoEventoTableTableManager get egresoEvento =>
+      $$EgresoEventoTableTableManager(_db, _db.egresoEvento);
 }

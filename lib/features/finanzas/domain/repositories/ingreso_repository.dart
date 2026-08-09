@@ -1,0 +1,79 @@
+import 'package:riseg_one/core/database/app_database.dart';
+
+/// Dinero reconocido como ingreso de RISEG (Etapa 4K.1) — automático
+/// cuando proviene de un `Pago` (esa composición vive dentro de
+/// `PagoRepositoryImpl`, no aquí — ver la nota de arquitectura en ese
+/// archivo) o manual cuando no pasa por ninguna Cuenta por cobrar.
+abstract interface class IngresoRepository {
+  Future<IngresoData?> obtenerPorId(String id);
+
+  Future<IngresoData?> obtenerPorPagoId(String pagoId);
+
+  Future<List<IngresoData>> listar({
+    String? estatus,
+    String? categoriaFinancieraId,
+    String? servicioId,
+    String? sucursalId,
+    String? areaId,
+    DateTime? rangoInicio,
+    DateTime? rangoFin,
+  });
+
+  Future<List<IngresoEventoData>> listarEventos(String ingresoId);
+
+  /// Inserta el Ingreso y registra el evento `registrado`. El llamador
+  /// ya generó `folioIngreso` (mismo criterio que `PagoRepository.crear`).
+  Future<IngresoData> crear({
+    String? pagoId,
+    required String folioIngreso,
+    required int monto,
+    required DateTime fecha,
+    String? categoriaFinancieraId,
+    String? servicioId,
+    String? sucursalId,
+    String? areaId,
+    String? cuentaCaja,
+    required String formaPago,
+    required String concepto,
+    String? observaciones,
+    String? actor,
+  });
+
+  /// Corrige metadatos administrativos — nunca `monto` (mismo criterio
+  /// que `Pago`/`ComplementoPago`: cancelar y volver a capturar).
+  Future<IngresoData> corregir({
+    required String ingresoId,
+    DateTime? fecha,
+    String? categoriaFinancieraId,
+    String? servicioId,
+    String? sucursalId,
+    String? areaId,
+    String? cuentaCaja,
+    String? formaPago,
+    String? concepto,
+    String? observaciones,
+    required String motivo,
+    String? actor,
+  });
+
+  Future<IngresoData> cancelar({
+    required String ingresoId,
+    required String motivo,
+    String? actor,
+  });
+
+  Future<AttachmentData> adjuntarComprobante({
+    required String ingresoId,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+    String? actor,
+  });
+
+  /// Suma de `monto` de Ingresos `registrado` (nunca `cancelado`) en el
+  /// rango dado — consulta base para reportes (Resolución 5 de
+  /// Marlon), sin pantalla de reporte todavía.
+  Future<int> totalIngresos({DateTime? rangoInicio, DateTime? rangoFin});
+}

@@ -19,17 +19,19 @@ enum CategoriaAdjuntoDocumentoPorEmitir { cfdiPdf, cfdiXml, reciboPdf, otroSopor
 /// Almacenamiento de archivos adjuntos — infraestructura compartida,
 /// no un módulo de Documentos propio.
 ///
-/// Arco exclusivo tipado de 5 vías (extendido en la Etapa 4J.3 con
-/// `complementoPagoId` — PDF/XML del Complemento de pago; Resolución 9
-/// de Marlon en 4I.2.2: nunca un `entityType`/`entityId` genérico) —
-/// exactamente uno de
-/// `empresaId`/`clienteId`/`documentoPorEmitirId`/`pagoId`/`complementoPagoId`
-/// no nulo. Las FK se declaran como SQL crudo en `customConstraints`
-/// (no `.references()`) para no crear un import circular con
+/// Arco exclusivo tipado de 7 vías (extendido en la Etapa 4K.1 con
+/// `ingresoId`/`egresoId`; Resolución 9 de Marlon en 4I.2.2: nunca un
+/// `entityType`/`entityId` genérico) — exactamente uno de
+/// `empresaId`/`clienteId`/`documentoPorEmitirId`/`pagoId`/`complementoPagoId`/`ingresoId`/`egresoId`
+/// no nulo. Cuarta extensión consecutiva de esta tabla (4I.2.2 → 4J.2
+/// → 4J.3 → 4K.1) — sigue siendo la decisión correcta por consistencia,
+/// pero vale la pena reconsiderar el diseño si aparece un octavo dueño.
+/// Las FK se declaran como SQL crudo en `customConstraints` (no
+/// `.references()`) para no crear un import circular con
 /// `empresa_table.dart` (que ya importa este archivo para
-/// `logoAttachmentId`) — mismo motivo por el que `pagoId`/
-/// `complementoPagoId` tampoco importan sus tablas de
-/// `features/finanzas`: `core` nunca depende de una feature.
+/// `logoAttachmentId`) — mismo motivo por el que ningún otro dueño
+/// importa su tabla de `features/finanzas`: `core` nunca depende de
+/// una feature.
 ///
 /// Deliberadamente sin `uploadedBy` (no hay Usuario todavía), sin
 /// `expiresAt`/`estadoFirma` (sin cumplimiento documental todavía).
@@ -53,9 +55,15 @@ class Attachment extends Table {
   /// PDF/XML de un Complemento de pago (Etapa 4J.3).
   TextColumn get complementoPagoId => text().nullable()();
 
+  /// Comprobante de un Ingreso manual (Etapa 4K.1).
+  TextColumn get ingresoId => text().nullable()();
+
+  /// Comprobante de un Egreso (Etapa 4K.1).
+  TextColumn get egresoId => text().nullable()();
+
   /// Solo aplica cuando `documentoPorEmitirId`/`complementoPagoId` no
-  /// son nulos — `null` para adjuntos de Empresa/Cliente/Pago (sin
-  /// categorías propias todavía).
+  /// son nulos — `null` para adjuntos de Empresa/Cliente/Pago/Ingreso/
+  /// Egreso (sin categorías propias todavía).
   TextColumn get categoria => text().nullable()();
 
   TextColumn get originalFileName => text()();
@@ -84,12 +92,16 @@ class Attachment extends Table {
         'FOREIGN KEY (documento_por_emitir_id) REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
         'FOREIGN KEY (pago_id) REFERENCES pago (id) ON DELETE CASCADE',
         'FOREIGN KEY (complemento_pago_id) REFERENCES complemento_pago (id) ON DELETE CASCADE',
+        'FOREIGN KEY (ingreso_id) REFERENCES ingreso (id) ON DELETE CASCADE',
+        'FOREIGN KEY (egreso_id) REFERENCES egreso (id) ON DELETE CASCADE',
         'CHECK ('
             '(CASE WHEN empresa_id IS NOT NULL THEN 1 ELSE 0 END + '
             'CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END + '
             'CASE WHEN documento_por_emitir_id IS NOT NULL THEN 1 ELSE 0 END + '
             'CASE WHEN pago_id IS NOT NULL THEN 1 ELSE 0 END + '
-            'CASE WHEN complemento_pago_id IS NOT NULL THEN 1 ELSE 0 END) = 1'
+            'CASE WHEN complemento_pago_id IS NOT NULL THEN 1 ELSE 0 END + '
+            'CASE WHEN ingreso_id IS NOT NULL THEN 1 ELSE 0 END + '
+            'CASE WHEN egreso_id IS NOT NULL THEN 1 ELSE 0 END) = 1'
             ')',
       ];
 }

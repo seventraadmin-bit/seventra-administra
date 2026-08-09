@@ -159,6 +159,27 @@ GoRouter createAppRouter() {
                         // 4J.3), mismo criterio que Pagos/Agenda.
                         builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.complementos),
                       ),
+                      GoRoute(
+                        path: 'ingresos',
+                        // Sin sub-ruta `:id` — el detalle de un Ingreso
+                        // se muestra en un diálogo (Etapa 4K.1), mismo
+                        // criterio que Pagos/Complementos.
+                        builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.ingresos),
+                      ),
+                      GoRoute(
+                        path: 'egresos',
+                        // Sin sub-ruta `:id` — el detalle de un Egreso
+                        // se muestra en un diálogo (Etapa 4K.1), mismo
+                        // criterio que Ingresos.
+                        builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.egresos),
+                      ),
+                      GoRoute(
+                        path: 'categorias',
+                        // Catálogo administrable de Categorías
+                        // financieras (Etapa 4K.1) — alta/archivado vía
+                        // diálogo, sin sub-ruta `:id`.
+                        builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.categorias),
+                      ),
                     ],
                   )
                 else
