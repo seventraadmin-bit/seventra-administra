@@ -29,12 +29,38 @@ abstract interface class EmpleadoRepository {
     String? actor,
   });
 
-  Future<EmpleadoData> cambiarEstatus({
+  /// Cierra el periodo laboral vigente (Etapa 5C) — deja `estatus` en
+  /// `baja` y completa `fechaBaja`/`motivoBaja`/`observacionesBaja` en
+  /// la misma fila de `Empleado`. Nunca toca `EmpleadoPeriodoLaboral`
+  /// (ese periodo cerrado se archiva solo hasta que haya un Reingreso).
+  Future<EmpleadoData> registrarBajaLaboral({
     required String empleadoId,
-    required String nuevo,
-    String? motivo,
+    required DateTime fechaBaja,
+    required String motivo,
+    String? observaciones,
     String? actor,
   });
+
+  /// Archiva el periodo cerrado actual en `EmpleadoPeriodoLaboral` y
+  /// resetea el periodo vigente en `Empleado` (Etapa 5C) — nunca crea
+  /// un Empleado nuevo. `puestoId`/`empresaId`/`sucursalId` son
+  /// `Value.absent()` cuando no se proporcionan (se conserva la
+  /// asignación anterior), mismo criterio que `corregir`.
+  Future<EmpleadoData> registrarReingreso({
+    required String empleadoId,
+    required DateTime fechaIngreso,
+    String? puestoId,
+    bool limpiarPuesto = false,
+    String? sucursalId,
+    bool limpiarSucursal = false,
+    String? actor,
+  });
+
+  /// Historial de periodos **cerrados** de este Empleado — nunca
+  /// incluye el periodo vigente (ver el doc comment de
+  /// `EmpleadoPeriodoLaboral`). Orden descendente por `fechaIngreso`
+  /// (el periodo cerrado más reciente primero).
+  Future<List<EmpleadoPeriodoLaboralData>> listarPeriodosLaboralesArchivados(String empleadoId);
 
   /// Actualiza el puntero `fotografiaAttachmentId` — el Attachment y su
   /// fila de unión en `EmpleadoAttachment` ya deben existir (los crea

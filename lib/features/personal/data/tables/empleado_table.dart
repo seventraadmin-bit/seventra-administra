@@ -12,6 +12,33 @@ enum EstadoCivilEmpleado { soltero, casado, divorciado, viudo, unionLibre }
 
 enum EstatusEmpleado { activo, baja }
 
+/// Motivo de baja laboral (Etapa 5C) — enum enriquecido a propósito:
+/// `generaAdvertenciaRecontratacion`/`requiereObservaciones` viven como
+/// propiedad de cada valor, no como una lista codificada aparte dentro
+/// de `calcularAlertaRecontratacion` (Resolución explícita de Marlon:
+/// "quiero dejar preparada la arquitectura para que posteriormente cada
+/// motivo de baja pueda definir si genera o no una advertencia"). El
+/// día que esto se vuelva un catálogo administrable, el reemplazo es
+/// una consulta a esa tabla en vez de esta propiedad — ningún llamador
+/// de `calcularAlertaRecontratacion` cambia.
+enum MotivoBajaEmpleado {
+  abandonoServicio(generaAdvertenciaRecontratacion: true),
+  robo(generaAdvertenciaRecontratacion: true),
+  malaConducta(generaAdvertenciaRecontratacion: true),
+  inasistencias(generaAdvertenciaRecontratacion: true),
+  incumplimientoConsignas(generaAdvertenciaRecontratacion: true),
+  noAproboCapacitacion(generaAdvertenciaRecontratacion: true),
+  renuncia(generaAdvertenciaRecontratacion: false),
+  finContrato(generaAdvertenciaRecontratacion: false),
+  reduccionPersonal(generaAdvertenciaRecontratacion: false),
+  otro(generaAdvertenciaRecontratacion: true, requiereObservaciones: true);
+
+  const MotivoBajaEmpleado({required this.generaAdvertenciaRecontratacion, this.requiereObservaciones = false});
+
+  final bool generaAdvertenciaRecontratacion;
+  final bool requiereObservaciones;
+}
+
 enum NivelEstudiosEmpleado { sinEstudios, primaria, secundaria, bachillerato, tecnico, licenciatura, posgrado }
 
 /// Resultado de una sustancia evaluada en un Antidoping (Etapa 5B) —
@@ -40,6 +67,8 @@ enum TipoEventoEmpleado {
   perfilPsicologicoActualizado,
   estudioSocioeconomicoActualizado,
   antidopingActualizado,
+  bajaLaboral,
+  reingreso,
 }
 
 /// Expediente del empleado (Etapa 5A) — la base sobre la que se
@@ -62,10 +91,21 @@ enum TipoEventoEmpleado {
 /// `fechaNacimiento` en tiempo de consulta (`calcularEdad`), mismo
 /// criterio que `estaVencida`/`calcularRangoAntiguedad` (4J.1) y
 /// `complementoPendiente` (4J.3): nunca almacenar lo que se puede
-/// derivar. `antigüedad` tampoco vive aquí todavía — llegará en la
-/// Etapa 5C junto con el modelo de periodos laborales (un reingreso
-/// reinicia la antigüedad desde cero, algo que este expediente por sí
-/// solo no puede expresar).
+/// derivar. `antigüedad` (Etapa 5C) sigue el mismo criterio —
+/// `calcularCicloLaboralEmpleado` la deriva de `fechaIngreso`/`estatus`/
+/// `fechaBaja`, nunca se almacena.
+///
+/// `fechaIngreso`/`estatus`/`puestoId`/`empresaId`/`sucursalId`
+/// representan siempre el **periodo laboral vigente** (Etapa 5C) —
+/// `fechaBaja`/`motivoBaja`/`observacionesBaja` lo completan cuando ese
+/// periodo está cerrado (`estatus == baja`), null mientras está activo.
+/// Un Reingreso (`RegistrarReingresoUseCase`) archiva ese periodo
+/// cerrado en `EmpleadoPeriodoLaboral` y resetea estos 8 campos al
+/// nuevo periodo — nunca crea un Empleado nuevo, nunca acumula
+/// antigüedad entre periodos. `EmpleadoPeriodoLaboral` por diseño solo
+/// contiene periodos ya cerrados y superados: el periodo vigente jamás
+/// tiene una fila ahí, vive únicamente aquí. Esto evita cualquier
+/// duplicación entre las dos tablas (Resolución explícita de Marlon).
 ///
 /// Perfil psicológico, Estudio socioeconómico y Antidoping (Etapa 5B)
 /// también viven aquí como columnas directas — mismo criterio que
@@ -128,6 +168,16 @@ class Empleado extends Table with AuditColumns {
   TextColumn get sucursalId => text().nullable().references(Sucursal, #id, onDelete: KeyAction.restrict)();
 
   TextColumn get observaciones => text().nullable()();
+
+  // --- Baja del periodo laboral vigente (Etapa 5C) — null mientras
+  // `estatus == activo`. Ver el doc comment de la clase para el
+  // criterio completo "vigente vs. archivado". ---
+
+  DateTimeColumn get fechaBaja => dateTime().nullable()();
+
+  TextColumn get motivoBaja => text().nullable()();
+
+  TextColumn get observacionesBaja => text().nullable()();
 
   // --- Escolaridad ---
 
@@ -216,4 +266,27 @@ class EmpleadoEvento extends Table {
   TextColumn get actor => text().nullable()();
 
   TextColumn get datosRelevantes => text().nullable()();
+}
+
+/// Historial de periodos laborales **cerrados** de un Empleado (Etapa
+/// 5C) — solo se inserta una fila aquí al momento de un Reingreso, para
+/// archivar el periodo que se está cerrando (ver el doc comment de
+/// `Empleado`). El periodo vigente nunca tiene fila aquí; se lee
+/// directamente de `Empleado`. Tabla de solo inserción, inmutable —
+/// mismo criterio que `EmpleadoEvento`.
+class EmpleadoPeriodoLaboral extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get empleadoId => text().references(Empleado, #id, onDelete: KeyAction.cascade)();
+
+  DateTimeColumn get fechaIngreso => dateTime()();
+
+  DateTimeColumn get fechaBaja => dateTime()();
+
+  TextColumn get motivoBaja => text()();
+
+  TextColumn get observacionesBaja => text().nullable()();
+
+  @override
+  List<String> get customConstraints => ['CHECK (fecha_baja >= fecha_ingreso)'];
 }

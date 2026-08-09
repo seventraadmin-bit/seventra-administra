@@ -13,22 +13,26 @@ import 'package:riseg_one/features/personal/data/repositories/empleado_repositor
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/actualizar_fotografia_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/adjuntar_documento_empleado_usecase.dart';
-import 'package:riseg_one/features/personal/domain/usecases/cambiar_estatus_empleado_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/alerta_recontratacion_empleado.dart';
+import 'package:riseg_one/features/personal/domain/usecases/calcular_ciclo_laboral_empleado.dart';
 import 'package:riseg_one/features/personal/domain/usecases/corregir_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/crear_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/empleado_alertas.dart';
 import 'package:riseg_one/features/personal/domain/usecases/empleado_validator.dart';
 import 'package:riseg_one/features/personal/domain/usecases/guardar_domicilio_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/registrar_antidoping_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/registrar_baja_laboral_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/registrar_estudio_socioeconomico_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/registrar_perfil_psicologico_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/registrar_reingreso_usecase.dart';
 
 void main() {
   late AppDatabase db;
   late EmpleadoRepositoryImpl empleadoRepo;
   late CrearEmpleadoUseCase crearEmpleado;
   late CorregirEmpleadoUseCase corregirEmpleado;
-  late CambiarEstatusEmpleadoUseCase cambiarEstatusEmpleado;
+  late RegistrarBajaLaboralUseCase registrarBajaLaboral;
+  late RegistrarReingresoUseCase registrarReingreso;
   late ActualizarFotografiaEmpleadoUseCase actualizarFotografia;
   late GuardarDomicilioEmpleadoUseCase guardarDomicilio;
   late AdjuntarDocumentoEmpleadoUseCase adjuntarDocumento;
@@ -45,7 +49,8 @@ void main() {
 
     crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarCodigo, validator);
     corregirEmpleado = CorregirEmpleadoUseCase(empleadoRepo, validator);
-    cambiarEstatusEmpleado = CambiarEstatusEmpleadoUseCase(empleadoRepo);
+    registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, validator);
+    registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, validator);
     guardarDomicilio = GuardarDomicilioEmpleadoUseCase(empleadoRepo);
 
     tempDir = Directory.systemTemp.createTempSync('riseg_empleado_test_');
@@ -190,32 +195,237 @@ void main() {
     });
   });
 
-  group('CambiarEstatusEmpleadoUseCase', () {
-    test('da de baja a un Empleado activo y registra el evento con estados', () async {
+  group('RegistrarBajaLaboralUseCase', () {
+    test('cierra el periodo vigente y registra el evento bajaLaboral', () async {
       final creado = await crearEmpleadoDePrueba();
       final empleado = (creado as CrearEmpleadoExitoso).empleado;
 
-      final resultado = await cambiarEstatusEmpleado.ejecutar(
+      final resultado = await registrarBajaLaboral.ejecutar(
         empleadoId: empleado.id,
-        nuevo: EstatusEmpleado.baja,
-        motivo: 'Renuncia',
+        fechaBaja: DateTime(2026, 6, 15),
+        motivo: MotivoBajaEmpleado.renuncia,
       );
 
-      expect(resultado, isA<CambiarEstatusEmpleadoExitoso>());
-      expect((resultado as CambiarEstatusEmpleadoExitoso).empleado.estatus, 'baja');
+      expect(resultado, isA<RegistrarBajaLaboralExitoso>());
+      final actualizado = (resultado as RegistrarBajaLaboralExitoso).empleado;
+      expect(actualizado.estatus, 'baja');
+      expect(actualizado.fechaBaja, DateTime(2026, 6, 15));
+      expect(actualizado.motivoBaja, 'renuncia');
 
       final eventos = await empleadoRepo.listarEventos(empleado.id);
-      expect(eventos.last.tipoEvento, 'cambioEstatus');
+      expect(eventos.last.tipoEvento, 'bajaLaboral');
       expect(eventos.last.estadoAnterior, 'activo');
       expect(eventos.last.estadoNuevo, 'baja');
+
+      // No debe archivar nada todavía — el periodo cerrado solo se
+      // archiva en EmpleadoPeriodoLaboral al momento del Reingreso.
+      final archivados = await empleadoRepo.listarPeriodosLaboralesArchivados(empleado.id);
+      expect(archivados, isEmpty);
     });
 
-    test('rechaza cambiar a un estatus en el que ya está', () async {
+    test('exige observaciones cuando el motivo es "otro"', () async {
       final creado = await crearEmpleadoDePrueba();
       final empleado = (creado as CrearEmpleadoExitoso).empleado;
 
-      final resultado = await cambiarEstatusEmpleado.ejecutar(empleadoId: empleado.id, nuevo: EstatusEmpleado.activo);
-      expect(resultado, isA<CambiarEstatusEmpleadoYaEnEseEstatus>());
+      final resultado = await registrarBajaLaboral.ejecutar(
+        empleadoId: empleado.id,
+        fechaBaja: DateTime(2026, 6, 15),
+        motivo: MotivoBajaEmpleado.otro,
+      );
+      expect(resultado, isA<RegistrarBajaLaboralObservacionesRequeridas>());
+
+      final conObservaciones = await registrarBajaLaboral.ejecutar(
+        empleadoId: empleado.id,
+        fechaBaja: DateTime(2026, 6, 15),
+        motivo: MotivoBajaEmpleado.otro,
+        observaciones: 'Detalle del motivo',
+      );
+      expect(conObservaciones, isA<RegistrarBajaLaboralExitoso>());
+    });
+
+    test('rechaza dar de baja a un Empleado que ya está de baja', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+      await registrarBajaLaboral.ejecutar(
+        empleadoId: empleado.id,
+        fechaBaja: DateTime(2026, 6, 15),
+        motivo: MotivoBajaEmpleado.renuncia,
+      );
+
+      final resultado = await registrarBajaLaboral.ejecutar(
+        empleadoId: empleado.id,
+        fechaBaja: DateTime(2026, 6, 20),
+        motivo: MotivoBajaEmpleado.renuncia,
+      );
+      expect(resultado, isA<RegistrarBajaLaboralYaDeBaja>());
+    });
+
+    test('rechaza una fecha de baja anterior al ingreso', () async {
+      final creado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2026, 1, 1));
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await registrarBajaLaboral.ejecutar(
+        empleadoId: empleado.id,
+        fechaBaja: DateTime(2025, 12, 31),
+        motivo: MotivoBajaEmpleado.renuncia,
+      );
+      expect(resultado, isA<RegistrarBajaLaboralFechaInvalida>());
+    });
+
+    test('rechaza un Empleado inexistente', () async {
+      final resultado = await registrarBajaLaboral.ejecutar(
+        empleadoId: 'no-existe',
+        fechaBaja: DateTime(2026, 6, 15),
+        motivo: MotivoBajaEmpleado.renuncia,
+      );
+      expect(resultado, isA<RegistrarBajaLaboralNoExiste>());
+    });
+  });
+
+  group('RegistrarReingresoUseCase', () {
+    Future<EmpleadoData> crearYDarDeBaja({MotivoBajaEmpleado motivo = MotivoBajaEmpleado.renuncia}) async {
+      final creado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2026, 1, 1));
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+      final baja = await registrarBajaLaboral.ejecutar(
+        empleadoId: empleado.id,
+        fechaBaja: DateTime(2026, 6, 15),
+        motivo: motivo,
+      );
+      return (baja as RegistrarBajaLaboralExitoso).empleado;
+    }
+
+    test('archiva el periodo cerrado, inicia uno nuevo y no crea un Empleado nuevo', () async {
+      final empleado = await crearYDarDeBaja();
+
+      final resultado = await registrarReingreso.ejecutar(empleadoId: empleado.id, fechaIngreso: DateTime(2026, 7, 1));
+
+      expect(resultado, isA<RegistrarReingresoExitoso>());
+      final actualizado = (resultado as RegistrarReingresoExitoso).empleado;
+      expect(actualizado.id, empleado.id, reason: 'nunca debe crear un Empleado nuevo');
+      expect(actualizado.codigoEmpleado, empleado.codigoEmpleado);
+      expect(actualizado.estatus, 'activo');
+      expect(actualizado.fechaIngreso, DateTime(2026, 7, 1));
+      expect(actualizado.fechaBaja, isNull);
+      expect(actualizado.motivoBaja, isNull);
+
+      final archivados = await empleadoRepo.listarPeriodosLaboralesArchivados(empleado.id);
+      expect(archivados, hasLength(1));
+      expect(archivados.single.fechaIngreso, DateTime(2026, 1, 1));
+      expect(archivados.single.fechaBaja, DateTime(2026, 6, 15));
+      expect(archivados.single.motivoBaja, 'renuncia');
+
+      final eventos = await empleadoRepo.listarEventos(empleado.id);
+      expect(eventos.last.tipoEvento, 'reingreso');
+    });
+
+    test('la antigüedad del nuevo periodo nunca acumula el periodo anterior', () async {
+      final empleado = await crearYDarDeBaja();
+      final reingreso = await registrarReingreso.ejecutar(empleadoId: empleado.id, fechaIngreso: DateTime(2026, 7, 1));
+      final actualizado = (reingreso as RegistrarReingresoExitoso).empleado;
+
+      final ciclo = calcularCicloLaboralEmpleado(actualizado, hoy: DateTime(2026, 7, 15));
+      expect(ciclo.diasLaborados, 14, reason: 'solo cuenta desde el nuevo ingreso, nunca desde el periodo anterior');
+    });
+
+    test('conserva expediente/documentación/evaluaciones/historial administrativo', () async {
+      final empleado = await crearYDarDeBaja();
+      await registrarPerfilPsicologico.ejecutar(empleadoId: empleado.id, fecha: DateTime(2026, 3, 1));
+
+      final reingreso = await registrarReingreso.ejecutar(empleadoId: empleado.id, fechaIngreso: DateTime(2026, 7, 1));
+      final actualizado = (reingreso as RegistrarReingresoExitoso).empleado;
+
+      expect(actualizado.curp, empleado.curp);
+      expect(actualizado.fechaEvaluacionPsicologica, DateTime(2026, 3, 1), reason: 'las evaluaciones no se borran en un reingreso');
+
+      final eventos = await empleadoRepo.listarEventos(empleado.id);
+      expect(eventos.map((e) => e.tipoEvento), containsAll(['creado', 'bajaLaboral', 'perfilPsicologicoActualizado', 'reingreso']));
+    });
+
+    test('rechaza reingresar a un Empleado que sigue activo', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await registrarReingreso.ejecutar(empleadoId: empleado.id, fechaIngreso: DateTime(2026, 7, 1));
+      expect(resultado, isA<RegistrarReingresoNoEstaDeBaja>());
+    });
+
+    test('rechaza una fecha de reingreso anterior a la baja anterior', () async {
+      final empleado = await crearYDarDeBaja();
+
+      final resultado = await registrarReingreso.ejecutar(empleadoId: empleado.id, fechaIngreso: DateTime(2026, 6, 1));
+      expect(resultado, isA<RegistrarReingresoFechaInvalida>());
+    });
+
+    test('rechaza un Empleado inexistente', () async {
+      final resultado = await registrarReingreso.ejecutar(empleadoId: 'no-existe', fechaIngreso: DateTime(2026, 7, 1));
+      expect(resultado, isA<RegistrarReingresoNoExiste>());
+    });
+  });
+
+  group('calcularCicloLaboralEmpleado', () {
+    test('antigüedad y días laborados se calculan sobre el periodo vigente activo', () async {
+      final creado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2024, 1, 1));
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final ciclo = calcularCicloLaboralEmpleado(empleado, hoy: DateTime(2026, 6, 1));
+      expect(ciclo.antiguedadAnios, 2);
+      expect(ciclo.antiguedadMeses, 5);
+      expect(ciclo.fechaProximoAniversario, DateTime(2027, 1, 1));
+    });
+
+    test('un Empleado de baja calcula hasta fechaBaja, no hasta hoy, y sin próximo aniversario', () async {
+      final creado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2024, 1, 1));
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+      final baja = await registrarBajaLaboral.ejecutar(
+        empleadoId: empleado.id,
+        fechaBaja: DateTime(2025, 1, 1),
+        motivo: MotivoBajaEmpleado.renuncia,
+      );
+      final actualizado = (baja as RegistrarBajaLaboralExitoso).empleado;
+
+      final ciclo = calcularCicloLaboralEmpleado(actualizado, hoy: DateTime(2026, 6, 1));
+      expect(ciclo.antiguedadAnios, 1);
+      expect(ciclo.antiguedadMeses, 0);
+      expect(ciclo.fechaProximoAniversario, isNull);
+    });
+  });
+
+  group('calcularAlertaRecontratacion', () {
+    test('sin bajas previas no hay advertencia', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final alerta = calcularAlertaRecontratacion(empleado, const []);
+      expect(alerta.tieneAdvertencia, isFalse);
+    });
+
+    test('un motivo que genera advertencia (p. ej. robo) en el periodo vigente cerrado sí advierte', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+      final baja = await registrarBajaLaboral.ejecutar(
+        empleadoId: empleado.id,
+        fechaBaja: DateTime(2026, 6, 15),
+        motivo: MotivoBajaEmpleado.robo,
+      );
+      final actualizado = (baja as RegistrarBajaLaboralExitoso).empleado;
+
+      final alerta = calcularAlertaRecontratacion(actualizado, const []);
+      expect(alerta.tieneAdvertencia, isTrue);
+      expect(alerta.motivos, contains(MotivoBajaEmpleado.robo));
+    });
+
+    test('un motivo neutro (renuncia) no genera advertencia', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+      final baja = await registrarBajaLaboral.ejecutar(
+        empleadoId: empleado.id,
+        fechaBaja: DateTime(2026, 6, 15),
+        motivo: MotivoBajaEmpleado.renuncia,
+      );
+      final actualizado = (baja as RegistrarBajaLaboralExitoso).empleado;
+
+      final alerta = calcularAlertaRecontratacion(actualizado, const []);
+      expect(alerta.tieneAdvertencia, isFalse);
     });
   });
 

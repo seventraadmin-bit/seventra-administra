@@ -1700,7 +1700,7 @@
   "empleadoExpedienteTitulo": "Expediente del empleado",
   "empleadoDetalleBotonCorregir": "Corregir",
   "empleadoDetalleBotonDarDeBaja": "Dar de baja",
-  "empleadoDetalleBotonReactivar": "Reactivar",
+  "empleadoDetalleBotonRegistrarReingreso": "Registrar reingreso",
   "empleadoDetalleBotonEditar": "Editar",
   "empleadoDetalleBotonAdjuntar": "Adjuntar",
   "empleadoDetalleCampoEdad": "Edad",
@@ -1726,6 +1726,27 @@
       "meses": {"type": "int"}
     }
   },
+  "empleadoCampoAntiguedad": "Antigüedad",
+  "empleadoDetalleAntiguedadAniosMeses": "{anios} años, {meses} meses",
+  "@empleadoDetalleAntiguedadAniosMeses": {
+    "placeholders": {
+      "anios": {"type": "int"},
+      "meses": {"type": "int"}
+    }
+  },
+  "empleadoCampoDiasLaborados": "Días laborados",
+  "empleadoDetalleDiasLaborados": "{dias} días",
+  "@empleadoDetalleDiasLaborados": {
+    "placeholders": {
+      "dias": {"type": "int"}
+    }
+  },
+  "empleadoCampoProximoAniversario": "Próximo aniversario",
+  "empleadoCampoFechaBaja": "Fecha de baja",
+  "empleadoCampoMotivoBaja": "Motivo de baja",
+  "empleadoCampoObservacionesBaja": "Observaciones de baja",
+  "empleadoSeccionHistorialLaboral": "Historial laboral",
+  "empleadoHistorialLaboralActivo": "Activo",
   "empleadoDetalleHistorialEventoCreado": "Registrado",
   "empleadoDetalleHistorialEventoCorregido": "Corregido",
   "empleadoDetalleHistorialEventoCambioEstatus": "Cambio de estatus",
@@ -1736,15 +1757,40 @@
   "empleadoDetalleHistorialEventoPerfilPsicologicoActualizado": "Perfil psicológico actualizado",
   "empleadoDetalleHistorialEventoEstudioSocioeconomicoActualizado": "Estudio socioeconómico actualizado",
   "empleadoDetalleHistorialEventoAntidopingActualizado": "Antidoping actualizado",
+  "empleadoDetalleHistorialEventoBajaLaboral": "Baja laboral",
+  "empleadoDetalleHistorialEventoReingreso": "Reingreso",
 
-  "cambiarEstatusEmpleadoDialogoTitulo": "Cambiar estatus",
-  "cambiarEstatusEmpleadoBotonConfirmar": "Confirmar",
-  "cambiarEstatusEmpleadoBotonCancelar": "Cancelar",
-  "cambiarEstatusEmpleadoMensajeBaja": "El Empleado quedará marcado como baja. Esta acción queda registrada en el historial.",
-  "cambiarEstatusEmpleadoMensajeActivo": "El Empleado volverá a quedar activo. Esta acción queda registrada en el historial.",
-  "cambiarEstatusEmpleadoCampoMotivo": "Motivo",
-  "cambiarEstatusEmpleadoExito": "Estatus actualizado correctamente.",
-  "cambiarEstatusEmpleadoErrorInesperado": "No se pudo cambiar el estatus. Intenta de nuevo.",
+  "bajaLaboralEmpleadoDialogoTitulo": "Dar de baja",
+  "bajaLaboralEmpleadoBotonConfirmar": "Confirmar",
+  "bajaLaboralEmpleadoBotonCancelar": "Cancelar",
+  "bajaLaboralEmpleadoExito": "Baja laboral registrada correctamente.",
+  "bajaLaboralEmpleadoErrorInesperado": "No se pudo registrar la baja laboral. Intenta de nuevo.",
+  "bajaLaboralEmpleadoErrorFechaInvalida": "Ingresa una fecha de baja válida (no anterior al ingreso, no futura).",
+  "bajaLaboralEmpleadoErrorObservacionesRequeridas": "Las observaciones son obligatorias para el motivo \"Otro\".",
+
+  "motivoBajaEmpleadoAbandonoServicio": "Abandono de servicio",
+  "motivoBajaEmpleadoRobo": "Robo",
+  "motivoBajaEmpleadoMalaConducta": "Mala conducta",
+  "motivoBajaEmpleadoInasistencias": "Inasistencias",
+  "motivoBajaEmpleadoIncumplimientoConsignas": "Incumplimiento de consignas",
+  "motivoBajaEmpleadoNoAproboCapacitacion": "No aprobó capacitación",
+  "motivoBajaEmpleadoRenuncia": "Renuncia",
+  "motivoBajaEmpleadoFinContrato": "Fin de contrato",
+  "motivoBajaEmpleadoReduccionPersonal": "Reducción de personal",
+  "motivoBajaEmpleadoOtro": "Otro",
+
+  "reingresoEmpleadoDialogoTitulo": "Registrar reingreso",
+  "reingresoEmpleadoBotonConfirmar": "Confirmar",
+  "reingresoEmpleadoBotonCancelar": "Cancelar",
+  "reingresoEmpleadoAdvertenciaMensaje": "Este Empleado tiene antecedentes de baja que ameritan revisión: {motivos}.",
+  "@reingresoEmpleadoAdvertenciaMensaje": {
+    "placeholders": {
+      "motivos": {"type": "String"}
+    }
+  },
+  "reingresoEmpleadoExito": "Reingreso registrado correctamente.",
+  "reingresoEmpleadoErrorInesperado": "No se pudo registrar el reingreso. Intenta de nuevo.",
+  "reingresoEmpleadoErrorFechaInvalida": "Ingresa una fecha de ingreso válida (no anterior a la baja anterior, no futura).",
 
   "actualizarFotografiaEmpleadoErrorInesperado": "No se pudo actualizar la fotografía. Intenta de nuevo.",
 

@@ -104,30 +104,102 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
   }
 
   @override
-  Future<EmpleadoData> cambiarEstatus({
+  Future<EmpleadoData> registrarBajaLaboral({
     required String empleadoId,
-    required String nuevo,
-    String? motivo,
+    required DateTime fechaBaja,
+    required String motivo,
+    String? observaciones,
     String? actor,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
 
       await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
-        EmpleadoCompanion(estatus: Value(nuevo), updatedAt: Value(DateTime.now())),
+        EmpleadoCompanion(
+          estatus: Value(EstatusEmpleado.baja.name),
+          fechaBaja: Value(fechaBaja),
+          motivoBaja: Value(motivo),
+          observacionesBaja: Value(observaciones),
+          updatedAt: Value(DateTime.now()),
+        ),
       );
       final actualizado = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
 
       await _registrarEvento(
         empleadoId: empleadoId,
-        tipoEvento: TipoEventoEmpleado.cambioEstatus,
+        tipoEvento: TipoEventoEmpleado.bajaLaboral,
         estadoAnterior: anterior.estatus,
-        estadoNuevo: nuevo,
-        observacion: motivo,
+        estadoNuevo: EstatusEmpleado.baja.name,
+        observacion: observaciones,
         actor: actor,
+        datosRelevantes: {'motivo': motivo},
       );
       return actualizado;
     });
+  }
+
+  @override
+  Future<EmpleadoData> registrarReingreso({
+    required String empleadoId,
+    required DateTime fechaIngreso,
+    String? puestoId,
+    bool limpiarPuesto = false,
+    String? sucursalId,
+    bool limpiarSucursal = false,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
+
+      // Archiva el periodo cerrado que se está reemplazando — solo si
+      // realmente había uno cerrado (fechaBaja/motivoBaja no nulos).
+      // Ver el doc comment de `EmpleadoPeriodoLaboral`: nunca contiene
+      // el periodo vigente, solo se le agrega una fila aquí.
+      if (anterior.fechaBaja != null && anterior.motivoBaja != null) {
+        await _db.into(_db.empleadoPeriodoLaboral).insert(
+              EmpleadoPeriodoLaboralCompanion.insert(
+                empleadoId: empleadoId,
+                fechaIngreso: anterior.fechaIngreso,
+                fechaBaja: anterior.fechaBaja!,
+                motivoBaja: anterior.motivoBaja!,
+                observacionesBaja: Value(anterior.observacionesBaja),
+              ),
+            );
+      }
+
+      await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
+        EmpleadoCompanion(
+          estatus: Value(EstatusEmpleado.activo.name),
+          fechaIngreso: Value(fechaIngreso),
+          fechaBaja: const Value(null),
+          motivoBaja: const Value(null),
+          observacionesBaja: const Value(null),
+          puestoId: limpiarPuesto ? const Value(null) : (puestoId == null ? const Value.absent() : Value(puestoId)),
+          sucursalId:
+              limpiarSucursal ? const Value(null) : (sucursalId == null ? const Value.absent() : Value(sucursalId)),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      final actualizado = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
+
+      await _registrarEvento(
+        empleadoId: empleadoId,
+        tipoEvento: TipoEventoEmpleado.reingreso,
+        estadoAnterior: anterior.estatus,
+        estadoNuevo: EstatusEmpleado.activo.name,
+        actor: actor,
+        datosRelevantes: {'fechaIngreso': fechaIngreso.toIso8601String()},
+      );
+      return actualizado;
+    });
+  }
+
+  @override
+  Future<List<EmpleadoPeriodoLaboralData>> listarPeriodosLaboralesArchivados(String empleadoId) {
+    return (_db.select(_db.empleadoPeriodoLaboral)
+          ..where((t) => t.empleadoId.equals(empleadoId))
+          ..orderBy([(t) => OrderingTerm.desc(t.fechaIngreso)]))
+        .get();
   }
 
   @override

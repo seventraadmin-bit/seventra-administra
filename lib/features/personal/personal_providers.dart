@@ -6,14 +6,15 @@ import 'data/repositories/empleado_repository_impl.dart';
 import 'domain/repositories/empleado_repository.dart';
 import 'domain/usecases/actualizar_fotografia_empleado_usecase.dart';
 import 'domain/usecases/adjuntar_documento_empleado_usecase.dart';
-import 'domain/usecases/cambiar_estatus_empleado_usecase.dart';
 import 'domain/usecases/corregir_empleado_usecase.dart';
 import 'domain/usecases/crear_empleado_usecase.dart';
 import 'domain/usecases/empleado_validator.dart';
 import 'domain/usecases/guardar_domicilio_empleado_usecase.dart';
 import 'domain/usecases/registrar_antidoping_usecase.dart';
+import 'domain/usecases/registrar_baja_laboral_usecase.dart';
 import 'domain/usecases/registrar_estudio_socioeconomico_usecase.dart';
 import 'domain/usecases/registrar_perfil_psicologico_usecase.dart';
+import 'domain/usecases/registrar_reingreso_usecase.dart';
 
 /// Providers del dominio Personal (Etapa 5A) — nace aquí, separado de
 /// `organizacion`/`comercial`/`finanzas` (mismo criterio que la
@@ -38,8 +39,12 @@ final corregirEmpleadoUseCaseProvider = Provider<CorregirEmpleadoUseCase>((ref) 
   return CorregirEmpleadoUseCase(ref.watch(empleadoRepositoryProvider), ref.watch(empleadoValidatorProvider));
 });
 
-final cambiarEstatusEmpleadoUseCaseProvider = Provider<CambiarEstatusEmpleadoUseCase>((ref) {
-  return CambiarEstatusEmpleadoUseCase(ref.watch(empleadoRepositoryProvider));
+final registrarBajaLaboralUseCaseProvider = Provider<RegistrarBajaLaboralUseCase>((ref) {
+  return RegistrarBajaLaboralUseCase(ref.watch(empleadoRepositoryProvider), ref.watch(empleadoValidatorProvider));
+});
+
+final registrarReingresoUseCaseProvider = Provider<RegistrarReingresoUseCase>((ref) {
+  return RegistrarReingresoUseCase(ref.watch(empleadoRepositoryProvider), ref.watch(empleadoValidatorProvider));
 });
 
 final actualizarFotografiaEmpleadoUseCaseProvider = Provider<ActualizarFotografiaEmpleadoUseCase>((ref) {

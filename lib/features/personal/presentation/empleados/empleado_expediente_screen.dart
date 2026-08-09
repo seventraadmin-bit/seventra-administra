@@ -9,8 +9,9 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/actualizar_fotografia_empleado_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/alerta_recontratacion_empleado.dart';
+import 'package:riseg_one/features/personal/domain/usecases/calcular_ciclo_laboral_empleado.dart';
 import 'package:riseg_one/features/personal/domain/usecases/calcular_edad.dart';
-import 'package:riseg_one/features/personal/domain/usecases/cambiar_estatus_empleado_usecase.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import '../../personal_providers.dart';
@@ -18,11 +19,13 @@ import 'empleados_list_controller.dart';
 import 'empleados_list_screen.dart';
 import 'widgets/adjuntar_documento_empleado_dialog.dart';
 import 'widgets/antidoping_empleado_dialog.dart';
+import 'widgets/baja_laboral_empleado_dialog.dart';
 import 'widgets/corregir_empleado_dialog.dart';
 import 'widgets/crear_empleado_dialog.dart';
 import 'widgets/domicilio_empleado_dialog.dart';
 import 'widgets/estudio_socioeconomico_empleado_dialog.dart';
 import 'widgets/perfil_psicologico_empleado_dialog.dart';
+import 'widgets/reingreso_empleado_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
@@ -47,6 +50,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   DireccionData? _domicilio;
   List<AttachmentData> _documentos = const [];
   List<EmpleadoEventoData> _eventos = const [];
+  List<EmpleadoPeriodoLaboralData> _periodosArchivados = const [];
   PuestoData? _puesto;
   EmpresaData? _empresa;
   SucursalData? _sucursal;
@@ -66,6 +70,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     final domicilio = await empleadoRepo.obtenerDomicilio(widget.empleadoId);
     final documentos = await ref.read(attachmentRepositoryProvider).listarActivosPorEmpleado(widget.empleadoId);
     final eventos = await empleadoRepo.listarEventos(widget.empleadoId);
+    final periodosArchivados = await empleadoRepo.listarPeriodosLaboralesArchivados(widget.empleadoId);
 
     PuestoData? puesto;
     if (empleado?.puestoId != null) {
@@ -87,6 +92,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       _domicilio = domicilio;
       _documentos = documentos;
       _eventos = eventos;
+      _periodosArchivados = periodosArchivados;
       _puesto = puesto;
       _empresa = empresa;
       _sucursal = sucursal;
@@ -106,6 +112,8 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       TipoEventoEmpleado.perfilPsicologicoActualizado => l10n.empleadoDetalleHistorialEventoPerfilPsicologicoActualizado,
       TipoEventoEmpleado.estudioSocioeconomicoActualizado => l10n.empleadoDetalleHistorialEventoEstudioSocioeconomicoActualizado,
       TipoEventoEmpleado.antidopingActualizado => l10n.empleadoDetalleHistorialEventoAntidopingActualizado,
+      TipoEventoEmpleado.bajaLaboral => l10n.empleadoDetalleHistorialEventoBajaLaboral,
+      TipoEventoEmpleado.reingreso => l10n.empleadoDetalleHistorialEventoReingreso,
     };
   }
 
@@ -165,54 +173,20 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     }
   }
 
-  Future<void> _cambiarEstatus(EstatusEmpleado nuevo) async {
-    final l10n = AppLocalizations.of(context)!;
-    final motivoController = TextEditingController();
-    final confirmado = await RisegDialog.showForm<bool>(
-      context: context,
-      title: l10n.cambiarEstatusEmpleadoDialogoTitulo,
-      confirmLabel: l10n.cambiarEstatusEmpleadoBotonConfirmar,
-      cancelLabel: l10n.cambiarEstatusEmpleadoBotonCancelar,
-      contentBuilder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            nuevo == EstatusEmpleado.baja
-                ? l10n.cambiarEstatusEmpleadoMensajeBaja
-                : l10n.cambiarEstatusEmpleadoMensajeActivo,
-            style: AppTypography.body,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          RisegTextField(label: l10n.cambiarEstatusEmpleadoCampoMotivo, controller: motivoController, autofocus: true),
-        ],
-      ),
-      onConfirm: () async => true,
-    );
-    if (confirmado != true) {
-      motivoController.dispose();
-      return;
+  Future<void> _registrarBajaLaboral() async {
+    final actualizo = await mostrarDialogoBajaLaboralEmpleado(context, ref, _empleado!);
+    if (actualizo) {
+      await _cargar();
+      ref.read(empleadosListControllerProvider.notifier).recargar();
     }
-    final motivo = motivoController.text.trim();
-    motivoController.dispose();
-    if (!mounted) return;
+  }
 
-    setState(() => _procesando = true);
-    final resultado = await ref
-        .read(cambiarEstatusEmpleadoUseCaseProvider)
-        .ejecutar(empleadoId: widget.empleadoId, nuevo: nuevo, motivo: motivo.isEmpty ? null : motivo);
-    if (!mounted) return;
-    setState(() => _procesando = false);
-
-    switch (resultado) {
-      case CambiarEstatusEmpleadoExitoso():
-        RisegFeedback.showSuccess(context, l10n.cambiarEstatusEmpleadoExito);
-        await _cargar();
-        ref.read(empleadosListControllerProvider.notifier).recargar();
-      case CambiarEstatusEmpleadoNoExiste():
-      case CambiarEstatusEmpleadoYaEnEseEstatus():
-      case CambiarEstatusEmpleadoErrorInesperado():
-        RisegFeedback.showError(context, l10n.cambiarEstatusEmpleadoErrorInesperado);
+  Future<void> _registrarReingreso() async {
+    final alerta = calcularAlertaRecontratacion(_empleado!, _periodosArchivados);
+    final actualizo = await mostrarDialogoReingresoEmpleado(context, ref, _empleado!, alerta);
+    if (actualizo) {
+      await _cargar();
+      ref.read(empleadosListControllerProvider.notifier).recargar();
     }
   }
 
@@ -241,6 +215,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     }
 
     final cancelado = EstatusEmpleado.values.byName(empleado.estatus) == EstatusEmpleado.baja;
+    final cicloLaboral = calcularCicloLaboralEmpleado(empleado);
 
     return Scaffold(
       appBar: AppBar(title: Text(empleadoNombreCompleto(empleado))),
@@ -279,12 +254,18 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                   spacing: AppSpacing.xs,
                   children: [
                     RisegButton(label: l10n.empleadoDetalleBotonCorregir, variant: RisegButtonVariant.secondary, onPressed: _corregir),
-                    RisegButton(
-                      label: cancelado ? l10n.empleadoDetalleBotonReactivar : l10n.empleadoDetalleBotonDarDeBaja,
-                      variant: RisegButtonVariant.danger,
-                      loading: _procesando,
-                      onPressed: () => _cambiarEstatus(cancelado ? EstatusEmpleado.activo : EstatusEmpleado.baja),
-                    ),
+                    if (cancelado)
+                      RisegButton(
+                        label: l10n.empleadoDetalleBotonRegistrarReingreso,
+                        variant: RisegButtonVariant.primary,
+                        onPressed: _registrarReingreso,
+                      )
+                    else
+                      RisegButton(
+                        label: l10n.empleadoDetalleBotonDarDeBaja,
+                        variant: RisegButtonVariant.danger,
+                        onPressed: _registrarBajaLaboral,
+                      ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -395,6 +376,77 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                       CampoConsulta(label: l10n.empleadoCampoSucursal, value: _sucursal?.nombre),
                       const SizedBox(height: AppSpacing.sm),
                       CampoConsulta(label: l10n.empleadoCampoObservaciones, value: empleado.observaciones),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CampoConsulta(
+                              label: l10n.empleadoCampoAntiguedad,
+                              value: l10n.empleadoDetalleAntiguedadAniosMeses(cicloLaboral.antiguedadAnios, cicloLaboral.antiguedadMeses),
+                            ),
+                          ),
+                          Expanded(
+                            child: CampoConsulta(
+                              label: l10n.empleadoCampoDiasLaborados,
+                              value: l10n.empleadoDetalleDiasLaborados(cicloLaboral.diasLaborados),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (cicloLaboral.fechaProximoAniversario != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(
+                          label: l10n.empleadoCampoProximoAniversario,
+                          value: _formatoFecha.format(cicloLaboral.fechaProximoAniversario!),
+                        ),
+                      ],
+                      if (cancelado) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(label: l10n.empleadoCampoFechaBaja, value: _formatoFecha.format(empleado.fechaBaja!)),
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(
+                          label: l10n.empleadoCampoMotivoBaja,
+                          value: motivoBajaEmpleadoLabel(l10n, empleado.motivoBaja!),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(label: l10n.empleadoCampoObservacionesBaja, value: empleado.observacionesBaja),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.empleadoSeccionHistorialLaboral, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${_formatoFecha.format(empleado.fechaIngreso)} — '
+                                '${cancelado ? _formatoFecha.format(empleado.fechaBaja!) : l10n.empleadoHistorialLaboralActivo}',
+                              ),
+                            ),
+                            if (cancelado) Text(motivoBajaEmpleadoLabel(l10n, empleado.motivoBaja!), style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                          ],
+                        ),
+                      ),
+                      for (final periodo in _periodosArchivados)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text('${_formatoFecha.format(periodo.fechaIngreso)} — ${_formatoFecha.format(periodo.fechaBaja)}'),
+                              ),
+                              Text(motivoBajaEmpleadoLabel(l10n, periodo.motivoBaja), style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),

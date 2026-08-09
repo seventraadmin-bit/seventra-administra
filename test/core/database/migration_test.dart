@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 19;
+const _currentSchemaVersion = 20;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -5353,6 +5353,203 @@ void main() {
 
       expect(actualizado.single.resultadoCoc, 'positivo');
       expect(actualizado.single.resultadoMet, 'noAplica');
+
+      await db.close();
+    },
+  );
+
+  test(
+    '20.json coincide con el esquema final de la Etapa 5C (3 columnas de baja en Empleado + tabla nueva EmpleadoPeriodoLaboral)',
+    () async {
+      final schema = await verifier.schemaAt(20);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, contains('empleado'));
+      expect(tablas, contains('empleado_periodo_laboral'));
+
+      final columnasEmpleado = schema.rawDatabase.select('PRAGMA table_info(empleado)').toList();
+      for (final nombre in ['fecha_baja', 'motivo_baja', 'observaciones_baja']) {
+        final columna = columnasEmpleado.firstWhere(
+          (c) => c['name'] == nombre,
+          orElse: () => throw StateError('Falta la columna $nombre en empleado (20.json)'),
+        );
+        expect(columna['notnull'], 0, reason: '$nombre debe ser nullable');
+      }
+
+      final sqlPeriodo =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado_periodo_laboral'")
+                  .single['sql']
+              as String;
+      expect(sqlPeriodo, contains('"empleado_id" TEXT NOT NULL REFERENCES empleado (id) ON DELETE CASCADE'));
+      expect(sqlPeriodo, contains('"fecha_ingreso" INTEGER NOT NULL'));
+      expect(sqlPeriodo, contains('"fecha_baja" INTEGER NOT NULL'));
+      expect(sqlPeriodo, contains('"motivo_baja" TEXT NOT NULL'));
+      expect(sqlPeriodo, contains('CHECK (fecha_baja >= fecha_ingreso)'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 19 → 20 conserva un Empleado real (incluso ya de baja, sin fechaBaja legado) y crea EmpleadoPeriodoLaboral vacía',
+    () async {
+      final schemaV19 = await verifier.schemaAt(19);
+      final raw = schemaV19.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO empleado (
+        id, codigo_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 'EMP-000001', 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1735689600, 3, 'activo',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      // Simula un Empleado que ya estaba de baja bajo el viejo
+      // CambiarEstatusEmpleadoUseCase (previo a esta etapa) — nunca tuvo
+      // fechaBaja/motivoBaja estructurados. La migración es puramente
+      // aditiva y no hace backfill: debe sobrevivir con esos campos en
+      // NULL, sin lanzar.
+      raw.execute('''
+      INSERT INTO empleado (
+        id, codigo_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-baja-legado', 'EMP-000002', 'Ana', 'García', 'femenino', 631152000, 'GAAA900101MDFXXX02',
+        'GAAA900101AB2', '12345678902', 'soltera', 1735689600, 2, 'baja',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV19.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleados = await db.select(db.empleado).get();
+      expect(empleados, hasLength(2), reason: 'ningún Empleado real debe perderse en una migración aditiva');
+
+      final empleado = empleados.firstWhere((e) => e.id == 'empleado-real');
+      expect(empleado.fechaBaja, isNull);
+      expect(empleado.motivoBaja, isNull);
+      expect(empleado.observacionesBaja, isNull);
+
+      final legado = empleados.firstWhere((e) => e.id == 'empleado-baja-legado');
+      expect(legado.estatus, 'baja');
+      expect(legado.fechaBaja, isNull, reason: 'sin backfill — invariante de aplicación, no de BD');
+
+      final periodos = await db.select(db.empleadoPeriodoLaboral).get();
+      expect(periodos, isEmpty, reason: 'EmpleadoPeriodoLaboral es tabla nueva en 5C, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'acepta un ciclo completo de baja + reingreso (archiva el periodo cerrado) tras la migración',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
+            EmpleadoCompanion.insert(
+              codigoEmpleado: 'EMP-000001',
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+
+      await (db.update(db.empleado)..where((t) => t.id.equals(empleado.id))).write(
+        EmpleadoCompanion(
+          estatus: const Value('baja'),
+          fechaBaja: Value(DateTime(2026, 6, 15)),
+          motivoBaja: const Value('renuncia'),
+        ),
+      );
+
+      await db.into(db.empleadoPeriodoLaboral).insert(
+            EmpleadoPeriodoLaboralCompanion.insert(
+              empleadoId: empleado.id,
+              fechaIngreso: DateTime(2026, 1, 1),
+              fechaBaja: DateTime(2026, 6, 15),
+              motivoBaja: 'renuncia',
+            ),
+          );
+
+      final periodos = await (db.select(db.empleadoPeriodoLaboral)..where((t) => t.empleadoId.equals(empleado.id))).get();
+      expect(periodos, hasLength(1));
+      expect(periodos.single.motivoBaja, 'renuncia');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'EmpleadoPeriodoLaboral rechaza fechaBaja anterior a fechaIngreso tras la migración',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
+            EmpleadoCompanion.insert(
+              codigoEmpleado: 'EMP-000001',
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+
+      expect(
+        () => db.into(db.empleadoPeriodoLaboral).insert(
+              EmpleadoPeriodoLaboralCompanion.insert(
+                empleadoId: empleado.id,
+                fechaIngreso: DateTime(2026, 6, 15),
+                fechaBaja: DateTime(2026, 1, 1),
+                motivoBaja: 'renuncia',
+              ),
+            ),
+        throwsA(anything),
+      );
 
       await db.close();
     },

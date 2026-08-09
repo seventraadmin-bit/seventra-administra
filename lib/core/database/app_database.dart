@@ -46,6 +46,7 @@ import 'migrations/migrar_attachment_v18.dart';
 import 'migrations/migrar_cuenta_por_cobrar_v14.dart';
 import 'migrations/migrar_direccion_v18.dart';
 import 'migrations/migrar_empleado_v19.dart';
+import 'migrations/migrar_empleado_v20.dart';
 import 'migrations/migrar_documento_por_emitir_v12.dart';
 import 'migrations/migrar_servicio_v6.dart';
 import 'migrations/migrar_servicio_v7.dart';
@@ -125,6 +126,7 @@ class AppMetadata extends Table {
   EgresoEvento,
   Empleado,
   EmpleadoEvento,
+  EmpleadoPeriodoLaboral,
   EmpresaAttachment,
   ClienteAttachment,
   DocumentoPorEmitirAttachment,
@@ -138,7 +140,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration {
@@ -466,6 +468,18 @@ class AppDatabase extends _$AppDatabase {
         // doc comment de `migrarEmpleadoV19` para el detalle completo.
         if (to >= 19 && from == 18) {
           await migrarEmpleadoV19(this, m);
+        }
+        // Aditiva (Etapa 5C): tabla nueva `EmpleadoPeriodoLaboral`
+        // (historial de periodos cerrados, nunca contiene el periodo
+        // vigente — ver su doc comment) + 3 columnas nullable de baja
+        // del periodo laboral vigente en `Empleado`. La tabla se crea
+        // para cualquier `from <= 19` (nunca existió antes, sin
+        // gotcha). Las columnas de `Empleado` sí llevan el gotcha en su
+        // variante de rango (`from == 18 || from == 19`, nunca `from <=
+        // 17`) — ver el doc comment de `migrarEmpleadoV20` para el
+        // detalle completo.
+        if (to >= 20 && from <= 19) {
+          await migrarEmpleadoV20(this, m, from);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

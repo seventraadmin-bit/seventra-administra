@@ -43,4 +43,26 @@ class EmpleadoValidator {
   bool fechaEvaluacionValida(DateTime fecha, {DateTime? hoy}) {
     return !fecha.isAfter(hoy ?? DateTime.now());
   }
+
+  /// La fecha de baja no puede ser anterior al inicio del periodo
+  /// laboral vigente que está cerrando, ni futura (Etapa 5C).
+  bool fechaBajaValida(DateTime fechaBaja, DateTime fechaIngresoVigente, {DateTime? hoy}) {
+    final referencia = hoy ?? DateTime.now();
+    if (fechaBaja.isAfter(referencia)) return false;
+    return !fechaBaja.isBefore(fechaIngresoVigente);
+  }
+
+  /// La fecha del nuevo periodo (Reingreso, Etapa 5C) debe cumplir las
+  /// mismas reglas que cualquier fecha de ingreso, y además no puede
+  /// ser anterior a la baja del periodo anterior que se está cerrando.
+  bool fechaReingresoValida(
+    DateTime fechaIngreso,
+    DateTime fechaNacimiento,
+    DateTime? fechaBajaAnterior, {
+    DateTime? hoy,
+  }) {
+    if (!fechaIngresoValida(fechaIngreso, fechaNacimiento, hoy: hoy)) return false;
+    if (fechaBajaAnterior == null) return true;
+    return !fechaIngreso.isBefore(fechaBajaAnterior);
+  }
 }

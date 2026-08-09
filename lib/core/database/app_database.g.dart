@@ -31228,6 +31228,40 @@ class $EmpleadoTable extends Empleado
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _fechaBajaMeta = const VerificationMeta(
+    'fechaBaja',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaBaja = GeneratedColumn<DateTime>(
+    'fecha_baja',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _motivoBajaMeta = const VerificationMeta(
+    'motivoBaja',
+  );
+  @override
+  late final GeneratedColumn<String> motivoBaja = GeneratedColumn<String>(
+    'motivo_baja',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesBajaMeta = const VerificationMeta(
+    'observacionesBaja',
+  );
+  @override
+  late final GeneratedColumn<String> observacionesBaja =
+      GeneratedColumn<String>(
+        'observaciones_baja',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _nivelEstudiosMeta = const VerificationMeta(
     'nivelEstudios',
   );
@@ -31478,6 +31512,9 @@ class $EmpleadoTable extends Empleado
     empresaId,
     sucursalId,
     observaciones,
+    fechaBaja,
+    motivoBaja,
+    observacionesBaja,
     nivelEstudios,
     observacionesEscolaridad,
     aniosExperienciaSeguridad,
@@ -31729,6 +31766,27 @@ class $EmpleadoTable extends Empleado
         observaciones.isAcceptableOrUnknown(
           data['observaciones']!,
           _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_baja')) {
+      context.handle(
+        _fechaBajaMeta,
+        fechaBaja.isAcceptableOrUnknown(data['fecha_baja']!, _fechaBajaMeta),
+      );
+    }
+    if (data.containsKey('motivo_baja')) {
+      context.handle(
+        _motivoBajaMeta,
+        motivoBaja.isAcceptableOrUnknown(data['motivo_baja']!, _motivoBajaMeta),
+      );
+    }
+    if (data.containsKey('observaciones_baja')) {
+      context.handle(
+        _observacionesBajaMeta,
+        observacionesBaja.isAcceptableOrUnknown(
+          data['observaciones_baja']!,
+          _observacionesBajaMeta,
         ),
       );
     }
@@ -32047,6 +32105,18 @@ class $EmpleadoTable extends Empleado
         DriftSqlType.string,
         data['${effectivePrefix}observaciones'],
       ),
+      fechaBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_baja'],
+      ),
+      motivoBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_baja'],
+      ),
+      observacionesBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_baja'],
+      ),
       nivelEstudios: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}nivel_estudios'],
@@ -32170,6 +32240,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
   final String? empresaId;
   final String? sucursalId;
   final String? observaciones;
+  final DateTime? fechaBaja;
+  final String? motivoBaja;
+  final String? observacionesBaja;
   final String? nivelEstudios;
   final String? observacionesEscolaridad;
   final int aniosExperienciaSeguridad;
@@ -32218,6 +32291,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     this.empresaId,
     this.sucursalId,
     this.observaciones,
+    this.fechaBaja,
+    this.motivoBaja,
+    this.observacionesBaja,
     this.nivelEstudios,
     this.observacionesEscolaridad,
     required this.aniosExperienciaSeguridad,
@@ -32294,6 +32370,15 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     }
     if (!nullToAbsent || observaciones != null) {
       map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || fechaBaja != null) {
+      map['fecha_baja'] = Variable<DateTime>(fechaBaja);
+    }
+    if (!nullToAbsent || motivoBaja != null) {
+      map['motivo_baja'] = Variable<String>(motivoBaja);
+    }
+    if (!nullToAbsent || observacionesBaja != null) {
+      map['observaciones_baja'] = Variable<String>(observacionesBaja);
     }
     if (!nullToAbsent || nivelEstudios != null) {
       map['nivel_estudios'] = Variable<String>(nivelEstudios);
@@ -32440,6 +32525,18 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           observaciones == null && nullToAbsent
               ? const Value.absent()
               : Value(observaciones),
+      fechaBaja:
+          fechaBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaBaja),
+      motivoBaja:
+          motivoBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoBaja),
+      observacionesBaja:
+          observacionesBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesBaja),
       nivelEstudios:
           nivelEstudios == null && nullToAbsent
               ? const Value.absent()
@@ -32563,6 +32660,11 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       empresaId: serializer.fromJson<String?>(json['empresaId']),
       sucursalId: serializer.fromJson<String?>(json['sucursalId']),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
+      fechaBaja: serializer.fromJson<DateTime?>(json['fechaBaja']),
+      motivoBaja: serializer.fromJson<String?>(json['motivoBaja']),
+      observacionesBaja: serializer.fromJson<String?>(
+        json['observacionesBaja'],
+      ),
       nivelEstudios: serializer.fromJson<String?>(json['nivelEstudios']),
       observacionesEscolaridad: serializer.fromJson<String?>(
         json['observacionesEscolaridad'],
@@ -32646,6 +32748,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       'empresaId': serializer.toJson<String?>(empresaId),
       'sucursalId': serializer.toJson<String?>(sucursalId),
       'observaciones': serializer.toJson<String?>(observaciones),
+      'fechaBaja': serializer.toJson<DateTime?>(fechaBaja),
+      'motivoBaja': serializer.toJson<String?>(motivoBaja),
+      'observacionesBaja': serializer.toJson<String?>(observacionesBaja),
       'nivelEstudios': serializer.toJson<String?>(nivelEstudios),
       'observacionesEscolaridad': serializer.toJson<String?>(
         observacionesEscolaridad,
@@ -32719,6 +32824,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     Value<String?> empresaId = const Value.absent(),
     Value<String?> sucursalId = const Value.absent(),
     Value<String?> observaciones = const Value.absent(),
+    Value<DateTime?> fechaBaja = const Value.absent(),
+    Value<String?> motivoBaja = const Value.absent(),
+    Value<String?> observacionesBaja = const Value.absent(),
     Value<String?> nivelEstudios = const Value.absent(),
     Value<String?> observacionesEscolaridad = const Value.absent(),
     int? aniosExperienciaSeguridad,
@@ -32784,6 +32892,12 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     sucursalId: sucursalId.present ? sucursalId.value : this.sucursalId,
     observaciones:
         observaciones.present ? observaciones.value : this.observaciones,
+    fechaBaja: fechaBaja.present ? fechaBaja.value : this.fechaBaja,
+    motivoBaja: motivoBaja.present ? motivoBaja.value : this.motivoBaja,
+    observacionesBaja:
+        observacionesBaja.present
+            ? observacionesBaja.value
+            : this.observacionesBaja,
     nivelEstudios:
         nivelEstudios.present ? nivelEstudios.value : this.nivelEstudios,
     observacionesEscolaridad:
@@ -32914,6 +33028,13 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           data.observaciones.present
               ? data.observaciones.value
               : this.observaciones,
+      fechaBaja: data.fechaBaja.present ? data.fechaBaja.value : this.fechaBaja,
+      motivoBaja:
+          data.motivoBaja.present ? data.motivoBaja.value : this.motivoBaja,
+      observacionesBaja:
+          data.observacionesBaja.present
+              ? data.observacionesBaja.value
+              : this.observacionesBaja,
       nivelEstudios:
           data.nivelEstudios.present
               ? data.nivelEstudios.value
@@ -33027,6 +33148,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           ..write('empresaId: $empresaId, ')
           ..write('sucursalId: $sucursalId, ')
           ..write('observaciones: $observaciones, ')
+          ..write('fechaBaja: $fechaBaja, ')
+          ..write('motivoBaja: $motivoBaja, ')
+          ..write('observacionesBaja: $observacionesBaja, ')
           ..write('nivelEstudios: $nivelEstudios, ')
           ..write('observacionesEscolaridad: $observacionesEscolaridad, ')
           ..write('aniosExperienciaSeguridad: $aniosExperienciaSeguridad, ')
@@ -33084,6 +33208,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     empresaId,
     sucursalId,
     observaciones,
+    fechaBaja,
+    motivoBaja,
+    observacionesBaja,
     nivelEstudios,
     observacionesEscolaridad,
     aniosExperienciaSeguridad,
@@ -33136,6 +33263,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           other.empresaId == this.empresaId &&
           other.sucursalId == this.sucursalId &&
           other.observaciones == this.observaciones &&
+          other.fechaBaja == this.fechaBaja &&
+          other.motivoBaja == this.motivoBaja &&
+          other.observacionesBaja == this.observacionesBaja &&
           other.nivelEstudios == this.nivelEstudios &&
           other.observacionesEscolaridad == this.observacionesEscolaridad &&
           other.aniosExperienciaSeguridad == this.aniosExperienciaSeguridad &&
@@ -33189,6 +33319,9 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
   final Value<String?> empresaId;
   final Value<String?> sucursalId;
   final Value<String?> observaciones;
+  final Value<DateTime?> fechaBaja;
+  final Value<String?> motivoBaja;
+  final Value<String?> observacionesBaja;
   final Value<String?> nivelEstudios;
   final Value<String?> observacionesEscolaridad;
   final Value<int> aniosExperienciaSeguridad;
@@ -33238,6 +33371,9 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.empresaId = const Value.absent(),
     this.sucursalId = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.fechaBaja = const Value.absent(),
+    this.motivoBaja = const Value.absent(),
+    this.observacionesBaja = const Value.absent(),
     this.nivelEstudios = const Value.absent(),
     this.observacionesEscolaridad = const Value.absent(),
     this.aniosExperienciaSeguridad = const Value.absent(),
@@ -33288,6 +33424,9 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.empresaId = const Value.absent(),
     this.sucursalId = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.fechaBaja = const Value.absent(),
+    this.motivoBaja = const Value.absent(),
+    this.observacionesBaja = const Value.absent(),
     this.nivelEstudios = const Value.absent(),
     this.observacionesEscolaridad = const Value.absent(),
     required int aniosExperienciaSeguridad,
@@ -33348,6 +33487,9 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Expression<String>? empresaId,
     Expression<String>? sucursalId,
     Expression<String>? observaciones,
+    Expression<DateTime>? fechaBaja,
+    Expression<String>? motivoBaja,
+    Expression<String>? observacionesBaja,
     Expression<String>? nivelEstudios,
     Expression<String>? observacionesEscolaridad,
     Expression<int>? aniosExperienciaSeguridad,
@@ -33401,6 +33543,9 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       if (empresaId != null) 'empresa_id': empresaId,
       if (sucursalId != null) 'sucursal_id': sucursalId,
       if (observaciones != null) 'observaciones': observaciones,
+      if (fechaBaja != null) 'fecha_baja': fechaBaja,
+      if (motivoBaja != null) 'motivo_baja': motivoBaja,
+      if (observacionesBaja != null) 'observaciones_baja': observacionesBaja,
       if (nivelEstudios != null) 'nivel_estudios': nivelEstudios,
       if (observacionesEscolaridad != null)
         'observaciones_escolaridad': observacionesEscolaridad,
@@ -33465,6 +33610,9 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Value<String?>? empresaId,
     Value<String?>? sucursalId,
     Value<String?>? observaciones,
+    Value<DateTime?>? fechaBaja,
+    Value<String?>? motivoBaja,
+    Value<String?>? observacionesBaja,
     Value<String?>? nivelEstudios,
     Value<String?>? observacionesEscolaridad,
     Value<int>? aniosExperienciaSeguridad,
@@ -33517,6 +33665,9 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       empresaId: empresaId ?? this.empresaId,
       sucursalId: sucursalId ?? this.sucursalId,
       observaciones: observaciones ?? this.observaciones,
+      fechaBaja: fechaBaja ?? this.fechaBaja,
+      motivoBaja: motivoBaja ?? this.motivoBaja,
+      observacionesBaja: observacionesBaja ?? this.observacionesBaja,
       nivelEstudios: nivelEstudios ?? this.nivelEstudios,
       observacionesEscolaridad:
           observacionesEscolaridad ?? this.observacionesEscolaridad,
@@ -33643,6 +33794,15 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     if (observaciones.present) {
       map['observaciones'] = Variable<String>(observaciones.value);
     }
+    if (fechaBaja.present) {
+      map['fecha_baja'] = Variable<DateTime>(fechaBaja.value);
+    }
+    if (motivoBaja.present) {
+      map['motivo_baja'] = Variable<String>(motivoBaja.value);
+    }
+    if (observacionesBaja.present) {
+      map['observaciones_baja'] = Variable<String>(observacionesBaja.value);
+    }
     if (nivelEstudios.present) {
       map['nivel_estudios'] = Variable<String>(nivelEstudios.value);
     }
@@ -33761,6 +33921,9 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
           ..write('empresaId: $empresaId, ')
           ..write('sucursalId: $sucursalId, ')
           ..write('observaciones: $observaciones, ')
+          ..write('fechaBaja: $fechaBaja, ')
+          ..write('motivoBaja: $motivoBaja, ')
+          ..write('observacionesBaja: $observacionesBaja, ')
           ..write('nivelEstudios: $nivelEstudios, ')
           ..write('observacionesEscolaridad: $observacionesEscolaridad, ')
           ..write('aniosExperienciaSeguridad: $aniosExperienciaSeguridad, ')
@@ -34374,6 +34537,449 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
           ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EmpleadoPeriodoLaboralTable extends EmpleadoPeriodoLaboral
+    with TableInfo<$EmpleadoPeriodoLaboralTable, EmpleadoPeriodoLaboralData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EmpleadoPeriodoLaboralTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empleado (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _fechaIngresoMeta = const VerificationMeta(
+    'fechaIngreso',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaIngreso = GeneratedColumn<DateTime>(
+    'fecha_ingreso',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaBajaMeta = const VerificationMeta(
+    'fechaBaja',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaBaja = GeneratedColumn<DateTime>(
+    'fecha_baja',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _motivoBajaMeta = const VerificationMeta(
+    'motivoBaja',
+  );
+  @override
+  late final GeneratedColumn<String> motivoBaja = GeneratedColumn<String>(
+    'motivo_baja',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _observacionesBajaMeta = const VerificationMeta(
+    'observacionesBaja',
+  );
+  @override
+  late final GeneratedColumn<String> observacionesBaja =
+      GeneratedColumn<String>(
+        'observaciones_baja',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    empleadoId,
+    fechaIngreso,
+    fechaBaja,
+    motivoBaja,
+    observacionesBaja,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'empleado_periodo_laboral';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EmpleadoPeriodoLaboralData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_empleadoIdMeta);
+    }
+    if (data.containsKey('fecha_ingreso')) {
+      context.handle(
+        _fechaIngresoMeta,
+        fechaIngreso.isAcceptableOrUnknown(
+          data['fecha_ingreso']!,
+          _fechaIngresoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaIngresoMeta);
+    }
+    if (data.containsKey('fecha_baja')) {
+      context.handle(
+        _fechaBajaMeta,
+        fechaBaja.isAcceptableOrUnknown(data['fecha_baja']!, _fechaBajaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaBajaMeta);
+    }
+    if (data.containsKey('motivo_baja')) {
+      context.handle(
+        _motivoBajaMeta,
+        motivoBaja.isAcceptableOrUnknown(data['motivo_baja']!, _motivoBajaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_motivoBajaMeta);
+    }
+    if (data.containsKey('observaciones_baja')) {
+      context.handle(
+        _observacionesBajaMeta,
+        observacionesBaja.isAcceptableOrUnknown(
+          data['observaciones_baja']!,
+          _observacionesBajaMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EmpleadoPeriodoLaboralData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EmpleadoPeriodoLaboralData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      empleadoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}empleado_id'],
+          )!,
+      fechaIngreso:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_ingreso'],
+          )!,
+      fechaBaja:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_baja'],
+          )!,
+      motivoBaja:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}motivo_baja'],
+          )!,
+      observacionesBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_baja'],
+      ),
+    );
+  }
+
+  @override
+  $EmpleadoPeriodoLaboralTable createAlias(String alias) {
+    return $EmpleadoPeriodoLaboralTable(attachedDatabase, alias);
+  }
+}
+
+class EmpleadoPeriodoLaboralData extends DataClass
+    implements Insertable<EmpleadoPeriodoLaboralData> {
+  final int id;
+  final String empleadoId;
+  final DateTime fechaIngreso;
+  final DateTime fechaBaja;
+  final String motivoBaja;
+  final String? observacionesBaja;
+  const EmpleadoPeriodoLaboralData({
+    required this.id,
+    required this.empleadoId,
+    required this.fechaIngreso,
+    required this.fechaBaja,
+    required this.motivoBaja,
+    this.observacionesBaja,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['empleado_id'] = Variable<String>(empleadoId);
+    map['fecha_ingreso'] = Variable<DateTime>(fechaIngreso);
+    map['fecha_baja'] = Variable<DateTime>(fechaBaja);
+    map['motivo_baja'] = Variable<String>(motivoBaja);
+    if (!nullToAbsent || observacionesBaja != null) {
+      map['observaciones_baja'] = Variable<String>(observacionesBaja);
+    }
+    return map;
+  }
+
+  EmpleadoPeriodoLaboralCompanion toCompanion(bool nullToAbsent) {
+    return EmpleadoPeriodoLaboralCompanion(
+      id: Value(id),
+      empleadoId: Value(empleadoId),
+      fechaIngreso: Value(fechaIngreso),
+      fechaBaja: Value(fechaBaja),
+      motivoBaja: Value(motivoBaja),
+      observacionesBaja:
+          observacionesBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesBaja),
+    );
+  }
+
+  factory EmpleadoPeriodoLaboralData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EmpleadoPeriodoLaboralData(
+      id: serializer.fromJson<int>(json['id']),
+      empleadoId: serializer.fromJson<String>(json['empleadoId']),
+      fechaIngreso: serializer.fromJson<DateTime>(json['fechaIngreso']),
+      fechaBaja: serializer.fromJson<DateTime>(json['fechaBaja']),
+      motivoBaja: serializer.fromJson<String>(json['motivoBaja']),
+      observacionesBaja: serializer.fromJson<String?>(
+        json['observacionesBaja'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'empleadoId': serializer.toJson<String>(empleadoId),
+      'fechaIngreso': serializer.toJson<DateTime>(fechaIngreso),
+      'fechaBaja': serializer.toJson<DateTime>(fechaBaja),
+      'motivoBaja': serializer.toJson<String>(motivoBaja),
+      'observacionesBaja': serializer.toJson<String?>(observacionesBaja),
+    };
+  }
+
+  EmpleadoPeriodoLaboralData copyWith({
+    int? id,
+    String? empleadoId,
+    DateTime? fechaIngreso,
+    DateTime? fechaBaja,
+    String? motivoBaja,
+    Value<String?> observacionesBaja = const Value.absent(),
+  }) => EmpleadoPeriodoLaboralData(
+    id: id ?? this.id,
+    empleadoId: empleadoId ?? this.empleadoId,
+    fechaIngreso: fechaIngreso ?? this.fechaIngreso,
+    fechaBaja: fechaBaja ?? this.fechaBaja,
+    motivoBaja: motivoBaja ?? this.motivoBaja,
+    observacionesBaja:
+        observacionesBaja.present
+            ? observacionesBaja.value
+            : this.observacionesBaja,
+  );
+  EmpleadoPeriodoLaboralData copyWithCompanion(
+    EmpleadoPeriodoLaboralCompanion data,
+  ) {
+    return EmpleadoPeriodoLaboralData(
+      id: data.id.present ? data.id.value : this.id,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
+      fechaIngreso:
+          data.fechaIngreso.present
+              ? data.fechaIngreso.value
+              : this.fechaIngreso,
+      fechaBaja: data.fechaBaja.present ? data.fechaBaja.value : this.fechaBaja,
+      motivoBaja:
+          data.motivoBaja.present ? data.motivoBaja.value : this.motivoBaja,
+      observacionesBaja:
+          data.observacionesBaja.present
+              ? data.observacionesBaja.value
+              : this.observacionesBaja,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpleadoPeriodoLaboralData(')
+          ..write('id: $id, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('fechaIngreso: $fechaIngreso, ')
+          ..write('fechaBaja: $fechaBaja, ')
+          ..write('motivoBaja: $motivoBaja, ')
+          ..write('observacionesBaja: $observacionesBaja')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    empleadoId,
+    fechaIngreso,
+    fechaBaja,
+    motivoBaja,
+    observacionesBaja,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EmpleadoPeriodoLaboralData &&
+          other.id == this.id &&
+          other.empleadoId == this.empleadoId &&
+          other.fechaIngreso == this.fechaIngreso &&
+          other.fechaBaja == this.fechaBaja &&
+          other.motivoBaja == this.motivoBaja &&
+          other.observacionesBaja == this.observacionesBaja);
+}
+
+class EmpleadoPeriodoLaboralCompanion
+    extends UpdateCompanion<EmpleadoPeriodoLaboralData> {
+  final Value<int> id;
+  final Value<String> empleadoId;
+  final Value<DateTime> fechaIngreso;
+  final Value<DateTime> fechaBaja;
+  final Value<String> motivoBaja;
+  final Value<String?> observacionesBaja;
+  const EmpleadoPeriodoLaboralCompanion({
+    this.id = const Value.absent(),
+    this.empleadoId = const Value.absent(),
+    this.fechaIngreso = const Value.absent(),
+    this.fechaBaja = const Value.absent(),
+    this.motivoBaja = const Value.absent(),
+    this.observacionesBaja = const Value.absent(),
+  });
+  EmpleadoPeriodoLaboralCompanion.insert({
+    this.id = const Value.absent(),
+    required String empleadoId,
+    required DateTime fechaIngreso,
+    required DateTime fechaBaja,
+    required String motivoBaja,
+    this.observacionesBaja = const Value.absent(),
+  }) : empleadoId = Value(empleadoId),
+       fechaIngreso = Value(fechaIngreso),
+       fechaBaja = Value(fechaBaja),
+       motivoBaja = Value(motivoBaja);
+  static Insertable<EmpleadoPeriodoLaboralData> custom({
+    Expression<int>? id,
+    Expression<String>? empleadoId,
+    Expression<DateTime>? fechaIngreso,
+    Expression<DateTime>? fechaBaja,
+    Expression<String>? motivoBaja,
+    Expression<String>? observacionesBaja,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (empleadoId != null) 'empleado_id': empleadoId,
+      if (fechaIngreso != null) 'fecha_ingreso': fechaIngreso,
+      if (fechaBaja != null) 'fecha_baja': fechaBaja,
+      if (motivoBaja != null) 'motivo_baja': motivoBaja,
+      if (observacionesBaja != null) 'observaciones_baja': observacionesBaja,
+    });
+  }
+
+  EmpleadoPeriodoLaboralCompanion copyWith({
+    Value<int>? id,
+    Value<String>? empleadoId,
+    Value<DateTime>? fechaIngreso,
+    Value<DateTime>? fechaBaja,
+    Value<String>? motivoBaja,
+    Value<String?>? observacionesBaja,
+  }) {
+    return EmpleadoPeriodoLaboralCompanion(
+      id: id ?? this.id,
+      empleadoId: empleadoId ?? this.empleadoId,
+      fechaIngreso: fechaIngreso ?? this.fechaIngreso,
+      fechaBaja: fechaBaja ?? this.fechaBaja,
+      motivoBaja: motivoBaja ?? this.motivoBaja,
+      observacionesBaja: observacionesBaja ?? this.observacionesBaja,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
+    }
+    if (fechaIngreso.present) {
+      map['fecha_ingreso'] = Variable<DateTime>(fechaIngreso.value);
+    }
+    if (fechaBaja.present) {
+      map['fecha_baja'] = Variable<DateTime>(fechaBaja.value);
+    }
+    if (motivoBaja.present) {
+      map['motivo_baja'] = Variable<String>(motivoBaja.value);
+    }
+    if (observacionesBaja.present) {
+      map['observaciones_baja'] = Variable<String>(observacionesBaja.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmpleadoPeriodoLaboralCompanion(')
+          ..write('id: $id, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('fechaIngreso: $fechaIngreso, ')
+          ..write('fechaBaja: $fechaBaja, ')
+          ..write('motivoBaja: $motivoBaja, ')
+          ..write('observacionesBaja: $observacionesBaja')
           ..write(')'))
         .toString();
   }
@@ -36384,6 +36990,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $EgresoEventoTable egresoEvento = $EgresoEventoTable(this);
   late final $EmpleadoTable empleado = $EmpleadoTable(this);
   late final $EmpleadoEventoTable empleadoEvento = $EmpleadoEventoTable(this);
+  late final $EmpleadoPeriodoLaboralTable empleadoPeriodoLaboral =
+      $EmpleadoPeriodoLaboralTable(this);
   late final $EmpresaAttachmentTable empresaAttachment =
       $EmpresaAttachmentTable(this);
   late final $ClienteAttachmentTable clienteAttachment =
@@ -36469,6 +37077,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     egresoEvento,
     empleado,
     empleadoEvento,
+    empleadoPeriodoLaboral,
     empresaAttachment,
     clienteAttachment,
     documentoPorEmitirAttachment,
@@ -36615,6 +37224,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('empleado_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'empleado',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('empleado_periodo_laboral', kind: UpdateKind.delete),
+      ],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -65830,6 +66448,9 @@ typedef $$EmpleadoTableCreateCompanionBuilder =
       Value<String?> empresaId,
       Value<String?> sucursalId,
       Value<String?> observaciones,
+      Value<DateTime?> fechaBaja,
+      Value<String?> motivoBaja,
+      Value<String?> observacionesBaja,
       Value<String?> nivelEstudios,
       Value<String?> observacionesEscolaridad,
       required int aniosExperienciaSeguridad,
@@ -65881,6 +66502,9 @@ typedef $$EmpleadoTableUpdateCompanionBuilder =
       Value<String?> empresaId,
       Value<String?> sucursalId,
       Value<String?> observaciones,
+      Value<DateTime?> fechaBaja,
+      Value<String?> motivoBaja,
+      Value<String?> observacionesBaja,
       Value<String?> nivelEstudios,
       Value<String?> observacionesEscolaridad,
       Value<int> aniosExperienciaSeguridad,
@@ -66002,6 +66626,34 @@ final class $$EmpleadoTableReferences
     ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_empleadoEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $EmpleadoPeriodoLaboralTable,
+    List<EmpleadoPeriodoLaboralData>
+  >
+  _empleadoPeriodoLaboralRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.empleadoPeriodoLaboral,
+        aliasName: $_aliasNameGenerator(
+          db.empleado.id,
+          db.empleadoPeriodoLaboral.empleadoId,
+        ),
+      );
+
+  $$EmpleadoPeriodoLaboralTableProcessedTableManager
+  get empleadoPeriodoLaboralRefs {
+    final manager = $$EmpleadoPeriodoLaboralTableTableManager(
+      $_db,
+      $_db.empleadoPeriodoLaboral,
+    ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _empleadoPeriodoLaboralRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -66156,6 +66808,21 @@ class $$EmpleadoTableFilterComposer
 
   ColumnFilters<String> get observaciones => $composableBuilder(
     column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaBaja => $composableBuilder(
+    column: $table.fechaBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -66377,6 +67044,32 @@ class $$EmpleadoTableFilterComposer
     return f(composer);
   }
 
+  Expression<bool> empleadoPeriodoLaboralRefs(
+    Expression<bool> Function($$EmpleadoPeriodoLaboralTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoPeriodoLaboralTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.empleadoPeriodoLaboral,
+          getReferencedColumn: (t) => t.empleadoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EmpleadoPeriodoLaboralTableFilterComposer(
+                $db: $db,
+                $table: $db.empleadoPeriodoLaboral,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<bool> empleadoAttachmentRefs(
     Expression<bool> Function($$EmpleadoAttachmentTableFilterComposer f) f,
   ) {
@@ -66524,6 +67217,21 @@ class $$EmpleadoTableOrderingComposer
 
   ColumnOrderings<String> get observaciones => $composableBuilder(
     column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaBaja => $composableBuilder(
+    column: $table.fechaBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -66828,6 +67536,19 @@ class $$EmpleadoTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<DateTime> get fechaBaja =>
+      $composableBuilder(column: $table.fechaBaja, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get nivelEstudios => $composableBuilder(
     column: $table.nivelEstudios,
     builder: (column) => column,
@@ -67049,6 +67770,32 @@ class $$EmpleadoTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> empleadoPeriodoLaboralRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoPeriodoLaboralTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoPeriodoLaboralTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.empleadoPeriodoLaboral,
+          getReferencedColumn: (t) => t.empleadoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EmpleadoPeriodoLaboralTableAnnotationComposer(
+                $db: $db,
+                $table: $db.empleadoPeriodoLaboral,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> empleadoAttachmentRefs<T extends Object>(
     Expression<T> Function($$EmpleadoAttachmentTableAnnotationComposer a) f,
   ) {
@@ -67095,6 +67842,7 @@ class $$EmpleadoTableTableManager
             bool empresaId,
             bool sucursalId,
             bool empleadoEventoRefs,
+            bool empleadoPeriodoLaboralRefs,
             bool empleadoAttachmentRefs,
           })
         > {
@@ -67138,6 +67886,9 @@ class $$EmpleadoTableTableManager
                 Value<String?> empresaId = const Value.absent(),
                 Value<String?> sucursalId = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<DateTime?> fechaBaja = const Value.absent(),
+                Value<String?> motivoBaja = const Value.absent(),
+                Value<String?> observacionesBaja = const Value.absent(),
                 Value<String?> nivelEstudios = const Value.absent(),
                 Value<String?> observacionesEscolaridad = const Value.absent(),
                 Value<int> aniosExperienciaSeguridad = const Value.absent(),
@@ -67191,6 +67942,9 @@ class $$EmpleadoTableTableManager
                 empresaId: empresaId,
                 sucursalId: sucursalId,
                 observaciones: observaciones,
+                fechaBaja: fechaBaja,
+                motivoBaja: motivoBaja,
+                observacionesBaja: observacionesBaja,
                 nivelEstudios: nivelEstudios,
                 observacionesEscolaridad: observacionesEscolaridad,
                 aniosExperienciaSeguridad: aniosExperienciaSeguridad,
@@ -67243,6 +67997,9 @@ class $$EmpleadoTableTableManager
                 Value<String?> empresaId = const Value.absent(),
                 Value<String?> sucursalId = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<DateTime?> fechaBaja = const Value.absent(),
+                Value<String?> motivoBaja = const Value.absent(),
+                Value<String?> observacionesBaja = const Value.absent(),
                 Value<String?> nivelEstudios = const Value.absent(),
                 Value<String?> observacionesEscolaridad = const Value.absent(),
                 required int aniosExperienciaSeguridad,
@@ -67296,6 +68053,9 @@ class $$EmpleadoTableTableManager
                 empresaId: empresaId,
                 sucursalId: sucursalId,
                 observaciones: observaciones,
+                fechaBaja: fechaBaja,
+                motivoBaja: motivoBaja,
+                observacionesBaja: observacionesBaja,
                 nivelEstudios: nivelEstudios,
                 observacionesEscolaridad: observacionesEscolaridad,
                 aniosExperienciaSeguridad: aniosExperienciaSeguridad,
@@ -67335,12 +68095,14 @@ class $$EmpleadoTableTableManager
             empresaId = false,
             sucursalId = false,
             empleadoEventoRefs = false,
+            empleadoPeriodoLaboralRefs = false,
             empleadoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (empleadoEventoRefs) db.empleadoEvento,
+                if (empleadoPeriodoLaboralRefs) db.empleadoPeriodoLaboral,
                 if (empleadoAttachmentRefs) db.empleadoAttachment,
               ],
               addJoins: <
@@ -67439,6 +68201,28 @@ class $$EmpleadoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (empleadoPeriodoLaboralRefs)
+                    await $_getPrefetchedData<
+                      EmpleadoData,
+                      $EmpleadoTable,
+                      EmpleadoPeriodoLaboralData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpleadoTableReferences
+                          ._empleadoPeriodoLaboralRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoPeriodoLaboralRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                   if (empleadoAttachmentRefs)
                     await $_getPrefetchedData<
                       EmpleadoData,
@@ -67487,6 +68271,7 @@ typedef $$EmpleadoTableProcessedTableManager =
         bool empresaId,
         bool sucursalId,
         bool empleadoEventoRefs,
+        bool empleadoPeriodoLaboralRefs,
         bool empleadoAttachmentRefs,
       })
     >;
@@ -67904,6 +68689,370 @@ typedef $$EmpleadoEventoTableProcessedTableManager =
       $$EmpleadoEventoTableUpdateCompanionBuilder,
       (EmpleadoEventoData, $$EmpleadoEventoTableReferences),
       EmpleadoEventoData,
+      PrefetchHooks Function({bool empleadoId})
+    >;
+typedef $$EmpleadoPeriodoLaboralTableCreateCompanionBuilder =
+    EmpleadoPeriodoLaboralCompanion Function({
+      Value<int> id,
+      required String empleadoId,
+      required DateTime fechaIngreso,
+      required DateTime fechaBaja,
+      required String motivoBaja,
+      Value<String?> observacionesBaja,
+    });
+typedef $$EmpleadoPeriodoLaboralTableUpdateCompanionBuilder =
+    EmpleadoPeriodoLaboralCompanion Function({
+      Value<int> id,
+      Value<String> empleadoId,
+      Value<DateTime> fechaIngreso,
+      Value<DateTime> fechaBaja,
+      Value<String> motivoBaja,
+      Value<String?> observacionesBaja,
+    });
+
+final class $$EmpleadoPeriodoLaboralTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $EmpleadoPeriodoLaboralTable,
+          EmpleadoPeriodoLaboralData
+        > {
+  $$EmpleadoPeriodoLaboralTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $EmpleadoTable _empleadoIdTable(_$AppDatabase db) =>
+      db.empleado.createAlias(
+        $_aliasNameGenerator(
+          db.empleadoPeriodoLaboral.empleadoId,
+          db.empleado.id,
+        ),
+      );
+
+  $$EmpleadoTableProcessedTableManager get empleadoId {
+    final $_column = $_itemColumn<String>('empleado_id')!;
+
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$EmpleadoPeriodoLaboralTableFilterComposer
+    extends Composer<_$AppDatabase, $EmpleadoPeriodoLaboralTable> {
+  $$EmpleadoPeriodoLaboralTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaIngreso => $composableBuilder(
+    column: $table.fechaIngreso,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaBaja => $composableBuilder(
+    column: $table.fechaBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$EmpleadoTableFilterComposer get empleadoId {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoPeriodoLaboralTableOrderingComposer
+    extends Composer<_$AppDatabase, $EmpleadoPeriodoLaboralTable> {
+  $$EmpleadoPeriodoLaboralTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaIngreso => $composableBuilder(
+    column: $table.fechaIngreso,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaBaja => $composableBuilder(
+    column: $table.fechaBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$EmpleadoTableOrderingComposer get empleadoId {
+    final $$EmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoPeriodoLaboralTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EmpleadoPeriodoLaboralTable> {
+  $$EmpleadoPeriodoLaboralTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaIngreso => $composableBuilder(
+    column: $table.fechaIngreso,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaBaja =>
+      $composableBuilder(column: $table.fechaBaja, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => column,
+  );
+
+  $$EmpleadoTableAnnotationComposer get empleadoId {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EmpleadoPeriodoLaboralTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EmpleadoPeriodoLaboralTable,
+          EmpleadoPeriodoLaboralData,
+          $$EmpleadoPeriodoLaboralTableFilterComposer,
+          $$EmpleadoPeriodoLaboralTableOrderingComposer,
+          $$EmpleadoPeriodoLaboralTableAnnotationComposer,
+          $$EmpleadoPeriodoLaboralTableCreateCompanionBuilder,
+          $$EmpleadoPeriodoLaboralTableUpdateCompanionBuilder,
+          (EmpleadoPeriodoLaboralData, $$EmpleadoPeriodoLaboralTableReferences),
+          EmpleadoPeriodoLaboralData,
+          PrefetchHooks Function({bool empleadoId})
+        > {
+  $$EmpleadoPeriodoLaboralTableTableManager(
+    _$AppDatabase db,
+    $EmpleadoPeriodoLaboralTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$EmpleadoPeriodoLaboralTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$EmpleadoPeriodoLaboralTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$EmpleadoPeriodoLaboralTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> empleadoId = const Value.absent(),
+                Value<DateTime> fechaIngreso = const Value.absent(),
+                Value<DateTime> fechaBaja = const Value.absent(),
+                Value<String> motivoBaja = const Value.absent(),
+                Value<String?> observacionesBaja = const Value.absent(),
+              }) => EmpleadoPeriodoLaboralCompanion(
+                id: id,
+                empleadoId: empleadoId,
+                fechaIngreso: fechaIngreso,
+                fechaBaja: fechaBaja,
+                motivoBaja: motivoBaja,
+                observacionesBaja: observacionesBaja,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String empleadoId,
+                required DateTime fechaIngreso,
+                required DateTime fechaBaja,
+                required String motivoBaja,
+                Value<String?> observacionesBaja = const Value.absent(),
+              }) => EmpleadoPeriodoLaboralCompanion.insert(
+                id: id,
+                empleadoId: empleadoId,
+                fechaIngreso: fechaIngreso,
+                fechaBaja: fechaBaja,
+                motivoBaja: motivoBaja,
+                observacionesBaja: observacionesBaja,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EmpleadoPeriodoLaboralTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({empleadoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (empleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empleadoId,
+                            referencedTable:
+                                $$EmpleadoPeriodoLaboralTableReferences
+                                    ._empleadoIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoPeriodoLaboralTableReferences
+                                    ._empleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EmpleadoPeriodoLaboralTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EmpleadoPeriodoLaboralTable,
+      EmpleadoPeriodoLaboralData,
+      $$EmpleadoPeriodoLaboralTableFilterComposer,
+      $$EmpleadoPeriodoLaboralTableOrderingComposer,
+      $$EmpleadoPeriodoLaboralTableAnnotationComposer,
+      $$EmpleadoPeriodoLaboralTableCreateCompanionBuilder,
+      $$EmpleadoPeriodoLaboralTableUpdateCompanionBuilder,
+      (EmpleadoPeriodoLaboralData, $$EmpleadoPeriodoLaboralTableReferences),
+      EmpleadoPeriodoLaboralData,
       PrefetchHooks Function({bool empleadoId})
     >;
 typedef $$EmpresaAttachmentTableCreateCompanionBuilder =
@@ -71079,6 +72228,11 @@ class $AppDatabaseManager {
       $$EmpleadoTableTableManager(_db, _db.empleado);
   $$EmpleadoEventoTableTableManager get empleadoEvento =>
       $$EmpleadoEventoTableTableManager(_db, _db.empleadoEvento);
+  $$EmpleadoPeriodoLaboralTableTableManager get empleadoPeriodoLaboral =>
+      $$EmpleadoPeriodoLaboralTableTableManager(
+        _db,
+        _db.empleadoPeriodoLaboral,
+      );
   $$EmpresaAttachmentTableTableManager get empresaAttachment =>
       $$EmpresaAttachmentTableTableManager(_db, _db.empresaAttachment);
   $$ClienteAttachmentTableTableManager get clienteAttachment =>
