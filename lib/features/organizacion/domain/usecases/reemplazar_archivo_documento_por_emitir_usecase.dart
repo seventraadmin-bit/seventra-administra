@@ -78,7 +78,7 @@ class ReemplazarArchivoDocumentoPorEmitirUseCase {
 
     try {
       final guardado = await _storage.guardar(
-        documentoPorEmitirId: documentoPorEmitirId,
+        ownerId: documentoPorEmitirId,
         categoria: categoria.name,
         sourceFilePath: sourceFilePath,
         originalFileName: originalFileName,

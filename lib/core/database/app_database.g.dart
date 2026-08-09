@@ -5793,6 +5793,15 @@ class $AttachmentTable extends Attachment
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _pagoIdMeta = const VerificationMeta('pagoId');
+  @override
+  late final GeneratedColumn<String> pagoId = GeneratedColumn<String>(
+    'pago_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _categoriaMeta = const VerificationMeta(
     'categoria',
   );
@@ -5894,6 +5903,7 @@ class $AttachmentTable extends Attachment
     empresaId,
     clienteId,
     documentoPorEmitirId,
+    pagoId,
     categoria,
     originalFileName,
     storedFileName,
@@ -5940,6 +5950,12 @@ class $AttachmentTable extends Attachment
           data['documento_por_emitir_id']!,
           _documentoPorEmitirIdMeta,
         ),
+      );
+    }
+    if (data.containsKey('pago_id')) {
+      context.handle(
+        _pagoIdMeta,
+        pagoId.isAcceptableOrUnknown(data['pago_id']!, _pagoIdMeta),
       );
     }
     if (data.containsKey('categoria')) {
@@ -6038,6 +6054,10 @@ class $AttachmentTable extends Attachment
         DriftSqlType.string,
         data['${effectivePrefix}documento_por_emitir_id'],
       ),
+      pagoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pago_id'],
+      ),
       categoria: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}categoria'],
@@ -6096,8 +6116,13 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   final String? clienteId;
   final String? documentoPorEmitirId;
 
+  /// Comprobante de pago (Etapa 4J.2) — un Pago puede tener varios
+  /// comprobantes adjuntos (PDF/XML/JPG/PNG), mismo mecanismo que
+  /// cualquier otro adjunto, sin campo dedicado dentro de `Pago`.
+  final String? pagoId;
+
   /// Solo aplica cuando `documentoPorEmitirId` no es nulo — `null` para
-  /// adjuntos de Empresa/Cliente.
+  /// adjuntos de Empresa/Cliente/Pago (sin categorías propias todavía).
   final String? categoria;
   final String originalFileName;
   final String storedFileName;
@@ -6112,6 +6137,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     this.empresaId,
     this.clienteId,
     this.documentoPorEmitirId,
+    this.pagoId,
     this.categoria,
     required this.originalFileName,
     required this.storedFileName,
@@ -6134,6 +6160,9 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     }
     if (!nullToAbsent || documentoPorEmitirId != null) {
       map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    }
+    if (!nullToAbsent || pagoId != null) {
+      map['pago_id'] = Variable<String>(pagoId);
     }
     if (!nullToAbsent || categoria != null) {
       map['categoria'] = Variable<String>(categoria);
@@ -6166,6 +6195,8 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           documentoPorEmitirId == null && nullToAbsent
               ? const Value.absent()
               : Value(documentoPorEmitirId),
+      pagoId:
+          pagoId == null && nullToAbsent ? const Value.absent() : Value(pagoId),
       categoria:
           categoria == null && nullToAbsent
               ? const Value.absent()
@@ -6193,6 +6224,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       documentoPorEmitirId: serializer.fromJson<String?>(
         json['documentoPorEmitirId'],
       ),
+      pagoId: serializer.fromJson<String?>(json['pagoId']),
       categoria: serializer.fromJson<String?>(json['categoria']),
       originalFileName: serializer.fromJson<String>(json['originalFileName']),
       storedFileName: serializer.fromJson<String>(json['storedFileName']),
@@ -6212,6 +6244,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       'empresaId': serializer.toJson<String?>(empresaId),
       'clienteId': serializer.toJson<String?>(clienteId),
       'documentoPorEmitirId': serializer.toJson<String?>(documentoPorEmitirId),
+      'pagoId': serializer.toJson<String?>(pagoId),
       'categoria': serializer.toJson<String?>(categoria),
       'originalFileName': serializer.toJson<String>(originalFileName),
       'storedFileName': serializer.toJson<String>(storedFileName),
@@ -6229,6 +6262,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     Value<String?> empresaId = const Value.absent(),
     Value<String?> clienteId = const Value.absent(),
     Value<String?> documentoPorEmitirId = const Value.absent(),
+    Value<String?> pagoId = const Value.absent(),
     Value<String?> categoria = const Value.absent(),
     String? originalFileName,
     String? storedFileName,
@@ -6246,6 +6280,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
         documentoPorEmitirId.present
             ? documentoPorEmitirId.value
             : this.documentoPorEmitirId,
+    pagoId: pagoId.present ? pagoId.value : this.pagoId,
     categoria: categoria.present ? categoria.value : this.categoria,
     originalFileName: originalFileName ?? this.originalFileName,
     storedFileName: storedFileName ?? this.storedFileName,
@@ -6265,6 +6300,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           data.documentoPorEmitirId.present
               ? data.documentoPorEmitirId.value
               : this.documentoPorEmitirId,
+      pagoId: data.pagoId.present ? data.pagoId.value : this.pagoId,
       categoria: data.categoria.present ? data.categoria.value : this.categoria,
       originalFileName:
           data.originalFileName.present
@@ -6290,6 +6326,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           ..write('empresaId: $empresaId, ')
           ..write('clienteId: $clienteId, ')
           ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('pagoId: $pagoId, ')
           ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
@@ -6309,6 +6346,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     empresaId,
     clienteId,
     documentoPorEmitirId,
+    pagoId,
     categoria,
     originalFileName,
     storedFileName,
@@ -6327,6 +6365,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           other.empresaId == this.empresaId &&
           other.clienteId == this.clienteId &&
           other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.pagoId == this.pagoId &&
           other.categoria == this.categoria &&
           other.originalFileName == this.originalFileName &&
           other.storedFileName == this.storedFileName &&
@@ -6343,6 +6382,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   final Value<String?> empresaId;
   final Value<String?> clienteId;
   final Value<String?> documentoPorEmitirId;
+  final Value<String?> pagoId;
   final Value<String?> categoria;
   final Value<String> originalFileName;
   final Value<String> storedFileName;
@@ -6358,6 +6398,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     this.empresaId = const Value.absent(),
     this.clienteId = const Value.absent(),
     this.documentoPorEmitirId = const Value.absent(),
+    this.pagoId = const Value.absent(),
     this.categoria = const Value.absent(),
     this.originalFileName = const Value.absent(),
     this.storedFileName = const Value.absent(),
@@ -6374,6 +6415,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     this.empresaId = const Value.absent(),
     this.clienteId = const Value.absent(),
     this.documentoPorEmitirId = const Value.absent(),
+    this.pagoId = const Value.absent(),
     this.categoria = const Value.absent(),
     required String originalFileName,
     required String storedFileName,
@@ -6395,6 +6437,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     Expression<String>? empresaId,
     Expression<String>? clienteId,
     Expression<String>? documentoPorEmitirId,
+    Expression<String>? pagoId,
     Expression<String>? categoria,
     Expression<String>? originalFileName,
     Expression<String>? storedFileName,
@@ -6412,6 +6455,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
       if (clienteId != null) 'cliente_id': clienteId,
       if (documentoPorEmitirId != null)
         'documento_por_emitir_id': documentoPorEmitirId,
+      if (pagoId != null) 'pago_id': pagoId,
       if (categoria != null) 'categoria': categoria,
       if (originalFileName != null) 'original_file_name': originalFileName,
       if (storedFileName != null) 'stored_file_name': storedFileName,
@@ -6430,6 +6474,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     Value<String?>? empresaId,
     Value<String?>? clienteId,
     Value<String?>? documentoPorEmitirId,
+    Value<String?>? pagoId,
     Value<String?>? categoria,
     Value<String>? originalFileName,
     Value<String>? storedFileName,
@@ -6446,6 +6491,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
       empresaId: empresaId ?? this.empresaId,
       clienteId: clienteId ?? this.clienteId,
       documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      pagoId: pagoId ?? this.pagoId,
       categoria: categoria ?? this.categoria,
       originalFileName: originalFileName ?? this.originalFileName,
       storedFileName: storedFileName ?? this.storedFileName,
@@ -6475,6 +6521,9 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
       map['documento_por_emitir_id'] = Variable<String>(
         documentoPorEmitirId.value,
       );
+    }
+    if (pagoId.present) {
+      map['pago_id'] = Variable<String>(pagoId.value);
     }
     if (categoria.present) {
       map['categoria'] = Variable<String>(categoria.value);
@@ -6516,6 +6565,7 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
           ..write('empresaId: $empresaId, ')
           ..write('clienteId: $clienteId, ')
           ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('pagoId: $pagoId, ')
           ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
@@ -23571,6 +23621,2204 @@ class CuentaPorCobrarEventoCompanion
   }
 }
 
+class $PagoTable extends Pago with TableInfo<$PagoTable, PagoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PagoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _folioPagoMeta = const VerificationMeta(
+    'folioPago',
+  );
+  @override
+  late final GeneratedColumn<String> folioPago = GeneratedColumn<String>(
+    'folio_pago',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _clienteIdMeta = const VerificationMeta(
+    'clienteId',
+  );
+  @override
+  late final GeneratedColumn<String> clienteId = GeneratedColumn<String>(
+    'cliente_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cliente (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _montoTotalMeta = const VerificationMeta(
+    'montoTotal',
+  );
+  @override
+  late final GeneratedColumn<int> montoTotal = GeneratedColumn<int>(
+    'monto_total',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _montoAplicadoMeta = const VerificationMeta(
+    'montoAplicado',
+  );
+  @override
+  late final GeneratedColumn<int> montoAplicado = GeneratedColumn<int>(
+    'monto_aplicado',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _fechaPagoMeta = const VerificationMeta(
+    'fechaPago',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaPago = GeneratedColumn<DateTime>(
+    'fecha_pago',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formaPagoMeta = const VerificationMeta(
+    'formaPago',
+  );
+  @override
+  late final GeneratedColumn<String> formaPago = GeneratedColumn<String>(
+    'forma_pago',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _referenciaMeta = const VerificationMeta(
+    'referencia',
+  );
+  @override
+  late final GeneratedColumn<String> referencia = GeneratedColumn<String>(
+    'referencia',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bancoOrigenMeta = const VerificationMeta(
+    'bancoOrigen',
+  );
+  @override
+  late final GeneratedColumn<String> bancoOrigen = GeneratedColumn<String>(
+    'banco_origen',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cuentaBancariaDestinoMeta =
+      const VerificationMeta('cuentaBancariaDestino');
+  @override
+  late final GeneratedColumn<String> cuentaBancariaDestino =
+      GeneratedColumn<String>(
+        'cuenta_bancaria_destino',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('registrado'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folioPago,
+    clienteId,
+    montoTotal,
+    montoAplicado,
+    fechaPago,
+    formaPago,
+    referencia,
+    bancoOrigen,
+    cuentaBancariaDestino,
+    observaciones,
+    estatus,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pago';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PagoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio_pago')) {
+      context.handle(
+        _folioPagoMeta,
+        folioPago.isAcceptableOrUnknown(data['folio_pago']!, _folioPagoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folioPagoMeta);
+    }
+    if (data.containsKey('cliente_id')) {
+      context.handle(
+        _clienteIdMeta,
+        clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_clienteIdMeta);
+    }
+    if (data.containsKey('monto_total')) {
+      context.handle(
+        _montoTotalMeta,
+        montoTotal.isAcceptableOrUnknown(data['monto_total']!, _montoTotalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_montoTotalMeta);
+    }
+    if (data.containsKey('monto_aplicado')) {
+      context.handle(
+        _montoAplicadoMeta,
+        montoAplicado.isAcceptableOrUnknown(
+          data['monto_aplicado']!,
+          _montoAplicadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_pago')) {
+      context.handle(
+        _fechaPagoMeta,
+        fechaPago.isAcceptableOrUnknown(data['fecha_pago']!, _fechaPagoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaPagoMeta);
+    }
+    if (data.containsKey('forma_pago')) {
+      context.handle(
+        _formaPagoMeta,
+        formaPago.isAcceptableOrUnknown(data['forma_pago']!, _formaPagoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_formaPagoMeta);
+    }
+    if (data.containsKey('referencia')) {
+      context.handle(
+        _referenciaMeta,
+        referencia.isAcceptableOrUnknown(data['referencia']!, _referenciaMeta),
+      );
+    }
+    if (data.containsKey('banco_origen')) {
+      context.handle(
+        _bancoOrigenMeta,
+        bancoOrigen.isAcceptableOrUnknown(
+          data['banco_origen']!,
+          _bancoOrigenMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cuenta_bancaria_destino')) {
+      context.handle(
+        _cuentaBancariaDestinoMeta,
+        cuentaBancariaDestino.isAcceptableOrUnknown(
+          data['cuenta_bancaria_destino']!,
+          _cuentaBancariaDestinoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PagoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PagoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      folioPago:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}folio_pago'],
+          )!,
+      clienteId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}cliente_id'],
+          )!,
+      montoTotal:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}monto_total'],
+          )!,
+      montoAplicado:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}monto_aplicado'],
+          )!,
+      fechaPago:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_pago'],
+          )!,
+      formaPago:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}forma_pago'],
+          )!,
+      referencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}referencia'],
+      ),
+      bancoOrigen: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}banco_origen'],
+      ),
+      cuentaBancariaDestino: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cuenta_bancaria_destino'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+    );
+  }
+
+  @override
+  $PagoTable createAlias(String alias) {
+    return $PagoTable(attachedDatabase, alias);
+  }
+}
+
+class PagoData extends DataClass implements Insertable<PagoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+
+  /// Identificador visible (`PAG-000001`, vía `CodigoSecuencia`) —
+  /// nunca capturado por el usuario (Resolución 2 de Marlon: sirve
+  /// para referirse a "el pago que liquidó estas cuatro cuentas" sin
+  /// usar el UUID interno).
+  final String folioPago;
+  final String clienteId;
+  final int montoTotal;
+
+  /// Denormalizado, mantenido transaccionalmente por
+  /// `AplicarPagoACuentaUseCase`/`CancelarAplicacionPagoUseCase` —
+  /// mismo criterio que `CuentaPorCobrar.saldoPendiente`.
+  /// `montoTotal - montoAplicado` (el dinero sin aplicar) se deriva
+  /// donde se necesite, nunca se guarda una tercera columna redundante.
+  final int montoAplicado;
+  final DateTime fechaPago;
+  final String formaPago;
+  final String? referencia;
+
+  /// Texto libre (Resolución 3 de Marlon) — el administrativo suele
+  /// recordar "vino de Banorte" aunque no tenga el comprobante a la
+  /// mano; sin catálogo de Bancos todavía.
+  final String? bancoOrigen;
+
+  /// Texto libre, mismo criterio ya usado por
+  /// `ConfiguracionCobroVigencia.cuentaBancaria` — sin catálogo de
+  /// Bancos todavía.
+  final String? cuentaBancariaDestino;
+  final String? observaciones;
+  final String estatus;
+  const PagoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.folioPago,
+    required this.clienteId,
+    required this.montoTotal,
+    required this.montoAplicado,
+    required this.fechaPago,
+    required this.formaPago,
+    this.referencia,
+    this.bancoOrigen,
+    this.cuentaBancariaDestino,
+    this.observaciones,
+    required this.estatus,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['folio_pago'] = Variable<String>(folioPago);
+    map['cliente_id'] = Variable<String>(clienteId);
+    map['monto_total'] = Variable<int>(montoTotal);
+    map['monto_aplicado'] = Variable<int>(montoAplicado);
+    map['fecha_pago'] = Variable<DateTime>(fechaPago);
+    map['forma_pago'] = Variable<String>(formaPago);
+    if (!nullToAbsent || referencia != null) {
+      map['referencia'] = Variable<String>(referencia);
+    }
+    if (!nullToAbsent || bancoOrigen != null) {
+      map['banco_origen'] = Variable<String>(bancoOrigen);
+    }
+    if (!nullToAbsent || cuentaBancariaDestino != null) {
+      map['cuenta_bancaria_destino'] = Variable<String>(cuentaBancariaDestino);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    map['estatus'] = Variable<String>(estatus);
+    return map;
+  }
+
+  PagoCompanion toCompanion(bool nullToAbsent) {
+    return PagoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      folioPago: Value(folioPago),
+      clienteId: Value(clienteId),
+      montoTotal: Value(montoTotal),
+      montoAplicado: Value(montoAplicado),
+      fechaPago: Value(fechaPago),
+      formaPago: Value(formaPago),
+      referencia:
+          referencia == null && nullToAbsent
+              ? const Value.absent()
+              : Value(referencia),
+      bancoOrigen:
+          bancoOrigen == null && nullToAbsent
+              ? const Value.absent()
+              : Value(bancoOrigen),
+      cuentaBancariaDestino:
+          cuentaBancariaDestino == null && nullToAbsent
+              ? const Value.absent()
+              : Value(cuentaBancariaDestino),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      estatus: Value(estatus),
+    );
+  }
+
+  factory PagoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PagoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      folioPago: serializer.fromJson<String>(json['folioPago']),
+      clienteId: serializer.fromJson<String>(json['clienteId']),
+      montoTotal: serializer.fromJson<int>(json['montoTotal']),
+      montoAplicado: serializer.fromJson<int>(json['montoAplicado']),
+      fechaPago: serializer.fromJson<DateTime>(json['fechaPago']),
+      formaPago: serializer.fromJson<String>(json['formaPago']),
+      referencia: serializer.fromJson<String?>(json['referencia']),
+      bancoOrigen: serializer.fromJson<String?>(json['bancoOrigen']),
+      cuentaBancariaDestino: serializer.fromJson<String?>(
+        json['cuentaBancariaDestino'],
+      ),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'folioPago': serializer.toJson<String>(folioPago),
+      'clienteId': serializer.toJson<String>(clienteId),
+      'montoTotal': serializer.toJson<int>(montoTotal),
+      'montoAplicado': serializer.toJson<int>(montoAplicado),
+      'fechaPago': serializer.toJson<DateTime>(fechaPago),
+      'formaPago': serializer.toJson<String>(formaPago),
+      'referencia': serializer.toJson<String?>(referencia),
+      'bancoOrigen': serializer.toJson<String?>(bancoOrigen),
+      'cuentaBancariaDestino': serializer.toJson<String?>(
+        cuentaBancariaDestino,
+      ),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'estatus': serializer.toJson<String>(estatus),
+    };
+  }
+
+  PagoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? folioPago,
+    String? clienteId,
+    int? montoTotal,
+    int? montoAplicado,
+    DateTime? fechaPago,
+    String? formaPago,
+    Value<String?> referencia = const Value.absent(),
+    Value<String?> bancoOrigen = const Value.absent(),
+    Value<String?> cuentaBancariaDestino = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+    String? estatus,
+  }) => PagoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    folioPago: folioPago ?? this.folioPago,
+    clienteId: clienteId ?? this.clienteId,
+    montoTotal: montoTotal ?? this.montoTotal,
+    montoAplicado: montoAplicado ?? this.montoAplicado,
+    fechaPago: fechaPago ?? this.fechaPago,
+    formaPago: formaPago ?? this.formaPago,
+    referencia: referencia.present ? referencia.value : this.referencia,
+    bancoOrigen: bancoOrigen.present ? bancoOrigen.value : this.bancoOrigen,
+    cuentaBancariaDestino:
+        cuentaBancariaDestino.present
+            ? cuentaBancariaDestino.value
+            : this.cuentaBancariaDestino,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    estatus: estatus ?? this.estatus,
+  );
+  PagoData copyWithCompanion(PagoCompanion data) {
+    return PagoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      folioPago: data.folioPago.present ? data.folioPago.value : this.folioPago,
+      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+      montoTotal:
+          data.montoTotal.present ? data.montoTotal.value : this.montoTotal,
+      montoAplicado:
+          data.montoAplicado.present
+              ? data.montoAplicado.value
+              : this.montoAplicado,
+      fechaPago: data.fechaPago.present ? data.fechaPago.value : this.fechaPago,
+      formaPago: data.formaPago.present ? data.formaPago.value : this.formaPago,
+      referencia:
+          data.referencia.present ? data.referencia.value : this.referencia,
+      bancoOrigen:
+          data.bancoOrigen.present ? data.bancoOrigen.value : this.bancoOrigen,
+      cuentaBancariaDestino:
+          data.cuentaBancariaDestino.present
+              ? data.cuentaBancariaDestino.value
+              : this.cuentaBancariaDestino,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PagoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folioPago: $folioPago, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('montoTotal: $montoTotal, ')
+          ..write('montoAplicado: $montoAplicado, ')
+          ..write('fechaPago: $fechaPago, ')
+          ..write('formaPago: $formaPago, ')
+          ..write('referencia: $referencia, ')
+          ..write('bancoOrigen: $bancoOrigen, ')
+          ..write('cuentaBancariaDestino: $cuentaBancariaDestino, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folioPago,
+    clienteId,
+    montoTotal,
+    montoAplicado,
+    fechaPago,
+    formaPago,
+    referencia,
+    bancoOrigen,
+    cuentaBancariaDestino,
+    observaciones,
+    estatus,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PagoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.folioPago == this.folioPago &&
+          other.clienteId == this.clienteId &&
+          other.montoTotal == this.montoTotal &&
+          other.montoAplicado == this.montoAplicado &&
+          other.fechaPago == this.fechaPago &&
+          other.formaPago == this.formaPago &&
+          other.referencia == this.referencia &&
+          other.bancoOrigen == this.bancoOrigen &&
+          other.cuentaBancariaDestino == this.cuentaBancariaDestino &&
+          other.observaciones == this.observaciones &&
+          other.estatus == this.estatus);
+}
+
+class PagoCompanion extends UpdateCompanion<PagoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> folioPago;
+  final Value<String> clienteId;
+  final Value<int> montoTotal;
+  final Value<int> montoAplicado;
+  final Value<DateTime> fechaPago;
+  final Value<String> formaPago;
+  final Value<String?> referencia;
+  final Value<String?> bancoOrigen;
+  final Value<String?> cuentaBancariaDestino;
+  final Value<String?> observaciones;
+  final Value<String> estatus;
+  final Value<int> rowid;
+  const PagoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.folioPago = const Value.absent(),
+    this.clienteId = const Value.absent(),
+    this.montoTotal = const Value.absent(),
+    this.montoAplicado = const Value.absent(),
+    this.fechaPago = const Value.absent(),
+    this.formaPago = const Value.absent(),
+    this.referencia = const Value.absent(),
+    this.bancoOrigen = const Value.absent(),
+    this.cuentaBancariaDestino = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PagoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String folioPago,
+    required String clienteId,
+    required int montoTotal,
+    this.montoAplicado = const Value.absent(),
+    required DateTime fechaPago,
+    required String formaPago,
+    this.referencia = const Value.absent(),
+    this.bancoOrigen = const Value.absent(),
+    this.cuentaBancariaDestino = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : folioPago = Value(folioPago),
+       clienteId = Value(clienteId),
+       montoTotal = Value(montoTotal),
+       fechaPago = Value(fechaPago),
+       formaPago = Value(formaPago);
+  static Insertable<PagoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? folioPago,
+    Expression<String>? clienteId,
+    Expression<int>? montoTotal,
+    Expression<int>? montoAplicado,
+    Expression<DateTime>? fechaPago,
+    Expression<String>? formaPago,
+    Expression<String>? referencia,
+    Expression<String>? bancoOrigen,
+    Expression<String>? cuentaBancariaDestino,
+    Expression<String>? observaciones,
+    Expression<String>? estatus,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (folioPago != null) 'folio_pago': folioPago,
+      if (clienteId != null) 'cliente_id': clienteId,
+      if (montoTotal != null) 'monto_total': montoTotal,
+      if (montoAplicado != null) 'monto_aplicado': montoAplicado,
+      if (fechaPago != null) 'fecha_pago': fechaPago,
+      if (formaPago != null) 'forma_pago': formaPago,
+      if (referencia != null) 'referencia': referencia,
+      if (bancoOrigen != null) 'banco_origen': bancoOrigen,
+      if (cuentaBancariaDestino != null)
+        'cuenta_bancaria_destino': cuentaBancariaDestino,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (estatus != null) 'estatus': estatus,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PagoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? folioPago,
+    Value<String>? clienteId,
+    Value<int>? montoTotal,
+    Value<int>? montoAplicado,
+    Value<DateTime>? fechaPago,
+    Value<String>? formaPago,
+    Value<String?>? referencia,
+    Value<String?>? bancoOrigen,
+    Value<String?>? cuentaBancariaDestino,
+    Value<String?>? observaciones,
+    Value<String>? estatus,
+    Value<int>? rowid,
+  }) {
+    return PagoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      folioPago: folioPago ?? this.folioPago,
+      clienteId: clienteId ?? this.clienteId,
+      montoTotal: montoTotal ?? this.montoTotal,
+      montoAplicado: montoAplicado ?? this.montoAplicado,
+      fechaPago: fechaPago ?? this.fechaPago,
+      formaPago: formaPago ?? this.formaPago,
+      referencia: referencia ?? this.referencia,
+      bancoOrigen: bancoOrigen ?? this.bancoOrigen,
+      cuentaBancariaDestino:
+          cuentaBancariaDestino ?? this.cuentaBancariaDestino,
+      observaciones: observaciones ?? this.observaciones,
+      estatus: estatus ?? this.estatus,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (folioPago.present) {
+      map['folio_pago'] = Variable<String>(folioPago.value);
+    }
+    if (clienteId.present) {
+      map['cliente_id'] = Variable<String>(clienteId.value);
+    }
+    if (montoTotal.present) {
+      map['monto_total'] = Variable<int>(montoTotal.value);
+    }
+    if (montoAplicado.present) {
+      map['monto_aplicado'] = Variable<int>(montoAplicado.value);
+    }
+    if (fechaPago.present) {
+      map['fecha_pago'] = Variable<DateTime>(fechaPago.value);
+    }
+    if (formaPago.present) {
+      map['forma_pago'] = Variable<String>(formaPago.value);
+    }
+    if (referencia.present) {
+      map['referencia'] = Variable<String>(referencia.value);
+    }
+    if (bancoOrigen.present) {
+      map['banco_origen'] = Variable<String>(bancoOrigen.value);
+    }
+    if (cuentaBancariaDestino.present) {
+      map['cuenta_bancaria_destino'] = Variable<String>(
+        cuentaBancariaDestino.value,
+      );
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PagoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folioPago: $folioPago, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('montoTotal: $montoTotal, ')
+          ..write('montoAplicado: $montoAplicado, ')
+          ..write('fechaPago: $fechaPago, ')
+          ..write('formaPago: $formaPago, ')
+          ..write('referencia: $referencia, ')
+          ..write('bancoOrigen: $bancoOrigen, ')
+          ..write('cuentaBancariaDestino: $cuentaBancariaDestino, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AplicacionPagoTable extends AplicacionPago
+    with TableInfo<$AplicacionPagoTable, AplicacionPagoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AplicacionPagoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _pagoIdMeta = const VerificationMeta('pagoId');
+  @override
+  late final GeneratedColumn<String> pagoId = GeneratedColumn<String>(
+    'pago_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES pago (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _cuentaPorCobrarIdMeta = const VerificationMeta(
+    'cuentaPorCobrarId',
+  );
+  @override
+  late final GeneratedColumn<String> cuentaPorCobrarId =
+      GeneratedColumn<String>(
+        'cuenta_por_cobrar_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES cuenta_por_cobrar (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _montoMeta = const VerificationMeta('monto');
+  @override
+  late final GeneratedColumn<int> monto = GeneratedColumn<int>(
+    'monto',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _saldoAntesMeta = const VerificationMeta(
+    'saldoAntes',
+  );
+  @override
+  late final GeneratedColumn<int> saldoAntes = GeneratedColumn<int>(
+    'saldo_antes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _saldoDespuesMeta = const VerificationMeta(
+    'saldoDespues',
+  );
+  @override
+  late final GeneratedColumn<int> saldoDespues = GeneratedColumn<int>(
+    'saldo_despues',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('aplicada'),
+  );
+  static const VerificationMeta _motivoCancelacionMeta = const VerificationMeta(
+    'motivoCancelacion',
+  );
+  @override
+  late final GeneratedColumn<String> motivoCancelacion =
+      GeneratedColumn<String>(
+        'motivo_cancelacion',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    pagoId,
+    cuentaPorCobrarId,
+    monto,
+    saldoAntes,
+    saldoDespues,
+    estatus,
+    motivoCancelacion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'aplicacion_pago';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AplicacionPagoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pago_id')) {
+      context.handle(
+        _pagoIdMeta,
+        pagoId.isAcceptableOrUnknown(data['pago_id']!, _pagoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pagoIdMeta);
+    }
+    if (data.containsKey('cuenta_por_cobrar_id')) {
+      context.handle(
+        _cuentaPorCobrarIdMeta,
+        cuentaPorCobrarId.isAcceptableOrUnknown(
+          data['cuenta_por_cobrar_id']!,
+          _cuentaPorCobrarIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_cuentaPorCobrarIdMeta);
+    }
+    if (data.containsKey('monto')) {
+      context.handle(
+        _montoMeta,
+        monto.isAcceptableOrUnknown(data['monto']!, _montoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_montoMeta);
+    }
+    if (data.containsKey('saldo_antes')) {
+      context.handle(
+        _saldoAntesMeta,
+        saldoAntes.isAcceptableOrUnknown(data['saldo_antes']!, _saldoAntesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_saldoAntesMeta);
+    }
+    if (data.containsKey('saldo_despues')) {
+      context.handle(
+        _saldoDespuesMeta,
+        saldoDespues.isAcceptableOrUnknown(
+          data['saldo_despues']!,
+          _saldoDespuesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_saldoDespuesMeta);
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('motivo_cancelacion')) {
+      context.handle(
+        _motivoCancelacionMeta,
+        motivoCancelacion.isAcceptableOrUnknown(
+          data['motivo_cancelacion']!,
+          _motivoCancelacionMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AplicacionPagoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AplicacionPagoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      pagoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}pago_id'],
+          )!,
+      cuentaPorCobrarId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}cuenta_por_cobrar_id'],
+          )!,
+      monto:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}monto'],
+          )!,
+      saldoAntes:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}saldo_antes'],
+          )!,
+      saldoDespues:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}saldo_despues'],
+          )!,
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      motivoCancelacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_cancelacion'],
+      ),
+    );
+  }
+
+  @override
+  $AplicacionPagoTable createAlias(String alias) {
+    return $AplicacionPagoTable(attachedDatabase, alias);
+  }
+}
+
+class AplicacionPagoData extends DataClass
+    implements Insertable<AplicacionPagoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String pagoId;
+  final String cuentaPorCobrarId;
+  final int monto;
+  final int saldoAntes;
+  final int saldoDespues;
+  final String estatus;
+  final String? motivoCancelacion;
+  const AplicacionPagoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.pagoId,
+    required this.cuentaPorCobrarId,
+    required this.monto,
+    required this.saldoAntes,
+    required this.saldoDespues,
+    required this.estatus,
+    this.motivoCancelacion,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['pago_id'] = Variable<String>(pagoId);
+    map['cuenta_por_cobrar_id'] = Variable<String>(cuentaPorCobrarId);
+    map['monto'] = Variable<int>(monto);
+    map['saldo_antes'] = Variable<int>(saldoAntes);
+    map['saldo_despues'] = Variable<int>(saldoDespues);
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || motivoCancelacion != null) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion);
+    }
+    return map;
+  }
+
+  AplicacionPagoCompanion toCompanion(bool nullToAbsent) {
+    return AplicacionPagoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      pagoId: Value(pagoId),
+      cuentaPorCobrarId: Value(cuentaPorCobrarId),
+      monto: Value(monto),
+      saldoAntes: Value(saldoAntes),
+      saldoDespues: Value(saldoDespues),
+      estatus: Value(estatus),
+      motivoCancelacion:
+          motivoCancelacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoCancelacion),
+    );
+  }
+
+  factory AplicacionPagoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AplicacionPagoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      pagoId: serializer.fromJson<String>(json['pagoId']),
+      cuentaPorCobrarId: serializer.fromJson<String>(json['cuentaPorCobrarId']),
+      monto: serializer.fromJson<int>(json['monto']),
+      saldoAntes: serializer.fromJson<int>(json['saldoAntes']),
+      saldoDespues: serializer.fromJson<int>(json['saldoDespues']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      motivoCancelacion: serializer.fromJson<String?>(
+        json['motivoCancelacion'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'pagoId': serializer.toJson<String>(pagoId),
+      'cuentaPorCobrarId': serializer.toJson<String>(cuentaPorCobrarId),
+      'monto': serializer.toJson<int>(monto),
+      'saldoAntes': serializer.toJson<int>(saldoAntes),
+      'saldoDespues': serializer.toJson<int>(saldoDespues),
+      'estatus': serializer.toJson<String>(estatus),
+      'motivoCancelacion': serializer.toJson<String?>(motivoCancelacion),
+    };
+  }
+
+  AplicacionPagoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? pagoId,
+    String? cuentaPorCobrarId,
+    int? monto,
+    int? saldoAntes,
+    int? saldoDespues,
+    String? estatus,
+    Value<String?> motivoCancelacion = const Value.absent(),
+  }) => AplicacionPagoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    pagoId: pagoId ?? this.pagoId,
+    cuentaPorCobrarId: cuentaPorCobrarId ?? this.cuentaPorCobrarId,
+    monto: monto ?? this.monto,
+    saldoAntes: saldoAntes ?? this.saldoAntes,
+    saldoDespues: saldoDespues ?? this.saldoDespues,
+    estatus: estatus ?? this.estatus,
+    motivoCancelacion:
+        motivoCancelacion.present
+            ? motivoCancelacion.value
+            : this.motivoCancelacion,
+  );
+  AplicacionPagoData copyWithCompanion(AplicacionPagoCompanion data) {
+    return AplicacionPagoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      pagoId: data.pagoId.present ? data.pagoId.value : this.pagoId,
+      cuentaPorCobrarId:
+          data.cuentaPorCobrarId.present
+              ? data.cuentaPorCobrarId.value
+              : this.cuentaPorCobrarId,
+      monto: data.monto.present ? data.monto.value : this.monto,
+      saldoAntes:
+          data.saldoAntes.present ? data.saldoAntes.value : this.saldoAntes,
+      saldoDespues:
+          data.saldoDespues.present
+              ? data.saldoDespues.value
+              : this.saldoDespues,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      motivoCancelacion:
+          data.motivoCancelacion.present
+              ? data.motivoCancelacion.value
+              : this.motivoCancelacion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AplicacionPagoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('pagoId: $pagoId, ')
+          ..write('cuentaPorCobrarId: $cuentaPorCobrarId, ')
+          ..write('monto: $monto, ')
+          ..write('saldoAntes: $saldoAntes, ')
+          ..write('saldoDespues: $saldoDespues, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    pagoId,
+    cuentaPorCobrarId,
+    monto,
+    saldoAntes,
+    saldoDespues,
+    estatus,
+    motivoCancelacion,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AplicacionPagoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.pagoId == this.pagoId &&
+          other.cuentaPorCobrarId == this.cuentaPorCobrarId &&
+          other.monto == this.monto &&
+          other.saldoAntes == this.saldoAntes &&
+          other.saldoDespues == this.saldoDespues &&
+          other.estatus == this.estatus &&
+          other.motivoCancelacion == this.motivoCancelacion);
+}
+
+class AplicacionPagoCompanion extends UpdateCompanion<AplicacionPagoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> pagoId;
+  final Value<String> cuentaPorCobrarId;
+  final Value<int> monto;
+  final Value<int> saldoAntes;
+  final Value<int> saldoDespues;
+  final Value<String> estatus;
+  final Value<String?> motivoCancelacion;
+  final Value<int> rowid;
+  const AplicacionPagoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.pagoId = const Value.absent(),
+    this.cuentaPorCobrarId = const Value.absent(),
+    this.monto = const Value.absent(),
+    this.saldoAntes = const Value.absent(),
+    this.saldoDespues = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AplicacionPagoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String pagoId,
+    required String cuentaPorCobrarId,
+    required int monto,
+    required int saldoAntes,
+    required int saldoDespues,
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : pagoId = Value(pagoId),
+       cuentaPorCobrarId = Value(cuentaPorCobrarId),
+       monto = Value(monto),
+       saldoAntes = Value(saldoAntes),
+       saldoDespues = Value(saldoDespues);
+  static Insertable<AplicacionPagoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? pagoId,
+    Expression<String>? cuentaPorCobrarId,
+    Expression<int>? monto,
+    Expression<int>? saldoAntes,
+    Expression<int>? saldoDespues,
+    Expression<String>? estatus,
+    Expression<String>? motivoCancelacion,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (pagoId != null) 'pago_id': pagoId,
+      if (cuentaPorCobrarId != null) 'cuenta_por_cobrar_id': cuentaPorCobrarId,
+      if (monto != null) 'monto': monto,
+      if (saldoAntes != null) 'saldo_antes': saldoAntes,
+      if (saldoDespues != null) 'saldo_despues': saldoDespues,
+      if (estatus != null) 'estatus': estatus,
+      if (motivoCancelacion != null) 'motivo_cancelacion': motivoCancelacion,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AplicacionPagoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? pagoId,
+    Value<String>? cuentaPorCobrarId,
+    Value<int>? monto,
+    Value<int>? saldoAntes,
+    Value<int>? saldoDespues,
+    Value<String>? estatus,
+    Value<String?>? motivoCancelacion,
+    Value<int>? rowid,
+  }) {
+    return AplicacionPagoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      pagoId: pagoId ?? this.pagoId,
+      cuentaPorCobrarId: cuentaPorCobrarId ?? this.cuentaPorCobrarId,
+      monto: monto ?? this.monto,
+      saldoAntes: saldoAntes ?? this.saldoAntes,
+      saldoDespues: saldoDespues ?? this.saldoDespues,
+      estatus: estatus ?? this.estatus,
+      motivoCancelacion: motivoCancelacion ?? this.motivoCancelacion,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (pagoId.present) {
+      map['pago_id'] = Variable<String>(pagoId.value);
+    }
+    if (cuentaPorCobrarId.present) {
+      map['cuenta_por_cobrar_id'] = Variable<String>(cuentaPorCobrarId.value);
+    }
+    if (monto.present) {
+      map['monto'] = Variable<int>(monto.value);
+    }
+    if (saldoAntes.present) {
+      map['saldo_antes'] = Variable<int>(saldoAntes.value);
+    }
+    if (saldoDespues.present) {
+      map['saldo_despues'] = Variable<int>(saldoDespues.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (motivoCancelacion.present) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AplicacionPagoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('pagoId: $pagoId, ')
+          ..write('cuentaPorCobrarId: $cuentaPorCobrarId, ')
+          ..write('monto: $monto, ')
+          ..write('saldoAntes: $saldoAntes, ')
+          ..write('saldoDespues: $saldoDespues, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PagoEventoTable extends PagoEvento
+    with TableInfo<$PagoEventoTable, PagoEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PagoEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _pagoIdMeta = const VerificationMeta('pagoId');
+  @override
+  late final GeneratedColumn<String> pagoId = GeneratedColumn<String>(
+    'pago_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES pago (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoAnteriorMeta = const VerificationMeta(
+    'estadoAnterior',
+  );
+  @override
+  late final GeneratedColumn<String> estadoAnterior = GeneratedColumn<String>(
+    'estado_anterior',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estadoNuevoMeta = const VerificationMeta(
+    'estadoNuevo',
+  );
+  @override
+  late final GeneratedColumn<String> estadoNuevo = GeneratedColumn<String>(
+    'estado_nuevo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    pagoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pago_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PagoEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('pago_id')) {
+      context.handle(
+        _pagoIdMeta,
+        pagoId.isAcceptableOrUnknown(data['pago_id']!, _pagoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pagoIdMeta);
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('estado_anterior')) {
+      context.handle(
+        _estadoAnteriorMeta,
+        estadoAnterior.isAcceptableOrUnknown(
+          data['estado_anterior']!,
+          _estadoAnteriorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estado_nuevo')) {
+      context.handle(
+        _estadoNuevoMeta,
+        estadoNuevo.isAcceptableOrUnknown(
+          data['estado_nuevo']!,
+          _estadoNuevoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PagoEventoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PagoEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      pagoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}pago_id'],
+          )!,
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      estadoAnterior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_anterior'],
+      ),
+      estadoNuevo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_nuevo'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $PagoEventoTable createAlias(String alias) {
+    return $PagoEventoTable(attachedDatabase, alias);
+  }
+}
+
+class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
+  final int id;
+  final String pagoId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? estadoAnterior;
+  final String? estadoNuevo;
+  final String? observacion;
+  final String? actor;
+  final String? datosRelevantes;
+  const PagoEventoData({
+    required this.id,
+    required this.pagoId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.estadoAnterior,
+    this.estadoNuevo,
+    this.observacion,
+    this.actor,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['pago_id'] = Variable<String>(pagoId);
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || estadoAnterior != null) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior);
+    }
+    if (!nullToAbsent || estadoNuevo != null) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  PagoEventoCompanion toCompanion(bool nullToAbsent) {
+    return PagoEventoCompanion(
+      id: Value(id),
+      pagoId: Value(pagoId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      estadoAnterior:
+          estadoAnterior == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoAnterior),
+      estadoNuevo:
+          estadoNuevo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoNuevo),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory PagoEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PagoEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      pagoId: serializer.fromJson<String>(json['pagoId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      estadoAnterior: serializer.fromJson<String?>(json['estadoAnterior']),
+      estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      actor: serializer.fromJson<String?>(json['actor']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'pagoId': serializer.toJson<String>(pagoId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'estadoAnterior': serializer.toJson<String?>(estadoAnterior),
+      'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
+      'observacion': serializer.toJson<String?>(observacion),
+      'actor': serializer.toJson<String?>(actor),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  PagoEventoData copyWith({
+    int? id,
+    String? pagoId,
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> estadoAnterior = const Value.absent(),
+    Value<String?> estadoNuevo = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => PagoEventoData(
+    id: id ?? this.id,
+    pagoId: pagoId ?? this.pagoId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    estadoAnterior:
+        estadoAnterior.present ? estadoAnterior.value : this.estadoAnterior,
+    estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    actor: actor.present ? actor.value : this.actor,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  PagoEventoData copyWithCompanion(PagoEventoCompanion data) {
+    return PagoEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      pagoId: data.pagoId.present ? data.pagoId.value : this.pagoId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      estadoAnterior:
+          data.estadoAnterior.present
+              ? data.estadoAnterior.value
+              : this.estadoAnterior,
+      estadoNuevo:
+          data.estadoNuevo.present ? data.estadoNuevo.value : this.estadoNuevo,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      actor: data.actor.present ? data.actor.value : this.actor,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PagoEventoData(')
+          ..write('id: $id, ')
+          ..write('pagoId: $pagoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    pagoId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PagoEventoData &&
+          other.id == this.id &&
+          other.pagoId == this.pagoId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.estadoAnterior == this.estadoAnterior &&
+          other.estadoNuevo == this.estadoNuevo &&
+          other.observacion == this.observacion &&
+          other.actor == this.actor &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
+  final Value<int> id;
+  final Value<String> pagoId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> estadoAnterior;
+  final Value<String?> estadoNuevo;
+  final Value<String?> observacion;
+  final Value<String?> actor;
+  final Value<String?> datosRelevantes;
+  const PagoEventoCompanion({
+    this.id = const Value.absent(),
+    this.pagoId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  PagoEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String pagoId,
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : pagoId = Value(pagoId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<PagoEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? pagoId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? estadoAnterior,
+    Expression<String>? estadoNuevo,
+    Expression<String>? observacion,
+    Expression<String>? actor,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (pagoId != null) 'pago_id': pagoId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (estadoAnterior != null) 'estado_anterior': estadoAnterior,
+      if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
+      if (observacion != null) 'observacion': observacion,
+      if (actor != null) 'actor': actor,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  PagoEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? pagoId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? estadoAnterior,
+    Value<String?>? estadoNuevo,
+    Value<String?>? observacion,
+    Value<String?>? actor,
+    Value<String?>? datosRelevantes,
+  }) {
+    return PagoEventoCompanion(
+      id: id ?? this.id,
+      pagoId: pagoId ?? this.pagoId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      estadoAnterior: estadoAnterior ?? this.estadoAnterior,
+      estadoNuevo: estadoNuevo ?? this.estadoNuevo,
+      observacion: observacion ?? this.observacion,
+      actor: actor ?? this.actor,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (pagoId.present) {
+      map['pago_id'] = Variable<String>(pagoId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (estadoAnterior.present) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior.value);
+    }
+    if (estadoNuevo.present) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PagoEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('pagoId: $pagoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -23630,6 +25878,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $CuentaPorCobrarEventoTable cuentaPorCobrarEvento =
       $CuentaPorCobrarEventoTable(this);
+  late final $PagoTable pago = $PagoTable(this);
+  late final $AplicacionPagoTable aplicacionPago = $AplicacionPagoTable(this);
+  late final $PagoEventoTable pagoEvento = $PagoEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -23687,6 +25938,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     documentoPorEmitirEvento,
     cuentaPorCobrar,
     cuentaPorCobrarEvento,
+    pago,
+    aplicacionPago,
+    pagoEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -23790,6 +26044,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       result: [
         TableUpdate('cuenta_por_cobrar_evento', kind: UpdateKind.delete),
       ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'pago',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('pago_evento', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -27385,6 +29646,7 @@ typedef $$AttachmentTableCreateCompanionBuilder =
       Value<String?> empresaId,
       Value<String?> clienteId,
       Value<String?> documentoPorEmitirId,
+      Value<String?> pagoId,
       Value<String?> categoria,
       required String originalFileName,
       required String storedFileName,
@@ -27402,6 +29664,7 @@ typedef $$AttachmentTableUpdateCompanionBuilder =
       Value<String?> empresaId,
       Value<String?> clienteId,
       Value<String?> documentoPorEmitirId,
+      Value<String?> pagoId,
       Value<String?> categoria,
       Value<String> originalFileName,
       Value<String> storedFileName,
@@ -27465,6 +29728,11 @@ class $$AttachmentTableFilterComposer
 
   ColumnFilters<String> get documentoPorEmitirId => $composableBuilder(
     column: $table.documentoPorEmitirId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pagoId => $composableBuilder(
+    column: $table.pagoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -27568,6 +29836,11 @@ class $$AttachmentTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get pagoId => $composableBuilder(
+    column: $table.pagoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get categoria => $composableBuilder(
     column: $table.categoria,
     builder: (column) => ColumnOrderings(column),
@@ -27636,6 +29909,9 @@ class $$AttachmentTableAnnotationComposer
     column: $table.documentoPorEmitirId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get pagoId =>
+      $composableBuilder(column: $table.pagoId, builder: (column) => column);
 
   GeneratedColumn<String> get categoria =>
       $composableBuilder(column: $table.categoria, builder: (column) => column);
@@ -27726,6 +30002,7 @@ class $$AttachmentTableTableManager
                 Value<String?> empresaId = const Value.absent(),
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> documentoPorEmitirId = const Value.absent(),
+                Value<String?> pagoId = const Value.absent(),
                 Value<String?> categoria = const Value.absent(),
                 Value<String> originalFileName = const Value.absent(),
                 Value<String> storedFileName = const Value.absent(),
@@ -27741,6 +30018,7 @@ class $$AttachmentTableTableManager
                 empresaId: empresaId,
                 clienteId: clienteId,
                 documentoPorEmitirId: documentoPorEmitirId,
+                pagoId: pagoId,
                 categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
@@ -27758,6 +30036,7 @@ class $$AttachmentTableTableManager
                 Value<String?> empresaId = const Value.absent(),
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> documentoPorEmitirId = const Value.absent(),
+                Value<String?> pagoId = const Value.absent(),
                 Value<String?> categoria = const Value.absent(),
                 required String originalFileName,
                 required String storedFileName,
@@ -27773,6 +30052,7 @@ class $$AttachmentTableTableManager
                 empresaId: empresaId,
                 clienteId: clienteId,
                 documentoPorEmitirId: documentoPorEmitirId,
+                pagoId: pagoId,
                 categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
@@ -29706,6 +31986,25 @@ final class $$ClienteTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$PagoTable, List<PagoData>> _pagoRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.pago,
+    aliasName: $_aliasNameGenerator(db.cliente.id, db.pago.clienteId),
+  );
+
+  $$PagoTableProcessedTableManager get pagoRefs {
+    final manager = $$PagoTableTableManager(
+      $_db,
+      $_db.pago,
+    ).filter((f) => f.clienteId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pagoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ClienteTableFilterComposer
@@ -29876,6 +32175,31 @@ class $$ClienteTableFilterComposer
           }) => $$DocumentoPorEmitirTableFilterComposer(
             $db: $db,
             $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> pagoRefs(
+    Expression<bool> Function($$PagoTableFilterComposer f) f,
+  ) {
+    final $$PagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableFilterComposer(
+            $db: $db,
+            $table: $db.pago,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -30129,6 +32453,31 @@ class $$ClienteTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> pagoRefs<T extends Object>(
+    Expression<T> Function($$PagoTableAnnotationComposer a) f,
+  ) {
+    final $$PagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ClienteTableTableManager
@@ -30150,6 +32499,7 @@ class $$ClienteTableTableManager
             bool entidadFiscalRefs,
             bool servicioRefs,
             bool documentoPorEmitirRefs,
+            bool pagoRefs,
           })
         > {
   $$ClienteTableTableManager(_$AppDatabase db, $ClienteTable table)
@@ -30231,6 +32581,7 @@ class $$ClienteTableTableManager
             entidadFiscalRefs = false,
             servicioRefs = false,
             documentoPorEmitirRefs = false,
+            pagoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -30239,6 +32590,7 @@ class $$ClienteTableTableManager
                 if (entidadFiscalRefs) db.entidadFiscal,
                 if (servicioRefs) db.servicio,
                 if (documentoPorEmitirRefs) db.documentoPorEmitir,
+                if (pagoRefs) db.pago,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -30362,6 +32714,25 @@ class $$ClienteTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (pagoRefs)
+                    await $_getPrefetchedData<
+                      ClienteData,
+                      $ClienteTable,
+                      PagoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ClienteTableReferences._pagoRefsTable(
+                        db,
+                      ),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ClienteTableReferences(db, table, p0).pagoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.clienteId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -30388,6 +32759,7 @@ typedef $$ClienteTableProcessedTableManager =
         bool entidadFiscalRefs,
         bool servicioRefs,
         bool documentoPorEmitirRefs,
+        bool pagoRefs,
       })
     >;
 typedef $$ContactoTableCreateCompanionBuilder =
@@ -42919,6 +45291,29 @@ final class $$CuentaPorCobrarTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$AplicacionPagoTable, List<AplicacionPagoData>>
+  _aplicacionPagoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.aplicacionPago,
+    aliasName: $_aliasNameGenerator(
+      db.cuentaPorCobrar.id,
+      db.aplicacionPago.cuentaPorCobrarId,
+    ),
+  );
+
+  $$AplicacionPagoTableProcessedTableManager get aplicacionPagoRefs {
+    final manager = $$AplicacionPagoTableTableManager(
+      $_db,
+      $_db.aplicacionPago,
+    ).filter(
+      (f) => f.cuentaPorCobrarId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(_aplicacionPagoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$CuentaPorCobrarTableFilterComposer
@@ -43076,6 +45471,31 @@ class $$CuentaPorCobrarTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> aplicacionPagoRefs(
+    Expression<bool> Function($$AplicacionPagoTableFilterComposer f) f,
+  ) {
+    final $$AplicacionPagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aplicacionPago,
+      getReferencedColumn: (t) => t.cuentaPorCobrarId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AplicacionPagoTableFilterComposer(
+            $db: $db,
+            $table: $db.aplicacionPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -43355,6 +45775,31 @@ class $$CuentaPorCobrarTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> aplicacionPagoRefs<T extends Object>(
+    Expression<T> Function($$AplicacionPagoTableAnnotationComposer a) f,
+  ) {
+    final $$AplicacionPagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aplicacionPago,
+      getReferencedColumn: (t) => t.cuentaPorCobrarId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AplicacionPagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.aplicacionPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CuentaPorCobrarTableTableManager
@@ -43373,6 +45818,7 @@ class $$CuentaPorCobrarTableTableManager
           PrefetchHooks Function({
             bool documentoPorEmitirId,
             bool cuentaPorCobrarEventoRefs,
+            bool aplicacionPagoRefs,
           })
         > {
   $$CuentaPorCobrarTableTableManager(
@@ -43504,11 +45950,13 @@ class $$CuentaPorCobrarTableTableManager
           prefetchHooksCallback: ({
             documentoPorEmitirId = false,
             cuentaPorCobrarEventoRefs = false,
+            aplicacionPagoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (cuentaPorCobrarEventoRefs) db.cuentaPorCobrarEvento,
+                if (aplicacionPagoRefs) db.aplicacionPago,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -43566,6 +46014,28 @@ class $$CuentaPorCobrarTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (aplicacionPagoRefs)
+                    await $_getPrefetchedData<
+                      CuentaPorCobrarData,
+                      $CuentaPorCobrarTable,
+                      AplicacionPagoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CuentaPorCobrarTableReferences
+                          ._aplicacionPagoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$CuentaPorCobrarTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).aplicacionPagoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.cuentaPorCobrarId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -43589,6 +46059,7 @@ typedef $$CuentaPorCobrarTableProcessedTableManager =
       PrefetchHooks Function({
         bool documentoPorEmitirId,
         bool cuentaPorCobrarEventoRefs,
+        bool aplicacionPagoRefs,
       })
     >;
 typedef $$CuentaPorCobrarEventoTableCreateCompanionBuilder =
@@ -44016,6 +46487,1666 @@ typedef $$CuentaPorCobrarEventoTableProcessedTableManager =
       CuentaPorCobrarEventoData,
       PrefetchHooks Function({bool cuentaPorCobrarId})
     >;
+typedef $$PagoTableCreateCompanionBuilder =
+    PagoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String folioPago,
+      required String clienteId,
+      required int montoTotal,
+      Value<int> montoAplicado,
+      required DateTime fechaPago,
+      required String formaPago,
+      Value<String?> referencia,
+      Value<String?> bancoOrigen,
+      Value<String?> cuentaBancariaDestino,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<int> rowid,
+    });
+typedef $$PagoTableUpdateCompanionBuilder =
+    PagoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> folioPago,
+      Value<String> clienteId,
+      Value<int> montoTotal,
+      Value<int> montoAplicado,
+      Value<DateTime> fechaPago,
+      Value<String> formaPago,
+      Value<String?> referencia,
+      Value<String?> bancoOrigen,
+      Value<String?> cuentaBancariaDestino,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<int> rowid,
+    });
+
+final class $$PagoTableReferences
+    extends BaseReferences<_$AppDatabase, $PagoTable, PagoData> {
+  $$PagoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ClienteTable _clienteIdTable(_$AppDatabase db) => db.cliente
+      .createAlias($_aliasNameGenerator(db.pago.clienteId, db.cliente.id));
+
+  $$ClienteTableProcessedTableManager get clienteId {
+    final $_column = $_itemColumn<String>('cliente_id')!;
+
+    final manager = $$ClienteTableTableManager(
+      $_db,
+      $_db.cliente,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_clienteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$AplicacionPagoTable, List<AplicacionPagoData>>
+  _aplicacionPagoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.aplicacionPago,
+    aliasName: $_aliasNameGenerator(db.pago.id, db.aplicacionPago.pagoId),
+  );
+
+  $$AplicacionPagoTableProcessedTableManager get aplicacionPagoRefs {
+    final manager = $$AplicacionPagoTableTableManager(
+      $_db,
+      $_db.aplicacionPago,
+    ).filter((f) => f.pagoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_aplicacionPagoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PagoEventoTable, List<PagoEventoData>>
+  _pagoEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pagoEvento,
+    aliasName: $_aliasNameGenerator(db.pago.id, db.pagoEvento.pagoId),
+  );
+
+  $$PagoEventoTableProcessedTableManager get pagoEventoRefs {
+    final manager = $$PagoEventoTableTableManager(
+      $_db,
+      $_db.pagoEvento,
+    ).filter((f) => f.pagoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pagoEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PagoTableFilterComposer extends Composer<_$AppDatabase, $PagoTable> {
+  $$PagoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folioPago => $composableBuilder(
+    column: $table.folioPago,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get montoTotal => $composableBuilder(
+    column: $table.montoTotal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get montoAplicado => $composableBuilder(
+    column: $table.montoAplicado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaPago => $composableBuilder(
+    column: $table.fechaPago,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formaPago => $composableBuilder(
+    column: $table.formaPago,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get referencia => $composableBuilder(
+    column: $table.referencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bancoOrigen => $composableBuilder(
+    column: $table.bancoOrigen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cuentaBancariaDestino => $composableBuilder(
+    column: $table.cuentaBancariaDestino,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ClienteTableFilterComposer get clienteId {
+    final $$ClienteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableFilterComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> aplicacionPagoRefs(
+    Expression<bool> Function($$AplicacionPagoTableFilterComposer f) f,
+  ) {
+    final $$AplicacionPagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aplicacionPago,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AplicacionPagoTableFilterComposer(
+            $db: $db,
+            $table: $db.aplicacionPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> pagoEventoRefs(
+    Expression<bool> Function($$PagoEventoTableFilterComposer f) f,
+  ) {
+    final $$PagoEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoEvento,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.pagoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PagoTableOrderingComposer extends Composer<_$AppDatabase, $PagoTable> {
+  $$PagoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folioPago => $composableBuilder(
+    column: $table.folioPago,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get montoTotal => $composableBuilder(
+    column: $table.montoTotal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get montoAplicado => $composableBuilder(
+    column: $table.montoAplicado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaPago => $composableBuilder(
+    column: $table.fechaPago,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formaPago => $composableBuilder(
+    column: $table.formaPago,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get referencia => $composableBuilder(
+    column: $table.referencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bancoOrigen => $composableBuilder(
+    column: $table.bancoOrigen,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cuentaBancariaDestino => $composableBuilder(
+    column: $table.cuentaBancariaDestino,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ClienteTableOrderingComposer get clienteId {
+    final $$ClienteTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableOrderingComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PagoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PagoTable> {
+  $$PagoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folioPago =>
+      $composableBuilder(column: $table.folioPago, builder: (column) => column);
+
+  GeneratedColumn<int> get montoTotal => $composableBuilder(
+    column: $table.montoTotal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get montoAplicado => $composableBuilder(
+    column: $table.montoAplicado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaPago =>
+      $composableBuilder(column: $table.fechaPago, builder: (column) => column);
+
+  GeneratedColumn<String> get formaPago =>
+      $composableBuilder(column: $table.formaPago, builder: (column) => column);
+
+  GeneratedColumn<String> get referencia => $composableBuilder(
+    column: $table.referencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bancoOrigen => $composableBuilder(
+    column: $table.bancoOrigen,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cuentaBancariaDestino => $composableBuilder(
+    column: $table.cuentaBancariaDestino,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  $$ClienteTableAnnotationComposer get clienteId {
+    final $$ClienteTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> aplicacionPagoRefs<T extends Object>(
+    Expression<T> Function($$AplicacionPagoTableAnnotationComposer a) f,
+  ) {
+    final $$AplicacionPagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aplicacionPago,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AplicacionPagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.aplicacionPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> pagoEventoRefs<T extends Object>(
+    Expression<T> Function($$PagoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$PagoEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoEvento,
+      getReferencedColumn: (t) => t.pagoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pagoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PagoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PagoTable,
+          PagoData,
+          $$PagoTableFilterComposer,
+          $$PagoTableOrderingComposer,
+          $$PagoTableAnnotationComposer,
+          $$PagoTableCreateCompanionBuilder,
+          $$PagoTableUpdateCompanionBuilder,
+          (PagoData, $$PagoTableReferences),
+          PagoData,
+          PrefetchHooks Function({
+            bool clienteId,
+            bool aplicacionPagoRefs,
+            bool pagoEventoRefs,
+          })
+        > {
+  $$PagoTableTableManager(_$AppDatabase db, $PagoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$PagoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$PagoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$PagoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> folioPago = const Value.absent(),
+                Value<String> clienteId = const Value.absent(),
+                Value<int> montoTotal = const Value.absent(),
+                Value<int> montoAplicado = const Value.absent(),
+                Value<DateTime> fechaPago = const Value.absent(),
+                Value<String> formaPago = const Value.absent(),
+                Value<String?> referencia = const Value.absent(),
+                Value<String?> bancoOrigen = const Value.absent(),
+                Value<String?> cuentaBancariaDestino = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PagoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folioPago: folioPago,
+                clienteId: clienteId,
+                montoTotal: montoTotal,
+                montoAplicado: montoAplicado,
+                fechaPago: fechaPago,
+                formaPago: formaPago,
+                referencia: referencia,
+                bancoOrigen: bancoOrigen,
+                cuentaBancariaDestino: cuentaBancariaDestino,
+                observaciones: observaciones,
+                estatus: estatus,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String folioPago,
+                required String clienteId,
+                required int montoTotal,
+                Value<int> montoAplicado = const Value.absent(),
+                required DateTime fechaPago,
+                required String formaPago,
+                Value<String?> referencia = const Value.absent(),
+                Value<String?> bancoOrigen = const Value.absent(),
+                Value<String?> cuentaBancariaDestino = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PagoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folioPago: folioPago,
+                clienteId: clienteId,
+                montoTotal: montoTotal,
+                montoAplicado: montoAplicado,
+                fechaPago: fechaPago,
+                formaPago: formaPago,
+                referencia: referencia,
+                bancoOrigen: bancoOrigen,
+                cuentaBancariaDestino: cuentaBancariaDestino,
+                observaciones: observaciones,
+                estatus: estatus,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$PagoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            clienteId = false,
+            aplicacionPagoRefs = false,
+            pagoEventoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (aplicacionPagoRefs) db.aplicacionPago,
+                if (pagoEventoRefs) db.pagoEvento,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (clienteId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.clienteId,
+                            referencedTable: $$PagoTableReferences
+                                ._clienteIdTable(db),
+                            referencedColumn:
+                                $$PagoTableReferences._clienteIdTable(db).id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (aplicacionPagoRefs)
+                    await $_getPrefetchedData<
+                      PagoData,
+                      $PagoTable,
+                      AplicacionPagoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PagoTableReferences
+                          ._aplicacionPagoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$PagoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).aplicacionPagoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) =>
+                              referencedItems.where((e) => e.pagoId == item.id),
+                      typedResults: items,
+                    ),
+                  if (pagoEventoRefs)
+                    await $_getPrefetchedData<
+                      PagoData,
+                      $PagoTable,
+                      PagoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PagoTableReferences
+                          ._pagoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$PagoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pagoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) =>
+                              referencedItems.where((e) => e.pagoId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PagoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PagoTable,
+      PagoData,
+      $$PagoTableFilterComposer,
+      $$PagoTableOrderingComposer,
+      $$PagoTableAnnotationComposer,
+      $$PagoTableCreateCompanionBuilder,
+      $$PagoTableUpdateCompanionBuilder,
+      (PagoData, $$PagoTableReferences),
+      PagoData,
+      PrefetchHooks Function({
+        bool clienteId,
+        bool aplicacionPagoRefs,
+        bool pagoEventoRefs,
+      })
+    >;
+typedef $$AplicacionPagoTableCreateCompanionBuilder =
+    AplicacionPagoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String pagoId,
+      required String cuentaPorCobrarId,
+      required int monto,
+      required int saldoAntes,
+      required int saldoDespues,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<int> rowid,
+    });
+typedef $$AplicacionPagoTableUpdateCompanionBuilder =
+    AplicacionPagoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> pagoId,
+      Value<String> cuentaPorCobrarId,
+      Value<int> monto,
+      Value<int> saldoAntes,
+      Value<int> saldoDespues,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<int> rowid,
+    });
+
+final class $$AplicacionPagoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $AplicacionPagoTable,
+          AplicacionPagoData
+        > {
+  $$AplicacionPagoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PagoTable _pagoIdTable(_$AppDatabase db) => db.pago.createAlias(
+    $_aliasNameGenerator(db.aplicacionPago.pagoId, db.pago.id),
+  );
+
+  $$PagoTableProcessedTableManager get pagoId {
+    final $_column = $_itemColumn<String>('pago_id')!;
+
+    final manager = $$PagoTableTableManager(
+      $_db,
+      $_db.pago,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CuentaPorCobrarTable _cuentaPorCobrarIdTable(_$AppDatabase db) =>
+      db.cuentaPorCobrar.createAlias(
+        $_aliasNameGenerator(
+          db.aplicacionPago.cuentaPorCobrarId,
+          db.cuentaPorCobrar.id,
+        ),
+      );
+
+  $$CuentaPorCobrarTableProcessedTableManager get cuentaPorCobrarId {
+    final $_column = $_itemColumn<String>('cuenta_por_cobrar_id')!;
+
+    final manager = $$CuentaPorCobrarTableTableManager(
+      $_db,
+      $_db.cuentaPorCobrar,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_cuentaPorCobrarIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AplicacionPagoTableFilterComposer
+    extends Composer<_$AppDatabase, $AplicacionPagoTable> {
+  $$AplicacionPagoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get saldoAntes => $composableBuilder(
+    column: $table.saldoAntes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get saldoDespues => $composableBuilder(
+    column: $table.saldoDespues,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PagoTableFilterComposer get pagoId {
+    final $$PagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableFilterComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CuentaPorCobrarTableFilterComposer get cuentaPorCobrarId {
+    final $$CuentaPorCobrarTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cuentaPorCobrarId,
+      referencedTable: $db.cuentaPorCobrar,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CuentaPorCobrarTableFilterComposer(
+            $db: $db,
+            $table: $db.cuentaPorCobrar,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AplicacionPagoTableOrderingComposer
+    extends Composer<_$AppDatabase, $AplicacionPagoTable> {
+  $$AplicacionPagoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get saldoAntes => $composableBuilder(
+    column: $table.saldoAntes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get saldoDespues => $composableBuilder(
+    column: $table.saldoDespues,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PagoTableOrderingComposer get pagoId {
+    final $$PagoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableOrderingComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CuentaPorCobrarTableOrderingComposer get cuentaPorCobrarId {
+    final $$CuentaPorCobrarTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cuentaPorCobrarId,
+      referencedTable: $db.cuentaPorCobrar,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CuentaPorCobrarTableOrderingComposer(
+            $db: $db,
+            $table: $db.cuentaPorCobrar,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AplicacionPagoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AplicacionPagoTable> {
+  $$AplicacionPagoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get monto =>
+      $composableBuilder(column: $table.monto, builder: (column) => column);
+
+  GeneratedColumn<int> get saldoAntes => $composableBuilder(
+    column: $table.saldoAntes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get saldoDespues => $composableBuilder(
+    column: $table.saldoDespues,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => column,
+  );
+
+  $$PagoTableAnnotationComposer get pagoId {
+    final $$PagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CuentaPorCobrarTableAnnotationComposer get cuentaPorCobrarId {
+    final $$CuentaPorCobrarTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cuentaPorCobrarId,
+      referencedTable: $db.cuentaPorCobrar,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CuentaPorCobrarTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cuentaPorCobrar,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AplicacionPagoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AplicacionPagoTable,
+          AplicacionPagoData,
+          $$AplicacionPagoTableFilterComposer,
+          $$AplicacionPagoTableOrderingComposer,
+          $$AplicacionPagoTableAnnotationComposer,
+          $$AplicacionPagoTableCreateCompanionBuilder,
+          $$AplicacionPagoTableUpdateCompanionBuilder,
+          (AplicacionPagoData, $$AplicacionPagoTableReferences),
+          AplicacionPagoData,
+          PrefetchHooks Function({bool pagoId, bool cuentaPorCobrarId})
+        > {
+  $$AplicacionPagoTableTableManager(
+    _$AppDatabase db,
+    $AplicacionPagoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$AplicacionPagoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$AplicacionPagoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$AplicacionPagoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> pagoId = const Value.absent(),
+                Value<String> cuentaPorCobrarId = const Value.absent(),
+                Value<int> monto = const Value.absent(),
+                Value<int> saldoAntes = const Value.absent(),
+                Value<int> saldoDespues = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AplicacionPagoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                pagoId: pagoId,
+                cuentaPorCobrarId: cuentaPorCobrarId,
+                monto: monto,
+                saldoAntes: saldoAntes,
+                saldoDespues: saldoDespues,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String pagoId,
+                required String cuentaPorCobrarId,
+                required int monto,
+                required int saldoAntes,
+                required int saldoDespues,
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AplicacionPagoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                pagoId: pagoId,
+                cuentaPorCobrarId: cuentaPorCobrarId,
+                monto: monto,
+                saldoAntes: saldoAntes,
+                saldoDespues: saldoDespues,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$AplicacionPagoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({pagoId = false, cuentaPorCobrarId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (pagoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.pagoId,
+                            referencedTable: $$AplicacionPagoTableReferences
+                                ._pagoIdTable(db),
+                            referencedColumn:
+                                $$AplicacionPagoTableReferences
+                                    ._pagoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (cuentaPorCobrarId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.cuentaPorCobrarId,
+                            referencedTable: $$AplicacionPagoTableReferences
+                                ._cuentaPorCobrarIdTable(db),
+                            referencedColumn:
+                                $$AplicacionPagoTableReferences
+                                    ._cuentaPorCobrarIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AplicacionPagoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AplicacionPagoTable,
+      AplicacionPagoData,
+      $$AplicacionPagoTableFilterComposer,
+      $$AplicacionPagoTableOrderingComposer,
+      $$AplicacionPagoTableAnnotationComposer,
+      $$AplicacionPagoTableCreateCompanionBuilder,
+      $$AplicacionPagoTableUpdateCompanionBuilder,
+      (AplicacionPagoData, $$AplicacionPagoTableReferences),
+      AplicacionPagoData,
+      PrefetchHooks Function({bool pagoId, bool cuentaPorCobrarId})
+    >;
+typedef $$PagoEventoTableCreateCompanionBuilder =
+    PagoEventoCompanion Function({
+      Value<int> id,
+      required String pagoId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+typedef $$PagoEventoTableUpdateCompanionBuilder =
+    PagoEventoCompanion Function({
+      Value<int> id,
+      Value<String> pagoId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$PagoEventoTableReferences
+    extends BaseReferences<_$AppDatabase, $PagoEventoTable, PagoEventoData> {
+  $$PagoEventoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PagoTable _pagoIdTable(_$AppDatabase db) => db.pago.createAlias(
+    $_aliasNameGenerator(db.pagoEvento.pagoId, db.pago.id),
+  );
+
+  $$PagoTableProcessedTableManager get pagoId {
+    final $_column = $_itemColumn<String>('pago_id')!;
+
+    final manager = $$PagoTableTableManager(
+      $_db,
+      $_db.pago,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PagoEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $PagoEventoTable> {
+  $$PagoEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PagoTableFilterComposer get pagoId {
+    final $$PagoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableFilterComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PagoEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $PagoEventoTable> {
+  $$PagoEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PagoTableOrderingComposer get pagoId {
+    final $$PagoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableOrderingComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PagoEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PagoEventoTable> {
+  $$PagoEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$PagoTableAnnotationComposer get pagoId {
+    final $$PagoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pagoId,
+      referencedTable: $db.pago,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PagoEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PagoEventoTable,
+          PagoEventoData,
+          $$PagoEventoTableFilterComposer,
+          $$PagoEventoTableOrderingComposer,
+          $$PagoEventoTableAnnotationComposer,
+          $$PagoEventoTableCreateCompanionBuilder,
+          $$PagoEventoTableUpdateCompanionBuilder,
+          (PagoEventoData, $$PagoEventoTableReferences),
+          PagoEventoData,
+          PrefetchHooks Function({bool pagoId})
+        > {
+  $$PagoEventoTableTableManager(_$AppDatabase db, $PagoEventoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$PagoEventoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$PagoEventoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$PagoEventoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> pagoId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => PagoEventoCompanion(
+                id: id,
+                pagoId: pagoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String pagoId,
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => PagoEventoCompanion.insert(
+                id: id,
+                pagoId: pagoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$PagoEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({pagoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (pagoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.pagoId,
+                            referencedTable: $$PagoEventoTableReferences
+                                ._pagoIdTable(db),
+                            referencedColumn:
+                                $$PagoEventoTableReferences._pagoIdTable(db).id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PagoEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PagoEventoTable,
+      PagoEventoData,
+      $$PagoEventoTableFilterComposer,
+      $$PagoEventoTableOrderingComposer,
+      $$PagoEventoTableAnnotationComposer,
+      $$PagoEventoTableCreateCompanionBuilder,
+      $$PagoEventoTableUpdateCompanionBuilder,
+      (PagoEventoData, $$PagoEventoTableReferences),
+      PagoEventoData,
+      PrefetchHooks Function({bool pagoId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -44130,4 +48261,9 @@ class $AppDatabaseManager {
       $$CuentaPorCobrarTableTableManager(_db, _db.cuentaPorCobrar);
   $$CuentaPorCobrarEventoTableTableManager get cuentaPorCobrarEvento =>
       $$CuentaPorCobrarEventoTableTableManager(_db, _db.cuentaPorCobrarEvento);
+  $$PagoTableTableManager get pago => $$PagoTableTableManager(_db, _db.pago);
+  $$AplicacionPagoTableTableManager get aplicacionPago =>
+      $$AplicacionPagoTableTableManager(_db, _db.aplicacionPago);
+  $$PagoEventoTableTableManager get pagoEvento =>
+      $$PagoEventoTableTableManager(_db, _db.pagoEvento);
 }

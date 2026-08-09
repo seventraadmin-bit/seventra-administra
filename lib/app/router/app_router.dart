@@ -145,6 +145,13 @@ GoRouter createAppRouter() {
                         builder: (context, state) =>
                             const FinanzasShellScreen(tab: FinanzasTab.cuentasPorCobrar),
                       ),
+                      GoRoute(
+                        path: 'pagos',
+                        // Sin sub-ruta `:id` — el detalle de un Pago se
+                        // muestra en un diálogo (Etapa 4J.2), mismo
+                        // criterio que Cuentas por cobrar/Agenda.
+                        builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.pagos),
+                      ),
                     ],
                   )
                 else

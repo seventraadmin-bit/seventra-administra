@@ -44,6 +44,16 @@ class AttachmentRepository {
         .get();
   }
 
+  /// Comprobantes de pago activos de un `Pago` (Etapa 4J.2) — mismo
+  /// criterio que los adjuntos de `DocumentoPorEmitir`: solo `estado =
+  /// activo`.
+  Future<List<AttachmentData>> listarActivosPorPago(String pagoId) {
+    return (_db.select(_db.attachment)
+          ..where((t) => t.pagoId.equals(pagoId) & t.estado.equals('activo'))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+
   Future<void> archivar(String id) {
     return (_db.update(_db.attachment)..where((t) => t.id.equals(id))).write(
       const AttachmentCompanion(estado: Value('archivado')),

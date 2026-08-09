@@ -15,10 +15,13 @@ enum EstatusCuentaPorCobrar { pendiente, parcial, pagada }
 
 /// Tipos de evento del historial de una Cuenta por cobrar
 /// (`CuentaPorCobrarEvento`) — mismo criterio append-only que
-/// `DocumentoPorEmitirEvento`. Deliberadamente solo los 2 eventos que
-/// 4J.1 realmente dispara — nunca se inventan eventos de pago antes
-/// de que exista el caso de uso que los produzca.
-enum TipoEventoCuentaPorCobrar { creada, fechaVencimientoDefinida }
+/// `DocumentoPorEmitirEvento`. `pagoAplicado`/`pagoAplicacionCancelada`
+/// se agregaron en la Etapa 4J.2: registran el efecto de cada
+/// `AplicacionPago` sobre esta Cuenta específica — el ciclo de vida
+/// del Pago en sí (registrado/corregido/cancelado) vive en
+/// `PagoEvento`, no aquí, porque bajo el modelo N:M un Pago puede
+/// tocar varias Cuentas a la vez.
+enum TipoEventoCuentaPorCobrar { creada, fechaVencimientoDefinida, pagoAplicado, pagoAplicacionCancelada }
 
 /// Obligación de cobro real, generada automáticamente cuando un
 /// `DocumentoPorEmitir` llega a `Procesado/Aceptado` (Etapa 4J.1,

@@ -30,18 +30,23 @@ class AttachmentStorage {
   final String _attachmentsDir;
 
   /// Copia el archivo en `sourceFilePath` a
-  /// `attachmentsDir/<documentoPorEmitirId>/<categoria>/<storedFileName>`.
-  /// Nunca mueve ni borra el archivo origen (puede seguir abierto en otro
+  /// `attachmentsDir/<ownerId>/<categoria>/<storedFileName>`. Nunca
+  /// mueve ni borra el archivo origen (puede seguir abierto en otro
   /// programa, seguir siendo el archivo temporal de un selector, etc.).
+  ///
+  /// `ownerId` es el id del dueño del adjunto (`DocumentoPorEmitir` o,
+  /// desde la Etapa 4J.2, `Pago`) — nombre genérico porque esta clase
+  /// es infraestructura compartida entre dueños, no propia de ningún
+  /// módulo.
   Future<ArchivoGuardado> guardar({
-    required String documentoPorEmitirId,
+    required String ownerId,
     required String categoria,
     required String sourceFilePath,
     required String originalFileName,
   }) async {
     final extension = p.extension(originalFileName).toLowerCase();
     final storedFileName = '${const Uuid().v4()}$extension';
-    final destinoDir = Directory(p.join(_attachmentsDir, documentoPorEmitirId, categoria));
+    final destinoDir = Directory(p.join(_attachmentsDir, ownerId, categoria));
     await destinoDir.create(recursive: true);
     final destinoPath = p.join(destinoDir.path, storedFileName);
 

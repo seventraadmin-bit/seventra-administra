@@ -6,14 +6,20 @@ import 'package:intl/intl.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
+import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_aplicacion_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cuenta_por_cobrar_antiguedad.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 
 import '../../../../organizacion/organizacion_providers.dart';
+import '../../../finanzas_providers.dart';
+import '../../pagos/pagos_list_screen.dart' show formatoCentavosPago;
+import '../../pagos/widgets/pago_detalle_dialog.dart';
 import '../cuentas_por_cobrar_controller.dart';
 import '../cuentas_por_cobrar_list_screen.dart' show formatoCentavosCuentaPorCobrar;
 import 'cuenta_por_cobrar_definir_vencimiento_dialog.dart';
+import 'registrar_pago_aplicado_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
@@ -34,8 +40,11 @@ class CuentaPorCobrarDetalleDialog extends ConsumerStatefulWidget {
 class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDetalleDialog> {
   CuentaPorCobrarData? _cuenta;
   List<CuentaPorCobrarEventoData> _eventos = const [];
+  List<AplicacionPagoData> _aplicacionesPago = const [];
+  final Map<String, String> _folioPagoPorAplicacion = {};
   String? _clienteNombre;
   bool _cargando = true;
+  bool _procesando = false;
 
   @override
   void initState() {
@@ -48,17 +57,25 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
     final notifier = ref.read(cuentasPorCobrarControllerProvider.notifier);
     final cuenta = await notifier.obtenerPorId(widget.cuentaPorCobrarId);
     final eventos = await notifier.listarEventos(widget.cuentaPorCobrarId);
+    final aplicacionesPago =
+        await ref.read(pagoRepositoryProvider).listarAplicacionesPorCuenta(widget.cuentaPorCobrarId);
 
     String? clienteNombre;
     if (cuenta != null) {
       final cliente = await ref.read(clienteRepositoryProvider).obtenerPorId(cuenta.clienteId);
       clienteNombre = cliente?.nombreComercial;
     }
+    for (final aplicacion in aplicacionesPago) {
+      if (_folioPagoPorAplicacion.containsKey(aplicacion.id)) continue;
+      final pago = await ref.read(pagoRepositoryProvider).obtenerPorId(aplicacion.pagoId);
+      if (pago != null) _folioPagoPorAplicacion[aplicacion.id] = pago.folioPago;
+    }
 
     if (!mounted) return;
     setState(() {
       _cuenta = cuenta;
       _eventos = eventos;
+      _aplicacionesPago = aplicacionesPago;
       _clienteNombre = clienteNombre;
       _cargando = false;
     });
@@ -110,6 +127,9 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
       TipoEventoCuentaPorCobrar.creada => l10n.cuentaPorCobrarDetalleHistorialEventoCreada,
       TipoEventoCuentaPorCobrar.fechaVencimientoDefinida =>
         l10n.cuentaPorCobrarDetalleHistorialEventoFechaVencimientoDefinida,
+      TipoEventoCuentaPorCobrar.pagoAplicado => l10n.cuentaPorCobrarDetalleHistorialEventoPagoAplicado,
+      TipoEventoCuentaPorCobrar.pagoAplicacionCancelada =>
+        l10n.cuentaPorCobrarDetalleHistorialEventoPagoAplicacionCancelada,
     };
   }
 
@@ -121,6 +141,66 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
       fechaActual: _cuenta?.fechaVencimiento,
     );
     if (actualizo) await _cargar();
+  }
+
+  Future<void> _registrarPago() async {
+    final actualizo = await mostrarDialogoRegistrarPagoAplicado(
+      context,
+      ref,
+      cuentaPorCobrarId: widget.cuentaPorCobrarId,
+      saldoPendiente: _cuenta!.saldoPendiente,
+    );
+    if (actualizo) await _cargar();
+  }
+
+  Future<void> _verPago(AplicacionPagoData aplicacion) async {
+    await showDialog<void>(context: context, builder: (_) => PagoDetalleDialog(pagoId: aplicacion.pagoId));
+    await _cargar();
+  }
+
+  Future<void> _cancelarAplicacionPago(AplicacionPagoData aplicacion) async {
+    final l10n = AppLocalizations.of(context)!;
+    final motivoController = TextEditingController();
+    final confirmado = await RisegDialog.showForm<bool>(
+      context: context,
+      title: l10n.cancelarAplicacionPagoConfirmacionTitulo,
+      confirmLabel: l10n.cancelarAplicacionPagoConfirmacionConfirmar,
+      cancelLabel: l10n.cancelarAplicacionPagoConfirmacionCancelar,
+      contentBuilder: (_) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.cancelarAplicacionPagoConfirmacionMensaje, style: AppTypography.body),
+          const SizedBox(height: AppSpacing.md),
+          RisegTextField(label: l10n.pagoMotivoCampo, controller: motivoController, autofocus: true),
+        ],
+      ),
+      onConfirm: () async => true,
+    );
+    if (confirmado != true) {
+      motivoController.dispose();
+      return;
+    }
+    final motivo = motivoController.text.trim();
+    motivoController.dispose();
+    if (!mounted) return;
+
+    setState(() => _procesando = true);
+    final resultado = await ref
+        .read(cancelarAplicacionPagoUseCaseProvider)
+        .ejecutar(aplicacionPagoId: aplicacion.id, motivo: motivo);
+    if (!mounted) return;
+    setState(() => _procesando = false);
+
+    switch (resultado) {
+      case CancelarAplicacionPagoExitoso():
+        RisegFeedback.showSuccess(context, l10n.cancelarAplicacionPagoExito);
+        await _cargar();
+      case CancelarAplicacionPagoNoExiste():
+      case CancelarAplicacionPagoYaCancelada():
+      case CancelarAplicacionPagoErrorInesperado():
+        RisegFeedback.showError(context, l10n.cancelarAplicacionPagoErrorInesperado);
+    }
   }
 
   @override
@@ -266,6 +346,67 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
               const SizedBox(height: AppSpacing.sm),
               CampoConsulta(label: l10n.agendaDetalleCampoObservaciones, value: c.observaciones),
             ],
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.cuentaPorCobrarDetalleSeccionPagos,
+                    style: AppTypography.heading3.copyWith(color: colors.textPrimary),
+                  ),
+                ),
+                if (EstatusCuentaPorCobrar.values.byName(c.estatus) != EstatusCuentaPorCobrar.pagada)
+                  RisegButton(
+                    label: l10n.cuentaPorCobrarDetalleBotonRegistrarPago,
+                    variant: RisegButtonVariant.ghost,
+                    onPressed: _registrarPago,
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            if (_aplicacionesPago.isEmpty)
+              Text(
+                l10n.cuentaPorCobrarDetallePagosSinPagos,
+                style: AppTypography.body.copyWith(color: colors.textMuted),
+              )
+            else
+              for (final aplicacion in _aplicacionesPago)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(_folioPagoPorAplicacion[aplicacion.id] ?? aplicacion.pagoId),
+                      ),
+                      SizedBox(width: 110, child: Text(formatoCentavosPago(aplicacion.monto))),
+                      SizedBox(
+                        width: 100,
+                        child: RisegStatusBadge(
+                          label: EstatusAplicacionPago.values.byName(aplicacion.estatus) ==
+                                  EstatusAplicacionPago.aplicada
+                              ? l10n.aplicacionPagoEstatusAplicada
+                              : l10n.aplicacionPagoEstatusCancelada,
+                          tone: EstatusAplicacionPago.values.byName(aplicacion.estatus) ==
+                                  EstatusAplicacionPago.aplicada
+                              ? RisegStatusTone.success
+                              : RisegStatusTone.neutral,
+                        ),
+                      ),
+                      RisegButton(
+                        label: l10n.pagoDetalleDialogoTitulo,
+                        variant: RisegButtonVariant.ghost,
+                        onPressed: () => _verPago(aplicacion),
+                      ),
+                      if (EstatusAplicacionPago.values.byName(aplicacion.estatus) == EstatusAplicacionPago.aplicada)
+                        RisegButton(
+                          label: l10n.cuentaPorCobrarDetalleBotonCancelarAplicacion,
+                          variant: RisegButtonVariant.ghost,
+                          loading: _procesando,
+                          onPressed: () => _cancelarAplicacionPago(aplicacion),
+                        ),
+                    ],
+                  ),
+                ),
             const SizedBox(height: AppSpacing.md),
             Text(
               l10n.cuentaPorCobrarDetalleSeccionHistorial,
