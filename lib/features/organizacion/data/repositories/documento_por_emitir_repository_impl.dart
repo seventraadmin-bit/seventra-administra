@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 
 import '../../domain/repositories/documento_por_emitir_repository.dart';
 import '../../domain/usecases/documento_por_emitir_armado.dart';
 import '../../domain/usecases/documento_por_emitir_detalle.dart';
+import '../tables/documento_por_emitir_table.dart';
 
 class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
   DocumentoPorEmitirRepositoryImpl(this._db);
@@ -24,6 +27,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
   Future<DocumentoPorEmitirData> crearDocumento({
     required String codigo,
     required DocumentoPorEmitirArmado armado,
+    required TipoEventoDocumentoPorEmitir tipoEventoCreacion,
   }) {
     return _db.transaction(() async {
       final documento = await _db.into(_db.documentoPorEmitir).insertReturning(
@@ -91,6 +95,13 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
             );
       }
 
+      await _registrarEvento(
+        documentoPorEmitirId: documento.id,
+        tipoEvento: tipoEventoCreacion,
+        estadoAnterior: null,
+        estadoNuevo: documento.estatus,
+      );
+
       return documento;
     });
   }
@@ -112,6 +123,8 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     final correos = await (_db.select(_db.documentoPorEmitirCorreo)
           ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId)))
         .get();
+    final correosEnvio = await listarCorreosEnvio(documentoPorEmitirId);
+    final eventos = await listarEventos(documentoPorEmitirId);
 
     return DocumentoPorEmitirDetalle(
       documento: documento,
@@ -119,6 +132,8 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
       configuraciones: configuraciones,
       lineas: lineas,
       correos: [for (final c in correos) c.correo],
+      correosEnvio: correosEnvio,
+      eventos: eventos,
     );
   }
 
@@ -206,15 +221,177 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required String documentoPorEmitirId,
     required String nuevoEstatus,
     String? motivo,
-  }) async {
-    await (_db.update(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).write(
-      DocumentoPorEmitirCompanion(
-        estatus: Value(nuevoEstatus),
-        motivoEstatus: Value(motivo),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
-    return (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+    required TipoEventoDocumentoPorEmitir tipoEvento,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
+          .getSingle();
+
+      await (_db.update(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).write(
+        DocumentoPorEmitirCompanion(
+          estatus: Value(nuevoEstatus),
+          motivoEstatus: Value(motivo),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      await _registrarEvento(
+        documentoPorEmitirId: documentoPorEmitirId,
+        tipoEvento: tipoEvento,
+        estadoAnterior: anterior.estatus,
+        estadoNuevo: nuevoEstatus,
+        observacion: motivo,
+        actor: actor,
+      );
+
+      return (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+    });
+  }
+
+  @override
+  Future<DocumentoPorEmitirData> registrarEmision({
+    required String documentoPorEmitirId,
+    required String folioDocumento,
+    String? serieFiscal,
+    String? folioFiscal,
+    String? uuid,
+    required DateTime fechaEmisionReal,
+    required int importeEmitido,
+    String? observacionesEmision,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
+          .getSingle();
+
+      await (_db.update(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).write(
+        DocumentoPorEmitirCompanion(
+          estatus: const Value(_estatusEmitido),
+          folioDocumento: Value(folioDocumento),
+          serieFiscal: Value(serieFiscal),
+          folioFiscal: Value(folioFiscal),
+          uuid: Value(uuid),
+          fechaEmisionReal: Value(fechaEmisionReal),
+          importeEmitido: Value(importeEmitido),
+          observacionesEmision: Value(observacionesEmision),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      await _registrarEvento(
+        documentoPorEmitirId: documentoPorEmitirId,
+        tipoEvento: TipoEventoDocumentoPorEmitir.emisionRegistrada,
+        estadoAnterior: anterior.estatus,
+        estadoNuevo: _estatusEmitido,
+        actor: actor,
+        datosRelevantes: {
+          'folioDocumento': folioDocumento,
+          'serieFiscal': serieFiscal,
+          'folioFiscal': folioFiscal,
+          'uuid': uuid,
+          'importeEmitido': importeEmitido,
+        },
+      );
+
+      return (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+    });
+  }
+
+  @override
+  Future<DocumentoPorEmitirData> corregirDatosEmision({
+    required String documentoPorEmitirId,
+    required String motivo,
+    String? folioDocumento,
+    String? serieFiscal,
+    String? folioFiscal,
+    String? uuid,
+    DateTime? fechaEmisionReal,
+    int? importeEmitido,
+    String? observacionesEmision,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
+          .getSingle();
+
+      await (_db.update(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).write(
+        DocumentoPorEmitirCompanion(
+          folioDocumento: folioDocumento == null ? const Value.absent() : Value(folioDocumento),
+          serieFiscal: serieFiscal == null ? const Value.absent() : Value(serieFiscal),
+          folioFiscal: folioFiscal == null ? const Value.absent() : Value(folioFiscal),
+          uuid: uuid == null ? const Value.absent() : Value(uuid),
+          fechaEmisionReal: fechaEmisionReal == null ? const Value.absent() : Value(fechaEmisionReal),
+          importeEmitido: importeEmitido == null ? const Value.absent() : Value(importeEmitido),
+          observacionesEmision: observacionesEmision == null ? const Value.absent() : Value(observacionesEmision),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      await _registrarEvento(
+        documentoPorEmitirId: documentoPorEmitirId,
+        tipoEvento: TipoEventoDocumentoPorEmitir.correccionDatosEmision,
+        estadoAnterior: anterior.estatus,
+        estadoNuevo: anterior.estatus,
+        observacion: motivo,
+        actor: actor,
+        datosRelevantes: {
+          'folioDocumentoAnterior': anterior.folioDocumento,
+          'serieFiscalAnterior': anterior.serieFiscal,
+          'folioFiscalAnterior': anterior.folioFiscal,
+          'uuidAnterior': anterior.uuid,
+          'importeEmitidoAnterior': anterior.importeEmitido,
+        },
+      );
+
+      return (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+    });
+  }
+
+  @override
+  Future<DocumentoPorEmitirData> registrarEnvio({
+    required String documentoPorEmitirId,
+    required DateTime fechaEnvio,
+    required List<String> correos,
+    String? observacionesEnvio,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
+          .getSingle();
+      final correosAnteriores = await listarCorreosEnvio(documentoPorEmitirId);
+
+      await (_db.update(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).write(
+        DocumentoPorEmitirCompanion(
+          estatus: const Value(_estatusEnviado),
+          fechaEnvio: Value(fechaEnvio),
+          observacionesEnvio: Value(observacionesEnvio),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      await (_db.delete(_db.documentoPorEmitirCorreoEnvio)..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId)))
+          .go();
+      for (final correo in correos) {
+        await _db.into(_db.documentoPorEmitirCorreoEnvio).insert(
+              DocumentoPorEmitirCorreoEnvioCompanion.insert(documentoPorEmitirId: documentoPorEmitirId, correo: correo),
+            );
+      }
+
+      await _registrarEvento(
+        documentoPorEmitirId: documentoPorEmitirId,
+        tipoEvento: TipoEventoDocumentoPorEmitir.envioRegistrado,
+        estadoAnterior: anterior.estatus,
+        estadoNuevo: _estatusEnviado,
+        actor: actor,
+        datosRelevantes: {
+          'correosUtilizados': correos,
+          if (correosAnteriores.isNotEmpty) 'correosAnteriores': correosAnteriores,
+        },
+      );
+
+      return (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+    });
   }
 
   @override
@@ -222,18 +399,82 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required String documentoPorEmitirId,
     int? ajusteManual,
     String? motivoAjuste,
-  }) async {
-    final actual = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
-    final importeFinal = actual.importeBaseEsperado + (ajusteManual ?? 0);
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      final actual = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
+          .getSingle();
+      final importeFinal = actual.importeBaseEsperado + (ajusteManual ?? 0);
 
-    await (_db.update(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).write(
-      DocumentoPorEmitirCompanion(
-        ajusteManual: Value(ajusteManual),
-        motivoAjuste: Value(motivoAjuste),
-        importeFinalEsperado: Value(importeFinal),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
-    return (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+      await (_db.update(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).write(
+        DocumentoPorEmitirCompanion(
+          ajusteManual: Value(ajusteManual),
+          motivoAjuste: Value(motivoAjuste),
+          importeFinalEsperado: Value(importeFinal),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      await _registrarEvento(
+        documentoPorEmitirId: documentoPorEmitirId,
+        tipoEvento: TipoEventoDocumentoPorEmitir.ajusteRegistrado,
+        estadoAnterior: actual.estatus,
+        estadoNuevo: actual.estatus,
+        observacion: motivoAjuste,
+        actor: actor,
+        datosRelevantes: {
+          'ajusteAnterior': actual.ajusteManual,
+          'ajusteNuevo': ajusteManual,
+          'motivoAnterior': actual.motivoAjuste,
+          'motivoNuevo': motivoAjuste,
+          'importeFinalAnterior': actual.importeFinalEsperado,
+          'importeFinalNuevo': importeFinal,
+        },
+      );
+
+      return (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+    });
+  }
+
+  @override
+  Future<List<String>> listarCorreosEnvio(String documentoPorEmitirId) async {
+    final filas = await (_db.select(_db.documentoPorEmitirCorreoEnvio)
+          ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId)))
+        .get();
+    return [for (final f in filas) f.correo];
+  }
+
+  @override
+  Future<List<DocumentoPorEmitirEventoData>> listarEventos(String documentoPorEmitirId) {
+    return (_db.select(_db.documentoPorEmitirEvento)
+          ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId))
+          ..orderBy([(t) => OrderingTerm.asc(t.fechaHora)]))
+        .get();
+  }
+
+  Future<void> _registrarEvento({
+    required String documentoPorEmitirId,
+    required TipoEventoDocumentoPorEmitir tipoEvento,
+    required String? estadoAnterior,
+    required String? estadoNuevo,
+    String? observacion,
+    String? actor,
+    Map<String, Object?>? datosRelevantes,
+  }) {
+    return _db.into(_db.documentoPorEmitirEvento).insert(
+          DocumentoPorEmitirEventoCompanion.insert(
+            documentoPorEmitirId: documentoPorEmitirId,
+            fechaHora: DateTime.now(),
+            tipoEvento: tipoEvento.name,
+            estadoAnterior: Value(estadoAnterior),
+            estadoNuevo: Value(estadoNuevo),
+            observacion: Value(observacion),
+            actor: Value(actor),
+            datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
+          ),
+        );
   }
 }
+
+const _estatusEmitido = 'emitido';
+const _estatusEnviado = 'enviado';

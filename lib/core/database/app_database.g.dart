@@ -17061,6 +17061,104 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _folioDocumentoMeta = const VerificationMeta(
+    'folioDocumento',
+  );
+  @override
+  late final GeneratedColumn<String> folioDocumento = GeneratedColumn<String>(
+    'folio_documento',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serieFiscalMeta = const VerificationMeta(
+    'serieFiscal',
+  );
+  @override
+  late final GeneratedColumn<String> serieFiscal = GeneratedColumn<String>(
+    'serie_fiscal',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _folioFiscalMeta = const VerificationMeta(
+    'folioFiscal',
+  );
+  @override
+  late final GeneratedColumn<String> folioFiscal = GeneratedColumn<String>(
+    'folio_fiscal',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+    'uuid',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaEmisionRealMeta = const VerificationMeta(
+    'fechaEmisionReal',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaEmisionReal =
+      GeneratedColumn<DateTime>(
+        'fecha_emision_real',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _importeEmitidoMeta = const VerificationMeta(
+    'importeEmitido',
+  );
+  @override
+  late final GeneratedColumn<int> importeEmitido = GeneratedColumn<int>(
+    'importe_emitido',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesEmisionMeta =
+      const VerificationMeta('observacionesEmision');
+  @override
+  late final GeneratedColumn<String> observacionesEmision =
+      GeneratedColumn<String>(
+        'observaciones_emision',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _fechaEnvioMeta = const VerificationMeta(
+    'fechaEnvio',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaEnvio = GeneratedColumn<DateTime>(
+    'fecha_envio',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesEnvioMeta =
+      const VerificationMeta('observacionesEnvio');
+  @override
+  late final GeneratedColumn<String> observacionesEnvio =
+      GeneratedColumn<String>(
+        'observaciones_envio',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -17087,6 +17185,15 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
     estatus,
     motivoEstatus,
     observaciones,
+    folioDocumento,
+    serieFiscal,
+    folioFiscal,
+    uuid,
+    fechaEmisionReal,
+    importeEmitido,
+    observacionesEmision,
+    fechaEnvio,
+    observacionesEnvio,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -17306,6 +17413,81 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
         ),
       );
     }
+    if (data.containsKey('folio_documento')) {
+      context.handle(
+        _folioDocumentoMeta,
+        folioDocumento.isAcceptableOrUnknown(
+          data['folio_documento']!,
+          _folioDocumentoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('serie_fiscal')) {
+      context.handle(
+        _serieFiscalMeta,
+        serieFiscal.isAcceptableOrUnknown(
+          data['serie_fiscal']!,
+          _serieFiscalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio_fiscal')) {
+      context.handle(
+        _folioFiscalMeta,
+        folioFiscal.isAcceptableOrUnknown(
+          data['folio_fiscal']!,
+          _folioFiscalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('uuid')) {
+      context.handle(
+        _uuidMeta,
+        uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta),
+      );
+    }
+    if (data.containsKey('fecha_emision_real')) {
+      context.handle(
+        _fechaEmisionRealMeta,
+        fechaEmisionReal.isAcceptableOrUnknown(
+          data['fecha_emision_real']!,
+          _fechaEmisionRealMeta,
+        ),
+      );
+    }
+    if (data.containsKey('importe_emitido')) {
+      context.handle(
+        _importeEmitidoMeta,
+        importeEmitido.isAcceptableOrUnknown(
+          data['importe_emitido']!,
+          _importeEmitidoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones_emision')) {
+      context.handle(
+        _observacionesEmisionMeta,
+        observacionesEmision.isAcceptableOrUnknown(
+          data['observaciones_emision']!,
+          _observacionesEmisionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_envio')) {
+      context.handle(
+        _fechaEnvioMeta,
+        fechaEnvio.isAcceptableOrUnknown(data['fecha_envio']!, _fechaEnvioMeta),
+      );
+    }
+    if (data.containsKey('observaciones_envio')) {
+      context.handle(
+        _observacionesEnvioMeta,
+        observacionesEnvio.isAcceptableOrUnknown(
+          data['observaciones_envio']!,
+          _observacionesEnvioMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -17427,6 +17609,42 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
         DriftSqlType.string,
         data['${effectivePrefix}observaciones'],
       ),
+      folioDocumento: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folio_documento'],
+      ),
+      serieFiscal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serie_fiscal'],
+      ),
+      folioFiscal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folio_fiscal'],
+      ),
+      uuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uuid'],
+      ),
+      fechaEmisionReal: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_emision_real'],
+      ),
+      importeEmitido: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}importe_emitido'],
+      ),
+      observacionesEmision: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_emision'],
+      ),
+      fechaEnvio: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_envio'],
+      ),
+      observacionesEnvio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_envio'],
+      ),
     );
   }
 
@@ -17474,6 +17692,23 @@ class DocumentoPorEmitirData extends DataClass
   /// entre uno y otro).
   final String? motivoEstatus;
   final String? observaciones;
+  final String? folioDocumento;
+
+  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
+  final String? serieFiscal;
+
+  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
+  final String? folioFiscal;
+
+  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
+  /// Puede capturarse después de marcar `emitido` (ej. al adjuntar el
+  /// XML) — nunca obligatorio en el momento de la emisión misma.
+  final String? uuid;
+  final DateTime? fechaEmisionReal;
+  final int? importeEmitido;
+  final String? observacionesEmision;
+  final DateTime? fechaEnvio;
+  final String? observacionesEnvio;
   const DocumentoPorEmitirData({
     required this.id,
     required this.createdAt,
@@ -17499,6 +17734,15 @@ class DocumentoPorEmitirData extends DataClass
     required this.estatus,
     this.motivoEstatus,
     this.observaciones,
+    this.folioDocumento,
+    this.serieFiscal,
+    this.folioFiscal,
+    this.uuid,
+    this.fechaEmisionReal,
+    this.importeEmitido,
+    this.observacionesEmision,
+    this.fechaEnvio,
+    this.observacionesEnvio,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -17548,6 +17792,33 @@ class DocumentoPorEmitirData extends DataClass
     }
     if (!nullToAbsent || observaciones != null) {
       map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || folioDocumento != null) {
+      map['folio_documento'] = Variable<String>(folioDocumento);
+    }
+    if (!nullToAbsent || serieFiscal != null) {
+      map['serie_fiscal'] = Variable<String>(serieFiscal);
+    }
+    if (!nullToAbsent || folioFiscal != null) {
+      map['folio_fiscal'] = Variable<String>(folioFiscal);
+    }
+    if (!nullToAbsent || uuid != null) {
+      map['uuid'] = Variable<String>(uuid);
+    }
+    if (!nullToAbsent || fechaEmisionReal != null) {
+      map['fecha_emision_real'] = Variable<DateTime>(fechaEmisionReal);
+    }
+    if (!nullToAbsent || importeEmitido != null) {
+      map['importe_emitido'] = Variable<int>(importeEmitido);
+    }
+    if (!nullToAbsent || observacionesEmision != null) {
+      map['observaciones_emision'] = Variable<String>(observacionesEmision);
+    }
+    if (!nullToAbsent || fechaEnvio != null) {
+      map['fecha_envio'] = Variable<DateTime>(fechaEnvio);
+    }
+    if (!nullToAbsent || observacionesEnvio != null) {
+      map['observaciones_envio'] = Variable<String>(observacionesEnvio);
     }
     return map;
   }
@@ -17602,6 +17873,39 @@ class DocumentoPorEmitirData extends DataClass
           observaciones == null && nullToAbsent
               ? const Value.absent()
               : Value(observaciones),
+      folioDocumento:
+          folioDocumento == null && nullToAbsent
+              ? const Value.absent()
+              : Value(folioDocumento),
+      serieFiscal:
+          serieFiscal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(serieFiscal),
+      folioFiscal:
+          folioFiscal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(folioFiscal),
+      uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
+      fechaEmisionReal:
+          fechaEmisionReal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaEmisionReal),
+      importeEmitido:
+          importeEmitido == null && nullToAbsent
+              ? const Value.absent()
+              : Value(importeEmitido),
+      observacionesEmision:
+          observacionesEmision == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesEmision),
+      fechaEnvio:
+          fechaEnvio == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaEnvio),
+      observacionesEnvio:
+          observacionesEnvio == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesEnvio),
     );
   }
 
@@ -17647,6 +17951,21 @@ class DocumentoPorEmitirData extends DataClass
       estatus: serializer.fromJson<String>(json['estatus']),
       motivoEstatus: serializer.fromJson<String?>(json['motivoEstatus']),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
+      folioDocumento: serializer.fromJson<String?>(json['folioDocumento']),
+      serieFiscal: serializer.fromJson<String?>(json['serieFiscal']),
+      folioFiscal: serializer.fromJson<String?>(json['folioFiscal']),
+      uuid: serializer.fromJson<String?>(json['uuid']),
+      fechaEmisionReal: serializer.fromJson<DateTime?>(
+        json['fechaEmisionReal'],
+      ),
+      importeEmitido: serializer.fromJson<int?>(json['importeEmitido']),
+      observacionesEmision: serializer.fromJson<String?>(
+        json['observacionesEmision'],
+      ),
+      fechaEnvio: serializer.fromJson<DateTime?>(json['fechaEnvio']),
+      observacionesEnvio: serializer.fromJson<String?>(
+        json['observacionesEnvio'],
+      ),
     );
   }
   @override
@@ -17683,6 +18002,15 @@ class DocumentoPorEmitirData extends DataClass
       'estatus': serializer.toJson<String>(estatus),
       'motivoEstatus': serializer.toJson<String?>(motivoEstatus),
       'observaciones': serializer.toJson<String?>(observaciones),
+      'folioDocumento': serializer.toJson<String?>(folioDocumento),
+      'serieFiscal': serializer.toJson<String?>(serieFiscal),
+      'folioFiscal': serializer.toJson<String?>(folioFiscal),
+      'uuid': serializer.toJson<String?>(uuid),
+      'fechaEmisionReal': serializer.toJson<DateTime?>(fechaEmisionReal),
+      'importeEmitido': serializer.toJson<int?>(importeEmitido),
+      'observacionesEmision': serializer.toJson<String?>(observacionesEmision),
+      'fechaEnvio': serializer.toJson<DateTime?>(fechaEnvio),
+      'observacionesEnvio': serializer.toJson<String?>(observacionesEnvio),
     };
   }
 
@@ -17711,6 +18039,15 @@ class DocumentoPorEmitirData extends DataClass
     String? estatus,
     Value<String?> motivoEstatus = const Value.absent(),
     Value<String?> observaciones = const Value.absent(),
+    Value<String?> folioDocumento = const Value.absent(),
+    Value<String?> serieFiscal = const Value.absent(),
+    Value<String?> folioFiscal = const Value.absent(),
+    Value<String?> uuid = const Value.absent(),
+    Value<DateTime?> fechaEmisionReal = const Value.absent(),
+    Value<int?> importeEmitido = const Value.absent(),
+    Value<String?> observacionesEmision = const Value.absent(),
+    Value<DateTime?> fechaEnvio = const Value.absent(),
+    Value<String?> observacionesEnvio = const Value.absent(),
   }) => DocumentoPorEmitirData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -17748,6 +18085,26 @@ class DocumentoPorEmitirData extends DataClass
         motivoEstatus.present ? motivoEstatus.value : this.motivoEstatus,
     observaciones:
         observaciones.present ? observaciones.value : this.observaciones,
+    folioDocumento:
+        folioDocumento.present ? folioDocumento.value : this.folioDocumento,
+    serieFiscal: serieFiscal.present ? serieFiscal.value : this.serieFiscal,
+    folioFiscal: folioFiscal.present ? folioFiscal.value : this.folioFiscal,
+    uuid: uuid.present ? uuid.value : this.uuid,
+    fechaEmisionReal:
+        fechaEmisionReal.present
+            ? fechaEmisionReal.value
+            : this.fechaEmisionReal,
+    importeEmitido:
+        importeEmitido.present ? importeEmitido.value : this.importeEmitido,
+    observacionesEmision:
+        observacionesEmision.present
+            ? observacionesEmision.value
+            : this.observacionesEmision,
+    fechaEnvio: fechaEnvio.present ? fechaEnvio.value : this.fechaEnvio,
+    observacionesEnvio:
+        observacionesEnvio.present
+            ? observacionesEnvio.value
+            : this.observacionesEnvio,
   );
   DocumentoPorEmitirData copyWithCompanion(DocumentoPorEmitirCompanion data) {
     return DocumentoPorEmitirData(
@@ -17822,6 +18179,33 @@ class DocumentoPorEmitirData extends DataClass
           data.observaciones.present
               ? data.observaciones.value
               : this.observaciones,
+      folioDocumento:
+          data.folioDocumento.present
+              ? data.folioDocumento.value
+              : this.folioDocumento,
+      serieFiscal:
+          data.serieFiscal.present ? data.serieFiscal.value : this.serieFiscal,
+      folioFiscal:
+          data.folioFiscal.present ? data.folioFiscal.value : this.folioFiscal,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
+      fechaEmisionReal:
+          data.fechaEmisionReal.present
+              ? data.fechaEmisionReal.value
+              : this.fechaEmisionReal,
+      importeEmitido:
+          data.importeEmitido.present
+              ? data.importeEmitido.value
+              : this.importeEmitido,
+      observacionesEmision:
+          data.observacionesEmision.present
+              ? data.observacionesEmision.value
+              : this.observacionesEmision,
+      fechaEnvio:
+          data.fechaEnvio.present ? data.fechaEnvio.value : this.fechaEnvio,
+      observacionesEnvio:
+          data.observacionesEnvio.present
+              ? data.observacionesEnvio.value
+              : this.observacionesEnvio,
     );
   }
 
@@ -17853,7 +18237,16 @@ class DocumentoPorEmitirData extends DataClass
           ..write('importeFinalEsperado: $importeFinalEsperado, ')
           ..write('estatus: $estatus, ')
           ..write('motivoEstatus: $motivoEstatus, ')
-          ..write('observaciones: $observaciones')
+          ..write('observaciones: $observaciones, ')
+          ..write('folioDocumento: $folioDocumento, ')
+          ..write('serieFiscal: $serieFiscal, ')
+          ..write('folioFiscal: $folioFiscal, ')
+          ..write('uuid: $uuid, ')
+          ..write('fechaEmisionReal: $fechaEmisionReal, ')
+          ..write('importeEmitido: $importeEmitido, ')
+          ..write('observacionesEmision: $observacionesEmision, ')
+          ..write('fechaEnvio: $fechaEnvio, ')
+          ..write('observacionesEnvio: $observacionesEnvio')
           ..write(')'))
         .toString();
   }
@@ -17884,6 +18277,15 @@ class DocumentoPorEmitirData extends DataClass
     estatus,
     motivoEstatus,
     observaciones,
+    folioDocumento,
+    serieFiscal,
+    folioFiscal,
+    uuid,
+    fechaEmisionReal,
+    importeEmitido,
+    observacionesEmision,
+    fechaEnvio,
+    observacionesEnvio,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -17914,7 +18316,16 @@ class DocumentoPorEmitirData extends DataClass
           other.importeFinalEsperado == this.importeFinalEsperado &&
           other.estatus == this.estatus &&
           other.motivoEstatus == this.motivoEstatus &&
-          other.observaciones == this.observaciones);
+          other.observaciones == this.observaciones &&
+          other.folioDocumento == this.folioDocumento &&
+          other.serieFiscal == this.serieFiscal &&
+          other.folioFiscal == this.folioFiscal &&
+          other.uuid == this.uuid &&
+          other.fechaEmisionReal == this.fechaEmisionReal &&
+          other.importeEmitido == this.importeEmitido &&
+          other.observacionesEmision == this.observacionesEmision &&
+          other.fechaEnvio == this.fechaEnvio &&
+          other.observacionesEnvio == this.observacionesEnvio);
 }
 
 class DocumentoPorEmitirCompanion
@@ -17943,6 +18354,15 @@ class DocumentoPorEmitirCompanion
   final Value<String> estatus;
   final Value<String?> motivoEstatus;
   final Value<String?> observaciones;
+  final Value<String?> folioDocumento;
+  final Value<String?> serieFiscal;
+  final Value<String?> folioFiscal;
+  final Value<String?> uuid;
+  final Value<DateTime?> fechaEmisionReal;
+  final Value<int?> importeEmitido;
+  final Value<String?> observacionesEmision;
+  final Value<DateTime?> fechaEnvio;
+  final Value<String?> observacionesEnvio;
   final Value<int> rowid;
   const DocumentoPorEmitirCompanion({
     this.id = const Value.absent(),
@@ -17969,6 +18389,15 @@ class DocumentoPorEmitirCompanion
     this.estatus = const Value.absent(),
     this.motivoEstatus = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.folioDocumento = const Value.absent(),
+    this.serieFiscal = const Value.absent(),
+    this.folioFiscal = const Value.absent(),
+    this.uuid = const Value.absent(),
+    this.fechaEmisionReal = const Value.absent(),
+    this.importeEmitido = const Value.absent(),
+    this.observacionesEmision = const Value.absent(),
+    this.fechaEnvio = const Value.absent(),
+    this.observacionesEnvio = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DocumentoPorEmitirCompanion.insert({
@@ -17996,6 +18425,15 @@ class DocumentoPorEmitirCompanion
     this.estatus = const Value.absent(),
     this.motivoEstatus = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.folioDocumento = const Value.absent(),
+    this.serieFiscal = const Value.absent(),
+    this.folioFiscal = const Value.absent(),
+    this.uuid = const Value.absent(),
+    this.fechaEmisionReal = const Value.absent(),
+    this.importeEmitido = const Value.absent(),
+    this.observacionesEmision = const Value.absent(),
+    this.fechaEnvio = const Value.absent(),
+    this.observacionesEnvio = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : codigo = Value(codigo),
        clienteId = Value(clienteId),
@@ -18032,6 +18470,15 @@ class DocumentoPorEmitirCompanion
     Expression<String>? estatus,
     Expression<String>? motivoEstatus,
     Expression<String>? observaciones,
+    Expression<String>? folioDocumento,
+    Expression<String>? serieFiscal,
+    Expression<String>? folioFiscal,
+    Expression<String>? uuid,
+    Expression<DateTime>? fechaEmisionReal,
+    Expression<int>? importeEmitido,
+    Expression<String>? observacionesEmision,
+    Expression<DateTime>? fechaEnvio,
+    Expression<String>? observacionesEnvio,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -18065,6 +18512,16 @@ class DocumentoPorEmitirCompanion
       if (estatus != null) 'estatus': estatus,
       if (motivoEstatus != null) 'motivo_estatus': motivoEstatus,
       if (observaciones != null) 'observaciones': observaciones,
+      if (folioDocumento != null) 'folio_documento': folioDocumento,
+      if (serieFiscal != null) 'serie_fiscal': serieFiscal,
+      if (folioFiscal != null) 'folio_fiscal': folioFiscal,
+      if (uuid != null) 'uuid': uuid,
+      if (fechaEmisionReal != null) 'fecha_emision_real': fechaEmisionReal,
+      if (importeEmitido != null) 'importe_emitido': importeEmitido,
+      if (observacionesEmision != null)
+        'observaciones_emision': observacionesEmision,
+      if (fechaEnvio != null) 'fecha_envio': fechaEnvio,
+      if (observacionesEnvio != null) 'observaciones_envio': observacionesEnvio,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -18094,6 +18551,15 @@ class DocumentoPorEmitirCompanion
     Value<String>? estatus,
     Value<String?>? motivoEstatus,
     Value<String?>? observaciones,
+    Value<String?>? folioDocumento,
+    Value<String?>? serieFiscal,
+    Value<String?>? folioFiscal,
+    Value<String?>? uuid,
+    Value<DateTime?>? fechaEmisionReal,
+    Value<int?>? importeEmitido,
+    Value<String?>? observacionesEmision,
+    Value<DateTime?>? fechaEnvio,
+    Value<String?>? observacionesEnvio,
     Value<int>? rowid,
   }) {
     return DocumentoPorEmitirCompanion(
@@ -18124,6 +18590,15 @@ class DocumentoPorEmitirCompanion
       estatus: estatus ?? this.estatus,
       motivoEstatus: motivoEstatus ?? this.motivoEstatus,
       observaciones: observaciones ?? this.observaciones,
+      folioDocumento: folioDocumento ?? this.folioDocumento,
+      serieFiscal: serieFiscal ?? this.serieFiscal,
+      folioFiscal: folioFiscal ?? this.folioFiscal,
+      uuid: uuid ?? this.uuid,
+      fechaEmisionReal: fechaEmisionReal ?? this.fechaEmisionReal,
+      importeEmitido: importeEmitido ?? this.importeEmitido,
+      observacionesEmision: observacionesEmision ?? this.observacionesEmision,
+      fechaEnvio: fechaEnvio ?? this.fechaEnvio,
+      observacionesEnvio: observacionesEnvio ?? this.observacionesEnvio,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -18209,6 +18684,35 @@ class DocumentoPorEmitirCompanion
     if (observaciones.present) {
       map['observaciones'] = Variable<String>(observaciones.value);
     }
+    if (folioDocumento.present) {
+      map['folio_documento'] = Variable<String>(folioDocumento.value);
+    }
+    if (serieFiscal.present) {
+      map['serie_fiscal'] = Variable<String>(serieFiscal.value);
+    }
+    if (folioFiscal.present) {
+      map['folio_fiscal'] = Variable<String>(folioFiscal.value);
+    }
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
+    }
+    if (fechaEmisionReal.present) {
+      map['fecha_emision_real'] = Variable<DateTime>(fechaEmisionReal.value);
+    }
+    if (importeEmitido.present) {
+      map['importe_emitido'] = Variable<int>(importeEmitido.value);
+    }
+    if (observacionesEmision.present) {
+      map['observaciones_emision'] = Variable<String>(
+        observacionesEmision.value,
+      );
+    }
+    if (fechaEnvio.present) {
+      map['fecha_envio'] = Variable<DateTime>(fechaEnvio.value);
+    }
+    if (observacionesEnvio.present) {
+      map['observaciones_envio'] = Variable<String>(observacionesEnvio.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -18244,6 +18748,15 @@ class DocumentoPorEmitirCompanion
           ..write('estatus: $estatus, ')
           ..write('motivoEstatus: $motivoEstatus, ')
           ..write('observaciones: $observaciones, ')
+          ..write('folioDocumento: $folioDocumento, ')
+          ..write('serieFiscal: $serieFiscal, ')
+          ..write('folioFiscal: $folioFiscal, ')
+          ..write('uuid: $uuid, ')
+          ..write('fechaEmisionReal: $fechaEmisionReal, ')
+          ..write('importeEmitido: $importeEmitido, ')
+          ..write('observacionesEmision: $observacionesEmision, ')
+          ..write('fechaEnvio: $fechaEnvio, ')
+          ..write('observacionesEnvio: $observacionesEnvio, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -20149,6 +20662,904 @@ class DocumentoPorEmitirCorreoCompanion
   }
 }
 
+class $DocumentoPorEmitirCorreoEnvioTable extends DocumentoPorEmitirCorreoEnvio
+    with
+        TableInfo<
+          $DocumentoPorEmitirCorreoEnvioTable,
+          DocumentoPorEmitirCorreoEnvioData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentoPorEmitirCorreoEnvioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _correoMeta = const VerificationMeta('correo');
+  @override
+  late final GeneratedColumn<String> correo = GeneratedColumn<String>(
+    'correo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, documentoPorEmitirId, correo];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento_por_emitir_correo_envio';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentoPorEmitirCorreoEnvioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentoPorEmitirIdMeta);
+    }
+    if (data.containsKey('correo')) {
+      context.handle(
+        _correoMeta,
+        correo.isAcceptableOrUnknown(data['correo']!, _correoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_correoMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentoPorEmitirCorreoEnvioData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentoPorEmitirCorreoEnvioData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      documentoPorEmitirId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}documento_por_emitir_id'],
+          )!,
+      correo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}correo'],
+          )!,
+    );
+  }
+
+  @override
+  $DocumentoPorEmitirCorreoEnvioTable createAlias(String alias) {
+    return $DocumentoPorEmitirCorreoEnvioTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentoPorEmitirCorreoEnvioData extends DataClass
+    implements Insertable<DocumentoPorEmitirCorreoEnvioData> {
+  final int id;
+  final String documentoPorEmitirId;
+  final String correo;
+  const DocumentoPorEmitirCorreoEnvioData({
+    required this.id,
+    required this.documentoPorEmitirId,
+    required this.correo,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    map['correo'] = Variable<String>(correo);
+    return map;
+  }
+
+  DocumentoPorEmitirCorreoEnvioCompanion toCompanion(bool nullToAbsent) {
+    return DocumentoPorEmitirCorreoEnvioCompanion(
+      id: Value(id),
+      documentoPorEmitirId: Value(documentoPorEmitirId),
+      correo: Value(correo),
+    );
+  }
+
+  factory DocumentoPorEmitirCorreoEnvioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentoPorEmitirCorreoEnvioData(
+      id: serializer.fromJson<int>(json['id']),
+      documentoPorEmitirId: serializer.fromJson<String>(
+        json['documentoPorEmitirId'],
+      ),
+      correo: serializer.fromJson<String>(json['correo']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'documentoPorEmitirId': serializer.toJson<String>(documentoPorEmitirId),
+      'correo': serializer.toJson<String>(correo),
+    };
+  }
+
+  DocumentoPorEmitirCorreoEnvioData copyWith({
+    int? id,
+    String? documentoPorEmitirId,
+    String? correo,
+  }) => DocumentoPorEmitirCorreoEnvioData(
+    id: id ?? this.id,
+    documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+    correo: correo ?? this.correo,
+  );
+  DocumentoPorEmitirCorreoEnvioData copyWithCompanion(
+    DocumentoPorEmitirCorreoEnvioCompanion data,
+  ) {
+    return DocumentoPorEmitirCorreoEnvioData(
+      id: data.id.present ? data.id.value : this.id,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+      correo: data.correo.present ? data.correo.value : this.correo,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirCorreoEnvioData(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('correo: $correo')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, documentoPorEmitirId, correo);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentoPorEmitirCorreoEnvioData &&
+          other.id == this.id &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.correo == this.correo);
+}
+
+class DocumentoPorEmitirCorreoEnvioCompanion
+    extends UpdateCompanion<DocumentoPorEmitirCorreoEnvioData> {
+  final Value<int> id;
+  final Value<String> documentoPorEmitirId;
+  final Value<String> correo;
+  const DocumentoPorEmitirCorreoEnvioCompanion({
+    this.id = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.correo = const Value.absent(),
+  });
+  DocumentoPorEmitirCorreoEnvioCompanion.insert({
+    this.id = const Value.absent(),
+    required String documentoPorEmitirId,
+    required String correo,
+  }) : documentoPorEmitirId = Value(documentoPorEmitirId),
+       correo = Value(correo);
+  static Insertable<DocumentoPorEmitirCorreoEnvioData> custom({
+    Expression<int>? id,
+    Expression<String>? documentoPorEmitirId,
+    Expression<String>? correo,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (correo != null) 'correo': correo,
+    });
+  }
+
+  DocumentoPorEmitirCorreoEnvioCompanion copyWith({
+    Value<int>? id,
+    Value<String>? documentoPorEmitirId,
+    Value<String>? correo,
+  }) {
+    return DocumentoPorEmitirCorreoEnvioCompanion(
+      id: id ?? this.id,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      correo: correo ?? this.correo,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (correo.present) {
+      map['correo'] = Variable<String>(correo.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirCorreoEnvioCompanion(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('correo: $correo')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DocumentoPorEmitirEventoTable extends DocumentoPorEmitirEvento
+    with
+        TableInfo<
+          $DocumentoPorEmitirEventoTable,
+          DocumentoPorEmitirEventoData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentoPorEmitirEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoAnteriorMeta = const VerificationMeta(
+    'estadoAnterior',
+  );
+  @override
+  late final GeneratedColumn<String> estadoAnterior = GeneratedColumn<String>(
+    'estado_anterior',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estadoNuevoMeta = const VerificationMeta(
+    'estadoNuevo',
+  );
+  @override
+  late final GeneratedColumn<String> estadoNuevo = GeneratedColumn<String>(
+    'estado_nuevo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    documentoPorEmitirId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento_por_emitir_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentoPorEmitirEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentoPorEmitirIdMeta);
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('estado_anterior')) {
+      context.handle(
+        _estadoAnteriorMeta,
+        estadoAnterior.isAcceptableOrUnknown(
+          data['estado_anterior']!,
+          _estadoAnteriorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estado_nuevo')) {
+      context.handle(
+        _estadoNuevoMeta,
+        estadoNuevo.isAcceptableOrUnknown(
+          data['estado_nuevo']!,
+          _estadoNuevoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentoPorEmitirEventoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentoPorEmitirEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      documentoPorEmitirId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}documento_por_emitir_id'],
+          )!,
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      estadoAnterior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_anterior'],
+      ),
+      estadoNuevo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_nuevo'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $DocumentoPorEmitirEventoTable createAlias(String alias) {
+    return $DocumentoPorEmitirEventoTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentoPorEmitirEventoData extends DataClass
+    implements Insertable<DocumentoPorEmitirEventoData> {
+  final int id;
+  final String documentoPorEmitirId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? estadoAnterior;
+  final String? estadoNuevo;
+  final String? observacion;
+
+  /// `null` mientras no exista autenticación real (Etapa 4I.2.1) — no
+  /// se pide al usuario un nombre manualmente. Cuando exista Usuario,
+  /// se agregará una referencia real sin romper el texto histórico ya
+  /// capturado en filas existentes (decisión explícita de Marlon).
+  final String? actor;
+
+  /// JSON libre con el snapshot de lo que cambió (ej. ajuste anterior/
+  /// nuevo, folio anterior/nuevo, correos utilizados) — se justifica
+  /// aquí porque es un log heterogéneo; nunca sustituye un campo
+  /// principal consultable en otra tabla.
+  final String? datosRelevantes;
+  const DocumentoPorEmitirEventoData({
+    required this.id,
+    required this.documentoPorEmitirId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.estadoAnterior,
+    this.estadoNuevo,
+    this.observacion,
+    this.actor,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || estadoAnterior != null) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior);
+    }
+    if (!nullToAbsent || estadoNuevo != null) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  DocumentoPorEmitirEventoCompanion toCompanion(bool nullToAbsent) {
+    return DocumentoPorEmitirEventoCompanion(
+      id: Value(id),
+      documentoPorEmitirId: Value(documentoPorEmitirId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      estadoAnterior:
+          estadoAnterior == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoAnterior),
+      estadoNuevo:
+          estadoNuevo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoNuevo),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory DocumentoPorEmitirEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentoPorEmitirEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      documentoPorEmitirId: serializer.fromJson<String>(
+        json['documentoPorEmitirId'],
+      ),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      estadoAnterior: serializer.fromJson<String?>(json['estadoAnterior']),
+      estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      actor: serializer.fromJson<String?>(json['actor']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'documentoPorEmitirId': serializer.toJson<String>(documentoPorEmitirId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'estadoAnterior': serializer.toJson<String?>(estadoAnterior),
+      'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
+      'observacion': serializer.toJson<String?>(observacion),
+      'actor': serializer.toJson<String?>(actor),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  DocumentoPorEmitirEventoData copyWith({
+    int? id,
+    String? documentoPorEmitirId,
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> estadoAnterior = const Value.absent(),
+    Value<String?> estadoNuevo = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => DocumentoPorEmitirEventoData(
+    id: id ?? this.id,
+    documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    estadoAnterior:
+        estadoAnterior.present ? estadoAnterior.value : this.estadoAnterior,
+    estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    actor: actor.present ? actor.value : this.actor,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  DocumentoPorEmitirEventoData copyWithCompanion(
+    DocumentoPorEmitirEventoCompanion data,
+  ) {
+    return DocumentoPorEmitirEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      estadoAnterior:
+          data.estadoAnterior.present
+              ? data.estadoAnterior.value
+              : this.estadoAnterior,
+      estadoNuevo:
+          data.estadoNuevo.present ? data.estadoNuevo.value : this.estadoNuevo,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      actor: data.actor.present ? data.actor.value : this.actor,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirEventoData(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    documentoPorEmitirId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentoPorEmitirEventoData &&
+          other.id == this.id &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.estadoAnterior == this.estadoAnterior &&
+          other.estadoNuevo == this.estadoNuevo &&
+          other.observacion == this.observacion &&
+          other.actor == this.actor &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class DocumentoPorEmitirEventoCompanion
+    extends UpdateCompanion<DocumentoPorEmitirEventoData> {
+  final Value<int> id;
+  final Value<String> documentoPorEmitirId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> estadoAnterior;
+  final Value<String?> estadoNuevo;
+  final Value<String?> observacion;
+  final Value<String?> actor;
+  final Value<String?> datosRelevantes;
+  const DocumentoPorEmitirEventoCompanion({
+    this.id = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  DocumentoPorEmitirEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String documentoPorEmitirId,
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : documentoPorEmitirId = Value(documentoPorEmitirId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<DocumentoPorEmitirEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? documentoPorEmitirId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? estadoAnterior,
+    Expression<String>? estadoNuevo,
+    Expression<String>? observacion,
+    Expression<String>? actor,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (estadoAnterior != null) 'estado_anterior': estadoAnterior,
+      if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
+      if (observacion != null) 'observacion': observacion,
+      if (actor != null) 'actor': actor,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  DocumentoPorEmitirEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? documentoPorEmitirId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? estadoAnterior,
+    Value<String?>? estadoNuevo,
+    Value<String?>? observacion,
+    Value<String?>? actor,
+    Value<String?>? datosRelevantes,
+  }) {
+    return DocumentoPorEmitirEventoCompanion(
+      id: id ?? this.id,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      estadoAnterior: estadoAnterior ?? this.estadoAnterior,
+      estadoNuevo: estadoNuevo ?? this.estadoNuevo,
+      observacion: observacion ?? this.observacion,
+      actor: actor ?? this.actor,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (estadoAnterior.present) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior.value);
+    }
+    if (estadoNuevo.present) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -20199,6 +21610,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $DocumentoPorEmitirLineaTable(this);
   late final $DocumentoPorEmitirCorreoTable documentoPorEmitirCorreo =
       $DocumentoPorEmitirCorreoTable(this);
+  late final $DocumentoPorEmitirCorreoEnvioTable documentoPorEmitirCorreoEnvio =
+      $DocumentoPorEmitirCorreoEnvioTable(this);
+  late final $DocumentoPorEmitirEventoTable documentoPorEmitirEvento =
+      $DocumentoPorEmitirEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -20252,6 +21667,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     documentoPorEmitirConfiguracion,
     documentoPorEmitirLinea,
     documentoPorEmitirCorreo,
+    documentoPorEmitirCorreoEnvio,
+    documentoPorEmitirEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -20324,6 +21741,27 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ),
       result: [
         TableUpdate('documento_por_emitir_correo', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'documento_por_emitir',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate(
+          'documento_por_emitir_correo_envio',
+          kind: UpdateKind.delete,
+        ),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'documento_por_emitir',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('documento_por_emitir_evento', kind: UpdateKind.delete),
       ],
     ),
   ]);
@@ -34722,6 +36160,15 @@ typedef $$DocumentoPorEmitirTableCreateCompanionBuilder =
       Value<String> estatus,
       Value<String?> motivoEstatus,
       Value<String?> observaciones,
+      Value<String?> folioDocumento,
+      Value<String?> serieFiscal,
+      Value<String?> folioFiscal,
+      Value<String?> uuid,
+      Value<DateTime?> fechaEmisionReal,
+      Value<int?> importeEmitido,
+      Value<String?> observacionesEmision,
+      Value<DateTime?> fechaEnvio,
+      Value<String?> observacionesEnvio,
       Value<int> rowid,
     });
 typedef $$DocumentoPorEmitirTableUpdateCompanionBuilder =
@@ -34750,6 +36197,15 @@ typedef $$DocumentoPorEmitirTableUpdateCompanionBuilder =
       Value<String> estatus,
       Value<String?> motivoEstatus,
       Value<String?> observaciones,
+      Value<String?> folioDocumento,
+      Value<String?> serieFiscal,
+      Value<String?> folioFiscal,
+      Value<String?> uuid,
+      Value<DateTime?> fechaEmisionReal,
+      Value<int?> importeEmitido,
+      Value<String?> observacionesEmision,
+      Value<DateTime?> fechaEnvio,
+      Value<String?> observacionesEnvio,
       Value<int> rowid,
     });
 
@@ -34926,6 +36382,66 @@ final class $$DocumentoPorEmitirTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirCorreoEnvioTable,
+    List<DocumentoPorEmitirCorreoEnvioData>
+  >
+  _documentoPorEmitirCorreoEnvioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirCorreoEnvio,
+        aliasName: $_aliasNameGenerator(
+          db.documentoPorEmitir.id,
+          db.documentoPorEmitirCorreoEnvio.documentoPorEmitirId,
+        ),
+      );
+
+  $$DocumentoPorEmitirCorreoEnvioTableProcessedTableManager
+  get documentoPorEmitirCorreoEnvioRefs {
+    final manager = $$DocumentoPorEmitirCorreoEnvioTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirCorreoEnvio,
+    ).filter(
+      (f) => f.documentoPorEmitirId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirCorreoEnvioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirEventoTable,
+    List<DocumentoPorEmitirEventoData>
+  >
+  _documentoPorEmitirEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirEvento,
+        aliasName: $_aliasNameGenerator(
+          db.documentoPorEmitir.id,
+          db.documentoPorEmitirEvento.documentoPorEmitirId,
+        ),
+      );
+
+  $$DocumentoPorEmitirEventoTableProcessedTableManager
+  get documentoPorEmitirEventoRefs {
+    final manager = $$DocumentoPorEmitirEventoTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirEvento,
+    ).filter(
+      (f) => f.documentoPorEmitirId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$DocumentoPorEmitirTableFilterComposer
@@ -35045,6 +36561,51 @@ class $$DocumentoPorEmitirTableFilterComposer
 
   ColumnFilters<String> get observaciones => $composableBuilder(
     column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folioDocumento => $composableBuilder(
+    column: $table.folioDocumento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serieFiscal => $composableBuilder(
+    column: $table.serieFiscal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folioFiscal => $composableBuilder(
+    column: $table.folioFiscal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uuid => $composableBuilder(
+    column: $table.uuid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaEmisionReal => $composableBuilder(
+    column: $table.fechaEmisionReal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importeEmitido => $composableBuilder(
+    column: $table.importeEmitido,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesEmision => $composableBuilder(
+    column: $table.observacionesEmision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaEnvio => $composableBuilder(
+    column: $table.fechaEnvio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesEnvio => $composableBuilder(
+    column: $table.observacionesEnvio,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -35202,6 +36763,62 @@ class $$DocumentoPorEmitirTableFilterComposer
         );
     return f(composer);
   }
+
+  Expression<bool> documentoPorEmitirCorreoEnvioRefs(
+    Expression<bool> Function(
+      $$DocumentoPorEmitirCorreoEnvioTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirCorreoEnvioTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirCorreoEnvio,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirCorreoEnvioTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirCorreoEnvio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirEventoRefs(
+    Expression<bool> Function($$DocumentoPorEmitirEventoTableFilterComposer f)
+    f,
+  ) {
+    final $$DocumentoPorEmitirEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirEvento,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$DocumentoPorEmitirTableOrderingComposer
@@ -35322,6 +36939,51 @@ class $$DocumentoPorEmitirTableOrderingComposer
 
   ColumnOrderings<String> get observaciones => $composableBuilder(
     column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folioDocumento => $composableBuilder(
+    column: $table.folioDocumento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serieFiscal => $composableBuilder(
+    column: $table.serieFiscal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folioFiscal => $composableBuilder(
+    column: $table.folioFiscal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uuid => $composableBuilder(
+    column: $table.uuid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaEmisionReal => $composableBuilder(
+    column: $table.fechaEmisionReal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importeEmitido => $composableBuilder(
+    column: $table.importeEmitido,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesEmision => $composableBuilder(
+    column: $table.observacionesEmision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaEnvio => $composableBuilder(
+    column: $table.fechaEnvio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesEnvio => $composableBuilder(
+    column: $table.observacionesEnvio,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -35478,6 +37140,49 @@ class $$DocumentoPorEmitirTableAnnotationComposer
 
   GeneratedColumn<String> get observaciones => $composableBuilder(
     column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folioDocumento => $composableBuilder(
+    column: $table.folioDocumento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serieFiscal => $composableBuilder(
+    column: $table.serieFiscal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folioFiscal => $composableBuilder(
+    column: $table.folioFiscal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get uuid =>
+      $composableBuilder(column: $table.uuid, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaEmisionReal => $composableBuilder(
+    column: $table.fechaEmisionReal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get importeEmitido => $composableBuilder(
+    column: $table.importeEmitido,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesEmision => $composableBuilder(
+    column: $table.observacionesEmision,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaEnvio => $composableBuilder(
+    column: $table.fechaEnvio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesEnvio => $composableBuilder(
+    column: $table.observacionesEnvio,
     builder: (column) => column,
   );
 
@@ -35638,6 +37343,62 @@ class $$DocumentoPorEmitirTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> documentoPorEmitirCorreoEnvioRefs<T extends Object>(
+    Expression<T> Function(
+      $$DocumentoPorEmitirCorreoEnvioTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$DocumentoPorEmitirCorreoEnvioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirCorreoEnvio,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirCorreoEnvioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirCorreoEnvio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> documentoPorEmitirEventoRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirEventoTableAnnotationComposer a)
+    f,
+  ) {
+    final $$DocumentoPorEmitirEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirEvento,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$DocumentoPorEmitirTableTableManager
@@ -35660,6 +37421,8 @@ class $$DocumentoPorEmitirTableTableManager
             bool documentoPorEmitirConfiguracionRefs,
             bool documentoPorEmitirLineaRefs,
             bool documentoPorEmitirCorreoRefs,
+            bool documentoPorEmitirCorreoEnvioRefs,
+            bool documentoPorEmitirEventoRefs,
           })
         > {
   $$DocumentoPorEmitirTableTableManager(
@@ -35712,6 +37475,15 @@ class $$DocumentoPorEmitirTableTableManager
                 Value<String> estatus = const Value.absent(),
                 Value<String?> motivoEstatus = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<String?> folioDocumento = const Value.absent(),
+                Value<String?> serieFiscal = const Value.absent(),
+                Value<String?> folioFiscal = const Value.absent(),
+                Value<String?> uuid = const Value.absent(),
+                Value<DateTime?> fechaEmisionReal = const Value.absent(),
+                Value<int?> importeEmitido = const Value.absent(),
+                Value<String?> observacionesEmision = const Value.absent(),
+                Value<DateTime?> fechaEnvio = const Value.absent(),
+                Value<String?> observacionesEnvio = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DocumentoPorEmitirCompanion(
                 id: id,
@@ -35738,6 +37510,15 @@ class $$DocumentoPorEmitirTableTableManager
                 estatus: estatus,
                 motivoEstatus: motivoEstatus,
                 observaciones: observaciones,
+                folioDocumento: folioDocumento,
+                serieFiscal: serieFiscal,
+                folioFiscal: folioFiscal,
+                uuid: uuid,
+                fechaEmisionReal: fechaEmisionReal,
+                importeEmitido: importeEmitido,
+                observacionesEmision: observacionesEmision,
+                fechaEnvio: fechaEnvio,
+                observacionesEnvio: observacionesEnvio,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -35768,6 +37549,15 @@ class $$DocumentoPorEmitirTableTableManager
                 Value<String> estatus = const Value.absent(),
                 Value<String?> motivoEstatus = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<String?> folioDocumento = const Value.absent(),
+                Value<String?> serieFiscal = const Value.absent(),
+                Value<String?> folioFiscal = const Value.absent(),
+                Value<String?> uuid = const Value.absent(),
+                Value<DateTime?> fechaEmisionReal = const Value.absent(),
+                Value<int?> importeEmitido = const Value.absent(),
+                Value<String?> observacionesEmision = const Value.absent(),
+                Value<DateTime?> fechaEnvio = const Value.absent(),
+                Value<String?> observacionesEnvio = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DocumentoPorEmitirCompanion.insert(
                 id: id,
@@ -35794,6 +37584,15 @@ class $$DocumentoPorEmitirTableTableManager
                 estatus: estatus,
                 motivoEstatus: motivoEstatus,
                 observaciones: observaciones,
+                folioDocumento: folioDocumento,
+                serieFiscal: serieFiscal,
+                folioFiscal: folioFiscal,
+                uuid: uuid,
+                fechaEmisionReal: fechaEmisionReal,
+                importeEmitido: importeEmitido,
+                observacionesEmision: observacionesEmision,
+                fechaEnvio: fechaEnvio,
+                observacionesEnvio: observacionesEnvio,
                 rowid: rowid,
               ),
           withReferenceMapper:
@@ -35813,6 +37612,8 @@ class $$DocumentoPorEmitirTableTableManager
             documentoPorEmitirConfiguracionRefs = false,
             documentoPorEmitirLineaRefs = false,
             documentoPorEmitirCorreoRefs = false,
+            documentoPorEmitirCorreoEnvioRefs = false,
+            documentoPorEmitirEventoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -35823,6 +37624,9 @@ class $$DocumentoPorEmitirTableTableManager
                   db.documentoPorEmitirConfiguracion,
                 if (documentoPorEmitirLineaRefs) db.documentoPorEmitirLinea,
                 if (documentoPorEmitirCorreoRefs) db.documentoPorEmitirCorreo,
+                if (documentoPorEmitirCorreoEnvioRefs)
+                  db.documentoPorEmitirCorreoEnvio,
+                if (documentoPorEmitirEventoRefs) db.documentoPorEmitirEvento,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -35960,6 +37764,50 @@ class $$DocumentoPorEmitirTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (documentoPorEmitirCorreoEnvioRefs)
+                    await $_getPrefetchedData<
+                      DocumentoPorEmitirData,
+                      $DocumentoPorEmitirTable,
+                      DocumentoPorEmitirCorreoEnvioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$DocumentoPorEmitirTableReferences
+                          ._documentoPorEmitirCorreoEnvioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$DocumentoPorEmitirTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirCorreoEnvioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.documentoPorEmitirId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirEventoRefs)
+                    await $_getPrefetchedData<
+                      DocumentoPorEmitirData,
+                      $DocumentoPorEmitirTable,
+                      DocumentoPorEmitirEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$DocumentoPorEmitirTableReferences
+                          ._documentoPorEmitirEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$DocumentoPorEmitirTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.documentoPorEmitirId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -35987,6 +37835,8 @@ typedef $$DocumentoPorEmitirTableProcessedTableManager =
         bool documentoPorEmitirConfiguracionRefs,
         bool documentoPorEmitirLineaRefs,
         bool documentoPorEmitirCorreoRefs,
+        bool documentoPorEmitirCorreoEnvioRefs,
+        bool documentoPorEmitirEventoRefs,
       })
     >;
 typedef $$DocumentoPorEmitirServicioTableCreateCompanionBuilder =
@@ -38013,6 +39863,757 @@ typedef $$DocumentoPorEmitirCorreoTableProcessedTableManager =
       DocumentoPorEmitirCorreoData,
       PrefetchHooks Function({bool documentoPorEmitirId})
     >;
+typedef $$DocumentoPorEmitirCorreoEnvioTableCreateCompanionBuilder =
+    DocumentoPorEmitirCorreoEnvioCompanion Function({
+      Value<int> id,
+      required String documentoPorEmitirId,
+      required String correo,
+    });
+typedef $$DocumentoPorEmitirCorreoEnvioTableUpdateCompanionBuilder =
+    DocumentoPorEmitirCorreoEnvioCompanion Function({
+      Value<int> id,
+      Value<String> documentoPorEmitirId,
+      Value<String> correo,
+    });
+
+final class $$DocumentoPorEmitirCorreoEnvioTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentoPorEmitirCorreoEnvioTable,
+          DocumentoPorEmitirCorreoEnvioData
+        > {
+  $$DocumentoPorEmitirCorreoEnvioTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $DocumentoPorEmitirTable _documentoPorEmitirIdTable(
+    _$AppDatabase db,
+  ) => db.documentoPorEmitir.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirCorreoEnvio.documentoPorEmitirId,
+      db.documentoPorEmitir.id,
+    ),
+  );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirId {
+    final $_column = $_itemColumn<String>('documento_por_emitir_id')!;
+
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _documentoPorEmitirIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DocumentoPorEmitirCorreoEnvioTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirCorreoEnvioTable> {
+  $$DocumentoPorEmitirCorreoEnvioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get correo => $composableBuilder(
+    column: $table.correo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$DocumentoPorEmitirTableFilterComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirCorreoEnvioTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirCorreoEnvioTable> {
+  $$DocumentoPorEmitirCorreoEnvioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get correo => $composableBuilder(
+    column: $table.correo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$DocumentoPorEmitirTableOrderingComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableOrderingComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirCorreoEnvioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirCorreoEnvioTable> {
+  $$DocumentoPorEmitirCorreoEnvioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get correo =>
+      $composableBuilder(column: $table.correo, builder: (column) => column);
+
+  $$DocumentoPorEmitirTableAnnotationComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.documentoPorEmitirId,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirCorreoEnvioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentoPorEmitirCorreoEnvioTable,
+          DocumentoPorEmitirCorreoEnvioData,
+          $$DocumentoPorEmitirCorreoEnvioTableFilterComposer,
+          $$DocumentoPorEmitirCorreoEnvioTableOrderingComposer,
+          $$DocumentoPorEmitirCorreoEnvioTableAnnotationComposer,
+          $$DocumentoPorEmitirCorreoEnvioTableCreateCompanionBuilder,
+          $$DocumentoPorEmitirCorreoEnvioTableUpdateCompanionBuilder,
+          (
+            DocumentoPorEmitirCorreoEnvioData,
+            $$DocumentoPorEmitirCorreoEnvioTableReferences,
+          ),
+          DocumentoPorEmitirCorreoEnvioData,
+          PrefetchHooks Function({bool documentoPorEmitirId})
+        > {
+  $$DocumentoPorEmitirCorreoEnvioTableTableManager(
+    _$AppDatabase db,
+    $DocumentoPorEmitirCorreoEnvioTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DocumentoPorEmitirCorreoEnvioTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DocumentoPorEmitirCorreoEnvioTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DocumentoPorEmitirCorreoEnvioTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> documentoPorEmitirId = const Value.absent(),
+                Value<String> correo = const Value.absent(),
+              }) => DocumentoPorEmitirCorreoEnvioCompanion(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                correo: correo,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String documentoPorEmitirId,
+                required String correo,
+              }) => DocumentoPorEmitirCorreoEnvioCompanion.insert(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                correo: correo,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DocumentoPorEmitirCorreoEnvioTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({documentoPorEmitirId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (documentoPorEmitirId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.documentoPorEmitirId,
+                            referencedTable:
+                                $$DocumentoPorEmitirCorreoEnvioTableReferences
+                                    ._documentoPorEmitirIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirCorreoEnvioTableReferences
+                                    ._documentoPorEmitirIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DocumentoPorEmitirCorreoEnvioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentoPorEmitirCorreoEnvioTable,
+      DocumentoPorEmitirCorreoEnvioData,
+      $$DocumentoPorEmitirCorreoEnvioTableFilterComposer,
+      $$DocumentoPorEmitirCorreoEnvioTableOrderingComposer,
+      $$DocumentoPorEmitirCorreoEnvioTableAnnotationComposer,
+      $$DocumentoPorEmitirCorreoEnvioTableCreateCompanionBuilder,
+      $$DocumentoPorEmitirCorreoEnvioTableUpdateCompanionBuilder,
+      (
+        DocumentoPorEmitirCorreoEnvioData,
+        $$DocumentoPorEmitirCorreoEnvioTableReferences,
+      ),
+      DocumentoPorEmitirCorreoEnvioData,
+      PrefetchHooks Function({bool documentoPorEmitirId})
+    >;
+typedef $$DocumentoPorEmitirEventoTableCreateCompanionBuilder =
+    DocumentoPorEmitirEventoCompanion Function({
+      Value<int> id,
+      required String documentoPorEmitirId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+typedef $$DocumentoPorEmitirEventoTableUpdateCompanionBuilder =
+    DocumentoPorEmitirEventoCompanion Function({
+      Value<int> id,
+      Value<String> documentoPorEmitirId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$DocumentoPorEmitirEventoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentoPorEmitirEventoTable,
+          DocumentoPorEmitirEventoData
+        > {
+  $$DocumentoPorEmitirEventoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $DocumentoPorEmitirTable _documentoPorEmitirIdTable(
+    _$AppDatabase db,
+  ) => db.documentoPorEmitir.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirEvento.documentoPorEmitirId,
+      db.documentoPorEmitir.id,
+    ),
+  );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirId {
+    final $_column = $_itemColumn<String>('documento_por_emitir_id')!;
+
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _documentoPorEmitirIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DocumentoPorEmitirEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirEventoTable> {
+  $$DocumentoPorEmitirEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$DocumentoPorEmitirTableFilterComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirEventoTable> {
+  $$DocumentoPorEmitirEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$DocumentoPorEmitirTableOrderingComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableOrderingComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirEventoTable> {
+  $$DocumentoPorEmitirEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$DocumentoPorEmitirTableAnnotationComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.documentoPorEmitirId,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentoPorEmitirEventoTable,
+          DocumentoPorEmitirEventoData,
+          $$DocumentoPorEmitirEventoTableFilterComposer,
+          $$DocumentoPorEmitirEventoTableOrderingComposer,
+          $$DocumentoPorEmitirEventoTableAnnotationComposer,
+          $$DocumentoPorEmitirEventoTableCreateCompanionBuilder,
+          $$DocumentoPorEmitirEventoTableUpdateCompanionBuilder,
+          (
+            DocumentoPorEmitirEventoData,
+            $$DocumentoPorEmitirEventoTableReferences,
+          ),
+          DocumentoPorEmitirEventoData,
+          PrefetchHooks Function({bool documentoPorEmitirId})
+        > {
+  $$DocumentoPorEmitirEventoTableTableManager(
+    _$AppDatabase db,
+    $DocumentoPorEmitirEventoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DocumentoPorEmitirEventoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DocumentoPorEmitirEventoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DocumentoPorEmitirEventoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> documentoPorEmitirId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => DocumentoPorEmitirEventoCompanion(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String documentoPorEmitirId,
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => DocumentoPorEmitirEventoCompanion.insert(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DocumentoPorEmitirEventoTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({documentoPorEmitirId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (documentoPorEmitirId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.documentoPorEmitirId,
+                            referencedTable:
+                                $$DocumentoPorEmitirEventoTableReferences
+                                    ._documentoPorEmitirIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirEventoTableReferences
+                                    ._documentoPorEmitirIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DocumentoPorEmitirEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentoPorEmitirEventoTable,
+      DocumentoPorEmitirEventoData,
+      $$DocumentoPorEmitirEventoTableFilterComposer,
+      $$DocumentoPorEmitirEventoTableOrderingComposer,
+      $$DocumentoPorEmitirEventoTableAnnotationComposer,
+      $$DocumentoPorEmitirEventoTableCreateCompanionBuilder,
+      $$DocumentoPorEmitirEventoTableUpdateCompanionBuilder,
+      (DocumentoPorEmitirEventoData, $$DocumentoPorEmitirEventoTableReferences),
+      DocumentoPorEmitirEventoData,
+      PrefetchHooks Function({bool documentoPorEmitirId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -38111,5 +40712,16 @@ class $AppDatabaseManager {
       $$DocumentoPorEmitirCorreoTableTableManager(
         _db,
         _db.documentoPorEmitirCorreo,
+      );
+  $$DocumentoPorEmitirCorreoEnvioTableTableManager
+  get documentoPorEmitirCorreoEnvio =>
+      $$DocumentoPorEmitirCorreoEnvioTableTableManager(
+        _db,
+        _db.documentoPorEmitirCorreoEnvio,
+      );
+  $$DocumentoPorEmitirEventoTableTableManager get documentoPorEmitirEvento =>
+      $$DocumentoPorEmitirEventoTableTableManager(
+        _db,
+        _db.documentoPorEmitirEvento,
       );
 }

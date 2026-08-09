@@ -21,7 +21,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 11;
+const _currentSchemaVersion = 12;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -2095,6 +2095,171 @@ void main() {
       () => db.customStatement('''
         INSERT INTO documento_por_emitir_servicio (documento_por_emitir_id, servicio_id)
         VALUES ('${documento.id}', 'servicio-inexistente');
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test(
+      '12.json coincide con el esquema final de la Etapa 4I.2.1 (datos definitivos aditivos, historial y correos de envío)',
+      () async {
+    final schema = await verifier.schemaAt(12);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+
+    expect(
+      tablas,
+      containsAll(<String>[
+        'documento_por_emitir', 'documento_por_emitir_servicio', 'documento_por_emitir_configuracion',
+        'documento_por_emitir_linea', 'documento_por_emitir_correo',
+        'documento_por_emitir_correo_envio', 'documento_por_emitir_evento',
+      ]),
+    );
+
+    final sqlDocumento = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir'")
+        .single['sql'] as String;
+    expect(sqlDocumento, contains('"folio_documento" TEXT'));
+    expect(sqlDocumento, contains('"serie_fiscal" TEXT'));
+    expect(sqlDocumento, contains('"folio_fiscal" TEXT'));
+    expect(sqlDocumento, contains('"uuid" TEXT'));
+    expect(sqlDocumento, contains('"fecha_emision_real" INTEGER'));
+    expect(sqlDocumento, contains('"importe_emitido" INTEGER'));
+    expect(sqlDocumento, contains('"fecha_envio" INTEGER'));
+    expect(sqlDocumento, contains('"observaciones_emision" TEXT'));
+    expect(sqlDocumento, contains('"observaciones_envio" TEXT'));
+    expect(sqlDocumento, contains('CHECK (importe_emitido IS NULL OR importe_emitido >= 0)'));
+
+    final sqlEvento = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir_evento'")
+        .single['sql'] as String;
+    expect(sqlEvento, contains('REFERENCES documento_por_emitir (id) ON DELETE CASCADE'));
+
+    final sqlCorreoEnvio = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir_correo_envio'")
+        .single['sql'] as String;
+    expect(sqlCorreoEnvio, contains('REFERENCES documento_por_emitir (id) ON DELETE CASCADE'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 11 → 12 conserva un DocumentoPorEmitir real y crea las tablas de emisión/historial vacías', () async {
+    final schemaV11 = await verifier.schemaAt(11);
+    final raw = schemaV11.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO documento_por_emitir (
+        id, codigo, cliente_id, tipo_documento, agrupacion, metodo, requiere_complemento,
+        periodo_inicio, periodo_fin, generation_key, importe_base_esperado, importe_final_esperado,
+        estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'documento-real', 'DOC-000001', 'cliente-real', 'reciboDePago', 'porServicio', 'noAplica', 0,
+        1735689600, 1738367999, 'clave-real', 0, 0,
+        'pendiente', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV11.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final documentos = await db.select(db.documentoPorEmitir).get();
+    expect(documentos, hasLength(1), reason: 'ningún DocumentoPorEmitir real debe perderse en una migración aditiva');
+    expect(documentos.single.folioDocumento, isNull, reason: 'columnas nuevas nullable, nunca inventadas');
+    expect(documentos.single.importeEmitido, isNull);
+
+    final eventos = await db.select(db.documentoPorEmitirEvento).get();
+    expect(eventos, isEmpty);
+
+    final correosEnvio = await db.select(db.documentoPorEmitirCorreoEnvio).get();
+    expect(correosEnvio, isEmpty);
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test('acepta un DocumentoPorEmitir con datos de emisión, envío y un evento de historial tras la migración', () async {
+    final schemaV11 = await verifier.schemaAt(11);
+    final db = AppDatabase(schemaV11.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final documento = await db.into(db.documentoPorEmitir).insertReturning(
+          DocumentoPorEmitirCompanion.insert(
+            codigo: 'DOC-000001',
+            clienteId: cliente.id,
+            tipoDocumento: 'cfdi',
+            agrupacion: 'porServicio',
+            metodo: 'pue',
+            periodoInicio: DateTime(2026, 1, 1),
+            periodoFin: DateTime(2026, 1, 31),
+            generationKey: 'clave-emitida',
+            importeBaseEsperado: 3000000,
+            importeFinalEsperado: 3000000,
+            estatus: const Value('enviado'),
+            folioDocumento: const Value('A-001'),
+            serieFiscal: const Value('A'),
+            folioFiscal: const Value('001'),
+            uuid: const Value('11111111-1111-1111-1111-111111111111'),
+            fechaEmisionReal: Value(DateTime(2026, 1, 5)),
+            importeEmitido: const Value(3000000),
+            fechaEnvio: Value(DateTime(2026, 1, 6)),
+          ),
+        );
+
+    await db.into(db.documentoPorEmitirCorreoEnvio).insertReturning(
+          DocumentoPorEmitirCorreoEnvioCompanion.insert(
+            documentoPorEmitirId: documento.id,
+            correo: 'facturacion@sportium.mx',
+          ),
+        );
+    final evento = await db.into(db.documentoPorEmitirEvento).insertReturning(
+          DocumentoPorEmitirEventoCompanion.insert(
+            documentoPorEmitirId: documento.id,
+            fechaHora: DateTime(2026, 1, 6),
+            tipoEvento: 'envioRegistrado',
+            estadoAnterior: const Value('emitido'),
+            estadoNuevo: const Value('enviado'),
+            datosRelevantes: const Value('{"correosUtilizados":["facturacion@sportium.mx"]}'),
+          ),
+        );
+
+    expect(evento.tipoEvento, 'envioRegistrado');
+    expect(documento.uuid, '11111111-1111-1111-1111-111111111111');
+
+    await db.close();
+  });
+
+  test('rechaza un DocumentoPorEmitirEvento con DocumentoPorEmitir inexistente tras la migración', () async {
+    final schemaV11 = await verifier.schemaAt(11);
+    final db = AppDatabase(schemaV11.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO documento_por_emitir_evento (documento_por_emitir_id, fecha_hora, tipo_evento)
+        VALUES ('documento-inexistente', 1700000000, 'creadoManual');
       '''),
       throwsA(anything),
     );

@@ -7,13 +7,44 @@ import 'entidad_fiscal_table.dart';
 import 'servicio_linea_comercial_vigencia_table.dart';
 import 'servicio_table.dart';
 
-/// Estados de la Etapa 4I.1 únicamente — Emitido/Enviado/
-/// Procesado-Aceptado llegan en la 4I.2, sin necesitar una migración
-/// nueva (el valor se guarda como texto libre, igual que todo enum del
-/// proyecto). Deliberadamente sin ningún estado de pago (pendiente de
-/// pago/vencido/pagado/parcial) — esos pertenecen a la futura Cuenta
-/// por cobrar.
-enum EstatusDocumentoPorEmitir { pendiente, enPreparacion, cancelado, noRequerido }
+/// Estados de la Etapa 4I.1+4I.2.1 — `emitido`/`enviado`/
+/// `procesadoAceptado` se agregan en la 4I.2.1 (Emitido no puede pasar
+/// a `cancelado`/`noRequerido` en esta etapa: eso implicaría una
+/// cancelación fiscal real, fuera de alcance). Deliberadamente sin
+/// ningún estado de pago (pendiente de pago/vencido/pagado/parcial) —
+/// esos pertenecen a la futura Cuenta por cobrar.
+enum EstatusDocumentoPorEmitir {
+  pendiente,
+  enPreparacion,
+  cancelado,
+  noRequerido,
+  emitido,
+  enviado,
+  procesadoAceptado,
+}
+
+/// Tipos de evento del historial administrativo (`DocumentoPorEmitirEvento`,
+/// Etapa 4I.2.1) — catálogo mínimo requerido explícitamente por Marlon.
+/// `edicionObservaciones` queda reservado para cuando exista un caso de
+/// uso real que edite `observaciones` fuera del flujo de emisión/envío
+/// (ninguno existe todavía en 4I.2.1) — no se inventa ese flujo solo
+/// para "usar" el valor del enum.
+enum TipoEventoDocumentoPorEmitir {
+  creadoAutomatico,
+  creadoManual,
+  marcadoEnPreparacion,
+  ajusteRegistrado,
+  emisionRegistrada,
+  correccionDatosEmision,
+  archivoAdjuntado,
+  archivoReemplazado,
+  envioRegistrado,
+  correccionEnviadoAEmitido,
+  procesadoAceptado,
+  cancelado,
+  marcadoNoRequerido,
+  edicionObservaciones,
+}
 
 /// Una obligación administrativa de preparar un documento (CFDI o
 /// recibo) para un periodo — nunca el documento fiscal/recibo real ni
@@ -91,11 +122,41 @@ class DocumentoPorEmitir extends Table with AuditColumns {
 
   TextColumn get observaciones => text().nullable()();
 
+  // Datos definitivos del documento (Etapa 4I.2.1) — aditivos,
+  // directamente en `DocumentoPorEmitir` y no en una entidad 1:1
+  // separada (Corrección explícita de Marlon): solo existe una emisión
+  // administrativa vigente por documento, nunca una colección, y el
+  // historial de correcciones ya vive en `DocumentoPorEmitirEvento`.
+  // Todos nullable: no existen hasta que se registra la emisión.
+  TextColumn get folioDocumento => text().nullable()();
+
+  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
+  TextColumn get serieFiscal => text().nullable()();
+
+  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
+  TextColumn get folioFiscal => text().nullable()();
+
+  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
+  /// Puede capturarse después de marcar `emitido` (ej. al adjuntar el
+  /// XML) — nunca obligatorio en el momento de la emisión misma.
+  TextColumn get uuid => text().nullable()();
+
+  DateTimeColumn get fechaEmisionReal => dateTime().nullable()();
+
+  IntColumn get importeEmitido => integer().nullable()();
+
+  TextColumn get observacionesEmision => text().nullable()();
+
+  DateTimeColumn get fechaEnvio => dateTime().nullable()();
+
+  TextColumn get observacionesEnvio => text().nullable()();
+
   @override
   List<String> get customConstraints => [
         'CHECK (periodo_fin >= periodo_inicio)',
         'CHECK (importe_base_esperado >= 0)',
         'CHECK (importe_final_esperado >= 0)',
+        'CHECK (importe_emitido IS NULL OR importe_emitido >= 0)',
       ];
 }
 
@@ -193,4 +254,54 @@ class DocumentoPorEmitirCorreo extends Table {
       text().references(DocumentoPorEmitir, #id, onDelete: KeyAction.cascade)();
 
   TextColumn get correo => text()();
+}
+
+/// Correos realmente utilizados al registrar el envío (Etapa 4I.2.1) —
+/// distinta de `DocumentoPorEmitirCorreo` (esa es la lista de la
+/// Configuración de cobro al momento de generar; esta es la lista
+/// definitiva, editable, con la que realmente se envió). Se
+/// reconstruye completa (borrar e insertar) cada vez que se registra o
+/// re-registra un envío — el valor anterior queda preservado como
+/// snapshot dentro del `datosRelevantes` del evento correspondiente,
+/// nunca aquí.
+class DocumentoPorEmitirCorreoEnvio extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get documentoPorEmitirId =>
+      text().references(DocumentoPorEmitir, #id, onDelete: KeyAction.cascade)();
+
+  TextColumn get correo => text()();
+}
+
+/// Historial administrativo (Etapa 4I.2.1) — tabla de solo inserción:
+/// nunca se actualiza ni se elimina una fila existente. Cada acción
+/// administrativa relevante agrega exactamente una fila, en la misma
+/// transacción que la mutación real que representa.
+class DocumentoPorEmitirEvento extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get documentoPorEmitirId =>
+      text().references(DocumentoPorEmitir, #id, onDelete: KeyAction.cascade)();
+
+  DateTimeColumn get fechaHora => dateTime()();
+
+  TextColumn get tipoEvento => text()();
+
+  TextColumn get estadoAnterior => text().nullable()();
+
+  TextColumn get estadoNuevo => text().nullable()();
+
+  TextColumn get observacion => text().nullable()();
+
+  /// `null` mientras no exista autenticación real (Etapa 4I.2.1) — no
+  /// se pide al usuario un nombre manualmente. Cuando exista Usuario,
+  /// se agregará una referencia real sin romper el texto histórico ya
+  /// capturado en filas existentes (decisión explícita de Marlon).
+  TextColumn get actor => text().nullable()();
+
+  /// JSON libre con el snapshot de lo que cambió (ej. ajuste anterior/
+  /// nuevo, folio anterior/nuevo, correos utilizados) — se justifica
+  /// aquí porque es un log heterogéneo; nunca sustituye un campo
+  /// principal consultable en otra tabla.
+  TextColumn get datosRelevantes => text().nullable()();
 }

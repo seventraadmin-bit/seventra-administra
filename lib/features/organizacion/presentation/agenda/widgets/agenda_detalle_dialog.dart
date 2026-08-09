@@ -16,8 +16,12 @@ import 'package:riseg_one/features/organizacion/presentation/shared/campo_consul
 import '../../../organizacion_providers.dart';
 import '../agenda_controller.dart';
 import '../agenda_list_screen.dart' show formatoCentavosAgenda;
+import 'agenda_corregir_datos_emision_dialog.dart';
+import 'agenda_registrar_emision_dialog.dart';
+import 'agenda_registrar_envio_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
+final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
 
 /// Detalle de un `DocumentoPorEmitir` (Etapa 4I.1) — expediente completo
 /// de solo consulta salvo la máquina de estados de 4 estados. El ajuste
@@ -96,6 +100,31 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
     };
   }
 
+  String _ajusteLabel(AppLocalizations l10n, int? ajuste) {
+    if (ajuste == null || ajuste == 0) return l10n.agendaAjusteEtiquetaSinAjuste;
+    final monto = formatoCentavosAgenda(ajuste.abs());
+    return ajuste < 0 ? l10n.agendaAjusteEtiquetaDescuento(monto) : l10n.agendaAjusteEtiquetaIncremento(monto);
+  }
+
+  String _eventoLabel(AppLocalizations l10n, String tipoEvento) {
+    return switch (TipoEventoDocumentoPorEmitir.values.byName(tipoEvento)) {
+      TipoEventoDocumentoPorEmitir.creadoAutomatico => l10n.agendaDetalleHistorialEventoCreadoAutomatico,
+      TipoEventoDocumentoPorEmitir.creadoManual => l10n.agendaDetalleHistorialEventoCreadoManual,
+      TipoEventoDocumentoPorEmitir.marcadoEnPreparacion => l10n.agendaDetalleHistorialEventoMarcadoEnPreparacion,
+      TipoEventoDocumentoPorEmitir.ajusteRegistrado => l10n.agendaDetalleHistorialEventoAjusteRegistrado,
+      TipoEventoDocumentoPorEmitir.emisionRegistrada => l10n.agendaDetalleHistorialEventoEmisionRegistrada,
+      TipoEventoDocumentoPorEmitir.correccionDatosEmision => l10n.agendaDetalleHistorialEventoCorreccionDatosEmision,
+      TipoEventoDocumentoPorEmitir.archivoAdjuntado => l10n.agendaDetalleHistorialEventoArchivoAdjuntado,
+      TipoEventoDocumentoPorEmitir.archivoReemplazado => l10n.agendaDetalleHistorialEventoArchivoReemplazado,
+      TipoEventoDocumentoPorEmitir.envioRegistrado => l10n.agendaDetalleHistorialEventoEnvioRegistrado,
+      TipoEventoDocumentoPorEmitir.correccionEnviadoAEmitido => l10n.agendaDetalleHistorialEventoCorreccionEnviadoAEmitido,
+      TipoEventoDocumentoPorEmitir.procesadoAceptado => l10n.agendaDetalleHistorialEventoProcesadoAceptado,
+      TipoEventoDocumentoPorEmitir.cancelado => l10n.agendaDetalleHistorialEventoCancelado,
+      TipoEventoDocumentoPorEmitir.marcadoNoRequerido => l10n.agendaDetalleHistorialEventoMarcadoNoRequerido,
+      TipoEventoDocumentoPorEmitir.edicionObservaciones => l10n.agendaDetalleHistorialEventoEdicionObservaciones,
+    };
+  }
+
   String _resumenIvaLabel(AppLocalizations l10n, ResumenIvaDocumento resumen) {
     return switch (resumen) {
       ResumenIvaDocumento.masIva => l10n.agendaDetalleResumenIvaMasIva,
@@ -111,6 +140,21 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
       EstatusDocumentoPorEmitir.enPreparacion => l10n.agendaEstatusEnPreparacion,
       EstatusDocumentoPorEmitir.cancelado => l10n.agendaEstatusCancelado,
       EstatusDocumentoPorEmitir.noRequerido => l10n.agendaEstatusNoRequerido,
+      EstatusDocumentoPorEmitir.emitido => l10n.agendaEstatusEmitido,
+      EstatusDocumentoPorEmitir.enviado => l10n.agendaEstatusEnviado,
+      EstatusDocumentoPorEmitir.procesadoAceptado => l10n.agendaEstatusProcesadoAceptado,
+    };
+  }
+
+  RisegStatusTone _estatusTono(EstatusDocumentoPorEmitir estatus) {
+    return switch (estatus) {
+      EstatusDocumentoPorEmitir.pendiente => RisegStatusTone.info,
+      EstatusDocumentoPorEmitir.enPreparacion => RisegStatusTone.warning,
+      EstatusDocumentoPorEmitir.cancelado => RisegStatusTone.neutral,
+      EstatusDocumentoPorEmitir.noRequerido => RisegStatusTone.neutral,
+      EstatusDocumentoPorEmitir.emitido => RisegStatusTone.info,
+      EstatusDocumentoPorEmitir.enviado => RisegStatusTone.info,
+      EstatusDocumentoPorEmitir.procesadoAceptado => RisegStatusTone.success,
     };
   }
 
@@ -164,6 +208,38 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
     }
   }
 
+  Future<void> _registrarEmision(DocumentoPorEmitirData documento) async {
+    final actualizo = await mostrarDialogoRegistrarEmision(context, ref, documento);
+    if (actualizo) await _cargar();
+  }
+
+  Future<void> _corregirDatosEmision(DocumentoPorEmitirData documento) async {
+    final actualizo = await mostrarDialogoCorregirDatosEmision(context, ref, documento);
+    if (actualizo) await _cargar();
+  }
+
+  Future<void> _registrarEnvio(String documentoPorEmitirId) async {
+    final actualizo = await mostrarDialogoRegistrarEnvio(context, ref, documentoPorEmitirId);
+    if (actualizo) await _cargar();
+  }
+
+  /// `Emitido → Procesado/Aceptado` directo omite el paso de envío —
+  /// se confirma explícitamente antes de aplicarlo (Resolución 5 de
+  /// Marlon: la interfaz debe confirmar claramente cuando se omita
+  /// Enviado).
+  Future<void> _marcarProcesadoAceptadoOmitiendoEnvio() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: l10n.agendaDetalleOmitirEnvioConfirmacionTitulo,
+      message: l10n.agendaDetalleOmitirEnvioConfirmacionMensaje,
+      confirmLabel: l10n.agendaDetalleOmitirEnvioConfirmacionConfirmar,
+      cancelLabel: l10n.agendaDetalleOmitirEnvioConfirmacionCancelar,
+    );
+    if (confirmado != true) return;
+    await _cambiarEstatus(EstatusDocumentoPorEmitir.procesadoAceptado);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -177,6 +253,7 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
     } else {
       final d = _detalle!.documento;
       final estatusActual = EstatusDocumentoPorEmitir.values.byName(d.estatus);
+      final esCfdi = TipoDocumentoCobro.values.byName(d.tipoDocumento) == TipoDocumentoCobro.cfdi;
 
       content = SizedBox(
         width: 560,
@@ -191,12 +268,7 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                 ),
                 RisegStatusBadge(
                   label: _estatusLabel(l10n, d.estatus),
-                  tone: switch (estatusActual) {
-                    EstatusDocumentoPorEmitir.pendiente => RisegStatusTone.info,
-                    EstatusDocumentoPorEmitir.enPreparacion => RisegStatusTone.warning,
-                    EstatusDocumentoPorEmitir.cancelado => RisegStatusTone.neutral,
-                    EstatusDocumentoPorEmitir.noRequerido => RisegStatusTone.neutral,
-                  },
+                  tone: _estatusTono(estatusActual),
                 ),
               ],
             ),
@@ -242,19 +314,26 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.md),
+            Text(l10n.agendaDetalleSeccionComparacionImportes, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
             Row(
               children: [
-                Expanded(child: CampoConsulta(label: l10n.agendaDetalleCampoImporteBase, value: formatoCentavosAgenda(d.importeBaseEsperado))),
-                Expanded(
-                  child: CampoConsulta(
-                    label: l10n.agendaDetalleCampoAjusteManual,
-                    value: d.ajusteManual == null ? null : formatoCentavosAgenda(d.ajusteManual!),
-                  ),
-                ),
-                Expanded(child: CampoConsulta(label: l10n.agendaDetalleCampoImporteFinal, value: formatoCentavosAgenda(d.importeFinalEsperado))),
+                Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteCalculado, value: formatoCentavosAgenda(d.importeBaseEsperado))),
+                Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionAjuste, value: _ajusteLabel(l10n, d.ajusteManual))),
+                Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteFinalEsperado, value: formatoCentavosAgenda(d.importeFinalEsperado))),
               ],
             ),
+            if (d.importeEmitido != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteEmitido, value: formatoCentavosAgenda(d.importeEmitido!))),
+                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionDiferencia, value: formatoCentavosAgenda(_detalle!.diferenciaEmision!))),
+                  const Expanded(child: SizedBox.shrink()),
+                ],
+              ),
+            ],
             const SizedBox(height: AppSpacing.sm),
             CampoConsulta(label: l10n.agendaDetalleCampoResumenIva, value: _resumenIvaLabel(l10n, _detalle!.resumenIva)),
             const SizedBox(height: AppSpacing.md),
@@ -312,6 +391,81 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
               const SizedBox(height: AppSpacing.md),
               CampoConsulta(label: l10n.agendaDetalleCampoObservaciones, value: d.observaciones),
             ],
+            if (estatusActual == EstatusDocumentoPorEmitir.emitido ||
+                estatusActual == EstatusDocumentoPorEmitir.enviado ||
+                estatusActual == EstatusDocumentoPorEmitir.procesadoAceptado) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text(l10n.agendaDetalleSeccionDatosEmision, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleCampoFolioDocumento, value: d.folioDocumento)),
+                  if (esCfdi) ...[
+                    Expanded(child: CampoConsulta(label: l10n.agendaDetalleCampoSerieFiscal, value: d.serieFiscal)),
+                    Expanded(child: CampoConsulta(label: l10n.agendaDetalleCampoFolioFiscal, value: d.folioFiscal)),
+                  ],
+                ],
+              ),
+              if (esCfdi) ...[
+                const SizedBox(height: AppSpacing.sm),
+                CampoConsulta(label: l10n.agendaDetalleCampoUuid, value: d.uuid),
+              ],
+              const SizedBox(height: AppSpacing.sm),
+              CampoConsulta(
+                label: l10n.agendaDetalleCampoFechaEmisionReal,
+                value: d.fechaEmisionReal == null ? null : _formatoFecha.format(d.fechaEmisionReal!),
+              ),
+              if (d.observacionesEmision != null && d.observacionesEmision!.trim().isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                CampoConsulta(label: l10n.agendaDetalleCampoObservacionesEmision, value: d.observacionesEmision),
+              ],
+            ],
+            if (estatusActual == EstatusDocumentoPorEmitir.enviado ||
+                estatusActual == EstatusDocumentoPorEmitir.procesadoAceptado) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text(l10n.agendaDetalleSeccionDatosEnvio, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
+              CampoConsulta(
+                label: l10n.agendaDetalleCampoFechaEnvio,
+                value: d.fechaEnvio == null ? null : _formatoFecha.format(d.fechaEnvio!),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              CampoConsulta(
+                label: l10n.agendaDetalleCampoCorreosUtilizados,
+                value: _detalle!.correosEnvio.isEmpty ? null : _detalle!.correosEnvio.join(', '),
+              ),
+              if (d.observacionesEnvio != null && d.observacionesEnvio!.trim().isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                CampoConsulta(label: l10n.agendaDetalleCampoObservacionesEnvio, value: d.observacionesEnvio),
+              ],
+            ],
+            const SizedBox(height: AppSpacing.md),
+            Text(l10n.agendaDetalleSeccionHistorial, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
+            if (_detalle!.eventos.isEmpty)
+              Text(l10n.agendaDetalleHistorialSinEventos, style: AppTypography.body.copyWith(color: colors.textMuted))
+            else
+              for (final evento in _detalle!.eventos)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            _formatoFechaHora.format(evento.fechaHora),
+                            style: AppTypography.caption.copyWith(color: colors.textMuted),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(_eventoLabel(l10n, evento.tipoEvento), style: AppTypography.label),
+                        ],
+                      ),
+                      if (evento.observacion != null && evento.observacion!.trim().isNotEmpty)
+                        Text(evento.observacion!, style: AppTypography.body.copyWith(color: colors.textMuted)),
+                    ],
+                  ),
+                ),
             const SizedBox(height: AppSpacing.lg),
             Wrap(
               spacing: AppSpacing.xs,
@@ -327,6 +481,11 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                 if (estatusActual == EstatusDocumentoPorEmitir.pendiente ||
                     estatusActual == EstatusDocumentoPorEmitir.enPreparacion) ...[
                   RisegButton(
+                    label: l10n.agendaDetalleBotonRegistrarEmision,
+                    variant: RisegButtonVariant.primary,
+                    onPressed: () => _registrarEmision(d),
+                  ),
+                  RisegButton(
                     label: l10n.agendaDetalleBotonCancelar,
                     variant: RisegButtonVariant.danger,
                     loading: _procesando,
@@ -339,6 +498,40 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                     onPressed: () => _cambiarEstatus(EstatusDocumentoPorEmitir.noRequerido, requiereMotivo: true),
                   ),
                 ],
+                if (estatusActual == EstatusDocumentoPorEmitir.emitido) ...[
+                  RisegButton(
+                    label: l10n.agendaDetalleBotonRegistrarEnvio,
+                    variant: RisegButtonVariant.primary,
+                    onPressed: () => _registrarEnvio(d.id),
+                  ),
+                  RisegButton(
+                    label: l10n.agendaDetalleBotonMarcarProcesadoAceptado,
+                    variant: RisegButtonVariant.secondary,
+                    loading: _procesando,
+                    onPressed: _marcarProcesadoAceptadoOmitiendoEnvio,
+                  ),
+                ],
+                if (estatusActual == EstatusDocumentoPorEmitir.enviado) ...[
+                  RisegButton(
+                    label: l10n.agendaDetalleBotonMarcarProcesadoAceptado,
+                    variant: RisegButtonVariant.primary,
+                    loading: _procesando,
+                    onPressed: () => _cambiarEstatus(EstatusDocumentoPorEmitir.procesadoAceptado),
+                  ),
+                  RisegButton(
+                    label: l10n.agendaDetalleBotonCorregirEnviadoAEmitido,
+                    variant: RisegButtonVariant.ghost,
+                    loading: _procesando,
+                    onPressed: () => _cambiarEstatus(EstatusDocumentoPorEmitir.emitido, requiereMotivo: true),
+                  ),
+                ],
+                if (estatusActual == EstatusDocumentoPorEmitir.emitido ||
+                    estatusActual == EstatusDocumentoPorEmitir.enviado)
+                  RisegButton(
+                    label: l10n.agendaDetalleBotonCorregirDatosEmision,
+                    variant: RisegButtonVariant.ghost,
+                    onPressed: () => _corregirDatosEmision(d),
+                  ),
               ],
             ),
           ],

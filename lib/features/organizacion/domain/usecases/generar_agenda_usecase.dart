@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 
 import '../repositories/configuracion_cobro_repository.dart';
 import '../repositories/documento_por_emitir_repository.dart';
@@ -195,7 +196,13 @@ class GenerarAgendaUseCase {
 
       final codigoResultado = await _generarCodigo.ejecutar('documento_por_emitir');
       final codigo = codigoResultado.when(ok: (c) => c, failure: (f) => throw StateError(f.message));
-      creados.add(await _repository.crearDocumento(codigo: codigo, armado: armado));
+      creados.add(
+        await _repository.crearDocumento(
+          codigo: codigo,
+          armado: armado,
+          tipoEventoCreacion: TipoEventoDocumentoPorEmitir.creadoAutomatico,
+        ),
+      );
     }
 
     return GenerarAgendaResultado(creados: creados, yaExistian: yaExistian);

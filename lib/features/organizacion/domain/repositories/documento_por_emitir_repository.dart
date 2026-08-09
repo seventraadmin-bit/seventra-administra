@@ -1,11 +1,13 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 
 import '../usecases/documento_por_emitir_armado.dart';
 import '../usecases/documento_por_emitir_detalle.dart';
 
-/// Agenda de documentos por emitir (Etapa 4I.1) — obligaciones
-/// administrativas de preparar un CFDI/recibo, nunca el documento real
-/// ni una Cuenta por cobrar.
+/// Agenda de documentos por emitir (Etapa 4I.1, ciclo administrativo
+/// completo desde la 4I.2.1) — obligaciones administrativas de
+/// preparar/emitir/enviar un CFDI/recibo, nunca el timbrado real ni una
+/// Cuenta por cobrar.
 abstract interface class DocumentoPorEmitirRepository {
   /// `null` si ningún documento existe todavía con esa
   /// `generationKey` — usado por la generación para omitir duplicados
@@ -15,10 +17,13 @@ abstract interface class DocumentoPorEmitirRepository {
 
   Future<DocumentoPorEmitirData?> obtenerPorId(String documentoPorEmitirId);
 
-  /// Inserta el documento y sus 4 tablas hijas en una sola transacción.
+  /// Inserta el documento y sus tablas hijas, y el primer evento de
+  /// historial (`creadoAutomatico`/`creadoManual`, según corresponda),
+  /// todo en una sola transacción.
   Future<DocumentoPorEmitirData> crearDocumento({
     required String codigo,
     required DocumentoPorEmitirArmado armado,
+    required TipoEventoDocumentoPorEmitir tipoEventoCreacion,
   });
 
   Future<DocumentoPorEmitirDetalle?> obtenerDetalle(String documentoPorEmitirId);
@@ -33,18 +38,77 @@ abstract interface class DocumentoPorEmitirRepository {
   });
 
   /// Cambia el estatus — el caso de uso ya validó la transición y que
-  /// `motivo` esté presente cuando la transición lo exige.
+  /// `motivo` esté presente cuando la transición lo exige. Registra el
+  /// evento de historial correspondiente en la misma transacción.
   Future<DocumentoPorEmitirData> cambiarEstatus({
     required String documentoPorEmitirId,
     required String nuevoEstatus,
     String? motivo,
+    required TipoEventoDocumentoPorEmitir tipoEvento,
+    String? actor,
   });
 
-  /// El modelo existe desde la Etapa 4I.1 aunque la interfaz de captura
-  /// se difiera a la 4I.2 — nunca toca el snapshot de líneas.
+  /// Registra los datos definitivos y transiciona a `emitido` — el
+  /// caso de uso ya validó la transición y los campos permitidos según
+  /// `tipoDocumento`. Registra el evento `emisionRegistrada`.
+  Future<DocumentoPorEmitirData> registrarEmision({
+    required String documentoPorEmitirId,
+    required String folioDocumento,
+    String? serieFiscal,
+    String? folioFiscal,
+    String? uuid,
+    required DateTime fechaEmisionReal,
+    required int importeEmitido,
+    String? observacionesEmision,
+    String? actor,
+  });
+
+  /// Corrige uno o más datos definitivos ya registrados, sin cambiar el
+  /// estatus — el caso de uso ya validó que el documento está en
+  /// `emitido`/`enviado` (nunca `procesadoAceptado`) y que `motivo` no
+  /// esté vacío. Registra el evento `correccionDatosEmision` con los
+  /// valores anteriores en `datosRelevantes`. `null` en un campo aquí
+  /// significa "no tocar ese campo", nunca "bórralo" — mismo criterio
+  /// que `actualizarObservaciones` en Configuración de cobro.
+  Future<DocumentoPorEmitirData> corregirDatosEmision({
+    required String documentoPorEmitirId,
+    required String motivo,
+    String? folioDocumento,
+    String? serieFiscal,
+    String? folioFiscal,
+    String? uuid,
+    DateTime? fechaEmisionReal,
+    int? importeEmitido,
+    String? observacionesEmision,
+    String? actor,
+  });
+
+  /// Registra el envío y transiciona a `enviado` — reconstruye
+  /// completa la lista de correos utilizados (borrar e insertar, mismo
+  /// criterio que `DocumentoPorEmitirCorreo`). Registra el evento
+  /// `envioRegistrado` con los correos utilizados en `datosRelevantes`.
+  Future<DocumentoPorEmitirData> registrarEnvio({
+    required String documentoPorEmitirId,
+    required DateTime fechaEnvio,
+    required List<String> correos,
+    String? observacionesEnvio,
+    String? actor,
+  });
+
+  /// El modelo existe desde la Etapa 4I.1; la interfaz de captura llega
+  /// en la 4I.2.1. Nunca toca el snapshot de líneas. Registra el
+  /// evento `ajusteRegistrado` con el ajuste/motivo anterior y nuevo.
   Future<DocumentoPorEmitirData> actualizarAjusteManual({
     required String documentoPorEmitirId,
     int? ajusteManual,
     String? motivoAjuste,
+    String? actor,
   });
+
+  /// Correos realmente utilizados en el envío vigente — vacío si nunca
+  /// se ha registrado un envío.
+  Future<List<String>> listarCorreosEnvio(String documentoPorEmitirId);
+
+  /// Historial administrativo completo, en orden cronológico.
+  Future<List<DocumentoPorEmitirEventoData>> listarEventos(String documentoPorEmitirId);
 }

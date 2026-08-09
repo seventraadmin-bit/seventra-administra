@@ -58,6 +58,7 @@ import 'domain/usecases/configuracion_cobro_regla_evento_validator.dart';
 import 'domain/usecases/configuracion_cobro_validator.dart';
 import 'domain/usecases/crear_area_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
+import 'domain/usecases/corregir_datos_emision_documento_por_emitir_usecase.dart';
 import 'domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'domain/usecases/crear_documento_manual_usecase.dart';
 import 'domain/usecases/crear_entidad_fiscal_usecase.dart';
@@ -87,6 +88,8 @@ import 'domain/usecases/listar_sucursales_usecase.dart';
 import 'domain/usecases/listar_tipos_sucursal_usecase.dart';
 import 'domain/usecases/mover_ubicacion_usecase.dart';
 import 'domain/usecases/obtener_arbol_ubicaciones_de_sucursal_usecase.dart';
+import 'domain/usecases/registrar_emision_documento_por_emitir_usecase.dart';
+import 'domain/usecases/registrar_envio_documento_por_emitir_usecase.dart';
 import 'domain/usecases/obtener_arbol_ubicaciones_usecase.dart';
 import 'domain/usecases/obtener_empresa_activa_usecase.dart';
 import 'domain/usecases/obtener_expediente_cliente_usecase.dart';
@@ -534,4 +537,20 @@ final cambiarEstatusDocumentoPorEmitirUseCaseProvider = Provider<CambiarEstatusD
 final actualizarAjusteManualDocumentoPorEmitirUseCaseProvider =
     Provider<ActualizarAjusteManualDocumentoPorEmitirUseCase>((ref) {
   return ActualizarAjusteManualDocumentoPorEmitirUseCase(ref.watch(documentoPorEmitirRepositoryProvider));
+});
+
+// --- Etapa 4I.2.1 — Emisión, envío e historial administrativo ---
+
+final registrarEmisionDocumentoPorEmitirUseCaseProvider =
+    Provider<RegistrarEmisionDocumentoPorEmitirUseCase>((ref) {
+  return RegistrarEmisionDocumentoPorEmitirUseCase(ref.watch(documentoPorEmitirRepositoryProvider));
+});
+
+final corregirDatosEmisionDocumentoPorEmitirUseCaseProvider =
+    Provider<CorregirDatosEmisionDocumentoPorEmitirUseCase>((ref) {
+  return CorregirDatosEmisionDocumentoPorEmitirUseCase(ref.watch(documentoPorEmitirRepositoryProvider));
+});
+
+final registrarEnvioDocumentoPorEmitirUseCaseProvider = Provider<RegistrarEnvioDocumentoPorEmitirUseCase>((ref) {
+  return RegistrarEnvioDocumentoPorEmitirUseCase(ref.watch(documentoPorEmitirRepositoryProvider));
 });

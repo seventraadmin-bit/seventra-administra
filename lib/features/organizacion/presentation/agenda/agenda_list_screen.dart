@@ -56,6 +56,9 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
       EstatusDocumentoPorEmitir.enPreparacion => l10n.agendaEstatusEnPreparacion,
       EstatusDocumentoPorEmitir.cancelado => l10n.agendaEstatusCancelado,
       EstatusDocumentoPorEmitir.noRequerido => l10n.agendaEstatusNoRequerido,
+      EstatusDocumentoPorEmitir.emitido => l10n.agendaEstatusEmitido,
+      EstatusDocumentoPorEmitir.enviado => l10n.agendaEstatusEnviado,
+      EstatusDocumentoPorEmitir.procesadoAceptado => l10n.agendaEstatusProcesadoAceptado,
     };
   }
 
@@ -65,6 +68,9 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
       EstatusDocumentoPorEmitir.enPreparacion => RisegStatusTone.warning,
       EstatusDocumentoPorEmitir.cancelado => RisegStatusTone.neutral,
       EstatusDocumentoPorEmitir.noRequerido => RisegStatusTone.neutral,
+      EstatusDocumentoPorEmitir.emitido => RisegStatusTone.info,
+      EstatusDocumentoPorEmitir.enviado => RisegStatusTone.info,
+      EstatusDocumentoPorEmitir.procesadoAceptado => RisegStatusTone.success,
     };
   }
 

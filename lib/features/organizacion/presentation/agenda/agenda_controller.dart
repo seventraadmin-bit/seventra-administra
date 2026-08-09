@@ -3,9 +3,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/corregir_datos_emision_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_emitir_detalle.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/generar_agenda_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/registrar_emision_documento_por_emitir_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/registrar_envio_documento_por_emitir_usecase.dart';
 
 import '../../organizacion_providers.dart';
 import 'agenda_state.dart';
@@ -144,5 +147,90 @@ class AgendaController extends _$AgendaController {
 
   Future<DocumentoPorEmitirDetalle?> obtenerDetalle(String documentoPorEmitirId) {
     return ref.read(documentoPorEmitirRepositoryProvider).obtenerDetalle(documentoPorEmitirId);
+  }
+
+  Future<RegistrarEmisionDocumentoPorEmitirResultado?> registrarEmision({
+    required String documentoPorEmitirId,
+    required String folioDocumento,
+    String? serieFiscal,
+    String? folioFiscal,
+    String? uuid,
+    required DateTime fechaEmisionReal,
+    required int importeEmitido,
+    String? observacionesEmision,
+  }) async {
+    final resultado = await ref.read(registrarEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
+          documentoPorEmitirId: documentoPorEmitirId,
+          folioDocumento: folioDocumento,
+          serieFiscal: serieFiscal,
+          folioFiscal: folioFiscal,
+          uuid: uuid,
+          fechaEmisionReal: fechaEmisionReal,
+          importeEmitido: importeEmitido,
+          observacionesEmision: observacionesEmision,
+        );
+    if (resultado is RegistrarEmisionDocumentoPorEmitirExitoso) {
+      await _cargar();
+    }
+    return resultado;
+  }
+
+  Future<CorregirDatosEmisionDocumentoPorEmitirResultado?> corregirDatosEmision({
+    required String documentoPorEmitirId,
+    required String motivo,
+    String? folioDocumento,
+    String? serieFiscal,
+    String? folioFiscal,
+    String? uuid,
+    DateTime? fechaEmisionReal,
+    int? importeEmitido,
+    String? observacionesEmision,
+  }) async {
+    final resultado = await ref.read(corregirDatosEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
+          documentoPorEmitirId: documentoPorEmitirId,
+          motivo: motivo,
+          folioDocumento: folioDocumento,
+          serieFiscal: serieFiscal,
+          folioFiscal: folioFiscal,
+          uuid: uuid,
+          fechaEmisionReal: fechaEmisionReal,
+          importeEmitido: importeEmitido,
+          observacionesEmision: observacionesEmision,
+        );
+    if (resultado is CorregirDatosEmisionDocumentoPorEmitirExitoso) {
+      await _cargar();
+    }
+    return resultado;
+  }
+
+  Future<RegistrarEnvioDocumentoPorEmitirResultado?> registrarEnvio({
+    required String documentoPorEmitirId,
+    required DateTime fechaEnvio,
+    List<String> correos = const [],
+    String? observacionesEnvio,
+  }) async {
+    final resultado = await ref.read(registrarEnvioDocumentoPorEmitirUseCaseProvider).ejecutar(
+          documentoPorEmitirId: documentoPorEmitirId,
+          fechaEnvio: fechaEnvio,
+          correos: correos,
+          observacionesEnvio: observacionesEnvio,
+        );
+    if (resultado is RegistrarEnvioDocumentoPorEmitirExitoso) {
+      await _cargar();
+    }
+    return resultado;
+  }
+
+  /// Correos ya utilizados en un envío previo, o el snapshot de la
+  /// Configuración de cobro al generar si nunca se ha enviado — insumo
+  /// para prellenar el formulario de envío (Resolución 8 de Marlon:
+  /// precargados pero editables).
+  Future<List<String>> obtenerCorreosSugeridosParaEnvio(String documentoPorEmitirId) async {
+    final repo = ref.read(documentoPorEmitirRepositoryProvider);
+    final correosEnvio = await repo.listarCorreosEnvio(documentoPorEmitirId);
+    if (correosEnvio.isNotEmpty) return correosEnvio;
+
+    final detalle = await repo.obtenerDetalle(documentoPorEmitirId);
+    return detalle?.correos ?? const [];
   }
 }

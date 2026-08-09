@@ -865,6 +865,9 @@
   "agendaEstatusEnPreparacion": "En preparación",
   "agendaEstatusCancelado": "Cancelado",
   "agendaEstatusNoRequerido": "No requerido",
+  "agendaEstatusEmitido": "Emitido",
+  "agendaEstatusEnviado": "Enviado",
+  "agendaEstatusProcesadoAceptado": "Procesado/Aceptado",
   "agendaGenerarExito": "Se generaron {creados} documento(s). {yaExistian} ya existían.",
   "@agendaGenerarExito": {
     "placeholders": {
@@ -932,5 +935,98 @@
   "agendaDetalleMotivoBotonCancelar": "Cancelar",
   "agendaDetalleCambiarEstatusExito": "Estatus actualizado correctamente.",
   "agendaDetalleCambiarEstatusErrorMotivoRequerido": "Este cambio de estatus requiere un motivo.",
-  "agendaDetalleCambiarEstatusErrorInesperado": "No se pudo actualizar el estatus. Intenta de nuevo."
+  "agendaDetalleCambiarEstatusErrorInesperado": "No se pudo actualizar el estatus. Intenta de nuevo.",
+
+  "agendaDetalleBotonRegistrarEmision": "Registrar emisión",
+  "agendaDetalleBotonRegistrarEnvio": "Registrar envío",
+  "agendaDetalleBotonMarcarProcesadoAceptado": "Marcar Procesado/Aceptado",
+  "agendaDetalleBotonCorregirDatosEmision": "Corregir datos de emisión",
+  "agendaDetalleBotonCorregirEnviadoAEmitido": "Corregir a Emitido",
+
+  "agendaDetalleOmitirEnvioConfirmacionTitulo": "Marcar Procesado/Aceptado sin envío",
+  "agendaDetalleOmitirEnvioConfirmacionMensaje": "Este documento pasará directamente de Emitido a Procesado/Aceptado, sin pasar por Enviado. Úsalo solo cuando no exista un paso de envío formal (ej. entrega en mano). ¿Confirmas?",
+  "agendaDetalleOmitirEnvioConfirmacionConfirmar": "Sí, marcar Procesado/Aceptado",
+  "agendaDetalleOmitirEnvioConfirmacionCancelar": "Cancelar",
+
+  "agendaDetalleSeccionDatosEmision": "Datos de emisión",
+  "agendaDetalleSeccionDatosEnvio": "Datos de envío",
+  "agendaDetalleSeccionComparacionImportes": "Comparación de importes",
+  "agendaDetalleSeccionHistorial": "Historial administrativo",
+
+  "agendaDetalleCampoFolioDocumento": "Folio del documento",
+  "agendaDetalleCampoSerieFiscal": "Serie fiscal",
+  "agendaDetalleCampoFolioFiscal": "Folio fiscal",
+  "agendaDetalleCampoUuid": "UUID",
+  "agendaDetalleCampoFechaEmisionReal": "Fecha de emisión",
+  "agendaDetalleCampoImporteEmitido": "Importe emitido",
+  "agendaDetalleCampoObservacionesEmision": "Observaciones de emisión",
+  "agendaDetalleCampoFechaEnvio": "Fecha de envío",
+  "agendaDetalleCampoCorreosUtilizados": "Correos utilizados",
+  "agendaDetalleCampoObservacionesEnvio": "Observaciones de envío",
+
+  "agendaDetalleComparacionImporteCalculado": "Importe calculado",
+  "agendaDetalleComparacionAjuste": "Ajuste",
+  "agendaDetalleComparacionImporteFinalEsperado": "Importe final esperado",
+  "agendaDetalleComparacionImporteEmitido": "Importe emitido",
+  "agendaDetalleComparacionDiferencia": "Diferencia",
+
+  "agendaDetalleHistorialSinEventos": "Sin eventos registrados todavía.",
+  "agendaDetalleHistorialActorDesconocido": "Sistema",
+  "agendaDetalleHistorialEventoCreadoAutomatico": "Creado automáticamente",
+  "agendaDetalleHistorialEventoCreadoManual": "Creado manualmente",
+  "agendaDetalleHistorialEventoMarcadoEnPreparacion": "Marcado en preparación",
+  "agendaDetalleHistorialEventoAjusteRegistrado": "Ajuste manual registrado",
+  "agendaDetalleHistorialEventoEmisionRegistrada": "Emisión registrada",
+  "agendaDetalleHistorialEventoCorreccionDatosEmision": "Corrección de datos de emisión",
+  "agendaDetalleHistorialEventoArchivoAdjuntado": "Archivo adjuntado",
+  "agendaDetalleHistorialEventoArchivoReemplazado": "Archivo reemplazado",
+  "agendaDetalleHistorialEventoEnvioRegistrado": "Envío registrado",
+  "agendaDetalleHistorialEventoCorreccionEnviadoAEmitido": "Corregido de Enviado a Emitido",
+  "agendaDetalleHistorialEventoProcesadoAceptado": "Marcado Procesado/Aceptado",
+  "agendaDetalleHistorialEventoCancelado": "Cancelado",
+  "agendaDetalleHistorialEventoMarcadoNoRequerido": "Marcado no requerido",
+  "agendaDetalleHistorialEventoEdicionObservaciones": "Observaciones editadas",
+
+  "agendaAjusteEtiquetaDescuento": "Descuento de {monto}",
+  "@agendaAjusteEtiquetaDescuento": {
+    "placeholders": {
+      "monto": {"type": "String"}
+    }
+  },
+  "agendaAjusteEtiquetaIncremento": "Incremento de {monto}",
+  "@agendaAjusteEtiquetaIncremento": {
+    "placeholders": {
+      "monto": {"type": "String"}
+    }
+  },
+  "agendaAjusteEtiquetaSinAjuste": "Sin ajuste",
+
+  "agendaRegistrarEmisionDialogoTitulo": "Registrar emisión",
+  "agendaRegistrarEmisionBotonConfirmar": "Registrar emisión",
+  "agendaRegistrarEmisionBotonCancelar": "Cancelar",
+  "agendaRegistrarEmisionExito": "Emisión registrada correctamente.",
+  "agendaRegistrarEmisionErrorFolioRequerido": "El folio del documento es obligatorio.",
+  "agendaRegistrarEmisionErrorCamposNoPermitidosParaRecibo": "Un recibo no captura serie fiscal, folio fiscal ni UUID.",
+  "agendaRegistrarEmisionErrorImporteInvalido": "El importe emitido no puede ser negativo.",
+  "agendaRegistrarEmisionErrorTransicionInvalida": "Este documento ya no puede pasar a Emitido por esta vía.",
+  "agendaRegistrarEmisionErrorInesperado": "No se pudo registrar la emisión. Intenta de nuevo.",
+
+  "agendaCorregirDatosEmisionDialogoTitulo": "Corregir datos de emisión",
+  "agendaCorregirDatosEmisionBotonConfirmar": "Guardar corrección",
+  "agendaCorregirDatosEmisionBotonCancelar": "Cancelar",
+  "agendaCorregirDatosEmisionCampoMotivo": "Motivo de la corrección",
+  "agendaCorregirDatosEmisionExito": "Datos de emisión corregidos correctamente.",
+  "agendaCorregirDatosEmisionErrorMotivoRequerido": "La corrección requiere un motivo.",
+  "agendaCorregirDatosEmisionErrorNoPermitido": "Este documento ya no admite corrección de datos de emisión.",
+  "agendaCorregirDatosEmisionErrorInesperado": "No se pudo corregir la emisión. Intenta de nuevo.",
+
+  "agendaRegistrarEnvioDialogoTitulo": "Registrar envío",
+  "agendaRegistrarEnvioBotonConfirmar": "Registrar envío",
+  "agendaRegistrarEnvioBotonCancelar": "Cancelar",
+  "agendaRegistrarEnvioCampoCorreoNuevo": "Agregar correo",
+  "agendaRegistrarEnvioBotonAgregarCorreo": "Agregar",
+  "agendaRegistrarEnvioBotonQuitarCorreo": "Quitar",
+  "agendaRegistrarEnvioExito": "Envío registrado correctamente.",
+  "agendaRegistrarEnvioErrorTransicionInvalida": "Este documento no puede registrarse como enviado.",
+  "agendaRegistrarEnvioErrorInesperado": "No se pudo registrar el envío. Intenta de nuevo."
 }

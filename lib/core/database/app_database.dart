@@ -23,6 +23,7 @@ import '../../features/organizacion/data/tables/ubicacion_table.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
+import 'migrations/migrar_documento_por_emitir_v12.dart';
 import 'migrations/migrar_servicio_v6.dart';
 import 'migrations/migrar_servicio_v7.dart';
 import 'seed/seed_data.dart';
@@ -85,12 +86,14 @@ class AppMetadata extends Table {
   DocumentoPorEmitirConfiguracion,
   DocumentoPorEmitirLinea,
   DocumentoPorEmitirCorreo,
+  DocumentoPorEmitirCorreoEnvio,
+  DocumentoPorEmitirEvento,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration {
@@ -244,6 +247,30 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(documentoPorEmitirConfiguracion);
           await m.createTable(documentoPorEmitirLinea);
           await m.createTable(documentoPorEmitirCorreo);
+        }
+        // Aditiva+estructural (Etapa 4I.2.1): datos definitivos del
+        // documento directamente en `DocumentoPorEmitir` (Corrección
+        // explícita de Marlon: nunca una entidad 1:1 separada) + 2
+        // tablas nuevas (`DocumentoPorEmitirCorreoEnvio`,
+        // `DocumentoPorEmitirEvento`). `migrarDocumentoPorEmitirV12`
+        // recrea la tabla completa (SQLite no permite agregar un CHECK
+        // de tabla vía `ADD COLUMN`) — ver ese archivo para el detalle.
+        //
+        // SOLO corre si `from == 11` exacto — NUNCA `from <= 11` (mismo
+        // gotcha ya documentado en `migrarServicioV7`, arriba): un
+        // origen `from <= 10` ya pasó por el paso `to >= 11` de arriba,
+        // que crea `documentoPorEmitir` vía `m.createTable` con la forma
+        // *actual* de la clase Dart — que ya incluye estas 9 columnas y
+        // su CHECK. Recrearla otra vez ahí lanzaría "table already
+        // exists". Las 2 tablas nuevas sí son seguras con `from <= 11`
+        // (nunca existieron antes de esta etapa, sin importar el
+        // origen).
+        if (to >= 12 && from == 11) {
+          await migrarDocumentoPorEmitirV12(this, m);
+        }
+        if (to >= 12 && from <= 11) {
+          await m.createTable(documentoPorEmitirCorreoEnvio);
+          await m.createTable(documentoPorEmitirEvento);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,
