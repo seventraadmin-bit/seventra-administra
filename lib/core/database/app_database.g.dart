@@ -5782,6 +5782,28 @@ class $AttachmentTable extends Attachment
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _categoriaMeta = const VerificationMeta(
+    'categoria',
+  );
+  @override
+  late final GeneratedColumn<String> categoria = GeneratedColumn<String>(
+    'categoria',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _originalFileNameMeta = const VerificationMeta(
     'originalFileName',
   );
@@ -5844,6 +5866,16 @@ class $AttachmentTable extends Attachment
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _estadoMeta = const VerificationMeta('estado');
+  @override
+  late final GeneratedColumn<String> estado = GeneratedColumn<String>(
+    'estado',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('activo'),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -5861,12 +5893,15 @@ class $AttachmentTable extends Attachment
     id,
     empresaId,
     clienteId,
+    documentoPorEmitirId,
+    categoria,
     originalFileName,
     storedFileName,
     path,
     mimeType,
     sizeBytes,
     hash,
+    estado,
     createdAt,
   ];
   @override
@@ -5896,6 +5931,21 @@ class $AttachmentTable extends Attachment
       context.handle(
         _clienteIdMeta,
         clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
+      );
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('categoria')) {
+      context.handle(
+        _categoriaMeta,
+        categoria.isAcceptableOrUnknown(data['categoria']!, _categoriaMeta),
       );
     }
     if (data.containsKey('original_file_name')) {
@@ -5950,6 +6000,12 @@ class $AttachmentTable extends Attachment
         hash.isAcceptableOrUnknown(data['hash']!, _hashMeta),
       );
     }
+    if (data.containsKey('estado')) {
+      context.handle(
+        _estadoMeta,
+        estado.isAcceptableOrUnknown(data['estado']!, _estadoMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -5977,6 +6033,14 @@ class $AttachmentTable extends Attachment
       clienteId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}cliente_id'],
+      ),
+      documentoPorEmitirId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}documento_por_emitir_id'],
+      ),
+      categoria: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}categoria'],
       ),
       originalFileName:
           attachedDatabase.typeMapping.read(
@@ -6007,6 +6071,11 @@ class $AttachmentTable extends Attachment
         DriftSqlType.string,
         data['${effectivePrefix}hash'],
       ),
+      estado:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estado'],
+          )!,
       createdAt:
           attachedDatabase.typeMapping.read(
             DriftSqlType.dateTime,
@@ -6025,23 +6094,32 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
   final String id;
   final String? empresaId;
   final String? clienteId;
+  final String? documentoPorEmitirId;
+
+  /// Solo aplica cuando `documentoPorEmitirId` no es nulo — `null` para
+  /// adjuntos de Empresa/Cliente.
+  final String? categoria;
   final String originalFileName;
   final String storedFileName;
   final String path;
   final String mimeType;
   final int sizeBytes;
   final String? hash;
+  final String estado;
   final DateTime createdAt;
   const AttachmentData({
     required this.id,
     this.empresaId,
     this.clienteId,
+    this.documentoPorEmitirId,
+    this.categoria,
     required this.originalFileName,
     required this.storedFileName,
     required this.path,
     required this.mimeType,
     required this.sizeBytes,
     this.hash,
+    required this.estado,
     required this.createdAt,
   });
   @override
@@ -6054,6 +6132,12 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     if (!nullToAbsent || clienteId != null) {
       map['cliente_id'] = Variable<String>(clienteId);
     }
+    if (!nullToAbsent || documentoPorEmitirId != null) {
+      map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    }
+    if (!nullToAbsent || categoria != null) {
+      map['categoria'] = Variable<String>(categoria);
+    }
     map['original_file_name'] = Variable<String>(originalFileName);
     map['stored_file_name'] = Variable<String>(storedFileName);
     map['path'] = Variable<String>(path);
@@ -6062,6 +6146,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     if (!nullToAbsent || hash != null) {
       map['hash'] = Variable<String>(hash);
     }
+    map['estado'] = Variable<String>(estado);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -6077,12 +6162,21 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           clienteId == null && nullToAbsent
               ? const Value.absent()
               : Value(clienteId),
+      documentoPorEmitirId:
+          documentoPorEmitirId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(documentoPorEmitirId),
+      categoria:
+          categoria == null && nullToAbsent
+              ? const Value.absent()
+              : Value(categoria),
       originalFileName: Value(originalFileName),
       storedFileName: Value(storedFileName),
       path: Value(path),
       mimeType: Value(mimeType),
       sizeBytes: Value(sizeBytes),
       hash: hash == null && nullToAbsent ? const Value.absent() : Value(hash),
+      estado: Value(estado),
       createdAt: Value(createdAt),
     );
   }
@@ -6096,12 +6190,17 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       id: serializer.fromJson<String>(json['id']),
       empresaId: serializer.fromJson<String?>(json['empresaId']),
       clienteId: serializer.fromJson<String?>(json['clienteId']),
+      documentoPorEmitirId: serializer.fromJson<String?>(
+        json['documentoPorEmitirId'],
+      ),
+      categoria: serializer.fromJson<String?>(json['categoria']),
       originalFileName: serializer.fromJson<String>(json['originalFileName']),
       storedFileName: serializer.fromJson<String>(json['storedFileName']),
       path: serializer.fromJson<String>(json['path']),
       mimeType: serializer.fromJson<String>(json['mimeType']),
       sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
       hash: serializer.fromJson<String?>(json['hash']),
+      estado: serializer.fromJson<String>(json['estado']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -6112,12 +6211,15 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       'id': serializer.toJson<String>(id),
       'empresaId': serializer.toJson<String?>(empresaId),
       'clienteId': serializer.toJson<String?>(clienteId),
+      'documentoPorEmitirId': serializer.toJson<String?>(documentoPorEmitirId),
+      'categoria': serializer.toJson<String?>(categoria),
       'originalFileName': serializer.toJson<String>(originalFileName),
       'storedFileName': serializer.toJson<String>(storedFileName),
       'path': serializer.toJson<String>(path),
       'mimeType': serializer.toJson<String>(mimeType),
       'sizeBytes': serializer.toJson<int>(sizeBytes),
       'hash': serializer.toJson<String?>(hash),
+      'estado': serializer.toJson<String>(estado),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -6126,23 +6228,32 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     String? id,
     Value<String?> empresaId = const Value.absent(),
     Value<String?> clienteId = const Value.absent(),
+    Value<String?> documentoPorEmitirId = const Value.absent(),
+    Value<String?> categoria = const Value.absent(),
     String? originalFileName,
     String? storedFileName,
     String? path,
     String? mimeType,
     int? sizeBytes,
     Value<String?> hash = const Value.absent(),
+    String? estado,
     DateTime? createdAt,
   }) => AttachmentData(
     id: id ?? this.id,
     empresaId: empresaId.present ? empresaId.value : this.empresaId,
     clienteId: clienteId.present ? clienteId.value : this.clienteId,
+    documentoPorEmitirId:
+        documentoPorEmitirId.present
+            ? documentoPorEmitirId.value
+            : this.documentoPorEmitirId,
+    categoria: categoria.present ? categoria.value : this.categoria,
     originalFileName: originalFileName ?? this.originalFileName,
     storedFileName: storedFileName ?? this.storedFileName,
     path: path ?? this.path,
     mimeType: mimeType ?? this.mimeType,
     sizeBytes: sizeBytes ?? this.sizeBytes,
     hash: hash.present ? hash.value : this.hash,
+    estado: estado ?? this.estado,
     createdAt: createdAt ?? this.createdAt,
   );
   AttachmentData copyWithCompanion(AttachmentCompanion data) {
@@ -6150,6 +6261,11 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       id: data.id.present ? data.id.value : this.id,
       empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
       clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+      categoria: data.categoria.present ? data.categoria.value : this.categoria,
       originalFileName:
           data.originalFileName.present
               ? data.originalFileName.value
@@ -6162,6 +6278,7 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
       mimeType: data.mimeType.present ? data.mimeType.value : this.mimeType,
       sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
       hash: data.hash.present ? data.hash.value : this.hash,
+      estado: data.estado.present ? data.estado.value : this.estado,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -6172,12 +6289,15 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           ..write('id: $id, ')
           ..write('empresaId: $empresaId, ')
           ..write('clienteId: $clienteId, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
           ..write('path: $path, ')
           ..write('mimeType: $mimeType, ')
           ..write('sizeBytes: $sizeBytes, ')
           ..write('hash: $hash, ')
+          ..write('estado: $estado, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -6188,12 +6308,15 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
     id,
     empresaId,
     clienteId,
+    documentoPorEmitirId,
+    categoria,
     originalFileName,
     storedFileName,
     path,
     mimeType,
     sizeBytes,
     hash,
+    estado,
     createdAt,
   );
   @override
@@ -6203,12 +6326,15 @@ class AttachmentData extends DataClass implements Insertable<AttachmentData> {
           other.id == this.id &&
           other.empresaId == this.empresaId &&
           other.clienteId == this.clienteId &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.categoria == this.categoria &&
           other.originalFileName == this.originalFileName &&
           other.storedFileName == this.storedFileName &&
           other.path == this.path &&
           other.mimeType == this.mimeType &&
           other.sizeBytes == this.sizeBytes &&
           other.hash == this.hash &&
+          other.estado == this.estado &&
           other.createdAt == this.createdAt);
 }
 
@@ -6216,24 +6342,30 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
   final Value<String> id;
   final Value<String?> empresaId;
   final Value<String?> clienteId;
+  final Value<String?> documentoPorEmitirId;
+  final Value<String?> categoria;
   final Value<String> originalFileName;
   final Value<String> storedFileName;
   final Value<String> path;
   final Value<String> mimeType;
   final Value<int> sizeBytes;
   final Value<String?> hash;
+  final Value<String> estado;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const AttachmentCompanion({
     this.id = const Value.absent(),
     this.empresaId = const Value.absent(),
     this.clienteId = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.categoria = const Value.absent(),
     this.originalFileName = const Value.absent(),
     this.storedFileName = const Value.absent(),
     this.path = const Value.absent(),
     this.mimeType = const Value.absent(),
     this.sizeBytes = const Value.absent(),
     this.hash = const Value.absent(),
+    this.estado = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -6241,12 +6373,15 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     required String id,
     this.empresaId = const Value.absent(),
     this.clienteId = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.categoria = const Value.absent(),
     required String originalFileName,
     required String storedFileName,
     required String path,
     required String mimeType,
     required int sizeBytes,
     this.hash = const Value.absent(),
+    this.estado = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -6259,12 +6394,15 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     Expression<String>? id,
     Expression<String>? empresaId,
     Expression<String>? clienteId,
+    Expression<String>? documentoPorEmitirId,
+    Expression<String>? categoria,
     Expression<String>? originalFileName,
     Expression<String>? storedFileName,
     Expression<String>? path,
     Expression<String>? mimeType,
     Expression<int>? sizeBytes,
     Expression<String>? hash,
+    Expression<String>? estado,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -6272,12 +6410,16 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
       if (id != null) 'id': id,
       if (empresaId != null) 'empresa_id': empresaId,
       if (clienteId != null) 'cliente_id': clienteId,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (categoria != null) 'categoria': categoria,
       if (originalFileName != null) 'original_file_name': originalFileName,
       if (storedFileName != null) 'stored_file_name': storedFileName,
       if (path != null) 'path': path,
       if (mimeType != null) 'mime_type': mimeType,
       if (sizeBytes != null) 'size_bytes': sizeBytes,
       if (hash != null) 'hash': hash,
+      if (estado != null) 'estado': estado,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -6287,12 +6429,15 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     Value<String>? id,
     Value<String?>? empresaId,
     Value<String?>? clienteId,
+    Value<String?>? documentoPorEmitirId,
+    Value<String?>? categoria,
     Value<String>? originalFileName,
     Value<String>? storedFileName,
     Value<String>? path,
     Value<String>? mimeType,
     Value<int>? sizeBytes,
     Value<String?>? hash,
+    Value<String>? estado,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -6300,12 +6445,15 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
       id: id ?? this.id,
       empresaId: empresaId ?? this.empresaId,
       clienteId: clienteId ?? this.clienteId,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      categoria: categoria ?? this.categoria,
       originalFileName: originalFileName ?? this.originalFileName,
       storedFileName: storedFileName ?? this.storedFileName,
       path: path ?? this.path,
       mimeType: mimeType ?? this.mimeType,
       sizeBytes: sizeBytes ?? this.sizeBytes,
       hash: hash ?? this.hash,
+      estado: estado ?? this.estado,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -6322,6 +6470,14 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     }
     if (clienteId.present) {
       map['cliente_id'] = Variable<String>(clienteId.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (categoria.present) {
+      map['categoria'] = Variable<String>(categoria.value);
     }
     if (originalFileName.present) {
       map['original_file_name'] = Variable<String>(originalFileName.value);
@@ -6341,6 +6497,9 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
     if (hash.present) {
       map['hash'] = Variable<String>(hash.value);
     }
+    if (estado.present) {
+      map['estado'] = Variable<String>(estado.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -6356,12 +6515,15 @@ class AttachmentCompanion extends UpdateCompanion<AttachmentData> {
           ..write('id: $id, ')
           ..write('empresaId: $empresaId, ')
           ..write('clienteId: $clienteId, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('categoria: $categoria, ')
           ..write('originalFileName: $originalFileName, ')
           ..write('storedFileName: $storedFileName, ')
           ..write('path: $path, ')
           ..write('mimeType: $mimeType, ')
           ..write('sizeBytes: $sizeBytes, ')
           ..write('hash: $hash, ')
+          ..write('estado: $estado, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -25357,12 +25519,15 @@ typedef $$AttachmentTableCreateCompanionBuilder =
       required String id,
       Value<String?> empresaId,
       Value<String?> clienteId,
+      Value<String?> documentoPorEmitirId,
+      Value<String?> categoria,
       required String originalFileName,
       required String storedFileName,
       required String path,
       required String mimeType,
       required int sizeBytes,
       Value<String?> hash,
+      Value<String> estado,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -25371,12 +25536,15 @@ typedef $$AttachmentTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String?> empresaId,
       Value<String?> clienteId,
+      Value<String?> documentoPorEmitirId,
+      Value<String?> categoria,
       Value<String> originalFileName,
       Value<String> storedFileName,
       Value<String> path,
       Value<String> mimeType,
       Value<int> sizeBytes,
       Value<String?> hash,
+      Value<String> estado,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -25430,6 +25598,16 @@ class $$AttachmentTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get documentoPorEmitirId => $composableBuilder(
+    column: $table.documentoPorEmitirId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoria => $composableBuilder(
+    column: $table.categoria,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get originalFileName => $composableBuilder(
     column: $table.originalFileName,
     builder: (column) => ColumnFilters(column),
@@ -25457,6 +25635,11 @@ class $$AttachmentTableFilterComposer
 
   ColumnFilters<String> get hash => $composableBuilder(
     column: $table.hash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estado => $composableBuilder(
+    column: $table.estado,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25515,6 +25698,16 @@ class $$AttachmentTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get documentoPorEmitirId => $composableBuilder(
+    column: $table.documentoPorEmitirId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoria => $composableBuilder(
+    column: $table.categoria,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get originalFileName => $composableBuilder(
     column: $table.originalFileName,
     builder: (column) => ColumnOrderings(column),
@@ -25545,6 +25738,11 @@ class $$AttachmentTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get estado => $composableBuilder(
+    column: $table.estado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -25569,6 +25767,14 @@ class $$AttachmentTableAnnotationComposer
   GeneratedColumn<String> get clienteId =>
       $composableBuilder(column: $table.clienteId, builder: (column) => column);
 
+  GeneratedColumn<String> get documentoPorEmitirId => $composableBuilder(
+    column: $table.documentoPorEmitirId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get categoria =>
+      $composableBuilder(column: $table.categoria, builder: (column) => column);
+
   GeneratedColumn<String> get originalFileName => $composableBuilder(
     column: $table.originalFileName,
     builder: (column) => column,
@@ -25590,6 +25796,9 @@ class $$AttachmentTableAnnotationComposer
 
   GeneratedColumn<String> get hash =>
       $composableBuilder(column: $table.hash, builder: (column) => column);
+
+  GeneratedColumn<String> get estado =>
+      $composableBuilder(column: $table.estado, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -25651,24 +25860,30 @@ class $$AttachmentTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String?> empresaId = const Value.absent(),
                 Value<String?> clienteId = const Value.absent(),
+                Value<String?> documentoPorEmitirId = const Value.absent(),
+                Value<String?> categoria = const Value.absent(),
                 Value<String> originalFileName = const Value.absent(),
                 Value<String> storedFileName = const Value.absent(),
                 Value<String> path = const Value.absent(),
                 Value<String> mimeType = const Value.absent(),
                 Value<int> sizeBytes = const Value.absent(),
                 Value<String?> hash = const Value.absent(),
+                Value<String> estado = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AttachmentCompanion(
                 id: id,
                 empresaId: empresaId,
                 clienteId: clienteId,
+                documentoPorEmitirId: documentoPorEmitirId,
+                categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
                 path: path,
                 mimeType: mimeType,
                 sizeBytes: sizeBytes,
                 hash: hash,
+                estado: estado,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -25677,24 +25892,30 @@ class $$AttachmentTableTableManager
                 required String id,
                 Value<String?> empresaId = const Value.absent(),
                 Value<String?> clienteId = const Value.absent(),
+                Value<String?> documentoPorEmitirId = const Value.absent(),
+                Value<String?> categoria = const Value.absent(),
                 required String originalFileName,
                 required String storedFileName,
                 required String path,
                 required String mimeType,
                 required int sizeBytes,
                 Value<String?> hash = const Value.absent(),
+                Value<String> estado = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AttachmentCompanion.insert(
                 id: id,
                 empresaId: empresaId,
                 clienteId: clienteId,
+                documentoPorEmitirId: documentoPorEmitirId,
+                categoria: categoria,
                 originalFileName: originalFileName,
                 storedFileName: storedFileName,
                 path: path,
                 mimeType: mimeType,
                 sizeBytes: sizeBytes,
                 hash: hash,
+                estado: estado,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

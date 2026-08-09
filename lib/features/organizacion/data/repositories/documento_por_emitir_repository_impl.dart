@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../domain/repositories/documento_por_emitir_repository.dart';
 import '../../domain/usecases/documento_por_emitir_armado.dart';
@@ -9,9 +11,10 @@ import '../../domain/usecases/documento_por_emitir_detalle.dart';
 import '../tables/documento_por_emitir_table.dart';
 
 class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
-  DocumentoPorEmitirRepositoryImpl(this._db);
+  DocumentoPorEmitirRepositoryImpl(this._db, this._attachmentRepository);
 
   final AppDatabase _db;
+  final AttachmentRepository _attachmentRepository;
 
   @override
   Future<DocumentoPorEmitirData?> obtenerPorGenerationKey(String generationKey) {
@@ -450,6 +453,98 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
           ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId))
           ..orderBy([(t) => OrderingTerm.asc(t.fechaHora)]))
         .get();
+  }
+
+  @override
+  Future<AttachmentData> adjuntarArchivo({
+    required String documentoPorEmitirId,
+    required String categoria,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      final adjunto = await _attachmentRepository.crear(
+        AttachmentCompanion.insert(
+          id: const Uuid().v4(),
+          documentoPorEmitirId: Value(documentoPorEmitirId),
+          categoria: Value(categoria),
+          originalFileName: originalFileName,
+          storedFileName: storedFileName,
+          path: path,
+          mimeType: mimeType,
+          sizeBytes: sizeBytes,
+        ),
+      );
+
+      await _registrarEvento(
+        documentoPorEmitirId: documentoPorEmitirId,
+        tipoEvento: TipoEventoDocumentoPorEmitir.archivoAdjuntado,
+        estadoAnterior: null,
+        estadoNuevo: null,
+        actor: actor,
+        datosRelevantes: {
+          'categoria': categoria,
+          'archivoNuevo': originalFileName,
+          'attachmentId': adjunto.id,
+        },
+      );
+
+      return adjunto;
+    });
+  }
+
+  @override
+  Future<AttachmentData> reemplazarArchivo({
+    required String documentoPorEmitirId,
+    required String attachmentAnteriorId,
+    required String categoria,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+    String? motivo,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await _attachmentRepository.obtenerPorId(attachmentAnteriorId);
+
+      final nuevo = await _attachmentRepository.crear(
+        AttachmentCompanion.insert(
+          id: const Uuid().v4(),
+          documentoPorEmitirId: Value(documentoPorEmitirId),
+          categoria: Value(categoria),
+          originalFileName: originalFileName,
+          storedFileName: storedFileName,
+          path: path,
+          mimeType: mimeType,
+          sizeBytes: sizeBytes,
+        ),
+      );
+      await _attachmentRepository.archivar(attachmentAnteriorId);
+
+      await _registrarEvento(
+        documentoPorEmitirId: documentoPorEmitirId,
+        tipoEvento: TipoEventoDocumentoPorEmitir.archivoReemplazado,
+        estadoAnterior: null,
+        estadoNuevo: null,
+        observacion: motivo,
+        actor: actor,
+        datosRelevantes: {
+          'categoria': categoria,
+          'archivoAnteriorId': attachmentAnteriorId,
+          'archivoAnterior': anterior?.originalFileName,
+          'archivoNuevoId': nuevo.id,
+          'archivoNuevo': originalFileName,
+        },
+      );
+
+      return nuevo;
+    });
   }
 
   Future<void> _registrarEvento({

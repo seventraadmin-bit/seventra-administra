@@ -21,7 +21,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 12;
+const _currentSchemaVersion = 13;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -2260,6 +2260,150 @@ void main() {
       () => db.customStatement('''
         INSERT INTO documento_por_emitir_evento (documento_por_emitir_id, fecha_hora, tipo_evento)
         VALUES ('documento-inexistente', 1700000000, 'creadoManual');
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('13.json coincide con el esquema final de la Etapa 4I.2.2 (Attachment con arco exclusivo de 3 vías)', () async {
+    final schema = await verifier.schemaAt(13);
+
+    final sqlAttachment = schema.rawDatabase
+        .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'attachment'")
+        .single['sql'] as String;
+    expect(sqlAttachment, contains('"documento_por_emitir_id" TEXT'));
+    expect(sqlAttachment, contains('"categoria" TEXT'));
+    expect(sqlAttachment, contains('"estado" TEXT'));
+    expect(
+      sqlAttachment,
+      contains('REFERENCES documento_por_emitir (id) ON DELETE CASCADE'),
+    );
+    expect(sqlAttachment, contains('empresa_id IS NOT NULL'));
+    expect(sqlAttachment, contains('documento_por_emitir_id IS NOT NULL'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 12 → 13 conserva un Attachment real de Empresa con las columnas nuevas en NULL/activo', () async {
+    final schemaV12 = await verifier.schemaAt(12);
+    final raw = schemaV12.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO empresa (id, codigo, nombre_comercial, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('empresa-real', 'RSG-01', 'RISEG', 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO attachment (
+        id, empresa_id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at
+      ) VALUES (
+        'attachment-real', 'empresa-real', 'logo.png', 'a1b2c3.png', '/attachments/a1b2c3.png',
+        'image/png', 12345, 1700000000
+      );
+    ''');
+
+    final db = AppDatabase(schemaV12.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final attachments = await db.select(db.attachment).get();
+    expect(attachments, hasLength(1), reason: 'ningún Attachment real debe perderse en una migración aditiva');
+    expect(attachments.single.documentoPorEmitirId, isNull);
+    expect(attachments.single.categoria, isNull);
+    expect(attachments.single.estado, 'activo', reason: 'las filas existentes deben quedar activas por defecto');
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+    final integridad = await db
+        .customSelect('PRAGMA integrity_check')
+        .map((r) => r.data['integrity_check'] as String)
+        .get();
+    expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test('acepta un Attachment de DocumentoPorEmitir con categoría tras la migración', () async {
+    final schemaV12 = await verifier.schemaAt(12);
+    final db = AppDatabase(schemaV12.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+    final documento = await db.into(db.documentoPorEmitir).insertReturning(
+          DocumentoPorEmitirCompanion.insert(
+            codigo: 'DOC-000001',
+            clienteId: cliente.id,
+            tipoDocumento: 'reciboDePago',
+            agrupacion: 'porServicio',
+            metodo: 'noAplica',
+            periodoInicio: DateTime(2026, 1, 1),
+            periodoFin: DateTime(2026, 1, 31),
+            generationKey: 'clave-adjunto',
+            importeBaseEsperado: 0,
+            importeFinalEsperado: 0,
+          ),
+        );
+
+    final adjunto = await db.into(db.attachment).insertReturning(
+          AttachmentCompanion.insert(
+            id: 'attachment-nuevo',
+            documentoPorEmitirId: Value(documento.id),
+            originalFileName: 'recibo enero.pdf',
+            storedFileName: 'f1e2d3.pdf',
+            path: '/attachments/${documento.id}/reciboPdf/f1e2d3.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 54321,
+            categoria: const Value('reciboPdf'),
+          ),
+        );
+
+    expect(adjunto.estado, 'activo');
+    expect(adjunto.categoria, 'reciboPdf');
+    expect(adjunto.documentoPorEmitirId, documento.id);
+
+    await db.close();
+  });
+
+  test('rechaza un Attachment con más de un dueño (arco exclusivo de 3 vías) tras la migración', () async {
+    final schemaV12 = await verifier.schemaAt(12);
+    final db = AppDatabase(schemaV12.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final cliente = await db.into(db.cliente).insertReturning(
+          ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+        );
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO attachment (
+          id, cliente_id, documento_por_emitir_id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at
+        ) VALUES (
+          'attachment-doble-dueno', '${cliente.id}', 'documento-inexistente', 'a.pdf', 'x.pdf', '/x.pdf',
+          'application/pdf', 100, 1700000000
+        );
+      '''),
+      throwsA(anything),
+    );
+
+    await db.close();
+  });
+
+  test('rechaza un Attachment sin ningún dueño tras la migración', () async {
+    final schemaV12 = await verifier.schemaAt(12);
+    final db = AppDatabase(schemaV12.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    expect(
+      () => db.customStatement('''
+        INSERT INTO attachment (id, original_file_name, stored_file_name, path, mime_type, size_bytes, created_at)
+        VALUES ('attachment-sin-dueno', 'a.pdf', 'x.pdf', '/x.pdf', 'application/pdf', 100, 1700000000);
       '''),
       throwsA(anything),
     );

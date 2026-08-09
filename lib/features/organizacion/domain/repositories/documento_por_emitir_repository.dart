@@ -111,4 +111,37 @@ abstract interface class DocumentoPorEmitirRepository {
 
   /// Historial administrativo completo, en orden cronológico.
   Future<List<DocumentoPorEmitirEventoData>> listarEventos(String documentoPorEmitirId);
+
+  /// Inserta el nuevo `Attachment` y registra el evento
+  /// `archivoAdjuntado` en la misma transacción — el caso de uso ya
+  /// validó la categoría, el tipo de archivo y ya guardó el archivo
+  /// físico (el `path`/`storedFileName` aquí son el resultado de eso,
+  /// nunca se calculan en el repositorio).
+  Future<AttachmentData> adjuntarArchivo({
+    required String documentoPorEmitirId,
+    required String categoria,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+    String? actor,
+  });
+
+  /// Inserta el `Attachment` nuevo, archiva el anterior
+  /// (`estado = archivado`, nunca lo borra) y registra el evento
+  /// `archivoReemplazado` con ambos ids/nombres y el motivo (si lo
+  /// hay) en `datosRelevantes` — todo en una sola transacción.
+  Future<AttachmentData> reemplazarArchivo({
+    required String documentoPorEmitirId,
+    required String attachmentAnteriorId,
+    required String categoria,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+    String? motivo,
+    String? actor,
+  });
 }

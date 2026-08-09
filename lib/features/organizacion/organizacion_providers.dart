@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/attachments/attachment_repository.dart';
+import '../../core/attachments/attachment_storage.dart';
 import '../../core/codigos/codigo_secuencia_service.dart';
 import '../../core/codigos/generar_codigo_usecase.dart';
 import '../../core/di/providers.dart';
@@ -29,6 +31,7 @@ import 'domain/repositories/sucursal_repository.dart';
 import 'domain/repositories/ubicacion_repository.dart';
 import 'domain/usecases/activar_area_usecase.dart';
 import 'domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
+import 'domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
 import 'domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
 import 'domain/usecases/actualizar_area_usecase.dart';
 import 'domain/usecases/actualizar_contacto_usecase.dart';
@@ -90,6 +93,7 @@ import 'domain/usecases/mover_ubicacion_usecase.dart';
 import 'domain/usecases/obtener_arbol_ubicaciones_de_sucursal_usecase.dart';
 import 'domain/usecases/registrar_emision_documento_por_emitir_usecase.dart';
 import 'domain/usecases/registrar_envio_documento_por_emitir_usecase.dart';
+import 'domain/usecases/reemplazar_archivo_documento_por_emitir_usecase.dart';
 import 'domain/usecases/obtener_arbol_ubicaciones_usecase.dart';
 import 'domain/usecases/obtener_empresa_activa_usecase.dart';
 import 'domain/usecases/obtener_expediente_cliente_usecase.dart';
@@ -500,8 +504,16 @@ final obtenerHistorialLineaComercialUseCaseProvider = Provider<ObtenerHistorialL
 
 // --- Etapa 4I.1 — Agenda de documentos por emitir ---
 
+final attachmentRepositoryProvider = Provider<AttachmentRepository>((ref) {
+  return AttachmentRepository(ref.watch(appDatabaseProvider));
+});
+
+final attachmentStorageProvider = Provider<AttachmentStorage>((ref) {
+  return AttachmentStorage(ref.watch(appPathsProvider).attachmentsDir);
+});
+
 final documentoPorEmitirRepositoryProvider = Provider<DocumentoPorEmitirRepository>((ref) {
-  return DocumentoPorEmitirRepositoryImpl(ref.watch(appDatabaseProvider));
+  return DocumentoPorEmitirRepositoryImpl(ref.watch(appDatabaseProvider), ref.watch(attachmentRepositoryProvider));
 });
 
 final ensamblarDocumentoPorEmitirUseCaseProvider = Provider<EnsamblarDocumentoPorEmitirUseCase>((ref) {
@@ -553,4 +565,21 @@ final corregirDatosEmisionDocumentoPorEmitirUseCaseProvider =
 
 final registrarEnvioDocumentoPorEmitirUseCaseProvider = Provider<RegistrarEnvioDocumentoPorEmitirUseCase>((ref) {
   return RegistrarEnvioDocumentoPorEmitirUseCase(ref.watch(documentoPorEmitirRepositoryProvider));
+});
+
+// --- Etapa 4I.2.2 — Adjuntos, ajuste manual e historial administrativo ---
+
+final adjuntarArchivoDocumentoPorEmitirUseCaseProvider = Provider<AdjuntarArchivoDocumentoPorEmitirUseCase>((ref) {
+  return AdjuntarArchivoDocumentoPorEmitirUseCase(
+    ref.watch(documentoPorEmitirRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+  );
+});
+
+final reemplazarArchivoDocumentoPorEmitirUseCaseProvider = Provider<ReemplazarArchivoDocumentoPorEmitirUseCase>((ref) {
+  return ReemplazarArchivoDocumentoPorEmitirUseCase(
+    ref.watch(documentoPorEmitirRepositoryProvider),
+    ref.watch(attachmentRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+  );
 });

@@ -1,7 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/tables/attachment_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/corregir_datos_emision_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
@@ -9,6 +12,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_em
 import 'package:riseg_one/features/organizacion/domain/usecases/generar_agenda_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_emision_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_envio_documento_por_emitir_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/reemplazar_archivo_documento_por_emitir_usecase.dart';
 
 import '../../organizacion_providers.dart';
 import 'agenda_state.dart';
@@ -232,5 +236,66 @@ class AgendaController extends _$AgendaController {
 
     final detalle = await repo.obtenerDetalle(documentoPorEmitirId);
     return detalle?.correos ?? const [];
+  }
+
+  Future<AdjuntarArchivoDocumentoPorEmitirResultado> adjuntarArchivo({
+    required String documentoPorEmitirId,
+    required CategoriaAdjuntoDocumentoPorEmitir categoria,
+    required String sourceFilePath,
+    required String originalFileName,
+    required String mimeType,
+  }) async {
+    final resultado = await ref.read(adjuntarArchivoDocumentoPorEmitirUseCaseProvider).ejecutar(
+          documentoPorEmitirId: documentoPorEmitirId,
+          categoria: categoria,
+          sourceFilePath: sourceFilePath,
+          originalFileName: originalFileName,
+          mimeType: mimeType,
+        );
+    if (resultado is AdjuntarArchivoDocumentoPorEmitirExitoso) {
+      await _cargar();
+    }
+    return resultado;
+  }
+
+  Future<ReemplazarArchivoDocumentoPorEmitirResultado> reemplazarArchivo({
+    required String documentoPorEmitirId,
+    required String attachmentAnteriorId,
+    required CategoriaAdjuntoDocumentoPorEmitir categoria,
+    required String sourceFilePath,
+    required String originalFileName,
+    required String mimeType,
+    String? motivo,
+  }) async {
+    final resultado = await ref.read(reemplazarArchivoDocumentoPorEmitirUseCaseProvider).ejecutar(
+          documentoPorEmitirId: documentoPorEmitirId,
+          attachmentAnteriorId: attachmentAnteriorId,
+          categoria: categoria,
+          sourceFilePath: sourceFilePath,
+          originalFileName: originalFileName,
+          mimeType: mimeType,
+          motivo: motivo,
+        );
+    if (resultado is ReemplazarArchivoDocumentoPorEmitirExitoso) {
+      await _cargar();
+    }
+    return resultado;
+  }
+
+  Future<List<AttachmentData>> listarAdjuntosActivos(String documentoPorEmitirId, {String? categoria}) {
+    return ref
+        .read(attachmentRepositoryProvider)
+        .listarActivosPorDocumentoPorEmitir(documentoPorEmitirId, categoria: categoria);
+  }
+
+  /// Versiones anteriores archivadas — solo se consultan explícitamente
+  /// desde el historial (Resolución 6 de Marlon), nunca en el listado
+  /// normal de adjuntos.
+  Future<List<AttachmentData>> listarAdjuntosArchivados(String documentoPorEmitirId) {
+    return ref.read(attachmentRepositoryProvider).listarArchivadosPorDocumentoPorEmitir(documentoPorEmitirId);
+  }
+
+  Future<void> abrirArchivo(String path) {
+    return ref.read(attachmentStorageProvider).abrir(path);
   }
 }

@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
@@ -108,7 +109,7 @@ void main() {
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
-    documentoRepo = DocumentoPorEmitirRepositoryImpl(db);
+    documentoRepo = DocumentoPorEmitirRepositoryImpl(db, AttachmentRepository(db));
     final comercialRepo = ServicioComercialRepositoryImpl(db);
     final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);

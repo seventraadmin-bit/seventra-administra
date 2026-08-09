@@ -26,6 +26,11 @@ dependencies:
   path: ^1.9.0
   uuid: ^4.5.1
 
+  # Adjuntos (Etapa 4I.2.2) — selección de archivo del sistema; abrir un
+  # adjunto usa el programa predeterminado del SO vía dart:io, sin
+  # dependencia adicional.
+  file_picker: ^8.1.6
+
   # Rutas / navegación
   go_router: ^14.6.2
 

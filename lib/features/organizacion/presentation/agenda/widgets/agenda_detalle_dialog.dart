@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,9 +18,12 @@ import 'package:riseg_one/features/organizacion/presentation/shared/campo_consul
 import '../../../organizacion_providers.dart';
 import '../agenda_controller.dart';
 import '../agenda_list_screen.dart' show formatoCentavosAgenda;
+import 'agenda_adjuntos_section.dart';
+import 'agenda_ajuste_manual_dialog.dart';
 import 'agenda_corregir_datos_emision_dialog.dart';
 import 'agenda_registrar_emision_dialog.dart';
 import 'agenda_registrar_envio_dialog.dart';
+import 'agenda_versiones_archivadas_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
@@ -125,6 +130,37 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
     };
   }
 
+  /// Traduce el JSON de `datosRelevantes` de un evento a líneas
+  /// legibles — nunca se muestra el JSON crudo en pantalla. Claves no
+  /// reconocidas se ignoran silenciosamente (el JSON es un log
+  /// heterogéneo por diseño, distintos eventos traen distintas claves).
+  List<String> _datosRelevantesLegibles(AppLocalizations l10n, String? datosJson) {
+    if (datosJson == null) return const [];
+    final Map<String, dynamic> datos;
+    try {
+      datos = jsonDecode(datosJson) as Map<String, dynamic>;
+    } catch (_) {
+      return const [];
+    }
+
+    final lineas = <String>[];
+    void agregar(String etiqueta, Object? valor) {
+      if (valor == null) return;
+      lineas.add('$etiqueta: $valor');
+    }
+
+    agregar(l10n.agendaDetalleHistorialDatoCategoria, datos['categoria']);
+    agregar(l10n.agendaDetalleHistorialDatoArchivoAnterior, datos['archivoAnterior']);
+    agregar(l10n.agendaDetalleHistorialDatoArchivoNuevo, datos['archivoNuevo']);
+    agregar(l10n.agendaDetalleHistorialDatoFolioAnterior, datos['folioDocumentoAnterior']);
+    final ajusteAnterior = datos['ajusteAnterior'];
+    if (ajusteAnterior is int) agregar(l10n.agendaDetalleHistorialDatoAjusteAnterior, formatoCentavosAgenda(ajusteAnterior));
+    final ajusteNuevo = datos['ajusteNuevo'];
+    if (ajusteNuevo is int) agregar(l10n.agendaDetalleHistorialDatoAjusteNuevo, formatoCentavosAgenda(ajusteNuevo));
+
+    return lineas;
+  }
+
   String _resumenIvaLabel(AppLocalizations l10n, ResumenIvaDocumento resumen) {
     return switch (resumen) {
       ResumenIvaDocumento.masIva => l10n.agendaDetalleResumenIvaMasIva,
@@ -221,6 +257,15 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
   Future<void> _registrarEnvio(String documentoPorEmitirId) async {
     final actualizo = await mostrarDialogoRegistrarEnvio(context, ref, documentoPorEmitirId);
     if (actualizo) await _cargar();
+  }
+
+  Future<void> _ajusteManual(DocumentoPorEmitirData documento) async {
+    final actualizo = await mostrarDialogoAjusteManual(context, ref, documento);
+    if (actualizo) await _cargar();
+  }
+
+  Future<void> _verVersionesArchivadas() async {
+    await mostrarDialogoVersionesArchivadas(context, ref, widget.documentoPorEmitirId);
   }
 
   /// `Emitido → Procesado/Aceptado` directo omite el paso de envío —
@@ -440,7 +485,23 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
               ],
             ],
             const SizedBox(height: AppSpacing.md),
-            Text(l10n.agendaDetalleSeccionHistorial, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+            AgendaAdjuntosSection(documento: d),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.agendaDetalleSeccionHistorial,
+                    style: AppTypography.heading3.copyWith(color: colors.textPrimary),
+                  ),
+                ),
+                RisegButton(
+                  label: l10n.agendaDetalleHistorialBotonVersionesArchivadas,
+                  variant: RisegButtonVariant.ghost,
+                  onPressed: _verVersionesArchivadas,
+                ),
+              ],
+            ),
             const SizedBox(height: AppSpacing.xs),
             if (_detalle!.eventos.isEmpty)
               Text(l10n.agendaDetalleHistorialSinEventos, style: AppTypography.body.copyWith(color: colors.textMuted))
@@ -461,8 +522,18 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                           Text(_eventoLabel(l10n, evento.tipoEvento), style: AppTypography.label),
                         ],
                       ),
+                      // `actor` se omite por completo mientras sea `null`
+                      // (Resolución de Marlon: ausencia limpia, nunca un
+                      // placeholder) — solo aparece cuando exista.
+                      if (evento.actor != null)
+                        Text(
+                          '${l10n.agendaDetalleHistorialCampoActor}: ${evento.actor}',
+                          style: AppTypography.caption.copyWith(color: colors.textMuted),
+                        ),
                       if (evento.observacion != null && evento.observacion!.trim().isNotEmpty)
                         Text(evento.observacion!, style: AppTypography.body.copyWith(color: colors.textMuted)),
+                      for (final linea in _datosRelevantesLegibles(l10n, evento.datosRelevantes))
+                        Text(linea, style: AppTypography.caption.copyWith(color: colors.textMuted)),
                     ],
                   ),
                 ),
@@ -531,6 +602,13 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                     label: l10n.agendaDetalleBotonCorregirDatosEmision,
                     variant: RisegButtonVariant.ghost,
                     onPressed: () => _corregirDatosEmision(d),
+                  ),
+                if (estatusActual != EstatusDocumentoPorEmitir.cancelado &&
+                    estatusActual != EstatusDocumentoPorEmitir.noRequerido)
+                  RisegButton(
+                    label: l10n.agendaDetalleBotonAjusteManual,
+                    variant: RisegButtonVariant.ghost,
+                    onPressed: () => _ajusteManual(d),
                   ),
               ],
             ),

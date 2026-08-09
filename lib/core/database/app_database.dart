@@ -23,6 +23,7 @@ import '../../features/organizacion/data/tables/ubicacion_table.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
+import 'migrations/migrar_attachment_v13.dart';
 import 'migrations/migrar_documento_por_emitir_v12.dart';
 import 'migrations/migrar_servicio_v6.dart';
 import 'migrations/migrar_servicio_v7.dart';
@@ -93,7 +94,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration {
@@ -271,6 +272,17 @@ class AppDatabase extends _$AppDatabase {
         if (to >= 12 && from <= 11) {
           await m.createTable(documentoPorEmitirCorreoEnvio);
           await m.createTable(documentoPorEmitirEvento);
+        }
+        // Estructural (Etapa 4I.2.2): Attachment gana el tercer brazo
+        // del arco exclusivo (`documentoPorEmitirId`) + `categoria` +
+        // `estado` — mismo motivo de recreación que
+        // `migrarDocumentoPorEmitirV12` (el CHECK no se puede ampliar
+        // vía `ADD COLUMN`). Mismo gotcha de siempre: `from == 1` ya
+        // crea `attachment` con la forma *actual* en
+        // `_createEtapa4ATables` (arriba en este mismo `onUpgrade`), así
+        // que aquí es `from >= 2`, nunca sin acotar.
+        if (to >= 13 && from >= 2 && from <= 12) {
+          await migrarAttachmentV13(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,
