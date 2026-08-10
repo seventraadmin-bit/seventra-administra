@@ -54,6 +54,7 @@ import '../../features/inventario/data/tables/categoria_articulo_table.dart';
 import '../../features/inventario/data/tables/descuento_inventario_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_attachment_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
+import 'migrations/migrar_asignacion_attachment_v29.dart';
 import 'migrations/migrar_asignacion_servicio_v21.dart';
 import 'migrations/migrar_asignacion_v28.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
@@ -187,7 +188,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
 
   @override
   MigrationStrategy get migration {
@@ -647,6 +648,15 @@ class AppDatabase extends _$AppDatabase {
           await migrarAsignacionV28(this, m);
           await m.createTable(descuentoInventario);
           await m.createTable(asignacionAttachment);
+        }
+        // Estructural (Etapa 7C): `AsignacionAttachment` gana llave
+        // primaria compuesta — ver el doc comment de
+        // `migrarAsignacionAttachmentV29`. Gotcha de rango exacto de
+        // siempre: `from <= 27` ya crea la tabla con la forma *actual*
+        // en el bloque `to >= 28` de arriba, así que aquí es `from ==
+        // 28` exacto, nunca `from <= 28`.
+        if (to >= 29 && from == 28) {
+          await migrarAsignacionAttachmentV29(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

@@ -8,8 +8,10 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
+import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/adjuntar_resguardo_firmado_dialog.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/asignar_articulo_dialog.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/cerrar_asignacion_dialog.dart';
+import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/generar_resguardo_dialog.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/reemplazar_asignacion_dialog.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
@@ -78,6 +80,8 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   Map<String, ArticuloData> _articulosInventarioPorId = const {};
   Map<String, String> _variantesInventarioPorId = const {};
   Map<String, String> _unidadesInventarioPorId = const {};
+  List<AttachmentData> _resguardos = const [];
+  List<DescuentoInventarioData> _descuentosPendientes = const [];
   bool _cargando = true;
   bool _procesando = false;
 
@@ -181,6 +185,22 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       if (unidad != null) unidadesInventarioPorId[unidadId] = '${unidad.codigo} · ${unidad.numeroSerie}';
     }
 
+    // Resguardos (Etapa 7C) — un mismo documento puede cubrir varias
+    // Asignaciones y sigue siendo consultable aunque ya no estén
+    // activas, así que se agrega sobre el historial completo,
+    // deduplicando por Attachment.
+    final historialInventario = await ref.read(asignacionRepositoryProvider).listarHistorialPorEmpleado(widget.empleadoId);
+    final resguardosPorId = <String, AttachmentData>{};
+    for (final asignacion in historialInventario) {
+      final adjuntos = await ref.read(attachmentRepositoryProvider).listarActivosPorAsignacion(asignacion.id);
+      for (final adjunto in adjuntos) {
+        resguardosPorId[adjunto.id] = adjunto;
+      }
+    }
+    final resguardos = resguardosPorId.values.toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    final descuentosPendientes = await ref.read(asignacionRepositoryProvider).listarDescuentosPendientesPorEmpleado(widget.empleadoId);
+
     if (!mounted) return;
     setState(() {
       _empleado = empleado;
@@ -203,6 +223,8 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       _articulosInventarioPorId = articulosInventarioPorId;
       _variantesInventarioPorId = variantesInventarioPorId;
       _unidadesInventarioPorId = unidadesInventarioPorId;
+      _resguardos = resguardos;
+      _descuentosPendientes = descuentosPendientes;
       _cargando = false;
     });
   }
@@ -369,6 +391,20 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   Future<void> _reemplazarInventario(AsignacionData asignacion) async {
     final reemplazado = await mostrarDialogoReemplazarAsignacion(context, ref, asignacion: asignacion);
     if (reemplazado) await _cargar();
+  }
+
+  Future<void> _generarResguardo() async {
+    await mostrarDialogoGenerarResguardo(context, ref, asignaciones: _inventarioAsignado, detalleBuilder: _inventarioDetalle);
+  }
+
+  Future<void> _adjuntarResguardoFirmado() async {
+    final adjunto = await mostrarDialogoAdjuntarResguardoFirmado(
+      context,
+      ref,
+      asignaciones: _inventarioAsignado,
+      detalleBuilder: _inventarioDetalle,
+    );
+    if (adjunto) await _cargar();
   }
 
   String _inventarioDetalle(AsignacionData asignacion) {
@@ -796,6 +832,25 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: [
+                          RisegButton(
+                            label: l10n.generarResguardoDialogoTitulo,
+                            variant: RisegButtonVariant.secondary,
+                            size: RisegButtonSize.compact,
+                            onPressed: _inventarioAsignado.isEmpty ? null : _generarResguardo,
+                          ),
+                          RisegButton(
+                            label: l10n.adjuntarResguardoDialogoTitulo,
+                            variant: RisegButtonVariant.secondary,
+                            size: RisegButtonSize.compact,
+                            onPressed: _inventarioAsignado.isEmpty ? null : _adjuntarResguardoFirmado,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
                       if (_inventarioAsignado.isEmpty)
                         Text(l10n.asignacionSeccionVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
                       else
@@ -831,9 +886,67 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                               ],
                             ),
                           ),
+                      if (_resguardos.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Text(l10n.resguardoSeccionTitulo, style: AppTypography.label),
+                        const SizedBox(height: AppSpacing.xs),
+                        for (final resguardo in _resguardos)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _formatoFechaHora.format(resguardo.createdAt),
+                                    style: AppTypography.body.copyWith(color: colors.textMuted),
+                                  ),
+                                ),
+                                RisegButton(
+                                  label: l10n.resguardoBotonAbrir,
+                                  variant: RisegButtonVariant.ghost,
+                                  size: RisegButtonSize.compact,
+                                  onPressed: () => ref.read(attachmentStorageProvider).abrir(resguardo.path),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ],
                   ),
                 ),
+                if (_descuentosPendientes.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  RisegCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.descuentosPendientesSeccionTitulo, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+                        const SizedBox(height: AppSpacing.xs),
+                        for (final descuento in _descuentosPendientes)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(_formatoMonedaEmpleado.format(descuento.importe / 100), style: AppTypography.label),
+                                      Text(
+                                        descuento.observaciones ?? l10n.descuentosPendientesAvisoNoAplicado,
+                                        style: AppTypography.caption.copyWith(color: colors.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                RisegStatusBadge(label: l10n.descuentosPendientesEstadoPendiente, tone: RisegStatusTone.warning),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.xl),
                 RisegCard(
                   child: Column(

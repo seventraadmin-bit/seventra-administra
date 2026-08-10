@@ -2370,5 +2370,34 @@
   "reemplazarAsignacionErrorUnidadNoDisponible": "Esa unidad ya no está disponible.",
   "reemplazarAsignacionErrorCantidadInvalida": "La cantidad debe ser mayor a cero.",
   "reemplazarAsignacionErrorSobrepasaDisponible": "La cantidad excede el disponible actual.",
-  "reemplazarAsignacionErrorInesperado": "Ocurrió un error al registrar el reemplazo."
+  "reemplazarAsignacionErrorInesperado": "Ocurrió un error al registrar el reemplazo.",
+
+  "seleccionarAsignacionesCampoVacio": "No hay artículos activos para seleccionar.",
+  "seleccionarAsignacionesBotonCancelar": "Cancelar",
+
+  "generarResguardoDialogoTitulo": "Generar resguardo",
+  "generarResguardoBotonConfirmar": "Generar e imprimir",
+  "generarResguardoExito": "Documento generado — se abrió para imprimir.",
+  "generarResguardoErrorSinAsignaciones": "Selecciona al menos un artículo.",
+  "generarResguardoErrorDestinoInvalido": "Los artículos seleccionados deben pertenecer al mismo Empleado o Servicio.",
+  "generarResguardoErrorInesperado": "Ocurrió un error al generar el documento.",
+
+  "adjuntarResguardoDialogoTitulo": "Adjuntar resguardo firmado",
+  "adjuntarResguardoBotonSeleccionarArchivo": "Seleccionar archivo firmado",
+  "adjuntarResguardoBotonConfirmar": "Adjuntar",
+  "adjuntarResguardoExito": "Resguardo firmado adjuntado correctamente.",
+  "adjuntarResguardoErrorSinAsignaciones": "Selecciona al menos un artículo.",
+  "adjuntarResguardoErrorSinArchivo": "Selecciona el archivo firmado.",
+  "adjuntarResguardoErrorDestinoInvalido": "Los artículos seleccionados deben pertenecer al mismo Empleado o Servicio.",
+  "adjuntarResguardoErrorInesperado": "Ocurrió un error al adjuntar el resguardo.",
+
+  "resguardoSeccionTitulo": "Resguardos",
+  "resguardoSeccionVacio": "Sin resguardos firmados todavía.",
+  "resguardoBotonAbrir": "Abrir",
+  "resguardoBotonVer": "Ver resguardo",
+
+  "descuentosPendientesSeccionTitulo": "Descuentos pendientes",
+  "descuentosPendientesVacio": "Sin descuentos pendientes.",
+  "descuentosPendientesEstadoPendiente": "Pendiente",
+  "descuentosPendientesAvisoNoAplicado": "Aún no se aplica a Nómina."
 }

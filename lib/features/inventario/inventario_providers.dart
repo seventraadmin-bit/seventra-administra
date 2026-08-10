@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
+import 'data/pdf/resguardo_pdf_renderer.dart';
 import 'data/repositories/articulo_repository_impl.dart';
 import 'data/repositories/asignacion_repository_impl.dart';
 import 'data/repositories/categoria_articulo_repository_impl.dart';
@@ -12,6 +13,7 @@ import 'domain/repositories/asignacion_repository.dart';
 import 'domain/repositories/categoria_articulo_repository.dart';
 import 'domain/repositories/inventario_repository.dart';
 import 'domain/usecases/adjuntar_comprobante_movimiento_usecase.dart';
+import 'domain/usecases/adjuntar_resguardo_firmado_usecase.dart';
 import 'domain/usecases/archivar_articulo_usecase.dart';
 import 'domain/usecases/archivar_categoria_articulo_usecase.dart';
 import 'domain/usecases/archivar_variante_articulo_usecase.dart';
@@ -22,6 +24,7 @@ import 'domain/usecases/crear_articulo_usecase.dart';
 import 'domain/usecases/crear_asignacion_usecase.dart';
 import 'domain/usecases/crear_categoria_articulo_usecase.dart';
 import 'domain/usecases/crear_variante_articulo_usecase.dart';
+import 'domain/usecases/generar_documento_resguardo_usecase.dart';
 import 'domain/usecases/obtener_empleados_responsables_servicio_usecase.dart';
 import 'domain/usecases/registrar_ajuste_usecase.dart';
 import 'domain/usecases/registrar_baja_unidad_usecase.dart';
@@ -144,4 +147,25 @@ final obtenerEmpleadosResponsablesServicioUseCaseProvider = Provider<ObtenerEmpl
     ref.watch(asignacionServicioRepositoryProvider),
     ref.watch(empleadoRepositoryProvider),
   );
+});
+
+/// Providers de Documentos de resguardo (Etapa 7C).
+final resguardoPdfRendererProvider = Provider<ResguardoPdfRenderer>((ref) => ResguardoPdfRenderer());
+
+final generarDocumentoResguardoUseCaseProvider = Provider<GenerarDocumentoResguardoUseCase>((ref) {
+  return GenerarDocumentoResguardoUseCase(
+    ref.watch(asignacionRepositoryProvider),
+    ref.watch(articuloRepositoryProvider),
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(empresaRepositoryProvider),
+    ref.watch(attachmentRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(resguardoPdfRendererProvider),
+  );
+});
+
+final adjuntarResguardoFirmadoUseCaseProvider = Provider<AdjuntarResguardoFirmadoUseCase>((ref) {
+  return AdjuntarResguardoFirmadoUseCase(ref.watch(asignacionRepositoryProvider), ref.watch(attachmentStorageProvider));
 });

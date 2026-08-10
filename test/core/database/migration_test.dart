@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 28;
+const _currentSchemaVersion = 29;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -6937,6 +6937,166 @@ void main() {
             ),
           );
       expect(descuento.estatus, 'pendiente');
+
+      await db.close();
+    },
+  );
+
+  test(
+    '29.json coincide con el esquema final de la Etapa 7C (AsignacionAttachment con llave primaria compuesta)',
+    () async {
+      final schema = await verifier.schemaAt(29);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+      expect(tablas, contains('asignacion_attachment'));
+
+      final sqlAsignacionAttachment =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_attachment'")
+                  .single['sql']
+              as String;
+      expect(sqlAsignacionAttachment, contains('asignacion_id'));
+      expect(
+        sqlAsignacionAttachment,
+        contains('PRIMARY KEY'),
+        reason: 'la llave primaria debe seguir declarada explícitamente (ahora compuesta)',
+      );
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test('migración 28 → 29 conserva una Asignacion real y recrea AsignacionAttachment vacía', () async {
+    final schemaV28 = await verifier.schemaAt(28);
+    final raw = schemaV28.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO categoria_articulo (id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('categoria-real', 'Radios', 1700000000, 1700000000, 'activo');
+    ''');
+    raw.execute('''
+      INSERT INTO articulo (
+        id, folio, categoria_id, nombre, maneja_variante, maneja_serie,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'articulo-real', 'ART-000001', 'categoria-real', 'Radio Motorola', 0, 0,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+    raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1735689600, 3, 'activo',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+    raw.execute('''
+      INSERT INTO asignacion (
+        id, articulo_id, cantidad, empleado_id, fecha_entrega, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'asignacion-real', 'articulo-real', 2, 'empleado-real', 1735689600, 'activa',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV28.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final asignaciones = await db.select(db.asignacion).get();
+    expect(asignaciones, hasLength(1), reason: 'ninguna Asignacion real debe perderse en una migración puramente estructural');
+
+    final asignacionAttachments = await db.select(db.asignacionAttachment).get();
+    expect(asignacionAttachments, isEmpty, reason: 'AsignacionAttachment nunca tuvo filas — se recrea vacía');
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty);
+
+    final integridad =
+        await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+    expect(integridad, ['ok']);
+
+    await db.close();
+  });
+
+  test(
+    'llave primaria compuesta de AsignacionAttachment: un mismo Attachment puede unirse a varias Asignaciones, '
+    'pero no repetir el mismo par',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final categoria = await db.into(db.categoriaArticulo).insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Radios'),
+          );
+      final articulo = await db.into(db.articulo).insertReturning(
+            ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Radio Motorola'),
+          );
+      final empleado = await db.into(db.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+      final asignacion1 = await db.into(db.asignacion).insertReturning(
+            AsignacionCompanion.insert(articuloId: articulo.id, cantidad: 1, empleadoId: Value(empleado.id), fechaEntrega: DateTime(2026, 1, 1)),
+          );
+      final asignacion2 = await db.into(db.asignacion).insertReturning(
+            AsignacionCompanion.insert(articuloId: articulo.id, cantidad: 1, empleadoId: Value(empleado.id), fechaEntrega: DateTime(2026, 1, 1)),
+          );
+
+      final attachment = await db.into(db.attachment).insertReturning(
+            AttachmentCompanion.insert(
+              id: 'attachment-resguardo',
+              categoria: const Value('resguardo'),
+              originalFileName: 'resguardo.pdf',
+              storedFileName: 'uuid.pdf',
+              path: 'C:/tmp/uuid.pdf',
+              mimeType: 'application/pdf',
+              sizeBytes: 1024,
+            ),
+          );
+
+      await db.into(db.asignacionAttachment).insert(
+            AsignacionAttachmentCompanion.insert(attachmentId: attachment.id, asignacionId: asignacion1.id),
+          );
+      await db.into(db.asignacionAttachment).insert(
+            AsignacionAttachmentCompanion.insert(attachmentId: attachment.id, asignacionId: asignacion2.id),
+          );
+
+      final filas = await db.select(db.asignacionAttachment).get();
+      expect(filas, hasLength(2), reason: 'un mismo Attachment sí debe poder unirse a más de una Asignación');
+
+      await expectLater(
+        db.into(db.asignacionAttachment).insert(
+              AsignacionAttachmentCompanion.insert(attachmentId: attachment.id, asignacionId: asignacion1.id),
+            ),
+        throwsA(anything),
+        reason: 'el mismo par (attachment_id, asignacion_id) no puede repetirse',
+      );
 
       await db.close();
     },

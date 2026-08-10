@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../domain/repositories/asignacion_repository.dart';
 import '../tables/articulo_unidad_table.dart' show EstatusArticuloUnidad;
@@ -66,6 +67,19 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
   Future<DescuentoInventarioData?> obtenerDescuentoPorAsignacion(String asignacionId) {
     return (_db.select(_db.descuentoInventario)..where((t) => t.asignacionId.equals(asignacionId)))
         .getSingleOrNull();
+  }
+
+  @override
+  Future<List<DescuentoInventarioData>> listarDescuentosPendientesPorEmpleado(String empleadoId) {
+    final query = _db.select(_db.descuentoInventario)
+      ..where((t) => t.empleadoId.equals(empleadoId) & t.estatus.equals(EstatusDescuentoInventario.pendiente.name))
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
+    return query.get();
+  }
+
+  @override
+  Future<AsignacionData?> obtenerAsignacionReemplazada(String asignacionId) {
+    return (_db.select(_db.asignacion)..where((t) => t.asignacionReemplazoId.equals(asignacionId))).getSingleOrNull();
   }
 
   Future<MovimientoInventarioData> _insertarMovimiento({
@@ -333,5 +347,36 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
       ),
     );
     return (_db.select(_db.descuentoInventario)..where((t) => t.id.equals(descuentoId))).getSingle();
+  }
+
+  @override
+  Future<AttachmentData> adjuntarResguardo({
+    required List<String> asignacionIds,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+    String? actor,
+  }) {
+    return _db.transaction(() async {
+      final adjunto = await _db.into(_db.attachment).insertReturning(
+            AttachmentCompanion.insert(
+              id: const Uuid().v4(),
+              categoria: const Value('resguardo'),
+              originalFileName: originalFileName,
+              storedFileName: storedFileName,
+              path: path,
+              mimeType: mimeType,
+              sizeBytes: sizeBytes,
+            ),
+          );
+      for (final asignacionId in asignacionIds) {
+        await _db.into(_db.asignacionAttachment).insert(
+              AsignacionAttachmentCompanion.insert(attachmentId: adjunto.id, asignacionId: asignacionId),
+            );
+      }
+      return adjunto;
+    });
   }
 }

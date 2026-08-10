@@ -30,6 +30,20 @@ abstract interface class AsignacionRepository {
 
   Future<DescuentoInventarioData?> obtenerDescuentoPorAsignacion(String asignacionId);
 
+  /// `DescuentoInventario` con `estatus = pendiente` de un Empleado —
+  /// respuesta directa a "descuentos de Inventario todavía sin
+  /// aplicarlos a Nómina" (Etapa 7C): solo lectura, Inventario nunca
+  /// escribe hacia Nómina en esta etapa.
+  Future<List<DescuentoInventarioData>> listarDescuentosPendientesPorEmpleado(String empleadoId);
+
+  /// La `Asignacion` que [asignacionId] reemplazó, si la hay —
+  /// `asignacionReemplazoId` vive en la fila VIEJA apuntando hacia la
+  /// nueva (ver el doc comment de `Asignacion`), así que encontrar el
+  /// predecesor de una fila requiere buscar en la dirección inversa.
+  /// Usado por `GenerarDocumentoResguardoUseCase` (Etapa 7C) para la
+  /// línea "Sustituye a" del PDF.
+  Future<AsignacionData?> obtenerAsignacionReemplazada(String asignacionId);
+
   /// Crea la `Asignacion` + su `MovimientoInventario` tipo
   /// `salidaAsignacion` + (si `unidadId` viene poblado) actualiza
   /// `ArticuloUnidad.estatus` a `asignado` — una transacción.
@@ -87,6 +101,20 @@ abstract interface class AsignacionRepository {
   Future<DescuentoInventarioData> cancelarDescuento({
     required String descuentoId,
     String? observaciones,
+    String? actor,
+  });
+
+  /// Adjunta el resguardo firmado (Etapa 7C) — inserta un único
+  /// `Attachment` + una fila de `AsignacionAttachment` por cada
+  /// `asignacionId` en [asignacionIds] (llave compuesta, ver el doc
+  /// comment de esa tabla), una transacción.
+  Future<AttachmentData> adjuntarResguardo({
+    required List<String> asignacionIds,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
     String? actor,
   });
 }

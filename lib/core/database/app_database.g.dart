@@ -52222,7 +52222,7 @@ class $AsignacionAttachmentTable extends AsignacionAttachment
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  Set<GeneratedColumn> get $primaryKey => {attachmentId, asignacionId};
   @override
   AsignacionAttachmentData map(
     Map<String, dynamic> data, {

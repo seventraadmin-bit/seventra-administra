@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/obtener_empleados_responsables_servicio_usecase.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 
+import 'adjuntar_resguardo_firmado_dialog.dart';
 import 'asignar_articulo_dialog.dart';
 import 'cerrar_asignacion_dialog.dart';
+import 'generar_resguardo_dialog.dart';
 import 'reemplazar_asignacion_dialog.dart';
+
+final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
 
 /// Sección "Inventario asignado" para el expediente de un Servicio
 /// (Etapa 7B) — autocontenida (carga y estado propios) para no tocar
@@ -44,6 +50,7 @@ class _InventarioAsignadoServicioSectionState extends ConsumerState<InventarioAs
   Map<String, String> _variantesPorId = const {};
   Map<String, String> _unidadesPorId = const {};
   List<EmpleadoOpcion> _empleadosParaResponsable = const [];
+  List<AttachmentData> _resguardos = const [];
 
   @override
   void initState() {
@@ -79,6 +86,18 @@ class _InventarioAsignadoServicioSectionState extends ConsumerState<InventarioAs
     final empleadosParaResponsable =
         await ref.read(obtenerEmpleadosResponsablesServicioUseCaseProvider).ejecutar(widget.servicioId);
 
+    // Resguardos (Etapa 7C) — agregado sobre el historial completo,
+    // deduplicado por Attachment, mismo criterio que el lado Empleado.
+    final historialInventario = await asignacionRepo.listarHistorialPorServicio(widget.servicioId);
+    final resguardosPorId = <String, AttachmentData>{};
+    for (final asignacion in historialInventario) {
+      final adjuntos = await ref.read(attachmentRepositoryProvider).listarActivosPorAsignacion(asignacion.id);
+      for (final adjunto in adjuntos) {
+        resguardosPorId[adjunto.id] = adjunto;
+      }
+    }
+    final resguardos = resguardosPorId.values.toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
     if (!mounted) return;
     setState(() {
       _inventarioAsignado = inventarioAsignado;
@@ -86,6 +105,7 @@ class _InventarioAsignadoServicioSectionState extends ConsumerState<InventarioAs
       _variantesPorId = variantesPorId;
       _unidadesPorId = unidadesPorId;
       _empleadosParaResponsable = empleadosParaResponsable;
+      _resguardos = resguardos;
       _cargando = false;
     });
   }
@@ -146,6 +166,20 @@ class _InventarioAsignadoServicioSectionState extends ConsumerState<InventarioAs
     if (reemplazado) await _cargar();
   }
 
+  Future<void> _generarResguardo() async {
+    await mostrarDialogoGenerarResguardo(context, ref, asignaciones: _inventarioAsignado, detalleBuilder: _detalle);
+  }
+
+  Future<void> _adjuntarResguardoFirmado() async {
+    final adjunto = await mostrarDialogoAdjuntarResguardoFirmado(
+      context,
+      ref,
+      asignaciones: _inventarioAsignado,
+      detalleBuilder: _detalle,
+    );
+    if (adjunto) await _cargar();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -164,6 +198,25 @@ class _InventarioAsignadoServicioSectionState extends ConsumerState<InventarioAs
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children: [
+            RisegButton(
+              label: l10n.generarResguardoDialogoTitulo,
+              variant: RisegButtonVariant.secondary,
+              size: RisegButtonSize.compact,
+              onPressed: _inventarioAsignado.isEmpty ? null : _generarResguardo,
+            ),
+            RisegButton(
+              label: l10n.adjuntarResguardoDialogoTitulo,
+              variant: RisegButtonVariant.secondary,
+              size: RisegButtonSize.compact,
+              onPressed: _inventarioAsignado.isEmpty ? null : _adjuntarResguardoFirmado,
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
         if (_cargando)
           const Padding(padding: EdgeInsets.symmetric(vertical: AppSpacing.md), child: Center(child: CircularProgressIndicator()))
         else if (_inventarioAsignado.isEmpty)
@@ -201,6 +254,28 @@ class _InventarioAsignadoServicioSectionState extends ConsumerState<InventarioAs
                 ],
               ),
             ),
+        if (_resguardos.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(l10n.resguardoSeccionTitulo, style: AppTypography.label),
+          const SizedBox(height: AppSpacing.xs),
+          for (final resguardo in _resguardos)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(_formatoFechaHora.format(resguardo.createdAt), style: AppTypography.body.copyWith(color: colors.textMuted)),
+                  ),
+                  RisegButton(
+                    label: l10n.resguardoBotonAbrir,
+                    variant: RisegButtonVariant.ghost,
+                    size: RisegButtonSize.compact,
+                    onPressed: () => ref.read(attachmentStorageProvider).abrir(resguardo.path),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ],
     );
   }

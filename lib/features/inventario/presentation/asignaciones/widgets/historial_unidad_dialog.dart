@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 
@@ -35,6 +36,15 @@ RisegStatusTone estatusAsignacionTono(String estatus) {
 Future<void> mostrarDialogoHistorialUnidad(BuildContext context, WidgetRef ref, ArticuloUnidadData unidad) async {
   final l10n = AppLocalizations.of(context)!;
   final asignaciones = await ref.read(asignacionRepositoryProvider).listarPorUnidad(unidad.id);
+
+  // Resguardo (Etapa 7C), si lo hay, por Asignación — se resuelve solo
+  // el primero (un mismo documento puede cubrir varias Asignaciones,
+  // pero aquí solo importa "¿hay uno que abrir para esta fila?").
+  final resguardoPorAsignacion = <String, AttachmentData>{};
+  for (final a in asignaciones) {
+    final adjuntos = await ref.read(attachmentRepositoryProvider).listarActivosPorAsignacion(a.id);
+    if (adjuntos.isNotEmpty) resguardoPorAsignacion[a.id] = adjuntos.first;
+  }
   if (!context.mounted) return;
 
   await showDialog<void>(
@@ -59,6 +69,14 @@ Future<void> mostrarDialogoHistorialUnidad(BuildContext context, WidgetRef ref, 
                               '${a.fechaCierre == null ? '' : ' – ${_formatoFecha.format(a.fechaCierre!)}'}',
                             ),
                           ),
+                          if (resguardoPorAsignacion.containsKey(a.id))
+                            RisegButton(
+                              label: l10n.resguardoBotonVer,
+                              variant: RisegButtonVariant.ghost,
+                              size: RisegButtonSize.compact,
+                              onPressed: () => ref.read(attachmentStorageProvider).abrir(resguardoPorAsignacion[a.id]!.path),
+                            ),
+                          const SizedBox(width: AppSpacing.xs),
                           RisegStatusBadge(label: estatusAsignacionLabel(l10n, a.estatus), tone: estatusAsignacionTono(a.estatus)),
                         ],
                       ),

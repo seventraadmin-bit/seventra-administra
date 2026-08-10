@@ -135,6 +135,20 @@ class AttachmentRepository {
     return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
+  /// Resguardos activos (documento de entrega firmado) de una
+  /// `Asignacion` (Etapa 7C) — un mismo Attachment puede aparecer para
+  /// varias Asignaciones distintas (llave compuesta en
+  /// `AsignacionAttachment`, ver su doc comment): un resguardo real
+  /// suele cubrir varios artículos con una sola firma.
+  Future<List<AttachmentData>> listarActivosPorAsignacion(String asignacionId) {
+    final query = _db.select(_db.attachment).join([
+      innerJoin(_db.asignacionAttachment, _db.asignacionAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.asignacionAttachment.asignacionId.equals(asignacionId) & _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
+  }
+
   /// Documentos activos del expediente de un Empleado (Etapa 5A).
   Future<List<AttachmentData>> listarActivosPorEmpleado(String empleadoId) {
     final query = _db.select(_db.attachment).join([
