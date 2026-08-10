@@ -43,21 +43,38 @@ class AppSidebar extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Branding: siempre fijo, nunca entra en el área con scroll —
+          // Resolución explícita de Marlon (Etapa 3B, revisión de
+          // navegación): ningún destino debe volverse inaccesible por
+          // altura de ventana reducida.
           _SidebarHeader(collapsed: collapsed),
           Divider(height: 1, color: theme.dividerColor),
+          // Zona con scroll: solo los destinos. `Scrollbar` con
+          // `thumbVisibility: true` para que el scroll sea descubrible a
+          // simple vista, no solo funcional (Resolución de Marlon: "el
+          // comportamiento correcto es responsive + scroll"). El control
+          // de colapso se queda fijo fuera de esta zona (ver más abajo) —
+          // la protección contra desborde en alturas extremas vive en
+          // `resolveSidebarCollapsed`, que ahora también reacciona a la
+          // altura disponible (mismo mecanismo ya usado para el ancho),
+          // en vez de mover el control a un lugar donde dejaría de estar
+          // siempre visible en el caso común.
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
-              itemCount: destinations.length,
-              itemBuilder: (context, index) {
-                final destination = destinations[index];
-                return _SidebarItem(
-                  destination: destination,
-                  isActive: index == activeIndex,
-                  collapsed: collapsed,
-                  onTap: () => onDestinationSelected(index),
-                );
-              },
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: ListView(
+                key: const Key('app_sidebar_nav_scroll'),
+                padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
+                children: [
+                  for (var index = 0; index < destinations.length; index++)
+                    _SidebarItem(
+                      destination: destinations[index],
+                      isActive: index == activeIndex,
+                      collapsed: collapsed,
+                      onTap: () => onDestinationSelected(index),
+                    ),
+                ],
+              ),
             ),
           ),
           Divider(height: 1, color: theme.dividerColor),

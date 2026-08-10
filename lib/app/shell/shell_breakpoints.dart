@@ -20,6 +20,19 @@ abstract final class ShellBreakpoints {
   /// que el área de contenido quede sin espacio utilizable.
   static const double sidebarForceCollapse = 640;
 
+  /// Piso de seguridad por **altura**: por debajo de esta altura de
+  /// ventana disponible, el sidebar se colapsa sin importar el modo ni el
+  /// ancho — mismo criterio exacto que [sidebarForceCollapse], solo que
+  /// para la otra dimensión (bug real encontrado por Marlon: con ventana
+  /// angosta en altura, el encabezado fijo + el control de colapso fijo
+  /// dejaban muy poco margen antes de desbordar). En modo colapsado, el
+  /// encabezado y cada destino ocupan mucho menos alto, lo que da margen
+  /// de sobra incluso en ventanas bastante reducidas — medido: sin este
+  /// piso, el sidebar expandido desborda por debajo de ~400px de alto
+  /// disponible; colapsado, el piso real queda muy por debajo de este
+  /// valor. 560 dejando margen de seguridad generoso, nunca al límite.
+  static const double sidebarForceCollapseHeight = 560;
+
   /// Ancho del sidebar expandido.
   ///
   /// Reducido de 240 a 224 en el refinamiento visual previo a la Etapa 3B —

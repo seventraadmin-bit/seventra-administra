@@ -20,17 +20,24 @@ enum SidebarMode {
   colapsadoForzado,
 }
 
-/// Calcula si el sidebar debe verse colapsado dado su [mode] y el
-/// [availableWidth] de la ventana.
+/// Calcula si el sidebar debe verse colapsado dado su [mode] y el tamaño
+/// disponible de la ventana ([availableWidth]/[availableHeight]).
 ///
 /// La seguridad del layout siempre tiene prioridad: por debajo de
-/// [ShellBreakpoints.sidebarForceCollapse] se colapsa sin importar el modo,
-/// incluso si el usuario lo forzó a expandido.
+/// [ShellBreakpoints.sidebarForceCollapse] (ancho) o
+/// [ShellBreakpoints.sidebarForceCollapseHeight] (alto) se colapsa sin
+/// importar el modo, incluso si el usuario lo forzó a expandido —
+/// [availableHeight] es opcional (`null` omite el chequeo de alto) para no
+/// romper a quien ya llame esta función solo con ancho.
 bool resolveSidebarCollapsed({
   required SidebarMode mode,
   required double availableWidth,
+  double? availableHeight,
 }) {
   if (availableWidth < ShellBreakpoints.sidebarForceCollapse) {
+    return true;
+  }
+  if (availableHeight != null && availableHeight < ShellBreakpoints.sidebarForceCollapseHeight) {
     return true;
   }
   return switch (mode) {

@@ -29,7 +29,7 @@ import '../shell/shell_destinations.dart';
 /// [createAppRouter].
 ///
 /// Un `StatefulShellRoute.indexedStack` con una rama por cada uno de los
-/// 12 destinos del Shell — cada rama conserva su propia navegación interna
+/// 11 destinos del Shell — cada rama conserva su propia navegación interna
 /// y queda preparada para rutas anidadas (hoy solo tiene el placeholder).
 GoRouter createAppRouter() {
   return GoRouter(

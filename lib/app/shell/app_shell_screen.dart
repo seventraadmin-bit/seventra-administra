@@ -37,6 +37,7 @@ class AppShellScreen extends ConsumerWidget {
           final collapsed = resolveSidebarCollapsed(
             mode: mode,
             availableWidth: constraints.maxWidth,
+            availableHeight: constraints.maxHeight,
           );
 
           return Row(

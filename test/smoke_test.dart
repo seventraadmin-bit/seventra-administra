@@ -23,8 +23,8 @@ import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
 /// Sobrescribe [appDatabaseProvider] con una base en memoria — desde que
 /// `/organizacion` abre `EmpresaExpedienteScreen` (Etapa 4B), el Shell ya
 /// depende de la base de datos incluso en estas pruebas de navegación.
-Future<void> _pumpApp(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(1440, 900);
+Future<void> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 900)}) async {
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -110,6 +110,37 @@ void main() {
     final widthAfter = tester.getSize(sidebarFinder).width;
     expect(widthAfter, lessThan(widthBefore));
   });
+
+  testWidgets(
+    'Con altura de ventana reducida, los destinos inferiores del sidebar siguen siendo accesibles mediante scroll',
+    (tester) async {
+      // 1440×600: por debajo del alto real donde antes se cortaban los
+      // últimos destinos sin forma de alcanzarlos (bug reportado por
+      // Marlon) — muy por encima del piso mínimo real del sidebar
+      // (~200px, solo el encabezado fijo), así que esta altura representa
+      // una ventana reducida "de uso normal", no un caso extremo.
+      await _pumpApp(tester, size: const Size(1440, 600));
+
+      // El último destino del menú no cabe sin scroll a esta altura.
+      expect(find.byKey(const Key('nav_item_configuracion')), findsNothing);
+
+      // El branding superior permanece visible y fijo mientras tanto.
+      expect(find.byKey(const Key('sidebar_logo')), findsOneWidget);
+
+      await tester.drag(find.byKey(const Key('app_sidebar_nav_scroll')), const Offset(0, -600));
+      await tester.pumpAndSettle();
+
+      // Tras el scroll, el destino ya es accesible y sigue siendo
+      // funcional (navega correctamente).
+      expect(find.byKey(const Key('nav_item_configuracion')), findsOneWidget);
+      expect(find.byKey(const Key('sidebar_logo')), findsOneWidget, reason: 'el branding sigue fijo tras el scroll');
+
+      await tester.tap(find.byKey(const Key('nav_item_configuracion')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('app_shell')), findsOneWidget);
+    },
+  );
 
   testWidgets('El logotipo oficial se muestra en el sidebar', (tester) async {
     await _pumpApp(tester);

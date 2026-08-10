@@ -22,9 +22,24 @@ class ShellDestination {
   String get id => path.replaceFirst('/', '');
 }
 
-/// Definición estructural (ruta + ícono) de los 12 módulos, sin depender de
+/// Definición estructural (ruta + ícono) de los 11 módulos, sin depender de
 /// localización — la usa el router para construir las ramas del
 /// `StatefulShellRoute`, que se arma una sola vez sin `BuildContext`.
+///
+/// Sin `/documentos`: era un placeholder heredado del boceto inicial del
+/// Shell, nunca desarrollado. Revisión explícita de Marlon (después de
+/// Etapa 7C): RISEG ONE ya sigue una arquitectura donde cada documento
+/// vive ligado a su dominio (documentos del empleado y ficha técnica en
+/// Personal, resguardos en Inventario, comprobantes en Finanzas/Nómina,
+/// documentos de Empresa/Cliente en su dominio — todos vía la
+/// infraestructura compartida de `Attachment`, nunca duplicados). Un
+/// módulo "Documentos" global no tendría función propia más allá de
+/// volver a mostrar archivos que ya pertenecen a otros módulos —
+/// exactamente el tipo de redundancia que el principio de "información
+/// ligada, sin duplicados" de este proyecto evita. Que un destino haya
+/// aparecido en el menú original no obliga a construirlo como módulo:
+/// mismo criterio aplicaría a cualquier otro placeholder heredado que
+/// resulte ser igual de redundante al revisarlo.
 const List<({String path, IconData icon})> shellModuleDefs = [
   (path: '/dashboard', icon: Icons.dashboard_outlined),
   (path: '/organizacion', icon: Icons.apartment_outlined),
@@ -35,7 +50,6 @@ const List<({String path, IconData icon})> shellModuleDefs = [
   (path: '/activos', icon: Icons.qr_code_2_outlined),
   (path: '/vehiculos', icon: Icons.directions_car_outlined),
   (path: '/telefonia', icon: Icons.phone_iphone_outlined),
-  (path: '/documentos', icon: Icons.description_outlined),
   (path: '/reportes', icon: Icons.bar_chart_outlined),
   (path: '/configuracion', icon: Icons.settings_outlined),
 ];
@@ -51,7 +65,6 @@ String _labelFor(String path, AppLocalizations l10n) {
     '/activos' => l10n.moduleActivos,
     '/vehiculos' => l10n.moduleVehiculos,
     '/telefonia' => l10n.moduleTelefonia,
-    '/documentos' => l10n.moduleDocumentos,
     '/reportes' => l10n.moduleReportes,
     '/configuracion' => l10n.moduleConfiguracion,
     _ => path,
