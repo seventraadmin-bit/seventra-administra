@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 26;
+const _currentSchemaVersion = 27;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -157,7 +157,7 @@ void main() {
       expect(areas, hasLength(6));
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(16));
+      expect(codigosSecuencia, hasLength(18));
 
       await db.close();
     },
@@ -6496,6 +6496,198 @@ void main() {
 
       final aplicacion = await db.into(db.aplicacionPagoNomina).insertReturning(baseAplicacion);
       expect(aplicacion.saldoDespues, 0);
+
+      await db.close();
+    },
+  );
+
+  test(
+    '27.json coincide con el esquema final de la Etapa 7A (tablas nuevas CategoriaArticulo, Articulo, '
+    'ArticuloVariante, ArticuloUnidad, ArticuloUnidadTelefono, MovimientoInventario, MovimientoInventarioAttachment)',
+    () async {
+      final schema = await verifier.schemaAt(27);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(
+        tablas,
+        containsAll([
+          'categoria_articulo',
+          'articulo',
+          'articulo_variante',
+          'articulo_unidad',
+          'articulo_unidad_telefono',
+          'movimiento_inventario',
+          'movimiento_inventario_attachment',
+        ]),
+      );
+
+      final sqlArticulo =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo'")
+                  .single['sql']
+              as String;
+      expect(sqlArticulo, contains('"folio" TEXT NOT NULL UNIQUE'));
+      expect(sqlArticulo, contains('CHECK (costo_referencia IS NULL OR costo_referencia >= 0)'));
+
+      final sqlVariante =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo_variante'")
+                  .single['sql']
+              as String;
+      expect(sqlVariante, contains('UNIQUE (articulo_id, valor)'));
+
+      final sqlMovimiento =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'movimiento_inventario'")
+                  .single['sql']
+              as String;
+      expect(sqlMovimiento, contains('CHECK (variante_id IS NULL OR unidad_id IS NULL)'));
+      expect(sqlMovimiento, contains('CHECK (cantidad > 0)'));
+      expect(sqlMovimiento, contains('CHECK (unidad_id IS NULL OR cantidad = 1)'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 26 → 27 conserva una Nómina real y crea las tablas de Inventario vacías, sembrando '
+    'CodigoSecuencia(articulo)/CodigoSecuencia(articulo_unidad)',
+    () async {
+      final schemaV26 = await verifier.schemaAt(26);
+      final raw = schemaV26.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO nomina (
+        id, folio, anio, mes, tipo_periodo, fecha_inicio_periodo, fecha_fin_periodo, fecha_pago_ordinaria,
+        estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'nomina-real', 'NOM-000001', 2026, 1, 'primera', 1735689600, 1736812800, 1737331200,
+        'cerrada', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV26.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final nominas = await db.select(db.nomina).get();
+      expect(nominas, hasLength(1), reason: 'ninguna Nómina real debe perderse en una migración puramente aditiva');
+
+      final articulos = await db.select(db.articulo).get();
+      expect(articulos, isEmpty, reason: 'Articulo es tabla nueva en 7A, sin backfill');
+      final movimientos = await db.select(db.movimientoInventario).get();
+      expect(movimientos, isEmpty);
+
+      final codigoArticulo =
+          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('articulo'))).getSingleOrNull();
+      expect(codigoArticulo, isNotNull, reason: 'runSeed debe sembrar el contador de folio de articulo');
+      expect(codigoArticulo!.prefijo, 'ART');
+
+      final codigoUnidad =
+          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('articulo_unidad'))).getSingleOrNull();
+      expect(codigoUnidad, isNotNull);
+      expect(codigoUnidad!.prefijo, 'UNI');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de Articulo/ArticuloVariante/MovimientoInventario tras la migración: costo >= 0, variante/unidad '
+    'mutuamente excluyentes, cantidad siempre positiva',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final categoria = await db.into(db.categoriaArticulo).insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Camisa'),
+          );
+
+      await expectLater(
+        db.into(db.articulo).insert(
+              ArticuloCompanion.insert(
+                folio: 'ART-000001',
+                categoriaId: categoria.id,
+                nombre: 'Camisa RISEG',
+                costoReferencia: const Value(-100),
+              ),
+            ),
+        throwsA(anything),
+        reason: 'costo_referencia negativo debe rechazarse',
+      );
+
+      final articulo = await db.into(db.articulo).insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              categoriaId: categoria.id,
+              nombre: 'Camisa RISEG',
+              manejaVariante: const Value(true),
+            ),
+          );
+      final variante = await db.into(db.articuloVariante).insertReturning(
+            ArticuloVarianteCompanion.insert(articuloId: articulo.id, valor: 'M'),
+          );
+
+      final unidad = await db.into(db.articuloUnidad).insertReturning(
+            ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-0001'),
+          );
+
+      await expectLater(
+        db.into(db.movimientoInventario).insert(
+              MovimientoInventarioCompanion.insert(
+                articuloId: articulo.id,
+                cantidad: 1,
+                tipoMovimiento: 'entrada',
+                fecha: DateTime(2026, 1, 1),
+                varianteId: Value(variante.id),
+                unidadId: Value(unidad.id),
+              ),
+            ),
+        throwsA(anything),
+        reason: 'variante_id y unidad_id nunca pueden venir poblados a la vez',
+      );
+
+      await expectLater(
+        db.into(db.movimientoInventario).insert(
+              MovimientoInventarioCompanion.insert(
+                articuloId: articulo.id,
+                cantidad: 2,
+                tipoMovimiento: 'entrada',
+                fecha: DateTime(2026, 1, 1),
+                unidadId: Value(unidad.id),
+              ),
+            ),
+        throwsA(anything),
+        reason: 'un movimiento de unidad serializada siempre tiene cantidad = 1',
+      );
+
+      final movimiento = await db.into(db.movimientoInventario).insertReturning(
+            MovimientoInventarioCompanion.insert(
+              articuloId: articulo.id,
+              cantidad: 20,
+              tipoMovimiento: 'entrada',
+              fecha: DateTime(2026, 1, 1),
+              varianteId: Value(variante.id),
+            ),
+          );
+      expect(movimiento.cantidad, 20);
 
       await db.close();
     },

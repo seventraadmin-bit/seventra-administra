@@ -46750,6 +46750,3532 @@ class PagoNominaAttachmentCompanion
   }
 }
 
+class $CategoriaArticuloTable extends CategoriaArticulo
+    with TableInfo<$CategoriaArticuloTable, CategoriaArticuloData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CategoriaArticuloTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    nombre,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'categoria_articulo';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CategoriaArticuloData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CategoriaArticuloData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CategoriaArticuloData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      nombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre'],
+          )!,
+    );
+  }
+
+  @override
+  $CategoriaArticuloTable createAlias(String alias) {
+    return $CategoriaArticuloTable(attachedDatabase, alias);
+  }
+}
+
+class CategoriaArticuloData extends DataClass
+    implements Insertable<CategoriaArticuloData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String nombre;
+  const CategoriaArticuloData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.nombre,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['nombre'] = Variable<String>(nombre);
+    return map;
+  }
+
+  CategoriaArticuloCompanion toCompanion(bool nullToAbsent) {
+    return CategoriaArticuloCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      nombre: Value(nombre),
+    );
+  }
+
+  factory CategoriaArticuloData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CategoriaArticuloData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'nombre': serializer.toJson<String>(nombre),
+    };
+  }
+
+  CategoriaArticuloData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? nombre,
+  }) => CategoriaArticuloData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    nombre: nombre ?? this.nombre,
+  );
+  CategoriaArticuloData copyWithCompanion(CategoriaArticuloCompanion data) {
+    return CategoriaArticuloData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CategoriaArticuloData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nombre: $nombre')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, createdAt, updatedAt, cicloVidaRegistro, nombre);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CategoriaArticuloData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.nombre == this.nombre);
+}
+
+class CategoriaArticuloCompanion
+    extends UpdateCompanion<CategoriaArticuloData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> nombre;
+  final Value<int> rowid;
+  const CategoriaArticuloCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CategoriaArticuloCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String nombre,
+    this.rowid = const Value.absent(),
+  }) : nombre = Value(nombre);
+  static Insertable<CategoriaArticuloData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? nombre,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (nombre != null) 'nombre': nombre,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CategoriaArticuloCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? nombre,
+    Value<int>? rowid,
+  }) {
+    return CategoriaArticuloCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      nombre: nombre ?? this.nombre,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CategoriaArticuloCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nombre: $nombre, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ArticuloTable extends Articulo
+    with TableInfo<$ArticuloTable, ArticuloData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArticuloTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _folioMeta = const VerificationMeta('folio');
+  @override
+  late final GeneratedColumn<String> folio = GeneratedColumn<String>(
+    'folio',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _categoriaIdMeta = const VerificationMeta(
+    'categoriaId',
+  );
+  @override
+  late final GeneratedColumn<String> categoriaId = GeneratedColumn<String>(
+    'categoria_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES categoria_articulo (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descripcionMeta = const VerificationMeta(
+    'descripcion',
+  );
+  @override
+  late final GeneratedColumn<String> descripcion = GeneratedColumn<String>(
+    'descripcion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _unidadMedidaMeta = const VerificationMeta(
+    'unidadMedida',
+  );
+  @override
+  late final GeneratedColumn<String> unidadMedida = GeneratedColumn<String>(
+    'unidad_medida',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _manejaVarianteMeta = const VerificationMeta(
+    'manejaVariante',
+  );
+  @override
+  late final GeneratedColumn<bool> manejaVariante = GeneratedColumn<bool>(
+    'maneja_variante',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("maneja_variante" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _manejaSerieMeta = const VerificationMeta(
+    'manejaSerie',
+  );
+  @override
+  late final GeneratedColumn<bool> manejaSerie = GeneratedColumn<bool>(
+    'maneja_serie',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("maneja_serie" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _costoReferenciaMeta = const VerificationMeta(
+    'costoReferencia',
+  );
+  @override
+  late final GeneratedColumn<int> costoReferencia = GeneratedColumn<int>(
+    'costo_referencia',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folio,
+    categoriaId,
+    nombre,
+    descripcion,
+    unidadMedida,
+    manejaVariante,
+    manejaSerie,
+    costoReferencia,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'articulo';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ArticuloData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio')) {
+      context.handle(
+        _folioMeta,
+        folio.isAcceptableOrUnknown(data['folio']!, _folioMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folioMeta);
+    }
+    if (data.containsKey('categoria_id')) {
+      context.handle(
+        _categoriaIdMeta,
+        categoriaId.isAcceptableOrUnknown(
+          data['categoria_id']!,
+          _categoriaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_categoriaIdMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('descripcion')) {
+      context.handle(
+        _descripcionMeta,
+        descripcion.isAcceptableOrUnknown(
+          data['descripcion']!,
+          _descripcionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('unidad_medida')) {
+      context.handle(
+        _unidadMedidaMeta,
+        unidadMedida.isAcceptableOrUnknown(
+          data['unidad_medida']!,
+          _unidadMedidaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('maneja_variante')) {
+      context.handle(
+        _manejaVarianteMeta,
+        manejaVariante.isAcceptableOrUnknown(
+          data['maneja_variante']!,
+          _manejaVarianteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('maneja_serie')) {
+      context.handle(
+        _manejaSerieMeta,
+        manejaSerie.isAcceptableOrUnknown(
+          data['maneja_serie']!,
+          _manejaSerieMeta,
+        ),
+      );
+    }
+    if (data.containsKey('costo_referencia')) {
+      context.handle(
+        _costoReferenciaMeta,
+        costoReferencia.isAcceptableOrUnknown(
+          data['costo_referencia']!,
+          _costoReferenciaMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ArticuloData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArticuloData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      folio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}folio'],
+          )!,
+      categoriaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}categoria_id'],
+          )!,
+      nombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre'],
+          )!,
+      descripcion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}descripcion'],
+      ),
+      unidadMedida: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unidad_medida'],
+      ),
+      manejaVariante:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}maneja_variante'],
+          )!,
+      manejaSerie:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}maneja_serie'],
+          )!,
+      costoReferencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}costo_referencia'],
+      ),
+    );
+  }
+
+  @override
+  $ArticuloTable createAlias(String alias) {
+    return $ArticuloTable(attachedDatabase, alias);
+  }
+}
+
+class ArticuloData extends DataClass implements Insertable<ArticuloData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String folio;
+  final String categoriaId;
+  final String nombre;
+  final String? descripcion;
+
+  /// Texto libre ("pieza", "par", "kit") — deliberadamente sin
+  /// catálogo propio, la variedad real no justifica un catálogo más
+  /// (Resolución explícita de Marlon: "no pedir campos que no aporten
+  /// valor operativo").
+  final String? unidadMedida;
+  final bool manejaVariante;
+  final bool manejaSerie;
+
+  /// Orientativo, editable a mano — deja de usarse en cuanto existan
+  /// entradas reales capturadas (ver `calcularCostoPromedioArticulo`),
+  /// nunca participa en el cálculo de costo una vez que hay historial.
+  final int? costoReferencia;
+  const ArticuloData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.folio,
+    required this.categoriaId,
+    required this.nombre,
+    this.descripcion,
+    this.unidadMedida,
+    required this.manejaVariante,
+    required this.manejaSerie,
+    this.costoReferencia,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['folio'] = Variable<String>(folio);
+    map['categoria_id'] = Variable<String>(categoriaId);
+    map['nombre'] = Variable<String>(nombre);
+    if (!nullToAbsent || descripcion != null) {
+      map['descripcion'] = Variable<String>(descripcion);
+    }
+    if (!nullToAbsent || unidadMedida != null) {
+      map['unidad_medida'] = Variable<String>(unidadMedida);
+    }
+    map['maneja_variante'] = Variable<bool>(manejaVariante);
+    map['maneja_serie'] = Variable<bool>(manejaSerie);
+    if (!nullToAbsent || costoReferencia != null) {
+      map['costo_referencia'] = Variable<int>(costoReferencia);
+    }
+    return map;
+  }
+
+  ArticuloCompanion toCompanion(bool nullToAbsent) {
+    return ArticuloCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      folio: Value(folio),
+      categoriaId: Value(categoriaId),
+      nombre: Value(nombre),
+      descripcion:
+          descripcion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(descripcion),
+      unidadMedida:
+          unidadMedida == null && nullToAbsent
+              ? const Value.absent()
+              : Value(unidadMedida),
+      manejaVariante: Value(manejaVariante),
+      manejaSerie: Value(manejaSerie),
+      costoReferencia:
+          costoReferencia == null && nullToAbsent
+              ? const Value.absent()
+              : Value(costoReferencia),
+    );
+  }
+
+  factory ArticuloData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArticuloData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      folio: serializer.fromJson<String>(json['folio']),
+      categoriaId: serializer.fromJson<String>(json['categoriaId']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      descripcion: serializer.fromJson<String?>(json['descripcion']),
+      unidadMedida: serializer.fromJson<String?>(json['unidadMedida']),
+      manejaVariante: serializer.fromJson<bool>(json['manejaVariante']),
+      manejaSerie: serializer.fromJson<bool>(json['manejaSerie']),
+      costoReferencia: serializer.fromJson<int?>(json['costoReferencia']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'folio': serializer.toJson<String>(folio),
+      'categoriaId': serializer.toJson<String>(categoriaId),
+      'nombre': serializer.toJson<String>(nombre),
+      'descripcion': serializer.toJson<String?>(descripcion),
+      'unidadMedida': serializer.toJson<String?>(unidadMedida),
+      'manejaVariante': serializer.toJson<bool>(manejaVariante),
+      'manejaSerie': serializer.toJson<bool>(manejaSerie),
+      'costoReferencia': serializer.toJson<int?>(costoReferencia),
+    };
+  }
+
+  ArticuloData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? folio,
+    String? categoriaId,
+    String? nombre,
+    Value<String?> descripcion = const Value.absent(),
+    Value<String?> unidadMedida = const Value.absent(),
+    bool? manejaVariante,
+    bool? manejaSerie,
+    Value<int?> costoReferencia = const Value.absent(),
+  }) => ArticuloData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    folio: folio ?? this.folio,
+    categoriaId: categoriaId ?? this.categoriaId,
+    nombre: nombre ?? this.nombre,
+    descripcion: descripcion.present ? descripcion.value : this.descripcion,
+    unidadMedida: unidadMedida.present ? unidadMedida.value : this.unidadMedida,
+    manejaVariante: manejaVariante ?? this.manejaVariante,
+    manejaSerie: manejaSerie ?? this.manejaSerie,
+    costoReferencia:
+        costoReferencia.present ? costoReferencia.value : this.costoReferencia,
+  );
+  ArticuloData copyWithCompanion(ArticuloCompanion data) {
+    return ArticuloData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      folio: data.folio.present ? data.folio.value : this.folio,
+      categoriaId:
+          data.categoriaId.present ? data.categoriaId.value : this.categoriaId,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      descripcion:
+          data.descripcion.present ? data.descripcion.value : this.descripcion,
+      unidadMedida:
+          data.unidadMedida.present
+              ? data.unidadMedida.value
+              : this.unidadMedida,
+      manejaVariante:
+          data.manejaVariante.present
+              ? data.manejaVariante.value
+              : this.manejaVariante,
+      manejaSerie:
+          data.manejaSerie.present ? data.manejaSerie.value : this.manejaSerie,
+      costoReferencia:
+          data.costoReferencia.present
+              ? data.costoReferencia.value
+              : this.costoReferencia,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArticuloData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folio: $folio, ')
+          ..write('categoriaId: $categoriaId, ')
+          ..write('nombre: $nombre, ')
+          ..write('descripcion: $descripcion, ')
+          ..write('unidadMedida: $unidadMedida, ')
+          ..write('manejaVariante: $manejaVariante, ')
+          ..write('manejaSerie: $manejaSerie, ')
+          ..write('costoReferencia: $costoReferencia')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folio,
+    categoriaId,
+    nombre,
+    descripcion,
+    unidadMedida,
+    manejaVariante,
+    manejaSerie,
+    costoReferencia,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArticuloData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.folio == this.folio &&
+          other.categoriaId == this.categoriaId &&
+          other.nombre == this.nombre &&
+          other.descripcion == this.descripcion &&
+          other.unidadMedida == this.unidadMedida &&
+          other.manejaVariante == this.manejaVariante &&
+          other.manejaSerie == this.manejaSerie &&
+          other.costoReferencia == this.costoReferencia);
+}
+
+class ArticuloCompanion extends UpdateCompanion<ArticuloData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> folio;
+  final Value<String> categoriaId;
+  final Value<String> nombre;
+  final Value<String?> descripcion;
+  final Value<String?> unidadMedida;
+  final Value<bool> manejaVariante;
+  final Value<bool> manejaSerie;
+  final Value<int?> costoReferencia;
+  final Value<int> rowid;
+  const ArticuloCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.folio = const Value.absent(),
+    this.categoriaId = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.descripcion = const Value.absent(),
+    this.unidadMedida = const Value.absent(),
+    this.manejaVariante = const Value.absent(),
+    this.manejaSerie = const Value.absent(),
+    this.costoReferencia = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ArticuloCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String folio,
+    required String categoriaId,
+    required String nombre,
+    this.descripcion = const Value.absent(),
+    this.unidadMedida = const Value.absent(),
+    this.manejaVariante = const Value.absent(),
+    this.manejaSerie = const Value.absent(),
+    this.costoReferencia = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : folio = Value(folio),
+       categoriaId = Value(categoriaId),
+       nombre = Value(nombre);
+  static Insertable<ArticuloData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? folio,
+    Expression<String>? categoriaId,
+    Expression<String>? nombre,
+    Expression<String>? descripcion,
+    Expression<String>? unidadMedida,
+    Expression<bool>? manejaVariante,
+    Expression<bool>? manejaSerie,
+    Expression<int>? costoReferencia,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (folio != null) 'folio': folio,
+      if (categoriaId != null) 'categoria_id': categoriaId,
+      if (nombre != null) 'nombre': nombre,
+      if (descripcion != null) 'descripcion': descripcion,
+      if (unidadMedida != null) 'unidad_medida': unidadMedida,
+      if (manejaVariante != null) 'maneja_variante': manejaVariante,
+      if (manejaSerie != null) 'maneja_serie': manejaSerie,
+      if (costoReferencia != null) 'costo_referencia': costoReferencia,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ArticuloCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? folio,
+    Value<String>? categoriaId,
+    Value<String>? nombre,
+    Value<String?>? descripcion,
+    Value<String?>? unidadMedida,
+    Value<bool>? manejaVariante,
+    Value<bool>? manejaSerie,
+    Value<int?>? costoReferencia,
+    Value<int>? rowid,
+  }) {
+    return ArticuloCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      folio: folio ?? this.folio,
+      categoriaId: categoriaId ?? this.categoriaId,
+      nombre: nombre ?? this.nombre,
+      descripcion: descripcion ?? this.descripcion,
+      unidadMedida: unidadMedida ?? this.unidadMedida,
+      manejaVariante: manejaVariante ?? this.manejaVariante,
+      manejaSerie: manejaSerie ?? this.manejaSerie,
+      costoReferencia: costoReferencia ?? this.costoReferencia,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (folio.present) {
+      map['folio'] = Variable<String>(folio.value);
+    }
+    if (categoriaId.present) {
+      map['categoria_id'] = Variable<String>(categoriaId.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (descripcion.present) {
+      map['descripcion'] = Variable<String>(descripcion.value);
+    }
+    if (unidadMedida.present) {
+      map['unidad_medida'] = Variable<String>(unidadMedida.value);
+    }
+    if (manejaVariante.present) {
+      map['maneja_variante'] = Variable<bool>(manejaVariante.value);
+    }
+    if (manejaSerie.present) {
+      map['maneja_serie'] = Variable<bool>(manejaSerie.value);
+    }
+    if (costoReferencia.present) {
+      map['costo_referencia'] = Variable<int>(costoReferencia.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArticuloCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folio: $folio, ')
+          ..write('categoriaId: $categoriaId, ')
+          ..write('nombre: $nombre, ')
+          ..write('descripcion: $descripcion, ')
+          ..write('unidadMedida: $unidadMedida, ')
+          ..write('manejaVariante: $manejaVariante, ')
+          ..write('manejaSerie: $manejaSerie, ')
+          ..write('costoReferencia: $costoReferencia, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ArticuloVarianteTable extends ArticuloVariante
+    with TableInfo<$ArticuloVarianteTable, ArticuloVarianteData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArticuloVarianteTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _articuloIdMeta = const VerificationMeta(
+    'articuloId',
+  );
+  @override
+  late final GeneratedColumn<String> articuloId = GeneratedColumn<String>(
+    'articulo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _valorMeta = const VerificationMeta('valor');
+  @override
+  late final GeneratedColumn<String> valor = GeneratedColumn<String>(
+    'valor',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    articuloId,
+    valor,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'articulo_variante';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ArticuloVarianteData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('articulo_id')) {
+      context.handle(
+        _articuloIdMeta,
+        articuloId.isAcceptableOrUnknown(data['articulo_id']!, _articuloIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_articuloIdMeta);
+    }
+    if (data.containsKey('valor')) {
+      context.handle(
+        _valorMeta,
+        valor.isAcceptableOrUnknown(data['valor']!, _valorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valorMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ArticuloVarianteData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArticuloVarianteData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      articuloId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}articulo_id'],
+          )!,
+      valor:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}valor'],
+          )!,
+    );
+  }
+
+  @override
+  $ArticuloVarianteTable createAlias(String alias) {
+    return $ArticuloVarianteTable(attachedDatabase, alias);
+  }
+}
+
+class ArticuloVarianteData extends DataClass
+    implements Insertable<ArticuloVarianteData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String articuloId;
+  final String valor;
+  const ArticuloVarianteData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.articuloId,
+    required this.valor,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['articulo_id'] = Variable<String>(articuloId);
+    map['valor'] = Variable<String>(valor);
+    return map;
+  }
+
+  ArticuloVarianteCompanion toCompanion(bool nullToAbsent) {
+    return ArticuloVarianteCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      articuloId: Value(articuloId),
+      valor: Value(valor),
+    );
+  }
+
+  factory ArticuloVarianteData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArticuloVarianteData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      articuloId: serializer.fromJson<String>(json['articuloId']),
+      valor: serializer.fromJson<String>(json['valor']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'articuloId': serializer.toJson<String>(articuloId),
+      'valor': serializer.toJson<String>(valor),
+    };
+  }
+
+  ArticuloVarianteData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? articuloId,
+    String? valor,
+  }) => ArticuloVarianteData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    articuloId: articuloId ?? this.articuloId,
+    valor: valor ?? this.valor,
+  );
+  ArticuloVarianteData copyWithCompanion(ArticuloVarianteCompanion data) {
+    return ArticuloVarianteData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      articuloId:
+          data.articuloId.present ? data.articuloId.value : this.articuloId,
+      valor: data.valor.present ? data.valor.value : this.valor,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArticuloVarianteData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('valor: $valor')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    articuloId,
+    valor,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArticuloVarianteData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.articuloId == this.articuloId &&
+          other.valor == this.valor);
+}
+
+class ArticuloVarianteCompanion extends UpdateCompanion<ArticuloVarianteData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> articuloId;
+  final Value<String> valor;
+  final Value<int> rowid;
+  const ArticuloVarianteCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.articuloId = const Value.absent(),
+    this.valor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ArticuloVarianteCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String articuloId,
+    required String valor,
+    this.rowid = const Value.absent(),
+  }) : articuloId = Value(articuloId),
+       valor = Value(valor);
+  static Insertable<ArticuloVarianteData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? articuloId,
+    Expression<String>? valor,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (articuloId != null) 'articulo_id': articuloId,
+      if (valor != null) 'valor': valor,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ArticuloVarianteCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? articuloId,
+    Value<String>? valor,
+    Value<int>? rowid,
+  }) {
+    return ArticuloVarianteCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      articuloId: articuloId ?? this.articuloId,
+      valor: valor ?? this.valor,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (articuloId.present) {
+      map['articulo_id'] = Variable<String>(articuloId.value);
+    }
+    if (valor.present) {
+      map['valor'] = Variable<String>(valor.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArticuloVarianteCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('valor: $valor, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ArticuloUnidadTable extends ArticuloUnidad
+    with TableInfo<$ArticuloUnidadTable, ArticuloUnidadData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArticuloUnidadTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _articuloIdMeta = const VerificationMeta(
+    'articuloId',
+  );
+  @override
+  late final GeneratedColumn<String> articuloId = GeneratedColumn<String>(
+    'articulo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _numeroSerieMeta = const VerificationMeta(
+    'numeroSerie',
+  );
+  @override
+  late final GeneratedColumn<String> numeroSerie = GeneratedColumn<String>(
+    'numero_serie',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _marcaMeta = const VerificationMeta('marca');
+  @override
+  late final GeneratedColumn<String> marca = GeneratedColumn<String>(
+    'marca',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _modeloMeta = const VerificationMeta('modelo');
+  @override
+  late final GeneratedColumn<String> modelo = GeneratedColumn<String>(
+    'modelo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('disponible'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    articuloId,
+    numeroSerie,
+    marca,
+    modelo,
+    estatus,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'articulo_unidad';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ArticuloUnidadData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoMeta);
+    }
+    if (data.containsKey('articulo_id')) {
+      context.handle(
+        _articuloIdMeta,
+        articuloId.isAcceptableOrUnknown(data['articulo_id']!, _articuloIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_articuloIdMeta);
+    }
+    if (data.containsKey('numero_serie')) {
+      context.handle(
+        _numeroSerieMeta,
+        numeroSerie.isAcceptableOrUnknown(
+          data['numero_serie']!,
+          _numeroSerieMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_numeroSerieMeta);
+    }
+    if (data.containsKey('marca')) {
+      context.handle(
+        _marcaMeta,
+        marca.isAcceptableOrUnknown(data['marca']!, _marcaMeta),
+      );
+    }
+    if (data.containsKey('modelo')) {
+      context.handle(
+        _modeloMeta,
+        modelo.isAcceptableOrUnknown(data['modelo']!, _modeloMeta),
+      );
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ArticuloUnidadData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArticuloUnidadData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      codigo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}codigo'],
+          )!,
+      articuloId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}articulo_id'],
+          )!,
+      numeroSerie:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}numero_serie'],
+          )!,
+      marca: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}marca'],
+      ),
+      modelo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}modelo'],
+      ),
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+    );
+  }
+
+  @override
+  $ArticuloUnidadTable createAlias(String alias) {
+    return $ArticuloUnidadTable(attachedDatabase, alias);
+  }
+}
+
+class ArticuloUnidadData extends DataClass
+    implements Insertable<ArticuloUnidadData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String codigo;
+  final String articuloId;
+  final String numeroSerie;
+  final String? marca;
+  final String? modelo;
+  final String estatus;
+  const ArticuloUnidadData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.codigo,
+    required this.articuloId,
+    required this.numeroSerie,
+    this.marca,
+    this.modelo,
+    required this.estatus,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['codigo'] = Variable<String>(codigo);
+    map['articulo_id'] = Variable<String>(articuloId);
+    map['numero_serie'] = Variable<String>(numeroSerie);
+    if (!nullToAbsent || marca != null) {
+      map['marca'] = Variable<String>(marca);
+    }
+    if (!nullToAbsent || modelo != null) {
+      map['modelo'] = Variable<String>(modelo);
+    }
+    map['estatus'] = Variable<String>(estatus);
+    return map;
+  }
+
+  ArticuloUnidadCompanion toCompanion(bool nullToAbsent) {
+    return ArticuloUnidadCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      codigo: Value(codigo),
+      articuloId: Value(articuloId),
+      numeroSerie: Value(numeroSerie),
+      marca:
+          marca == null && nullToAbsent ? const Value.absent() : Value(marca),
+      modelo:
+          modelo == null && nullToAbsent ? const Value.absent() : Value(modelo),
+      estatus: Value(estatus),
+    );
+  }
+
+  factory ArticuloUnidadData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArticuloUnidadData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      codigo: serializer.fromJson<String>(json['codigo']),
+      articuloId: serializer.fromJson<String>(json['articuloId']),
+      numeroSerie: serializer.fromJson<String>(json['numeroSerie']),
+      marca: serializer.fromJson<String?>(json['marca']),
+      modelo: serializer.fromJson<String?>(json['modelo']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'codigo': serializer.toJson<String>(codigo),
+      'articuloId': serializer.toJson<String>(articuloId),
+      'numeroSerie': serializer.toJson<String>(numeroSerie),
+      'marca': serializer.toJson<String?>(marca),
+      'modelo': serializer.toJson<String?>(modelo),
+      'estatus': serializer.toJson<String>(estatus),
+    };
+  }
+
+  ArticuloUnidadData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? codigo,
+    String? articuloId,
+    String? numeroSerie,
+    Value<String?> marca = const Value.absent(),
+    Value<String?> modelo = const Value.absent(),
+    String? estatus,
+  }) => ArticuloUnidadData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    codigo: codigo ?? this.codigo,
+    articuloId: articuloId ?? this.articuloId,
+    numeroSerie: numeroSerie ?? this.numeroSerie,
+    marca: marca.present ? marca.value : this.marca,
+    modelo: modelo.present ? modelo.value : this.modelo,
+    estatus: estatus ?? this.estatus,
+  );
+  ArticuloUnidadData copyWithCompanion(ArticuloUnidadCompanion data) {
+    return ArticuloUnidadData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+      articuloId:
+          data.articuloId.present ? data.articuloId.value : this.articuloId,
+      numeroSerie:
+          data.numeroSerie.present ? data.numeroSerie.value : this.numeroSerie,
+      marca: data.marca.present ? data.marca.value : this.marca,
+      modelo: data.modelo.present ? data.modelo.value : this.modelo,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArticuloUnidadData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('numeroSerie: $numeroSerie, ')
+          ..write('marca: $marca, ')
+          ..write('modelo: $modelo, ')
+          ..write('estatus: $estatus')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    articuloId,
+    numeroSerie,
+    marca,
+    modelo,
+    estatus,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArticuloUnidadData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.codigo == this.codigo &&
+          other.articuloId == this.articuloId &&
+          other.numeroSerie == this.numeroSerie &&
+          other.marca == this.marca &&
+          other.modelo == this.modelo &&
+          other.estatus == this.estatus);
+}
+
+class ArticuloUnidadCompanion extends UpdateCompanion<ArticuloUnidadData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> codigo;
+  final Value<String> articuloId;
+  final Value<String> numeroSerie;
+  final Value<String?> marca;
+  final Value<String?> modelo;
+  final Value<String> estatus;
+  final Value<int> rowid;
+  const ArticuloUnidadCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.articuloId = const Value.absent(),
+    this.numeroSerie = const Value.absent(),
+    this.marca = const Value.absent(),
+    this.modelo = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ArticuloUnidadCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String codigo,
+    required String articuloId,
+    required String numeroSerie,
+    this.marca = const Value.absent(),
+    this.modelo = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : codigo = Value(codigo),
+       articuloId = Value(articuloId),
+       numeroSerie = Value(numeroSerie);
+  static Insertable<ArticuloUnidadData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? codigo,
+    Expression<String>? articuloId,
+    Expression<String>? numeroSerie,
+    Expression<String>? marca,
+    Expression<String>? modelo,
+    Expression<String>? estatus,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (codigo != null) 'codigo': codigo,
+      if (articuloId != null) 'articulo_id': articuloId,
+      if (numeroSerie != null) 'numero_serie': numeroSerie,
+      if (marca != null) 'marca': marca,
+      if (modelo != null) 'modelo': modelo,
+      if (estatus != null) 'estatus': estatus,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ArticuloUnidadCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? codigo,
+    Value<String>? articuloId,
+    Value<String>? numeroSerie,
+    Value<String?>? marca,
+    Value<String?>? modelo,
+    Value<String>? estatus,
+    Value<int>? rowid,
+  }) {
+    return ArticuloUnidadCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      codigo: codigo ?? this.codigo,
+      articuloId: articuloId ?? this.articuloId,
+      numeroSerie: numeroSerie ?? this.numeroSerie,
+      marca: marca ?? this.marca,
+      modelo: modelo ?? this.modelo,
+      estatus: estatus ?? this.estatus,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (articuloId.present) {
+      map['articulo_id'] = Variable<String>(articuloId.value);
+    }
+    if (numeroSerie.present) {
+      map['numero_serie'] = Variable<String>(numeroSerie.value);
+    }
+    if (marca.present) {
+      map['marca'] = Variable<String>(marca.value);
+    }
+    if (modelo.present) {
+      map['modelo'] = Variable<String>(modelo.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArticuloUnidadCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('numeroSerie: $numeroSerie, ')
+          ..write('marca: $marca, ')
+          ..write('modelo: $modelo, ')
+          ..write('estatus: $estatus, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ArticuloUnidadTelefonoTable extends ArticuloUnidadTelefono
+    with TableInfo<$ArticuloUnidadTelefonoTable, ArticuloUnidadTelefonoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArticuloUnidadTelefonoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _unidadIdMeta = const VerificationMeta(
+    'unidadId',
+  );
+  @override
+  late final GeneratedColumn<String> unidadId = GeneratedColumn<String>(
+    'unidad_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo_unidad (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _imeiMeta = const VerificationMeta('imei');
+  @override
+  late final GeneratedColumn<String> imei = GeneratedColumn<String>(
+    'imei',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _numeroTelefonicoMeta = const VerificationMeta(
+    'numeroTelefonico',
+  );
+  @override
+  late final GeneratedColumn<String> numeroTelefonico = GeneratedColumn<String>(
+    'numero_telefonico',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [unidadId, imei, numeroTelefonico];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'articulo_unidad_telefono';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ArticuloUnidadTelefonoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('unidad_id')) {
+      context.handle(
+        _unidadIdMeta,
+        unidadId.isAcceptableOrUnknown(data['unidad_id']!, _unidadIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_unidadIdMeta);
+    }
+    if (data.containsKey('imei')) {
+      context.handle(
+        _imeiMeta,
+        imei.isAcceptableOrUnknown(data['imei']!, _imeiMeta),
+      );
+    }
+    if (data.containsKey('numero_telefonico')) {
+      context.handle(
+        _numeroTelefonicoMeta,
+        numeroTelefonico.isAcceptableOrUnknown(
+          data['numero_telefonico']!,
+          _numeroTelefonicoMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {unidadId};
+  @override
+  ArticuloUnidadTelefonoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArticuloUnidadTelefonoData(
+      unidadId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}unidad_id'],
+          )!,
+      imei: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}imei'],
+      ),
+      numeroTelefonico: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}numero_telefonico'],
+      ),
+    );
+  }
+
+  @override
+  $ArticuloUnidadTelefonoTable createAlias(String alias) {
+    return $ArticuloUnidadTelefonoTable(attachedDatabase, alias);
+  }
+}
+
+class ArticuloUnidadTelefonoData extends DataClass
+    implements Insertable<ArticuloUnidadTelefonoData> {
+  final String unidadId;
+  final String? imei;
+  final String? numeroTelefonico;
+  const ArticuloUnidadTelefonoData({
+    required this.unidadId,
+    this.imei,
+    this.numeroTelefonico,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['unidad_id'] = Variable<String>(unidadId);
+    if (!nullToAbsent || imei != null) {
+      map['imei'] = Variable<String>(imei);
+    }
+    if (!nullToAbsent || numeroTelefonico != null) {
+      map['numero_telefonico'] = Variable<String>(numeroTelefonico);
+    }
+    return map;
+  }
+
+  ArticuloUnidadTelefonoCompanion toCompanion(bool nullToAbsent) {
+    return ArticuloUnidadTelefonoCompanion(
+      unidadId: Value(unidadId),
+      imei: imei == null && nullToAbsent ? const Value.absent() : Value(imei),
+      numeroTelefonico:
+          numeroTelefonico == null && nullToAbsent
+              ? const Value.absent()
+              : Value(numeroTelefonico),
+    );
+  }
+
+  factory ArticuloUnidadTelefonoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArticuloUnidadTelefonoData(
+      unidadId: serializer.fromJson<String>(json['unidadId']),
+      imei: serializer.fromJson<String?>(json['imei']),
+      numeroTelefonico: serializer.fromJson<String?>(json['numeroTelefonico']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'unidadId': serializer.toJson<String>(unidadId),
+      'imei': serializer.toJson<String?>(imei),
+      'numeroTelefonico': serializer.toJson<String?>(numeroTelefonico),
+    };
+  }
+
+  ArticuloUnidadTelefonoData copyWith({
+    String? unidadId,
+    Value<String?> imei = const Value.absent(),
+    Value<String?> numeroTelefonico = const Value.absent(),
+  }) => ArticuloUnidadTelefonoData(
+    unidadId: unidadId ?? this.unidadId,
+    imei: imei.present ? imei.value : this.imei,
+    numeroTelefonico:
+        numeroTelefonico.present
+            ? numeroTelefonico.value
+            : this.numeroTelefonico,
+  );
+  ArticuloUnidadTelefonoData copyWithCompanion(
+    ArticuloUnidadTelefonoCompanion data,
+  ) {
+    return ArticuloUnidadTelefonoData(
+      unidadId: data.unidadId.present ? data.unidadId.value : this.unidadId,
+      imei: data.imei.present ? data.imei.value : this.imei,
+      numeroTelefonico:
+          data.numeroTelefonico.present
+              ? data.numeroTelefonico.value
+              : this.numeroTelefonico,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArticuloUnidadTelefonoData(')
+          ..write('unidadId: $unidadId, ')
+          ..write('imei: $imei, ')
+          ..write('numeroTelefonico: $numeroTelefonico')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(unidadId, imei, numeroTelefonico);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArticuloUnidadTelefonoData &&
+          other.unidadId == this.unidadId &&
+          other.imei == this.imei &&
+          other.numeroTelefonico == this.numeroTelefonico);
+}
+
+class ArticuloUnidadTelefonoCompanion
+    extends UpdateCompanion<ArticuloUnidadTelefonoData> {
+  final Value<String> unidadId;
+  final Value<String?> imei;
+  final Value<String?> numeroTelefonico;
+  final Value<int> rowid;
+  const ArticuloUnidadTelefonoCompanion({
+    this.unidadId = const Value.absent(),
+    this.imei = const Value.absent(),
+    this.numeroTelefonico = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ArticuloUnidadTelefonoCompanion.insert({
+    required String unidadId,
+    this.imei = const Value.absent(),
+    this.numeroTelefonico = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : unidadId = Value(unidadId);
+  static Insertable<ArticuloUnidadTelefonoData> custom({
+    Expression<String>? unidadId,
+    Expression<String>? imei,
+    Expression<String>? numeroTelefonico,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (unidadId != null) 'unidad_id': unidadId,
+      if (imei != null) 'imei': imei,
+      if (numeroTelefonico != null) 'numero_telefonico': numeroTelefonico,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ArticuloUnidadTelefonoCompanion copyWith({
+    Value<String>? unidadId,
+    Value<String?>? imei,
+    Value<String?>? numeroTelefonico,
+    Value<int>? rowid,
+  }) {
+    return ArticuloUnidadTelefonoCompanion(
+      unidadId: unidadId ?? this.unidadId,
+      imei: imei ?? this.imei,
+      numeroTelefonico: numeroTelefonico ?? this.numeroTelefonico,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (unidadId.present) {
+      map['unidad_id'] = Variable<String>(unidadId.value);
+    }
+    if (imei.present) {
+      map['imei'] = Variable<String>(imei.value);
+    }
+    if (numeroTelefonico.present) {
+      map['numero_telefonico'] = Variable<String>(numeroTelefonico.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArticuloUnidadTelefonoCompanion(')
+          ..write('unidadId: $unidadId, ')
+          ..write('imei: $imei, ')
+          ..write('numeroTelefonico: $numeroTelefonico, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MovimientoInventarioTable extends MovimientoInventario
+    with TableInfo<$MovimientoInventarioTable, MovimientoInventarioData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MovimientoInventarioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _articuloIdMeta = const VerificationMeta(
+    'articuloId',
+  );
+  @override
+  late final GeneratedColumn<String> articuloId = GeneratedColumn<String>(
+    'articulo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _varianteIdMeta = const VerificationMeta(
+    'varianteId',
+  );
+  @override
+  late final GeneratedColumn<String> varianteId = GeneratedColumn<String>(
+    'variante_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo_variante (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _unidadIdMeta = const VerificationMeta(
+    'unidadId',
+  );
+  @override
+  late final GeneratedColumn<String> unidadId = GeneratedColumn<String>(
+    'unidad_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo_unidad (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _cantidadMeta = const VerificationMeta(
+    'cantidad',
+  );
+  @override
+  late final GeneratedColumn<int> cantidad = GeneratedColumn<int>(
+    'cantidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMovimientoMeta = const VerificationMeta(
+    'tipoMovimiento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoMovimiento = GeneratedColumn<String>(
+    'tipo_movimiento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
+    'fecha',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _costoUnitarioMeta = const VerificationMeta(
+    'costoUnitario',
+  );
+  @override
+  late final GeneratedColumn<int> costoUnitario = GeneratedColumn<int>(
+    'costo_unitario',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    articuloId,
+    varianteId,
+    unidadId,
+    cantidad,
+    tipoMovimiento,
+    fecha,
+    costoUnitario,
+    observaciones,
+    actor,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'movimiento_inventario';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MovimientoInventarioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('articulo_id')) {
+      context.handle(
+        _articuloIdMeta,
+        articuloId.isAcceptableOrUnknown(data['articulo_id']!, _articuloIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_articuloIdMeta);
+    }
+    if (data.containsKey('variante_id')) {
+      context.handle(
+        _varianteIdMeta,
+        varianteId.isAcceptableOrUnknown(data['variante_id']!, _varianteIdMeta),
+      );
+    }
+    if (data.containsKey('unidad_id')) {
+      context.handle(
+        _unidadIdMeta,
+        unidadId.isAcceptableOrUnknown(data['unidad_id']!, _unidadIdMeta),
+      );
+    }
+    if (data.containsKey('cantidad')) {
+      context.handle(
+        _cantidadMeta,
+        cantidad.isAcceptableOrUnknown(data['cantidad']!, _cantidadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cantidadMeta);
+    }
+    if (data.containsKey('tipo_movimiento')) {
+      context.handle(
+        _tipoMovimientoMeta,
+        tipoMovimiento.isAcceptableOrUnknown(
+          data['tipo_movimiento']!,
+          _tipoMovimientoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMovimientoMeta);
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('costo_unitario')) {
+      context.handle(
+        _costoUnitarioMeta,
+        costoUnitario.isAcceptableOrUnknown(
+          data['costo_unitario']!,
+          _costoUnitarioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MovimientoInventarioData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MovimientoInventarioData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      articuloId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}articulo_id'],
+          )!,
+      varianteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variante_id'],
+      ),
+      unidadId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unidad_id'],
+      ),
+      cantidad:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}cantidad'],
+          )!,
+      tipoMovimiento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_movimiento'],
+          )!,
+      fecha:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha'],
+          )!,
+      costoUnitario: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}costo_unitario'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+    );
+  }
+
+  @override
+  $MovimientoInventarioTable createAlias(String alias) {
+    return $MovimientoInventarioTable(attachedDatabase, alias);
+  }
+}
+
+class MovimientoInventarioData extends DataClass
+    implements Insertable<MovimientoInventarioData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String articuloId;
+  final String? varianteId;
+  final String? unidadId;
+  final int cantidad;
+  final String tipoMovimiento;
+  final DateTime fecha;
+
+  /// Solo tiene sentido en movimientos `entrada` — costo total nunca
+  /// se guarda, se deriva como `cantidad × costoUnitario` donde se
+  /// necesite mostrarlo.
+  final int? costoUnitario;
+  final String? observaciones;
+  final String? actor;
+  const MovimientoInventarioData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.articuloId,
+    this.varianteId,
+    this.unidadId,
+    required this.cantidad,
+    required this.tipoMovimiento,
+    required this.fecha,
+    this.costoUnitario,
+    this.observaciones,
+    this.actor,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['articulo_id'] = Variable<String>(articuloId);
+    if (!nullToAbsent || varianteId != null) {
+      map['variante_id'] = Variable<String>(varianteId);
+    }
+    if (!nullToAbsent || unidadId != null) {
+      map['unidad_id'] = Variable<String>(unidadId);
+    }
+    map['cantidad'] = Variable<int>(cantidad);
+    map['tipo_movimiento'] = Variable<String>(tipoMovimiento);
+    map['fecha'] = Variable<DateTime>(fecha);
+    if (!nullToAbsent || costoUnitario != null) {
+      map['costo_unitario'] = Variable<int>(costoUnitario);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    return map;
+  }
+
+  MovimientoInventarioCompanion toCompanion(bool nullToAbsent) {
+    return MovimientoInventarioCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      articuloId: Value(articuloId),
+      varianteId:
+          varianteId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(varianteId),
+      unidadId:
+          unidadId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(unidadId),
+      cantidad: Value(cantidad),
+      tipoMovimiento: Value(tipoMovimiento),
+      fecha: Value(fecha),
+      costoUnitario:
+          costoUnitario == null && nullToAbsent
+              ? const Value.absent()
+              : Value(costoUnitario),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+    );
+  }
+
+  factory MovimientoInventarioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MovimientoInventarioData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      articuloId: serializer.fromJson<String>(json['articuloId']),
+      varianteId: serializer.fromJson<String?>(json['varianteId']),
+      unidadId: serializer.fromJson<String?>(json['unidadId']),
+      cantidad: serializer.fromJson<int>(json['cantidad']),
+      tipoMovimiento: serializer.fromJson<String>(json['tipoMovimiento']),
+      fecha: serializer.fromJson<DateTime>(json['fecha']),
+      costoUnitario: serializer.fromJson<int?>(json['costoUnitario']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      actor: serializer.fromJson<String?>(json['actor']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'articuloId': serializer.toJson<String>(articuloId),
+      'varianteId': serializer.toJson<String?>(varianteId),
+      'unidadId': serializer.toJson<String?>(unidadId),
+      'cantidad': serializer.toJson<int>(cantidad),
+      'tipoMovimiento': serializer.toJson<String>(tipoMovimiento),
+      'fecha': serializer.toJson<DateTime>(fecha),
+      'costoUnitario': serializer.toJson<int?>(costoUnitario),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'actor': serializer.toJson<String?>(actor),
+    };
+  }
+
+  MovimientoInventarioData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? articuloId,
+    Value<String?> varianteId = const Value.absent(),
+    Value<String?> unidadId = const Value.absent(),
+    int? cantidad,
+    String? tipoMovimiento,
+    DateTime? fecha,
+    Value<int?> costoUnitario = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+  }) => MovimientoInventarioData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    articuloId: articuloId ?? this.articuloId,
+    varianteId: varianteId.present ? varianteId.value : this.varianteId,
+    unidadId: unidadId.present ? unidadId.value : this.unidadId,
+    cantidad: cantidad ?? this.cantidad,
+    tipoMovimiento: tipoMovimiento ?? this.tipoMovimiento,
+    fecha: fecha ?? this.fecha,
+    costoUnitario:
+        costoUnitario.present ? costoUnitario.value : this.costoUnitario,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    actor: actor.present ? actor.value : this.actor,
+  );
+  MovimientoInventarioData copyWithCompanion(
+    MovimientoInventarioCompanion data,
+  ) {
+    return MovimientoInventarioData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      articuloId:
+          data.articuloId.present ? data.articuloId.value : this.articuloId,
+      varianteId:
+          data.varianteId.present ? data.varianteId.value : this.varianteId,
+      unidadId: data.unidadId.present ? data.unidadId.value : this.unidadId,
+      cantidad: data.cantidad.present ? data.cantidad.value : this.cantidad,
+      tipoMovimiento:
+          data.tipoMovimiento.present
+              ? data.tipoMovimiento.value
+              : this.tipoMovimiento,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      costoUnitario:
+          data.costoUnitario.present
+              ? data.costoUnitario.value
+              : this.costoUnitario,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      actor: data.actor.present ? data.actor.value : this.actor,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MovimientoInventarioData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('varianteId: $varianteId, ')
+          ..write('unidadId: $unidadId, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('tipoMovimiento: $tipoMovimiento, ')
+          ..write('fecha: $fecha, ')
+          ..write('costoUnitario: $costoUnitario, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('actor: $actor')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    articuloId,
+    varianteId,
+    unidadId,
+    cantidad,
+    tipoMovimiento,
+    fecha,
+    costoUnitario,
+    observaciones,
+    actor,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MovimientoInventarioData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.articuloId == this.articuloId &&
+          other.varianteId == this.varianteId &&
+          other.unidadId == this.unidadId &&
+          other.cantidad == this.cantidad &&
+          other.tipoMovimiento == this.tipoMovimiento &&
+          other.fecha == this.fecha &&
+          other.costoUnitario == this.costoUnitario &&
+          other.observaciones == this.observaciones &&
+          other.actor == this.actor);
+}
+
+class MovimientoInventarioCompanion
+    extends UpdateCompanion<MovimientoInventarioData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> articuloId;
+  final Value<String?> varianteId;
+  final Value<String?> unidadId;
+  final Value<int> cantidad;
+  final Value<String> tipoMovimiento;
+  final Value<DateTime> fecha;
+  final Value<int?> costoUnitario;
+  final Value<String?> observaciones;
+  final Value<String?> actor;
+  final Value<int> rowid;
+  const MovimientoInventarioCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.articuloId = const Value.absent(),
+    this.varianteId = const Value.absent(),
+    this.unidadId = const Value.absent(),
+    this.cantidad = const Value.absent(),
+    this.tipoMovimiento = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.costoUnitario = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MovimientoInventarioCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String articuloId,
+    this.varianteId = const Value.absent(),
+    this.unidadId = const Value.absent(),
+    required int cantidad,
+    required String tipoMovimiento,
+    required DateTime fecha,
+    this.costoUnitario = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : articuloId = Value(articuloId),
+       cantidad = Value(cantidad),
+       tipoMovimiento = Value(tipoMovimiento),
+       fecha = Value(fecha);
+  static Insertable<MovimientoInventarioData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? articuloId,
+    Expression<String>? varianteId,
+    Expression<String>? unidadId,
+    Expression<int>? cantidad,
+    Expression<String>? tipoMovimiento,
+    Expression<DateTime>? fecha,
+    Expression<int>? costoUnitario,
+    Expression<String>? observaciones,
+    Expression<String>? actor,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (articuloId != null) 'articulo_id': articuloId,
+      if (varianteId != null) 'variante_id': varianteId,
+      if (unidadId != null) 'unidad_id': unidadId,
+      if (cantidad != null) 'cantidad': cantidad,
+      if (tipoMovimiento != null) 'tipo_movimiento': tipoMovimiento,
+      if (fecha != null) 'fecha': fecha,
+      if (costoUnitario != null) 'costo_unitario': costoUnitario,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (actor != null) 'actor': actor,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MovimientoInventarioCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? articuloId,
+    Value<String?>? varianteId,
+    Value<String?>? unidadId,
+    Value<int>? cantidad,
+    Value<String>? tipoMovimiento,
+    Value<DateTime>? fecha,
+    Value<int?>? costoUnitario,
+    Value<String?>? observaciones,
+    Value<String?>? actor,
+    Value<int>? rowid,
+  }) {
+    return MovimientoInventarioCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      articuloId: articuloId ?? this.articuloId,
+      varianteId: varianteId ?? this.varianteId,
+      unidadId: unidadId ?? this.unidadId,
+      cantidad: cantidad ?? this.cantidad,
+      tipoMovimiento: tipoMovimiento ?? this.tipoMovimiento,
+      fecha: fecha ?? this.fecha,
+      costoUnitario: costoUnitario ?? this.costoUnitario,
+      observaciones: observaciones ?? this.observaciones,
+      actor: actor ?? this.actor,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (articuloId.present) {
+      map['articulo_id'] = Variable<String>(articuloId.value);
+    }
+    if (varianteId.present) {
+      map['variante_id'] = Variable<String>(varianteId.value);
+    }
+    if (unidadId.present) {
+      map['unidad_id'] = Variable<String>(unidadId.value);
+    }
+    if (cantidad.present) {
+      map['cantidad'] = Variable<int>(cantidad.value);
+    }
+    if (tipoMovimiento.present) {
+      map['tipo_movimiento'] = Variable<String>(tipoMovimiento.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (costoUnitario.present) {
+      map['costo_unitario'] = Variable<int>(costoUnitario.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MovimientoInventarioCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('varianteId: $varianteId, ')
+          ..write('unidadId: $unidadId, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('tipoMovimiento: $tipoMovimiento, ')
+          ..write('fecha: $fecha, ')
+          ..write('costoUnitario: $costoUnitario, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('actor: $actor, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MovimientoInventarioAttachmentTable
+    extends MovimientoInventarioAttachment
+    with
+        TableInfo<
+          $MovimientoInventarioAttachmentTable,
+          MovimientoInventarioAttachmentData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MovimientoInventarioAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _movimientoInventarioIdMeta =
+      const VerificationMeta('movimientoInventarioId');
+  @override
+  late final GeneratedColumn<String> movimientoInventarioId =
+      GeneratedColumn<String>(
+        'movimiento_inventario_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES movimiento_inventario (id) ON DELETE CASCADE',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, movimientoInventarioId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'movimiento_inventario_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MovimientoInventarioAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('movimiento_inventario_id')) {
+      context.handle(
+        _movimientoInventarioIdMeta,
+        movimientoInventarioId.isAcceptableOrUnknown(
+          data['movimiento_inventario_id']!,
+          _movimientoInventarioIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_movimientoInventarioIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  MovimientoInventarioAttachmentData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MovimientoInventarioAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      movimientoInventarioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}movimiento_inventario_id'],
+          )!,
+    );
+  }
+
+  @override
+  $MovimientoInventarioAttachmentTable createAlias(String alias) {
+    return $MovimientoInventarioAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class MovimientoInventarioAttachmentData extends DataClass
+    implements Insertable<MovimientoInventarioAttachmentData> {
+  final String attachmentId;
+  final String movimientoInventarioId;
+  const MovimientoInventarioAttachmentData({
+    required this.attachmentId,
+    required this.movimientoInventarioId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['movimiento_inventario_id'] = Variable<String>(movimientoInventarioId);
+    return map;
+  }
+
+  MovimientoInventarioAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return MovimientoInventarioAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      movimientoInventarioId: Value(movimientoInventarioId),
+    );
+  }
+
+  factory MovimientoInventarioAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MovimientoInventarioAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      movimientoInventarioId: serializer.fromJson<String>(
+        json['movimientoInventarioId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'movimientoInventarioId': serializer.toJson<String>(
+        movimientoInventarioId,
+      ),
+    };
+  }
+
+  MovimientoInventarioAttachmentData copyWith({
+    String? attachmentId,
+    String? movimientoInventarioId,
+  }) => MovimientoInventarioAttachmentData(
+    attachmentId: attachmentId ?? this.attachmentId,
+    movimientoInventarioId:
+        movimientoInventarioId ?? this.movimientoInventarioId,
+  );
+  MovimientoInventarioAttachmentData copyWithCompanion(
+    MovimientoInventarioAttachmentCompanion data,
+  ) {
+    return MovimientoInventarioAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      movimientoInventarioId:
+          data.movimientoInventarioId.present
+              ? data.movimientoInventarioId.value
+              : this.movimientoInventarioId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MovimientoInventarioAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('movimientoInventarioId: $movimientoInventarioId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, movimientoInventarioId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MovimientoInventarioAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.movimientoInventarioId == this.movimientoInventarioId);
+}
+
+class MovimientoInventarioAttachmentCompanion
+    extends UpdateCompanion<MovimientoInventarioAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> movimientoInventarioId;
+  final Value<int> rowid;
+  const MovimientoInventarioAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.movimientoInventarioId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MovimientoInventarioAttachmentCompanion.insert({
+    required String attachmentId,
+    required String movimientoInventarioId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       movimientoInventarioId = Value(movimientoInventarioId);
+  static Insertable<MovimientoInventarioAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? movimientoInventarioId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (movimientoInventarioId != null)
+        'movimiento_inventario_id': movimientoInventarioId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MovimientoInventarioAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? movimientoInventarioId,
+    Value<int>? rowid,
+  }) {
+    return MovimientoInventarioAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      movimientoInventarioId:
+          movimientoInventarioId ?? this.movimientoInventarioId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (movimientoInventarioId.present) {
+      map['movimiento_inventario_id'] = Variable<String>(
+        movimientoInventarioId.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MovimientoInventarioAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('movimientoInventarioId: $movimientoInventarioId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -46865,6 +50391,19 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $PagoNominaAttachmentTable pagoNominaAttachment =
       $PagoNominaAttachmentTable(this);
+  late final $CategoriaArticuloTable categoriaArticulo =
+      $CategoriaArticuloTable(this);
+  late final $ArticuloTable articulo = $ArticuloTable(this);
+  late final $ArticuloVarianteTable articuloVariante = $ArticuloVarianteTable(
+    this,
+  );
+  late final $ArticuloUnidadTable articuloUnidad = $ArticuloUnidadTable(this);
+  late final $ArticuloUnidadTelefonoTable articuloUnidadTelefono =
+      $ArticuloUnidadTelefonoTable(this);
+  late final $MovimientoInventarioTable movimientoInventario =
+      $MovimientoInventarioTable(this);
+  late final $MovimientoInventarioAttachmentTable
+  movimientoInventarioAttachment = $MovimientoInventarioAttachmentTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -46959,6 +50498,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     aplicacionPagoNomina,
     pagoNominaEvento,
     pagoNominaAttachment,
+    categoriaArticulo,
+    articulo,
+    articuloVariante,
+    articuloUnidad,
+    articuloUnidadTelefono,
+    movimientoInventario,
+    movimientoInventarioAttachment,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -47262,6 +50808,39 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('pago_nomina_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'articulo_unidad',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('articulo_unidad_telefono', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate(
+          'movimiento_inventario_attachment',
+          kind: UpdateKind.delete,
+        ),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'movimiento_inventario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate(
+          'movimiento_inventario_attachment',
+          kind: UpdateKind.delete,
+        ),
+      ],
     ),
   ]);
 }
@@ -51865,6 +55444,34 @@ final class $$AttachmentTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $MovimientoInventarioAttachmentTable,
+    List<MovimientoInventarioAttachmentData>
+  >
+  _movimientoInventarioAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.movimientoInventarioAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.movimientoInventarioAttachment.attachmentId,
+        ),
+      );
+
+  $$MovimientoInventarioAttachmentTableProcessedTableManager
+  get movimientoInventarioAttachmentRefs {
+    final manager = $$MovimientoInventarioAttachmentTableTableManager(
+      $_db,
+      $_db.movimientoInventarioAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _movimientoInventarioAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AttachmentTableFilterComposer
@@ -52229,6 +55836,35 @@ class $$AttachmentTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> movimientoInventarioAttachmentRefs(
+    Expression<bool> Function(
+      $$MovimientoInventarioAttachmentTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$MovimientoInventarioAttachmentTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.movimientoInventarioAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioAttachmentTableFilterComposer(
+                $db: $db,
+                $table: $db.movimientoInventarioAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -52647,6 +56283,35 @@ class $$AttachmentTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> movimientoInventarioAttachmentRefs<T extends Object>(
+    Expression<T> Function(
+      $$MovimientoInventarioAttachmentTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$MovimientoInventarioAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.movimientoInventarioAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.movimientoInventarioAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AttachmentTableTableManager
@@ -52675,6 +56340,7 @@ class $$AttachmentTableTableManager
             bool egresoAttachmentRefs,
             bool empleadoAttachmentRefs,
             bool pagoNominaAttachmentRefs,
+            bool movimientoInventarioAttachmentRefs,
           })
         > {
   $$AttachmentTableTableManager(_$AppDatabase db, $AttachmentTable table)
@@ -52763,6 +56429,7 @@ class $$AttachmentTableTableManager
             egresoAttachmentRefs = false,
             empleadoAttachmentRefs = false,
             pagoNominaAttachmentRefs = false,
+            movimientoInventarioAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -52780,6 +56447,8 @@ class $$AttachmentTableTableManager
                 if (egresoAttachmentRefs) db.egresoAttachment,
                 if (empleadoAttachmentRefs) db.empleadoAttachment,
                 if (pagoNominaAttachmentRefs) db.pagoNominaAttachment,
+                if (movimientoInventarioAttachmentRefs)
+                  db.movimientoInventarioAttachment,
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -53048,6 +56717,28 @@ class $$AttachmentTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (movimientoInventarioAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      MovimientoInventarioAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._movimientoInventarioAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).movimientoInventarioAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -53081,6 +56772,7 @@ typedef $$AttachmentTableProcessedTableManager =
         bool egresoAttachmentRefs,
         bool empleadoAttachmentRefs,
         bool pagoNominaAttachmentRefs,
+        bool movimientoInventarioAttachmentRefs,
       })
     >;
 typedef $$HorarioTableCreateCompanionBuilder =
@@ -91164,6 +94856,3768 @@ typedef $$PagoNominaAttachmentTableProcessedTableManager =
       PagoNominaAttachmentData,
       PrefetchHooks Function({bool attachmentId, bool pagoNominaId})
     >;
+typedef $$CategoriaArticuloTableCreateCompanionBuilder =
+    CategoriaArticuloCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String nombre,
+      Value<int> rowid,
+    });
+typedef $$CategoriaArticuloTableUpdateCompanionBuilder =
+    CategoriaArticuloCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> nombre,
+      Value<int> rowid,
+    });
+
+final class $$CategoriaArticuloTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CategoriaArticuloTable,
+          CategoriaArticuloData
+        > {
+  $$CategoriaArticuloTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$ArticuloTable, List<ArticuloData>>
+  _articuloRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.articulo,
+    aliasName: $_aliasNameGenerator(
+      db.categoriaArticulo.id,
+      db.articulo.categoriaId,
+    ),
+  );
+
+  $$ArticuloTableProcessedTableManager get articuloRefs {
+    final manager = $$ArticuloTableTableManager(
+      $_db,
+      $_db.articulo,
+    ).filter((f) => f.categoriaId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_articuloRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CategoriaArticuloTableFilterComposer
+    extends Composer<_$AppDatabase, $CategoriaArticuloTable> {
+  $$CategoriaArticuloTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> articuloRefs(
+    Expression<bool> Function($$ArticuloTableFilterComposer f) f,
+  ) {
+    final $$ArticuloTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.categoriaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableFilterComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CategoriaArticuloTableOrderingComposer
+    extends Composer<_$AppDatabase, $CategoriaArticuloTable> {
+  $$CategoriaArticuloTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CategoriaArticuloTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CategoriaArticuloTable> {
+  $$CategoriaArticuloTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  Expression<T> articuloRefs<T extends Object>(
+    Expression<T> Function($$ArticuloTableAnnotationComposer a) f,
+  ) {
+    final $$ArticuloTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.categoriaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CategoriaArticuloTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CategoriaArticuloTable,
+          CategoriaArticuloData,
+          $$CategoriaArticuloTableFilterComposer,
+          $$CategoriaArticuloTableOrderingComposer,
+          $$CategoriaArticuloTableAnnotationComposer,
+          $$CategoriaArticuloTableCreateCompanionBuilder,
+          $$CategoriaArticuloTableUpdateCompanionBuilder,
+          (CategoriaArticuloData, $$CategoriaArticuloTableReferences),
+          CategoriaArticuloData,
+          PrefetchHooks Function({bool articuloRefs})
+        > {
+  $$CategoriaArticuloTableTableManager(
+    _$AppDatabase db,
+    $CategoriaArticuloTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$CategoriaArticuloTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$CategoriaArticuloTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$CategoriaArticuloTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CategoriaArticuloCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nombre: nombre,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String nombre,
+                Value<int> rowid = const Value.absent(),
+              }) => CategoriaArticuloCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nombre: nombre,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$CategoriaArticuloTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({articuloRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (articuloRefs) db.articulo],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (articuloRefs)
+                    await $_getPrefetchedData<
+                      CategoriaArticuloData,
+                      $CategoriaArticuloTable,
+                      ArticuloData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CategoriaArticuloTableReferences
+                          ._articuloRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$CategoriaArticuloTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).articuloRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.categoriaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CategoriaArticuloTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CategoriaArticuloTable,
+      CategoriaArticuloData,
+      $$CategoriaArticuloTableFilterComposer,
+      $$CategoriaArticuloTableOrderingComposer,
+      $$CategoriaArticuloTableAnnotationComposer,
+      $$CategoriaArticuloTableCreateCompanionBuilder,
+      $$CategoriaArticuloTableUpdateCompanionBuilder,
+      (CategoriaArticuloData, $$CategoriaArticuloTableReferences),
+      CategoriaArticuloData,
+      PrefetchHooks Function({bool articuloRefs})
+    >;
+typedef $$ArticuloTableCreateCompanionBuilder =
+    ArticuloCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String folio,
+      required String categoriaId,
+      required String nombre,
+      Value<String?> descripcion,
+      Value<String?> unidadMedida,
+      Value<bool> manejaVariante,
+      Value<bool> manejaSerie,
+      Value<int?> costoReferencia,
+      Value<int> rowid,
+    });
+typedef $$ArticuloTableUpdateCompanionBuilder =
+    ArticuloCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> folio,
+      Value<String> categoriaId,
+      Value<String> nombre,
+      Value<String?> descripcion,
+      Value<String?> unidadMedida,
+      Value<bool> manejaVariante,
+      Value<bool> manejaSerie,
+      Value<int?> costoReferencia,
+      Value<int> rowid,
+    });
+
+final class $$ArticuloTableReferences
+    extends BaseReferences<_$AppDatabase, $ArticuloTable, ArticuloData> {
+  $$ArticuloTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CategoriaArticuloTable _categoriaIdTable(_$AppDatabase db) =>
+      db.categoriaArticulo.createAlias(
+        $_aliasNameGenerator(db.articulo.categoriaId, db.categoriaArticulo.id),
+      );
+
+  $$CategoriaArticuloTableProcessedTableManager get categoriaId {
+    final $_column = $_itemColumn<String>('categoria_id')!;
+
+    final manager = $$CategoriaArticuloTableTableManager(
+      $_db,
+      $_db.categoriaArticulo,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_categoriaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ArticuloVarianteTable, List<ArticuloVarianteData>>
+  _articuloVarianteRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.articuloVariante,
+    aliasName: $_aliasNameGenerator(
+      db.articulo.id,
+      db.articuloVariante.articuloId,
+    ),
+  );
+
+  $$ArticuloVarianteTableProcessedTableManager get articuloVarianteRefs {
+    final manager = $$ArticuloVarianteTableTableManager(
+      $_db,
+      $_db.articuloVariante,
+    ).filter((f) => f.articuloId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _articuloVarianteRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ArticuloUnidadTable, List<ArticuloUnidadData>>
+  _articuloUnidadRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.articuloUnidad,
+    aliasName: $_aliasNameGenerator(
+      db.articulo.id,
+      db.articuloUnidad.articuloId,
+    ),
+  );
+
+  $$ArticuloUnidadTableProcessedTableManager get articuloUnidadRefs {
+    final manager = $$ArticuloUnidadTableTableManager(
+      $_db,
+      $_db.articuloUnidad,
+    ).filter((f) => f.articuloId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_articuloUnidadRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $MovimientoInventarioTable,
+    List<MovimientoInventarioData>
+  >
+  _movimientoInventarioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.movimientoInventario,
+        aliasName: $_aliasNameGenerator(
+          db.articulo.id,
+          db.movimientoInventario.articuloId,
+        ),
+      );
+
+  $$MovimientoInventarioTableProcessedTableManager
+  get movimientoInventarioRefs {
+    final manager = $$MovimientoInventarioTableTableManager(
+      $_db,
+      $_db.movimientoInventario,
+    ).filter((f) => f.articuloId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _movimientoInventarioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ArticuloTableFilterComposer
+    extends Composer<_$AppDatabase, $ArticuloTable> {
+  $$ArticuloTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folio => $composableBuilder(
+    column: $table.folio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get unidadMedida => $composableBuilder(
+    column: $table.unidadMedida,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get manejaVariante => $composableBuilder(
+    column: $table.manejaVariante,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get manejaSerie => $composableBuilder(
+    column: $table.manejaSerie,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get costoReferencia => $composableBuilder(
+    column: $table.costoReferencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CategoriaArticuloTableFilterComposer get categoriaId {
+    final $$CategoriaArticuloTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoriaId,
+      referencedTable: $db.categoriaArticulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CategoriaArticuloTableFilterComposer(
+            $db: $db,
+            $table: $db.categoriaArticulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> articuloVarianteRefs(
+    Expression<bool> Function($$ArticuloVarianteTableFilterComposer f) f,
+  ) {
+    final $$ArticuloVarianteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.articuloId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableFilterComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> articuloUnidadRefs(
+    Expression<bool> Function($$ArticuloUnidadTableFilterComposer f) f,
+  ) {
+    final $$ArticuloUnidadTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.articuloId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableFilterComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> movimientoInventarioRefs(
+    Expression<bool> Function($$MovimientoInventarioTableFilterComposer f) f,
+  ) {
+    final $$MovimientoInventarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.movimientoInventario,
+      getReferencedColumn: (t) => t.articuloId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovimientoInventarioTableFilterComposer(
+            $db: $db,
+            $table: $db.movimientoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ArticuloTableOrderingComposer
+    extends Composer<_$AppDatabase, $ArticuloTable> {
+  $$ArticuloTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folio => $composableBuilder(
+    column: $table.folio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get unidadMedida => $composableBuilder(
+    column: $table.unidadMedida,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get manejaVariante => $composableBuilder(
+    column: $table.manejaVariante,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get manejaSerie => $composableBuilder(
+    column: $table.manejaSerie,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get costoReferencia => $composableBuilder(
+    column: $table.costoReferencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CategoriaArticuloTableOrderingComposer get categoriaId {
+    final $$CategoriaArticuloTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoriaId,
+      referencedTable: $db.categoriaArticulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CategoriaArticuloTableOrderingComposer(
+            $db: $db,
+            $table: $db.categoriaArticulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ArticuloTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ArticuloTable> {
+  $$ArticuloTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folio =>
+      $composableBuilder(column: $table.folio, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get unidadMedida => $composableBuilder(
+    column: $table.unidadMedida,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get manejaVariante => $composableBuilder(
+    column: $table.manejaVariante,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get manejaSerie => $composableBuilder(
+    column: $table.manejaSerie,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get costoReferencia => $composableBuilder(
+    column: $table.costoReferencia,
+    builder: (column) => column,
+  );
+
+  $$CategoriaArticuloTableAnnotationComposer get categoriaId {
+    final $$CategoriaArticuloTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.categoriaId,
+          referencedTable: $db.categoriaArticulo,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CategoriaArticuloTableAnnotationComposer(
+                $db: $db,
+                $table: $db.categoriaArticulo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  Expression<T> articuloVarianteRefs<T extends Object>(
+    Expression<T> Function($$ArticuloVarianteTableAnnotationComposer a) f,
+  ) {
+    final $$ArticuloVarianteTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.articuloId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> articuloUnidadRefs<T extends Object>(
+    Expression<T> Function($$ArticuloUnidadTableAnnotationComposer a) f,
+  ) {
+    final $$ArticuloUnidadTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.articuloId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> movimientoInventarioRefs<T extends Object>(
+    Expression<T> Function($$MovimientoInventarioTableAnnotationComposer a) f,
+  ) {
+    final $$MovimientoInventarioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.movimientoInventario,
+          getReferencedColumn: (t) => t.articuloId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.movimientoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ArticuloTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ArticuloTable,
+          ArticuloData,
+          $$ArticuloTableFilterComposer,
+          $$ArticuloTableOrderingComposer,
+          $$ArticuloTableAnnotationComposer,
+          $$ArticuloTableCreateCompanionBuilder,
+          $$ArticuloTableUpdateCompanionBuilder,
+          (ArticuloData, $$ArticuloTableReferences),
+          ArticuloData,
+          PrefetchHooks Function({
+            bool categoriaId,
+            bool articuloVarianteRefs,
+            bool articuloUnidadRefs,
+            bool movimientoInventarioRefs,
+          })
+        > {
+  $$ArticuloTableTableManager(_$AppDatabase db, $ArticuloTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ArticuloTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$ArticuloTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$ArticuloTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> folio = const Value.absent(),
+                Value<String> categoriaId = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<String?> descripcion = const Value.absent(),
+                Value<String?> unidadMedida = const Value.absent(),
+                Value<bool> manejaVariante = const Value.absent(),
+                Value<bool> manejaSerie = const Value.absent(),
+                Value<int?> costoReferencia = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArticuloCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folio: folio,
+                categoriaId: categoriaId,
+                nombre: nombre,
+                descripcion: descripcion,
+                unidadMedida: unidadMedida,
+                manejaVariante: manejaVariante,
+                manejaSerie: manejaSerie,
+                costoReferencia: costoReferencia,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String folio,
+                required String categoriaId,
+                required String nombre,
+                Value<String?> descripcion = const Value.absent(),
+                Value<String?> unidadMedida = const Value.absent(),
+                Value<bool> manejaVariante = const Value.absent(),
+                Value<bool> manejaSerie = const Value.absent(),
+                Value<int?> costoReferencia = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArticuloCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folio: folio,
+                categoriaId: categoriaId,
+                nombre: nombre,
+                descripcion: descripcion,
+                unidadMedida: unidadMedida,
+                manejaVariante: manejaVariante,
+                manejaSerie: manejaSerie,
+                costoReferencia: costoReferencia,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ArticuloTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            categoriaId = false,
+            articuloVarianteRefs = false,
+            articuloUnidadRefs = false,
+            movimientoInventarioRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (articuloVarianteRefs) db.articuloVariante,
+                if (articuloUnidadRefs) db.articuloUnidad,
+                if (movimientoInventarioRefs) db.movimientoInventario,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (categoriaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.categoriaId,
+                            referencedTable: $$ArticuloTableReferences
+                                ._categoriaIdTable(db),
+                            referencedColumn:
+                                $$ArticuloTableReferences
+                                    ._categoriaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (articuloVarianteRefs)
+                    await $_getPrefetchedData<
+                      ArticuloData,
+                      $ArticuloTable,
+                      ArticuloVarianteData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloTableReferences
+                          ._articuloVarianteRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).articuloVarianteRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.articuloId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (articuloUnidadRefs)
+                    await $_getPrefetchedData<
+                      ArticuloData,
+                      $ArticuloTable,
+                      ArticuloUnidadData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloTableReferences
+                          ._articuloUnidadRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).articuloUnidadRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.articuloId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (movimientoInventarioRefs)
+                    await $_getPrefetchedData<
+                      ArticuloData,
+                      $ArticuloTable,
+                      MovimientoInventarioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloTableReferences
+                          ._movimientoInventarioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).movimientoInventarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.articuloId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ArticuloTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ArticuloTable,
+      ArticuloData,
+      $$ArticuloTableFilterComposer,
+      $$ArticuloTableOrderingComposer,
+      $$ArticuloTableAnnotationComposer,
+      $$ArticuloTableCreateCompanionBuilder,
+      $$ArticuloTableUpdateCompanionBuilder,
+      (ArticuloData, $$ArticuloTableReferences),
+      ArticuloData,
+      PrefetchHooks Function({
+        bool categoriaId,
+        bool articuloVarianteRefs,
+        bool articuloUnidadRefs,
+        bool movimientoInventarioRefs,
+      })
+    >;
+typedef $$ArticuloVarianteTableCreateCompanionBuilder =
+    ArticuloVarianteCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String articuloId,
+      required String valor,
+      Value<int> rowid,
+    });
+typedef $$ArticuloVarianteTableUpdateCompanionBuilder =
+    ArticuloVarianteCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> articuloId,
+      Value<String> valor,
+      Value<int> rowid,
+    });
+
+final class $$ArticuloVarianteTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ArticuloVarianteTable,
+          ArticuloVarianteData
+        > {
+  $$ArticuloVarianteTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ArticuloTable _articuloIdTable(_$AppDatabase db) =>
+      db.articulo.createAlias(
+        $_aliasNameGenerator(db.articuloVariante.articuloId, db.articulo.id),
+      );
+
+  $$ArticuloTableProcessedTableManager get articuloId {
+    final $_column = $_itemColumn<String>('articulo_id')!;
+
+    final manager = $$ArticuloTableTableManager(
+      $_db,
+      $_db.articulo,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_articuloIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $MovimientoInventarioTable,
+    List<MovimientoInventarioData>
+  >
+  _movimientoInventarioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.movimientoInventario,
+        aliasName: $_aliasNameGenerator(
+          db.articuloVariante.id,
+          db.movimientoInventario.varianteId,
+        ),
+      );
+
+  $$MovimientoInventarioTableProcessedTableManager
+  get movimientoInventarioRefs {
+    final manager = $$MovimientoInventarioTableTableManager(
+      $_db,
+      $_db.movimientoInventario,
+    ).filter((f) => f.varianteId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _movimientoInventarioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ArticuloVarianteTableFilterComposer
+    extends Composer<_$AppDatabase, $ArticuloVarianteTable> {
+  $$ArticuloVarianteTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get valor => $composableBuilder(
+    column: $table.valor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ArticuloTableFilterComposer get articuloId {
+    final $$ArticuloTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableFilterComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> movimientoInventarioRefs(
+    Expression<bool> Function($$MovimientoInventarioTableFilterComposer f) f,
+  ) {
+    final $$MovimientoInventarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.movimientoInventario,
+      getReferencedColumn: (t) => t.varianteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovimientoInventarioTableFilterComposer(
+            $db: $db,
+            $table: $db.movimientoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ArticuloVarianteTableOrderingComposer
+    extends Composer<_$AppDatabase, $ArticuloVarianteTable> {
+  $$ArticuloVarianteTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get valor => $composableBuilder(
+    column: $table.valor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ArticuloTableOrderingComposer get articuloId {
+    final $$ArticuloTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableOrderingComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ArticuloVarianteTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ArticuloVarianteTable> {
+  $$ArticuloVarianteTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get valor =>
+      $composableBuilder(column: $table.valor, builder: (column) => column);
+
+  $$ArticuloTableAnnotationComposer get articuloId {
+    final $$ArticuloTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> movimientoInventarioRefs<T extends Object>(
+    Expression<T> Function($$MovimientoInventarioTableAnnotationComposer a) f,
+  ) {
+    final $$MovimientoInventarioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.movimientoInventario,
+          getReferencedColumn: (t) => t.varianteId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.movimientoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ArticuloVarianteTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ArticuloVarianteTable,
+          ArticuloVarianteData,
+          $$ArticuloVarianteTableFilterComposer,
+          $$ArticuloVarianteTableOrderingComposer,
+          $$ArticuloVarianteTableAnnotationComposer,
+          $$ArticuloVarianteTableCreateCompanionBuilder,
+          $$ArticuloVarianteTableUpdateCompanionBuilder,
+          (ArticuloVarianteData, $$ArticuloVarianteTableReferences),
+          ArticuloVarianteData,
+          PrefetchHooks Function({
+            bool articuloId,
+            bool movimientoInventarioRefs,
+          })
+        > {
+  $$ArticuloVarianteTableTableManager(
+    _$AppDatabase db,
+    $ArticuloVarianteTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () =>
+                  $$ArticuloVarianteTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$ArticuloVarianteTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$ArticuloVarianteTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> articuloId = const Value.absent(),
+                Value<String> valor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArticuloVarianteCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                articuloId: articuloId,
+                valor: valor,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String articuloId,
+                required String valor,
+                Value<int> rowid = const Value.absent(),
+              }) => ArticuloVarianteCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                articuloId: articuloId,
+                valor: valor,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ArticuloVarianteTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            articuloId = false,
+            movimientoInventarioRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (movimientoInventarioRefs) db.movimientoInventario,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (articuloId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.articuloId,
+                            referencedTable: $$ArticuloVarianteTableReferences
+                                ._articuloIdTable(db),
+                            referencedColumn:
+                                $$ArticuloVarianteTableReferences
+                                    ._articuloIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (movimientoInventarioRefs)
+                    await $_getPrefetchedData<
+                      ArticuloVarianteData,
+                      $ArticuloVarianteTable,
+                      MovimientoInventarioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloVarianteTableReferences
+                          ._movimientoInventarioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloVarianteTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).movimientoInventarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.varianteId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ArticuloVarianteTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ArticuloVarianteTable,
+      ArticuloVarianteData,
+      $$ArticuloVarianteTableFilterComposer,
+      $$ArticuloVarianteTableOrderingComposer,
+      $$ArticuloVarianteTableAnnotationComposer,
+      $$ArticuloVarianteTableCreateCompanionBuilder,
+      $$ArticuloVarianteTableUpdateCompanionBuilder,
+      (ArticuloVarianteData, $$ArticuloVarianteTableReferences),
+      ArticuloVarianteData,
+      PrefetchHooks Function({bool articuloId, bool movimientoInventarioRefs})
+    >;
+typedef $$ArticuloUnidadTableCreateCompanionBuilder =
+    ArticuloUnidadCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String codigo,
+      required String articuloId,
+      required String numeroSerie,
+      Value<String?> marca,
+      Value<String?> modelo,
+      Value<String> estatus,
+      Value<int> rowid,
+    });
+typedef $$ArticuloUnidadTableUpdateCompanionBuilder =
+    ArticuloUnidadCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> codigo,
+      Value<String> articuloId,
+      Value<String> numeroSerie,
+      Value<String?> marca,
+      Value<String?> modelo,
+      Value<String> estatus,
+      Value<int> rowid,
+    });
+
+final class $$ArticuloUnidadTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ArticuloUnidadTable,
+          ArticuloUnidadData
+        > {
+  $$ArticuloUnidadTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ArticuloTable _articuloIdTable(_$AppDatabase db) =>
+      db.articulo.createAlias(
+        $_aliasNameGenerator(db.articuloUnidad.articuloId, db.articulo.id),
+      );
+
+  $$ArticuloTableProcessedTableManager get articuloId {
+    final $_column = $_itemColumn<String>('articulo_id')!;
+
+    final manager = $$ArticuloTableTableManager(
+      $_db,
+      $_db.articulo,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_articuloIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ArticuloUnidadTelefonoTable,
+    List<ArticuloUnidadTelefonoData>
+  >
+  _articuloUnidadTelefonoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.articuloUnidadTelefono,
+        aliasName: $_aliasNameGenerator(
+          db.articuloUnidad.id,
+          db.articuloUnidadTelefono.unidadId,
+        ),
+      );
+
+  $$ArticuloUnidadTelefonoTableProcessedTableManager
+  get articuloUnidadTelefonoRefs {
+    final manager = $$ArticuloUnidadTelefonoTableTableManager(
+      $_db,
+      $_db.articuloUnidadTelefono,
+    ).filter((f) => f.unidadId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _articuloUnidadTelefonoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $MovimientoInventarioTable,
+    List<MovimientoInventarioData>
+  >
+  _movimientoInventarioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.movimientoInventario,
+        aliasName: $_aliasNameGenerator(
+          db.articuloUnidad.id,
+          db.movimientoInventario.unidadId,
+        ),
+      );
+
+  $$MovimientoInventarioTableProcessedTableManager
+  get movimientoInventarioRefs {
+    final manager = $$MovimientoInventarioTableTableManager(
+      $_db,
+      $_db.movimientoInventario,
+    ).filter((f) => f.unidadId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _movimientoInventarioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ArticuloUnidadTableFilterComposer
+    extends Composer<_$AppDatabase, $ArticuloUnidadTable> {
+  $$ArticuloUnidadTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get numeroSerie => $composableBuilder(
+    column: $table.numeroSerie,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get marca => $composableBuilder(
+    column: $table.marca,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelo => $composableBuilder(
+    column: $table.modelo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ArticuloTableFilterComposer get articuloId {
+    final $$ArticuloTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableFilterComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> articuloUnidadTelefonoRefs(
+    Expression<bool> Function($$ArticuloUnidadTelefonoTableFilterComposer f) f,
+  ) {
+    final $$ArticuloUnidadTelefonoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.articuloUnidadTelefono,
+          getReferencedColumn: (t) => t.unidadId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ArticuloUnidadTelefonoTableFilterComposer(
+                $db: $db,
+                $table: $db.articuloUnidadTelefono,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> movimientoInventarioRefs(
+    Expression<bool> Function($$MovimientoInventarioTableFilterComposer f) f,
+  ) {
+    final $$MovimientoInventarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.movimientoInventario,
+      getReferencedColumn: (t) => t.unidadId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovimientoInventarioTableFilterComposer(
+            $db: $db,
+            $table: $db.movimientoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ArticuloUnidadTableOrderingComposer
+    extends Composer<_$AppDatabase, $ArticuloUnidadTable> {
+  $$ArticuloUnidadTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get numeroSerie => $composableBuilder(
+    column: $table.numeroSerie,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get marca => $composableBuilder(
+    column: $table.marca,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelo => $composableBuilder(
+    column: $table.modelo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ArticuloTableOrderingComposer get articuloId {
+    final $$ArticuloTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableOrderingComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ArticuloUnidadTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ArticuloUnidadTable> {
+  $$ArticuloUnidadTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  GeneratedColumn<String> get numeroSerie => $composableBuilder(
+    column: $table.numeroSerie,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get marca =>
+      $composableBuilder(column: $table.marca, builder: (column) => column);
+
+  GeneratedColumn<String> get modelo =>
+      $composableBuilder(column: $table.modelo, builder: (column) => column);
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  $$ArticuloTableAnnotationComposer get articuloId {
+    final $$ArticuloTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> articuloUnidadTelefonoRefs<T extends Object>(
+    Expression<T> Function($$ArticuloUnidadTelefonoTableAnnotationComposer a) f,
+  ) {
+    final $$ArticuloUnidadTelefonoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.articuloUnidadTelefono,
+          getReferencedColumn: (t) => t.unidadId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ArticuloUnidadTelefonoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.articuloUnidadTelefono,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> movimientoInventarioRefs<T extends Object>(
+    Expression<T> Function($$MovimientoInventarioTableAnnotationComposer a) f,
+  ) {
+    final $$MovimientoInventarioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.movimientoInventario,
+          getReferencedColumn: (t) => t.unidadId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.movimientoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ArticuloUnidadTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ArticuloUnidadTable,
+          ArticuloUnidadData,
+          $$ArticuloUnidadTableFilterComposer,
+          $$ArticuloUnidadTableOrderingComposer,
+          $$ArticuloUnidadTableAnnotationComposer,
+          $$ArticuloUnidadTableCreateCompanionBuilder,
+          $$ArticuloUnidadTableUpdateCompanionBuilder,
+          (ArticuloUnidadData, $$ArticuloUnidadTableReferences),
+          ArticuloUnidadData,
+          PrefetchHooks Function({
+            bool articuloId,
+            bool articuloUnidadTelefonoRefs,
+            bool movimientoInventarioRefs,
+          })
+        > {
+  $$ArticuloUnidadTableTableManager(
+    _$AppDatabase db,
+    $ArticuloUnidadTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ArticuloUnidadTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$ArticuloUnidadTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$ArticuloUnidadTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> codigo = const Value.absent(),
+                Value<String> articuloId = const Value.absent(),
+                Value<String> numeroSerie = const Value.absent(),
+                Value<String?> marca = const Value.absent(),
+                Value<String?> modelo = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArticuloUnidadCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                articuloId: articuloId,
+                numeroSerie: numeroSerie,
+                marca: marca,
+                modelo: modelo,
+                estatus: estatus,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String codigo,
+                required String articuloId,
+                required String numeroSerie,
+                Value<String?> marca = const Value.absent(),
+                Value<String?> modelo = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArticuloUnidadCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                articuloId: articuloId,
+                numeroSerie: numeroSerie,
+                marca: marca,
+                modelo: modelo,
+                estatus: estatus,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ArticuloUnidadTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            articuloId = false,
+            articuloUnidadTelefonoRefs = false,
+            movimientoInventarioRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (articuloUnidadTelefonoRefs) db.articuloUnidadTelefono,
+                if (movimientoInventarioRefs) db.movimientoInventario,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (articuloId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.articuloId,
+                            referencedTable: $$ArticuloUnidadTableReferences
+                                ._articuloIdTable(db),
+                            referencedColumn:
+                                $$ArticuloUnidadTableReferences
+                                    ._articuloIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (articuloUnidadTelefonoRefs)
+                    await $_getPrefetchedData<
+                      ArticuloUnidadData,
+                      $ArticuloUnidadTable,
+                      ArticuloUnidadTelefonoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloUnidadTableReferences
+                          ._articuloUnidadTelefonoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloUnidadTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).articuloUnidadTelefonoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.unidadId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (movimientoInventarioRefs)
+                    await $_getPrefetchedData<
+                      ArticuloUnidadData,
+                      $ArticuloUnidadTable,
+                      MovimientoInventarioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloUnidadTableReferences
+                          ._movimientoInventarioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloUnidadTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).movimientoInventarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.unidadId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ArticuloUnidadTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ArticuloUnidadTable,
+      ArticuloUnidadData,
+      $$ArticuloUnidadTableFilterComposer,
+      $$ArticuloUnidadTableOrderingComposer,
+      $$ArticuloUnidadTableAnnotationComposer,
+      $$ArticuloUnidadTableCreateCompanionBuilder,
+      $$ArticuloUnidadTableUpdateCompanionBuilder,
+      (ArticuloUnidadData, $$ArticuloUnidadTableReferences),
+      ArticuloUnidadData,
+      PrefetchHooks Function({
+        bool articuloId,
+        bool articuloUnidadTelefonoRefs,
+        bool movimientoInventarioRefs,
+      })
+    >;
+typedef $$ArticuloUnidadTelefonoTableCreateCompanionBuilder =
+    ArticuloUnidadTelefonoCompanion Function({
+      required String unidadId,
+      Value<String?> imei,
+      Value<String?> numeroTelefonico,
+      Value<int> rowid,
+    });
+typedef $$ArticuloUnidadTelefonoTableUpdateCompanionBuilder =
+    ArticuloUnidadTelefonoCompanion Function({
+      Value<String> unidadId,
+      Value<String?> imei,
+      Value<String?> numeroTelefonico,
+      Value<int> rowid,
+    });
+
+final class $$ArticuloUnidadTelefonoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ArticuloUnidadTelefonoTable,
+          ArticuloUnidadTelefonoData
+        > {
+  $$ArticuloUnidadTelefonoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ArticuloUnidadTable _unidadIdTable(_$AppDatabase db) =>
+      db.articuloUnidad.createAlias(
+        $_aliasNameGenerator(
+          db.articuloUnidadTelefono.unidadId,
+          db.articuloUnidad.id,
+        ),
+      );
+
+  $$ArticuloUnidadTableProcessedTableManager get unidadId {
+    final $_column = $_itemColumn<String>('unidad_id')!;
+
+    final manager = $$ArticuloUnidadTableTableManager(
+      $_db,
+      $_db.articuloUnidad,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_unidadIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ArticuloUnidadTelefonoTableFilterComposer
+    extends Composer<_$AppDatabase, $ArticuloUnidadTelefonoTable> {
+  $$ArticuloUnidadTelefonoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get imei => $composableBuilder(
+    column: $table.imei,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get numeroTelefonico => $composableBuilder(
+    column: $table.numeroTelefonico,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ArticuloUnidadTableFilterComposer get unidadId {
+    final $$ArticuloUnidadTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableFilterComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ArticuloUnidadTelefonoTableOrderingComposer
+    extends Composer<_$AppDatabase, $ArticuloUnidadTelefonoTable> {
+  $$ArticuloUnidadTelefonoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get imei => $composableBuilder(
+    column: $table.imei,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get numeroTelefonico => $composableBuilder(
+    column: $table.numeroTelefonico,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ArticuloUnidadTableOrderingComposer get unidadId {
+    final $$ArticuloUnidadTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableOrderingComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ArticuloUnidadTelefonoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ArticuloUnidadTelefonoTable> {
+  $$ArticuloUnidadTelefonoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get imei =>
+      $composableBuilder(column: $table.imei, builder: (column) => column);
+
+  GeneratedColumn<String> get numeroTelefonico => $composableBuilder(
+    column: $table.numeroTelefonico,
+    builder: (column) => column,
+  );
+
+  $$ArticuloUnidadTableAnnotationComposer get unidadId {
+    final $$ArticuloUnidadTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ArticuloUnidadTelefonoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ArticuloUnidadTelefonoTable,
+          ArticuloUnidadTelefonoData,
+          $$ArticuloUnidadTelefonoTableFilterComposer,
+          $$ArticuloUnidadTelefonoTableOrderingComposer,
+          $$ArticuloUnidadTelefonoTableAnnotationComposer,
+          $$ArticuloUnidadTelefonoTableCreateCompanionBuilder,
+          $$ArticuloUnidadTelefonoTableUpdateCompanionBuilder,
+          (ArticuloUnidadTelefonoData, $$ArticuloUnidadTelefonoTableReferences),
+          ArticuloUnidadTelefonoData,
+          PrefetchHooks Function({bool unidadId})
+        > {
+  $$ArticuloUnidadTelefonoTableTableManager(
+    _$AppDatabase db,
+    $ArticuloUnidadTelefonoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ArticuloUnidadTelefonoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$ArticuloUnidadTelefonoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$ArticuloUnidadTelefonoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> unidadId = const Value.absent(),
+                Value<String?> imei = const Value.absent(),
+                Value<String?> numeroTelefonico = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArticuloUnidadTelefonoCompanion(
+                unidadId: unidadId,
+                imei: imei,
+                numeroTelefonico: numeroTelefonico,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String unidadId,
+                Value<String?> imei = const Value.absent(),
+                Value<String?> numeroTelefonico = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArticuloUnidadTelefonoCompanion.insert(
+                unidadId: unidadId,
+                imei: imei,
+                numeroTelefonico: numeroTelefonico,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ArticuloUnidadTelefonoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({unidadId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (unidadId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.unidadId,
+                            referencedTable:
+                                $$ArticuloUnidadTelefonoTableReferences
+                                    ._unidadIdTable(db),
+                            referencedColumn:
+                                $$ArticuloUnidadTelefonoTableReferences
+                                    ._unidadIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ArticuloUnidadTelefonoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ArticuloUnidadTelefonoTable,
+      ArticuloUnidadTelefonoData,
+      $$ArticuloUnidadTelefonoTableFilterComposer,
+      $$ArticuloUnidadTelefonoTableOrderingComposer,
+      $$ArticuloUnidadTelefonoTableAnnotationComposer,
+      $$ArticuloUnidadTelefonoTableCreateCompanionBuilder,
+      $$ArticuloUnidadTelefonoTableUpdateCompanionBuilder,
+      (ArticuloUnidadTelefonoData, $$ArticuloUnidadTelefonoTableReferences),
+      ArticuloUnidadTelefonoData,
+      PrefetchHooks Function({bool unidadId})
+    >;
+typedef $$MovimientoInventarioTableCreateCompanionBuilder =
+    MovimientoInventarioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String articuloId,
+      Value<String?> varianteId,
+      Value<String?> unidadId,
+      required int cantidad,
+      required String tipoMovimiento,
+      required DateTime fecha,
+      Value<int?> costoUnitario,
+      Value<String?> observaciones,
+      Value<String?> actor,
+      Value<int> rowid,
+    });
+typedef $$MovimientoInventarioTableUpdateCompanionBuilder =
+    MovimientoInventarioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> articuloId,
+      Value<String?> varianteId,
+      Value<String?> unidadId,
+      Value<int> cantidad,
+      Value<String> tipoMovimiento,
+      Value<DateTime> fecha,
+      Value<int?> costoUnitario,
+      Value<String?> observaciones,
+      Value<String?> actor,
+      Value<int> rowid,
+    });
+
+final class $$MovimientoInventarioTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $MovimientoInventarioTable,
+          MovimientoInventarioData
+        > {
+  $$MovimientoInventarioTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ArticuloTable _articuloIdTable(_$AppDatabase db) =>
+      db.articulo.createAlias(
+        $_aliasNameGenerator(
+          db.movimientoInventario.articuloId,
+          db.articulo.id,
+        ),
+      );
+
+  $$ArticuloTableProcessedTableManager get articuloId {
+    final $_column = $_itemColumn<String>('articulo_id')!;
+
+    final manager = $$ArticuloTableTableManager(
+      $_db,
+      $_db.articulo,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_articuloIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ArticuloVarianteTable _varianteIdTable(_$AppDatabase db) =>
+      db.articuloVariante.createAlias(
+        $_aliasNameGenerator(
+          db.movimientoInventario.varianteId,
+          db.articuloVariante.id,
+        ),
+      );
+
+  $$ArticuloVarianteTableProcessedTableManager? get varianteId {
+    final $_column = $_itemColumn<String>('variante_id');
+    if ($_column == null) return null;
+    final manager = $$ArticuloVarianteTableTableManager(
+      $_db,
+      $_db.articuloVariante,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_varianteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ArticuloUnidadTable _unidadIdTable(_$AppDatabase db) =>
+      db.articuloUnidad.createAlias(
+        $_aliasNameGenerator(
+          db.movimientoInventario.unidadId,
+          db.articuloUnidad.id,
+        ),
+      );
+
+  $$ArticuloUnidadTableProcessedTableManager? get unidadId {
+    final $_column = $_itemColumn<String>('unidad_id');
+    if ($_column == null) return null;
+    final manager = $$ArticuloUnidadTableTableManager(
+      $_db,
+      $_db.articuloUnidad,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_unidadIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $MovimientoInventarioAttachmentTable,
+    List<MovimientoInventarioAttachmentData>
+  >
+  _movimientoInventarioAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.movimientoInventarioAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.movimientoInventario.id,
+          db.movimientoInventarioAttachment.movimientoInventarioId,
+        ),
+      );
+
+  $$MovimientoInventarioAttachmentTableProcessedTableManager
+  get movimientoInventarioAttachmentRefs {
+    final manager = $$MovimientoInventarioAttachmentTableTableManager(
+      $_db,
+      $_db.movimientoInventarioAttachment,
+    ).filter(
+      (f) => f.movimientoInventarioId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _movimientoInventarioAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$MovimientoInventarioTableFilterComposer
+    extends Composer<_$AppDatabase, $MovimientoInventarioTable> {
+  $$MovimientoInventarioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoMovimiento => $composableBuilder(
+    column: $table.tipoMovimiento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get costoUnitario => $composableBuilder(
+    column: $table.costoUnitario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ArticuloTableFilterComposer get articuloId {
+    final $$ArticuloTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableFilterComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloVarianteTableFilterComposer get varianteId {
+    final $$ArticuloVarianteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.varianteId,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableFilterComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloUnidadTableFilterComposer get unidadId {
+    final $$ArticuloUnidadTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableFilterComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> movimientoInventarioAttachmentRefs(
+    Expression<bool> Function(
+      $$MovimientoInventarioAttachmentTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$MovimientoInventarioAttachmentTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.movimientoInventarioAttachment,
+          getReferencedColumn: (t) => t.movimientoInventarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioAttachmentTableFilterComposer(
+                $db: $db,
+                $table: $db.movimientoInventarioAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$MovimientoInventarioTableOrderingComposer
+    extends Composer<_$AppDatabase, $MovimientoInventarioTable> {
+  $$MovimientoInventarioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoMovimiento => $composableBuilder(
+    column: $table.tipoMovimiento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get costoUnitario => $composableBuilder(
+    column: $table.costoUnitario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ArticuloTableOrderingComposer get articuloId {
+    final $$ArticuloTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableOrderingComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloVarianteTableOrderingComposer get varianteId {
+    final $$ArticuloVarianteTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.varianteId,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableOrderingComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloUnidadTableOrderingComposer get unidadId {
+    final $$ArticuloUnidadTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableOrderingComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MovimientoInventarioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MovimientoInventarioTable> {
+  $$MovimientoInventarioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cantidad =>
+      $composableBuilder(column: $table.cantidad, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoMovimiento => $composableBuilder(
+    column: $table.tipoMovimiento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<int> get costoUnitario => $composableBuilder(
+    column: $table.costoUnitario,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  $$ArticuloTableAnnotationComposer get articuloId {
+    final $$ArticuloTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloVarianteTableAnnotationComposer get varianteId {
+    final $$ArticuloVarianteTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.varianteId,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloUnidadTableAnnotationComposer get unidadId {
+    final $$ArticuloUnidadTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> movimientoInventarioAttachmentRefs<T extends Object>(
+    Expression<T> Function(
+      $$MovimientoInventarioAttachmentTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$MovimientoInventarioAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.movimientoInventarioAttachment,
+          getReferencedColumn: (t) => t.movimientoInventarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.movimientoInventarioAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$MovimientoInventarioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MovimientoInventarioTable,
+          MovimientoInventarioData,
+          $$MovimientoInventarioTableFilterComposer,
+          $$MovimientoInventarioTableOrderingComposer,
+          $$MovimientoInventarioTableAnnotationComposer,
+          $$MovimientoInventarioTableCreateCompanionBuilder,
+          $$MovimientoInventarioTableUpdateCompanionBuilder,
+          (MovimientoInventarioData, $$MovimientoInventarioTableReferences),
+          MovimientoInventarioData,
+          PrefetchHooks Function({
+            bool articuloId,
+            bool varianteId,
+            bool unidadId,
+            bool movimientoInventarioAttachmentRefs,
+          })
+        > {
+  $$MovimientoInventarioTableTableManager(
+    _$AppDatabase db,
+    $MovimientoInventarioTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$MovimientoInventarioTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$MovimientoInventarioTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$MovimientoInventarioTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> articuloId = const Value.absent(),
+                Value<String?> varianteId = const Value.absent(),
+                Value<String?> unidadId = const Value.absent(),
+                Value<int> cantidad = const Value.absent(),
+                Value<String> tipoMovimiento = const Value.absent(),
+                Value<DateTime> fecha = const Value.absent(),
+                Value<int?> costoUnitario = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MovimientoInventarioCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                articuloId: articuloId,
+                varianteId: varianteId,
+                unidadId: unidadId,
+                cantidad: cantidad,
+                tipoMovimiento: tipoMovimiento,
+                fecha: fecha,
+                costoUnitario: costoUnitario,
+                observaciones: observaciones,
+                actor: actor,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String articuloId,
+                Value<String?> varianteId = const Value.absent(),
+                Value<String?> unidadId = const Value.absent(),
+                required int cantidad,
+                required String tipoMovimiento,
+                required DateTime fecha,
+                Value<int?> costoUnitario = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MovimientoInventarioCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                articuloId: articuloId,
+                varianteId: varianteId,
+                unidadId: unidadId,
+                cantidad: cantidad,
+                tipoMovimiento: tipoMovimiento,
+                fecha: fecha,
+                costoUnitario: costoUnitario,
+                observaciones: observaciones,
+                actor: actor,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$MovimientoInventarioTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            articuloId = false,
+            varianteId = false,
+            unidadId = false,
+            movimientoInventarioAttachmentRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (movimientoInventarioAttachmentRefs)
+                  db.movimientoInventarioAttachment,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (articuloId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.articuloId,
+                            referencedTable:
+                                $$MovimientoInventarioTableReferences
+                                    ._articuloIdTable(db),
+                            referencedColumn:
+                                $$MovimientoInventarioTableReferences
+                                    ._articuloIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (varianteId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.varianteId,
+                            referencedTable:
+                                $$MovimientoInventarioTableReferences
+                                    ._varianteIdTable(db),
+                            referencedColumn:
+                                $$MovimientoInventarioTableReferences
+                                    ._varianteIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (unidadId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.unidadId,
+                            referencedTable:
+                                $$MovimientoInventarioTableReferences
+                                    ._unidadIdTable(db),
+                            referencedColumn:
+                                $$MovimientoInventarioTableReferences
+                                    ._unidadIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (movimientoInventarioAttachmentRefs)
+                    await $_getPrefetchedData<
+                      MovimientoInventarioData,
+                      $MovimientoInventarioTable,
+                      MovimientoInventarioAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$MovimientoInventarioTableReferences
+                          ._movimientoInventarioAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$MovimientoInventarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).movimientoInventarioAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.movimientoInventarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MovimientoInventarioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MovimientoInventarioTable,
+      MovimientoInventarioData,
+      $$MovimientoInventarioTableFilterComposer,
+      $$MovimientoInventarioTableOrderingComposer,
+      $$MovimientoInventarioTableAnnotationComposer,
+      $$MovimientoInventarioTableCreateCompanionBuilder,
+      $$MovimientoInventarioTableUpdateCompanionBuilder,
+      (MovimientoInventarioData, $$MovimientoInventarioTableReferences),
+      MovimientoInventarioData,
+      PrefetchHooks Function({
+        bool articuloId,
+        bool varianteId,
+        bool unidadId,
+        bool movimientoInventarioAttachmentRefs,
+      })
+    >;
+typedef $$MovimientoInventarioAttachmentTableCreateCompanionBuilder =
+    MovimientoInventarioAttachmentCompanion Function({
+      required String attachmentId,
+      required String movimientoInventarioId,
+      Value<int> rowid,
+    });
+typedef $$MovimientoInventarioAttachmentTableUpdateCompanionBuilder =
+    MovimientoInventarioAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> movimientoInventarioId,
+      Value<int> rowid,
+    });
+
+final class $$MovimientoInventarioAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $MovimientoInventarioAttachmentTable,
+          MovimientoInventarioAttachmentData
+        > {
+  $$MovimientoInventarioAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.movimientoInventarioAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MovimientoInventarioTable _movimientoInventarioIdTable(
+    _$AppDatabase db,
+  ) => db.movimientoInventario.createAlias(
+    $_aliasNameGenerator(
+      db.movimientoInventarioAttachment.movimientoInventarioId,
+      db.movimientoInventario.id,
+    ),
+  );
+
+  $$MovimientoInventarioTableProcessedTableManager get movimientoInventarioId {
+    final $_column = $_itemColumn<String>('movimiento_inventario_id')!;
+
+    final manager = $$MovimientoInventarioTableTableManager(
+      $_db,
+      $_db.movimientoInventario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _movimientoInventarioIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$MovimientoInventarioAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $MovimientoInventarioAttachmentTable> {
+  $$MovimientoInventarioAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovimientoInventarioTableFilterComposer get movimientoInventarioId {
+    final $$MovimientoInventarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.movimientoInventarioId,
+      referencedTable: $db.movimientoInventario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovimientoInventarioTableFilterComposer(
+            $db: $db,
+            $table: $db.movimientoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MovimientoInventarioAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $MovimientoInventarioAttachmentTable> {
+  $$MovimientoInventarioAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovimientoInventarioTableOrderingComposer get movimientoInventarioId {
+    final $$MovimientoInventarioTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.movimientoInventarioId,
+          referencedTable: $db.movimientoInventario,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioTableOrderingComposer(
+                $db: $db,
+                $table: $db.movimientoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$MovimientoInventarioAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MovimientoInventarioAttachmentTable> {
+  $$MovimientoInventarioAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovimientoInventarioTableAnnotationComposer get movimientoInventarioId {
+    final $$MovimientoInventarioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.movimientoInventarioId,
+          referencedTable: $db.movimientoInventario,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.movimientoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$MovimientoInventarioAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MovimientoInventarioAttachmentTable,
+          MovimientoInventarioAttachmentData,
+          $$MovimientoInventarioAttachmentTableFilterComposer,
+          $$MovimientoInventarioAttachmentTableOrderingComposer,
+          $$MovimientoInventarioAttachmentTableAnnotationComposer,
+          $$MovimientoInventarioAttachmentTableCreateCompanionBuilder,
+          $$MovimientoInventarioAttachmentTableUpdateCompanionBuilder,
+          (
+            MovimientoInventarioAttachmentData,
+            $$MovimientoInventarioAttachmentTableReferences,
+          ),
+          MovimientoInventarioAttachmentData,
+          PrefetchHooks Function({
+            bool attachmentId,
+            bool movimientoInventarioId,
+          })
+        > {
+  $$MovimientoInventarioAttachmentTableTableManager(
+    _$AppDatabase db,
+    $MovimientoInventarioAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$MovimientoInventarioAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$MovimientoInventarioAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$MovimientoInventarioAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> movimientoInventarioId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MovimientoInventarioAttachmentCompanion(
+                attachmentId: attachmentId,
+                movimientoInventarioId: movimientoInventarioId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String movimientoInventarioId,
+                Value<int> rowid = const Value.absent(),
+              }) => MovimientoInventarioAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                movimientoInventarioId: movimientoInventarioId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$MovimientoInventarioAttachmentTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            attachmentId = false,
+            movimientoInventarioId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable:
+                                $$MovimientoInventarioAttachmentTableReferences
+                                    ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$MovimientoInventarioAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (movimientoInventarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.movimientoInventarioId,
+                            referencedTable:
+                                $$MovimientoInventarioAttachmentTableReferences
+                                    ._movimientoInventarioIdTable(db),
+                            referencedColumn:
+                                $$MovimientoInventarioAttachmentTableReferences
+                                    ._movimientoInventarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MovimientoInventarioAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MovimientoInventarioAttachmentTable,
+      MovimientoInventarioAttachmentData,
+      $$MovimientoInventarioAttachmentTableFilterComposer,
+      $$MovimientoInventarioAttachmentTableOrderingComposer,
+      $$MovimientoInventarioAttachmentTableAnnotationComposer,
+      $$MovimientoInventarioAttachmentTableCreateCompanionBuilder,
+      $$MovimientoInventarioAttachmentTableUpdateCompanionBuilder,
+      (
+        MovimientoInventarioAttachmentData,
+        $$MovimientoInventarioAttachmentTableReferences,
+      ),
+      MovimientoInventarioAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool movimientoInventarioId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -91357,4 +98811,25 @@ class $AppDatabaseManager {
       $$PagoNominaEventoTableTableManager(_db, _db.pagoNominaEvento);
   $$PagoNominaAttachmentTableTableManager get pagoNominaAttachment =>
       $$PagoNominaAttachmentTableTableManager(_db, _db.pagoNominaAttachment);
+  $$CategoriaArticuloTableTableManager get categoriaArticulo =>
+      $$CategoriaArticuloTableTableManager(_db, _db.categoriaArticulo);
+  $$ArticuloTableTableManager get articulo =>
+      $$ArticuloTableTableManager(_db, _db.articulo);
+  $$ArticuloVarianteTableTableManager get articuloVariante =>
+      $$ArticuloVarianteTableTableManager(_db, _db.articuloVariante);
+  $$ArticuloUnidadTableTableManager get articuloUnidad =>
+      $$ArticuloUnidadTableTableManager(_db, _db.articuloUnidad);
+  $$ArticuloUnidadTelefonoTableTableManager get articuloUnidadTelefono =>
+      $$ArticuloUnidadTelefonoTableTableManager(
+        _db,
+        _db.articuloUnidadTelefono,
+      );
+  $$MovimientoInventarioTableTableManager get movimientoInventario =>
+      $$MovimientoInventarioTableTableManager(_db, _db.movimientoInventario);
+  $$MovimientoInventarioAttachmentTableTableManager
+  get movimientoInventarioAttachment =>
+      $$MovimientoInventarioAttachmentTableTableManager(
+        _db,
+        _db.movimientoInventarioAttachment,
+      );
 }

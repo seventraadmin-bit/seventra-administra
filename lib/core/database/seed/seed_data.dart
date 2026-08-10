@@ -41,6 +41,8 @@ Future<void> _seedCodigoSecuencia(AppDatabase db) async {
     ('ficha_tecnica', 'FICHA', 6),
     ('nomina', 'NOM', 6),
     ('pago_nomina', 'PAGN', 6),
+    ('articulo', 'ART', 6),
+    ('articulo_unidad', 'UNI', 6),
   ];
 
   for (final (entityType, prefijo, digitos) in config) {

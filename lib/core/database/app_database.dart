@@ -44,6 +44,13 @@ import '../../features/nomina/data/tables/nomina_evento_table.dart';
 import '../../features/nomina/data/tables/nomina_table.dart';
 import '../../features/nomina/data/tables/pago_nomina_attachment_table.dart';
 import '../../features/nomina/data/tables/pago_nomina_table.dart';
+import '../../features/inventario/data/tables/articulo_table.dart';
+import '../../features/inventario/data/tables/articulo_unidad_table.dart';
+import '../../features/inventario/data/tables/articulo_unidad_telefono_table.dart';
+import '../../features/inventario/data/tables/articulo_variante_table.dart';
+import '../../features/inventario/data/tables/categoria_articulo_table.dart';
+import '../../features/inventario/data/tables/movimiento_inventario_attachment_table.dart';
+import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
 import 'migrations/migrar_asignacion_servicio_v21.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_empleado_v21.dart';
@@ -161,12 +168,19 @@ class AppMetadata extends Table {
   AplicacionPagoNomina,
   PagoNominaEvento,
   PagoNominaAttachment,
+  CategoriaArticulo,
+  Articulo,
+  ArticuloVariante,
+  ArticuloUnidad,
+  ArticuloUnidadTelefono,
+  MovimientoInventario,
+  MovimientoInventarioAttachment,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration {
@@ -598,6 +612,21 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(aplicacionPagoNomina);
           await m.createTable(pagoNominaEvento);
           await m.createTable(pagoNominaAttachment);
+        }
+        // Aditiva (Etapa 7A): catálogo y existencias de Inventario —
+        // ninguna tabla existió antes, `from <= 26` es seguro sin
+        // acotar un origen exacto. Los renglones nuevos de
+        // `CodigoSecuencia('articulo')`/`CodigoSecuencia('articulo_unidad')`
+        // se siembran vía `runSeed()` normal, arriba en este mismo
+        // `onUpgrade`.
+        if (to >= 27 && from <= 26) {
+          await m.createTable(categoriaArticulo);
+          await m.createTable(articulo);
+          await m.createTable(articuloVariante);
+          await m.createTable(articuloUnidad);
+          await m.createTable(articuloUnidadTelefono);
+          await m.createTable(movimientoInventario);
+          await m.createTable(movimientoInventarioAttachment);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

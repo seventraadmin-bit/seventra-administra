@@ -121,6 +121,20 @@ class AttachmentRepository {
     return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
+  /// Comprobantes activos de un `MovimientoInventario` (Etapa 7A).
+  Future<List<AttachmentData>> listarActivosPorMovimientoInventario(String movimientoInventarioId) {
+    final query = _db.select(_db.attachment).join([
+      innerJoin(
+        _db.movimientoInventarioAttachment,
+        _db.movimientoInventarioAttachment.attachmentId.equalsExp(_db.attachment.id),
+      ),
+    ])
+      ..where(_db.movimientoInventarioAttachment.movimientoInventarioId.equals(movimientoInventarioId) &
+          _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
+  }
+
   /// Documentos activos del expediente de un Empleado (Etapa 5A).
   Future<List<AttachmentData>> listarActivosPorEmpleado(String empleadoId) {
     final query = _db.select(_db.attachment).join([
