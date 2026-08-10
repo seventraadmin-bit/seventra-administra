@@ -6,18 +6,9 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/cerrar_asignacion_usecase.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/obtener_empleados_responsables_servicio_usecase.dart'
+    show EmpleadoOpcion;
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
-
-/// Par id/nombre mínimo para el picker de "empleado responsable" del
-/// descuento — el diálogo de Inventario no conoce el tipo real
-/// `EmpleadoData` (evita un import cruzado Inventario→Personal); el
-/// llamador (`EmpleadoExpedienteScreen`/`ServicioExpedienteScreen`) lo
-/// resuelve y pasa ya armado.
-class EmpleadoOpcion {
-  const EmpleadoOpcion({required this.id, required this.nombre});
-  final String id;
-  final String nombre;
-}
 
 String motivoCierreLabel(AppLocalizations l10n, MotivoCierreAsignacion motivo) {
   return switch (motivo) {

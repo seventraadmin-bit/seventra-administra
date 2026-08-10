@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/obtener_empleados_responsables_servicio_usecase.dart'
+    show EmpleadoOpcion;
 import 'package:riseg_one/features/inventario/domain/usecases/reemplazar_asignacion_usecase.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 
-import 'cerrar_asignacion_dialog.dart' show EmpleadoOpcion, motivoCierreLabel;
+import 'cerrar_asignacion_dialog.dart' show motivoCierreLabel;
 
 /// Diálogo "Reemplazar artículo" (Etapa 7B) — cierra la Asignación
 /// vigente y crea de inmediato la de reemplazo, siempre elegida del

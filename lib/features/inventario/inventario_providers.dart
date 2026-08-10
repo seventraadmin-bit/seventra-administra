@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../organizacion/organizacion_providers.dart';
+import '../personal/personal_providers.dart';
 import 'data/repositories/articulo_repository_impl.dart';
 import 'data/repositories/asignacion_repository_impl.dart';
 import 'data/repositories/categoria_articulo_repository_impl.dart';
@@ -21,6 +22,7 @@ import 'domain/usecases/crear_articulo_usecase.dart';
 import 'domain/usecases/crear_asignacion_usecase.dart';
 import 'domain/usecases/crear_categoria_articulo_usecase.dart';
 import 'domain/usecases/crear_variante_articulo_usecase.dart';
+import 'domain/usecases/obtener_empleados_responsables_servicio_usecase.dart';
 import 'domain/usecases/registrar_ajuste_usecase.dart';
 import 'domain/usecases/registrar_baja_unidad_usecase.dart';
 import 'domain/usecases/registrar_baja_usecase.dart';
@@ -130,4 +132,16 @@ final reemplazarAsignacionUseCaseProvider = Provider<ReemplazarAsignacionUseCase
 
 final cancelarDescuentoInventarioUseCaseProvider = Provider<CancelarDescuentoInventarioUseCase>((ref) {
   return CancelarDescuentoInventarioUseCase(ref.watch(asignacionRepositoryProvider));
+});
+
+/// Dependencia cruzada al dominio `personal` (lectura) — mismo patrón
+/// ya establecido por `organizacion_providers.dart` al componer
+/// `ObtenerExpedienteServicioUseCaseProvider`. La UI de Inventario
+/// nunca importa `personal_providers.dart` directamente: solo conoce
+/// este caso de uso.
+final obtenerEmpleadosResponsablesServicioUseCaseProvider = Provider<ObtenerEmpleadosResponsablesServicioUseCase>((ref) {
+  return ObtenerEmpleadosResponsablesServicioUseCase(
+    ref.watch(asignacionServicioRepositoryProvider),
+    ref.watch(empleadoRepositoryProvider),
+  );
 });

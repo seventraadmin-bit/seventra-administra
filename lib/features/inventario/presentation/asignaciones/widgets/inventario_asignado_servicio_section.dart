@@ -5,9 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/obtener_empleados_responsables_servicio_usecase.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
-import 'package:riseg_one/features/personal/personal_providers.dart';
-import 'package:riseg_one/features/personal/presentation/empleados/empleados_list_screen.dart' show empleadoNombreCompleto;
 
 import 'asignar_articulo_dialog.dart';
 import 'cerrar_asignacion_dialog.dart';
@@ -23,8 +22,12 @@ import 'reemplazar_asignacion_dialog.dart';
 ///
 /// Para "empleado responsable" del descuento (cuando se reporta daño/
 /// pérdida de un bien del Servicio), la lista de candidatos es el
-/// personal actualmente asignado a este Servicio (`AsignacionServicio`
-/// vigente) — el operador elige a quién atribuir, nunca se infiere.
+/// personal actualmente asignado a este Servicio — resuelta vía
+/// `ObtenerEmpleadosResponsablesServicioUseCase` (Inventario), nunca
+/// leyendo repositorios de Personal directamente desde esta UI
+/// (corrección de cierre de 7B: antes de este ajuste, este archivo
+/// importaba `personal_providers.dart` de forma directa, creando una
+/// dependencia de dominio adicional evitable).
 class InventarioAsignadoServicioSection extends ConsumerStatefulWidget {
   const InventarioAsignadoServicioSection({required this.servicioId, super.key});
 
@@ -73,12 +76,8 @@ class _InventarioAsignadoServicioSectionState extends ConsumerState<InventarioAs
       if (unidad != null) unidadesPorId[unidadId] = '${unidad.codigo} · ${unidad.numeroSerie}';
     }
 
-    final asignacionesServicio = await ref.read(asignacionServicioRepositoryProvider).listarActivasPorServicio(widget.servicioId);
-    final empleadosParaResponsable = <EmpleadoOpcion>[];
-    for (final a in asignacionesServicio) {
-      final empleado = await ref.read(empleadoRepositoryProvider).obtenerPorId(a.empleadoId);
-      if (empleado != null) empleadosParaResponsable.add(EmpleadoOpcion(id: empleado.id, nombre: empleadoNombreCompleto(empleado)));
-    }
+    final empleadosParaResponsable =
+        await ref.read(obtenerEmpleadosResponsablesServicioUseCaseProvider).ejecutar(widget.servicioId);
 
     if (!mounted) return;
     setState(() {
