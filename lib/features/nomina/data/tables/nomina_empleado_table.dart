@@ -17,9 +17,13 @@ enum FuenteSueldoNomina { servicio, administrativo }
 /// `estatus` general de la `Nomina` (Resolución explícita de Marlon:
 /// "Pagada debe representar que el dinero efectivamente salió"; puede
 /// haber Empleados ya pagados y otros pendientes dentro de la misma
-/// Nómina cerrada). Inerte en la Etapa 6C — ninguna acción todavía lo
-/// cambia; la Etapa 6D es la que le da comportamiento real.
-enum EstatusPagoNominaEmpleado { pendiente, pagado }
+/// Nómina cerrada). Mantenido transaccionalmente por
+/// `PagoNominaRepositoryImpl` en cada `AplicacionPagoNomina` (Etapa 6D)
+/// — mismo criterio que `CuentaPorCobrar.estatus` se mantiene en cada
+/// `AplicacionPago`. `parcial` agregado en 6D: sin `CHECK` que
+/// restrinja los valores de esta columna, así que sumar un valor de
+/// enum no requiere migración.
+enum EstatusPagoNominaEmpleado { pendiente, parcial, pagado }
 
 /// Un renglón de Nómina por Empleado (Etapa 6C) — snapshot completo:
 /// identidad, cálculo, movimientos manuales y distribución Fiscal/No

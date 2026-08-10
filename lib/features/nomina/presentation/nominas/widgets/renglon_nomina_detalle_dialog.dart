@@ -43,6 +43,7 @@ class RenglonNominaDetalleDialog extends ConsumerStatefulWidget {
 class _RenglonNominaDetalleDialogState extends ConsumerState<RenglonNominaDetalleDialog> {
   NominaEmpleadoData? _renglon;
   List<NominaEmpleadoTramoData> _tramos = const [];
+  List<AplicacionPagoNominaData> _aplicacionesPago = const [];
   bool _cargando = true;
   bool _guardandoMovimientos = false;
   bool _guardandoDistribucion = false;
@@ -89,10 +90,12 @@ class _RenglonNominaDetalleDialogState extends ConsumerState<RenglonNominaDetall
     final notifier = ref.read(nominasControllerProvider.notifier);
     final tramos = await notifier.listarTramos(widget.nominaEmpleadoId);
     final renglon = await ref.read(nominaRepositoryProvider).obtenerEmpleado(widget.nominaEmpleadoId);
+    final aplicacionesPago = await notifier.listarAplicacionesPorRenglon(widget.nominaEmpleadoId);
     if (!mounted) return;
     setState(() {
       _renglon = renglon;
       _tramos = tramos;
+      _aplicacionesPago = aplicacionesPago;
       _cargando = false;
       if (renglon != null) {
         _prestamoCtrl.text = _pesos(renglon.prestamo);
@@ -364,6 +367,21 @@ class _RenglonNominaDetalleDialogState extends ConsumerState<RenglonNominaDetall
                 ),
               ),
             ],
+            const SizedBox(height: AppSpacing.md),
+            Text(l10n.renglonNominaDetalleSeccionHistorialPagos, style: AppTypography.label.copyWith(color: colors.textMuted)),
+            const SizedBox(height: AppSpacing.xs),
+            if (_aplicacionesPago.isEmpty)
+              Text(l10n.renglonNominaDetalleHistorialPagosVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+            else
+              for (final ap in _aplicacionesPago)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                  child: Text(
+                    '${_formatoFecha.format(ap.createdAt)} · ${formatoCentavosPago(ap.monto)}'
+                    '${ap.estatus == 'cancelada' ? ' (${l10n.pagoNominaEstatusCancelado})' : ''}',
+                    style: AppTypography.body.copyWith(color: colors.textPrimary),
+                  ),
+                ),
           ],
         ),
       );

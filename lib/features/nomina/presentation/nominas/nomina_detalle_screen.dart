@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
@@ -13,12 +14,25 @@ import 'package:riseg_one/features/nomina/domain/usecases/cerrar_nomina_usecase.
 import 'nominas_controller.dart';
 import 'nominas_list_screen.dart' show nominaEstatusLabel, nominaEstatusTono;
 import 'widgets/generar_nomina_dialog.dart' show nominaTipoPeriodoLabel;
+import 'widgets/pago_nomina_detalle_dialog.dart';
+import 'widgets/registrar_pago_nomina_dialog.dart';
 import 'widgets/renglon_nomina_detalle_dialog.dart';
+
+final _formatoFecha = DateFormat('dd/MM/yyyy');
 
 String nominaEstatusPagoLabel(AppLocalizations l10n, String valor) {
   return switch (EstatusPagoNominaEmpleado.values.byName(valor)) {
     EstatusPagoNominaEmpleado.pendiente => l10n.nominaEstatusPagoPendiente,
+    EstatusPagoNominaEmpleado.parcial => l10n.nominaEstatusPagoParcial,
     EstatusPagoNominaEmpleado.pagado => l10n.nominaEstatusPagoPagado,
+  };
+}
+
+RisegStatusTone nominaEstatusPagoTono(String valor) {
+  return switch (EstatusPagoNominaEmpleado.values.byName(valor)) {
+    EstatusPagoNominaEmpleado.pendiente => RisegStatusTone.neutral,
+    EstatusPagoNominaEmpleado.parcial => RisegStatusTone.warning,
+    EstatusPagoNominaEmpleado.pagado => RisegStatusTone.success,
   };
 }
 
@@ -40,6 +54,7 @@ class NominaDetalleScreen extends ConsumerStatefulWidget {
 class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
   NominaData? _nomina;
   List<NominaEmpleadoData> _renglones = const [];
+  List<PagoNominaData> _pagos = const [];
   Set<String> _idsRequierenRevision = const {};
   bool _cargando = true;
   bool _procesando = false;
@@ -60,13 +75,31 @@ class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
     // doc comment de `EvaluarRenglonesRequierenRevisionUseCase`).
     final requierenRevision =
         nomina == null ? const <NominaEmpleadoData>[] : await notifier.renglonesQueRequierenRevision(widget.nominaId);
+    final pagos = nomina == null ? const <PagoNominaData>[] : await notifier.listarPagos(widget.nominaId);
     if (!mounted) return;
     setState(() {
       _nomina = nomina;
       _renglones = renglones;
       _idsRequierenRevision = requierenRevision.map((r) => r.id).toSet();
+      _pagos = pagos;
       _cargando = false;
     });
+  }
+
+  Future<void> _abrirRegistrarPago() async {
+    final pendientesOParciales = _renglones.where((r) => r.estatusPago != 'pagado').toList();
+    final huboCambio = await mostrarDialogoRegistrarPagoNomina(
+      context,
+      ref,
+      nominaId: widget.nominaId,
+      renglonesPendientesOParciales: pendientesOParciales,
+    );
+    if (huboCambio) await _cargar();
+  }
+
+  Future<void> _abrirPago(PagoNominaData pago) async {
+    final cambio = await showDialog<bool>(context: context, builder: (_) => PagoNominaDetalleDialog(pagoNominaId: pago.id));
+    if (cambio == true) await _cargar();
   }
 
   Future<void> _abrirRenglon(NominaEmpleadoData renglon) async {
@@ -272,13 +305,59 @@ class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
                       }
                       return RisegStatusBadge(
                         label: nominaEstatusPagoLabel(l10n, r.estatusPago),
-                        tone: r.distribucionPendienteRevision ? RisegStatusTone.error : RisegStatusTone.neutral,
+                        tone: r.distribucionPendienteRevision ? RisegStatusTone.error : nominaEstatusPagoTono(r.estatusPago),
                       );
                     },
                   ),
                 ],
               ),
             ),
+            if (!esBorrador) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                children: [
+                  Expanded(child: Text(l10n.nominaDetalleSeccionPagos, style: AppTypography.heading3.copyWith(color: colors.textPrimary))),
+                  if (nomina.estatus == 'cerrada')
+                    RisegButton(
+                      label: l10n.nominaDetalleBotonRegistrarPago,
+                      variant: RisegButtonVariant.secondary,
+                      onPressed: _abrirRegistrarPago,
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                height: 220,
+                child: RisegTableBase<PagoNominaData>(
+                  rows: _pagos,
+                  onRowTap: _abrirPago,
+                  emptyState: RisegEmptyState(title: l10n.nominaDetalleSeccionPagos, message: l10n.nominaDetallePagosVacio),
+                  columns: [
+                    RisegColumn<PagoNominaData>(
+                      label: l10n.nominaDetallePagosColumnaFolio,
+                      width: 130,
+                      cellBuilder: (p) => Text(p.folioPagoNomina),
+                    ),
+                    RisegColumn<PagoNominaData>(
+                      label: l10n.nominaDetallePagosColumnaFecha,
+                      width: 110,
+                      cellBuilder: (p) => Text(_formatoFecha.format(p.fechaPago)),
+                    ),
+                    RisegColumn<PagoNominaData>(
+                      label: l10n.nominaDetallePagosColumnaMonto,
+                      width: 130,
+                      alignment: TextAlign.right,
+                      cellBuilder: (p) => Text(formatoCentavosPago(p.montoTotal)),
+                    ),
+                    RisegColumn<PagoNominaData>(
+                      label: l10n.nominaDetallePagosColumnaEstatus,
+                      width: 130,
+                      cellBuilder: (p) => RisegStatusBadge(label: pagoNominaEstatusLabel(l10n, p.estatus), tone: pagoNominaEstatusTono(p.estatus)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -111,6 +111,16 @@ class AttachmentRepository {
     return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
+  /// Comprobantes activos de un `PagoNomina` (Etapa 6D).
+  Future<List<AttachmentData>> listarActivosPorPagoNomina(String pagoNominaId) {
+    final query = _db.select(_db.attachment).join([
+      innerJoin(_db.pagoNominaAttachment, _db.pagoNominaAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.pagoNominaAttachment.pagoNominaId.equals(pagoNominaId) & _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
+  }
+
   /// Documentos activos del expediente de un Empleado (Etapa 5A).
   Future<List<AttachmentData>> listarActivosPorEmpleado(String empleadoId) {
     final query = _db.select(_db.attachment).join([

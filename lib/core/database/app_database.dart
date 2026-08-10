@@ -42,6 +42,8 @@ import '../../features/nomina/data/tables/nomina_empleado_table.dart';
 import '../../features/nomina/data/tables/nomina_empleado_tramo_table.dart';
 import '../../features/nomina/data/tables/nomina_evento_table.dart';
 import '../../features/nomina/data/tables/nomina_table.dart';
+import '../../features/nomina/data/tables/pago_nomina_attachment_table.dart';
+import '../../features/nomina/data/tables/pago_nomina_table.dart';
 import 'migrations/migrar_asignacion_servicio_v21.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_empleado_v21.dart';
@@ -155,12 +157,16 @@ class AppMetadata extends Table {
   NominaEmpleado,
   NominaEmpleadoTramo,
   NominaEvento,
+  PagoNomina,
+  AplicacionPagoNomina,
+  PagoNominaEvento,
+  PagoNominaAttachment,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration {
@@ -576,6 +582,22 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(nominaEmpleado);
           await m.createTable(nominaEmpleadoTramo);
           await m.createTable(nominaEvento);
+        }
+        // Aditiva (Etapa 6D): tablas nuevas de pagos de Nómina
+        // (PagoNomina/AplicacionPagoNomina/PagoNominaEvento/
+        // PagoNominaAttachment) — ninguna existió antes, `from <= 25`
+        // es seguro sin acotar un origen exacto. `PagoNomina.egresoId`
+        // referencia a `Egreso` (tabla ya existente) sin tocar su
+        // esquema — la FK nace en la tabla nueva a propósito, porque un
+        // `UNIQUE` agregado por `ALTER TABLE ... ADD COLUMN` no es
+        // soportado por SQLite. El renglón nuevo de
+        // `CodigoSecuencia('pago_nomina')` se siembra vía `runSeed()`
+        // normal, arriba en este mismo `onUpgrade`.
+        if (to >= 26 && from <= 25) {
+          await m.createTable(pagoNomina);
+          await m.createTable(aplicacionPagoNomina);
+          await m.createTable(pagoNominaEvento);
+          await m.createTable(pagoNominaAttachment);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

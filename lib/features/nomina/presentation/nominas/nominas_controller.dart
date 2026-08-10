@@ -5,9 +5,14 @@ import 'package:riseg_one/features/nomina/data/tables/nomina_table.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/actualizar_distribucion_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/actualizar_movimientos_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/actualizar_nomina_desde_personal_usecase.dart';
+import 'package:riseg_one/features/nomina/domain/usecases/adjuntar_comprobante_pago_nomina_usecase.dart';
+import 'package:riseg_one/features/nomina/domain/usecases/cancelar_pago_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/cerrar_nomina_usecase.dart';
+import 'package:riseg_one/features/nomina/domain/usecases/corregir_pago_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/generar_nomina_usecase.dart';
+import 'package:riseg_one/features/nomina/domain/usecases/registrar_pago_nomina_usecase.dart';
 
+import '../../../organizacion/organizacion_providers.dart';
 import '../../nomina_providers.dart';
 import 'nominas_state.dart';
 
@@ -107,6 +112,102 @@ class NominasController extends _$NominasController {
           nominaEmpleadoId: nominaEmpleadoId,
           montoFiscal: montoFiscal,
           montoNoFiscal: montoNoFiscal,
+        );
+  }
+
+  // --- Etapa 6D — Pagos de Nómina ---
+
+  Future<PagoNominaData?> obtenerPagoPorId(String pagoNominaId) {
+    return ref.read(pagoNominaRepositoryProvider).obtenerPorId(pagoNominaId);
+  }
+
+  Future<List<PagoNominaData>> listarPagos(String nominaId) {
+    return ref.read(pagoNominaRepositoryProvider).listarPorNomina(nominaId);
+  }
+
+  Future<List<AplicacionPagoNominaData>> listarAplicacionesPorRenglon(String nominaEmpleadoId) {
+    return ref.read(pagoNominaRepositoryProvider).listarAplicacionesPorRenglon(nominaEmpleadoId);
+  }
+
+  Future<List<AplicacionPagoNominaData>> listarAplicacionesPorPagoNomina(String pagoNominaId) {
+    return ref.read(pagoNominaRepositoryProvider).listarAplicacionesPorPagoNomina(pagoNominaId);
+  }
+
+  Future<NominaEmpleadoData?> obtenerRenglon(String nominaEmpleadoId) {
+    return ref.read(nominaRepositoryProvider).obtenerEmpleado(nominaEmpleadoId);
+  }
+
+  Future<int> saldoPendientePago(String nominaEmpleadoId) {
+    return ref.read(pagoNominaRepositoryProvider).saldoPendientePago(nominaEmpleadoId);
+  }
+
+  Future<List<AttachmentData>> listarComprobantesPagoNomina(String pagoNominaId) {
+    return ref.read(attachmentRepositoryProvider).listarActivosPorPagoNomina(pagoNominaId);
+  }
+
+  Future<void> abrirArchivo(String path) {
+    return ref.read(attachmentStorageProvider).abrir(path);
+  }
+
+  Future<RegistrarPagoNominaResultado> registrarPago({
+    required String nominaId,
+    required DateTime fechaPago,
+    required String formaPago,
+    String? referencia,
+    String? cuentaBancariaOrigen,
+    String? observaciones,
+    required List<({String nominaEmpleadoId, int monto})> aplicaciones,
+  }) async {
+    final resultado = await ref.read(registrarPagoNominaUseCaseProvider).ejecutar(
+          nominaId: nominaId,
+          fechaPago: fechaPago,
+          formaPago: formaPago,
+          referencia: referencia,
+          cuentaBancariaOrigen: cuentaBancariaOrigen,
+          observaciones: observaciones,
+          aplicaciones: aplicaciones,
+        );
+    if (resultado is RegistrarPagoNominaExitoso) await _cargar();
+    return resultado;
+  }
+
+  Future<CancelarPagoNominaResultado> cancelarPago({required String pagoNominaId, required String motivo}) async {
+    final resultado = await ref.read(cancelarPagoNominaUseCaseProvider).ejecutar(pagoNominaId: pagoNominaId, motivo: motivo);
+    if (resultado is CancelarPagoNominaExitoso) await _cargar();
+    return resultado;
+  }
+
+  Future<CorregirPagoNominaResultado> corregirPago({
+    required String pagoNominaId,
+    DateTime? fechaPago,
+    String? formaPago,
+    String? referencia,
+    String? cuentaBancariaOrigen,
+    String? observaciones,
+    required String motivo,
+  }) {
+    return ref.read(corregirPagoNominaUseCaseProvider).ejecutar(
+          pagoNominaId: pagoNominaId,
+          fechaPago: fechaPago,
+          formaPago: formaPago,
+          referencia: referencia,
+          cuentaBancariaOrigen: cuentaBancariaOrigen,
+          observaciones: observaciones,
+          motivo: motivo,
+        );
+  }
+
+  Future<AdjuntarComprobantePagoNominaResultado> adjuntarComprobantePagoNomina({
+    required String pagoNominaId,
+    required String sourceFilePath,
+    required String originalFileName,
+    required String mimeType,
+  }) {
+    return ref.read(adjuntarComprobantePagoNominaUseCaseProvider).ejecutar(
+          pagoNominaId: pagoNominaId,
+          sourceFilePath: sourceFilePath,
+          originalFileName: originalFileName,
+          mimeType: mimeType,
         );
   }
 }

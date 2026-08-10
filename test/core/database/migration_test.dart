@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 25;
+const _currentSchemaVersion = 26;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -157,7 +157,7 @@ void main() {
       expect(areas, hasLength(6));
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(15));
+      expect(codigosSecuencia, hasLength(16));
 
       await db.close();
     },
@@ -6291,6 +6291,211 @@ void main() {
         throwsA(anything),
         reason: 'importe_tramo negativo debe rechazarse',
       );
+
+      await db.close();
+    },
+  );
+
+  test(
+    '26.json coincide con el esquema final de la Etapa 6D (tablas nuevas PagoNomina, AplicacionPagoNomina, '
+    'PagoNominaEvento, PagoNominaAttachment)',
+    () async {
+      final schema = await verifier.schemaAt(26);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(
+        tablas,
+        containsAll(['pago_nomina', 'aplicacion_pago_nomina', 'pago_nomina_evento', 'pago_nomina_attachment']),
+      );
+
+      final sqlPagoNomina =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pago_nomina'")
+                  .single['sql']
+              as String;
+      expect(sqlPagoNomina, contains('"folio_pago_nomina" TEXT NOT NULL UNIQUE'));
+      expect(sqlPagoNomina, contains('"egreso_id" TEXT NULL UNIQUE REFERENCES egreso (id)'));
+      expect(sqlPagoNomina, contains('CHECK (monto_total > 0)'));
+
+      final sqlAplicacion =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'aplicacion_pago_nomina'")
+                  .single['sql']
+              as String;
+      expect(sqlAplicacion, contains('"nomina_empleado_id" TEXT NOT NULL REFERENCES nomina_empleado (id)'));
+      expect(sqlAplicacion, contains('CHECK (monto > 0)'));
+      expect(sqlAplicacion, contains('CHECK (saldo_despues = saldo_antes - monto)'));
+      expect(sqlAplicacion, contains('CHECK (saldo_despues >= 0)'));
+
+      // Confirma la dirección deliberada de la FK: PagoNomina (tabla
+      // nueva) referencia a Egreso (tabla ya existente desde 4K.1) —
+      // Egreso mismo no gana ninguna columna nueva en esta etapa.
+      final sqlEgreso =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'egreso'")
+                  .single['sql']
+              as String;
+      expect(sqlEgreso, isNot(contains('pago_nomina')));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 25 → 26 conserva una Nómina/NominaEmpleado real y crea las tablas de PagoNomina vacías, sembrando '
+    'CodigoSecuencia(pago_nomina)',
+    () async {
+      final schemaV25 = await verifier.schemaAt(25);
+      final raw = schemaV25.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO nomina (
+        id, folio, anio, mes, tipo_periodo, fecha_inicio_periodo, fecha_fin_periodo, fecha_pago_ordinaria,
+        estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'nomina-real', 'NOM-000001', 2026, 1, 'primera', 1735689600, 1736812800, 1737331200,
+        'cerrada', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV25.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final nominas = await db.select(db.nomina).get();
+      expect(nominas, hasLength(1), reason: 'ninguna Nómina real debe perderse en una migración puramente aditiva');
+      expect(nominas.single.id, 'nomina-real');
+
+      final pagos = await db.select(db.pagoNomina).get();
+      expect(pagos, isEmpty, reason: 'PagoNomina es tabla nueva en 6D, sin backfill');
+      final aplicaciones = await db.select(db.aplicacionPagoNomina).get();
+      expect(aplicaciones, isEmpty);
+      final eventos = await db.select(db.pagoNominaEvento).get();
+      expect(eventos, isEmpty);
+
+      final codigoPagoNomina =
+          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('pago_nomina'))).getSingleOrNull();
+      expect(codigoPagoNomina, isNotNull, reason: 'runSeed debe sembrar el contador de folio de pago_nomina');
+      expect(codigoPagoNomina!.prefijo, 'PAGN');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de PagoNomina/AplicacionPagoNomina tras la migración: monto_total > 0, saldo nunca negativo, '
+    'la aritmética del saldo debe cuadrar exactamente',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final nomina = await db.into(db.nomina).insertReturning(
+            NominaCompanion.insert(
+              folio: 'NOM-000001',
+              anio: 2026,
+              mes: 1,
+              tipoPeriodo: 'primera',
+              fechaInicioPeriodo: DateTime(2026, 1, 1),
+              fechaFinPeriodo: DateTime(2026, 1, 15),
+              fechaPagoOrdinaria: DateTime(2026, 1, 20),
+              estatus: const Value('cerrada'),
+            ),
+          );
+      final empleado = await db.into(db.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 0,
+            ),
+          );
+      final renglon = await db.into(db.nominaEmpleado).insertReturning(
+            NominaEmpleadoCompanion.insert(
+              nominaId: nomina.id,
+              empleadoId: empleado.id,
+              numeroEmpleado: 1,
+              nombreCompleto: 'Juan Pérez',
+              fuenteSueldoUtilizada: 'administrativo',
+              diasPagables: 15,
+              sueldoMensualUtilizado: 1500000,
+              sueldoQuincenalReferencia: 750000,
+              pagoPorDia: 50000,
+              importeBase: 750000,
+              totalAPagar: 750000,
+            ),
+          );
+
+      await expectLater(
+        db.into(db.pagoNomina).insert(
+              PagoNominaCompanion.insert(
+                folioPagoNomina: 'PAGN-000001',
+                nominaId: nomina.id,
+                montoTotal: 0,
+                fechaPago: DateTime(2026, 1, 20),
+                formaPago: 'transferencia',
+              ),
+            ),
+        throwsA(anything),
+        reason: 'monto_total = 0 debe rechazarse (debe ser > 0)',
+      );
+
+      final pagoNomina = await db.into(db.pagoNomina).insertReturning(
+            PagoNominaCompanion.insert(
+              folioPagoNomina: 'PAGN-000001',
+              nominaId: nomina.id,
+              montoTotal: 750000,
+              fechaPago: DateTime(2026, 1, 20),
+              formaPago: 'transferencia',
+            ),
+          );
+
+      final baseAplicacion = AplicacionPagoNominaCompanion.insert(
+        pagoNominaId: pagoNomina.id,
+        nominaEmpleadoId: renglon.id,
+        monto: 750000,
+        saldoAntes: 750000,
+        saldoDespues: 0,
+      );
+
+      await expectLater(
+        db.into(db.aplicacionPagoNomina).insert(baseAplicacion.copyWith(saldoDespues: const Value(1))),
+        throwsA(anything),
+        reason: 'saldo_despues debe cuadrar exactamente con saldo_antes - monto',
+      );
+      await expectLater(
+        db.into(db.aplicacionPagoNomina).insert(
+              baseAplicacion.copyWith(monto: const Value(800000), saldoAntes: const Value(750000), saldoDespues: const Value(-50000)),
+            ),
+        throwsA(anything),
+        reason: 'saldo_despues nunca puede quedar negativo (nunca se sobrepaga un renglón)',
+      );
+
+      final aplicacion = await db.into(db.aplicacionPagoNomina).insertReturning(baseAplicacion);
+      expect(aplicacion.saldoDespues, 0);
 
       await db.close();
     },
