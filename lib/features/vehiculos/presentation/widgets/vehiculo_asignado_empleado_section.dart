@@ -87,7 +87,7 @@ class _VehiculoAsignadoEmpleadoSectionState extends ConsumerState<VehiculoAsigna
                 label: l10n.vehiculoAsignadoBotonVerExpediente,
                 variant: RisegButtonVariant.ghost,
                 size: RisegButtonSize.compact,
-                onPressed: () => context.go('/vehiculos/${_vehiculo!.id}'),
+                onPressed: () => context.go('/vehiculos/flotilla/${_vehiculo!.id}'),
               ),
             ],
           ),

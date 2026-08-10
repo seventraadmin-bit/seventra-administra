@@ -7,8 +7,12 @@ import 'package:intl/intl.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
+import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_documento_table.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart' show MotivoBajaVehiculo;
 import 'package:riseg_one/features/vehiculos/domain/usecases/actualizar_fotografia_vehiculo_usecase.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/agrupar_documentos_vehiculo.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/calcular_estado_vigencia_documento.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/cambiar_estatus_vehiculo_usecase.dart';
 
 import 'vehiculo_labels.dart';
@@ -18,6 +22,8 @@ import 'widgets/asignar_vehiculo_dialog.dart';
 import 'widgets/cambiar_asignacion_vehiculo_dialog.dart';
 import 'widgets/dar_de_baja_vehiculo_dialog.dart';
 import 'widgets/gestionar_vehiculo_dialog.dart';
+import 'widgets/historial_documento_vehiculo_dialog.dart';
+import 'widgets/registrar_documento_vehiculo_dialog.dart';
 import 'widgets/registrar_kilometraje_vehiculo_dialog.dart';
 import 'widgets/retirar_asignacion_vehiculo_dialog.dart';
 
@@ -44,6 +50,8 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
   Map<String, String> _serviciosPorId = const {};
   VehiculoKilometrajeData? _kilometrajeActual;
   List<VehiculoKilometrajeData> _historialKilometraje = const [];
+  List<VehiculoDocumentoData> _documentos = const [];
+  Map<String, AttachmentData> _adjuntoPorDocumento = const {};
   bool _cargando = true;
   bool _procesando = false;
 
@@ -60,6 +68,8 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
     final asignacionRepo = ref.read(asignacionVehiculoRepositoryProvider);
     final kilometrajeRepo = ref.read(vehiculoKilometrajeRepositoryProvider);
     final opciones = ref.read(obtenerOpcionesAsignacionVehiculoUseCaseProvider);
+    final documentoRepo = ref.read(vehiculoDocumentoRepositoryProvider);
+    final attachmentRepo = ref.read(attachmentRepositoryProvider);
 
     final asignacionVigente = await asignacionRepo.obtenerActivaPorVehiculo(widget.vehiculoId);
     final historialAsignaciones = await asignacionRepo.listarPorVehiculo(widget.vehiculoId);
@@ -67,6 +77,13 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
     final servicios = await opciones.obtenerServicios();
     final kilometrajeActual = await kilometrajeRepo.obtenerActual(widget.vehiculoId);
     final historialKilometraje = await kilometrajeRepo.listarPorVehiculo(widget.vehiculoId);
+    final documentos = await documentoRepo.listarPorVehiculo(widget.vehiculoId);
+
+    final adjuntoPorDocumento = <String, AttachmentData>{};
+    for (final documento in documentosVigentesPorTipo(documentos)) {
+      final adjuntos = await attachmentRepo.listarActivosPorVehiculoDocumento(documento.id);
+      if (adjuntos.isNotEmpty) adjuntoPorDocumento[documento.id] = adjuntos.first;
+    }
 
     if (!mounted) return;
     setState(() {
@@ -77,6 +94,8 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
       _serviciosPorId = {for (final s in servicios) s.id: s.nombre};
       _kilometrajeActual = kilometrajeActual;
       _historialKilometraje = historialKilometraje;
+      _documentos = documentos;
+      _adjuntoPorDocumento = adjuntoPorDocumento;
       _cargando = false;
     });
   }
@@ -103,6 +122,26 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
   Future<void> _registrarKilometraje() async {
     final registrado = await mostrarDialogoRegistrarKilometrajeVehiculo(context, ref, widget.vehiculoId);
     if (registrado) await _cargar();
+  }
+
+  Future<void> _agregarDocumento() async {
+    final registrado = await mostrarDialogoRegistrarDocumentoVehiculo(context, ref, widget.vehiculoId);
+    if (registrado) await _cargar();
+  }
+
+  Future<void> _renovarDocumento(VehiculoDocumentoData documento) async {
+    final registrado = await mostrarDialogoRegistrarDocumentoVehiculo(
+      context,
+      ref,
+      widget.vehiculoId,
+      tipoPreseleccionado: TipoDocumentoVehiculo.values.byName(documento.tipo),
+    );
+    if (registrado) await _cargar();
+  }
+
+  Future<void> _verHistorialDocumento(String tipo) async {
+    final documentosDelTipo = _documentos.where((d) => d.tipo == tipo).toList();
+    await mostrarDialogoHistorialDocumentoVehiculo(context, ref, documentosDelTipo);
   }
 
   Future<void> _editar() async {
@@ -357,6 +396,89 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                           '${_kilometrajeActual!.kilometraje} km',
                           style: AppTypography.heading2.copyWith(color: colors.textPrimary),
                         ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RisegSectionHeader(
+                        title: l10n.vehiculoDocumentosSeccionTitulo,
+                        primaryAction: esBaja
+                            ? null
+                            : RisegButton(
+                                label: l10n.vehiculoBotonAgregarDocumento,
+                                variant: RisegButtonVariant.secondary,
+                                size: RisegButtonSize.compact,
+                                onPressed: _agregarDocumento,
+                              ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (documentosVigentesPorTipo(_documentos).isEmpty)
+                        Text(l10n.vehiculoDocumentosVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      else
+                        for (final documento in documentosVigentesPorTipo(_documentos))
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(tipoDocumentoVehiculoLabel(l10n, documento), style: AppTypography.body),
+                                      Builder(
+                                        builder: (_) {
+                                          final estado = calcularEstadoVigenciaDocumento(documento.fechaVencimiento);
+                                          final detalle = detalleVigenciaDocumentoLabel(l10n, estado, documento.fechaVencimiento);
+                                          return Row(
+                                            children: [
+                                              RisegStatusBadge(
+                                                label: estadoVigenciaDocumentoLabel(l10n, estado),
+                                                tone: estadoVigenciaDocumentoTono(estado),
+                                              ),
+                                              if (detalle.isNotEmpty) ...[
+                                                const SizedBox(width: AppSpacing.xs),
+                                                Text(detalle, style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                                              ],
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Wrap(
+                                  spacing: AppSpacing.xs,
+                                  children: [
+                                    if (_adjuntoPorDocumento.containsKey(documento.id))
+                                      RisegButton(
+                                        label: l10n.vehiculoDocumentoBotonAbrir,
+                                        variant: RisegButtonVariant.ghost,
+                                        size: RisegButtonSize.compact,
+                                        onPressed: () =>
+                                            ref.read(attachmentStorageProvider).abrir(_adjuntoPorDocumento[documento.id]!.path),
+                                      ),
+                                    RisegButton(
+                                      label: l10n.vehiculoBotonRenovarDocumento,
+                                      variant: RisegButtonVariant.ghost,
+                                      size: RisegButtonSize.compact,
+                                      onPressed: esBaja ? null : () => _renovarDocumento(documento),
+                                    ),
+                                    RisegButton(
+                                      label: l10n.vehiculoBotonVerHistorialDocumento,
+                                      variant: RisegButtonVariant.ghost,
+                                      size: RisegButtonSize.compact,
+                                      onPressed: () => _verHistorialDocumento(documento.tipo),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                     ],
                   ),
                 ),

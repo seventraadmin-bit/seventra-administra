@@ -57,7 +57,7 @@ class VehiculosListScreen extends ConsumerWidget {
             child: RisegTableBase<VehiculoData>(
               loading: state.cargando,
               rows: state.vehiculos,
-              onRowTap: (v) => context.go('/vehiculos/${v.id}'),
+              onRowTap: (v) => context.go('/vehiculos/flotilla/${v.id}'),
               emptyState: RisegEmptyState(
                 title: l10n.vehiculosListadoVacioTitulo,
                 message: l10n.vehiculosListadoVacioMensaje,

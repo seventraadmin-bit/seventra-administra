@@ -15,7 +15,7 @@ import '../../features/nomina/presentation/nominas/nomina_detalle_screen.dart';
 import '../../features/personal/presentation/empleados/empleado_expediente_screen.dart';
 import '../../features/personal/presentation/personal_shell_screen.dart';
 import '../../features/vehiculos/presentation/vehiculo_expediente_screen.dart';
-import '../../features/vehiculos/presentation/vehiculos_list_screen.dart';
+import '../../features/vehiculos/presentation/vehiculos_shell_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
 import '../shell/app_shell_screen.dart';
 import '../shell/dashboard_welcome_screen.dart';
@@ -255,20 +255,30 @@ GoRouter createAppRouter() {
                     ],
                   )
                 else if (def.path == '/vehiculos')
-                  // Vehículos es un dominio nuevo (Etapa 8A). Sin
-                  // subnavegación de pestañas todavía — mismo criterio
-                  // que Inventario en su propia Etapa 7A: la
-                  // subnavegación (Alertas, etc.) llega en una etapa
-                  // futura cuando exista más de una sección real, no
-                  // antes.
+                  // Vehículos (Etapa 8A) gana subnavegación de pestañas
+                  // desde la Etapa 8C (Flotilla | Alertas), mismo
+                  // patrón y mismo momento relativo que Inventario
+                  // (7A de una sola pantalla → 7D con Reportes) —
+                  // `/vehiculos` en sí redirige a `/vehiculos/flotilla`.
                   GoRoute(
                     path: def.path,
-                    builder: (context, state) => const VehiculosListScreen(),
+                    redirect: (context, state) =>
+                        state.uri.path == '/vehiculos' ? '/vehiculos/flotilla' : null,
                     routes: [
                       GoRoute(
-                        path: ':id',
-                        builder: (context, state) =>
-                            VehiculoExpedienteScreen(vehiculoId: state.pathParameters['id']!),
+                        path: 'flotilla',
+                        builder: (context, state) => const VehiculosShellScreen(tab: VehiculosTab.flotilla),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                VehiculoExpedienteScreen(vehiculoId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'alertas',
+                        builder: (context, state) => const VehiculosShellScreen(tab: VehiculosTab.alertas),
                       ),
                     ],
                   )

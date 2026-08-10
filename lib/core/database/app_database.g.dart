@@ -55256,6 +55256,989 @@ class VehiculoKilometrajeCompanion
   }
 }
 
+class $VehiculoDocumentoTable extends VehiculoDocumento
+    with TableInfo<$VehiculoDocumentoTable, VehiculoDocumentoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VehiculoDocumentoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _vehiculoIdMeta = const VerificationMeta(
+    'vehiculoId',
+  );
+  @override
+  late final GeneratedColumn<String> vehiculoId = GeneratedColumn<String>(
+    'vehiculo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES vehiculo (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoOtroDescripcionMeta =
+      const VerificationMeta('tipoOtroDescripcion');
+  @override
+  late final GeneratedColumn<String> tipoOtroDescripcion =
+      GeneratedColumn<String>(
+        'tipo_otro_descripcion',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _numeroFolioMeta = const VerificationMeta(
+    'numeroFolio',
+  );
+  @override
+  late final GeneratedColumn<String> numeroFolio = GeneratedColumn<String>(
+    'numero_folio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaEmisionMeta = const VerificationMeta(
+    'fechaEmision',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaEmision = GeneratedColumn<DateTime>(
+    'fecha_emision',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaVencimientoMeta = const VerificationMeta(
+    'fechaVencimiento',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaVencimiento =
+      GeneratedColumn<DateTime>(
+        'fecha_vencimiento',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    vehiculoId,
+    tipo,
+    tipoOtroDescripcion,
+    numeroFolio,
+    fechaEmision,
+    fechaVencimiento,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vehiculo_documento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VehiculoDocumentoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('vehiculo_id')) {
+      context.handle(
+        _vehiculoIdMeta,
+        vehiculoId.isAcceptableOrUnknown(data['vehiculo_id']!, _vehiculoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_vehiculoIdMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('tipo_otro_descripcion')) {
+      context.handle(
+        _tipoOtroDescripcionMeta,
+        tipoOtroDescripcion.isAcceptableOrUnknown(
+          data['tipo_otro_descripcion']!,
+          _tipoOtroDescripcionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('numero_folio')) {
+      context.handle(
+        _numeroFolioMeta,
+        numeroFolio.isAcceptableOrUnknown(
+          data['numero_folio']!,
+          _numeroFolioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_emision')) {
+      context.handle(
+        _fechaEmisionMeta,
+        fechaEmision.isAcceptableOrUnknown(
+          data['fecha_emision']!,
+          _fechaEmisionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_vencimiento')) {
+      context.handle(
+        _fechaVencimientoMeta,
+        fechaVencimiento.isAcceptableOrUnknown(
+          data['fecha_vencimiento']!,
+          _fechaVencimientoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VehiculoDocumentoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VehiculoDocumentoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      vehiculoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}vehiculo_id'],
+          )!,
+      tipo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo'],
+          )!,
+      tipoOtroDescripcion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo_otro_descripcion'],
+      ),
+      numeroFolio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}numero_folio'],
+      ),
+      fechaEmision: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_emision'],
+      ),
+      fechaVencimiento: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_vencimiento'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $VehiculoDocumentoTable createAlias(String alias) {
+    return $VehiculoDocumentoTable(attachedDatabase, alias);
+  }
+}
+
+class VehiculoDocumentoData extends DataClass
+    implements Insertable<VehiculoDocumentoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String vehiculoId;
+  final String tipo;
+
+  /// Solo aplica cuando `tipo == otro` — el nombre/descripción real del
+  /// documento (ej. "Constancia de no adeudo"). Obligatorio en ese caso
+  /// (validado en `RegistrarDocumentoVehiculoUseCase`, no por `CHECK`:
+  /// mismo criterio que el resto del proyecto para reglas que dependen
+  /// del valor de otra columna tipo-enum).
+  final String? tipoOtroDescripcion;
+  final String? numeroFolio;
+  final DateTime? fechaEmision;
+  final DateTime? fechaVencimiento;
+  final String? observaciones;
+  const VehiculoDocumentoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.vehiculoId,
+    required this.tipo,
+    this.tipoOtroDescripcion,
+    this.numeroFolio,
+    this.fechaEmision,
+    this.fechaVencimiento,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['vehiculo_id'] = Variable<String>(vehiculoId);
+    map['tipo'] = Variable<String>(tipo);
+    if (!nullToAbsent || tipoOtroDescripcion != null) {
+      map['tipo_otro_descripcion'] = Variable<String>(tipoOtroDescripcion);
+    }
+    if (!nullToAbsent || numeroFolio != null) {
+      map['numero_folio'] = Variable<String>(numeroFolio);
+    }
+    if (!nullToAbsent || fechaEmision != null) {
+      map['fecha_emision'] = Variable<DateTime>(fechaEmision);
+    }
+    if (!nullToAbsent || fechaVencimiento != null) {
+      map['fecha_vencimiento'] = Variable<DateTime>(fechaVencimiento);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  VehiculoDocumentoCompanion toCompanion(bool nullToAbsent) {
+    return VehiculoDocumentoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      vehiculoId: Value(vehiculoId),
+      tipo: Value(tipo),
+      tipoOtroDescripcion:
+          tipoOtroDescripcion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(tipoOtroDescripcion),
+      numeroFolio:
+          numeroFolio == null && nullToAbsent
+              ? const Value.absent()
+              : Value(numeroFolio),
+      fechaEmision:
+          fechaEmision == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaEmision),
+      fechaVencimiento:
+          fechaVencimiento == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaVencimiento),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory VehiculoDocumentoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VehiculoDocumentoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      vehiculoId: serializer.fromJson<String>(json['vehiculoId']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      tipoOtroDescripcion: serializer.fromJson<String?>(
+        json['tipoOtroDescripcion'],
+      ),
+      numeroFolio: serializer.fromJson<String?>(json['numeroFolio']),
+      fechaEmision: serializer.fromJson<DateTime?>(json['fechaEmision']),
+      fechaVencimiento: serializer.fromJson<DateTime?>(
+        json['fechaVencimiento'],
+      ),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'vehiculoId': serializer.toJson<String>(vehiculoId),
+      'tipo': serializer.toJson<String>(tipo),
+      'tipoOtroDescripcion': serializer.toJson<String?>(tipoOtroDescripcion),
+      'numeroFolio': serializer.toJson<String?>(numeroFolio),
+      'fechaEmision': serializer.toJson<DateTime?>(fechaEmision),
+      'fechaVencimiento': serializer.toJson<DateTime?>(fechaVencimiento),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  VehiculoDocumentoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? vehiculoId,
+    String? tipo,
+    Value<String?> tipoOtroDescripcion = const Value.absent(),
+    Value<String?> numeroFolio = const Value.absent(),
+    Value<DateTime?> fechaEmision = const Value.absent(),
+    Value<DateTime?> fechaVencimiento = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => VehiculoDocumentoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    vehiculoId: vehiculoId ?? this.vehiculoId,
+    tipo: tipo ?? this.tipo,
+    tipoOtroDescripcion:
+        tipoOtroDescripcion.present
+            ? tipoOtroDescripcion.value
+            : this.tipoOtroDescripcion,
+    numeroFolio: numeroFolio.present ? numeroFolio.value : this.numeroFolio,
+    fechaEmision: fechaEmision.present ? fechaEmision.value : this.fechaEmision,
+    fechaVencimiento:
+        fechaVencimiento.present
+            ? fechaVencimiento.value
+            : this.fechaVencimiento,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  VehiculoDocumentoData copyWithCompanion(VehiculoDocumentoCompanion data) {
+    return VehiculoDocumentoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      vehiculoId:
+          data.vehiculoId.present ? data.vehiculoId.value : this.vehiculoId,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      tipoOtroDescripcion:
+          data.tipoOtroDescripcion.present
+              ? data.tipoOtroDescripcion.value
+              : this.tipoOtroDescripcion,
+      numeroFolio:
+          data.numeroFolio.present ? data.numeroFolio.value : this.numeroFolio,
+      fechaEmision:
+          data.fechaEmision.present
+              ? data.fechaEmision.value
+              : this.fechaEmision,
+      fechaVencimiento:
+          data.fechaVencimiento.present
+              ? data.fechaVencimiento.value
+              : this.fechaVencimiento,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiculoDocumentoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('vehiculoId: $vehiculoId, ')
+          ..write('tipo: $tipo, ')
+          ..write('tipoOtroDescripcion: $tipoOtroDescripcion, ')
+          ..write('numeroFolio: $numeroFolio, ')
+          ..write('fechaEmision: $fechaEmision, ')
+          ..write('fechaVencimiento: $fechaVencimiento, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    vehiculoId,
+    tipo,
+    tipoOtroDescripcion,
+    numeroFolio,
+    fechaEmision,
+    fechaVencimiento,
+    observaciones,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VehiculoDocumentoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.vehiculoId == this.vehiculoId &&
+          other.tipo == this.tipo &&
+          other.tipoOtroDescripcion == this.tipoOtroDescripcion &&
+          other.numeroFolio == this.numeroFolio &&
+          other.fechaEmision == this.fechaEmision &&
+          other.fechaVencimiento == this.fechaVencimiento &&
+          other.observaciones == this.observaciones);
+}
+
+class VehiculoDocumentoCompanion
+    extends UpdateCompanion<VehiculoDocumentoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> vehiculoId;
+  final Value<String> tipo;
+  final Value<String?> tipoOtroDescripcion;
+  final Value<String?> numeroFolio;
+  final Value<DateTime?> fechaEmision;
+  final Value<DateTime?> fechaVencimiento;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const VehiculoDocumentoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.vehiculoId = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.tipoOtroDescripcion = const Value.absent(),
+    this.numeroFolio = const Value.absent(),
+    this.fechaEmision = const Value.absent(),
+    this.fechaVencimiento = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VehiculoDocumentoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String vehiculoId,
+    required String tipo,
+    this.tipoOtroDescripcion = const Value.absent(),
+    this.numeroFolio = const Value.absent(),
+    this.fechaEmision = const Value.absent(),
+    this.fechaVencimiento = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : vehiculoId = Value(vehiculoId),
+       tipo = Value(tipo);
+  static Insertable<VehiculoDocumentoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? vehiculoId,
+    Expression<String>? tipo,
+    Expression<String>? tipoOtroDescripcion,
+    Expression<String>? numeroFolio,
+    Expression<DateTime>? fechaEmision,
+    Expression<DateTime>? fechaVencimiento,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (vehiculoId != null) 'vehiculo_id': vehiculoId,
+      if (tipo != null) 'tipo': tipo,
+      if (tipoOtroDescripcion != null)
+        'tipo_otro_descripcion': tipoOtroDescripcion,
+      if (numeroFolio != null) 'numero_folio': numeroFolio,
+      if (fechaEmision != null) 'fecha_emision': fechaEmision,
+      if (fechaVencimiento != null) 'fecha_vencimiento': fechaVencimiento,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VehiculoDocumentoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? vehiculoId,
+    Value<String>? tipo,
+    Value<String?>? tipoOtroDescripcion,
+    Value<String?>? numeroFolio,
+    Value<DateTime?>? fechaEmision,
+    Value<DateTime?>? fechaVencimiento,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return VehiculoDocumentoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      vehiculoId: vehiculoId ?? this.vehiculoId,
+      tipo: tipo ?? this.tipo,
+      tipoOtroDescripcion: tipoOtroDescripcion ?? this.tipoOtroDescripcion,
+      numeroFolio: numeroFolio ?? this.numeroFolio,
+      fechaEmision: fechaEmision ?? this.fechaEmision,
+      fechaVencimiento: fechaVencimiento ?? this.fechaVencimiento,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (vehiculoId.present) {
+      map['vehiculo_id'] = Variable<String>(vehiculoId.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (tipoOtroDescripcion.present) {
+      map['tipo_otro_descripcion'] = Variable<String>(
+        tipoOtroDescripcion.value,
+      );
+    }
+    if (numeroFolio.present) {
+      map['numero_folio'] = Variable<String>(numeroFolio.value);
+    }
+    if (fechaEmision.present) {
+      map['fecha_emision'] = Variable<DateTime>(fechaEmision.value);
+    }
+    if (fechaVencimiento.present) {
+      map['fecha_vencimiento'] = Variable<DateTime>(fechaVencimiento.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiculoDocumentoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('vehiculoId: $vehiculoId, ')
+          ..write('tipo: $tipo, ')
+          ..write('tipoOtroDescripcion: $tipoOtroDescripcion, ')
+          ..write('numeroFolio: $numeroFolio, ')
+          ..write('fechaEmision: $fechaEmision, ')
+          ..write('fechaVencimiento: $fechaVencimiento, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $VehiculoDocumentoAttachmentTable extends VehiculoDocumentoAttachment
+    with
+        TableInfo<
+          $VehiculoDocumentoAttachmentTable,
+          VehiculoDocumentoAttachmentData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VehiculoDocumentoAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _vehiculoDocumentoIdMeta =
+      const VerificationMeta('vehiculoDocumentoId');
+  @override
+  late final GeneratedColumn<String> vehiculoDocumentoId =
+      GeneratedColumn<String>(
+        'vehiculo_documento_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES vehiculo_documento (id) ON DELETE CASCADE',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, vehiculoDocumentoId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vehiculo_documento_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VehiculoDocumentoAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('vehiculo_documento_id')) {
+      context.handle(
+        _vehiculoDocumentoIdMeta,
+        vehiculoDocumentoId.isAcceptableOrUnknown(
+          data['vehiculo_documento_id']!,
+          _vehiculoDocumentoIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_vehiculoDocumentoIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  VehiculoDocumentoAttachmentData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VehiculoDocumentoAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      vehiculoDocumentoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}vehiculo_documento_id'],
+          )!,
+    );
+  }
+
+  @override
+  $VehiculoDocumentoAttachmentTable createAlias(String alias) {
+    return $VehiculoDocumentoAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class VehiculoDocumentoAttachmentData extends DataClass
+    implements Insertable<VehiculoDocumentoAttachmentData> {
+  final String attachmentId;
+  final String vehiculoDocumentoId;
+  const VehiculoDocumentoAttachmentData({
+    required this.attachmentId,
+    required this.vehiculoDocumentoId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['vehiculo_documento_id'] = Variable<String>(vehiculoDocumentoId);
+    return map;
+  }
+
+  VehiculoDocumentoAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return VehiculoDocumentoAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      vehiculoDocumentoId: Value(vehiculoDocumentoId),
+    );
+  }
+
+  factory VehiculoDocumentoAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VehiculoDocumentoAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      vehiculoDocumentoId: serializer.fromJson<String>(
+        json['vehiculoDocumentoId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'vehiculoDocumentoId': serializer.toJson<String>(vehiculoDocumentoId),
+    };
+  }
+
+  VehiculoDocumentoAttachmentData copyWith({
+    String? attachmentId,
+    String? vehiculoDocumentoId,
+  }) => VehiculoDocumentoAttachmentData(
+    attachmentId: attachmentId ?? this.attachmentId,
+    vehiculoDocumentoId: vehiculoDocumentoId ?? this.vehiculoDocumentoId,
+  );
+  VehiculoDocumentoAttachmentData copyWithCompanion(
+    VehiculoDocumentoAttachmentCompanion data,
+  ) {
+    return VehiculoDocumentoAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      vehiculoDocumentoId:
+          data.vehiculoDocumentoId.present
+              ? data.vehiculoDocumentoId.value
+              : this.vehiculoDocumentoId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiculoDocumentoAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('vehiculoDocumentoId: $vehiculoDocumentoId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, vehiculoDocumentoId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VehiculoDocumentoAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.vehiculoDocumentoId == this.vehiculoDocumentoId);
+}
+
+class VehiculoDocumentoAttachmentCompanion
+    extends UpdateCompanion<VehiculoDocumentoAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> vehiculoDocumentoId;
+  final Value<int> rowid;
+  const VehiculoDocumentoAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.vehiculoDocumentoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VehiculoDocumentoAttachmentCompanion.insert({
+    required String attachmentId,
+    required String vehiculoDocumentoId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       vehiculoDocumentoId = Value(vehiculoDocumentoId);
+  static Insertable<VehiculoDocumentoAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? vehiculoDocumentoId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (vehiculoDocumentoId != null)
+        'vehiculo_documento_id': vehiculoDocumentoId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VehiculoDocumentoAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? vehiculoDocumentoId,
+    Value<int>? rowid,
+  }) {
+    return VehiculoDocumentoAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      vehiculoDocumentoId: vehiculoDocumentoId ?? this.vehiculoDocumentoId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (vehiculoDocumentoId.present) {
+      map['vehiculo_documento_id'] = Variable<String>(
+        vehiculoDocumentoId.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiculoDocumentoAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('vehiculoDocumentoId: $vehiculoDocumentoId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -55396,6 +56379,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $AsignacionVehiculoTable(this);
   late final $VehiculoKilometrajeTable vehiculoKilometraje =
       $VehiculoKilometrajeTable(this);
+  late final $VehiculoDocumentoTable vehiculoDocumento =
+      $VehiculoDocumentoTable(this);
+  late final $VehiculoDocumentoAttachmentTable vehiculoDocumentoAttachment =
+      $VehiculoDocumentoAttachmentTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -55520,6 +56507,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     vehiculoAttachment,
     asignacionVehiculo,
     vehiculoKilometraje,
+    vehiculoDocumento,
+    vehiculoDocumentoAttachment,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -55888,6 +56877,24 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('vehiculo_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('vehiculo_documento_attachment', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'vehiculo_documento',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('vehiculo_documento_attachment', kind: UpdateKind.delete),
+      ],
     ),
   ]);
 }
@@ -60594,6 +61601,34 @@ final class $$AttachmentTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $VehiculoDocumentoAttachmentTable,
+    List<VehiculoDocumentoAttachmentData>
+  >
+  _vehiculoDocumentoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.vehiculoDocumentoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.vehiculoDocumentoAttachment.attachmentId,
+        ),
+      );
+
+  $$VehiculoDocumentoAttachmentTableProcessedTableManager
+  get vehiculoDocumentoAttachmentRefs {
+    final manager = $$VehiculoDocumentoAttachmentTableTableManager(
+      $_db,
+      $_db.vehiculoDocumentoAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _vehiculoDocumentoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AttachmentTableFilterComposer
@@ -61062,6 +62097,35 @@ class $$AttachmentTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> vehiculoDocumentoAttachmentRefs(
+    Expression<bool> Function(
+      $$VehiculoDocumentoAttachmentTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$VehiculoDocumentoAttachmentTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoDocumentoAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoDocumentoAttachmentTableFilterComposer(
+                $db: $db,
+                $table: $db.vehiculoDocumentoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -61586,6 +62650,35 @@ class $$AttachmentTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> vehiculoDocumentoAttachmentRefs<T extends Object>(
+    Expression<T> Function(
+      $$VehiculoDocumentoAttachmentTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$VehiculoDocumentoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoDocumentoAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoDocumentoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.vehiculoDocumentoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AttachmentTableTableManager
@@ -61618,6 +62711,7 @@ class $$AttachmentTableTableManager
             bool asignacionAttachmentRefs,
             bool vehiculoRefs,
             bool vehiculoAttachmentRefs,
+            bool vehiculoDocumentoAttachmentRefs,
           })
         > {
   $$AttachmentTableTableManager(_$AppDatabase db, $AttachmentTable table)
@@ -61710,6 +62804,7 @@ class $$AttachmentTableTableManager
             asignacionAttachmentRefs = false,
             vehiculoRefs = false,
             vehiculoAttachmentRefs = false,
+            vehiculoDocumentoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -61732,6 +62827,8 @@ class $$AttachmentTableTableManager
                 if (asignacionAttachmentRefs) db.asignacionAttachment,
                 if (vehiculoRefs) db.vehiculo,
                 if (vehiculoAttachmentRefs) db.vehiculoAttachment,
+                if (vehiculoDocumentoAttachmentRefs)
+                  db.vehiculoDocumentoAttachment,
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -62088,6 +63185,28 @@ class $$AttachmentTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (vehiculoDocumentoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      VehiculoDocumentoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._vehiculoDocumentoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).vehiculoDocumentoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -62125,6 +63244,7 @@ typedef $$AttachmentTableProcessedTableManager =
         bool asignacionAttachmentRefs,
         bool vehiculoRefs,
         bool vehiculoAttachmentRefs,
+        bool vehiculoDocumentoAttachmentRefs,
       })
     >;
 typedef $$HorarioTableCreateCompanionBuilder =
@@ -107144,6 +108264,33 @@ final class $$VehiculoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $VehiculoDocumentoTable,
+    List<VehiculoDocumentoData>
+  >
+  _vehiculoDocumentoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.vehiculoDocumento,
+        aliasName: $_aliasNameGenerator(
+          db.vehiculo.id,
+          db.vehiculoDocumento.vehiculoId,
+        ),
+      );
+
+  $$VehiculoDocumentoTableProcessedTableManager get vehiculoDocumentoRefs {
+    final manager = $$VehiculoDocumentoTableTableManager(
+      $_db,
+      $_db.vehiculoDocumento,
+    ).filter((f) => f.vehiculoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _vehiculoDocumentoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$VehiculoTableFilterComposer
@@ -107344,6 +108491,31 @@ class $$VehiculoTableFilterComposer
           }) => $$VehiculoKilometrajeTableFilterComposer(
             $db: $db,
             $table: $db.vehiculoKilometraje,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> vehiculoDocumentoRefs(
+    Expression<bool> Function($$VehiculoDocumentoTableFilterComposer f) f,
+  ) {
+    final $$VehiculoDocumentoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.vehiculoDocumento,
+      getReferencedColumn: (t) => t.vehiculoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoDocumentoTableFilterComposer(
+            $db: $db,
+            $table: $db.vehiculoDocumento,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -107672,6 +108844,32 @@ class $$VehiculoTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> vehiculoDocumentoRefs<T extends Object>(
+    Expression<T> Function($$VehiculoDocumentoTableAnnotationComposer a) f,
+  ) {
+    final $$VehiculoDocumentoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoDocumento,
+          getReferencedColumn: (t) => t.vehiculoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoDocumentoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.vehiculoDocumento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$VehiculoTableTableManager
@@ -107692,6 +108890,7 @@ class $$VehiculoTableTableManager
             bool vehiculoAttachmentRefs,
             bool asignacionVehiculoRefs,
             bool vehiculoKilometrajeRefs,
+            bool vehiculoDocumentoRefs,
           })
         > {
   $$VehiculoTableTableManager(_$AppDatabase db, $VehiculoTable table)
@@ -107816,6 +109015,7 @@ class $$VehiculoTableTableManager
             vehiculoAttachmentRefs = false,
             asignacionVehiculoRefs = false,
             vehiculoKilometrajeRefs = false,
+            vehiculoDocumentoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -107823,6 +109023,7 @@ class $$VehiculoTableTableManager
                 if (vehiculoAttachmentRefs) db.vehiculoAttachment,
                 if (asignacionVehiculoRefs) db.asignacionVehiculo,
                 if (vehiculoKilometrajeRefs) db.vehiculoKilometraje,
+                if (vehiculoDocumentoRefs) db.vehiculoDocumento,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -107924,6 +109125,28 @@ class $$VehiculoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (vehiculoDocumentoRefs)
+                    await $_getPrefetchedData<
+                      VehiculoData,
+                      $VehiculoTable,
+                      VehiculoDocumentoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$VehiculoTableReferences
+                          ._vehiculoDocumentoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$VehiculoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).vehiculoDocumentoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.vehiculoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -107949,6 +109172,7 @@ typedef $$VehiculoTableProcessedTableManager =
         bool vehiculoAttachmentRefs,
         bool asignacionVehiculoRefs,
         bool vehiculoKilometrajeRefs,
+        bool vehiculoDocumentoRefs,
       })
     >;
 typedef $$VehiculoAttachmentTableCreateCompanionBuilder =
@@ -109446,6 +110670,991 @@ typedef $$VehiculoKilometrajeTableProcessedTableManager =
       VehiculoKilometrajeData,
       PrefetchHooks Function({bool vehiculoId})
     >;
+typedef $$VehiculoDocumentoTableCreateCompanionBuilder =
+    VehiculoDocumentoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String vehiculoId,
+      required String tipo,
+      Value<String?> tipoOtroDescripcion,
+      Value<String?> numeroFolio,
+      Value<DateTime?> fechaEmision,
+      Value<DateTime?> fechaVencimiento,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$VehiculoDocumentoTableUpdateCompanionBuilder =
+    VehiculoDocumentoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> vehiculoId,
+      Value<String> tipo,
+      Value<String?> tipoOtroDescripcion,
+      Value<String?> numeroFolio,
+      Value<DateTime?> fechaEmision,
+      Value<DateTime?> fechaVencimiento,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$VehiculoDocumentoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $VehiculoDocumentoTable,
+          VehiculoDocumentoData
+        > {
+  $$VehiculoDocumentoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $VehiculoTable _vehiculoIdTable(_$AppDatabase db) =>
+      db.vehiculo.createAlias(
+        $_aliasNameGenerator(db.vehiculoDocumento.vehiculoId, db.vehiculo.id),
+      );
+
+  $$VehiculoTableProcessedTableManager get vehiculoId {
+    final $_column = $_itemColumn<String>('vehiculo_id')!;
+
+    final manager = $$VehiculoTableTableManager(
+      $_db,
+      $_db.vehiculo,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_vehiculoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $VehiculoDocumentoAttachmentTable,
+    List<VehiculoDocumentoAttachmentData>
+  >
+  _vehiculoDocumentoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.vehiculoDocumentoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.vehiculoDocumento.id,
+          db.vehiculoDocumentoAttachment.vehiculoDocumentoId,
+        ),
+      );
+
+  $$VehiculoDocumentoAttachmentTableProcessedTableManager
+  get vehiculoDocumentoAttachmentRefs {
+    final manager = $$VehiculoDocumentoAttachmentTableTableManager(
+      $_db,
+      $_db.vehiculoDocumentoAttachment,
+    ).filter(
+      (f) => f.vehiculoDocumentoId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _vehiculoDocumentoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$VehiculoDocumentoTableFilterComposer
+    extends Composer<_$AppDatabase, $VehiculoDocumentoTable> {
+  $$VehiculoDocumentoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoOtroDescripcion => $composableBuilder(
+    column: $table.tipoOtroDescripcion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get numeroFolio => $composableBuilder(
+    column: $table.numeroFolio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaEmision => $composableBuilder(
+    column: $table.fechaEmision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaVencimiento => $composableBuilder(
+    column: $table.fechaVencimiento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$VehiculoTableFilterComposer get vehiculoId {
+    final $$VehiculoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehiculoId,
+      referencedTable: $db.vehiculo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoTableFilterComposer(
+            $db: $db,
+            $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> vehiculoDocumentoAttachmentRefs(
+    Expression<bool> Function(
+      $$VehiculoDocumentoAttachmentTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$VehiculoDocumentoAttachmentTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoDocumentoAttachment,
+          getReferencedColumn: (t) => t.vehiculoDocumentoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoDocumentoAttachmentTableFilterComposer(
+                $db: $db,
+                $table: $db.vehiculoDocumentoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$VehiculoDocumentoTableOrderingComposer
+    extends Composer<_$AppDatabase, $VehiculoDocumentoTable> {
+  $$VehiculoDocumentoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoOtroDescripcion => $composableBuilder(
+    column: $table.tipoOtroDescripcion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get numeroFolio => $composableBuilder(
+    column: $table.numeroFolio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaEmision => $composableBuilder(
+    column: $table.fechaEmision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaVencimiento => $composableBuilder(
+    column: $table.fechaVencimiento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$VehiculoTableOrderingComposer get vehiculoId {
+    final $$VehiculoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehiculoId,
+      referencedTable: $db.vehiculo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoTableOrderingComposer(
+            $db: $db,
+            $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VehiculoDocumentoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VehiculoDocumentoTable> {
+  $$VehiculoDocumentoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoOtroDescripcion => $composableBuilder(
+    column: $table.tipoOtroDescripcion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get numeroFolio => $composableBuilder(
+    column: $table.numeroFolio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaEmision => $composableBuilder(
+    column: $table.fechaEmision,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaVencimiento => $composableBuilder(
+    column: $table.fechaVencimiento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  $$VehiculoTableAnnotationComposer get vehiculoId {
+    final $$VehiculoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehiculoId,
+      referencedTable: $db.vehiculo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> vehiculoDocumentoAttachmentRefs<T extends Object>(
+    Expression<T> Function(
+      $$VehiculoDocumentoAttachmentTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$VehiculoDocumentoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoDocumentoAttachment,
+          getReferencedColumn: (t) => t.vehiculoDocumentoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoDocumentoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.vehiculoDocumentoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$VehiculoDocumentoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VehiculoDocumentoTable,
+          VehiculoDocumentoData,
+          $$VehiculoDocumentoTableFilterComposer,
+          $$VehiculoDocumentoTableOrderingComposer,
+          $$VehiculoDocumentoTableAnnotationComposer,
+          $$VehiculoDocumentoTableCreateCompanionBuilder,
+          $$VehiculoDocumentoTableUpdateCompanionBuilder,
+          (VehiculoDocumentoData, $$VehiculoDocumentoTableReferences),
+          VehiculoDocumentoData,
+          PrefetchHooks Function({
+            bool vehiculoId,
+            bool vehiculoDocumentoAttachmentRefs,
+          })
+        > {
+  $$VehiculoDocumentoTableTableManager(
+    _$AppDatabase db,
+    $VehiculoDocumentoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$VehiculoDocumentoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$VehiculoDocumentoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$VehiculoDocumentoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> vehiculoId = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String?> tipoOtroDescripcion = const Value.absent(),
+                Value<String?> numeroFolio = const Value.absent(),
+                Value<DateTime?> fechaEmision = const Value.absent(),
+                Value<DateTime?> fechaVencimiento = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehiculoDocumentoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                vehiculoId: vehiculoId,
+                tipo: tipo,
+                tipoOtroDescripcion: tipoOtroDescripcion,
+                numeroFolio: numeroFolio,
+                fechaEmision: fechaEmision,
+                fechaVencimiento: fechaVencimiento,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String vehiculoId,
+                required String tipo,
+                Value<String?> tipoOtroDescripcion = const Value.absent(),
+                Value<String?> numeroFolio = const Value.absent(),
+                Value<DateTime?> fechaEmision = const Value.absent(),
+                Value<DateTime?> fechaVencimiento = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehiculoDocumentoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                vehiculoId: vehiculoId,
+                tipo: tipo,
+                tipoOtroDescripcion: tipoOtroDescripcion,
+                numeroFolio: numeroFolio,
+                fechaEmision: fechaEmision,
+                fechaVencimiento: fechaVencimiento,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$VehiculoDocumentoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            vehiculoId = false,
+            vehiculoDocumentoAttachmentRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (vehiculoDocumentoAttachmentRefs)
+                  db.vehiculoDocumentoAttachment,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (vehiculoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.vehiculoId,
+                            referencedTable: $$VehiculoDocumentoTableReferences
+                                ._vehiculoIdTable(db),
+                            referencedColumn:
+                                $$VehiculoDocumentoTableReferences
+                                    ._vehiculoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (vehiculoDocumentoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      VehiculoDocumentoData,
+                      $VehiculoDocumentoTable,
+                      VehiculoDocumentoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$VehiculoDocumentoTableReferences
+                          ._vehiculoDocumentoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$VehiculoDocumentoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).vehiculoDocumentoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.vehiculoDocumentoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$VehiculoDocumentoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VehiculoDocumentoTable,
+      VehiculoDocumentoData,
+      $$VehiculoDocumentoTableFilterComposer,
+      $$VehiculoDocumentoTableOrderingComposer,
+      $$VehiculoDocumentoTableAnnotationComposer,
+      $$VehiculoDocumentoTableCreateCompanionBuilder,
+      $$VehiculoDocumentoTableUpdateCompanionBuilder,
+      (VehiculoDocumentoData, $$VehiculoDocumentoTableReferences),
+      VehiculoDocumentoData,
+      PrefetchHooks Function({
+        bool vehiculoId,
+        bool vehiculoDocumentoAttachmentRefs,
+      })
+    >;
+typedef $$VehiculoDocumentoAttachmentTableCreateCompanionBuilder =
+    VehiculoDocumentoAttachmentCompanion Function({
+      required String attachmentId,
+      required String vehiculoDocumentoId,
+      Value<int> rowid,
+    });
+typedef $$VehiculoDocumentoAttachmentTableUpdateCompanionBuilder =
+    VehiculoDocumentoAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> vehiculoDocumentoId,
+      Value<int> rowid,
+    });
+
+final class $$VehiculoDocumentoAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $VehiculoDocumentoAttachmentTable,
+          VehiculoDocumentoAttachmentData
+        > {
+  $$VehiculoDocumentoAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.vehiculoDocumentoAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $VehiculoDocumentoTable _vehiculoDocumentoIdTable(_$AppDatabase db) =>
+      db.vehiculoDocumento.createAlias(
+        $_aliasNameGenerator(
+          db.vehiculoDocumentoAttachment.vehiculoDocumentoId,
+          db.vehiculoDocumento.id,
+        ),
+      );
+
+  $$VehiculoDocumentoTableProcessedTableManager get vehiculoDocumentoId {
+    final $_column = $_itemColumn<String>('vehiculo_documento_id')!;
+
+    final manager = $$VehiculoDocumentoTableTableManager(
+      $_db,
+      $_db.vehiculoDocumento,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_vehiculoDocumentoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$VehiculoDocumentoAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $VehiculoDocumentoAttachmentTable> {
+  $$VehiculoDocumentoAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$VehiculoDocumentoTableFilterComposer get vehiculoDocumentoId {
+    final $$VehiculoDocumentoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehiculoDocumentoId,
+      referencedTable: $db.vehiculoDocumento,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoDocumentoTableFilterComposer(
+            $db: $db,
+            $table: $db.vehiculoDocumento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VehiculoDocumentoAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $VehiculoDocumentoAttachmentTable> {
+  $$VehiculoDocumentoAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$VehiculoDocumentoTableOrderingComposer get vehiculoDocumentoId {
+    final $$VehiculoDocumentoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehiculoDocumentoId,
+      referencedTable: $db.vehiculoDocumento,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoDocumentoTableOrderingComposer(
+            $db: $db,
+            $table: $db.vehiculoDocumento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VehiculoDocumentoAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VehiculoDocumentoAttachmentTable> {
+  $$VehiculoDocumentoAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$VehiculoDocumentoTableAnnotationComposer get vehiculoDocumentoId {
+    final $$VehiculoDocumentoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.vehiculoDocumentoId,
+          referencedTable: $db.vehiculoDocumento,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoDocumentoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.vehiculoDocumento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$VehiculoDocumentoAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VehiculoDocumentoAttachmentTable,
+          VehiculoDocumentoAttachmentData,
+          $$VehiculoDocumentoAttachmentTableFilterComposer,
+          $$VehiculoDocumentoAttachmentTableOrderingComposer,
+          $$VehiculoDocumentoAttachmentTableAnnotationComposer,
+          $$VehiculoDocumentoAttachmentTableCreateCompanionBuilder,
+          $$VehiculoDocumentoAttachmentTableUpdateCompanionBuilder,
+          (
+            VehiculoDocumentoAttachmentData,
+            $$VehiculoDocumentoAttachmentTableReferences,
+          ),
+          VehiculoDocumentoAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool vehiculoDocumentoId})
+        > {
+  $$VehiculoDocumentoAttachmentTableTableManager(
+    _$AppDatabase db,
+    $VehiculoDocumentoAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$VehiculoDocumentoAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$VehiculoDocumentoAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$VehiculoDocumentoAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> vehiculoDocumentoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehiculoDocumentoAttachmentCompanion(
+                attachmentId: attachmentId,
+                vehiculoDocumentoId: vehiculoDocumentoId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String vehiculoDocumentoId,
+                Value<int> rowid = const Value.absent(),
+              }) => VehiculoDocumentoAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                vehiculoDocumentoId: vehiculoDocumentoId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$VehiculoDocumentoAttachmentTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            attachmentId = false,
+            vehiculoDocumentoId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable:
+                                $$VehiculoDocumentoAttachmentTableReferences
+                                    ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$VehiculoDocumentoAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (vehiculoDocumentoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.vehiculoDocumentoId,
+                            referencedTable:
+                                $$VehiculoDocumentoAttachmentTableReferences
+                                    ._vehiculoDocumentoIdTable(db),
+                            referencedColumn:
+                                $$VehiculoDocumentoAttachmentTableReferences
+                                    ._vehiculoDocumentoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$VehiculoDocumentoAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VehiculoDocumentoAttachmentTable,
+      VehiculoDocumentoAttachmentData,
+      $$VehiculoDocumentoAttachmentTableFilterComposer,
+      $$VehiculoDocumentoAttachmentTableOrderingComposer,
+      $$VehiculoDocumentoAttachmentTableAnnotationComposer,
+      $$VehiculoDocumentoAttachmentTableCreateCompanionBuilder,
+      $$VehiculoDocumentoAttachmentTableUpdateCompanionBuilder,
+      (
+        VehiculoDocumentoAttachmentData,
+        $$VehiculoDocumentoAttachmentTableReferences,
+      ),
+      VehiculoDocumentoAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool vehiculoDocumentoId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -109674,4 +111883,12 @@ class $AppDatabaseManager {
       $$AsignacionVehiculoTableTableManager(_db, _db.asignacionVehiculo);
   $$VehiculoKilometrajeTableTableManager get vehiculoKilometraje =>
       $$VehiculoKilometrajeTableTableManager(_db, _db.vehiculoKilometraje);
+  $$VehiculoDocumentoTableTableManager get vehiculoDocumento =>
+      $$VehiculoDocumentoTableTableManager(_db, _db.vehiculoDocumento);
+  $$VehiculoDocumentoAttachmentTableTableManager
+  get vehiculoDocumentoAttachment =>
+      $$VehiculoDocumentoAttachmentTableTableManager(
+        _db,
+        _db.vehiculoDocumentoAttachment,
+      );
 }

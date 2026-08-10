@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 31;
+const _currentSchemaVersion = 32;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -7497,6 +7497,111 @@ void main() {
             ),
           );
       expect(lectura.kilometraje, 15000);
+
+      await db.close();
+    },
+  );
+
+  test(
+    '32.json coincide con el esquema final de la Etapa 8C (tablas nuevas VehiculoDocumento, '
+    'VehiculoDocumentoAttachment, sin índices propios)',
+    () async {
+      final schema = await verifier.schemaAt(32);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['vehiculo_documento', 'vehiculo_documento_attachment']));
+
+      final sqlDocumento =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo_documento'")
+                  .single['sql']
+              as String;
+      expect(
+        sqlDocumento,
+        contains(
+          'CHECK (fecha_vencimiento IS NULL OR fecha_emision IS NULL OR fecha_vencimiento >= fecha_emision)',
+        ),
+      );
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 31 → 32 conserva un Vehículo real y crea la tabla VehiculoDocumento vacía',
+    () async {
+      final schemaV31 = await verifier.schemaAt(31);
+      final raw = schemaV31.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO vehiculo (
+        id, codigo, marca, modelo, tipo_vehiculo, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vehiculo-real', 'VEH-000001', 'BMW', '320i', 'sedan', 'disponible', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV31.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final vehiculos = await db.select(db.vehiculo).get();
+      expect(vehiculos, hasLength(1), reason: 'ningún Vehículo real debe perderse en una migración puramente aditiva');
+
+      final documentos = await db.select(db.vehiculoDocumento).get();
+      expect(documentos, isEmpty, reason: 'VehiculoDocumento es tabla nueva en 8C, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de VehiculoDocumento tras la migración: fecha_vencimiento >= fecha_emision cuando ambas existen',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final vehiculo = await db.into(db.vehiculo).insertReturning(
+            VehiculoCompanion.insert(codigo: 'VEH-000001', marca: 'BMW', modelo: '320i', tipoVehiculo: 'sedan'),
+          );
+
+      await expectLater(
+        db.into(db.vehiculoDocumento).insert(
+              VehiculoDocumentoCompanion.insert(
+                vehiculoId: vehiculo.id,
+                tipo: 'seguro',
+                fechaEmision: Value(DateTime(2026, 6, 1)),
+                fechaVencimiento: Value(DateTime(2026, 1, 1)),
+              ),
+            ),
+        throwsA(anything),
+        reason: 'fecha_vencimiento no puede ser anterior a fecha_emision',
+      );
+
+      final documento = await db.into(db.vehiculoDocumento).insertReturning(
+            VehiculoDocumentoCompanion.insert(
+              vehiculoId: vehiculo.id,
+              tipo: 'facturaCartaFactura',
+            ),
+          );
+      expect(documento.fechaVencimiento, isNull, reason: 'documentos sin vencimiento (ej. factura) son válidos');
 
       await db.close();
     },

@@ -55,6 +55,7 @@ import '../../features/inventario/data/tables/descuento_inventario_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_attachment_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
 import '../../features/vehiculos/data/tables/asignacion_vehiculo_table.dart';
+import '../../features/vehiculos/data/tables/vehiculo_documento_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_kilometraje_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_table.dart';
 import 'migrations/migrar_asignacion_attachment_v29.dart';
@@ -192,12 +193,14 @@ class AppMetadata extends Table {
   VehiculoAttachment,
   AsignacionVehiculo,
   VehiculoKilometraje,
+  VehiculoDocumento,
+  VehiculoDocumentoAttachment,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 32;
 
   @override
   MigrationStrategy get migration {
@@ -685,6 +688,16 @@ class AppDatabase extends _$AppDatabase {
         // `from <= 30` es seguro sin acotar un origen exacto.
         if (to >= 31 && from <= 30) {
           await migrarAsignacionVehiculoV31(this, m);
+        }
+        // Aditiva (Etapa 8C): `VehiculoDocumento`/
+        // `VehiculoDocumentoAttachment` — ninguna con índice propio, así
+        // que a diferencia de 8A/8B basta `m.createTable` directo (sin
+        // migración dedicada), mismo criterio que `DescuentoInventario`/
+        // `AsignacionAttachment` en 7B. Tablas enteramente nuevas, así
+        // que `from <= 31` es seguro sin acotar un origen exacto.
+        if (to >= 32 && from <= 31) {
+          await m.createTable(vehiculoDocumento);
+          await m.createTable(vehiculoDocumentoAttachment);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

@@ -2,6 +2,7 @@
 // sidebar, marcado del destino activo y presencia del logotipo — usando
 // Keys estables, no únicamente texto traducido.
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -419,6 +420,46 @@ void main() {
       // Confirma que el Empleado creado directo en BD sí aparece en el
       // listado (sanity check del setup de la prueba).
       expect(empleado.id, isNotEmpty);
+    },
+  );
+
+  testWidgets(
+    'Vehículos: la pestaña Alertas muestra documentos vencidos pero excluye vehículos dados de baja (Etapa 8C, punto 10)',
+    (tester) async {
+      final db = await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      final activo = await db.into(db.vehiculo).insertReturning(
+            VehiculoCompanion.insert(codigo: 'VEH-A', marca: 'BMW', modelo: '320i', tipoVehiculo: 'sedan'),
+          );
+      final baja = await db.into(db.vehiculo).insertReturning(
+            VehiculoCompanion.insert(
+              codigo: 'VEH-B',
+              marca: 'Nissan',
+              modelo: 'Versa',
+              tipoVehiculo: 'sedan',
+              estatus: const Value('baja'),
+              fechaBaja: Value(DateTime(2026, 1, 1)),
+              motivoBaja: const Value('venta'),
+            ),
+          );
+
+      // Vencimiento fijo en el pasado lejano — siempre "vencido" sin
+      // importar la fecha real en la que corra la prueba.
+      await db.into(db.vehiculoDocumento).insert(
+            VehiculoDocumentoCompanion.insert(vehiculoId: activo.id, tipo: 'seguro', fechaVencimiento: Value(DateTime(2000, 1, 1))),
+          );
+      await db.into(db.vehiculoDocumento).insert(
+            VehiculoDocumentoCompanion.insert(vehiculoId: baja.id, tipo: 'seguro', fechaVencimiento: Value(DateTime(2000, 1, 1))),
+          );
+
+      await tester.tap(find.byKey(const Key('nav_item_vehiculos')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.vehiculosTabAlertas));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('VEH-A'), findsOneWidget, reason: 'el vehículo activo con documento vencido sí genera alerta');
+      expect(find.textContaining('VEH-B'), findsNothing, reason: 'el vehículo dado de baja no debe generar ruido de alertas');
     },
   );
 }

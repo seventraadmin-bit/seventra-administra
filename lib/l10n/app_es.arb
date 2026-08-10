@@ -2618,5 +2618,80 @@
   "vehiculoAsignadoSeccionTitulo": "Vehículo asignado",
   "vehiculoAsignadoVacio": "Sin vehículo asignado.",
   "vehiculoAsignadoDesde": "Desde",
-  "vehiculoAsignadoBotonVerExpediente": "Ver expediente"
+  "vehiculoAsignadoBotonVerExpediente": "Ver expediente",
+
+  "vehiculosTabFlotilla": "Flotilla",
+  "vehiculosTabAlertas": "Alertas",
+
+  "tipoDocumentoVehiculoTarjetaCirculacion": "Tarjeta de circulación",
+  "tipoDocumentoVehiculoSeguro": "Seguro",
+  "tipoDocumentoVehiculoVerificacion": "Verificación",
+  "tipoDocumentoVehiculoTenenciaRefrendo": "Tenencia / Refrendo",
+  "tipoDocumentoVehiculoFacturaCartaFactura": "Factura / Carta factura",
+  "tipoDocumentoVehiculoPoliza": "Póliza",
+  "tipoDocumentoVehiculoOtro": "Otro",
+
+  "estadoVigenciaDocumentoSinVencimiento": "Sin vencimiento",
+  "estadoVigenciaDocumentoVigente": "Vigente",
+  "estadoVigenciaDocumentoProximoAVencer": "Próximo a vencer",
+  "estadoVigenciaDocumentoVencido": "Vencido",
+
+  "vehiculoDocumentoDetalleVigenteHasta": "Vigente hasta {fecha}",
+  "@vehiculoDocumentoDetalleVigenteHasta": {
+    "placeholders": {
+      "fecha": {
+        "type": "String"
+      }
+    }
+  },
+  "vehiculoDocumentoDetalleVenceEnDias": "Vence en {dias} días",
+  "@vehiculoDocumentoDetalleVenceEnDias": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      }
+    }
+  },
+  "vehiculoDocumentoDetalleVencidoDesde": "Venció el {fecha}",
+  "@vehiculoDocumentoDetalleVencidoDesde": {
+    "placeholders": {
+      "fecha": {
+        "type": "String"
+      }
+    }
+  },
+
+  "vehiculoDocumentosSeccionTitulo": "Documentos",
+  "vehiculoDocumentosVacio": "Sin documentos registrados.",
+  "vehiculoBotonAgregarDocumento": "Agregar documento",
+  "vehiculoBotonRenovarDocumento": "Renovar",
+  "vehiculoBotonVerHistorialDocumento": "Ver histórico",
+  "vehiculoDocumentoBotonAbrir": "Abrir",
+
+  "vehiculoDocumentoDialogoTituloNuevo": "Agregar documento",
+  "vehiculoDocumentoDialogoTituloRenovar": "Renovar documento",
+  "vehiculoDocumentoCampoTipo": "Tipo de documento",
+  "vehiculoDocumentoCampoDescripcionOtro": "Descripción",
+  "vehiculoDocumentoCampoFolio": "Folio / Número",
+  "vehiculoDocumentoCampoFechaEmision": "Fecha de emisión",
+  "vehiculoDocumentoCampoFechaVencimiento": "Fecha de vencimiento",
+  "vehiculoDocumentoCampoObservaciones": "Observaciones",
+  "vehiculoDocumentoCampoArchivo": "Archivo (opcional)",
+  "vehiculoDocumentoBotonSeleccionarArchivo": "Seleccionar archivo",
+  "vehiculoDocumentoBotonGuardarDocumento": "Guardar documento",
+  "vehiculoDocumentoGuardadoExito": "Documento guardado.",
+  "vehiculoDocumentoErrorDescripcionRequerida": "La descripción es obligatoria cuando el tipo es \"Otro\".",
+  "vehiculoDocumentoErrorFechasInvalidas": "La fecha de vencimiento no puede ser anterior a la de emisión.",
+  "vehiculoDocumentoErrorInesperado": "Ocurrió un error inesperado.",
+
+  "vehiculoDocumentoHistorialDialogoTitulo": "Histórico del documento",
+  "vehiculoDocumentoHistorialVacio": "Sin historial.",
+  "vehiculoDocumentoHistorialBotonCerrar": "Cerrar",
+
+  "vehiculosAlertasTitulo": "Alertas de documentos",
+  "vehiculosAlertasVacio": "Sin documentos vencidos ni próximos a vencer.",
+  "vehiculosAlertasColumnaVehiculo": "Vehículo",
+  "vehiculosAlertasColumnaDocumento": "Documento",
+  "vehiculosAlertasColumnaEstado": "Estado",
+  "vehiculosAlertasColumnaVencimiento": "Vencimiento"
 }
