@@ -33,6 +33,7 @@ import '../../features/finanzas/data/tables/ingreso_attachment_table.dart';
 import '../../features/finanzas/data/tables/ingreso_table.dart';
 import '../../features/finanzas/data/tables/pago_attachment_table.dart';
 import '../../features/finanzas/data/tables/pago_table.dart';
+import '../../features/personal/data/tables/asignacion_servicio_sueldo_vigencia_table.dart';
 import '../../features/personal/data/tables/asignacion_servicio_table.dart';
 import '../../features/personal/data/tables/empleado_attachment_table.dart';
 import '../../features/personal/data/tables/empleado_table.dart';
@@ -42,6 +43,7 @@ import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_empleado_v21.dart';
 import 'migrations/migrar_empleado_v23.dart';
 import 'migrations/migrar_ficha_tecnica_empleado_v22.dart';
+import 'migrations/migrar_servicio_v24.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
 import 'migrations/migrar_attachment_v13.dart';
@@ -135,6 +137,7 @@ class AppMetadata extends Table {
   EmpleadoEvento,
   EmpleadoPeriodoLaboral,
   AsignacionServicio,
+  AsignacionServicioSueldoVigencia,
   FichaTecnicaEmpleado,
   EmpresaAttachment,
   ClienteAttachment,
@@ -149,7 +152,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration {
@@ -528,6 +531,31 @@ class AppDatabase extends _$AppDatabase {
         // arriba, que para cuando se ejecuta ya incluye estas columnas.
         if (to >= 23 && from >= 18 && from <= 22) {
           await migrarEmpleadoV23(this, m);
+        }
+        // Aditiva (Etapa 6B): tabla nueva `AsignacionServicioSueldoVigencia`
+        // (historial de sueldo/bono por asignación) — tabla enteramente
+        // nueva, segura para cualquier `from <= 23`, sin gotcha. Requiere
+        // que `asignacion_servicio` ya exista (su FK la referencia) — el
+        // paso que la crea (`migrarAsignacionServicioV21`, arriba) siempre
+        // corre antes en esta misma cadena secuencial de `onUpgrade`.
+        if (to >= 24 && from <= 23) {
+          await m.createTable(asignacionServicioSueldoVigencia);
+        }
+        // Estructural (Etapa 6B): agrega `sueldoMensualReferenciaPersonal`/
+        // `bonoMensualReferenciaPersonal` a `Servicio` — requiere recrear
+        // la tabla porque ambas llevan `CHECK` (ver el doc comment de
+        // `migrarServicioV24`: `ALTER TABLE ... ADD COLUMN` no agrega
+        // restricciones de tabla).
+        //
+        // Gotcha de rango, mismo criterio que `migrarServicioV6`/
+        // `migrarServicioV7`: `from == 1` y `from` 2 a 5 ya obtienen la
+        // forma *actual* (incluye estas 2 columnas) vía
+        // `_createEtapa4ATables`/`migrarServicioV6` (ambos usan
+        // `m.createTable(servicio)`, que siempre lee la clase Dart de
+        // hoy) — solo `from` 6 a 23 tiene la forma física anterior y
+        // necesita este paso.
+        if (to >= 24 && from >= 6 && from <= 23) {
+          await migrarServicioV24(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

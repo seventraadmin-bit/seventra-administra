@@ -88,4 +88,12 @@ abstract interface class ServicioRepository {
   /// Texto libre transitorio — sin validación de dominio más allá de
   /// recorte/`vacío→null` (ver `GuardarResponsableInternoUseCase`).
   Future<ServicioData> guardarResponsableInterno({required String servicioId, required String? texto});
+
+  /// Sueldo/bono mensual de referencia (Etapa 6B) — escritura cruda, sin
+  /// validaciones de negocio (ver `GuardarSueldoReferenciaServicioUseCase`).
+  Future<ServicioData> guardarSueldoReferencia({
+    required String servicioId,
+    required int? sueldoMensualReferenciaPersonal,
+    required int? bonoMensualReferenciaPersonal,
+  });
 }

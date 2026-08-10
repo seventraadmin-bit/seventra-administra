@@ -783,6 +783,15 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         case CrearEmpleadoServicioNoActivo():
           errorAdscripcion = l10n.empleadoErrorServicioNoActivo;
           return null;
+        // TODO(Etapa 6B UI): mensaje dedicado cuando el Servicio de
+        // adscripción no tiene sueldo de referencia capturado —
+        // pendiente junto con la UI de captura de
+        // `Servicio.sueldoMensualReferenciaPersonal`.
+        case CrearEmpleadoSueldoAsignacionRequerido():
+        case CrearEmpleadoSueldoAsignacionInvalido():
+        case CrearEmpleadoBonoAsignacionInvalido():
+          errorAdscripcion = l10n.empleadoErrorServicioNoActivo;
+          return null;
         case CrearEmpleadoDatosBancariosInvalidos():
           errorDatosBancarios = l10n.empleadoErrorDatosBancariosInvalidos;
           return null;

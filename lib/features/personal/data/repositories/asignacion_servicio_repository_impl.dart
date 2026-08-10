@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/tables/audit_columns.dart';
 
 import '../../domain/repositories/asignacion_servicio_repository.dart';
+import '../../domain/usecases/asignacion_sueldo_con_vigencia.dart';
 import '../tables/asignacion_servicio_table.dart';
 import '../tables/empleado_table.dart';
 import 'empleado_evento_writer.dart';
@@ -19,6 +21,11 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
 
   @override
   Future<AsignacionServicioData?> obtenerActivaPorEmpleado(String empleadoId) => _buscarActivaPorEmpleado(empleadoId);
+
+  @override
+  Future<AsignacionServicioData?> obtenerPorId(String asignacionServicioId) {
+    return (_db.select(_db.asignacionServicio)..where((t) => t.id.equals(asignacionServicioId))).getSingleOrNull();
+  }
 
   @override
   Future<List<AsignacionServicioData>> listarPorEmpleado(String empleadoId) {
@@ -43,11 +50,33 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
         .get();
   }
 
+  /// Primera vigencia de sueldo de una asignación recién creada (Etapa
+  /// 6B) — siempre abierta (`fechaFinVigencia == null`), fecha de inicio
+  /// igual a la de la propia asignación. Ninguna `AsignacionServicio`
+  /// existe sin al menos una de estas.
+  Future<void> _crearPrimeraVigenciaSueldo({
+    required String asignacionServicioId,
+    required DateTime fechaInicio,
+    required int sueldoMensual,
+    required int bonoMensual,
+  }) {
+    return _db.into(_db.asignacionServicioSueldoVigencia).insert(
+          AsignacionServicioSueldoVigenciaCompanion.insert(
+            asignacionServicioId: asignacionServicioId,
+            sueldoMensual: sueldoMensual,
+            bonoMensual: bonoMensual,
+            fechaInicioVigencia: fechaInicio,
+          ),
+        );
+  }
+
   @override
   Future<AsignacionServicioData> asignar({
     required String empleadoId,
     required String servicioId,
     required DateTime fechaInicio,
+    required int sueldoMensual,
+    required int bonoMensual,
     String? turnoId,
     String? observaciones,
     String? actor,
@@ -62,6 +91,12 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
               observaciones: Value(observaciones),
             ),
           );
+      await _crearPrimeraVigenciaSueldo(
+        asignacionServicioId: asignacion.id,
+        fechaInicio: fechaInicio,
+        sueldoMensual: sueldoMensual,
+        bonoMensual: bonoMensual,
+      );
       await registrarEventoEmpleado(
         _db,
         empleadoId: empleadoId,
@@ -78,6 +113,8 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
     required String empleadoId,
     required String nuevoServicioId,
     required DateTime fecha,
+    required int sueldoMensual,
+    required int bonoMensual,
     String? turnoId,
     String? observaciones,
     String? actor,
@@ -105,6 +142,12 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
               observaciones: Value(observaciones),
             ),
           );
+      await _crearPrimeraVigenciaSueldo(
+        asignacionServicioId: nueva.id,
+        fechaInicio: fecha,
+        sueldoMensual: sueldoMensual,
+        bonoMensual: bonoMensual,
+      );
 
       await registrarEventoEmpleado(
         _db,
@@ -199,6 +242,89 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
           datosRelevantes: {'servicioId': servicioId, 'motivo': MotivoTerminoAsignacion.servicioTerminado.name},
         );
       }
+    });
+  }
+
+  @override
+  Future<List<AsignacionServicioSueldoVigenciaData>> listarVigenciasSueldoActivas(String asignacionServicioId) {
+    return (_db.select(_db.asignacionServicioSueldoVigencia)
+          ..where(
+            (t) =>
+                t.asignacionServicioId.equals(asignacionServicioId) &
+                t.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name),
+          ))
+        .get();
+  }
+
+  @override
+  Future<List<AsignacionServicioSueldoVigenciaData>> listarHistorialSueldo(String asignacionServicioId) {
+    return (_db.select(_db.asignacionServicioSueldoVigencia)
+          ..where((t) => t.asignacionServicioId.equals(asignacionServicioId))
+          ..orderBy([(t) => OrderingTerm.asc(t.fechaInicioVigencia)]))
+        .get();
+  }
+
+  @override
+  Future<AsignacionServicioSueldoVigenciaData> registrarVigenciaSueldo({
+    required String asignacionServicioId,
+    required int sueldoMensual,
+    required int bonoMensual,
+    required DateTime fechaInicioVigencia,
+    String? observaciones,
+  }) {
+    return _db.transaction(() async {
+      final existentes = await listarVigenciasSueldoActivas(asignacionServicioId);
+      final inicioNueva = soloFechaSueldo(fechaInicioVigencia);
+
+      // Predecesora: la vigencia `activo` cuyo rango contiene o antecede
+      // a la nueva fecha de inicio — a lo más una, por la invariante de
+      // no-solapamiento (mismo criterio que `ServicioComercialRepositoryImpl.cambiarVigencia`).
+      AsignacionServicioSueldoVigenciaData? predecesora;
+      for (final v in existentes) {
+        final inicio = soloFechaSueldo(v.fechaInicioVigencia);
+        final fin = v.fechaFinVigencia == null ? null : soloFechaSueldo(v.fechaFinVigencia!);
+        if (!inicio.isAfter(inicioNueva) && (fin == null || !fin.isBefore(inicioNueva))) {
+          if (predecesora == null || inicio.isAfter(soloFechaSueldo(predecesora.fechaInicioVigencia))) {
+            predecesora = v;
+          }
+        }
+      }
+
+      if (predecesora != null) {
+        await (_db.update(_db.asignacionServicioSueldoVigencia)..where((t) => t.id.equals(predecesora!.id))).write(
+          AsignacionServicioSueldoVigenciaCompanion(
+            fechaFinVigencia: Value(inicioNueva.subtract(const Duration(days: 1))),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+
+      // Sucesora: entre las restantes, la de fecha de inicio más
+      // próxima después de la nueva.
+      AsignacionServicioSueldoVigenciaData? sucesora;
+      for (final v in existentes) {
+        if (predecesora != null && v.id == predecesora.id) continue;
+        final inicio = soloFechaSueldo(v.fechaInicioVigencia);
+        if (inicio.isAfter(inicioNueva)) {
+          if (sucesora == null || inicio.isBefore(soloFechaSueldo(sucesora.fechaInicioVigencia))) {
+            sucesora = v;
+          }
+        }
+      }
+
+      final fechaFinNueva =
+          sucesora != null ? soloFechaSueldo(sucesora.fechaInicioVigencia).subtract(const Duration(days: 1)) : null;
+
+      return _db.into(_db.asignacionServicioSueldoVigencia).insertReturning(
+            AsignacionServicioSueldoVigenciaCompanion.insert(
+              asignacionServicioId: asignacionServicioId,
+              sueldoMensual: sueldoMensual,
+              bonoMensual: bonoMensual,
+              fechaInicioVigencia: fechaInicioVigencia,
+              fechaFinVigencia: Value(fechaFinNueva),
+              observaciones: Value(observaciones),
+            ),
+          );
     });
   }
 }

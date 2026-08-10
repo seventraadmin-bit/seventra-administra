@@ -25,6 +25,15 @@ class CambiarServicioEmpleadoMismoServicio extends CambiarServicioEmpleadoResult
 
 class CambiarServicioEmpleadoFechaInvalida extends CambiarServicioEmpleadoResultado {}
 
+/// Mismo criterio que `AsignarEmpleadoServicioSueldoRequerido`: el nuevo
+/// Servicio no tiene sueldo de referencia y tampoco se capturó una
+/// excepción individual.
+class CambiarServicioEmpleadoSueldoRequerido extends CambiarServicioEmpleadoResultado {}
+
+class CambiarServicioEmpleadoSueldoInvalido extends CambiarServicioEmpleadoResultado {}
+
+class CambiarServicioEmpleadoBonoInvalido extends CambiarServicioEmpleadoResultado {}
+
 class CambiarServicioEmpleadoErrorInesperado extends CambiarServicioEmpleadoResultado {
   CambiarServicioEmpleadoErrorInesperado(this.mensaje);
   final String mensaje;
@@ -34,6 +43,11 @@ class CambiarServicioEmpleadoErrorInesperado extends CambiarServicioEmpleadoResu
 /// la asignación anterior (`motivoTermino = cambioServicio`, automático)
 /// y crea la nueva, en una sola transacción. Nunca obliga a "retirar
 /// primero, asignar después" (Resolución explícita de Marlon).
+///
+/// `sueldoMensual`/`bonoMensual` (Etapa 6B) son la excepción individual
+/// de la asignación *nueva* — mismo criterio de precarga/resolución que
+/// `AsignarEmpleadoServicioUseCase`. La asignación anterior conserva su
+/// propio historial de vigencias de sueldo sin tocarse.
 class CambiarServicioEmpleadoUseCase {
   CambiarServicioEmpleadoUseCase(
     this._empleadoRepository,
@@ -53,6 +67,8 @@ class CambiarServicioEmpleadoUseCase {
     required DateTime fecha,
     String? turnoId,
     String? observaciones,
+    int? sueldoMensual,
+    int? bonoMensual,
     String? actor,
   }) async {
     final empleado = await _empleadoRepository.obtenerPorId(empleadoId);
@@ -72,11 +88,20 @@ class CambiarServicioEmpleadoUseCase {
       return CambiarServicioEmpleadoFechaInvalida();
     }
 
+    final sueldoResuelto = sueldoMensual ?? nuevoServicio.sueldoMensualReferenciaPersonal;
+    if (sueldoResuelto == null) return CambiarServicioEmpleadoSueldoRequerido();
+    if (!_validator.sueldoValido(sueldoResuelto)) return CambiarServicioEmpleadoSueldoInvalido();
+
+    final bonoResuelto = bonoMensual ?? nuevoServicio.bonoMensualReferenciaPersonal ?? 0;
+    if (!_validator.bonoValido(bonoResuelto)) return CambiarServicioEmpleadoBonoInvalido();
+
     try {
       final asignacion = await _asignacionRepository.cambiarServicio(
         empleadoId: empleadoId,
         nuevoServicioId: nuevoServicioId,
         fecha: fecha,
+        sueldoMensual: sueldoResuelto,
+        bonoMensual: bonoResuelto,
         turnoId: turnoId,
         observaciones: observaciones,
         actor: actor,

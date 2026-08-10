@@ -26,6 +26,16 @@ class AsignarEmpleadoServicioServicioNoActivo extends AsignarEmpleadoServicioRes
 
 class AsignarEmpleadoServicioFechaInvalida extends AsignarEmpleadoServicioResultado {}
 
+/// El Servicio no tiene `sueldoMensualReferenciaPersonal` capturado y la
+/// asignación tampoco recibió un `sueldoMensual` de excepción — no hay
+/// ninguna fuente de la que precargar (Etapa 6B, toda asignación
+/// necesita un sueldo `> 0`).
+class AsignarEmpleadoServicioSueldoRequerido extends AsignarEmpleadoServicioResultado {}
+
+class AsignarEmpleadoServicioSueldoInvalido extends AsignarEmpleadoServicioResultado {}
+
+class AsignarEmpleadoServicioBonoInvalido extends AsignarEmpleadoServicioResultado {}
+
 class AsignarEmpleadoServicioErrorInesperado extends AsignarEmpleadoServicioResultado {
   AsignarEmpleadoServicioErrorInesperado(this.mensaje);
   final String mensaje;
@@ -36,6 +46,14 @@ class AsignarEmpleadoServicioErrorInesperado extends AsignarEmpleadoServicioResu
 /// horarios/incidencias/PCR (fuera de alcance explícito). Un Empleado
 /// solo puede tener una asignación vigente a la vez, reforzado también
 /// por el índice único parcial de `AsignacionServicio`.
+///
+/// `sueldoMensual`/`bonoMensual` (Etapa 6B) son la excepción individual
+/// — si se omiten, se precargan desde
+/// `Servicio.sueldoMensualReferenciaPersonal`/
+/// `bonoMensualReferenciaPersonal` (Resolución explícita de Marlon: "Al
+/// asignar personal, esos valores se precargan"). El bono, a falta de
+/// referencia y de excepción, cae a `0` — nunca bloquea la asignación
+/// por sí solo (acepta `0`, a diferencia del sueldo).
 class AsignarEmpleadoServicioUseCase {
   AsignarEmpleadoServicioUseCase(
     this._empleadoRepository,
@@ -55,6 +73,8 @@ class AsignarEmpleadoServicioUseCase {
     required DateTime fechaInicio,
     String? turnoId,
     String? observaciones,
+    int? sueldoMensual,
+    int? bonoMensual,
     String? actor,
   }) async {
     final empleado = await _empleadoRepository.obtenerPorId(empleadoId);
@@ -76,11 +96,20 @@ class AsignarEmpleadoServicioUseCase {
       return AsignarEmpleadoServicioFechaInvalida();
     }
 
+    final sueldoResuelto = sueldoMensual ?? servicio.sueldoMensualReferenciaPersonal;
+    if (sueldoResuelto == null) return AsignarEmpleadoServicioSueldoRequerido();
+    if (!_validator.sueldoValido(sueldoResuelto)) return AsignarEmpleadoServicioSueldoInvalido();
+
+    final bonoResuelto = bonoMensual ?? servicio.bonoMensualReferenciaPersonal ?? 0;
+    if (!_validator.bonoValido(bonoResuelto)) return AsignarEmpleadoServicioBonoInvalido();
+
     try {
       final asignacion = await _asignacionRepository.asignar(
         empleadoId: empleadoId,
         servicioId: servicioId,
         fechaInicio: fechaInicio,
+        sueldoMensual: sueldoResuelto,
+        bonoMensual: bonoResuelto,
         turnoId: turnoId,
         observaciones: observaciones,
         actor: actor,

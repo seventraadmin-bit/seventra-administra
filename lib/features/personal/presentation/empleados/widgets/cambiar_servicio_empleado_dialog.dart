@@ -114,6 +114,12 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
         case CambiarServicioEmpleadoEmpleadoNoExiste():
         case CambiarServicioEmpleadoNoTieneAsignacionVigente():
         case CambiarServicioEmpleadoErrorInesperado():
+        // TODO(Etapa 6B UI): mensaje dedicado cuando el nuevo Servicio no
+        // tiene sueldo de referencia capturado — pendiente junto con la
+        // UI de captura de `Servicio.sueldoMensualReferenciaPersonal`.
+        case CambiarServicioEmpleadoSueldoRequerido():
+        case CambiarServicioEmpleadoSueldoInvalido():
+        case CambiarServicioEmpleadoBonoInvalido():
           RisegFeedback.showError(context, l10n.cambiarServicioEmpleadoErrorInesperado);
           return false;
         case CambiarServicioEmpleadoServicioNoExiste():

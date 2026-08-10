@@ -21,7 +21,13 @@ abstract interface class EmpleadoRepository {
   /// `CrearEmpleadoUseCase` ya validó que el Servicio exista y esté
   /// activo antes de llegar aquí. `Empleado` nunca gana una columna
   /// `servicioId`.
-  Future<EmpleadoData> crear(EmpleadoCompanion datos, {String? servicioIdAsignacion, String? turnoIdAsignacion});
+  Future<EmpleadoData> crear(
+    EmpleadoCompanion datos, {
+    String? servicioIdAsignacion,
+    String? turnoIdAsignacion,
+    int? sueldoMensualAsignacion,
+    int? bonoMensualAsignacion,
+  });
 
   /// `cambios` nunca debe incluir `codigoEmpleado` — inmutable después
   /// de creado (responsabilidad de `CorregirEmpleadoUseCase`, mismo

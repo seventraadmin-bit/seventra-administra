@@ -41,6 +41,16 @@ class CrearEmpleadoServicioNoExiste extends CrearEmpleadoResultado {}
 
 class CrearEmpleadoServicioNoActivo extends CrearEmpleadoResultado {}
 
+/// El Servicio de adscripción no tiene `sueldoMensualReferenciaPersonal`
+/// capturado y tampoco se capturó una excepción individual
+/// (`sueldoMensualAsignacion`) — mismo criterio que
+/// `AsignarEmpleadoServicioSueldoRequerido` (Etapa 6B).
+class CrearEmpleadoSueldoAsignacionRequerido extends CrearEmpleadoResultado {}
+
+class CrearEmpleadoSueldoAsignacionInvalido extends CrearEmpleadoResultado {}
+
+class CrearEmpleadoBonoAsignacionInvalido extends CrearEmpleadoResultado {}
+
 /// Datos bancarios (Etapa 6A): se capturó algo pero falta el banco, o
 /// falta tanto tarjeta/cuenta como CLABE.
 class CrearEmpleadoDatosBancariosInvalidos extends CrearEmpleadoResultado {}
@@ -100,6 +110,14 @@ class CrearEmpleadoUseCase {
     // (ver `EmpleadoRepositoryImpl.crear`). ---
     String? servicioId,
     String? turnoId,
+    // Excepción individual de sueldo/bono para la asignación inicial
+    // (Etapa 6B) — solo relevante cuando `servicioId != null`; si se
+    // omite, se precarga desde
+    // `Servicio.sueldoMensualReferenciaPersonal`/
+    // `bonoMensualReferenciaPersonal`. Mismo criterio que
+    // `AsignarEmpleadoServicioUseCase`.
+    int? sueldoMensualAsignacion,
+    int? bonoMensualAsignacion,
     String? sucursalId,
     // --- Datos bancarios (Etapa 6A) — todo opcional; si se captura
     // algo, banco es obligatorio y se necesita al menos uno de
@@ -149,12 +167,21 @@ class CrearEmpleadoUseCase {
     }
 
     if (servicioId != null && sucursalId != null) return CrearEmpleadoAdscripcionAmbigua();
+    int? sueldoResuelto;
+    int? bonoResuelto;
     if (servicioId != null) {
       final servicio = await _servicioRepository.obtenerPorId(servicioId);
       if (servicio == null) return CrearEmpleadoServicioNoExiste();
       if (EstatusServicio.values.byName(servicio.estatus) != EstatusServicio.activo) {
         return CrearEmpleadoServicioNoActivo();
       }
+
+      sueldoResuelto = sueldoMensualAsignacion ?? servicio.sueldoMensualReferenciaPersonal;
+      if (sueldoResuelto == null) return CrearEmpleadoSueldoAsignacionRequerido();
+      if (sueldoResuelto <= 0) return CrearEmpleadoSueldoAsignacionInvalido();
+
+      bonoResuelto = bonoMensualAsignacion ?? servicio.bonoMensualReferenciaPersonal ?? 0;
+      if (bonoResuelto < 0) return CrearEmpleadoBonoAsignacionInvalido();
     }
 
     try {
@@ -200,6 +227,8 @@ class CrearEmpleadoUseCase {
         ),
         servicioIdAsignacion: servicioId,
         turnoIdAsignacion: turnoId,
+        sueldoMensualAsignacion: sueldoResuelto,
+        bonoMensualAsignacion: bonoResuelto,
       );
       return CrearEmpleadoExitoso(empleado);
     } catch (e) {

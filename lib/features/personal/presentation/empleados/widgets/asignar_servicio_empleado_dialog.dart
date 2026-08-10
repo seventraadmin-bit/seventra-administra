@@ -109,6 +109,12 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
         case AsignarEmpleadoServicioEmpleadoNoActivo():
         case AsignarEmpleadoServicioYaTieneAsignacionVigente():
         case AsignarEmpleadoServicioErrorInesperado():
+        // TODO(Etapa 6B UI): mensaje dedicado cuando el Servicio no tiene
+        // sueldo de referencia capturado — pendiente junto con la UI de
+        // captura de `Servicio.sueldoMensualReferenciaPersonal`.
+        case AsignarEmpleadoServicioSueldoRequerido():
+        case AsignarEmpleadoServicioSueldoInvalido():
+        case AsignarEmpleadoServicioBonoInvalido():
           RisegFeedback.showError(context, l10n.asignarServicioEmpleadoErrorInesperado);
           return false;
         case AsignarEmpleadoServicioServicioNoExiste():

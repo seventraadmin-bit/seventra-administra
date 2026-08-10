@@ -248,4 +248,20 @@ class ServicioRepositoryImpl implements ServicioRepository {
     );
     return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
   }
+
+  @override
+  Future<ServicioData> guardarSueldoReferencia({
+    required String servicioId,
+    required int? sueldoMensualReferenciaPersonal,
+    required int? bonoMensualReferenciaPersonal,
+  }) async {
+    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
+      ServicioCompanion(
+        sueldoMensualReferenciaPersonal: Value(sueldoMensualReferenciaPersonal),
+        bonoMensualReferenciaPersonal: Value(bonoMensualReferenciaPersonal),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+  }
 }

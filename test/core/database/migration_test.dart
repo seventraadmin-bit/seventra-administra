@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 23;
+const _currentSchemaVersion = 24;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -5928,6 +5928,166 @@ void main() {
             base.copyWith(bonoMensualAdministrativo: const Value(0)),
           );
       expect(conBonoCero.bonoMensualAdministrativo, 0, reason: 'bono_mensual_administrativo = 0 sí es válido');
+
+      await db.close();
+    },
+  );
+
+  test(
+    '24.json coincide con el esquema final de la Etapa 6B (sueldo/bono de referencia en Servicio, '
+    'tabla nueva AsignacionServicioSueldoVigencia)',
+    () async {
+      final schema = await verifier.schemaAt(24);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, contains('asignacion_servicio_sueldo_vigencia'));
+
+      final sqlServicio =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'servicio'")
+                  .single['sql']
+              as String;
+      expect(sqlServicio, contains('CHECK (sueldo_mensual_referencia_personal IS NULL OR sueldo_mensual_referencia_personal > 0)'));
+      expect(sqlServicio, contains('CHECK (bono_mensual_referencia_personal IS NULL OR bono_mensual_referencia_personal >= 0)'));
+
+      final sqlVigencia =
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_servicio_sueldo_vigencia'",
+                  )
+                  .single['sql']
+              as String;
+      expect(sqlVigencia, contains('"asignacion_servicio_id" TEXT NOT NULL REFERENCES asignacion_servicio (id)'));
+      expect(sqlVigencia, contains('CHECK (sueldo_mensual > 0)'));
+      expect(sqlVigencia, contains('CHECK (bono_mensual >= 0)'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 23 → 24 conserva un Servicio real (columnas nuevas en NULL) y crea AsignacionServicioSueldoVigencia vacía',
+    () async {
+      final schemaV23 = await verifier.schemaAt(23);
+      final raw = schemaV23.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-real', 'SER-000001', 'cliente-real', 'Vigilancia Sportium Toluca', '${SeedIds.tipoServicioVigilanciaFija}',
+        'activo', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV23.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final servicios = await db.select(db.servicio).get();
+      expect(servicios, hasLength(1), reason: 'ningún Servicio real debe perderse en una migración estructural');
+      expect(servicios.single.id, 'servicio-real');
+      expect(servicios.single.sueldoMensualReferenciaPersonal, isNull);
+      expect(servicios.single.bonoMensualReferenciaPersonal, isNull);
+
+      final vigenciasSueldo = await db.select(db.asignacionServicioSueldoVigencia).get();
+      expect(vigenciasSueldo, isEmpty, reason: 'AsignacionServicioSueldoVigencia es tabla nueva en 6B, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de sueldo/bono de referencia y de vigencia de sueldo tras la migración: sueldo debe ser > 0, bono acepta 0',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final cliente = await db.into(db.cliente).insertReturning(
+            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+          );
+      final baseServicio = ServicioCompanion.insert(
+        codigo: 'SER-000001',
+        clienteId: cliente.id,
+        nombre: 'Vigilancia Sportium Toluca',
+        tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+        fechaInicio: DateTime(2026, 1, 1),
+      );
+
+      await expectLater(
+        db.into(db.servicio).insert(baseServicio.copyWith(sueldoMensualReferenciaPersonal: const Value(0))),
+        throwsA(anything),
+        reason: 'sueldo_mensual_referencia_personal = 0 debe rechazarse (debe ser > 0)',
+      );
+
+      final servicio = await db.into(db.servicio).insertReturning(
+            baseServicio.copyWith(
+              sueldoMensualReferenciaPersonal: const Value(1500000),
+              bonoMensualReferenciaPersonal: const Value(0),
+            ),
+          );
+      expect(servicio.bonoMensualReferenciaPersonal, 0, reason: 'bono_mensual_referencia_personal = 0 sí es válido');
+
+      final empleado = await db.into(db.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 0,
+            ),
+          );
+      final asignacion = await db.into(db.asignacionServicio).insertReturning(
+            AsignacionServicioCompanion.insert(
+              empleadoId: empleado.id,
+              servicioId: servicio.id,
+              fechaInicio: DateTime(2026, 1, 1),
+            ),
+          );
+      final baseVigencia = AsignacionServicioSueldoVigenciaCompanion.insert(
+        asignacionServicioId: asignacion.id,
+        sueldoMensual: 1500000,
+        bonoMensual: 0,
+        fechaInicioVigencia: DateTime(2026, 1, 1),
+      );
+
+      await expectLater(
+        db.into(db.asignacionServicioSueldoVigencia).insert(baseVigencia.copyWith(sueldoMensual: const Value(0))),
+        throwsA(anything),
+        reason: 'sueldo_mensual = 0 debe rechazarse (debe ser > 0) en AsignacionServicioSueldoVigencia',
+      );
+
+      final vigencia = await db.into(db.asignacionServicioSueldoVigencia).insertReturning(
+            baseVigencia.copyWith(bonoMensual: const Value(0)),
+          );
+      expect(vigencia.bonoMensual, 0, reason: 'bono_mensual = 0 sí es válido en AsignacionServicioSueldoVigencia');
 
       await db.close();
     },

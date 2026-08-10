@@ -86,9 +86,24 @@ class Servicio extends Table with AuditColumns {
 
   TextColumn get referenciaContractual => text().nullable()();
 
+  /// Sueldo/bono mensual de referencia para el personal asignado a este
+  /// Servicio (Etapa 6B) — se precargan al crear una `AsignacionServicio`
+  /// nueva contra este Servicio; la asignación puede capturar importes
+  /// distintos por excepción individual, y un cambio posterior aquí
+  /// nunca modifica retroactivamente asignaciones ya existentes
+  /// (Resolución explícita de Marlon). `sueldoMensualReferenciaPersonal`
+  /// debe ser `> 0` cuando se captura; `bonoMensualReferenciaPersonal`
+  /// acepta `0` — mismo criterio que `Empleado.sueldoMensualAdministrativo`/
+  /// `bonoMensualAdministrativo` (Etapa 6A). En centavos, nunca `real`.
+  IntColumn get sueldoMensualReferenciaPersonal => integer().nullable()();
+
+  IntColumn get bonoMensualReferenciaPersonal => integer().nullable()();
+
   @override
   List<String> get customConstraints => [
         'CHECK (elementos_autorizados >= 0)',
         'CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)',
+        'CHECK (sueldo_mensual_referencia_personal IS NULL OR sueldo_mensual_referencia_personal > 0)',
+        'CHECK (bono_mensual_referencia_personal IS NULL OR bono_mensual_referencia_personal >= 0)',
       ];
 }

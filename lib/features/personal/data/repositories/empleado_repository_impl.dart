@@ -67,7 +67,13 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
   }
 
   @override
-  Future<EmpleadoData> crear(EmpleadoCompanion datos, {String? servicioIdAsignacion, String? turnoIdAsignacion}) {
+  Future<EmpleadoData> crear(
+    EmpleadoCompanion datos, {
+    String? servicioIdAsignacion,
+    String? turnoIdAsignacion,
+    int? sueldoMensualAsignacion,
+    int? bonoMensualAsignacion,
+  }) {
     return _db.transaction(() async {
       final empleado = await _db.into(_db.empleado).insertReturning(datos);
       await _registrarEvento(
@@ -80,14 +86,17 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       // compuesto aquí, en la misma transacción, para que "para el
       // usuario parezca una sola captura" (Resolución explícita de
       // Marlon) sin que Empleado gane una columna `servicioId`. La
-      // validación de que el Servicio exista y esté activo ya ocurrió
-      // en `CrearEmpleadoUseCase` antes de llegar aquí — este método
-      // solo escribe.
+      // validación de que el Servicio exista y esté activo, y la
+      // resolución de sueldo/bono (precarga desde Servicio o excepción
+      // individual, Etapa 6B), ya ocurrieron en `CrearEmpleadoUseCase`
+      // antes de llegar aquí — este método solo escribe.
       if (servicioIdAsignacion != null) {
         await _asignacionServicioRepository.asignar(
           empleadoId: empleado.id,
           servicioId: servicioIdAsignacion,
           fechaInicio: empleado.fechaIngreso,
+          sueldoMensual: sueldoMensualAsignacion!,
+          bonoMensual: bonoMensualAsignacion!,
           turnoId: turnoIdAsignacion,
         );
       }

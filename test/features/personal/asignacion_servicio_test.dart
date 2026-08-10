@@ -15,14 +15,17 @@ import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart'
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_sueldo_referencia_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/tables/asignacion_servicio_table.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/asignacion_servicio_validator.dart';
+import 'package:riseg_one/features/personal/domain/usecases/asignacion_sueldo_con_vigencia.dart';
 import 'package:riseg_one/features/personal/domain/usecases/asignar_empleado_servicio_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/cambiar_servicio_empleado_usecase.dart';
+import 'package:riseg_one/features/personal/domain/usecases/cambiar_vigencia_sueldo_asignacion_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/crear_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/empleado_validator.dart';
 import 'package:riseg_one/features/personal/domain/usecases/registrar_baja_laboral_usecase.dart';
@@ -41,6 +44,8 @@ void main() {
   late AsignarEmpleadoServicioUseCase asignarEmpleadoServicio;
   late CambiarServicioEmpleadoUseCase cambiarServicioEmpleado;
   late RetirarEmpleadoServicioUseCase retirarEmpleadoServicio;
+  late GuardarSueldoReferenciaServicioUseCase guardarSueldoReferenciaServicio;
+  late CambiarVigenciaSueldoAsignacionUseCase cambiarVigenciaSueldoAsignacion;
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
@@ -63,6 +68,8 @@ void main() {
     asignarEmpleadoServicio = AsignarEmpleadoServicioUseCase(empleadoRepo, asignacionRepo, servicioRepo, asignacionValidator);
     cambiarServicioEmpleado = CambiarServicioEmpleadoUseCase(empleadoRepo, asignacionRepo, servicioRepo, asignacionValidator);
     retirarEmpleadoServicio = RetirarEmpleadoServicioUseCase(empleadoRepo, asignacionRepo, asignacionValidator);
+    guardarSueldoReferenciaServicio = GuardarSueldoReferenciaServicioUseCase(servicioRepo, servicioValidator);
+    cambiarVigenciaSueldoAsignacion = CambiarVigenciaSueldoAsignacionUseCase(asignacionRepo, asignacionValidator);
   });
 
   tearDown(() => db.close());
@@ -98,13 +105,32 @@ void main() {
     );
   }
 
-  Future<ServicioData> crearServicioDePrueba({String nombre = 'Vigilancia Sportium Toluca', String? clienteId}) async {
+  /// Por defecto ya deja `sueldoMensualReferenciaPersonal`/
+  /// `bonoMensualReferenciaPersonal` capturados (Etapa 6B) — para que
+  /// las pruebas centradas en otro comportamiento no tengan que resolver
+  /// la precarga de sueldo en cada caso. Pasar `sueldoMensualReferencia:
+  /// null` explícitamente para probar el camino "sin referencia".
+  Future<ServicioData> crearServicioDePrueba({
+    String nombre = 'Vigilancia Sportium Toluca',
+    String? clienteId,
+    int? sueldoMensualReferencia = 1500000,
+    int? bonoMensualReferencia = 0,
+  }) async {
     final cliente = clienteId ?? (await crearClienteDePrueba()).id;
     final resultado = await crearServicio.ejecutar(
       clienteId: cliente,
       borrador: ServicioBorrador(nombre: nombre, tipoServicioId: SeedIds.tipoServicioVigilanciaFija, fechaInicio: DateTime(2026, 1, 1)),
     );
-    return (resultado as GuardarServicioExitoso).servicio;
+    var servicio = (resultado as GuardarServicioExitoso).servicio;
+    if (sueldoMensualReferencia != null || bonoMensualReferencia != null) {
+      final guardado = await guardarSueldoReferenciaServicio.ejecutar(
+        servicioId: servicio.id,
+        sueldoMensualReferenciaPersonal: sueldoMensualReferencia,
+        bonoMensualReferenciaPersonal: bonoMensualReferencia,
+      );
+      servicio = (guardado as GuardarSueldoReferenciaServicioExitoso).servicio;
+    }
+    return servicio;
   }
 
   /// Activa un Servicio insertando su Dirección operativa directamente
@@ -358,6 +384,425 @@ void main() {
 
       final nuevaAsignacion = await asignarEmpleadoServicio.ejecutar(empleadoId: empleadoB.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 4, 1));
       expect(nuevaAsignacion, isA<AsignarEmpleadoServicioServicioNoActivo>(), reason: 'solo se bloquean asignaciones nuevas');
+    });
+  });
+
+  group('GuardarSueldoReferenciaServicioUseCase (Etapa 6B)', () {
+    test('guarda, actualiza y limpia sueldo/bono de referencia', () async {
+      final servicio = await crearServicioDePrueba(sueldoMensualReferencia: null, bonoMensualReferencia: null);
+
+      final guardado = await guardarSueldoReferenciaServicio.ejecutar(
+        servicioId: servicio.id,
+        sueldoMensualReferenciaPersonal: 1800000,
+        bonoMensualReferenciaPersonal: 200000,
+      );
+      expect(guardado, isA<GuardarSueldoReferenciaServicioExitoso>());
+      final actualizado = (guardado as GuardarSueldoReferenciaServicioExitoso).servicio;
+      expect(actualizado.sueldoMensualReferenciaPersonal, 1800000);
+      expect(actualizado.bonoMensualReferenciaPersonal, 200000);
+
+      final limpiado = await guardarSueldoReferenciaServicio.ejecutar(
+        servicioId: servicio.id,
+        sueldoMensualReferenciaPersonal: null,
+        bonoMensualReferenciaPersonal: null,
+      );
+      final servicioLimpio = (limpiado as GuardarSueldoReferenciaServicioExitoso).servicio;
+      expect(servicioLimpio.sueldoMensualReferenciaPersonal, isNull);
+      expect(servicioLimpio.bonoMensualReferenciaPersonal, isNull);
+    });
+
+    test('rechaza sueldo <= 0 pero acepta bono = 0', () async {
+      final servicio = await crearServicioDePrueba(sueldoMensualReferencia: null, bonoMensualReferencia: null);
+
+      final conSueldoCero = await guardarSueldoReferenciaServicio.ejecutar(
+        servicioId: servicio.id,
+        sueldoMensualReferenciaPersonal: 0,
+        bonoMensualReferenciaPersonal: null,
+      );
+      expect(conSueldoCero, isA<GuardarSueldoReferenciaServicioSueldoInvalido>());
+
+      final conBonoCero = await guardarSueldoReferenciaServicio.ejecutar(
+        servicioId: servicio.id,
+        sueldoMensualReferenciaPersonal: 1500000,
+        bonoMensualReferenciaPersonal: 0,
+      );
+      expect(conBonoCero, isA<GuardarSueldoReferenciaServicioExitoso>());
+    });
+
+    test('rechaza bono negativo', () async {
+      final servicio = await crearServicioDePrueba(sueldoMensualReferencia: null, bonoMensualReferencia: null);
+
+      final resultado = await guardarSueldoReferenciaServicio.ejecutar(
+        servicioId: servicio.id,
+        sueldoMensualReferenciaPersonal: 1500000,
+        bonoMensualReferenciaPersonal: -1,
+      );
+      expect(resultado, isA<GuardarSueldoReferenciaServicioBonoInvalido>());
+    });
+
+    test('rechaza un Servicio inexistente', () async {
+      final resultado = await guardarSueldoReferenciaServicio.ejecutar(
+        servicioId: 'no-existe',
+        sueldoMensualReferenciaPersonal: 1500000,
+        bonoMensualReferenciaPersonal: 0,
+      );
+      expect(resultado, isA<GuardarSueldoReferenciaServicioNoExiste>());
+    });
+  });
+
+  group('Precarga de sueldo/bono al asignar (Etapa 6B)', () {
+    test('AsignarEmpleadoServicioUseCase precarga sueldo/bono desde la referencia del Servicio', () async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicio = await activarServicio(
+        await crearServicioDePrueba(sueldoMensualReferencia: 1600000, bonoMensualReferencia: 300000),
+      );
+
+      final resultado = await asignarEmpleadoServicio.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicio.id,
+        fechaInicio: DateTime(2026, 2, 1),
+      );
+      final asignacion = (resultado as AsignarEmpleadoServicioExitoso).asignacion;
+
+      final vigencias = await asignacionRepo.listarHistorialSueldo(asignacion.id);
+      expect(vigencias, hasLength(1));
+      expect(vigencias.single.sueldoMensual, 1600000);
+      expect(vigencias.single.bonoMensual, 300000);
+      expect(vigencias.single.fechaInicioVigencia, DateTime(2026, 2, 1));
+      expect(vigencias.single.fechaFinVigencia, isNull);
+    });
+
+    test('AsignarEmpleadoServicioUseCase acepta una excepción individual que sustituye la referencia', () async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicio = await activarServicio(
+        await crearServicioDePrueba(sueldoMensualReferencia: 1600000, bonoMensualReferencia: 300000),
+      );
+
+      final resultado = await asignarEmpleadoServicio.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicio.id,
+        fechaInicio: DateTime(2026, 2, 1),
+        sueldoMensual: 2000000,
+        bonoMensual: 0,
+      );
+      final asignacion = (resultado as AsignarEmpleadoServicioExitoso).asignacion;
+
+      final vigencias = await asignacionRepo.listarHistorialSueldo(asignacion.id);
+      expect(vigencias.single.sueldoMensual, 2000000, reason: 'la excepción individual sustituye la referencia del Servicio');
+      expect(vigencias.single.bonoMensual, 0);
+    });
+
+    test('AsignarEmpleadoServicioUseCase rechaza cuando el Servicio no tiene referencia y no hay excepción', () async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicio = await activarServicio(
+        await crearServicioDePrueba(sueldoMensualReferencia: null, bonoMensualReferencia: null),
+      );
+
+      final resultado = await asignarEmpleadoServicio.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicio.id,
+        fechaInicio: DateTime(2026, 2, 1),
+      );
+      expect(resultado, isA<AsignarEmpleadoServicioSueldoRequerido>());
+    });
+
+    test('AsignarEmpleadoServicioUseCase acepta bono = 0 cuando el Servicio no tiene bono de referencia', () async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicio = await activarServicio(
+        await crearServicioDePrueba(sueldoMensualReferencia: 1600000, bonoMensualReferencia: null),
+      );
+
+      final resultado = await asignarEmpleadoServicio.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicio.id,
+        fechaInicio: DateTime(2026, 2, 1),
+      );
+      final asignacion = (resultado as AsignarEmpleadoServicioExitoso).asignacion;
+      final vigencias = await asignacionRepo.listarHistorialSueldo(asignacion.id);
+      expect(vigencias.single.bonoMensual, 0);
+    });
+
+    test('AsignarEmpleadoServicioUseCase rechaza una excepción de sueldo <= 0', () async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicio = await activarServicio(await crearServicioDePrueba());
+
+      final resultado = await asignarEmpleadoServicio.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicio.id,
+        fechaInicio: DateTime(2026, 2, 1),
+        sueldoMensual: 0,
+      );
+      expect(resultado, isA<AsignarEmpleadoServicioSueldoInvalido>());
+    });
+
+    test('AsignarEmpleadoServicioUseCase rechaza una excepción de bono negativo', () async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicio = await activarServicio(await crearServicioDePrueba());
+
+      final resultado = await asignarEmpleadoServicio.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicio.id,
+        fechaInicio: DateTime(2026, 2, 1),
+        bonoMensual: -1,
+      );
+      expect(resultado, isA<AsignarEmpleadoServicioBonoInvalido>());
+    });
+
+    test('cambiar la referencia del Servicio después no modifica retroactivamente una asignación ya existente', () async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicio = await activarServicio(
+        await crearServicioDePrueba(sueldoMensualReferencia: 1600000, bonoMensualReferencia: 0),
+      );
+
+      final resultado = await asignarEmpleadoServicio.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicio.id,
+        fechaInicio: DateTime(2026, 2, 1),
+      );
+      final asignacion = (resultado as AsignarEmpleadoServicioExitoso).asignacion;
+
+      await guardarSueldoReferenciaServicio.ejecutar(
+        servicioId: servicio.id,
+        sueldoMensualReferenciaPersonal: 5000000,
+        bonoMensualReferenciaPersonal: 1000000,
+      );
+
+      final vigencias = await asignacionRepo.listarHistorialSueldo(asignacion.id);
+      expect(vigencias.single.sueldoMensual, 1600000, reason: 'un cambio posterior en la referencia del Servicio nunca es retroactivo');
+      expect(vigencias.single.bonoMensual, 0);
+    });
+
+    test('CambiarServicioEmpleadoUseCase precarga sueldo/bono desde la referencia del nuevo Servicio', () async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicioA = await activarServicio(
+        await crearServicioDePrueba(nombre: 'Servicio A', sueldoMensualReferencia: 1500000, bonoMensualReferencia: 0),
+      );
+      final servicioB = await activarServicio(
+        await crearServicioDePrueba(nombre: 'Servicio B', sueldoMensualReferencia: 2200000, bonoMensualReferencia: 400000),
+      );
+      final anterior = await asignarEmpleadoServicio.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicioA.id,
+        fechaInicio: DateTime(2026, 1, 1),
+      );
+      final asignacionAnterior = (anterior as AsignarEmpleadoServicioExitoso).asignacion;
+
+      final resultado = await cambiarServicioEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        nuevoServicioId: servicioB.id,
+        fecha: DateTime(2026, 3, 15),
+      );
+      final nueva = (resultado as CambiarServicioEmpleadoExitoso).asignacion;
+
+      final vigenciasNueva = await asignacionRepo.listarHistorialSueldo(nueva.id);
+      expect(vigenciasNueva.single.sueldoMensual, 2200000);
+      expect(vigenciasNueva.single.bonoMensual, 400000);
+
+      final vigenciasAnterior = await asignacionRepo.listarHistorialSueldo(asignacionAnterior.id);
+      expect(vigenciasAnterior.single.sueldoMensual, 1500000, reason: 'la asignación anterior conserva su propio historial de sueldo');
+    });
+
+    test('CambiarServicioEmpleadoUseCase rechaza cuando el nuevo Servicio no tiene referencia y no hay excepción', () async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicioA = await activarServicio(await crearServicioDePrueba(nombre: 'Servicio A'));
+      final servicioB = await activarServicio(
+        await crearServicioDePrueba(nombre: 'Servicio B', sueldoMensualReferencia: null, bonoMensualReferencia: null),
+      );
+      await asignarEmpleadoServicio.ejecutar(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2026, 1, 1));
+
+      final resultado = await cambiarServicioEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        nuevoServicioId: servicioB.id,
+        fecha: DateTime(2026, 3, 15),
+      );
+      expect(resultado, isA<CambiarServicioEmpleadoSueldoRequerido>());
+    });
+
+    test('CrearEmpleadoUseCase con adscripción a Servicio precarga sueldo/bono de la asignación inicial', () async {
+      final servicio = await activarServicio(
+        await crearServicioDePrueba(sueldoMensualReferencia: 1700000, bonoMensualReferencia: 250000),
+      );
+
+      final resultado = await crearEmpleado.ejecutar(
+        nombres: 'Juan',
+        apellidoPaterno: 'Pérez',
+        sexo: SexoEmpleado.masculino,
+        fechaNacimiento: DateTime(1990, 1, 1),
+        curp: 'PEXJ900101HDFXXX01',
+        rfc: 'PEXJ900101AB1',
+        nss: '12345678901',
+        estadoCivil: EstadoCivilEmpleado.soltero,
+        fechaIngreso: DateTime(2026, 2, 1),
+        aniosExperienciaSeguridad: 3,
+        servicioId: servicio.id,
+      );
+      final empleado = (resultado as CrearEmpleadoExitoso).empleado;
+
+      final asignacion = await asignacionRepo.obtenerActivaPorEmpleado(empleado.id);
+      final vigencias = await asignacionRepo.listarHistorialSueldo(asignacion!.id);
+      expect(vigencias.single.sueldoMensual, 1700000);
+      expect(vigencias.single.bonoMensual, 250000);
+    });
+
+    test('CrearEmpleadoUseCase rechaza cuando el Servicio de adscripción no tiene referencia y no hay excepción', () async {
+      final servicio = await activarServicio(
+        await crearServicioDePrueba(sueldoMensualReferencia: null, bonoMensualReferencia: null),
+      );
+
+      final resultado = await crearEmpleado.ejecutar(
+        nombres: 'Juan',
+        apellidoPaterno: 'Pérez',
+        sexo: SexoEmpleado.masculino,
+        fechaNacimiento: DateTime(1990, 1, 1),
+        curp: 'PEXJ900101HDFXXX01',
+        rfc: 'PEXJ900101AB1',
+        nss: '12345678901',
+        estadoCivil: EstadoCivilEmpleado.soltero,
+        fechaIngreso: DateTime(2026, 2, 1),
+        aniosExperienciaSeguridad: 3,
+        servicioId: servicio.id,
+      );
+      expect(resultado, isA<CrearEmpleadoSueldoAsignacionRequerido>());
+    });
+  });
+
+  group('CambiarVigenciaSueldoAsignacionUseCase (Etapa 6B)', () {
+    Future<AsignacionServicioData> crearAsignacionDePrueba({
+      DateTime? fechaInicio,
+      int sueldoMensual = 1500000,
+      int bonoMensual = 0,
+    }) async {
+      final empleado = await crearEmpleadoDePrueba();
+      final servicio = await activarServicio(
+        await crearServicioDePrueba(sueldoMensualReferencia: sueldoMensual, bonoMensualReferencia: bonoMensual),
+      );
+      final resultado = await asignarEmpleadoServicio.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicio.id,
+        fechaInicio: fechaInicio ?? DateTime(2026, 2, 1),
+      );
+      return (resultado as AsignarEmpleadoServicioExitoso).asignacion;
+    }
+
+    test('registra una nueva vigencia efectiva hoy y cierra la anterior el día previo', () async {
+      final asignacion = await crearAsignacionDePrueba();
+
+      final resultado = await cambiarVigenciaSueldoAsignacion.ejecutar(
+        asignacionServicioId: asignacion.id,
+        sueldoMensual: 1800000,
+        bonoMensual: 100000,
+        fechaInicioVigencia: DateTime(2026, 6, 1),
+      );
+      expect(resultado, isA<CambiarVigenciaSueldoAsignacionExitoso>());
+
+      final historial = await asignacionRepo.listarHistorialSueldo(asignacion.id);
+      expect(historial, hasLength(2));
+      final original = historial.firstWhere((v) => v.sueldoMensual == 1500000);
+      final nueva = historial.firstWhere((v) => v.sueldoMensual == 1800000);
+      expect(original.fechaFinVigencia, DateTime(2026, 5, 31));
+      expect(nueva.fechaInicioVigencia, DateTime(2026, 6, 1));
+      expect(nueva.fechaFinVigencia, isNull);
+      expect(nueva.bonoMensual, 100000);
+    });
+
+    test('permite programar una vigencia futura sin sustituir la vigente de inmediato', () async {
+      final asignacion = await crearAsignacionDePrueba();
+
+      final resultado = await cambiarVigenciaSueldoAsignacion.ejecutar(
+        asignacionServicioId: asignacion.id,
+        sueldoMensual: 2000000,
+        bonoMensual: 0,
+        fechaInicioVigencia: DateTime(2027, 1, 1),
+      );
+      expect(resultado, isA<CambiarVigenciaSueldoAsignacionExitoso>());
+
+      // La predecesora sí se cierra un día antes del inicio de la
+      // programada (evita solapamiento de rangos), pero eso no la
+      // "sustituye" — sigue siendo la vigente HOY porque la fecha de
+      // hoy cae dentro de su rango; la clasificación es por fecha, no
+      // por si `fechaFinVigencia` es `null` (mismo criterio que
+      // `clasificarVigencias` para línea comercial).
+      final historial = await asignacionRepo.listarHistorialSueldo(asignacion.id);
+      final original = historial.firstWhere((v) => v.sueldoMensual == 1500000);
+      final programada = historial.firstWhere((v) => v.sueldoMensual == 2000000);
+      expect(original.fechaFinVigencia, DateTime(2026, 12, 31));
+
+      final activas = await asignacionRepo.listarVigenciasSueldoActivas(asignacion.id);
+      final clasificacion = clasificarVigenciasSueldo(activas, DateTime(2026, 6, 1));
+      expect(clasificacion.vigente?.id, original.id, reason: 'la vigente hoy sigue siendo la original, no la programada');
+      expect(clasificacion.programadas.map((v) => v.id), contains(programada.id));
+    });
+
+    test('rechaza una fecha de inicio duplicada', () async {
+      final asignacion = await crearAsignacionDePrueba();
+      await cambiarVigenciaSueldoAsignacion.ejecutar(
+        asignacionServicioId: asignacion.id,
+        sueldoMensual: 1800000,
+        bonoMensual: 0,
+        fechaInicioVigencia: DateTime(2026, 6, 1),
+      );
+
+      final resultado = await cambiarVigenciaSueldoAsignacion.ejecutar(
+        asignacionServicioId: asignacion.id,
+        sueldoMensual: 1900000,
+        bonoMensual: 0,
+        fechaInicioVigencia: DateTime(2026, 6, 1),
+      );
+      expect(resultado, isA<CambiarVigenciaSueldoAsignacionFechaDuplicada>());
+    });
+
+    test('rechaza una fecha anterior al inicio de la propia asignación', () async {
+      final asignacion = await crearAsignacionDePrueba(fechaInicio: DateTime(2026, 2, 1));
+
+      final resultado = await cambiarVigenciaSueldoAsignacion.ejecutar(
+        asignacionServicioId: asignacion.id,
+        sueldoMensual: 1800000,
+        bonoMensual: 0,
+        fechaInicioVigencia: DateTime(2026, 1, 1),
+      );
+      expect(resultado, isA<CambiarVigenciaSueldoAsignacionFechaInvalida>());
+    });
+
+    test('rechaza sueldo <= 0 pero acepta bono = 0', () async {
+      final asignacion = await crearAsignacionDePrueba();
+
+      final conSueldoCero = await cambiarVigenciaSueldoAsignacion.ejecutar(
+        asignacionServicioId: asignacion.id,
+        sueldoMensual: 0,
+        bonoMensual: 0,
+        fechaInicioVigencia: DateTime(2026, 6, 1),
+      );
+      expect(conSueldoCero, isA<CambiarVigenciaSueldoAsignacionSueldoInvalido>());
+
+      final conBonoCero = await cambiarVigenciaSueldoAsignacion.ejecutar(
+        asignacionServicioId: asignacion.id,
+        sueldoMensual: 1800000,
+        bonoMensual: 0,
+        fechaInicioVigencia: DateTime(2026, 6, 1),
+      );
+      expect(conBonoCero, isA<CambiarVigenciaSueldoAsignacionExitoso>());
+    });
+
+    test('rechaza bono negativo', () async {
+      final asignacion = await crearAsignacionDePrueba();
+
+      final resultado = await cambiarVigenciaSueldoAsignacion.ejecutar(
+        asignacionServicioId: asignacion.id,
+        sueldoMensual: 1800000,
+        bonoMensual: -1,
+        fechaInicioVigencia: DateTime(2026, 6, 1),
+      );
+      expect(resultado, isA<CambiarVigenciaSueldoAsignacionBonoInvalido>());
+    });
+
+    test('rechaza una asignación inexistente', () async {
+      final resultado = await cambiarVigenciaSueldoAsignacion.ejecutar(
+        asignacionServicioId: 'no-existe',
+        sueldoMensual: 1800000,
+        bonoMensual: 0,
+        fechaInicioVigencia: DateTime(2026, 6, 1),
+      );
+      expect(resultado, isA<CambiarVigenciaSueldoAsignacionNoExiste>());
     });
   });
 }

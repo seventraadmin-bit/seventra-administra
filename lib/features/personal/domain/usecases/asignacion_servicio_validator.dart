@@ -22,4 +22,23 @@ class AsignacionServicioValidator {
     if (fechaTermino.isAfter(referencia)) return false;
     return !fechaTermino.isBefore(fechaInicioVigente);
   }
+
+  /// Sueldo de una vigencia de `AsignacionServicioSueldoVigencia` (Etapa
+  /// 6B) — debe ser `> 0`, mismo criterio que
+  /// `Servicio.sueldoMensualReferenciaPersonal`/
+  /// `Empleado.sueldoMensualAdministrativo`.
+  bool sueldoValido(int sueldoMensual) => sueldoMensual > 0;
+
+  /// A diferencia del sueldo, el bono sí acepta `0`.
+  bool bonoValido(int bonoMensual) => bonoMensual >= 0;
+
+  /// La fecha de inicio de una nueva vigencia de sueldo no puede ser
+  /// anterior al inicio de la propia asignación que la contiene — no
+  /// puede haber un sueldo vigente antes de que la persona estuviera
+  /// asignada a ese Servicio. A diferencia de `fechaInicioValida`, sí
+  /// admite fechas futuras (Resolución explícita de Marlon: "Debe ser
+  /// posible programar una vigencia futura").
+  bool fechaVigenciaSueldoValida(DateTime fechaInicioVigencia, DateTime fechaInicioAsignacion) {
+    return !fechaInicioVigencia.isBefore(fechaInicioAsignacion);
+  }
 }
