@@ -35831,6 +35831,606 @@ class AsignacionServicioCompanion
   }
 }
 
+class $FichaTecnicaEmpleadoTable extends FichaTecnicaEmpleado
+    with TableInfo<$FichaTecnicaEmpleadoTable, FichaTecnicaEmpleadoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FichaTecnicaEmpleadoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _folioMeta = const VerificationMeta('folio');
+  @override
+  late final GeneratedColumn<String> folio = GeneratedColumn<String>(
+    'folio',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empleado (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _camposExcluidosMeta = const VerificationMeta(
+    'camposExcluidos',
+  );
+  @override
+  late final GeneratedColumn<String> camposExcluidos = GeneratedColumn<String>(
+    'campos_excluidos',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folio,
+    empleadoId,
+    servicioId,
+    attachmentId,
+    camposExcluidos,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ficha_tecnica_empleado';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FichaTecnicaEmpleadoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio')) {
+      context.handle(
+        _folioMeta,
+        folio.isAcceptableOrUnknown(data['folio']!, _folioMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folioMeta);
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_empleadoIdMeta);
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    }
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('campos_excluidos')) {
+      context.handle(
+        _camposExcluidosMeta,
+        camposExcluidos.isAcceptableOrUnknown(
+          data['campos_excluidos']!,
+          _camposExcluidosMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FichaTecnicaEmpleadoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FichaTecnicaEmpleadoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      folio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}folio'],
+          )!,
+      empleadoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}empleado_id'],
+          )!,
+      servicioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servicio_id'],
+      ),
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      camposExcluidos: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}campos_excluidos'],
+      ),
+    );
+  }
+
+  @override
+  $FichaTecnicaEmpleadoTable createAlias(String alias) {
+    return $FichaTecnicaEmpleadoTable(attachedDatabase, alias);
+  }
+}
+
+class FichaTecnicaEmpleadoData extends DataClass
+    implements Insertable<FichaTecnicaEmpleadoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String folio;
+  final String empleadoId;
+  final String? servicioId;
+  final String attachmentId;
+  final String? camposExcluidos;
+  const FichaTecnicaEmpleadoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.folio,
+    required this.empleadoId,
+    this.servicioId,
+    required this.attachmentId,
+    this.camposExcluidos,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['folio'] = Variable<String>(folio);
+    map['empleado_id'] = Variable<String>(empleadoId);
+    if (!nullToAbsent || servicioId != null) {
+      map['servicio_id'] = Variable<String>(servicioId);
+    }
+    map['attachment_id'] = Variable<String>(attachmentId);
+    if (!nullToAbsent || camposExcluidos != null) {
+      map['campos_excluidos'] = Variable<String>(camposExcluidos);
+    }
+    return map;
+  }
+
+  FichaTecnicaEmpleadoCompanion toCompanion(bool nullToAbsent) {
+    return FichaTecnicaEmpleadoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      folio: Value(folio),
+      empleadoId: Value(empleadoId),
+      servicioId:
+          servicioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(servicioId),
+      attachmentId: Value(attachmentId),
+      camposExcluidos:
+          camposExcluidos == null && nullToAbsent
+              ? const Value.absent()
+              : Value(camposExcluidos),
+    );
+  }
+
+  factory FichaTecnicaEmpleadoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FichaTecnicaEmpleadoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      folio: serializer.fromJson<String>(json['folio']),
+      empleadoId: serializer.fromJson<String>(json['empleadoId']),
+      servicioId: serializer.fromJson<String?>(json['servicioId']),
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      camposExcluidos: serializer.fromJson<String?>(json['camposExcluidos']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'folio': serializer.toJson<String>(folio),
+      'empleadoId': serializer.toJson<String>(empleadoId),
+      'servicioId': serializer.toJson<String?>(servicioId),
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'camposExcluidos': serializer.toJson<String?>(camposExcluidos),
+    };
+  }
+
+  FichaTecnicaEmpleadoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? folio,
+    String? empleadoId,
+    Value<String?> servicioId = const Value.absent(),
+    String? attachmentId,
+    Value<String?> camposExcluidos = const Value.absent(),
+  }) => FichaTecnicaEmpleadoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    folio: folio ?? this.folio,
+    empleadoId: empleadoId ?? this.empleadoId,
+    servicioId: servicioId.present ? servicioId.value : this.servicioId,
+    attachmentId: attachmentId ?? this.attachmentId,
+    camposExcluidos:
+        camposExcluidos.present ? camposExcluidos.value : this.camposExcluidos,
+  );
+  FichaTecnicaEmpleadoData copyWithCompanion(
+    FichaTecnicaEmpleadoCompanion data,
+  ) {
+    return FichaTecnicaEmpleadoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      folio: data.folio.present ? data.folio.value : this.folio,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      camposExcluidos:
+          data.camposExcluidos.present
+              ? data.camposExcluidos.value
+              : this.camposExcluidos,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FichaTecnicaEmpleadoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folio: $folio, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('camposExcluidos: $camposExcluidos')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folio,
+    empleadoId,
+    servicioId,
+    attachmentId,
+    camposExcluidos,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FichaTecnicaEmpleadoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.folio == this.folio &&
+          other.empleadoId == this.empleadoId &&
+          other.servicioId == this.servicioId &&
+          other.attachmentId == this.attachmentId &&
+          other.camposExcluidos == this.camposExcluidos);
+}
+
+class FichaTecnicaEmpleadoCompanion
+    extends UpdateCompanion<FichaTecnicaEmpleadoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> folio;
+  final Value<String> empleadoId;
+  final Value<String?> servicioId;
+  final Value<String> attachmentId;
+  final Value<String?> camposExcluidos;
+  final Value<int> rowid;
+  const FichaTecnicaEmpleadoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.folio = const Value.absent(),
+    this.empleadoId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.attachmentId = const Value.absent(),
+    this.camposExcluidos = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FichaTecnicaEmpleadoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String folio,
+    required String empleadoId,
+    this.servicioId = const Value.absent(),
+    required String attachmentId,
+    this.camposExcluidos = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : folio = Value(folio),
+       empleadoId = Value(empleadoId),
+       attachmentId = Value(attachmentId);
+  static Insertable<FichaTecnicaEmpleadoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? folio,
+    Expression<String>? empleadoId,
+    Expression<String>? servicioId,
+    Expression<String>? attachmentId,
+    Expression<String>? camposExcluidos,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (folio != null) 'folio': folio,
+      if (empleadoId != null) 'empleado_id': empleadoId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (camposExcluidos != null) 'campos_excluidos': camposExcluidos,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FichaTecnicaEmpleadoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? folio,
+    Value<String>? empleadoId,
+    Value<String?>? servicioId,
+    Value<String>? attachmentId,
+    Value<String?>? camposExcluidos,
+    Value<int>? rowid,
+  }) {
+    return FichaTecnicaEmpleadoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      folio: folio ?? this.folio,
+      empleadoId: empleadoId ?? this.empleadoId,
+      servicioId: servicioId ?? this.servicioId,
+      attachmentId: attachmentId ?? this.attachmentId,
+      camposExcluidos: camposExcluidos ?? this.camposExcluidos,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (folio.present) {
+      map['folio'] = Variable<String>(folio.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (camposExcluidos.present) {
+      map['campos_excluidos'] = Variable<String>(camposExcluidos.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FichaTecnicaEmpleadoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folio: $folio, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('camposExcluidos: $camposExcluidos, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $EmpresaAttachmentTable extends EmpresaAttachment
     with TableInfo<$EmpresaAttachmentTable, EmpresaAttachmentData> {
   @override
@@ -37840,6 +38440,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $EmpleadoPeriodoLaboralTable(this);
   late final $AsignacionServicioTable asignacionServicio =
       $AsignacionServicioTable(this);
+  late final $FichaTecnicaEmpleadoTable fichaTecnicaEmpleado =
+      $FichaTecnicaEmpleadoTable(this);
   late final $EmpresaAttachmentTable empresaAttachment =
       $EmpresaAttachmentTable(this);
   late final $ClienteAttachmentTable clienteAttachment =
@@ -37931,6 +38533,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     empleadoEvento,
     empleadoPeriodoLaboral,
     asignacionServicio,
+    fichaTecnicaEmpleado,
     empresaAttachment,
     clienteAttachment,
     documentoPorEmitirAttachment,
@@ -42170,6 +42773,34 @@ final class $$AttachmentTableReferences
   }
 
   static MultiTypedResultKey<
+    $FichaTecnicaEmpleadoTable,
+    List<FichaTecnicaEmpleadoData>
+  >
+  _fichaTecnicaEmpleadoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.fichaTecnicaEmpleado,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.fichaTecnicaEmpleado.attachmentId,
+        ),
+      );
+
+  $$FichaTecnicaEmpleadoTableProcessedTableManager
+  get fichaTecnicaEmpleadoRefs {
+    final manager = $$FichaTecnicaEmpleadoTableTableManager(
+      $_db,
+      $_db.fichaTecnicaEmpleado,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _fichaTecnicaEmpleadoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
     $EmpresaAttachmentTable,
     List<EmpresaAttachmentData>
   >
@@ -42478,6 +43109,31 @@ class $$AttachmentTableFilterComposer
           }) => $$EmpleadoTableFilterComposer(
             $db: $db,
             $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> fichaTecnicaEmpleadoRefs(
+    Expression<bool> Function($$FichaTecnicaEmpleadoTableFilterComposer f) f,
+  ) {
+    final $$FichaTecnicaEmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.fichaTecnicaEmpleado,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FichaTecnicaEmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.fichaTecnicaEmpleado,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -42847,6 +43503,32 @@ class $$AttachmentTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> fichaTecnicaEmpleadoRefs<T extends Object>(
+    Expression<T> Function($$FichaTecnicaEmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$FichaTecnicaEmpleadoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.fichaTecnicaEmpleado,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$FichaTecnicaEmpleadoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.fichaTecnicaEmpleado,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> empresaAttachmentRefs<T extends Object>(
     Expression<T> Function($$EmpresaAttachmentTableAnnotationComposer a) f,
   ) {
@@ -43074,6 +43756,7 @@ class $$AttachmentTableTableManager
           PrefetchHooks Function({
             bool empresaRefs,
             bool empleadoRefs,
+            bool fichaTecnicaEmpleadoRefs,
             bool empresaAttachmentRefs,
             bool clienteAttachmentRefs,
             bool documentoPorEmitirAttachmentRefs,
@@ -43160,6 +43843,7 @@ class $$AttachmentTableTableManager
           prefetchHooksCallback: ({
             empresaRefs = false,
             empleadoRefs = false,
+            fichaTecnicaEmpleadoRefs = false,
             empresaAttachmentRefs = false,
             clienteAttachmentRefs = false,
             documentoPorEmitirAttachmentRefs = false,
@@ -43174,6 +43858,7 @@ class $$AttachmentTableTableManager
               explicitlyWatchedTables: [
                 if (empresaRefs) db.empresa,
                 if (empleadoRefs) db.empleado,
+                if (fichaTecnicaEmpleadoRefs) db.fichaTecnicaEmpleado,
                 if (empresaAttachmentRefs) db.empresaAttachment,
                 if (clienteAttachmentRefs) db.clienteAttachment,
                 if (documentoPorEmitirAttachmentRefs)
@@ -43228,6 +43913,28 @@ class $$AttachmentTableTableManager
                       referencedItemsForCurrentItem:
                           (item, referencedItems) => referencedItems.where(
                             (e) => e.fotografiaAttachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (fichaTecnicaEmpleadoRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      FichaTecnicaEmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._fichaTecnicaEmpleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).fichaTecnicaEmpleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
                           ),
                       typedResults: items,
                     ),
@@ -43430,6 +44137,7 @@ typedef $$AttachmentTableProcessedTableManager =
       PrefetchHooks Function({
         bool empresaRefs,
         bool empleadoRefs,
+        bool fichaTecnicaEmpleadoRefs,
         bool empresaAttachmentRefs,
         bool clienteAttachmentRefs,
         bool documentoPorEmitirAttachmentRefs,
@@ -48290,6 +48998,34 @@ final class $$ServicioTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $FichaTecnicaEmpleadoTable,
+    List<FichaTecnicaEmpleadoData>
+  >
+  _fichaTecnicaEmpleadoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.fichaTecnicaEmpleado,
+        aliasName: $_aliasNameGenerator(
+          db.servicio.id,
+          db.fichaTecnicaEmpleado.servicioId,
+        ),
+      );
+
+  $$FichaTecnicaEmpleadoTableProcessedTableManager
+  get fichaTecnicaEmpleadoRefs {
+    final manager = $$FichaTecnicaEmpleadoTableTableManager(
+      $_db,
+      $_db.fichaTecnicaEmpleado,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _fichaTecnicaEmpleadoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ServicioTableFilterComposer
@@ -48710,6 +49446,31 @@ class $$ServicioTableFilterComposer
           }) => $$AsignacionServicioTableFilterComposer(
             $db: $db,
             $table: $db.asignacionServicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> fichaTecnicaEmpleadoRefs(
+    Expression<bool> Function($$FichaTecnicaEmpleadoTableFilterComposer f) f,
+  ) {
+    final $$FichaTecnicaEmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.fichaTecnicaEmpleado,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FichaTecnicaEmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.fichaTecnicaEmpleado,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -49334,6 +50095,32 @@ class $$ServicioTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> fichaTecnicaEmpleadoRefs<T extends Object>(
+    Expression<T> Function($$FichaTecnicaEmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$FichaTecnicaEmpleadoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.fichaTecnicaEmpleado,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$FichaTecnicaEmpleadoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.fichaTecnicaEmpleado,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ServicioTableTableManager
@@ -49364,6 +50151,7 @@ class $$ServicioTableTableManager
             bool ingresoRefs,
             bool egresoRefs,
             bool asignacionServicioRefs,
+            bool fichaTecnicaEmpleadoRefs,
           })
         > {
   $$ServicioTableTableManager(_$AppDatabase db, $ServicioTable table)
@@ -49492,6 +50280,7 @@ class $$ServicioTableTableManager
             ingresoRefs = false,
             egresoRefs = false,
             asignacionServicioRefs = false,
+            fichaTecnicaEmpleadoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -49507,6 +50296,7 @@ class $$ServicioTableTableManager
                 if (ingresoRefs) db.ingreso,
                 if (egresoRefs) db.egreso,
                 if (asignacionServicioRefs) db.asignacionServicio,
+                if (fichaTecnicaEmpleadoRefs) db.fichaTecnicaEmpleado,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -49796,6 +50586,28 @@ class $$ServicioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (fichaTecnicaEmpleadoRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      FichaTecnicaEmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._fichaTecnicaEmpleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).fichaTecnicaEmpleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -49831,6 +50643,7 @@ typedef $$ServicioTableProcessedTableManager =
         bool ingresoRefs,
         bool egresoRefs,
         bool asignacionServicioRefs,
+        bool fichaTecnicaEmpleadoRefs,
       })
     >;
 typedef $$UbicacionTableCreateCompanionBuilder =
@@ -67755,6 +68568,34 @@ final class $$EmpleadoTableReferences
   }
 
   static MultiTypedResultKey<
+    $FichaTecnicaEmpleadoTable,
+    List<FichaTecnicaEmpleadoData>
+  >
+  _fichaTecnicaEmpleadoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.fichaTecnicaEmpleado,
+        aliasName: $_aliasNameGenerator(
+          db.empleado.id,
+          db.fichaTecnicaEmpleado.empleadoId,
+        ),
+      );
+
+  $$FichaTecnicaEmpleadoTableProcessedTableManager
+  get fichaTecnicaEmpleadoRefs {
+    final manager = $$FichaTecnicaEmpleadoTableTableManager(
+      $_db,
+      $_db.fichaTecnicaEmpleado,
+    ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _fichaTecnicaEmpleadoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
     $EmpleadoAttachmentTable,
     List<EmpleadoAttachmentData>
   >
@@ -68186,6 +69027,31 @@ class $$EmpleadoTableFilterComposer
           }) => $$AsignacionServicioTableFilterComposer(
             $db: $db,
             $table: $db.asignacionServicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> fichaTecnicaEmpleadoRefs(
+    Expression<bool> Function($$FichaTecnicaEmpleadoTableFilterComposer f) f,
+  ) {
+    final $$FichaTecnicaEmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.fichaTecnicaEmpleado,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FichaTecnicaEmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.fichaTecnicaEmpleado,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -68957,6 +69823,32 @@ class $$EmpleadoTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> fichaTecnicaEmpleadoRefs<T extends Object>(
+    Expression<T> Function($$FichaTecnicaEmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$FichaTecnicaEmpleadoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.fichaTecnicaEmpleado,
+          getReferencedColumn: (t) => t.empleadoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$FichaTecnicaEmpleadoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.fichaTecnicaEmpleado,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> empleadoAttachmentRefs<T extends Object>(
     Expression<T> Function($$EmpleadoAttachmentTableAnnotationComposer a) f,
   ) {
@@ -69005,6 +69897,7 @@ class $$EmpleadoTableTableManager
             bool empleadoEventoRefs,
             bool empleadoPeriodoLaboralRefs,
             bool asignacionServicioRefs,
+            bool fichaTecnicaEmpleadoRefs,
             bool empleadoAttachmentRefs,
           })
         > {
@@ -69263,6 +70156,7 @@ class $$EmpleadoTableTableManager
             empleadoEventoRefs = false,
             empleadoPeriodoLaboralRefs = false,
             asignacionServicioRefs = false,
+            fichaTecnicaEmpleadoRefs = false,
             empleadoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
@@ -69271,6 +70165,7 @@ class $$EmpleadoTableTableManager
                 if (empleadoEventoRefs) db.empleadoEvento,
                 if (empleadoPeriodoLaboralRefs) db.empleadoPeriodoLaboral,
                 if (asignacionServicioRefs) db.asignacionServicio,
+                if (fichaTecnicaEmpleadoRefs) db.fichaTecnicaEmpleado,
                 if (empleadoAttachmentRefs) db.empleadoAttachment,
               ],
               addJoins: <
@@ -69413,6 +70308,28 @@ class $$EmpleadoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (fichaTecnicaEmpleadoRefs)
+                    await $_getPrefetchedData<
+                      EmpleadoData,
+                      $EmpleadoTable,
+                      FichaTecnicaEmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpleadoTableReferences
+                          ._fichaTecnicaEmpleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).fichaTecnicaEmpleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                   if (empleadoAttachmentRefs)
                     await $_getPrefetchedData<
                       EmpleadoData,
@@ -69463,6 +70380,7 @@ typedef $$EmpleadoTableProcessedTableManager =
         bool empleadoEventoRefs,
         bool empleadoPeriodoLaboralRefs,
         bool asignacionServicioRefs,
+        bool fichaTecnicaEmpleadoRefs,
         bool empleadoAttachmentRefs,
       })
     >;
@@ -70921,6 +71839,629 @@ typedef $$AsignacionServicioTableProcessedTableManager =
       (AsignacionServicioData, $$AsignacionServicioTableReferences),
       AsignacionServicioData,
       PrefetchHooks Function({bool empleadoId, bool servicioId, bool turnoId})
+    >;
+typedef $$FichaTecnicaEmpleadoTableCreateCompanionBuilder =
+    FichaTecnicaEmpleadoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String folio,
+      required String empleadoId,
+      Value<String?> servicioId,
+      required String attachmentId,
+      Value<String?> camposExcluidos,
+      Value<int> rowid,
+    });
+typedef $$FichaTecnicaEmpleadoTableUpdateCompanionBuilder =
+    FichaTecnicaEmpleadoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> folio,
+      Value<String> empleadoId,
+      Value<String?> servicioId,
+      Value<String> attachmentId,
+      Value<String?> camposExcluidos,
+      Value<int> rowid,
+    });
+
+final class $$FichaTecnicaEmpleadoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $FichaTecnicaEmpleadoTable,
+          FichaTecnicaEmpleadoData
+        > {
+  $$FichaTecnicaEmpleadoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $EmpleadoTable _empleadoIdTable(_$AppDatabase db) =>
+      db.empleado.createAlias(
+        $_aliasNameGenerator(
+          db.fichaTecnicaEmpleado.empleadoId,
+          db.empleado.id,
+        ),
+      );
+
+  $$EmpleadoTableProcessedTableManager get empleadoId {
+    final $_column = $_itemColumn<String>('empleado_id')!;
+
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(
+          db.fichaTecnicaEmpleado.servicioId,
+          db.servicio.id,
+        ),
+      );
+
+  $$ServicioTableProcessedTableManager? get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id');
+    if ($_column == null) return null;
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.fichaTecnicaEmpleado.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$FichaTecnicaEmpleadoTableFilterComposer
+    extends Composer<_$AppDatabase, $FichaTecnicaEmpleadoTable> {
+  $$FichaTecnicaEmpleadoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folio => $composableBuilder(
+    column: $table.folio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get camposExcluidos => $composableBuilder(
+    column: $table.camposExcluidos,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$EmpleadoTableFilterComposer get empleadoId {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FichaTecnicaEmpleadoTableOrderingComposer
+    extends Composer<_$AppDatabase, $FichaTecnicaEmpleadoTable> {
+  $$FichaTecnicaEmpleadoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folio => $composableBuilder(
+    column: $table.folio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get camposExcluidos => $composableBuilder(
+    column: $table.camposExcluidos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$EmpleadoTableOrderingComposer get empleadoId {
+    final $$EmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FichaTecnicaEmpleadoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FichaTecnicaEmpleadoTable> {
+  $$FichaTecnicaEmpleadoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folio =>
+      $composableBuilder(column: $table.folio, builder: (column) => column);
+
+  GeneratedColumn<String> get camposExcluidos => $composableBuilder(
+    column: $table.camposExcluidos,
+    builder: (column) => column,
+  );
+
+  $$EmpleadoTableAnnotationComposer get empleadoId {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FichaTecnicaEmpleadoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FichaTecnicaEmpleadoTable,
+          FichaTecnicaEmpleadoData,
+          $$FichaTecnicaEmpleadoTableFilterComposer,
+          $$FichaTecnicaEmpleadoTableOrderingComposer,
+          $$FichaTecnicaEmpleadoTableAnnotationComposer,
+          $$FichaTecnicaEmpleadoTableCreateCompanionBuilder,
+          $$FichaTecnicaEmpleadoTableUpdateCompanionBuilder,
+          (FichaTecnicaEmpleadoData, $$FichaTecnicaEmpleadoTableReferences),
+          FichaTecnicaEmpleadoData,
+          PrefetchHooks Function({
+            bool empleadoId,
+            bool servicioId,
+            bool attachmentId,
+          })
+        > {
+  $$FichaTecnicaEmpleadoTableTableManager(
+    _$AppDatabase db,
+    $FichaTecnicaEmpleadoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$FichaTecnicaEmpleadoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$FichaTecnicaEmpleadoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$FichaTecnicaEmpleadoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> folio = const Value.absent(),
+                Value<String> empleadoId = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<String> attachmentId = const Value.absent(),
+                Value<String?> camposExcluidos = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FichaTecnicaEmpleadoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folio: folio,
+                empleadoId: empleadoId,
+                servicioId: servicioId,
+                attachmentId: attachmentId,
+                camposExcluidos: camposExcluidos,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String folio,
+                required String empleadoId,
+                Value<String?> servicioId = const Value.absent(),
+                required String attachmentId,
+                Value<String?> camposExcluidos = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FichaTecnicaEmpleadoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folio: folio,
+                empleadoId: empleadoId,
+                servicioId: servicioId,
+                attachmentId: attachmentId,
+                camposExcluidos: camposExcluidos,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$FichaTecnicaEmpleadoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            empleadoId = false,
+            servicioId = false,
+            attachmentId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (empleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empleadoId,
+                            referencedTable:
+                                $$FichaTecnicaEmpleadoTableReferences
+                                    ._empleadoIdTable(db),
+                            referencedColumn:
+                                $$FichaTecnicaEmpleadoTableReferences
+                                    ._empleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable:
+                                $$FichaTecnicaEmpleadoTableReferences
+                                    ._servicioIdTable(db),
+                            referencedColumn:
+                                $$FichaTecnicaEmpleadoTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable:
+                                $$FichaTecnicaEmpleadoTableReferences
+                                    ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$FichaTecnicaEmpleadoTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$FichaTecnicaEmpleadoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FichaTecnicaEmpleadoTable,
+      FichaTecnicaEmpleadoData,
+      $$FichaTecnicaEmpleadoTableFilterComposer,
+      $$FichaTecnicaEmpleadoTableOrderingComposer,
+      $$FichaTecnicaEmpleadoTableAnnotationComposer,
+      $$FichaTecnicaEmpleadoTableCreateCompanionBuilder,
+      $$FichaTecnicaEmpleadoTableUpdateCompanionBuilder,
+      (FichaTecnicaEmpleadoData, $$FichaTecnicaEmpleadoTableReferences),
+      FichaTecnicaEmpleadoData,
+      PrefetchHooks Function({
+        bool empleadoId,
+        bool servicioId,
+        bool attachmentId,
+      })
     >;
 typedef $$EmpresaAttachmentTableCreateCompanionBuilder =
     EmpresaAttachmentCompanion Function({
@@ -74102,6 +75643,8 @@ class $AppDatabaseManager {
       );
   $$AsignacionServicioTableTableManager get asignacionServicio =>
       $$AsignacionServicioTableTableManager(_db, _db.asignacionServicio);
+  $$FichaTecnicaEmpleadoTableTableManager get fichaTecnicaEmpleado =>
+      $$FichaTecnicaEmpleadoTableTableManager(_db, _db.fichaTecnicaEmpleado);
   $$EmpresaAttachmentTableTableManager get empresaAttachment =>
       $$EmpresaAttachmentTableTableManager(_db, _db.empresaAttachment);
   $$ClienteAttachmentTableTableManager get clienteAttachment =>

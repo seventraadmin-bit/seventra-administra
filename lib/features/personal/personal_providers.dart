@@ -2,10 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../organizacion/organizacion_providers.dart';
+import 'data/pdf/ficha_tecnica_pdf_renderer.dart';
 import 'data/repositories/asignacion_servicio_repository_impl.dart';
 import 'data/repositories/empleado_repository_impl.dart';
+import 'data/repositories/ficha_tecnica_empleado_repository_impl.dart';
 import 'domain/repositories/asignacion_servicio_repository.dart';
 import 'domain/repositories/empleado_repository.dart';
+import 'domain/repositories/ficha_tecnica_empleado_repository.dart';
 import 'domain/usecases/actualizar_fotografia_empleado_usecase.dart';
 import 'domain/usecases/adjuntar_documento_empleado_usecase.dart';
 import 'domain/usecases/asignacion_servicio_validator.dart';
@@ -14,6 +17,7 @@ import 'domain/usecases/cambiar_servicio_empleado_usecase.dart';
 import 'domain/usecases/corregir_empleado_usecase.dart';
 import 'domain/usecases/crear_empleado_usecase.dart';
 import 'domain/usecases/empleado_validator.dart';
+import 'domain/usecases/generar_ficha_tecnica_empleado_usecase.dart';
 import 'domain/usecases/guardar_domicilio_empleado_usecase.dart';
 import 'domain/usecases/registrar_antidoping_usecase.dart';
 import 'domain/usecases/registrar_baja_laboral_usecase.dart';
@@ -125,5 +129,29 @@ final registrarAntidopingUseCaseProvider = Provider<RegistrarAntidopingUseCase>(
     ref.watch(empleadoRepositoryProvider),
     ref.watch(attachmentStorageProvider),
     ref.watch(empleadoValidatorProvider),
+  );
+});
+
+final fichaTecnicaEmpleadoRepositoryProvider = Provider<FichaTecnicaEmpleadoRepository>((ref) {
+  return FichaTecnicaEmpleadoRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final fichaTecnicaPdfRendererProvider = Provider<FichaTecnicaPdfRenderer>((ref) {
+  return FichaTecnicaPdfRenderer();
+});
+
+final generarFichaTecnicaEmpleadoUseCaseProvider = Provider<GenerarFichaTecnicaEmpleadoUseCase>((ref) {
+  return GenerarFichaTecnicaEmpleadoUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(asignacionServicioRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(puestoRepositoryProvider),
+    ref.watch(catalogoRepositoryProvider),
+    ref.watch(empresaRepositoryProvider),
+    ref.watch(attachmentRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(fichaTecnicaEmpleadoRepositoryProvider),
+    ref.watch(generarCodigoUseCaseProvider),
+    ref.watch(fichaTecnicaPdfRendererProvider),
   );
 });

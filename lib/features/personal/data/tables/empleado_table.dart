@@ -72,6 +72,7 @@ enum TipoEventoEmpleado {
   asignacionServicio,
   cambioServicio,
   retiroServicio,
+  fichaTecnicaGenerada,
 }
 
 /// Expediente del empleado (Etapa 5A) — la base sobre la que se

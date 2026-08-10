@@ -26,6 +26,7 @@ import 'widgets/corregir_empleado_dialog.dart';
 import 'widgets/crear_empleado_dialog.dart';
 import 'widgets/domicilio_empleado_dialog.dart';
 import 'widgets/estudio_socioeconomico_empleado_dialog.dart';
+import 'widgets/generar_ficha_tecnica_empleado_dialog.dart';
 import 'widgets/perfil_psicologico_empleado_dialog.dart';
 import 'widgets/reingreso_empleado_dialog.dart';
 import 'widgets/retirar_servicio_empleado_dialog.dart';
@@ -61,6 +62,8 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   PuestoData? _puesto;
   EmpresaData? _empresa;
   SucursalData? _sucursal;
+  List<FichaTecnicaEmpleadoData> _fichasTecnicas = const [];
+  Map<String, String> _fichaTecnicaRutasPorAttachmentId = const {};
   bool _cargando = true;
   bool _procesando = false;
 
@@ -75,15 +78,21 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     final empleadoRepo = ref.read(empleadoRepositoryProvider);
     final empleado = await empleadoRepo.obtenerPorId(widget.empleadoId);
     final domicilio = await empleadoRepo.obtenerDomicilio(widget.empleadoId);
-    // La fotografía es un Attachment más (categoría `fotografia`, fuera
-    // de `CategoriaDocumentoEmpleado`) pero se muestra aparte, en el
-    // avatar — nunca debe listarse aquí como si fuera un documento del
-    // expediente.
+    // La fotografía y la Ficha técnica son Attachments más (categorías
+    // `fotografia`/`fichaTecnica`, fuera de `CategoriaDocumentoEmpleado`)
+    // pero cada una se muestra en su propia sección — nunca deben
+    // listarse aquí como si fueran documentos del expediente.
     final documentos = (await ref.read(attachmentRepositoryProvider).listarActivosPorEmpleado(widget.empleadoId))
-        .where((d) => d.categoria != 'fotografia')
+        .where((d) => d.categoria != 'fotografia' && d.categoria != 'fichaTecnica')
         .toList();
     final eventos = await empleadoRepo.listarEventos(widget.empleadoId);
     final periodosArchivados = await empleadoRepo.listarPeriodosLaboralesArchivados(widget.empleadoId);
+    final fichasTecnicas = await ref.read(fichaTecnicaEmpleadoRepositoryProvider).listarPorEmpleado(widget.empleadoId);
+    final fichaTecnicaRutasPorAttachmentId = <String, String>{};
+    for (final ficha in fichasTecnicas) {
+      final adjunto = await ref.read(attachmentRepositoryProvider).obtenerPorId(ficha.attachmentId);
+      if (adjunto != null) fichaTecnicaRutasPorAttachmentId[ficha.attachmentId] = adjunto.path;
+    }
 
     // Asignación a Servicio (Etapa 5D) — solo consulta desde aquí, nunca
     // duplica nombre de Servicio/Turno: se resuelve contra sus propios
@@ -134,6 +143,8 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       _puesto = puesto;
       _empresa = empresa;
       _sucursal = sucursal;
+      _fichasTecnicas = fichasTecnicas;
+      _fichaTecnicaRutasPorAttachmentId = fichaTecnicaRutasPorAttachmentId;
       _cargando = false;
     });
   }
@@ -155,6 +166,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       TipoEventoEmpleado.asignacionServicio => l10n.empleadoDetalleHistorialEventoAsignacionServicio,
       TipoEventoEmpleado.cambioServicio => l10n.empleadoDetalleHistorialEventoCambioServicio,
       TipoEventoEmpleado.retiroServicio => l10n.empleadoDetalleHistorialEventoRetiroServicio,
+      TipoEventoEmpleado.fichaTecnicaGenerada => l10n.empleadoDetalleHistorialEventoFichaTecnicaGenerada,
     };
   }
 
@@ -166,6 +178,17 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   Future<void> _editarDomicilio() async {
     final actualizo = await mostrarDialogoDomicilioEmpleado(context, ref, empleadoId: widget.empleadoId, domicilioActual: _domicilio);
     if (actualizo) await _cargar();
+  }
+
+  Future<void> _generarFichaTecnica() async {
+    final generada = await mostrarDialogoGenerarFichaTecnicaEmpleado(
+      context,
+      ref,
+      empleado: _empleado!,
+      domicilio: _domicilio,
+      asignacionVigente: _asignacionVigente,
+    );
+    if (generada) await _cargar();
   }
 
   Future<void> _adjuntarDocumento() async {
@@ -769,6 +792,49 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                                   label: l10n.agendaAdjuntoBotonAbrir,
                                   variant: RisegButtonVariant.ghost,
                                   onPressed: () => ref.read(attachmentStorageProvider).abrir(documento.path),
+                                ),
+                              ],
+                            ),
+                          ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(l10n.fichaTecnicaSeccionTitulo, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+                          ),
+                          RisegButton(
+                            label: l10n.fichaTecnicaBotonGenerar,
+                            variant: RisegButtonVariant.ghost,
+                            onPressed: _procesando ? null : _generarFichaTecnica,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      if (_fichasTecnicas.isEmpty)
+                        Text(l10n.fichaTecnicaSinFichas, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      else
+                        for (final ficha in _fichasTecnicas)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text('${ficha.folio} · ${_formatoFechaHora.format(ficha.createdAt)}'),
+                                ),
+                                RisegButton(
+                                  label: l10n.agendaAdjuntoBotonAbrir,
+                                  variant: RisegButtonVariant.ghost,
+                                  onPressed: () {
+                                    final ruta = _fichaTecnicaRutasPorAttachmentId[ficha.attachmentId];
+                                    if (ruta != null) ref.read(attachmentStorageProvider).abrir(ruta);
+                                  },
                                 ),
                               ],
                             ),

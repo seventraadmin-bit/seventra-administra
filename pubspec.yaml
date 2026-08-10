@@ -43,6 +43,12 @@ dependencies:
   # Localización
   intl: ^0.19.0
 
+  # Generación de PDF (Etapa 5E) — solo generación de bytes; abrir el
+  # archivo resultante reutiliza `AttachmentStorage.abrir` (programa
+  # predeterminado del SO), nunca un visor propio, así que no se agrega
+  # el paquete `printing`.
+  pdf: ^3.11.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

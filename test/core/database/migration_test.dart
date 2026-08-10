@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 21;
+const _currentSchemaVersion = 22;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -157,7 +157,7 @@ void main() {
       expect(areas, hasLength(6));
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(13));
+      expect(codigosSecuencia, hasLength(14));
 
       await db.close();
     },
@@ -5721,6 +5721,82 @@ void main() {
             ),
         throwsA(anything),
       );
+
+      await db.close();
+    },
+  );
+
+  test(
+    '22.json coincide con el esquema final de la Etapa 5E (tabla nueva FichaTecnicaEmpleado)',
+    () async {
+      final schema = await verifier.schemaAt(22);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, contains('ficha_tecnica_empleado'));
+
+      final sqlFicha =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'ficha_tecnica_empleado'")
+                  .single['sql']
+              as String;
+      expect(sqlFicha, contains('"folio" TEXT NOT NULL UNIQUE'));
+      expect(sqlFicha, contains('"empleado_id" TEXT NOT NULL REFERENCES empleado (id)'));
+      expect(sqlFicha, contains('"servicio_id" TEXT NULL REFERENCES servicio (id)'));
+      expect(sqlFicha, contains('"attachment_id" TEXT NOT NULL REFERENCES attachment (id)'));
+      expect(sqlFicha, contains('"campos_excluidos" TEXT NULL'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 21 → 22 conserva un Empleado real y crea FichaTecnicaEmpleado vacía',
+    () async {
+      final schemaV21 = await verifier.schemaAt(21);
+      final raw = schemaV21.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO empleado (
+        id, codigo_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 'EMP-000001', 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1735689600, 3, 'activo',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV21.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleados = await db.select(db.empleado).get();
+      expect(empleados, hasLength(1), reason: 'ningún Empleado real debe perderse en una migración aditiva');
+
+      final codigoFichaTecnica =
+          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('ficha_tecnica'))).getSingleOrNull();
+      expect(codigoFichaTecnica, isNotNull, reason: 'runSeed debe sembrar el contador de folio de ficha_tecnica');
+      expect(codigoFichaTecnica!.prefijo, 'FICHA');
+
+      final fichas = await db.select(db.fichaTecnicaEmpleado).get();
+      expect(fichas, isEmpty, reason: 'FichaTecnicaEmpleado es tabla nueva en 5E, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
 
       await db.close();
     },
