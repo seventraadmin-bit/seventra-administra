@@ -15,6 +15,7 @@ import 'package:riseg_one/features/nomina/domain/usecases/actualizar_movimientos
 import 'package:riseg_one/features/nomina/domain/usecases/actualizar_nomina_desde_personal_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/calcular_periodo_nomina.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/cerrar_nomina_usecase.dart';
+import 'package:riseg_one/features/nomina/domain/usecases/evaluar_renglones_requieren_revision_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/generar_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/resolver_sueldo_empleado_nomina.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
@@ -90,7 +91,8 @@ void main() {
     actualizarDesdePersonal = ActualizarNominaDesdePersonalUseCase(nominaRepo, empleadoRepo, puestoRepo, catalogoRepo, resolverSueldo);
     actualizarMovimientos = ActualizarMovimientosNominaUseCase(nominaRepo);
     actualizarDistribucion = ActualizarDistribucionNominaUseCase(nominaRepo);
-    cerrarNomina = CerrarNominaUseCase(nominaRepo);
+    final evaluarRenglonesRequierenRevision = EvaluarRenglonesRequierenRevisionUseCase(nominaRepo, empleadoRepo, resolverSueldo);
+    cerrarNomina = CerrarNominaUseCase(nominaRepo, evaluarRenglonesRequierenRevision);
   });
 
   tearDown(() => db.close());
@@ -499,5 +501,26 @@ void main() {
       final resultado = await cerrarNomina.ejecutar(nominaId: nomina.id);
       expect(resultado, isA<CerrarNominaSinEmpleados>());
     });
+
+    test(
+      'bloquea el cierre cuando un renglón se quedó sin días pagables pero conserva movimientos manuales '
+      '(Resolución explícita de Marlon: nunca queda solo implícito en diasPagables == 0)',
+      () async {
+        final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1), sueldoMensualAdministrativo: 1500000);
+        final generado = (await generarNomina.ejecutar(anio: 2026, mes: 2, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
+        final renglonOriginal = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
+        await actualizarMovimientos.ejecutar(nominaEmpleadoId: renglonOriginal.id, prestamo: 20000);
+
+        await registrarBajaLaboral.ejecutar(empleadoId: empleado.id, fechaBaja: DateTime(2026, 1, 20), motivo: MotivoBajaEmpleado.renuncia);
+        await actualizarDesdePersonal.ejecutar(nominaId: generado.nomina.id);
+
+        final resultado = await cerrarNomina.ejecutar(nominaId: generado.nomina.id);
+        expect(resultado, isA<CerrarNominaRequiereRevision>());
+        expect((resultado as CerrarNominaRequiereRevision).renglonesPendientes, hasLength(1));
+
+        final nominaTrasIntento = await nominaRepo.obtenerPorId(generado.nomina.id);
+        expect(nominaTrasIntento!.estatus, 'borrador', reason: 'nunca se cierra en silencio con un renglón que requiere revisión');
+      },
+    );
   });
 }

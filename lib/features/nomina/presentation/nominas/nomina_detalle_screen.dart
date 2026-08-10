@@ -40,6 +40,7 @@ class NominaDetalleScreen extends ConsumerStatefulWidget {
 class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
   NominaData? _nomina;
   List<NominaEmpleadoData> _renglones = const [];
+  Set<String> _idsRequierenRevision = const {};
   bool _cargando = true;
   bool _procesando = false;
 
@@ -54,10 +55,16 @@ class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
     final notifier = ref.read(nominasControllerProvider.notifier);
     final nomina = await notifier.obtenerPorId(widget.nominaId);
     final renglones = nomina == null ? <NominaEmpleadoData>[] : await notifier.listarEmpleados(widget.nominaId);
+    // Re-evaluado contra el estado actual de Personal — no puede
+    // derivarse solo de las columnas ya guardadas del renglón (ver el
+    // doc comment de `EvaluarRenglonesRequierenRevisionUseCase`).
+    final requierenRevision =
+        nomina == null ? const <NominaEmpleadoData>[] : await notifier.renglonesQueRequierenRevision(widget.nominaId);
     if (!mounted) return;
     setState(() {
       _nomina = nomina;
       _renglones = renglones;
+      _idsRequierenRevision = requierenRevision.map((r) => r.id).toSet();
       _cargando = false;
     });
   }
@@ -113,6 +120,8 @@ class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
         RisegFeedback.showError(context, l10n.cerrarNominaSinEmpleados);
       case CerrarNominaDistribucionPendiente():
         RisegFeedback.showError(context, l10n.cerrarNominaDistribucionPendiente);
+      case CerrarNominaRequiereRevision():
+        RisegFeedback.showError(context, l10n.cerrarNominaRequiereRevision);
       case CerrarNominaYaCerrada():
         RisegFeedback.showError(context, l10n.cerrarNominaYaCerrada);
       case CerrarNominaNoExiste():
@@ -136,6 +145,8 @@ class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
     }
 
     final esBorrador = nomina.estatus == 'borrador';
+    final colors = context.colors;
+    final hayRenglonesRequierenRevision = _idsRequierenRevision.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(title: Text(nomina.folio)),
@@ -171,6 +182,22 @@ class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
                 ],
               ],
             ),
+            if (hayRenglonesRequierenRevision) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(color: colors.errorBg, borderRadius: AppRadius.mdRadius),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_outlined, color: colors.error, size: AppSizes.iconSm),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(l10n.nominaDetalleBannerRequiereRevision, style: AppTypography.body.copyWith(color: colors.error)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             Expanded(
               child: RisegTableBase<NominaEmpleadoData>(
@@ -235,10 +262,19 @@ class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
                   ),
                   RisegColumn<NominaEmpleadoData>(
                     label: l10n.nominaDetalleColumnaEstado,
-                    width: 110,
-                    cellBuilder: (r) => r.distribucionPendienteRevision
-                        ? RisegStatusBadge(label: nominaEstatusPagoLabel(l10n, r.estatusPago), tone: RisegStatusTone.error)
-                        : RisegStatusBadge(label: nominaEstatusPagoLabel(l10n, r.estatusPago), tone: RisegStatusTone.neutral),
+                    width: 150,
+                    cellBuilder: (r) {
+                      if (_idsRequierenRevision.contains(r.id)) {
+                        return Tooltip(
+                          message: l10n.nominaDetalleRequiereRevisionTooltip,
+                          child: RisegStatusBadge(label: l10n.nominaDetalleEstadoRequiereRevision, tone: RisegStatusTone.error),
+                        );
+                      }
+                      return RisegStatusBadge(
+                        label: nominaEstatusPagoLabel(l10n, r.estatusPago),
+                        tone: r.distribucionPendienteRevision ? RisegStatusTone.error : RisegStatusTone.neutral,
+                      );
+                    },
                   ),
                 ],
               ),

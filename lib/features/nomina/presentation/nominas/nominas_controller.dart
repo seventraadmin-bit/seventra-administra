@@ -72,6 +72,10 @@ class NominasController extends _$NominasController {
     return resultado;
   }
 
+  Future<List<NominaEmpleadoData>> renglonesQueRequierenRevision(String nominaId) {
+    return ref.read(evaluarRenglonesRequierenRevisionUseCaseProvider).ejecutar(nominaId);
+  }
+
   Future<ActualizarMovimientosNominaResultado> actualizarMovimientos({
     required String nominaEmpleadoId,
     int? prestamo,

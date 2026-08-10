@@ -2040,6 +2040,9 @@
   "nominaDetalleVacioMensaje": "Esta nómina no tiene empleados incluidos.",
   "nominaDetalleCargaErrorTitulo": "No se pudo cargar la nómina",
   "nominaDetalleCargaErrorMensaje": "Ocurrió un error al cargar el detalle de la nómina.",
+  "nominaDetalleEstadoRequiereRevision": "Requiere revisión",
+  "nominaDetalleRequiereRevisionTooltip": "Requiere revisión: este empleado ya no tiene días pagables, pero existen movimientos manuales capturados.",
+  "nominaDetalleBannerRequiereRevision": "Hay empleados que ya no tienen días pagables, pero conservan movimientos manuales capturados. Revísalos antes de cerrar la nómina.",
 
   "actualizarNominaExito": "Nómina actualizada desde Personal.",
   "actualizarNominaNominaCerrada": "Esta nómina ya está cerrada, no admite actualizaciones.",
@@ -2052,6 +2055,7 @@
   "cerrarNominaExito": "Nómina cerrada correctamente.",
   "cerrarNominaSinEmpleados": "No se puede cerrar una nómina sin empleados.",
   "cerrarNominaDistribucionPendiente": "Hay renglones con distribución Fiscal/No fiscal pendiente de revisar. Corrígela antes de cerrar.",
+  "cerrarNominaRequiereRevision": "Hay empleados sin días pagables que conservan movimientos manuales capturados. Revísalos antes de cerrar.",
   "cerrarNominaYaCerrada": "Esta nómina ya está cerrada.",
   "cerrarNominaErrorInesperado": "Ocurrió un error al cerrar la nómina.",
 

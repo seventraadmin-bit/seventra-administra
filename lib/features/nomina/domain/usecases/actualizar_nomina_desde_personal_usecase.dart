@@ -8,6 +8,7 @@ import '../repositories/nomina_repository.dart';
 import 'calcular_dias_pagables_empleado.dart';
 import 'fila_nomina_generada.dart';
 import 'generar_nomina_usecase.dart' show EmpleadoExcluidoNomina;
+import 'renglon_nomina_requiere_revision.dart';
 import 'resolver_sueldo_empleado_nomina.dart';
 
 sealed class ActualizarNominaDesdePersonalResultado {}
@@ -149,14 +150,7 @@ class ActualizarNominaDesdePersonalUseCase {
 
         if (!tieneDias) {
           if (existente == null) continue;
-          final tieneDatosManuales = existente.prestamo != 0 ||
-              existente.tiempoExtra != 0 ||
-              existente.faltas != 0 ||
-              existente.otrosDescuentos != 0 ||
-              (existente.observaciones != null && existente.observaciones!.trim().isNotEmpty) ||
-              existente.bonoModificadoManualmente ||
-              existente.distribucionModificadaManualmente;
-          if (tieneDatosManuales) {
+          if (renglonNominaTieneMovimientosManuales(existente)) {
             conservadosSinDias++;
           } else {
             await _nominaRepository.eliminarRenglon(existente.id);

@@ -9,6 +9,7 @@ import 'domain/usecases/actualizar_distribucion_nomina_usecase.dart';
 import 'domain/usecases/actualizar_movimientos_nomina_usecase.dart';
 import 'domain/usecases/actualizar_nomina_desde_personal_usecase.dart';
 import 'domain/usecases/cerrar_nomina_usecase.dart';
+import 'domain/usecases/evaluar_renglones_requieren_revision_usecase.dart';
 import 'domain/usecases/generar_nomina_usecase.dart';
 import 'domain/usecases/resolver_sueldo_empleado_nomina.dart';
 
@@ -56,6 +57,14 @@ final actualizarDistribucionNominaUseCaseProvider = Provider<ActualizarDistribuc
   return ActualizarDistribucionNominaUseCase(ref.watch(nominaRepositoryProvider));
 });
 
+final evaluarRenglonesRequierenRevisionUseCaseProvider = Provider<EvaluarRenglonesRequierenRevisionUseCase>((ref) {
+  return EvaluarRenglonesRequierenRevisionUseCase(
+    ref.watch(nominaRepositoryProvider),
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(resolverSueldoEmpleadoNominaProvider),
+  );
+});
+
 final cerrarNominaUseCaseProvider = Provider<CerrarNominaUseCase>((ref) {
-  return CerrarNominaUseCase(ref.watch(nominaRepositoryProvider));
+  return CerrarNominaUseCase(ref.watch(nominaRepositoryProvider), ref.watch(evaluarRenglonesRequierenRevisionUseCaseProvider));
 });
