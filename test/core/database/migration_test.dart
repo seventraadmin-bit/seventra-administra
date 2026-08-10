@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 24;
+const _currentSchemaVersion = 25;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -157,7 +157,7 @@ void main() {
       expect(areas, hasLength(6));
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(14));
+      expect(codigosSecuencia, hasLength(15));
 
       await db.close();
     },
@@ -6088,6 +6088,209 @@ void main() {
             baseVigencia.copyWith(bonoMensual: const Value(0)),
           );
       expect(vigencia.bonoMensual, 0, reason: 'bono_mensual = 0 sí es válido en AsignacionServicioSueldoVigencia');
+
+      await db.close();
+    },
+  );
+
+  test(
+    '25.json coincide con el esquema final de la Etapa 6C (tablas nuevas Nomina, NominaEmpleado, '
+    'NominaEmpleadoTramo, NominaEvento)',
+    () async {
+      final schema = await verifier.schemaAt(25);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['nomina', 'nomina_empleado', 'nomina_empleado_tramo', 'nomina_evento']));
+
+      final sqlNomina =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'nomina'")
+                  .single['sql']
+              as String;
+      expect(sqlNomina, contains('UNIQUE (anio, mes, tipo_periodo)'));
+      expect(sqlNomina, contains('"folio" TEXT NOT NULL UNIQUE'));
+      expect(sqlNomina, contains('CHECK (mes >= 1 AND mes <= 12)'));
+
+      final sqlNominaEmpleado =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'nomina_empleado'")
+                  .single['sql']
+              as String;
+      expect(sqlNominaEmpleado, contains('UNIQUE (nomina_id, empleado_id)'));
+      expect(sqlNominaEmpleado, contains('CHECK (dias_pagables >= 0)'));
+      expect(sqlNominaEmpleado, contains('CHECK (sueldo_mensual_utilizado > 0)'));
+      // Deliberadamente sin CHECK monto_fiscal + monto_no_fiscal == total_a_pagar
+      // (Resolución explícita de Marlon: debe poder existir una distribución
+      // temporalmente pendiente de revisar sin que la escritura falle).
+      expect(sqlNominaEmpleado, isNot(contains('monto_fiscal + monto_no_fiscal')));
+
+      final sqlNominaEmpleadoTramo =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'nomina_empleado_tramo'")
+                  .single['sql']
+              as String;
+      expect(sqlNominaEmpleadoTramo, contains('CHECK (dias_reales > 0)'));
+      expect(sqlNominaEmpleadoTramo, contains('CHECK (sueldo_mensual > 0)'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 24 → 25 conserva un Empleado/Servicio real y crea las 4 tablas de Nómina vacías, sembrando '
+    'CodigoSecuencia(nomina)',
+    () async {
+      final schemaV24 = await verifier.schemaAt(24);
+      final raw = schemaV24.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '10000000001', 'soltero', 1735689600, 3, 'activo',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV24.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleados = await db.select(db.empleado).get();
+      expect(empleados, hasLength(1), reason: 'ningún Empleado real debe perderse en una migración puramente aditiva');
+      expect(empleados.single.id, 'empleado-real');
+
+      final nominas = await db.select(db.nomina).get();
+      expect(nominas, isEmpty, reason: 'Nomina es tabla nueva en 6C, sin backfill');
+      final renglones = await db.select(db.nominaEmpleado).get();
+      expect(renglones, isEmpty);
+      final tramos = await db.select(db.nominaEmpleadoTramo).get();
+      expect(tramos, isEmpty);
+      final eventos = await db.select(db.nominaEvento).get();
+      expect(eventos, isEmpty);
+
+      final codigoNomina =
+          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('nomina'))).getSingleOrNull();
+      expect(codigoNomina, isNotNull, reason: 'runSeed debe sembrar el contador de folio de nomina');
+      expect(codigoNomina!.prefijo, 'NOM');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de Nomina/NominaEmpleado/NominaEmpleadoTramo tras la migración: unicidad de periodo, distribución '
+    'pendiente permitida temporalmente, importe_tramo >= 0',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final nomina = await db.into(db.nomina).insertReturning(
+            NominaCompanion.insert(
+              folio: 'NOM-000001',
+              anio: 2026,
+              mes: 1,
+              tipoPeriodo: 'primera',
+              fechaInicioPeriodo: DateTime(2026, 1, 1),
+              fechaFinPeriodo: DateTime(2026, 1, 15),
+              fechaPagoOrdinaria: DateTime(2026, 1, 20),
+            ),
+          );
+
+      await expectLater(
+        db.into(db.nomina).insert(
+              NominaCompanion.insert(
+                folio: 'NOM-000002',
+                anio: 2026,
+                mes: 1,
+                tipoPeriodo: 'primera',
+                fechaInicioPeriodo: DateTime(2026, 1, 1),
+                fechaFinPeriodo: DateTime(2026, 1, 15),
+                fechaPagoOrdinaria: DateTime(2026, 1, 20),
+              ),
+            ),
+        throwsA(anything),
+        reason: 'una segunda Nómina para el mismo (anio, mes, tipo_periodo) debe rechazarse',
+      );
+
+      final empleado = await db.into(db.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 0,
+            ),
+          );
+
+      final baseRenglon = NominaEmpleadoCompanion.insert(
+        nominaId: nomina.id,
+        empleadoId: empleado.id,
+        numeroEmpleado: 1,
+        nombreCompleto: 'Juan Pérez',
+        fuenteSueldoUtilizada: 'administrativo',
+        diasPagables: 15,
+        sueldoMensualUtilizado: 1500000,
+        sueldoQuincenalReferencia: 750000,
+        pagoPorDia: 50000,
+        importeBase: 750000,
+        totalAPagar: 750000,
+      );
+
+      // Distribución temporalmente pendiente de revisar (fiscal + no fiscal
+      // no suman el total) — debe poder escribirse sin fallar a nivel de
+      // base de datos; el bloqueo real vive en `CerrarNominaUseCase`.
+      final renglonPendiente = await db.into(db.nominaEmpleado).insertReturning(
+            baseRenglon.copyWith(
+              montoFiscal: const Value(100000),
+              montoNoFiscal: const Value(0),
+              distribucionPendienteRevision: const Value(true),
+            ),
+          );
+      expect(renglonPendiente.distribucionPendienteRevision, isTrue);
+
+      await expectLater(
+        db.into(db.nominaEmpleadoTramo).insert(
+              NominaEmpleadoTramoCompanion.insert(
+                nominaEmpleadoId: renglonPendiente.id,
+                fechaInicio: DateTime(2026, 1, 1),
+                fechaFin: DateTime(2026, 1, 15),
+                fuenteSueldo: 'administrativo',
+                sueldoMensual: 1500000,
+                bonoMensual: 0,
+                diasReales: 15,
+                importeTramo: -1,
+              ),
+            ),
+        throwsA(anything),
+        reason: 'importe_tramo negativo debe rechazarse',
+      );
 
       await db.close();
     },

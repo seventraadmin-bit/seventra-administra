@@ -38,6 +38,10 @@ import '../../features/personal/data/tables/asignacion_servicio_table.dart';
 import '../../features/personal/data/tables/empleado_attachment_table.dart';
 import '../../features/personal/data/tables/empleado_table.dart';
 import '../../features/personal/data/tables/ficha_tecnica_empleado_table.dart';
+import '../../features/nomina/data/tables/nomina_empleado_table.dart';
+import '../../features/nomina/data/tables/nomina_empleado_tramo_table.dart';
+import '../../features/nomina/data/tables/nomina_evento_table.dart';
+import '../../features/nomina/data/tables/nomina_table.dart';
 import 'migrations/migrar_asignacion_servicio_v21.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_empleado_v21.dart';
@@ -147,12 +151,16 @@ class AppMetadata extends Table {
   IngresoAttachment,
   EgresoAttachment,
   EmpleadoAttachment,
+  Nomina,
+  NominaEmpleado,
+  NominaEmpleadoTramo,
+  NominaEvento,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration {
@@ -556,6 +564,18 @@ class AppDatabase extends _$AppDatabase {
         // necesita este paso.
         if (to >= 24 && from >= 6 && from <= 23) {
           await migrarServicioV24(this, m);
+        }
+        // Aditiva (Etapa 6C): tablas nuevas del motor de Nómina
+        // (Nomina/NominaEmpleado/NominaEmpleadoTramo/NominaEvento) —
+        // ninguna existió antes, `from <= 24` es seguro sin acotar un
+        // origen exacto. El renglón nuevo de `CodigoSecuencia('nomina')`
+        // se siembra vía `runSeed()` normal, arriba en este mismo
+        // `onUpgrade`.
+        if (to >= 25 && from <= 24) {
+          await m.createTable(nomina);
+          await m.createTable(nominaEmpleado);
+          await m.createTable(nominaEmpleadoTramo);
+          await m.createTable(nominaEvento);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

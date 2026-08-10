@@ -40040,6 +40040,4250 @@ class EmpleadoAttachmentCompanion
   }
 }
 
+class $NominaTable extends Nomina with TableInfo<$NominaTable, NominaData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NominaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _folioMeta = const VerificationMeta('folio');
+  @override
+  late final GeneratedColumn<String> folio = GeneratedColumn<String>(
+    'folio',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _anioMeta = const VerificationMeta('anio');
+  @override
+  late final GeneratedColumn<int> anio = GeneratedColumn<int>(
+    'anio',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mesMeta = const VerificationMeta('mes');
+  @override
+  late final GeneratedColumn<int> mes = GeneratedColumn<int>(
+    'mes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoPeriodoMeta = const VerificationMeta(
+    'tipoPeriodo',
+  );
+  @override
+  late final GeneratedColumn<String> tipoPeriodo = GeneratedColumn<String>(
+    'tipo_periodo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaInicioPeriodoMeta =
+      const VerificationMeta('fechaInicioPeriodo');
+  @override
+  late final GeneratedColumn<DateTime> fechaInicioPeriodo =
+      GeneratedColumn<DateTime>(
+        'fecha_inicio_periodo',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _fechaFinPeriodoMeta = const VerificationMeta(
+    'fechaFinPeriodo',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaFinPeriodo =
+      GeneratedColumn<DateTime>(
+        'fecha_fin_periodo',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _fechaPagoOrdinariaMeta =
+      const VerificationMeta('fechaPagoOrdinaria');
+  @override
+  late final GeneratedColumn<DateTime> fechaPagoOrdinaria =
+      GeneratedColumn<DateTime>(
+        'fecha_pago_ordinaria',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('borrador'),
+  );
+  static const VerificationMeta _fechaCierreMeta = const VerificationMeta(
+    'fechaCierre',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaCierre = GeneratedColumn<DateTime>(
+    'fecha_cierre',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folio,
+    anio,
+    mes,
+    tipoPeriodo,
+    fechaInicioPeriodo,
+    fechaFinPeriodo,
+    fechaPagoOrdinaria,
+    estatus,
+    fechaCierre,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nomina';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NominaData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio')) {
+      context.handle(
+        _folioMeta,
+        folio.isAcceptableOrUnknown(data['folio']!, _folioMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folioMeta);
+    }
+    if (data.containsKey('anio')) {
+      context.handle(
+        _anioMeta,
+        anio.isAcceptableOrUnknown(data['anio']!, _anioMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_anioMeta);
+    }
+    if (data.containsKey('mes')) {
+      context.handle(
+        _mesMeta,
+        mes.isAcceptableOrUnknown(data['mes']!, _mesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mesMeta);
+    }
+    if (data.containsKey('tipo_periodo')) {
+      context.handle(
+        _tipoPeriodoMeta,
+        tipoPeriodo.isAcceptableOrUnknown(
+          data['tipo_periodo']!,
+          _tipoPeriodoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoPeriodoMeta);
+    }
+    if (data.containsKey('fecha_inicio_periodo')) {
+      context.handle(
+        _fechaInicioPeriodoMeta,
+        fechaInicioPeriodo.isAcceptableOrUnknown(
+          data['fecha_inicio_periodo']!,
+          _fechaInicioPeriodoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaInicioPeriodoMeta);
+    }
+    if (data.containsKey('fecha_fin_periodo')) {
+      context.handle(
+        _fechaFinPeriodoMeta,
+        fechaFinPeriodo.isAcceptableOrUnknown(
+          data['fecha_fin_periodo']!,
+          _fechaFinPeriodoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaFinPeriodoMeta);
+    }
+    if (data.containsKey('fecha_pago_ordinaria')) {
+      context.handle(
+        _fechaPagoOrdinariaMeta,
+        fechaPagoOrdinaria.isAcceptableOrUnknown(
+          data['fecha_pago_ordinaria']!,
+          _fechaPagoOrdinariaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaPagoOrdinariaMeta);
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('fecha_cierre')) {
+      context.handle(
+        _fechaCierreMeta,
+        fechaCierre.isAcceptableOrUnknown(
+          data['fecha_cierre']!,
+          _fechaCierreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NominaData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NominaData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      folio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}folio'],
+          )!,
+      anio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}anio'],
+          )!,
+      mes:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}mes'],
+          )!,
+      tipoPeriodo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_periodo'],
+          )!,
+      fechaInicioPeriodo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_inicio_periodo'],
+          )!,
+      fechaFinPeriodo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_fin_periodo'],
+          )!,
+      fechaPagoOrdinaria:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_pago_ordinaria'],
+          )!,
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      fechaCierre: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_cierre'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $NominaTable createAlias(String alias) {
+    return $NominaTable(attachedDatabase, alias);
+  }
+}
+
+class NominaData extends DataClass implements Insertable<NominaData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String folio;
+  final int anio;
+
+  /// 1 a 12.
+  final int mes;
+  final String tipoPeriodo;
+  final DateTime fechaInicioPeriodo;
+  final DateTime fechaFinPeriodo;
+
+  /// Fecha de pago ordinaria calculada automáticamente
+  /// (`calcularPeriodoNomina`) — nunca capturada a mano.
+  final DateTime fechaPagoOrdinaria;
+  final String estatus;
+  final DateTime? fechaCierre;
+  final String? observaciones;
+  const NominaData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.folio,
+    required this.anio,
+    required this.mes,
+    required this.tipoPeriodo,
+    required this.fechaInicioPeriodo,
+    required this.fechaFinPeriodo,
+    required this.fechaPagoOrdinaria,
+    required this.estatus,
+    this.fechaCierre,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['folio'] = Variable<String>(folio);
+    map['anio'] = Variable<int>(anio);
+    map['mes'] = Variable<int>(mes);
+    map['tipo_periodo'] = Variable<String>(tipoPeriodo);
+    map['fecha_inicio_periodo'] = Variable<DateTime>(fechaInicioPeriodo);
+    map['fecha_fin_periodo'] = Variable<DateTime>(fechaFinPeriodo);
+    map['fecha_pago_ordinaria'] = Variable<DateTime>(fechaPagoOrdinaria);
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || fechaCierre != null) {
+      map['fecha_cierre'] = Variable<DateTime>(fechaCierre);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  NominaCompanion toCompanion(bool nullToAbsent) {
+    return NominaCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      folio: Value(folio),
+      anio: Value(anio),
+      mes: Value(mes),
+      tipoPeriodo: Value(tipoPeriodo),
+      fechaInicioPeriodo: Value(fechaInicioPeriodo),
+      fechaFinPeriodo: Value(fechaFinPeriodo),
+      fechaPagoOrdinaria: Value(fechaPagoOrdinaria),
+      estatus: Value(estatus),
+      fechaCierre:
+          fechaCierre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaCierre),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory NominaData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NominaData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      folio: serializer.fromJson<String>(json['folio']),
+      anio: serializer.fromJson<int>(json['anio']),
+      mes: serializer.fromJson<int>(json['mes']),
+      tipoPeriodo: serializer.fromJson<String>(json['tipoPeriodo']),
+      fechaInicioPeriodo: serializer.fromJson<DateTime>(
+        json['fechaInicioPeriodo'],
+      ),
+      fechaFinPeriodo: serializer.fromJson<DateTime>(json['fechaFinPeriodo']),
+      fechaPagoOrdinaria: serializer.fromJson<DateTime>(
+        json['fechaPagoOrdinaria'],
+      ),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      fechaCierre: serializer.fromJson<DateTime?>(json['fechaCierre']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'folio': serializer.toJson<String>(folio),
+      'anio': serializer.toJson<int>(anio),
+      'mes': serializer.toJson<int>(mes),
+      'tipoPeriodo': serializer.toJson<String>(tipoPeriodo),
+      'fechaInicioPeriodo': serializer.toJson<DateTime>(fechaInicioPeriodo),
+      'fechaFinPeriodo': serializer.toJson<DateTime>(fechaFinPeriodo),
+      'fechaPagoOrdinaria': serializer.toJson<DateTime>(fechaPagoOrdinaria),
+      'estatus': serializer.toJson<String>(estatus),
+      'fechaCierre': serializer.toJson<DateTime?>(fechaCierre),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  NominaData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? folio,
+    int? anio,
+    int? mes,
+    String? tipoPeriodo,
+    DateTime? fechaInicioPeriodo,
+    DateTime? fechaFinPeriodo,
+    DateTime? fechaPagoOrdinaria,
+    String? estatus,
+    Value<DateTime?> fechaCierre = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => NominaData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    folio: folio ?? this.folio,
+    anio: anio ?? this.anio,
+    mes: mes ?? this.mes,
+    tipoPeriodo: tipoPeriodo ?? this.tipoPeriodo,
+    fechaInicioPeriodo: fechaInicioPeriodo ?? this.fechaInicioPeriodo,
+    fechaFinPeriodo: fechaFinPeriodo ?? this.fechaFinPeriodo,
+    fechaPagoOrdinaria: fechaPagoOrdinaria ?? this.fechaPagoOrdinaria,
+    estatus: estatus ?? this.estatus,
+    fechaCierre: fechaCierre.present ? fechaCierre.value : this.fechaCierre,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  NominaData copyWithCompanion(NominaCompanion data) {
+    return NominaData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      folio: data.folio.present ? data.folio.value : this.folio,
+      anio: data.anio.present ? data.anio.value : this.anio,
+      mes: data.mes.present ? data.mes.value : this.mes,
+      tipoPeriodo:
+          data.tipoPeriodo.present ? data.tipoPeriodo.value : this.tipoPeriodo,
+      fechaInicioPeriodo:
+          data.fechaInicioPeriodo.present
+              ? data.fechaInicioPeriodo.value
+              : this.fechaInicioPeriodo,
+      fechaFinPeriodo:
+          data.fechaFinPeriodo.present
+              ? data.fechaFinPeriodo.value
+              : this.fechaFinPeriodo,
+      fechaPagoOrdinaria:
+          data.fechaPagoOrdinaria.present
+              ? data.fechaPagoOrdinaria.value
+              : this.fechaPagoOrdinaria,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      fechaCierre:
+          data.fechaCierre.present ? data.fechaCierre.value : this.fechaCierre,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NominaData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folio: $folio, ')
+          ..write('anio: $anio, ')
+          ..write('mes: $mes, ')
+          ..write('tipoPeriodo: $tipoPeriodo, ')
+          ..write('fechaInicioPeriodo: $fechaInicioPeriodo, ')
+          ..write('fechaFinPeriodo: $fechaFinPeriodo, ')
+          ..write('fechaPagoOrdinaria: $fechaPagoOrdinaria, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaCierre: $fechaCierre, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folio,
+    anio,
+    mes,
+    tipoPeriodo,
+    fechaInicioPeriodo,
+    fechaFinPeriodo,
+    fechaPagoOrdinaria,
+    estatus,
+    fechaCierre,
+    observaciones,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NominaData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.folio == this.folio &&
+          other.anio == this.anio &&
+          other.mes == this.mes &&
+          other.tipoPeriodo == this.tipoPeriodo &&
+          other.fechaInicioPeriodo == this.fechaInicioPeriodo &&
+          other.fechaFinPeriodo == this.fechaFinPeriodo &&
+          other.fechaPagoOrdinaria == this.fechaPagoOrdinaria &&
+          other.estatus == this.estatus &&
+          other.fechaCierre == this.fechaCierre &&
+          other.observaciones == this.observaciones);
+}
+
+class NominaCompanion extends UpdateCompanion<NominaData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> folio;
+  final Value<int> anio;
+  final Value<int> mes;
+  final Value<String> tipoPeriodo;
+  final Value<DateTime> fechaInicioPeriodo;
+  final Value<DateTime> fechaFinPeriodo;
+  final Value<DateTime> fechaPagoOrdinaria;
+  final Value<String> estatus;
+  final Value<DateTime?> fechaCierre;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const NominaCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.folio = const Value.absent(),
+    this.anio = const Value.absent(),
+    this.mes = const Value.absent(),
+    this.tipoPeriodo = const Value.absent(),
+    this.fechaInicioPeriodo = const Value.absent(),
+    this.fechaFinPeriodo = const Value.absent(),
+    this.fechaPagoOrdinaria = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.fechaCierre = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NominaCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String folio,
+    required int anio,
+    required int mes,
+    required String tipoPeriodo,
+    required DateTime fechaInicioPeriodo,
+    required DateTime fechaFinPeriodo,
+    required DateTime fechaPagoOrdinaria,
+    this.estatus = const Value.absent(),
+    this.fechaCierre = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : folio = Value(folio),
+       anio = Value(anio),
+       mes = Value(mes),
+       tipoPeriodo = Value(tipoPeriodo),
+       fechaInicioPeriodo = Value(fechaInicioPeriodo),
+       fechaFinPeriodo = Value(fechaFinPeriodo),
+       fechaPagoOrdinaria = Value(fechaPagoOrdinaria);
+  static Insertable<NominaData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? folio,
+    Expression<int>? anio,
+    Expression<int>? mes,
+    Expression<String>? tipoPeriodo,
+    Expression<DateTime>? fechaInicioPeriodo,
+    Expression<DateTime>? fechaFinPeriodo,
+    Expression<DateTime>? fechaPagoOrdinaria,
+    Expression<String>? estatus,
+    Expression<DateTime>? fechaCierre,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (folio != null) 'folio': folio,
+      if (anio != null) 'anio': anio,
+      if (mes != null) 'mes': mes,
+      if (tipoPeriodo != null) 'tipo_periodo': tipoPeriodo,
+      if (fechaInicioPeriodo != null)
+        'fecha_inicio_periodo': fechaInicioPeriodo,
+      if (fechaFinPeriodo != null) 'fecha_fin_periodo': fechaFinPeriodo,
+      if (fechaPagoOrdinaria != null)
+        'fecha_pago_ordinaria': fechaPagoOrdinaria,
+      if (estatus != null) 'estatus': estatus,
+      if (fechaCierre != null) 'fecha_cierre': fechaCierre,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NominaCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? folio,
+    Value<int>? anio,
+    Value<int>? mes,
+    Value<String>? tipoPeriodo,
+    Value<DateTime>? fechaInicioPeriodo,
+    Value<DateTime>? fechaFinPeriodo,
+    Value<DateTime>? fechaPagoOrdinaria,
+    Value<String>? estatus,
+    Value<DateTime?>? fechaCierre,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return NominaCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      folio: folio ?? this.folio,
+      anio: anio ?? this.anio,
+      mes: mes ?? this.mes,
+      tipoPeriodo: tipoPeriodo ?? this.tipoPeriodo,
+      fechaInicioPeriodo: fechaInicioPeriodo ?? this.fechaInicioPeriodo,
+      fechaFinPeriodo: fechaFinPeriodo ?? this.fechaFinPeriodo,
+      fechaPagoOrdinaria: fechaPagoOrdinaria ?? this.fechaPagoOrdinaria,
+      estatus: estatus ?? this.estatus,
+      fechaCierre: fechaCierre ?? this.fechaCierre,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (folio.present) {
+      map['folio'] = Variable<String>(folio.value);
+    }
+    if (anio.present) {
+      map['anio'] = Variable<int>(anio.value);
+    }
+    if (mes.present) {
+      map['mes'] = Variable<int>(mes.value);
+    }
+    if (tipoPeriodo.present) {
+      map['tipo_periodo'] = Variable<String>(tipoPeriodo.value);
+    }
+    if (fechaInicioPeriodo.present) {
+      map['fecha_inicio_periodo'] = Variable<DateTime>(
+        fechaInicioPeriodo.value,
+      );
+    }
+    if (fechaFinPeriodo.present) {
+      map['fecha_fin_periodo'] = Variable<DateTime>(fechaFinPeriodo.value);
+    }
+    if (fechaPagoOrdinaria.present) {
+      map['fecha_pago_ordinaria'] = Variable<DateTime>(
+        fechaPagoOrdinaria.value,
+      );
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (fechaCierre.present) {
+      map['fecha_cierre'] = Variable<DateTime>(fechaCierre.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NominaCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folio: $folio, ')
+          ..write('anio: $anio, ')
+          ..write('mes: $mes, ')
+          ..write('tipoPeriodo: $tipoPeriodo, ')
+          ..write('fechaInicioPeriodo: $fechaInicioPeriodo, ')
+          ..write('fechaFinPeriodo: $fechaFinPeriodo, ')
+          ..write('fechaPagoOrdinaria: $fechaPagoOrdinaria, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaCierre: $fechaCierre, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NominaEmpleadoTable extends NominaEmpleado
+    with TableInfo<$NominaEmpleadoTable, NominaEmpleadoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NominaEmpleadoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _nominaIdMeta = const VerificationMeta(
+    'nominaId',
+  );
+  @override
+  late final GeneratedColumn<String> nominaId = GeneratedColumn<String>(
+    'nomina_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nomina (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empleado (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _numeroEmpleadoMeta = const VerificationMeta(
+    'numeroEmpleado',
+  );
+  @override
+  late final GeneratedColumn<int> numeroEmpleado = GeneratedColumn<int>(
+    'numero_empleado',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nombreCompletoMeta = const VerificationMeta(
+    'nombreCompleto',
+  );
+  @override
+  late final GeneratedColumn<String> nombreCompleto = GeneratedColumn<String>(
+    'nombre_completo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _puestoNombreMeta = const VerificationMeta(
+    'puestoNombre',
+  );
+  @override
+  late final GeneratedColumn<String> puestoNombre = GeneratedColumn<String>(
+    'puesto_nombre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _servicioNombreMeta = const VerificationMeta(
+    'servicioNombre',
+  );
+  @override
+  late final GeneratedColumn<String> servicioNombre = GeneratedColumn<String>(
+    'servicio_nombre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _turnoNombreMeta = const VerificationMeta(
+    'turnoNombre',
+  );
+  @override
+  late final GeneratedColumn<String> turnoNombre = GeneratedColumn<String>(
+    'turno_nombre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bancoNombreMeta = const VerificationMeta(
+    'bancoNombre',
+  );
+  @override
+  late final GeneratedColumn<String> bancoNombre = GeneratedColumn<String>(
+    'banco_nombre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _numeroCuentaTarjetaMeta =
+      const VerificationMeta('numeroCuentaTarjeta');
+  @override
+  late final GeneratedColumn<String> numeroCuentaTarjeta =
+      GeneratedColumn<String>(
+        'numero_cuenta_tarjeta',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _clabeMeta = const VerificationMeta('clabe');
+  @override
+  late final GeneratedColumn<String> clabe = GeneratedColumn<String>(
+    'clabe',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fuenteSueldoUtilizadaMeta =
+      const VerificationMeta('fuenteSueldoUtilizada');
+  @override
+  late final GeneratedColumn<String> fuenteSueldoUtilizada =
+      GeneratedColumn<String>(
+        'fuente_sueldo_utilizada',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _diasPagablesMeta = const VerificationMeta(
+    'diasPagables',
+  );
+  @override
+  late final GeneratedColumn<int> diasPagables = GeneratedColumn<int>(
+    'dias_pagables',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sueldoMensualUtilizadoMeta =
+      const VerificationMeta('sueldoMensualUtilizado');
+  @override
+  late final GeneratedColumn<int> sueldoMensualUtilizado = GeneratedColumn<int>(
+    'sueldo_mensual_utilizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sueldoQuincenalReferenciaMeta =
+      const VerificationMeta('sueldoQuincenalReferencia');
+  @override
+  late final GeneratedColumn<int> sueldoQuincenalReferencia =
+      GeneratedColumn<int>(
+        'sueldo_quincenal_referencia',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _pagoPorDiaMeta = const VerificationMeta(
+    'pagoPorDia',
+  );
+  @override
+  late final GeneratedColumn<int> pagoPorDia = GeneratedColumn<int>(
+    'pago_por_dia',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _importeBaseMeta = const VerificationMeta(
+    'importeBase',
+  );
+  @override
+  late final GeneratedColumn<int> importeBase = GeneratedColumn<int>(
+    'importe_base',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _prestamoMeta = const VerificationMeta(
+    'prestamo',
+  );
+  @override
+  late final GeneratedColumn<int> prestamo = GeneratedColumn<int>(
+    'prestamo',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _tiempoExtraMeta = const VerificationMeta(
+    'tiempoExtra',
+  );
+  @override
+  late final GeneratedColumn<int> tiempoExtra = GeneratedColumn<int>(
+    'tiempo_extra',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _bonoMeta = const VerificationMeta('bono');
+  @override
+  late final GeneratedColumn<int> bono = GeneratedColumn<int>(
+    'bono',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _bonoModificadoManualmenteMeta =
+      const VerificationMeta('bonoModificadoManualmente');
+  @override
+  late final GeneratedColumn<bool> bonoModificadoManualmente =
+      GeneratedColumn<bool>(
+        'bono_modificado_manualmente',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("bono_modificado_manualmente" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
+  static const VerificationMeta _faltasMeta = const VerificationMeta('faltas');
+  @override
+  late final GeneratedColumn<int> faltas = GeneratedColumn<int>(
+    'faltas',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _descuentoPorFaltasMeta =
+      const VerificationMeta('descuentoPorFaltas');
+  @override
+  late final GeneratedColumn<int> descuentoPorFaltas = GeneratedColumn<int>(
+    'descuento_por_faltas',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _otrosDescuentosMeta = const VerificationMeta(
+    'otrosDescuentos',
+  );
+  @override
+  late final GeneratedColumn<int> otrosDescuentos = GeneratedColumn<int>(
+    'otros_descuentos',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _montoFiscalMeta = const VerificationMeta(
+    'montoFiscal',
+  );
+  @override
+  late final GeneratedColumn<int> montoFiscal = GeneratedColumn<int>(
+    'monto_fiscal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _montoNoFiscalMeta = const VerificationMeta(
+    'montoNoFiscal',
+  );
+  @override
+  late final GeneratedColumn<int> montoNoFiscal = GeneratedColumn<int>(
+    'monto_no_fiscal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _distribucionModificadaManualmenteMeta =
+      const VerificationMeta('distribucionModificadaManualmente');
+  @override
+  late final GeneratedColumn<bool> distribucionModificadaManualmente =
+      GeneratedColumn<bool>(
+        'distribucion_modificada_manualmente',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("distribucion_modificada_manualmente" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
+  static const VerificationMeta _distribucionPendienteRevisionMeta =
+      const VerificationMeta('distribucionPendienteRevision');
+  @override
+  late final GeneratedColumn<bool> distribucionPendienteRevision =
+      GeneratedColumn<bool>(
+        'distribucion_pendiente_revision',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("distribucion_pendiente_revision" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
+  static const VerificationMeta _totalAPagarMeta = const VerificationMeta(
+    'totalAPagar',
+  );
+  @override
+  late final GeneratedColumn<int> totalAPagar = GeneratedColumn<int>(
+    'total_a_pagar',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estatusPagoMeta = const VerificationMeta(
+    'estatusPago',
+  );
+  @override
+  late final GeneratedColumn<String> estatusPago = GeneratedColumn<String>(
+    'estatus_pago',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pendiente'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    nominaId,
+    empleadoId,
+    numeroEmpleado,
+    nombreCompleto,
+    puestoNombre,
+    servicioId,
+    servicioNombre,
+    turnoNombre,
+    bancoNombre,
+    numeroCuentaTarjeta,
+    clabe,
+    fuenteSueldoUtilizada,
+    diasPagables,
+    sueldoMensualUtilizado,
+    sueldoQuincenalReferencia,
+    pagoPorDia,
+    importeBase,
+    prestamo,
+    tiempoExtra,
+    bono,
+    bonoModificadoManualmente,
+    faltas,
+    descuentoPorFaltas,
+    otrosDescuentos,
+    observaciones,
+    montoFiscal,
+    montoNoFiscal,
+    distribucionModificadaManualmente,
+    distribucionPendienteRevision,
+    totalAPagar,
+    estatusPago,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nomina_empleado';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NominaEmpleadoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nomina_id')) {
+      context.handle(
+        _nominaIdMeta,
+        nominaId.isAcceptableOrUnknown(data['nomina_id']!, _nominaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nominaIdMeta);
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_empleadoIdMeta);
+    }
+    if (data.containsKey('numero_empleado')) {
+      context.handle(
+        _numeroEmpleadoMeta,
+        numeroEmpleado.isAcceptableOrUnknown(
+          data['numero_empleado']!,
+          _numeroEmpleadoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_numeroEmpleadoMeta);
+    }
+    if (data.containsKey('nombre_completo')) {
+      context.handle(
+        _nombreCompletoMeta,
+        nombreCompleto.isAcceptableOrUnknown(
+          data['nombre_completo']!,
+          _nombreCompletoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreCompletoMeta);
+    }
+    if (data.containsKey('puesto_nombre')) {
+      context.handle(
+        _puestoNombreMeta,
+        puestoNombre.isAcceptableOrUnknown(
+          data['puesto_nombre']!,
+          _puestoNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    }
+    if (data.containsKey('servicio_nombre')) {
+      context.handle(
+        _servicioNombreMeta,
+        servicioNombre.isAcceptableOrUnknown(
+          data['servicio_nombre']!,
+          _servicioNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('turno_nombre')) {
+      context.handle(
+        _turnoNombreMeta,
+        turnoNombre.isAcceptableOrUnknown(
+          data['turno_nombre']!,
+          _turnoNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('banco_nombre')) {
+      context.handle(
+        _bancoNombreMeta,
+        bancoNombre.isAcceptableOrUnknown(
+          data['banco_nombre']!,
+          _bancoNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('numero_cuenta_tarjeta')) {
+      context.handle(
+        _numeroCuentaTarjetaMeta,
+        numeroCuentaTarjeta.isAcceptableOrUnknown(
+          data['numero_cuenta_tarjeta']!,
+          _numeroCuentaTarjetaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('clabe')) {
+      context.handle(
+        _clabeMeta,
+        clabe.isAcceptableOrUnknown(data['clabe']!, _clabeMeta),
+      );
+    }
+    if (data.containsKey('fuente_sueldo_utilizada')) {
+      context.handle(
+        _fuenteSueldoUtilizadaMeta,
+        fuenteSueldoUtilizada.isAcceptableOrUnknown(
+          data['fuente_sueldo_utilizada']!,
+          _fuenteSueldoUtilizadaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fuenteSueldoUtilizadaMeta);
+    }
+    if (data.containsKey('dias_pagables')) {
+      context.handle(
+        _diasPagablesMeta,
+        diasPagables.isAcceptableOrUnknown(
+          data['dias_pagables']!,
+          _diasPagablesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_diasPagablesMeta);
+    }
+    if (data.containsKey('sueldo_mensual_utilizado')) {
+      context.handle(
+        _sueldoMensualUtilizadoMeta,
+        sueldoMensualUtilizado.isAcceptableOrUnknown(
+          data['sueldo_mensual_utilizado']!,
+          _sueldoMensualUtilizadoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sueldoMensualUtilizadoMeta);
+    }
+    if (data.containsKey('sueldo_quincenal_referencia')) {
+      context.handle(
+        _sueldoQuincenalReferenciaMeta,
+        sueldoQuincenalReferencia.isAcceptableOrUnknown(
+          data['sueldo_quincenal_referencia']!,
+          _sueldoQuincenalReferenciaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sueldoQuincenalReferenciaMeta);
+    }
+    if (data.containsKey('pago_por_dia')) {
+      context.handle(
+        _pagoPorDiaMeta,
+        pagoPorDia.isAcceptableOrUnknown(
+          data['pago_por_dia']!,
+          _pagoPorDiaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_pagoPorDiaMeta);
+    }
+    if (data.containsKey('importe_base')) {
+      context.handle(
+        _importeBaseMeta,
+        importeBase.isAcceptableOrUnknown(
+          data['importe_base']!,
+          _importeBaseMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_importeBaseMeta);
+    }
+    if (data.containsKey('prestamo')) {
+      context.handle(
+        _prestamoMeta,
+        prestamo.isAcceptableOrUnknown(data['prestamo']!, _prestamoMeta),
+      );
+    }
+    if (data.containsKey('tiempo_extra')) {
+      context.handle(
+        _tiempoExtraMeta,
+        tiempoExtra.isAcceptableOrUnknown(
+          data['tiempo_extra']!,
+          _tiempoExtraMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bono')) {
+      context.handle(
+        _bonoMeta,
+        bono.isAcceptableOrUnknown(data['bono']!, _bonoMeta),
+      );
+    }
+    if (data.containsKey('bono_modificado_manualmente')) {
+      context.handle(
+        _bonoModificadoManualmenteMeta,
+        bonoModificadoManualmente.isAcceptableOrUnknown(
+          data['bono_modificado_manualmente']!,
+          _bonoModificadoManualmenteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('faltas')) {
+      context.handle(
+        _faltasMeta,
+        faltas.isAcceptableOrUnknown(data['faltas']!, _faltasMeta),
+      );
+    }
+    if (data.containsKey('descuento_por_faltas')) {
+      context.handle(
+        _descuentoPorFaltasMeta,
+        descuentoPorFaltas.isAcceptableOrUnknown(
+          data['descuento_por_faltas']!,
+          _descuentoPorFaltasMeta,
+        ),
+      );
+    }
+    if (data.containsKey('otros_descuentos')) {
+      context.handle(
+        _otrosDescuentosMeta,
+        otrosDescuentos.isAcceptableOrUnknown(
+          data['otros_descuentos']!,
+          _otrosDescuentosMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('monto_fiscal')) {
+      context.handle(
+        _montoFiscalMeta,
+        montoFiscal.isAcceptableOrUnknown(
+          data['monto_fiscal']!,
+          _montoFiscalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('monto_no_fiscal')) {
+      context.handle(
+        _montoNoFiscalMeta,
+        montoNoFiscal.isAcceptableOrUnknown(
+          data['monto_no_fiscal']!,
+          _montoNoFiscalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('distribucion_modificada_manualmente')) {
+      context.handle(
+        _distribucionModificadaManualmenteMeta,
+        distribucionModificadaManualmente.isAcceptableOrUnknown(
+          data['distribucion_modificada_manualmente']!,
+          _distribucionModificadaManualmenteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('distribucion_pendiente_revision')) {
+      context.handle(
+        _distribucionPendienteRevisionMeta,
+        distribucionPendienteRevision.isAcceptableOrUnknown(
+          data['distribucion_pendiente_revision']!,
+          _distribucionPendienteRevisionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_a_pagar')) {
+      context.handle(
+        _totalAPagarMeta,
+        totalAPagar.isAcceptableOrUnknown(
+          data['total_a_pagar']!,
+          _totalAPagarMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_totalAPagarMeta);
+    }
+    if (data.containsKey('estatus_pago')) {
+      context.handle(
+        _estatusPagoMeta,
+        estatusPago.isAcceptableOrUnknown(
+          data['estatus_pago']!,
+          _estatusPagoMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NominaEmpleadoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NominaEmpleadoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      nominaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nomina_id'],
+          )!,
+      empleadoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}empleado_id'],
+          )!,
+      numeroEmpleado:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}numero_empleado'],
+          )!,
+      nombreCompleto:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre_completo'],
+          )!,
+      puestoNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}puesto_nombre'],
+      ),
+      servicioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servicio_id'],
+      ),
+      servicioNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servicio_nombre'],
+      ),
+      turnoNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}turno_nombre'],
+      ),
+      bancoNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}banco_nombre'],
+      ),
+      numeroCuentaTarjeta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}numero_cuenta_tarjeta'],
+      ),
+      clabe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}clabe'],
+      ),
+      fuenteSueldoUtilizada:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}fuente_sueldo_utilizada'],
+          )!,
+      diasPagables:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}dias_pagables'],
+          )!,
+      sueldoMensualUtilizado:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}sueldo_mensual_utilizado'],
+          )!,
+      sueldoQuincenalReferencia:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}sueldo_quincenal_referencia'],
+          )!,
+      pagoPorDia:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}pago_por_dia'],
+          )!,
+      importeBase:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}importe_base'],
+          )!,
+      prestamo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}prestamo'],
+          )!,
+      tiempoExtra:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}tiempo_extra'],
+          )!,
+      bono:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}bono'],
+          )!,
+      bonoModificadoManualmente:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}bono_modificado_manualmente'],
+          )!,
+      faltas:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}faltas'],
+          )!,
+      descuentoPorFaltas:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}descuento_por_faltas'],
+          )!,
+      otrosDescuentos:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}otros_descuentos'],
+          )!,
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      montoFiscal:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}monto_fiscal'],
+          )!,
+      montoNoFiscal:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}monto_no_fiscal'],
+          )!,
+      distribucionModificadaManualmente:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}distribucion_modificada_manualmente'],
+          )!,
+      distribucionPendienteRevision:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}distribucion_pendiente_revision'],
+          )!,
+      totalAPagar:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}total_a_pagar'],
+          )!,
+      estatusPago:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus_pago'],
+          )!,
+    );
+  }
+
+  @override
+  $NominaEmpleadoTable createAlias(String alias) {
+    return $NominaEmpleadoTable(attachedDatabase, alias);
+  }
+}
+
+class NominaEmpleadoData extends DataClass
+    implements Insertable<NominaEmpleadoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String nominaId;
+  final String empleadoId;
+  final int numeroEmpleado;
+  final String nombreCompleto;
+  final String? puestoNombre;
+  final String? servicioId;
+  final String? servicioNombre;
+  final String? turnoNombre;
+  final String? bancoNombre;
+  final String? numeroCuentaTarjeta;
+  final String? clabe;
+  final String fuenteSueldoUtilizada;
+  final int diasPagables;
+
+  /// Sueldo mensual del **último** tramo — nunca un promedio.
+  final int sueldoMensualUtilizado;
+
+  /// `sueldoMensualUtilizado / 2` — se almacena, no se deriva en
+  /// pantalla, mismo criterio de snapshot que el resto de la fila.
+  final int sueldoQuincenalReferencia;
+
+  /// `sueldoMensualUtilizado / 30` — base de `descuentoPorFaltas`.
+  final int pagoPorDia;
+
+  /// Suma de `NominaEmpleadoTramo.importeTramo` de este renglón.
+  final int importeBase;
+  final int prestamo;
+  final int tiempoExtra;
+
+  /// Propuesto automáticamente solo en la Nómina de la segunda quincena
+  /// (pago del día 5) — `$0` por defecto en la primera. Nunca se
+  /// prorratea entre tramos (Resolución explícita de Marlon).
+  final int bono;
+
+  /// `true` en cuanto el usuario edita `bono` a mano — evita que
+  /// `ActualizarNominaDesdePersonalUseCase` lo vuelva a proponer
+  /// automáticamente y lo pise.
+  final bool bonoModificadoManualmente;
+
+  /// Días de falta — **independiente** de `diasPagables` (Resolución
+  /// explícita de Marlon: una falta nunca reduce los días pagables,
+  /// solo genera una deducción). Sin lógica automática de pérdida de
+  /// bono en esta etapa.
+  final int faltas;
+
+  /// `faltas × pagoPorDia` — se recalcula cada vez que `faltas` cambia,
+  /// pero se almacena como cualquier otro campo de esta fila.
+  final int descuentoPorFaltas;
+  final int otrosDescuentos;
+  final String? observaciones;
+  final int montoFiscal;
+  final int montoNoFiscal;
+
+  /// `true` en cuanto el usuario edita la distribución a mano — mismo
+  /// criterio que `bonoModificadoManualmente`.
+  final bool distribucionModificadaManualmente;
+
+  /// `true` cuando `ActualizarNominaDesdePersonalUseCase` recalculó el
+  /// total y la distribución manual ya capturada dejó de sumar el
+  /// total — nunca se ajusta en silencio (Resolución explícita de
+  /// Marlon). Bloquea el cierre de la Nómina mientras siga en `true`.
+  final bool distribucionPendienteRevision;
+
+  /// `importeBase + bono + tiempoExtra − prestamo − descuentoPorFaltas
+  /// − otrosDescuentos`. Se recalcula en cada escritura del renglón,
+  /// nunca en pantalla — igual que el resto de esta fila.
+  final int totalAPagar;
+  final String estatusPago;
+  const NominaEmpleadoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.nominaId,
+    required this.empleadoId,
+    required this.numeroEmpleado,
+    required this.nombreCompleto,
+    this.puestoNombre,
+    this.servicioId,
+    this.servicioNombre,
+    this.turnoNombre,
+    this.bancoNombre,
+    this.numeroCuentaTarjeta,
+    this.clabe,
+    required this.fuenteSueldoUtilizada,
+    required this.diasPagables,
+    required this.sueldoMensualUtilizado,
+    required this.sueldoQuincenalReferencia,
+    required this.pagoPorDia,
+    required this.importeBase,
+    required this.prestamo,
+    required this.tiempoExtra,
+    required this.bono,
+    required this.bonoModificadoManualmente,
+    required this.faltas,
+    required this.descuentoPorFaltas,
+    required this.otrosDescuentos,
+    this.observaciones,
+    required this.montoFiscal,
+    required this.montoNoFiscal,
+    required this.distribucionModificadaManualmente,
+    required this.distribucionPendienteRevision,
+    required this.totalAPagar,
+    required this.estatusPago,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['nomina_id'] = Variable<String>(nominaId);
+    map['empleado_id'] = Variable<String>(empleadoId);
+    map['numero_empleado'] = Variable<int>(numeroEmpleado);
+    map['nombre_completo'] = Variable<String>(nombreCompleto);
+    if (!nullToAbsent || puestoNombre != null) {
+      map['puesto_nombre'] = Variable<String>(puestoNombre);
+    }
+    if (!nullToAbsent || servicioId != null) {
+      map['servicio_id'] = Variable<String>(servicioId);
+    }
+    if (!nullToAbsent || servicioNombre != null) {
+      map['servicio_nombre'] = Variable<String>(servicioNombre);
+    }
+    if (!nullToAbsent || turnoNombre != null) {
+      map['turno_nombre'] = Variable<String>(turnoNombre);
+    }
+    if (!nullToAbsent || bancoNombre != null) {
+      map['banco_nombre'] = Variable<String>(bancoNombre);
+    }
+    if (!nullToAbsent || numeroCuentaTarjeta != null) {
+      map['numero_cuenta_tarjeta'] = Variable<String>(numeroCuentaTarjeta);
+    }
+    if (!nullToAbsent || clabe != null) {
+      map['clabe'] = Variable<String>(clabe);
+    }
+    map['fuente_sueldo_utilizada'] = Variable<String>(fuenteSueldoUtilizada);
+    map['dias_pagables'] = Variable<int>(diasPagables);
+    map['sueldo_mensual_utilizado'] = Variable<int>(sueldoMensualUtilizado);
+    map['sueldo_quincenal_referencia'] = Variable<int>(
+      sueldoQuincenalReferencia,
+    );
+    map['pago_por_dia'] = Variable<int>(pagoPorDia);
+    map['importe_base'] = Variable<int>(importeBase);
+    map['prestamo'] = Variable<int>(prestamo);
+    map['tiempo_extra'] = Variable<int>(tiempoExtra);
+    map['bono'] = Variable<int>(bono);
+    map['bono_modificado_manualmente'] = Variable<bool>(
+      bonoModificadoManualmente,
+    );
+    map['faltas'] = Variable<int>(faltas);
+    map['descuento_por_faltas'] = Variable<int>(descuentoPorFaltas);
+    map['otros_descuentos'] = Variable<int>(otrosDescuentos);
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    map['monto_fiscal'] = Variable<int>(montoFiscal);
+    map['monto_no_fiscal'] = Variable<int>(montoNoFiscal);
+    map['distribucion_modificada_manualmente'] = Variable<bool>(
+      distribucionModificadaManualmente,
+    );
+    map['distribucion_pendiente_revision'] = Variable<bool>(
+      distribucionPendienteRevision,
+    );
+    map['total_a_pagar'] = Variable<int>(totalAPagar);
+    map['estatus_pago'] = Variable<String>(estatusPago);
+    return map;
+  }
+
+  NominaEmpleadoCompanion toCompanion(bool nullToAbsent) {
+    return NominaEmpleadoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      nominaId: Value(nominaId),
+      empleadoId: Value(empleadoId),
+      numeroEmpleado: Value(numeroEmpleado),
+      nombreCompleto: Value(nombreCompleto),
+      puestoNombre:
+          puestoNombre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(puestoNombre),
+      servicioId:
+          servicioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(servicioId),
+      servicioNombre:
+          servicioNombre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(servicioNombre),
+      turnoNombre:
+          turnoNombre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(turnoNombre),
+      bancoNombre:
+          bancoNombre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(bancoNombre),
+      numeroCuentaTarjeta:
+          numeroCuentaTarjeta == null && nullToAbsent
+              ? const Value.absent()
+              : Value(numeroCuentaTarjeta),
+      clabe:
+          clabe == null && nullToAbsent ? const Value.absent() : Value(clabe),
+      fuenteSueldoUtilizada: Value(fuenteSueldoUtilizada),
+      diasPagables: Value(diasPagables),
+      sueldoMensualUtilizado: Value(sueldoMensualUtilizado),
+      sueldoQuincenalReferencia: Value(sueldoQuincenalReferencia),
+      pagoPorDia: Value(pagoPorDia),
+      importeBase: Value(importeBase),
+      prestamo: Value(prestamo),
+      tiempoExtra: Value(tiempoExtra),
+      bono: Value(bono),
+      bonoModificadoManualmente: Value(bonoModificadoManualmente),
+      faltas: Value(faltas),
+      descuentoPorFaltas: Value(descuentoPorFaltas),
+      otrosDescuentos: Value(otrosDescuentos),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      montoFiscal: Value(montoFiscal),
+      montoNoFiscal: Value(montoNoFiscal),
+      distribucionModificadaManualmente: Value(
+        distribucionModificadaManualmente,
+      ),
+      distribucionPendienteRevision: Value(distribucionPendienteRevision),
+      totalAPagar: Value(totalAPagar),
+      estatusPago: Value(estatusPago),
+    );
+  }
+
+  factory NominaEmpleadoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NominaEmpleadoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      nominaId: serializer.fromJson<String>(json['nominaId']),
+      empleadoId: serializer.fromJson<String>(json['empleadoId']),
+      numeroEmpleado: serializer.fromJson<int>(json['numeroEmpleado']),
+      nombreCompleto: serializer.fromJson<String>(json['nombreCompleto']),
+      puestoNombre: serializer.fromJson<String?>(json['puestoNombre']),
+      servicioId: serializer.fromJson<String?>(json['servicioId']),
+      servicioNombre: serializer.fromJson<String?>(json['servicioNombre']),
+      turnoNombre: serializer.fromJson<String?>(json['turnoNombre']),
+      bancoNombre: serializer.fromJson<String?>(json['bancoNombre']),
+      numeroCuentaTarjeta: serializer.fromJson<String?>(
+        json['numeroCuentaTarjeta'],
+      ),
+      clabe: serializer.fromJson<String?>(json['clabe']),
+      fuenteSueldoUtilizada: serializer.fromJson<String>(
+        json['fuenteSueldoUtilizada'],
+      ),
+      diasPagables: serializer.fromJson<int>(json['diasPagables']),
+      sueldoMensualUtilizado: serializer.fromJson<int>(
+        json['sueldoMensualUtilizado'],
+      ),
+      sueldoQuincenalReferencia: serializer.fromJson<int>(
+        json['sueldoQuincenalReferencia'],
+      ),
+      pagoPorDia: serializer.fromJson<int>(json['pagoPorDia']),
+      importeBase: serializer.fromJson<int>(json['importeBase']),
+      prestamo: serializer.fromJson<int>(json['prestamo']),
+      tiempoExtra: serializer.fromJson<int>(json['tiempoExtra']),
+      bono: serializer.fromJson<int>(json['bono']),
+      bonoModificadoManualmente: serializer.fromJson<bool>(
+        json['bonoModificadoManualmente'],
+      ),
+      faltas: serializer.fromJson<int>(json['faltas']),
+      descuentoPorFaltas: serializer.fromJson<int>(json['descuentoPorFaltas']),
+      otrosDescuentos: serializer.fromJson<int>(json['otrosDescuentos']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      montoFiscal: serializer.fromJson<int>(json['montoFiscal']),
+      montoNoFiscal: serializer.fromJson<int>(json['montoNoFiscal']),
+      distribucionModificadaManualmente: serializer.fromJson<bool>(
+        json['distribucionModificadaManualmente'],
+      ),
+      distribucionPendienteRevision: serializer.fromJson<bool>(
+        json['distribucionPendienteRevision'],
+      ),
+      totalAPagar: serializer.fromJson<int>(json['totalAPagar']),
+      estatusPago: serializer.fromJson<String>(json['estatusPago']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'nominaId': serializer.toJson<String>(nominaId),
+      'empleadoId': serializer.toJson<String>(empleadoId),
+      'numeroEmpleado': serializer.toJson<int>(numeroEmpleado),
+      'nombreCompleto': serializer.toJson<String>(nombreCompleto),
+      'puestoNombre': serializer.toJson<String?>(puestoNombre),
+      'servicioId': serializer.toJson<String?>(servicioId),
+      'servicioNombre': serializer.toJson<String?>(servicioNombre),
+      'turnoNombre': serializer.toJson<String?>(turnoNombre),
+      'bancoNombre': serializer.toJson<String?>(bancoNombre),
+      'numeroCuentaTarjeta': serializer.toJson<String?>(numeroCuentaTarjeta),
+      'clabe': serializer.toJson<String?>(clabe),
+      'fuenteSueldoUtilizada': serializer.toJson<String>(fuenteSueldoUtilizada),
+      'diasPagables': serializer.toJson<int>(diasPagables),
+      'sueldoMensualUtilizado': serializer.toJson<int>(sueldoMensualUtilizado),
+      'sueldoQuincenalReferencia': serializer.toJson<int>(
+        sueldoQuincenalReferencia,
+      ),
+      'pagoPorDia': serializer.toJson<int>(pagoPorDia),
+      'importeBase': serializer.toJson<int>(importeBase),
+      'prestamo': serializer.toJson<int>(prestamo),
+      'tiempoExtra': serializer.toJson<int>(tiempoExtra),
+      'bono': serializer.toJson<int>(bono),
+      'bonoModificadoManualmente': serializer.toJson<bool>(
+        bonoModificadoManualmente,
+      ),
+      'faltas': serializer.toJson<int>(faltas),
+      'descuentoPorFaltas': serializer.toJson<int>(descuentoPorFaltas),
+      'otrosDescuentos': serializer.toJson<int>(otrosDescuentos),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'montoFiscal': serializer.toJson<int>(montoFiscal),
+      'montoNoFiscal': serializer.toJson<int>(montoNoFiscal),
+      'distribucionModificadaManualmente': serializer.toJson<bool>(
+        distribucionModificadaManualmente,
+      ),
+      'distribucionPendienteRevision': serializer.toJson<bool>(
+        distribucionPendienteRevision,
+      ),
+      'totalAPagar': serializer.toJson<int>(totalAPagar),
+      'estatusPago': serializer.toJson<String>(estatusPago),
+    };
+  }
+
+  NominaEmpleadoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? nominaId,
+    String? empleadoId,
+    int? numeroEmpleado,
+    String? nombreCompleto,
+    Value<String?> puestoNombre = const Value.absent(),
+    Value<String?> servicioId = const Value.absent(),
+    Value<String?> servicioNombre = const Value.absent(),
+    Value<String?> turnoNombre = const Value.absent(),
+    Value<String?> bancoNombre = const Value.absent(),
+    Value<String?> numeroCuentaTarjeta = const Value.absent(),
+    Value<String?> clabe = const Value.absent(),
+    String? fuenteSueldoUtilizada,
+    int? diasPagables,
+    int? sueldoMensualUtilizado,
+    int? sueldoQuincenalReferencia,
+    int? pagoPorDia,
+    int? importeBase,
+    int? prestamo,
+    int? tiempoExtra,
+    int? bono,
+    bool? bonoModificadoManualmente,
+    int? faltas,
+    int? descuentoPorFaltas,
+    int? otrosDescuentos,
+    Value<String?> observaciones = const Value.absent(),
+    int? montoFiscal,
+    int? montoNoFiscal,
+    bool? distribucionModificadaManualmente,
+    bool? distribucionPendienteRevision,
+    int? totalAPagar,
+    String? estatusPago,
+  }) => NominaEmpleadoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    nominaId: nominaId ?? this.nominaId,
+    empleadoId: empleadoId ?? this.empleadoId,
+    numeroEmpleado: numeroEmpleado ?? this.numeroEmpleado,
+    nombreCompleto: nombreCompleto ?? this.nombreCompleto,
+    puestoNombre: puestoNombre.present ? puestoNombre.value : this.puestoNombre,
+    servicioId: servicioId.present ? servicioId.value : this.servicioId,
+    servicioNombre:
+        servicioNombre.present ? servicioNombre.value : this.servicioNombre,
+    turnoNombre: turnoNombre.present ? turnoNombre.value : this.turnoNombre,
+    bancoNombre: bancoNombre.present ? bancoNombre.value : this.bancoNombre,
+    numeroCuentaTarjeta:
+        numeroCuentaTarjeta.present
+            ? numeroCuentaTarjeta.value
+            : this.numeroCuentaTarjeta,
+    clabe: clabe.present ? clabe.value : this.clabe,
+    fuenteSueldoUtilizada: fuenteSueldoUtilizada ?? this.fuenteSueldoUtilizada,
+    diasPagables: diasPagables ?? this.diasPagables,
+    sueldoMensualUtilizado:
+        sueldoMensualUtilizado ?? this.sueldoMensualUtilizado,
+    sueldoQuincenalReferencia:
+        sueldoQuincenalReferencia ?? this.sueldoQuincenalReferencia,
+    pagoPorDia: pagoPorDia ?? this.pagoPorDia,
+    importeBase: importeBase ?? this.importeBase,
+    prestamo: prestamo ?? this.prestamo,
+    tiempoExtra: tiempoExtra ?? this.tiempoExtra,
+    bono: bono ?? this.bono,
+    bonoModificadoManualmente:
+        bonoModificadoManualmente ?? this.bonoModificadoManualmente,
+    faltas: faltas ?? this.faltas,
+    descuentoPorFaltas: descuentoPorFaltas ?? this.descuentoPorFaltas,
+    otrosDescuentos: otrosDescuentos ?? this.otrosDescuentos,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    montoFiscal: montoFiscal ?? this.montoFiscal,
+    montoNoFiscal: montoNoFiscal ?? this.montoNoFiscal,
+    distribucionModificadaManualmente:
+        distribucionModificadaManualmente ??
+        this.distribucionModificadaManualmente,
+    distribucionPendienteRevision:
+        distribucionPendienteRevision ?? this.distribucionPendienteRevision,
+    totalAPagar: totalAPagar ?? this.totalAPagar,
+    estatusPago: estatusPago ?? this.estatusPago,
+  );
+  NominaEmpleadoData copyWithCompanion(NominaEmpleadoCompanion data) {
+    return NominaEmpleadoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      nominaId: data.nominaId.present ? data.nominaId.value : this.nominaId,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
+      numeroEmpleado:
+          data.numeroEmpleado.present
+              ? data.numeroEmpleado.value
+              : this.numeroEmpleado,
+      nombreCompleto:
+          data.nombreCompleto.present
+              ? data.nombreCompleto.value
+              : this.nombreCompleto,
+      puestoNombre:
+          data.puestoNombre.present
+              ? data.puestoNombre.value
+              : this.puestoNombre,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      servicioNombre:
+          data.servicioNombre.present
+              ? data.servicioNombre.value
+              : this.servicioNombre,
+      turnoNombre:
+          data.turnoNombre.present ? data.turnoNombre.value : this.turnoNombre,
+      bancoNombre:
+          data.bancoNombre.present ? data.bancoNombre.value : this.bancoNombre,
+      numeroCuentaTarjeta:
+          data.numeroCuentaTarjeta.present
+              ? data.numeroCuentaTarjeta.value
+              : this.numeroCuentaTarjeta,
+      clabe: data.clabe.present ? data.clabe.value : this.clabe,
+      fuenteSueldoUtilizada:
+          data.fuenteSueldoUtilizada.present
+              ? data.fuenteSueldoUtilizada.value
+              : this.fuenteSueldoUtilizada,
+      diasPagables:
+          data.diasPagables.present
+              ? data.diasPagables.value
+              : this.diasPagables,
+      sueldoMensualUtilizado:
+          data.sueldoMensualUtilizado.present
+              ? data.sueldoMensualUtilizado.value
+              : this.sueldoMensualUtilizado,
+      sueldoQuincenalReferencia:
+          data.sueldoQuincenalReferencia.present
+              ? data.sueldoQuincenalReferencia.value
+              : this.sueldoQuincenalReferencia,
+      pagoPorDia:
+          data.pagoPorDia.present ? data.pagoPorDia.value : this.pagoPorDia,
+      importeBase:
+          data.importeBase.present ? data.importeBase.value : this.importeBase,
+      prestamo: data.prestamo.present ? data.prestamo.value : this.prestamo,
+      tiempoExtra:
+          data.tiempoExtra.present ? data.tiempoExtra.value : this.tiempoExtra,
+      bono: data.bono.present ? data.bono.value : this.bono,
+      bonoModificadoManualmente:
+          data.bonoModificadoManualmente.present
+              ? data.bonoModificadoManualmente.value
+              : this.bonoModificadoManualmente,
+      faltas: data.faltas.present ? data.faltas.value : this.faltas,
+      descuentoPorFaltas:
+          data.descuentoPorFaltas.present
+              ? data.descuentoPorFaltas.value
+              : this.descuentoPorFaltas,
+      otrosDescuentos:
+          data.otrosDescuentos.present
+              ? data.otrosDescuentos.value
+              : this.otrosDescuentos,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      montoFiscal:
+          data.montoFiscal.present ? data.montoFiscal.value : this.montoFiscal,
+      montoNoFiscal:
+          data.montoNoFiscal.present
+              ? data.montoNoFiscal.value
+              : this.montoNoFiscal,
+      distribucionModificadaManualmente:
+          data.distribucionModificadaManualmente.present
+              ? data.distribucionModificadaManualmente.value
+              : this.distribucionModificadaManualmente,
+      distribucionPendienteRevision:
+          data.distribucionPendienteRevision.present
+              ? data.distribucionPendienteRevision.value
+              : this.distribucionPendienteRevision,
+      totalAPagar:
+          data.totalAPagar.present ? data.totalAPagar.value : this.totalAPagar,
+      estatusPago:
+          data.estatusPago.present ? data.estatusPago.value : this.estatusPago,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NominaEmpleadoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nominaId: $nominaId, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('numeroEmpleado: $numeroEmpleado, ')
+          ..write('nombreCompleto: $nombreCompleto, ')
+          ..write('puestoNombre: $puestoNombre, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('servicioNombre: $servicioNombre, ')
+          ..write('turnoNombre: $turnoNombre, ')
+          ..write('bancoNombre: $bancoNombre, ')
+          ..write('numeroCuentaTarjeta: $numeroCuentaTarjeta, ')
+          ..write('clabe: $clabe, ')
+          ..write('fuenteSueldoUtilizada: $fuenteSueldoUtilizada, ')
+          ..write('diasPagables: $diasPagables, ')
+          ..write('sueldoMensualUtilizado: $sueldoMensualUtilizado, ')
+          ..write('sueldoQuincenalReferencia: $sueldoQuincenalReferencia, ')
+          ..write('pagoPorDia: $pagoPorDia, ')
+          ..write('importeBase: $importeBase, ')
+          ..write('prestamo: $prestamo, ')
+          ..write('tiempoExtra: $tiempoExtra, ')
+          ..write('bono: $bono, ')
+          ..write('bonoModificadoManualmente: $bonoModificadoManualmente, ')
+          ..write('faltas: $faltas, ')
+          ..write('descuentoPorFaltas: $descuentoPorFaltas, ')
+          ..write('otrosDescuentos: $otrosDescuentos, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('montoFiscal: $montoFiscal, ')
+          ..write('montoNoFiscal: $montoNoFiscal, ')
+          ..write(
+            'distribucionModificadaManualmente: $distribucionModificadaManualmente, ',
+          )
+          ..write(
+            'distribucionPendienteRevision: $distribucionPendienteRevision, ',
+          )
+          ..write('totalAPagar: $totalAPagar, ')
+          ..write('estatusPago: $estatusPago')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    nominaId,
+    empleadoId,
+    numeroEmpleado,
+    nombreCompleto,
+    puestoNombre,
+    servicioId,
+    servicioNombre,
+    turnoNombre,
+    bancoNombre,
+    numeroCuentaTarjeta,
+    clabe,
+    fuenteSueldoUtilizada,
+    diasPagables,
+    sueldoMensualUtilizado,
+    sueldoQuincenalReferencia,
+    pagoPorDia,
+    importeBase,
+    prestamo,
+    tiempoExtra,
+    bono,
+    bonoModificadoManualmente,
+    faltas,
+    descuentoPorFaltas,
+    otrosDescuentos,
+    observaciones,
+    montoFiscal,
+    montoNoFiscal,
+    distribucionModificadaManualmente,
+    distribucionPendienteRevision,
+    totalAPagar,
+    estatusPago,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NominaEmpleadoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.nominaId == this.nominaId &&
+          other.empleadoId == this.empleadoId &&
+          other.numeroEmpleado == this.numeroEmpleado &&
+          other.nombreCompleto == this.nombreCompleto &&
+          other.puestoNombre == this.puestoNombre &&
+          other.servicioId == this.servicioId &&
+          other.servicioNombre == this.servicioNombre &&
+          other.turnoNombre == this.turnoNombre &&
+          other.bancoNombre == this.bancoNombre &&
+          other.numeroCuentaTarjeta == this.numeroCuentaTarjeta &&
+          other.clabe == this.clabe &&
+          other.fuenteSueldoUtilizada == this.fuenteSueldoUtilizada &&
+          other.diasPagables == this.diasPagables &&
+          other.sueldoMensualUtilizado == this.sueldoMensualUtilizado &&
+          other.sueldoQuincenalReferencia == this.sueldoQuincenalReferencia &&
+          other.pagoPorDia == this.pagoPorDia &&
+          other.importeBase == this.importeBase &&
+          other.prestamo == this.prestamo &&
+          other.tiempoExtra == this.tiempoExtra &&
+          other.bono == this.bono &&
+          other.bonoModificadoManualmente == this.bonoModificadoManualmente &&
+          other.faltas == this.faltas &&
+          other.descuentoPorFaltas == this.descuentoPorFaltas &&
+          other.otrosDescuentos == this.otrosDescuentos &&
+          other.observaciones == this.observaciones &&
+          other.montoFiscal == this.montoFiscal &&
+          other.montoNoFiscal == this.montoNoFiscal &&
+          other.distribucionModificadaManualmente ==
+              this.distribucionModificadaManualmente &&
+          other.distribucionPendienteRevision ==
+              this.distribucionPendienteRevision &&
+          other.totalAPagar == this.totalAPagar &&
+          other.estatusPago == this.estatusPago);
+}
+
+class NominaEmpleadoCompanion extends UpdateCompanion<NominaEmpleadoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> nominaId;
+  final Value<String> empleadoId;
+  final Value<int> numeroEmpleado;
+  final Value<String> nombreCompleto;
+  final Value<String?> puestoNombre;
+  final Value<String?> servicioId;
+  final Value<String?> servicioNombre;
+  final Value<String?> turnoNombre;
+  final Value<String?> bancoNombre;
+  final Value<String?> numeroCuentaTarjeta;
+  final Value<String?> clabe;
+  final Value<String> fuenteSueldoUtilizada;
+  final Value<int> diasPagables;
+  final Value<int> sueldoMensualUtilizado;
+  final Value<int> sueldoQuincenalReferencia;
+  final Value<int> pagoPorDia;
+  final Value<int> importeBase;
+  final Value<int> prestamo;
+  final Value<int> tiempoExtra;
+  final Value<int> bono;
+  final Value<bool> bonoModificadoManualmente;
+  final Value<int> faltas;
+  final Value<int> descuentoPorFaltas;
+  final Value<int> otrosDescuentos;
+  final Value<String?> observaciones;
+  final Value<int> montoFiscal;
+  final Value<int> montoNoFiscal;
+  final Value<bool> distribucionModificadaManualmente;
+  final Value<bool> distribucionPendienteRevision;
+  final Value<int> totalAPagar;
+  final Value<String> estatusPago;
+  final Value<int> rowid;
+  const NominaEmpleadoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.nominaId = const Value.absent(),
+    this.empleadoId = const Value.absent(),
+    this.numeroEmpleado = const Value.absent(),
+    this.nombreCompleto = const Value.absent(),
+    this.puestoNombre = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.servicioNombre = const Value.absent(),
+    this.turnoNombre = const Value.absent(),
+    this.bancoNombre = const Value.absent(),
+    this.numeroCuentaTarjeta = const Value.absent(),
+    this.clabe = const Value.absent(),
+    this.fuenteSueldoUtilizada = const Value.absent(),
+    this.diasPagables = const Value.absent(),
+    this.sueldoMensualUtilizado = const Value.absent(),
+    this.sueldoQuincenalReferencia = const Value.absent(),
+    this.pagoPorDia = const Value.absent(),
+    this.importeBase = const Value.absent(),
+    this.prestamo = const Value.absent(),
+    this.tiempoExtra = const Value.absent(),
+    this.bono = const Value.absent(),
+    this.bonoModificadoManualmente = const Value.absent(),
+    this.faltas = const Value.absent(),
+    this.descuentoPorFaltas = const Value.absent(),
+    this.otrosDescuentos = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.montoFiscal = const Value.absent(),
+    this.montoNoFiscal = const Value.absent(),
+    this.distribucionModificadaManualmente = const Value.absent(),
+    this.distribucionPendienteRevision = const Value.absent(),
+    this.totalAPagar = const Value.absent(),
+    this.estatusPago = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NominaEmpleadoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String nominaId,
+    required String empleadoId,
+    required int numeroEmpleado,
+    required String nombreCompleto,
+    this.puestoNombre = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.servicioNombre = const Value.absent(),
+    this.turnoNombre = const Value.absent(),
+    this.bancoNombre = const Value.absent(),
+    this.numeroCuentaTarjeta = const Value.absent(),
+    this.clabe = const Value.absent(),
+    required String fuenteSueldoUtilizada,
+    required int diasPagables,
+    required int sueldoMensualUtilizado,
+    required int sueldoQuincenalReferencia,
+    required int pagoPorDia,
+    required int importeBase,
+    this.prestamo = const Value.absent(),
+    this.tiempoExtra = const Value.absent(),
+    this.bono = const Value.absent(),
+    this.bonoModificadoManualmente = const Value.absent(),
+    this.faltas = const Value.absent(),
+    this.descuentoPorFaltas = const Value.absent(),
+    this.otrosDescuentos = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.montoFiscal = const Value.absent(),
+    this.montoNoFiscal = const Value.absent(),
+    this.distribucionModificadaManualmente = const Value.absent(),
+    this.distribucionPendienteRevision = const Value.absent(),
+    required int totalAPagar,
+    this.estatusPago = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : nominaId = Value(nominaId),
+       empleadoId = Value(empleadoId),
+       numeroEmpleado = Value(numeroEmpleado),
+       nombreCompleto = Value(nombreCompleto),
+       fuenteSueldoUtilizada = Value(fuenteSueldoUtilizada),
+       diasPagables = Value(diasPagables),
+       sueldoMensualUtilizado = Value(sueldoMensualUtilizado),
+       sueldoQuincenalReferencia = Value(sueldoQuincenalReferencia),
+       pagoPorDia = Value(pagoPorDia),
+       importeBase = Value(importeBase),
+       totalAPagar = Value(totalAPagar);
+  static Insertable<NominaEmpleadoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? nominaId,
+    Expression<String>? empleadoId,
+    Expression<int>? numeroEmpleado,
+    Expression<String>? nombreCompleto,
+    Expression<String>? puestoNombre,
+    Expression<String>? servicioId,
+    Expression<String>? servicioNombre,
+    Expression<String>? turnoNombre,
+    Expression<String>? bancoNombre,
+    Expression<String>? numeroCuentaTarjeta,
+    Expression<String>? clabe,
+    Expression<String>? fuenteSueldoUtilizada,
+    Expression<int>? diasPagables,
+    Expression<int>? sueldoMensualUtilizado,
+    Expression<int>? sueldoQuincenalReferencia,
+    Expression<int>? pagoPorDia,
+    Expression<int>? importeBase,
+    Expression<int>? prestamo,
+    Expression<int>? tiempoExtra,
+    Expression<int>? bono,
+    Expression<bool>? bonoModificadoManualmente,
+    Expression<int>? faltas,
+    Expression<int>? descuentoPorFaltas,
+    Expression<int>? otrosDescuentos,
+    Expression<String>? observaciones,
+    Expression<int>? montoFiscal,
+    Expression<int>? montoNoFiscal,
+    Expression<bool>? distribucionModificadaManualmente,
+    Expression<bool>? distribucionPendienteRevision,
+    Expression<int>? totalAPagar,
+    Expression<String>? estatusPago,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (nominaId != null) 'nomina_id': nominaId,
+      if (empleadoId != null) 'empleado_id': empleadoId,
+      if (numeroEmpleado != null) 'numero_empleado': numeroEmpleado,
+      if (nombreCompleto != null) 'nombre_completo': nombreCompleto,
+      if (puestoNombre != null) 'puesto_nombre': puestoNombre,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (servicioNombre != null) 'servicio_nombre': servicioNombre,
+      if (turnoNombre != null) 'turno_nombre': turnoNombre,
+      if (bancoNombre != null) 'banco_nombre': bancoNombre,
+      if (numeroCuentaTarjeta != null)
+        'numero_cuenta_tarjeta': numeroCuentaTarjeta,
+      if (clabe != null) 'clabe': clabe,
+      if (fuenteSueldoUtilizada != null)
+        'fuente_sueldo_utilizada': fuenteSueldoUtilizada,
+      if (diasPagables != null) 'dias_pagables': diasPagables,
+      if (sueldoMensualUtilizado != null)
+        'sueldo_mensual_utilizado': sueldoMensualUtilizado,
+      if (sueldoQuincenalReferencia != null)
+        'sueldo_quincenal_referencia': sueldoQuincenalReferencia,
+      if (pagoPorDia != null) 'pago_por_dia': pagoPorDia,
+      if (importeBase != null) 'importe_base': importeBase,
+      if (prestamo != null) 'prestamo': prestamo,
+      if (tiempoExtra != null) 'tiempo_extra': tiempoExtra,
+      if (bono != null) 'bono': bono,
+      if (bonoModificadoManualmente != null)
+        'bono_modificado_manualmente': bonoModificadoManualmente,
+      if (faltas != null) 'faltas': faltas,
+      if (descuentoPorFaltas != null)
+        'descuento_por_faltas': descuentoPorFaltas,
+      if (otrosDescuentos != null) 'otros_descuentos': otrosDescuentos,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (montoFiscal != null) 'monto_fiscal': montoFiscal,
+      if (montoNoFiscal != null) 'monto_no_fiscal': montoNoFiscal,
+      if (distribucionModificadaManualmente != null)
+        'distribucion_modificada_manualmente':
+            distribucionModificadaManualmente,
+      if (distribucionPendienteRevision != null)
+        'distribucion_pendiente_revision': distribucionPendienteRevision,
+      if (totalAPagar != null) 'total_a_pagar': totalAPagar,
+      if (estatusPago != null) 'estatus_pago': estatusPago,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NominaEmpleadoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? nominaId,
+    Value<String>? empleadoId,
+    Value<int>? numeroEmpleado,
+    Value<String>? nombreCompleto,
+    Value<String?>? puestoNombre,
+    Value<String?>? servicioId,
+    Value<String?>? servicioNombre,
+    Value<String?>? turnoNombre,
+    Value<String?>? bancoNombre,
+    Value<String?>? numeroCuentaTarjeta,
+    Value<String?>? clabe,
+    Value<String>? fuenteSueldoUtilizada,
+    Value<int>? diasPagables,
+    Value<int>? sueldoMensualUtilizado,
+    Value<int>? sueldoQuincenalReferencia,
+    Value<int>? pagoPorDia,
+    Value<int>? importeBase,
+    Value<int>? prestamo,
+    Value<int>? tiempoExtra,
+    Value<int>? bono,
+    Value<bool>? bonoModificadoManualmente,
+    Value<int>? faltas,
+    Value<int>? descuentoPorFaltas,
+    Value<int>? otrosDescuentos,
+    Value<String?>? observaciones,
+    Value<int>? montoFiscal,
+    Value<int>? montoNoFiscal,
+    Value<bool>? distribucionModificadaManualmente,
+    Value<bool>? distribucionPendienteRevision,
+    Value<int>? totalAPagar,
+    Value<String>? estatusPago,
+    Value<int>? rowid,
+  }) {
+    return NominaEmpleadoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      nominaId: nominaId ?? this.nominaId,
+      empleadoId: empleadoId ?? this.empleadoId,
+      numeroEmpleado: numeroEmpleado ?? this.numeroEmpleado,
+      nombreCompleto: nombreCompleto ?? this.nombreCompleto,
+      puestoNombre: puestoNombre ?? this.puestoNombre,
+      servicioId: servicioId ?? this.servicioId,
+      servicioNombre: servicioNombre ?? this.servicioNombre,
+      turnoNombre: turnoNombre ?? this.turnoNombre,
+      bancoNombre: bancoNombre ?? this.bancoNombre,
+      numeroCuentaTarjeta: numeroCuentaTarjeta ?? this.numeroCuentaTarjeta,
+      clabe: clabe ?? this.clabe,
+      fuenteSueldoUtilizada:
+          fuenteSueldoUtilizada ?? this.fuenteSueldoUtilizada,
+      diasPagables: diasPagables ?? this.diasPagables,
+      sueldoMensualUtilizado:
+          sueldoMensualUtilizado ?? this.sueldoMensualUtilizado,
+      sueldoQuincenalReferencia:
+          sueldoQuincenalReferencia ?? this.sueldoQuincenalReferencia,
+      pagoPorDia: pagoPorDia ?? this.pagoPorDia,
+      importeBase: importeBase ?? this.importeBase,
+      prestamo: prestamo ?? this.prestamo,
+      tiempoExtra: tiempoExtra ?? this.tiempoExtra,
+      bono: bono ?? this.bono,
+      bonoModificadoManualmente:
+          bonoModificadoManualmente ?? this.bonoModificadoManualmente,
+      faltas: faltas ?? this.faltas,
+      descuentoPorFaltas: descuentoPorFaltas ?? this.descuentoPorFaltas,
+      otrosDescuentos: otrosDescuentos ?? this.otrosDescuentos,
+      observaciones: observaciones ?? this.observaciones,
+      montoFiscal: montoFiscal ?? this.montoFiscal,
+      montoNoFiscal: montoNoFiscal ?? this.montoNoFiscal,
+      distribucionModificadaManualmente:
+          distribucionModificadaManualmente ??
+          this.distribucionModificadaManualmente,
+      distribucionPendienteRevision:
+          distribucionPendienteRevision ?? this.distribucionPendienteRevision,
+      totalAPagar: totalAPagar ?? this.totalAPagar,
+      estatusPago: estatusPago ?? this.estatusPago,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (nominaId.present) {
+      map['nomina_id'] = Variable<String>(nominaId.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
+    }
+    if (numeroEmpleado.present) {
+      map['numero_empleado'] = Variable<int>(numeroEmpleado.value);
+    }
+    if (nombreCompleto.present) {
+      map['nombre_completo'] = Variable<String>(nombreCompleto.value);
+    }
+    if (puestoNombre.present) {
+      map['puesto_nombre'] = Variable<String>(puestoNombre.value);
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (servicioNombre.present) {
+      map['servicio_nombre'] = Variable<String>(servicioNombre.value);
+    }
+    if (turnoNombre.present) {
+      map['turno_nombre'] = Variable<String>(turnoNombre.value);
+    }
+    if (bancoNombre.present) {
+      map['banco_nombre'] = Variable<String>(bancoNombre.value);
+    }
+    if (numeroCuentaTarjeta.present) {
+      map['numero_cuenta_tarjeta'] = Variable<String>(
+        numeroCuentaTarjeta.value,
+      );
+    }
+    if (clabe.present) {
+      map['clabe'] = Variable<String>(clabe.value);
+    }
+    if (fuenteSueldoUtilizada.present) {
+      map['fuente_sueldo_utilizada'] = Variable<String>(
+        fuenteSueldoUtilizada.value,
+      );
+    }
+    if (diasPagables.present) {
+      map['dias_pagables'] = Variable<int>(diasPagables.value);
+    }
+    if (sueldoMensualUtilizado.present) {
+      map['sueldo_mensual_utilizado'] = Variable<int>(
+        sueldoMensualUtilizado.value,
+      );
+    }
+    if (sueldoQuincenalReferencia.present) {
+      map['sueldo_quincenal_referencia'] = Variable<int>(
+        sueldoQuincenalReferencia.value,
+      );
+    }
+    if (pagoPorDia.present) {
+      map['pago_por_dia'] = Variable<int>(pagoPorDia.value);
+    }
+    if (importeBase.present) {
+      map['importe_base'] = Variable<int>(importeBase.value);
+    }
+    if (prestamo.present) {
+      map['prestamo'] = Variable<int>(prestamo.value);
+    }
+    if (tiempoExtra.present) {
+      map['tiempo_extra'] = Variable<int>(tiempoExtra.value);
+    }
+    if (bono.present) {
+      map['bono'] = Variable<int>(bono.value);
+    }
+    if (bonoModificadoManualmente.present) {
+      map['bono_modificado_manualmente'] = Variable<bool>(
+        bonoModificadoManualmente.value,
+      );
+    }
+    if (faltas.present) {
+      map['faltas'] = Variable<int>(faltas.value);
+    }
+    if (descuentoPorFaltas.present) {
+      map['descuento_por_faltas'] = Variable<int>(descuentoPorFaltas.value);
+    }
+    if (otrosDescuentos.present) {
+      map['otros_descuentos'] = Variable<int>(otrosDescuentos.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (montoFiscal.present) {
+      map['monto_fiscal'] = Variable<int>(montoFiscal.value);
+    }
+    if (montoNoFiscal.present) {
+      map['monto_no_fiscal'] = Variable<int>(montoNoFiscal.value);
+    }
+    if (distribucionModificadaManualmente.present) {
+      map['distribucion_modificada_manualmente'] = Variable<bool>(
+        distribucionModificadaManualmente.value,
+      );
+    }
+    if (distribucionPendienteRevision.present) {
+      map['distribucion_pendiente_revision'] = Variable<bool>(
+        distribucionPendienteRevision.value,
+      );
+    }
+    if (totalAPagar.present) {
+      map['total_a_pagar'] = Variable<int>(totalAPagar.value);
+    }
+    if (estatusPago.present) {
+      map['estatus_pago'] = Variable<String>(estatusPago.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NominaEmpleadoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nominaId: $nominaId, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('numeroEmpleado: $numeroEmpleado, ')
+          ..write('nombreCompleto: $nombreCompleto, ')
+          ..write('puestoNombre: $puestoNombre, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('servicioNombre: $servicioNombre, ')
+          ..write('turnoNombre: $turnoNombre, ')
+          ..write('bancoNombre: $bancoNombre, ')
+          ..write('numeroCuentaTarjeta: $numeroCuentaTarjeta, ')
+          ..write('clabe: $clabe, ')
+          ..write('fuenteSueldoUtilizada: $fuenteSueldoUtilizada, ')
+          ..write('diasPagables: $diasPagables, ')
+          ..write('sueldoMensualUtilizado: $sueldoMensualUtilizado, ')
+          ..write('sueldoQuincenalReferencia: $sueldoQuincenalReferencia, ')
+          ..write('pagoPorDia: $pagoPorDia, ')
+          ..write('importeBase: $importeBase, ')
+          ..write('prestamo: $prestamo, ')
+          ..write('tiempoExtra: $tiempoExtra, ')
+          ..write('bono: $bono, ')
+          ..write('bonoModificadoManualmente: $bonoModificadoManualmente, ')
+          ..write('faltas: $faltas, ')
+          ..write('descuentoPorFaltas: $descuentoPorFaltas, ')
+          ..write('otrosDescuentos: $otrosDescuentos, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('montoFiscal: $montoFiscal, ')
+          ..write('montoNoFiscal: $montoNoFiscal, ')
+          ..write(
+            'distribucionModificadaManualmente: $distribucionModificadaManualmente, ',
+          )
+          ..write(
+            'distribucionPendienteRevision: $distribucionPendienteRevision, ',
+          )
+          ..write('totalAPagar: $totalAPagar, ')
+          ..write('estatusPago: $estatusPago, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NominaEmpleadoTramoTable extends NominaEmpleadoTramo
+    with TableInfo<$NominaEmpleadoTramoTable, NominaEmpleadoTramoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NominaEmpleadoTramoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nominaEmpleadoIdMeta = const VerificationMeta(
+    'nominaEmpleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> nominaEmpleadoId = GeneratedColumn<String>(
+    'nomina_empleado_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nomina_empleado (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _fechaInicioMeta = const VerificationMeta(
+    'fechaInicio',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaInicio = GeneratedColumn<DateTime>(
+    'fecha_inicio',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaFinMeta = const VerificationMeta(
+    'fechaFin',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaFin = GeneratedColumn<DateTime>(
+    'fecha_fin',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _servicioNombreMeta = const VerificationMeta(
+    'servicioNombre',
+  );
+  @override
+  late final GeneratedColumn<String> servicioNombre = GeneratedColumn<String>(
+    'servicio_nombre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _turnoNombreMeta = const VerificationMeta(
+    'turnoNombre',
+  );
+  @override
+  late final GeneratedColumn<String> turnoNombre = GeneratedColumn<String>(
+    'turno_nombre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fuenteSueldoMeta = const VerificationMeta(
+    'fuenteSueldo',
+  );
+  @override
+  late final GeneratedColumn<String> fuenteSueldo = GeneratedColumn<String>(
+    'fuente_sueldo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sueldoMensualMeta = const VerificationMeta(
+    'sueldoMensual',
+  );
+  @override
+  late final GeneratedColumn<int> sueldoMensual = GeneratedColumn<int>(
+    'sueldo_mensual',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bonoMensualMeta = const VerificationMeta(
+    'bonoMensual',
+  );
+  @override
+  late final GeneratedColumn<int> bonoMensual = GeneratedColumn<int>(
+    'bono_mensual',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _diasRealesMeta = const VerificationMeta(
+    'diasReales',
+  );
+  @override
+  late final GeneratedColumn<int> diasReales = GeneratedColumn<int>(
+    'dias_reales',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _importeTramoMeta = const VerificationMeta(
+    'importeTramo',
+  );
+  @override
+  late final GeneratedColumn<int> importeTramo = GeneratedColumn<int>(
+    'importe_tramo',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    nominaEmpleadoId,
+    fechaInicio,
+    fechaFin,
+    servicioId,
+    servicioNombre,
+    turnoNombre,
+    fuenteSueldo,
+    sueldoMensual,
+    bonoMensual,
+    diasReales,
+    importeTramo,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nomina_empleado_tramo';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NominaEmpleadoTramoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('nomina_empleado_id')) {
+      context.handle(
+        _nominaEmpleadoIdMeta,
+        nominaEmpleadoId.isAcceptableOrUnknown(
+          data['nomina_empleado_id']!,
+          _nominaEmpleadoIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_nominaEmpleadoIdMeta);
+    }
+    if (data.containsKey('fecha_inicio')) {
+      context.handle(
+        _fechaInicioMeta,
+        fechaInicio.isAcceptableOrUnknown(
+          data['fecha_inicio']!,
+          _fechaInicioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaInicioMeta);
+    }
+    if (data.containsKey('fecha_fin')) {
+      context.handle(
+        _fechaFinMeta,
+        fechaFin.isAcceptableOrUnknown(data['fecha_fin']!, _fechaFinMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaFinMeta);
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    }
+    if (data.containsKey('servicio_nombre')) {
+      context.handle(
+        _servicioNombreMeta,
+        servicioNombre.isAcceptableOrUnknown(
+          data['servicio_nombre']!,
+          _servicioNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('turno_nombre')) {
+      context.handle(
+        _turnoNombreMeta,
+        turnoNombre.isAcceptableOrUnknown(
+          data['turno_nombre']!,
+          _turnoNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fuente_sueldo')) {
+      context.handle(
+        _fuenteSueldoMeta,
+        fuenteSueldo.isAcceptableOrUnknown(
+          data['fuente_sueldo']!,
+          _fuenteSueldoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fuenteSueldoMeta);
+    }
+    if (data.containsKey('sueldo_mensual')) {
+      context.handle(
+        _sueldoMensualMeta,
+        sueldoMensual.isAcceptableOrUnknown(
+          data['sueldo_mensual']!,
+          _sueldoMensualMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sueldoMensualMeta);
+    }
+    if (data.containsKey('bono_mensual')) {
+      context.handle(
+        _bonoMensualMeta,
+        bonoMensual.isAcceptableOrUnknown(
+          data['bono_mensual']!,
+          _bonoMensualMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_bonoMensualMeta);
+    }
+    if (data.containsKey('dias_reales')) {
+      context.handle(
+        _diasRealesMeta,
+        diasReales.isAcceptableOrUnknown(data['dias_reales']!, _diasRealesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_diasRealesMeta);
+    }
+    if (data.containsKey('importe_tramo')) {
+      context.handle(
+        _importeTramoMeta,
+        importeTramo.isAcceptableOrUnknown(
+          data['importe_tramo']!,
+          _importeTramoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_importeTramoMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NominaEmpleadoTramoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NominaEmpleadoTramoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      nominaEmpleadoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nomina_empleado_id'],
+          )!,
+      fechaInicio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_inicio'],
+          )!,
+      fechaFin:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_fin'],
+          )!,
+      servicioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servicio_id'],
+      ),
+      servicioNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servicio_nombre'],
+      ),
+      turnoNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}turno_nombre'],
+      ),
+      fuenteSueldo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}fuente_sueldo'],
+          )!,
+      sueldoMensual:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}sueldo_mensual'],
+          )!,
+      bonoMensual:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}bono_mensual'],
+          )!,
+      diasReales:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}dias_reales'],
+          )!,
+      importeTramo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}importe_tramo'],
+          )!,
+    );
+  }
+
+  @override
+  $NominaEmpleadoTramoTable createAlias(String alias) {
+    return $NominaEmpleadoTramoTable(attachedDatabase, alias);
+  }
+}
+
+class NominaEmpleadoTramoData extends DataClass
+    implements Insertable<NominaEmpleadoTramoData> {
+  final int id;
+  final String nominaEmpleadoId;
+  final DateTime fechaInicio;
+  final DateTime fechaFin;
+  final String? servicioId;
+  final String? servicioNombre;
+  final String? turnoNombre;
+  final String fuenteSueldo;
+  final int sueldoMensual;
+  final int bonoMensual;
+  final int diasReales;
+  final int importeTramo;
+  const NominaEmpleadoTramoData({
+    required this.id,
+    required this.nominaEmpleadoId,
+    required this.fechaInicio,
+    required this.fechaFin,
+    this.servicioId,
+    this.servicioNombre,
+    this.turnoNombre,
+    required this.fuenteSueldo,
+    required this.sueldoMensual,
+    required this.bonoMensual,
+    required this.diasReales,
+    required this.importeTramo,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['nomina_empleado_id'] = Variable<String>(nominaEmpleadoId);
+    map['fecha_inicio'] = Variable<DateTime>(fechaInicio);
+    map['fecha_fin'] = Variable<DateTime>(fechaFin);
+    if (!nullToAbsent || servicioId != null) {
+      map['servicio_id'] = Variable<String>(servicioId);
+    }
+    if (!nullToAbsent || servicioNombre != null) {
+      map['servicio_nombre'] = Variable<String>(servicioNombre);
+    }
+    if (!nullToAbsent || turnoNombre != null) {
+      map['turno_nombre'] = Variable<String>(turnoNombre);
+    }
+    map['fuente_sueldo'] = Variable<String>(fuenteSueldo);
+    map['sueldo_mensual'] = Variable<int>(sueldoMensual);
+    map['bono_mensual'] = Variable<int>(bonoMensual);
+    map['dias_reales'] = Variable<int>(diasReales);
+    map['importe_tramo'] = Variable<int>(importeTramo);
+    return map;
+  }
+
+  NominaEmpleadoTramoCompanion toCompanion(bool nullToAbsent) {
+    return NominaEmpleadoTramoCompanion(
+      id: Value(id),
+      nominaEmpleadoId: Value(nominaEmpleadoId),
+      fechaInicio: Value(fechaInicio),
+      fechaFin: Value(fechaFin),
+      servicioId:
+          servicioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(servicioId),
+      servicioNombre:
+          servicioNombre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(servicioNombre),
+      turnoNombre:
+          turnoNombre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(turnoNombre),
+      fuenteSueldo: Value(fuenteSueldo),
+      sueldoMensual: Value(sueldoMensual),
+      bonoMensual: Value(bonoMensual),
+      diasReales: Value(diasReales),
+      importeTramo: Value(importeTramo),
+    );
+  }
+
+  factory NominaEmpleadoTramoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NominaEmpleadoTramoData(
+      id: serializer.fromJson<int>(json['id']),
+      nominaEmpleadoId: serializer.fromJson<String>(json['nominaEmpleadoId']),
+      fechaInicio: serializer.fromJson<DateTime>(json['fechaInicio']),
+      fechaFin: serializer.fromJson<DateTime>(json['fechaFin']),
+      servicioId: serializer.fromJson<String?>(json['servicioId']),
+      servicioNombre: serializer.fromJson<String?>(json['servicioNombre']),
+      turnoNombre: serializer.fromJson<String?>(json['turnoNombre']),
+      fuenteSueldo: serializer.fromJson<String>(json['fuenteSueldo']),
+      sueldoMensual: serializer.fromJson<int>(json['sueldoMensual']),
+      bonoMensual: serializer.fromJson<int>(json['bonoMensual']),
+      diasReales: serializer.fromJson<int>(json['diasReales']),
+      importeTramo: serializer.fromJson<int>(json['importeTramo']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'nominaEmpleadoId': serializer.toJson<String>(nominaEmpleadoId),
+      'fechaInicio': serializer.toJson<DateTime>(fechaInicio),
+      'fechaFin': serializer.toJson<DateTime>(fechaFin),
+      'servicioId': serializer.toJson<String?>(servicioId),
+      'servicioNombre': serializer.toJson<String?>(servicioNombre),
+      'turnoNombre': serializer.toJson<String?>(turnoNombre),
+      'fuenteSueldo': serializer.toJson<String>(fuenteSueldo),
+      'sueldoMensual': serializer.toJson<int>(sueldoMensual),
+      'bonoMensual': serializer.toJson<int>(bonoMensual),
+      'diasReales': serializer.toJson<int>(diasReales),
+      'importeTramo': serializer.toJson<int>(importeTramo),
+    };
+  }
+
+  NominaEmpleadoTramoData copyWith({
+    int? id,
+    String? nominaEmpleadoId,
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+    Value<String?> servicioId = const Value.absent(),
+    Value<String?> servicioNombre = const Value.absent(),
+    Value<String?> turnoNombre = const Value.absent(),
+    String? fuenteSueldo,
+    int? sueldoMensual,
+    int? bonoMensual,
+    int? diasReales,
+    int? importeTramo,
+  }) => NominaEmpleadoTramoData(
+    id: id ?? this.id,
+    nominaEmpleadoId: nominaEmpleadoId ?? this.nominaEmpleadoId,
+    fechaInicio: fechaInicio ?? this.fechaInicio,
+    fechaFin: fechaFin ?? this.fechaFin,
+    servicioId: servicioId.present ? servicioId.value : this.servicioId,
+    servicioNombre:
+        servicioNombre.present ? servicioNombre.value : this.servicioNombre,
+    turnoNombre: turnoNombre.present ? turnoNombre.value : this.turnoNombre,
+    fuenteSueldo: fuenteSueldo ?? this.fuenteSueldo,
+    sueldoMensual: sueldoMensual ?? this.sueldoMensual,
+    bonoMensual: bonoMensual ?? this.bonoMensual,
+    diasReales: diasReales ?? this.diasReales,
+    importeTramo: importeTramo ?? this.importeTramo,
+  );
+  NominaEmpleadoTramoData copyWithCompanion(NominaEmpleadoTramoCompanion data) {
+    return NominaEmpleadoTramoData(
+      id: data.id.present ? data.id.value : this.id,
+      nominaEmpleadoId:
+          data.nominaEmpleadoId.present
+              ? data.nominaEmpleadoId.value
+              : this.nominaEmpleadoId,
+      fechaInicio:
+          data.fechaInicio.present ? data.fechaInicio.value : this.fechaInicio,
+      fechaFin: data.fechaFin.present ? data.fechaFin.value : this.fechaFin,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      servicioNombre:
+          data.servicioNombre.present
+              ? data.servicioNombre.value
+              : this.servicioNombre,
+      turnoNombre:
+          data.turnoNombre.present ? data.turnoNombre.value : this.turnoNombre,
+      fuenteSueldo:
+          data.fuenteSueldo.present
+              ? data.fuenteSueldo.value
+              : this.fuenteSueldo,
+      sueldoMensual:
+          data.sueldoMensual.present
+              ? data.sueldoMensual.value
+              : this.sueldoMensual,
+      bonoMensual:
+          data.bonoMensual.present ? data.bonoMensual.value : this.bonoMensual,
+      diasReales:
+          data.diasReales.present ? data.diasReales.value : this.diasReales,
+      importeTramo:
+          data.importeTramo.present
+              ? data.importeTramo.value
+              : this.importeTramo,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NominaEmpleadoTramoData(')
+          ..write('id: $id, ')
+          ..write('nominaEmpleadoId: $nominaEmpleadoId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('servicioNombre: $servicioNombre, ')
+          ..write('turnoNombre: $turnoNombre, ')
+          ..write('fuenteSueldo: $fuenteSueldo, ')
+          ..write('sueldoMensual: $sueldoMensual, ')
+          ..write('bonoMensual: $bonoMensual, ')
+          ..write('diasReales: $diasReales, ')
+          ..write('importeTramo: $importeTramo')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    nominaEmpleadoId,
+    fechaInicio,
+    fechaFin,
+    servicioId,
+    servicioNombre,
+    turnoNombre,
+    fuenteSueldo,
+    sueldoMensual,
+    bonoMensual,
+    diasReales,
+    importeTramo,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NominaEmpleadoTramoData &&
+          other.id == this.id &&
+          other.nominaEmpleadoId == this.nominaEmpleadoId &&
+          other.fechaInicio == this.fechaInicio &&
+          other.fechaFin == this.fechaFin &&
+          other.servicioId == this.servicioId &&
+          other.servicioNombre == this.servicioNombre &&
+          other.turnoNombre == this.turnoNombre &&
+          other.fuenteSueldo == this.fuenteSueldo &&
+          other.sueldoMensual == this.sueldoMensual &&
+          other.bonoMensual == this.bonoMensual &&
+          other.diasReales == this.diasReales &&
+          other.importeTramo == this.importeTramo);
+}
+
+class NominaEmpleadoTramoCompanion
+    extends UpdateCompanion<NominaEmpleadoTramoData> {
+  final Value<int> id;
+  final Value<String> nominaEmpleadoId;
+  final Value<DateTime> fechaInicio;
+  final Value<DateTime> fechaFin;
+  final Value<String?> servicioId;
+  final Value<String?> servicioNombre;
+  final Value<String?> turnoNombre;
+  final Value<String> fuenteSueldo;
+  final Value<int> sueldoMensual;
+  final Value<int> bonoMensual;
+  final Value<int> diasReales;
+  final Value<int> importeTramo;
+  const NominaEmpleadoTramoCompanion({
+    this.id = const Value.absent(),
+    this.nominaEmpleadoId = const Value.absent(),
+    this.fechaInicio = const Value.absent(),
+    this.fechaFin = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.servicioNombre = const Value.absent(),
+    this.turnoNombre = const Value.absent(),
+    this.fuenteSueldo = const Value.absent(),
+    this.sueldoMensual = const Value.absent(),
+    this.bonoMensual = const Value.absent(),
+    this.diasReales = const Value.absent(),
+    this.importeTramo = const Value.absent(),
+  });
+  NominaEmpleadoTramoCompanion.insert({
+    this.id = const Value.absent(),
+    required String nominaEmpleadoId,
+    required DateTime fechaInicio,
+    required DateTime fechaFin,
+    this.servicioId = const Value.absent(),
+    this.servicioNombre = const Value.absent(),
+    this.turnoNombre = const Value.absent(),
+    required String fuenteSueldo,
+    required int sueldoMensual,
+    required int bonoMensual,
+    required int diasReales,
+    required int importeTramo,
+  }) : nominaEmpleadoId = Value(nominaEmpleadoId),
+       fechaInicio = Value(fechaInicio),
+       fechaFin = Value(fechaFin),
+       fuenteSueldo = Value(fuenteSueldo),
+       sueldoMensual = Value(sueldoMensual),
+       bonoMensual = Value(bonoMensual),
+       diasReales = Value(diasReales),
+       importeTramo = Value(importeTramo);
+  static Insertable<NominaEmpleadoTramoData> custom({
+    Expression<int>? id,
+    Expression<String>? nominaEmpleadoId,
+    Expression<DateTime>? fechaInicio,
+    Expression<DateTime>? fechaFin,
+    Expression<String>? servicioId,
+    Expression<String>? servicioNombre,
+    Expression<String>? turnoNombre,
+    Expression<String>? fuenteSueldo,
+    Expression<int>? sueldoMensual,
+    Expression<int>? bonoMensual,
+    Expression<int>? diasReales,
+    Expression<int>? importeTramo,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (nominaEmpleadoId != null) 'nomina_empleado_id': nominaEmpleadoId,
+      if (fechaInicio != null) 'fecha_inicio': fechaInicio,
+      if (fechaFin != null) 'fecha_fin': fechaFin,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (servicioNombre != null) 'servicio_nombre': servicioNombre,
+      if (turnoNombre != null) 'turno_nombre': turnoNombre,
+      if (fuenteSueldo != null) 'fuente_sueldo': fuenteSueldo,
+      if (sueldoMensual != null) 'sueldo_mensual': sueldoMensual,
+      if (bonoMensual != null) 'bono_mensual': bonoMensual,
+      if (diasReales != null) 'dias_reales': diasReales,
+      if (importeTramo != null) 'importe_tramo': importeTramo,
+    });
+  }
+
+  NominaEmpleadoTramoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? nominaEmpleadoId,
+    Value<DateTime>? fechaInicio,
+    Value<DateTime>? fechaFin,
+    Value<String?>? servicioId,
+    Value<String?>? servicioNombre,
+    Value<String?>? turnoNombre,
+    Value<String>? fuenteSueldo,
+    Value<int>? sueldoMensual,
+    Value<int>? bonoMensual,
+    Value<int>? diasReales,
+    Value<int>? importeTramo,
+  }) {
+    return NominaEmpleadoTramoCompanion(
+      id: id ?? this.id,
+      nominaEmpleadoId: nominaEmpleadoId ?? this.nominaEmpleadoId,
+      fechaInicio: fechaInicio ?? this.fechaInicio,
+      fechaFin: fechaFin ?? this.fechaFin,
+      servicioId: servicioId ?? this.servicioId,
+      servicioNombre: servicioNombre ?? this.servicioNombre,
+      turnoNombre: turnoNombre ?? this.turnoNombre,
+      fuenteSueldo: fuenteSueldo ?? this.fuenteSueldo,
+      sueldoMensual: sueldoMensual ?? this.sueldoMensual,
+      bonoMensual: bonoMensual ?? this.bonoMensual,
+      diasReales: diasReales ?? this.diasReales,
+      importeTramo: importeTramo ?? this.importeTramo,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (nominaEmpleadoId.present) {
+      map['nomina_empleado_id'] = Variable<String>(nominaEmpleadoId.value);
+    }
+    if (fechaInicio.present) {
+      map['fecha_inicio'] = Variable<DateTime>(fechaInicio.value);
+    }
+    if (fechaFin.present) {
+      map['fecha_fin'] = Variable<DateTime>(fechaFin.value);
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (servicioNombre.present) {
+      map['servicio_nombre'] = Variable<String>(servicioNombre.value);
+    }
+    if (turnoNombre.present) {
+      map['turno_nombre'] = Variable<String>(turnoNombre.value);
+    }
+    if (fuenteSueldo.present) {
+      map['fuente_sueldo'] = Variable<String>(fuenteSueldo.value);
+    }
+    if (sueldoMensual.present) {
+      map['sueldo_mensual'] = Variable<int>(sueldoMensual.value);
+    }
+    if (bonoMensual.present) {
+      map['bono_mensual'] = Variable<int>(bonoMensual.value);
+    }
+    if (diasReales.present) {
+      map['dias_reales'] = Variable<int>(diasReales.value);
+    }
+    if (importeTramo.present) {
+      map['importe_tramo'] = Variable<int>(importeTramo.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NominaEmpleadoTramoCompanion(')
+          ..write('id: $id, ')
+          ..write('nominaEmpleadoId: $nominaEmpleadoId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('servicioNombre: $servicioNombre, ')
+          ..write('turnoNombre: $turnoNombre, ')
+          ..write('fuenteSueldo: $fuenteSueldo, ')
+          ..write('sueldoMensual: $sueldoMensual, ')
+          ..write('bonoMensual: $bonoMensual, ')
+          ..write('diasReales: $diasReales, ')
+          ..write('importeTramo: $importeTramo')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NominaEventoTable extends NominaEvento
+    with TableInfo<$NominaEventoTable, NominaEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NominaEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nominaIdMeta = const VerificationMeta(
+    'nominaId',
+  );
+  @override
+  late final GeneratedColumn<String> nominaId = GeneratedColumn<String>(
+    'nomina_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nomina (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _nominaEmpleadoIdMeta = const VerificationMeta(
+    'nominaEmpleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> nominaEmpleadoId = GeneratedColumn<String>(
+    'nomina_empleado_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nomina_empleado (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    nominaId,
+    nominaEmpleadoId,
+    fechaHora,
+    tipoEvento,
+    observacion,
+    actor,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nomina_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NominaEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('nomina_id')) {
+      context.handle(
+        _nominaIdMeta,
+        nominaId.isAcceptableOrUnknown(data['nomina_id']!, _nominaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nominaIdMeta);
+    }
+    if (data.containsKey('nomina_empleado_id')) {
+      context.handle(
+        _nominaEmpleadoIdMeta,
+        nominaEmpleadoId.isAcceptableOrUnknown(
+          data['nomina_empleado_id']!,
+          _nominaEmpleadoIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NominaEventoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NominaEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      nominaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nomina_id'],
+          )!,
+      nominaEmpleadoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nomina_empleado_id'],
+      ),
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $NominaEventoTable createAlias(String alias) {
+    return $NominaEventoTable(attachedDatabase, alias);
+  }
+}
+
+class NominaEventoData extends DataClass
+    implements Insertable<NominaEventoData> {
+  final int id;
+  final String nominaId;
+  final String? nominaEmpleadoId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? observacion;
+  final String? actor;
+  final String? datosRelevantes;
+  const NominaEventoData({
+    required this.id,
+    required this.nominaId,
+    this.nominaEmpleadoId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.observacion,
+    this.actor,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['nomina_id'] = Variable<String>(nominaId);
+    if (!nullToAbsent || nominaEmpleadoId != null) {
+      map['nomina_empleado_id'] = Variable<String>(nominaEmpleadoId);
+    }
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  NominaEventoCompanion toCompanion(bool nullToAbsent) {
+    return NominaEventoCompanion(
+      id: Value(id),
+      nominaId: Value(nominaId),
+      nominaEmpleadoId:
+          nominaEmpleadoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(nominaEmpleadoId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory NominaEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NominaEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      nominaId: serializer.fromJson<String>(json['nominaId']),
+      nominaEmpleadoId: serializer.fromJson<String?>(json['nominaEmpleadoId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      actor: serializer.fromJson<String?>(json['actor']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'nominaId': serializer.toJson<String>(nominaId),
+      'nominaEmpleadoId': serializer.toJson<String?>(nominaEmpleadoId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'observacion': serializer.toJson<String?>(observacion),
+      'actor': serializer.toJson<String?>(actor),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  NominaEventoData copyWith({
+    int? id,
+    String? nominaId,
+    Value<String?> nominaEmpleadoId = const Value.absent(),
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => NominaEventoData(
+    id: id ?? this.id,
+    nominaId: nominaId ?? this.nominaId,
+    nominaEmpleadoId:
+        nominaEmpleadoId.present
+            ? nominaEmpleadoId.value
+            : this.nominaEmpleadoId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    actor: actor.present ? actor.value : this.actor,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  NominaEventoData copyWithCompanion(NominaEventoCompanion data) {
+    return NominaEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      nominaId: data.nominaId.present ? data.nominaId.value : this.nominaId,
+      nominaEmpleadoId:
+          data.nominaEmpleadoId.present
+              ? data.nominaEmpleadoId.value
+              : this.nominaEmpleadoId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      actor: data.actor.present ? data.actor.value : this.actor,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NominaEventoData(')
+          ..write('id: $id, ')
+          ..write('nominaId: $nominaId, ')
+          ..write('nominaEmpleadoId: $nominaEmpleadoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    nominaId,
+    nominaEmpleadoId,
+    fechaHora,
+    tipoEvento,
+    observacion,
+    actor,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NominaEventoData &&
+          other.id == this.id &&
+          other.nominaId == this.nominaId &&
+          other.nominaEmpleadoId == this.nominaEmpleadoId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.observacion == this.observacion &&
+          other.actor == this.actor &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
+  final Value<int> id;
+  final Value<String> nominaId;
+  final Value<String?> nominaEmpleadoId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> observacion;
+  final Value<String?> actor;
+  final Value<String?> datosRelevantes;
+  const NominaEventoCompanion({
+    this.id = const Value.absent(),
+    this.nominaId = const Value.absent(),
+    this.nominaEmpleadoId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  NominaEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String nominaId,
+    this.nominaEmpleadoId = const Value.absent(),
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : nominaId = Value(nominaId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<NominaEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? nominaId,
+    Expression<String>? nominaEmpleadoId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? observacion,
+    Expression<String>? actor,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (nominaId != null) 'nomina_id': nominaId,
+      if (nominaEmpleadoId != null) 'nomina_empleado_id': nominaEmpleadoId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (observacion != null) 'observacion': observacion,
+      if (actor != null) 'actor': actor,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  NominaEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? nominaId,
+    Value<String?>? nominaEmpleadoId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? observacion,
+    Value<String?>? actor,
+    Value<String?>? datosRelevantes,
+  }) {
+    return NominaEventoCompanion(
+      id: id ?? this.id,
+      nominaId: nominaId ?? this.nominaId,
+      nominaEmpleadoId: nominaEmpleadoId ?? this.nominaEmpleadoId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      observacion: observacion ?? this.observacion,
+      actor: actor ?? this.actor,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (nominaId.present) {
+      map['nomina_id'] = Variable<String>(nominaId.value);
+    }
+    if (nominaEmpleadoId.present) {
+      map['nomina_empleado_id'] = Variable<String>(nominaEmpleadoId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NominaEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('nominaId: $nominaId, ')
+          ..write('nominaEmpleadoId: $nominaEmpleadoId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -40142,6 +44386,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $EmpleadoAttachmentTable empleadoAttachment =
       $EmpleadoAttachmentTable(this);
+  late final $NominaTable nomina = $NominaTable(this);
+  late final $NominaEmpleadoTable nominaEmpleado = $NominaEmpleadoTable(this);
+  late final $NominaEmpleadoTramoTable nominaEmpleadoTramo =
+      $NominaEmpleadoTramoTable(this);
+  late final $NominaEventoTable nominaEvento = $NominaEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -40228,6 +44477,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ingresoAttachment,
     egresoAttachment,
     empleadoAttachment,
+    nomina,
+    nominaEmpleado,
+    nominaEmpleadoTramo,
+    nominaEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -40482,6 +44735,34 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('empleado_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'nomina',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('nomina_empleado', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'nomina_empleado',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('nomina_empleado_tramo', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'nomina',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('nomina_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'nomina_empleado',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('nomina_evento', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -51080,6 +55361,54 @@ final class $$ServicioTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$NominaEmpleadoTable, List<NominaEmpleadoData>>
+  _nominaEmpleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.nominaEmpleado,
+    aliasName: $_aliasNameGenerator(
+      db.servicio.id,
+      db.nominaEmpleado.servicioId,
+    ),
+  );
+
+  $$NominaEmpleadoTableProcessedTableManager get nominaEmpleadoRefs {
+    final manager = $$NominaEmpleadoTableTableManager(
+      $_db,
+      $_db.nominaEmpleado,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_nominaEmpleadoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $NominaEmpleadoTramoTable,
+    List<NominaEmpleadoTramoData>
+  >
+  _nominaEmpleadoTramoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.nominaEmpleadoTramo,
+        aliasName: $_aliasNameGenerator(
+          db.servicio.id,
+          db.nominaEmpleadoTramo.servicioId,
+        ),
+      );
+
+  $$NominaEmpleadoTramoTableProcessedTableManager get nominaEmpleadoTramoRefs {
+    final manager = $$NominaEmpleadoTramoTableTableManager(
+      $_db,
+      $_db.nominaEmpleadoTramo,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _nominaEmpleadoTramoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ServicioTableFilterComposer
@@ -51535,6 +55864,56 @@ class $$ServicioTableFilterComposer
           }) => $$FichaTecnicaEmpleadoTableFilterComposer(
             $db: $db,
             $table: $db.fichaTecnicaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> nominaEmpleadoRefs(
+    Expression<bool> Function($$NominaEmpleadoTableFilterComposer f) f,
+  ) {
+    final $$NominaEmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> nominaEmpleadoTramoRefs(
+    Expression<bool> Function($$NominaEmpleadoTramoTableFilterComposer f) f,
+  ) {
+    final $$NominaEmpleadoTramoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEmpleadoTramo,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTramoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEmpleadoTramo,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -52207,6 +56586,57 @@ class $$ServicioTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> nominaEmpleadoRefs<T extends Object>(
+    Expression<T> Function($$NominaEmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$NominaEmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> nominaEmpleadoTramoRefs<T extends Object>(
+    Expression<T> Function($$NominaEmpleadoTramoTableAnnotationComposer a) f,
+  ) {
+    final $$NominaEmpleadoTramoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.nominaEmpleadoTramo,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$NominaEmpleadoTramoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.nominaEmpleadoTramo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ServicioTableTableManager
@@ -52238,6 +56668,8 @@ class $$ServicioTableTableManager
             bool egresoRefs,
             bool asignacionServicioRefs,
             bool fichaTecnicaEmpleadoRefs,
+            bool nominaEmpleadoRefs,
+            bool nominaEmpleadoTramoRefs,
           })
         > {
   $$ServicioTableTableManager(_$AppDatabase db, $ServicioTable table)
@@ -52381,6 +56813,8 @@ class $$ServicioTableTableManager
             egresoRefs = false,
             asignacionServicioRefs = false,
             fichaTecnicaEmpleadoRefs = false,
+            nominaEmpleadoRefs = false,
+            nominaEmpleadoTramoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -52397,6 +56831,8 @@ class $$ServicioTableTableManager
                 if (egresoRefs) db.egreso,
                 if (asignacionServicioRefs) db.asignacionServicio,
                 if (fichaTecnicaEmpleadoRefs) db.fichaTecnicaEmpleado,
+                if (nominaEmpleadoRefs) db.nominaEmpleado,
+                if (nominaEmpleadoTramoRefs) db.nominaEmpleadoTramo,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -52708,6 +57144,50 @@ class $$ServicioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (nominaEmpleadoRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      NominaEmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._nominaEmpleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).nominaEmpleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (nominaEmpleadoTramoRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      NominaEmpleadoTramoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._nominaEmpleadoTramoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).nominaEmpleadoTramoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -52744,6 +57224,8 @@ typedef $$ServicioTableProcessedTableManager =
         bool egresoRefs,
         bool asignacionServicioRefs,
         bool fichaTecnicaEmpleadoRefs,
+        bool nominaEmpleadoRefs,
+        bool nominaEmpleadoTramoRefs,
       })
     >;
 typedef $$UbicacionTableCreateCompanionBuilder =
@@ -70749,6 +75231,27 @@ final class $$EmpleadoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$NominaEmpleadoTable, List<NominaEmpleadoData>>
+  _nominaEmpleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.nominaEmpleado,
+    aliasName: $_aliasNameGenerator(
+      db.empleado.id,
+      db.nominaEmpleado.empleadoId,
+    ),
+  );
+
+  $$NominaEmpleadoTableProcessedTableManager get nominaEmpleadoRefs {
+    final manager = $$NominaEmpleadoTableTableManager(
+      $_db,
+      $_db.nominaEmpleado,
+    ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_nominaEmpleadoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$EmpleadoTableFilterComposer
@@ -71248,6 +75751,31 @@ class $$EmpleadoTableFilterComposer
           }) => $$EmpleadoAttachmentTableFilterComposer(
             $db: $db,
             $table: $db.empleadoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> nominaEmpleadoRefs(
+    Expression<bool> Function($$NominaEmpleadoTableFilterComposer f) f,
+  ) {
+    final $$NominaEmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -72129,6 +76657,31 @@ class $$EmpleadoTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> nominaEmpleadoRefs<T extends Object>(
+    Expression<T> Function($$NominaEmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$NominaEmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$EmpleadoTableTableManager
@@ -72155,6 +76708,7 @@ class $$EmpleadoTableTableManager
             bool asignacionServicioRefs,
             bool fichaTecnicaEmpleadoRefs,
             bool empleadoAttachmentRefs,
+            bool nominaEmpleadoRefs,
           })
         > {
   $$EmpleadoTableTableManager(_$AppDatabase db, $EmpleadoTable table)
@@ -72435,6 +76989,7 @@ class $$EmpleadoTableTableManager
             asignacionServicioRefs = false,
             fichaTecnicaEmpleadoRefs = false,
             empleadoAttachmentRefs = false,
+            nominaEmpleadoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -72444,6 +76999,7 @@ class $$EmpleadoTableTableManager
                 if (asignacionServicioRefs) db.asignacionServicio,
                 if (fichaTecnicaEmpleadoRefs) db.fichaTecnicaEmpleado,
                 if (empleadoAttachmentRefs) db.empleadoAttachment,
+                if (nominaEmpleadoRefs) db.nominaEmpleado,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -72641,6 +77197,28 @@ class $$EmpleadoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (nominaEmpleadoRefs)
+                    await $_getPrefetchedData<
+                      EmpleadoData,
+                      $EmpleadoTable,
+                      NominaEmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpleadoTableReferences
+                          ._nominaEmpleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).nominaEmpleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -72672,6 +77250,7 @@ typedef $$EmpleadoTableProcessedTableManager =
         bool asignacionServicioRefs,
         bool fichaTecnicaEmpleadoRefs,
         bool empleadoAttachmentRefs,
+        bool nominaEmpleadoRefs,
       })
     >;
 typedef $$EmpleadoEventoTableCreateCompanionBuilder =
@@ -78376,6 +82955,3012 @@ typedef $$EmpleadoAttachmentTableProcessedTableManager =
       EmpleadoAttachmentData,
       PrefetchHooks Function({bool attachmentId, bool empleadoId})
     >;
+typedef $$NominaTableCreateCompanionBuilder =
+    NominaCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String folio,
+      required int anio,
+      required int mes,
+      required String tipoPeriodo,
+      required DateTime fechaInicioPeriodo,
+      required DateTime fechaFinPeriodo,
+      required DateTime fechaPagoOrdinaria,
+      Value<String> estatus,
+      Value<DateTime?> fechaCierre,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$NominaTableUpdateCompanionBuilder =
+    NominaCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> folio,
+      Value<int> anio,
+      Value<int> mes,
+      Value<String> tipoPeriodo,
+      Value<DateTime> fechaInicioPeriodo,
+      Value<DateTime> fechaFinPeriodo,
+      Value<DateTime> fechaPagoOrdinaria,
+      Value<String> estatus,
+      Value<DateTime?> fechaCierre,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$NominaTableReferences
+    extends BaseReferences<_$AppDatabase, $NominaTable, NominaData> {
+  $$NominaTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$NominaEmpleadoTable, List<NominaEmpleadoData>>
+  _nominaEmpleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.nominaEmpleado,
+    aliasName: $_aliasNameGenerator(db.nomina.id, db.nominaEmpleado.nominaId),
+  );
+
+  $$NominaEmpleadoTableProcessedTableManager get nominaEmpleadoRefs {
+    final manager = $$NominaEmpleadoTableTableManager(
+      $_db,
+      $_db.nominaEmpleado,
+    ).filter((f) => f.nominaId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_nominaEmpleadoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$NominaEventoTable, List<NominaEventoData>>
+  _nominaEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.nominaEvento,
+    aliasName: $_aliasNameGenerator(db.nomina.id, db.nominaEvento.nominaId),
+  );
+
+  $$NominaEventoTableProcessedTableManager get nominaEventoRefs {
+    final manager = $$NominaEventoTableTableManager(
+      $_db,
+      $_db.nominaEvento,
+    ).filter((f) => f.nominaId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_nominaEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$NominaTableFilterComposer
+    extends Composer<_$AppDatabase, $NominaTable> {
+  $$NominaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folio => $composableBuilder(
+    column: $table.folio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get anio => $composableBuilder(
+    column: $table.anio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get mes => $composableBuilder(
+    column: $table.mes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoPeriodo => $composableBuilder(
+    column: $table.tipoPeriodo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaInicioPeriodo => $composableBuilder(
+    column: $table.fechaInicioPeriodo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaFinPeriodo => $composableBuilder(
+    column: $table.fechaFinPeriodo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaPagoOrdinaria => $composableBuilder(
+    column: $table.fechaPagoOrdinaria,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaCierre => $composableBuilder(
+    column: $table.fechaCierre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> nominaEmpleadoRefs(
+    Expression<bool> Function($$NominaEmpleadoTableFilterComposer f) f,
+  ) {
+    final $$NominaEmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.nominaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> nominaEventoRefs(
+    Expression<bool> Function($$NominaEventoTableFilterComposer f) f,
+  ) {
+    final $$NominaEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEvento,
+      getReferencedColumn: (t) => t.nominaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$NominaTableOrderingComposer
+    extends Composer<_$AppDatabase, $NominaTable> {
+  $$NominaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folio => $composableBuilder(
+    column: $table.folio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get anio => $composableBuilder(
+    column: $table.anio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get mes => $composableBuilder(
+    column: $table.mes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoPeriodo => $composableBuilder(
+    column: $table.tipoPeriodo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaInicioPeriodo => $composableBuilder(
+    column: $table.fechaInicioPeriodo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaFinPeriodo => $composableBuilder(
+    column: $table.fechaFinPeriodo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaPagoOrdinaria => $composableBuilder(
+    column: $table.fechaPagoOrdinaria,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaCierre => $composableBuilder(
+    column: $table.fechaCierre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NominaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NominaTable> {
+  $$NominaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folio =>
+      $composableBuilder(column: $table.folio, builder: (column) => column);
+
+  GeneratedColumn<int> get anio =>
+      $composableBuilder(column: $table.anio, builder: (column) => column);
+
+  GeneratedColumn<int> get mes =>
+      $composableBuilder(column: $table.mes, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoPeriodo => $composableBuilder(
+    column: $table.tipoPeriodo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaInicioPeriodo => $composableBuilder(
+    column: $table.fechaInicioPeriodo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaFinPeriodo => $composableBuilder(
+    column: $table.fechaFinPeriodo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaPagoOrdinaria => $composableBuilder(
+    column: $table.fechaPagoOrdinaria,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaCierre => $composableBuilder(
+    column: $table.fechaCierre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  Expression<T> nominaEmpleadoRefs<T extends Object>(
+    Expression<T> Function($$NominaEmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$NominaEmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.nominaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> nominaEventoRefs<T extends Object>(
+    Expression<T> Function($$NominaEventoTableAnnotationComposer a) f,
+  ) {
+    final $$NominaEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEvento,
+      getReferencedColumn: (t) => t.nominaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nominaEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$NominaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NominaTable,
+          NominaData,
+          $$NominaTableFilterComposer,
+          $$NominaTableOrderingComposer,
+          $$NominaTableAnnotationComposer,
+          $$NominaTableCreateCompanionBuilder,
+          $$NominaTableUpdateCompanionBuilder,
+          (NominaData, $$NominaTableReferences),
+          NominaData,
+          PrefetchHooks Function({
+            bool nominaEmpleadoRefs,
+            bool nominaEventoRefs,
+          })
+        > {
+  $$NominaTableTableManager(_$AppDatabase db, $NominaTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$NominaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$NominaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$NominaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> folio = const Value.absent(),
+                Value<int> anio = const Value.absent(),
+                Value<int> mes = const Value.absent(),
+                Value<String> tipoPeriodo = const Value.absent(),
+                Value<DateTime> fechaInicioPeriodo = const Value.absent(),
+                Value<DateTime> fechaFinPeriodo = const Value.absent(),
+                Value<DateTime> fechaPagoOrdinaria = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaCierre = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NominaCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folio: folio,
+                anio: anio,
+                mes: mes,
+                tipoPeriodo: tipoPeriodo,
+                fechaInicioPeriodo: fechaInicioPeriodo,
+                fechaFinPeriodo: fechaFinPeriodo,
+                fechaPagoOrdinaria: fechaPagoOrdinaria,
+                estatus: estatus,
+                fechaCierre: fechaCierre,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String folio,
+                required int anio,
+                required int mes,
+                required String tipoPeriodo,
+                required DateTime fechaInicioPeriodo,
+                required DateTime fechaFinPeriodo,
+                required DateTime fechaPagoOrdinaria,
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaCierre = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NominaCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folio: folio,
+                anio: anio,
+                mes: mes,
+                tipoPeriodo: tipoPeriodo,
+                fechaInicioPeriodo: fechaInicioPeriodo,
+                fechaFinPeriodo: fechaFinPeriodo,
+                fechaPagoOrdinaria: fechaPagoOrdinaria,
+                estatus: estatus,
+                fechaCierre: fechaCierre,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$NominaTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            nominaEmpleadoRefs = false,
+            nominaEventoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (nominaEmpleadoRefs) db.nominaEmpleado,
+                if (nominaEventoRefs) db.nominaEvento,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (nominaEmpleadoRefs)
+                    await $_getPrefetchedData<
+                      NominaData,
+                      $NominaTable,
+                      NominaEmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$NominaTableReferences
+                          ._nominaEmpleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$NominaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).nominaEmpleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.nominaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (nominaEventoRefs)
+                    await $_getPrefetchedData<
+                      NominaData,
+                      $NominaTable,
+                      NominaEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$NominaTableReferences
+                          ._nominaEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$NominaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).nominaEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.nominaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$NominaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NominaTable,
+      NominaData,
+      $$NominaTableFilterComposer,
+      $$NominaTableOrderingComposer,
+      $$NominaTableAnnotationComposer,
+      $$NominaTableCreateCompanionBuilder,
+      $$NominaTableUpdateCompanionBuilder,
+      (NominaData, $$NominaTableReferences),
+      NominaData,
+      PrefetchHooks Function({bool nominaEmpleadoRefs, bool nominaEventoRefs})
+    >;
+typedef $$NominaEmpleadoTableCreateCompanionBuilder =
+    NominaEmpleadoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String nominaId,
+      required String empleadoId,
+      required int numeroEmpleado,
+      required String nombreCompleto,
+      Value<String?> puestoNombre,
+      Value<String?> servicioId,
+      Value<String?> servicioNombre,
+      Value<String?> turnoNombre,
+      Value<String?> bancoNombre,
+      Value<String?> numeroCuentaTarjeta,
+      Value<String?> clabe,
+      required String fuenteSueldoUtilizada,
+      required int diasPagables,
+      required int sueldoMensualUtilizado,
+      required int sueldoQuincenalReferencia,
+      required int pagoPorDia,
+      required int importeBase,
+      Value<int> prestamo,
+      Value<int> tiempoExtra,
+      Value<int> bono,
+      Value<bool> bonoModificadoManualmente,
+      Value<int> faltas,
+      Value<int> descuentoPorFaltas,
+      Value<int> otrosDescuentos,
+      Value<String?> observaciones,
+      Value<int> montoFiscal,
+      Value<int> montoNoFiscal,
+      Value<bool> distribucionModificadaManualmente,
+      Value<bool> distribucionPendienteRevision,
+      required int totalAPagar,
+      Value<String> estatusPago,
+      Value<int> rowid,
+    });
+typedef $$NominaEmpleadoTableUpdateCompanionBuilder =
+    NominaEmpleadoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> nominaId,
+      Value<String> empleadoId,
+      Value<int> numeroEmpleado,
+      Value<String> nombreCompleto,
+      Value<String?> puestoNombre,
+      Value<String?> servicioId,
+      Value<String?> servicioNombre,
+      Value<String?> turnoNombre,
+      Value<String?> bancoNombre,
+      Value<String?> numeroCuentaTarjeta,
+      Value<String?> clabe,
+      Value<String> fuenteSueldoUtilizada,
+      Value<int> diasPagables,
+      Value<int> sueldoMensualUtilizado,
+      Value<int> sueldoQuincenalReferencia,
+      Value<int> pagoPorDia,
+      Value<int> importeBase,
+      Value<int> prestamo,
+      Value<int> tiempoExtra,
+      Value<int> bono,
+      Value<bool> bonoModificadoManualmente,
+      Value<int> faltas,
+      Value<int> descuentoPorFaltas,
+      Value<int> otrosDescuentos,
+      Value<String?> observaciones,
+      Value<int> montoFiscal,
+      Value<int> montoNoFiscal,
+      Value<bool> distribucionModificadaManualmente,
+      Value<bool> distribucionPendienteRevision,
+      Value<int> totalAPagar,
+      Value<String> estatusPago,
+      Value<int> rowid,
+    });
+
+final class $$NominaEmpleadoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $NominaEmpleadoTable,
+          NominaEmpleadoData
+        > {
+  $$NominaEmpleadoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $NominaTable _nominaIdTable(_$AppDatabase db) => db.nomina.createAlias(
+    $_aliasNameGenerator(db.nominaEmpleado.nominaId, db.nomina.id),
+  );
+
+  $$NominaTableProcessedTableManager get nominaId {
+    final $_column = $_itemColumn<String>('nomina_id')!;
+
+    final manager = $$NominaTableTableManager(
+      $_db,
+      $_db.nomina,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_nominaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EmpleadoTable _empleadoIdTable(_$AppDatabase db) =>
+      db.empleado.createAlias(
+        $_aliasNameGenerator(db.nominaEmpleado.empleadoId, db.empleado.id),
+      );
+
+  $$EmpleadoTableProcessedTableManager get empleadoId {
+    final $_column = $_itemColumn<String>('empleado_id')!;
+
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(db.nominaEmpleado.servicioId, db.servicio.id),
+      );
+
+  $$ServicioTableProcessedTableManager? get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id');
+    if ($_column == null) return null;
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $NominaEmpleadoTramoTable,
+    List<NominaEmpleadoTramoData>
+  >
+  _nominaEmpleadoTramoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.nominaEmpleadoTramo,
+        aliasName: $_aliasNameGenerator(
+          db.nominaEmpleado.id,
+          db.nominaEmpleadoTramo.nominaEmpleadoId,
+        ),
+      );
+
+  $$NominaEmpleadoTramoTableProcessedTableManager get nominaEmpleadoTramoRefs {
+    final manager = $$NominaEmpleadoTramoTableTableManager(
+      $_db,
+      $_db.nominaEmpleadoTramo,
+    ).filter(
+      (f) => f.nominaEmpleadoId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _nominaEmpleadoTramoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$NominaEventoTable, List<NominaEventoData>>
+  _nominaEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.nominaEvento,
+    aliasName: $_aliasNameGenerator(
+      db.nominaEmpleado.id,
+      db.nominaEvento.nominaEmpleadoId,
+    ),
+  );
+
+  $$NominaEventoTableProcessedTableManager get nominaEventoRefs {
+    final manager = $$NominaEventoTableTableManager(
+      $_db,
+      $_db.nominaEvento,
+    ).filter(
+      (f) => f.nominaEmpleadoId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(_nominaEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$NominaEmpleadoTableFilterComposer
+    extends Composer<_$AppDatabase, $NominaEmpleadoTable> {
+  $$NominaEmpleadoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get numeroEmpleado => $composableBuilder(
+    column: $table.numeroEmpleado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombreCompleto => $composableBuilder(
+    column: $table.nombreCompleto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get puestoNombre => $composableBuilder(
+    column: $table.puestoNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get servicioNombre => $composableBuilder(
+    column: $table.servicioNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get turnoNombre => $composableBuilder(
+    column: $table.turnoNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bancoNombre => $composableBuilder(
+    column: $table.bancoNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get numeroCuentaTarjeta => $composableBuilder(
+    column: $table.numeroCuentaTarjeta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clabe => $composableBuilder(
+    column: $table.clabe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fuenteSueldoUtilizada => $composableBuilder(
+    column: $table.fuenteSueldoUtilizada,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diasPagables => $composableBuilder(
+    column: $table.diasPagables,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sueldoMensualUtilizado => $composableBuilder(
+    column: $table.sueldoMensualUtilizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sueldoQuincenalReferencia => $composableBuilder(
+    column: $table.sueldoQuincenalReferencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pagoPorDia => $composableBuilder(
+    column: $table.pagoPorDia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importeBase => $composableBuilder(
+    column: $table.importeBase,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get prestamo => $composableBuilder(
+    column: $table.prestamo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tiempoExtra => $composableBuilder(
+    column: $table.tiempoExtra,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bono => $composableBuilder(
+    column: $table.bono,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get bonoModificadoManualmente => $composableBuilder(
+    column: $table.bonoModificadoManualmente,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get faltas => $composableBuilder(
+    column: $table.faltas,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get descuentoPorFaltas => $composableBuilder(
+    column: $table.descuentoPorFaltas,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get otrosDescuentos => $composableBuilder(
+    column: $table.otrosDescuentos,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get montoFiscal => $composableBuilder(
+    column: $table.montoFiscal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get montoNoFiscal => $composableBuilder(
+    column: $table.montoNoFiscal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get distribucionModificadaManualmente =>
+      $composableBuilder(
+        column: $table.distribucionModificadaManualmente,
+        builder: (column) => ColumnFilters(column),
+      );
+
+  ColumnFilters<bool> get distribucionPendienteRevision => $composableBuilder(
+    column: $table.distribucionPendienteRevision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalAPagar => $composableBuilder(
+    column: $table.totalAPagar,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatusPago => $composableBuilder(
+    column: $table.estatusPago,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$NominaTableFilterComposer get nominaId {
+    final $$NominaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaId,
+      referencedTable: $db.nomina,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaTableFilterComposer(
+            $db: $db,
+            $table: $db.nomina,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableFilterComposer get empleadoId {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> nominaEmpleadoTramoRefs(
+    Expression<bool> Function($$NominaEmpleadoTramoTableFilterComposer f) f,
+  ) {
+    final $$NominaEmpleadoTramoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEmpleadoTramo,
+      getReferencedColumn: (t) => t.nominaEmpleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTramoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEmpleadoTramo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> nominaEventoRefs(
+    Expression<bool> Function($$NominaEventoTableFilterComposer f) f,
+  ) {
+    final $$NominaEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEvento,
+      getReferencedColumn: (t) => t.nominaEmpleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$NominaEmpleadoTableOrderingComposer
+    extends Composer<_$AppDatabase, $NominaEmpleadoTable> {
+  $$NominaEmpleadoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get numeroEmpleado => $composableBuilder(
+    column: $table.numeroEmpleado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombreCompleto => $composableBuilder(
+    column: $table.nombreCompleto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get puestoNombre => $composableBuilder(
+    column: $table.puestoNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get servicioNombre => $composableBuilder(
+    column: $table.servicioNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get turnoNombre => $composableBuilder(
+    column: $table.turnoNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bancoNombre => $composableBuilder(
+    column: $table.bancoNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get numeroCuentaTarjeta => $composableBuilder(
+    column: $table.numeroCuentaTarjeta,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clabe => $composableBuilder(
+    column: $table.clabe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fuenteSueldoUtilizada => $composableBuilder(
+    column: $table.fuenteSueldoUtilizada,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diasPagables => $composableBuilder(
+    column: $table.diasPagables,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sueldoMensualUtilizado => $composableBuilder(
+    column: $table.sueldoMensualUtilizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sueldoQuincenalReferencia => $composableBuilder(
+    column: $table.sueldoQuincenalReferencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pagoPorDia => $composableBuilder(
+    column: $table.pagoPorDia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importeBase => $composableBuilder(
+    column: $table.importeBase,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get prestamo => $composableBuilder(
+    column: $table.prestamo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tiempoExtra => $composableBuilder(
+    column: $table.tiempoExtra,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bono => $composableBuilder(
+    column: $table.bono,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get bonoModificadoManualmente => $composableBuilder(
+    column: $table.bonoModificadoManualmente,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get faltas => $composableBuilder(
+    column: $table.faltas,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get descuentoPorFaltas => $composableBuilder(
+    column: $table.descuentoPorFaltas,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get otrosDescuentos => $composableBuilder(
+    column: $table.otrosDescuentos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get montoFiscal => $composableBuilder(
+    column: $table.montoFiscal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get montoNoFiscal => $composableBuilder(
+    column: $table.montoNoFiscal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get distribucionModificadaManualmente =>
+      $composableBuilder(
+        column: $table.distribucionModificadaManualmente,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  ColumnOrderings<bool> get distribucionPendienteRevision => $composableBuilder(
+    column: $table.distribucionPendienteRevision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalAPagar => $composableBuilder(
+    column: $table.totalAPagar,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatusPago => $composableBuilder(
+    column: $table.estatusPago,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$NominaTableOrderingComposer get nominaId {
+    final $$NominaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaId,
+      referencedTable: $db.nomina,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaTableOrderingComposer(
+            $db: $db,
+            $table: $db.nomina,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableOrderingComposer get empleadoId {
+    final $$EmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NominaEmpleadoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NominaEmpleadoTable> {
+  $$NominaEmpleadoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get numeroEmpleado => $composableBuilder(
+    column: $table.numeroEmpleado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nombreCompleto => $composableBuilder(
+    column: $table.nombreCompleto,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get puestoNombre => $composableBuilder(
+    column: $table.puestoNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get servicioNombre => $composableBuilder(
+    column: $table.servicioNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get turnoNombre => $composableBuilder(
+    column: $table.turnoNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bancoNombre => $composableBuilder(
+    column: $table.bancoNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get numeroCuentaTarjeta => $composableBuilder(
+    column: $table.numeroCuentaTarjeta,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get clabe =>
+      $composableBuilder(column: $table.clabe, builder: (column) => column);
+
+  GeneratedColumn<String> get fuenteSueldoUtilizada => $composableBuilder(
+    column: $table.fuenteSueldoUtilizada,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get diasPagables => $composableBuilder(
+    column: $table.diasPagables,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sueldoMensualUtilizado => $composableBuilder(
+    column: $table.sueldoMensualUtilizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sueldoQuincenalReferencia => $composableBuilder(
+    column: $table.sueldoQuincenalReferencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get pagoPorDia => $composableBuilder(
+    column: $table.pagoPorDia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get importeBase => $composableBuilder(
+    column: $table.importeBase,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get prestamo =>
+      $composableBuilder(column: $table.prestamo, builder: (column) => column);
+
+  GeneratedColumn<int> get tiempoExtra => $composableBuilder(
+    column: $table.tiempoExtra,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get bono =>
+      $composableBuilder(column: $table.bono, builder: (column) => column);
+
+  GeneratedColumn<bool> get bonoModificadoManualmente => $composableBuilder(
+    column: $table.bonoModificadoManualmente,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get faltas =>
+      $composableBuilder(column: $table.faltas, builder: (column) => column);
+
+  GeneratedColumn<int> get descuentoPorFaltas => $composableBuilder(
+    column: $table.descuentoPorFaltas,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get otrosDescuentos => $composableBuilder(
+    column: $table.otrosDescuentos,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get montoFiscal => $composableBuilder(
+    column: $table.montoFiscal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get montoNoFiscal => $composableBuilder(
+    column: $table.montoNoFiscal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get distribucionModificadaManualmente =>
+      $composableBuilder(
+        column: $table.distribucionModificadaManualmente,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<bool> get distribucionPendienteRevision => $composableBuilder(
+    column: $table.distribucionPendienteRevision,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalAPagar => $composableBuilder(
+    column: $table.totalAPagar,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatusPago => $composableBuilder(
+    column: $table.estatusPago,
+    builder: (column) => column,
+  );
+
+  $$NominaTableAnnotationComposer get nominaId {
+    final $$NominaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaId,
+      referencedTable: $db.nomina,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nomina,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableAnnotationComposer get empleadoId {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> nominaEmpleadoTramoRefs<T extends Object>(
+    Expression<T> Function($$NominaEmpleadoTramoTableAnnotationComposer a) f,
+  ) {
+    final $$NominaEmpleadoTramoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.nominaEmpleadoTramo,
+          getReferencedColumn: (t) => t.nominaEmpleadoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$NominaEmpleadoTramoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.nominaEmpleadoTramo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> nominaEventoRefs<T extends Object>(
+    Expression<T> Function($$NominaEventoTableAnnotationComposer a) f,
+  ) {
+    final $$NominaEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEvento,
+      getReferencedColumn: (t) => t.nominaEmpleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nominaEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$NominaEmpleadoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NominaEmpleadoTable,
+          NominaEmpleadoData,
+          $$NominaEmpleadoTableFilterComposer,
+          $$NominaEmpleadoTableOrderingComposer,
+          $$NominaEmpleadoTableAnnotationComposer,
+          $$NominaEmpleadoTableCreateCompanionBuilder,
+          $$NominaEmpleadoTableUpdateCompanionBuilder,
+          (NominaEmpleadoData, $$NominaEmpleadoTableReferences),
+          NominaEmpleadoData,
+          PrefetchHooks Function({
+            bool nominaId,
+            bool empleadoId,
+            bool servicioId,
+            bool nominaEmpleadoTramoRefs,
+            bool nominaEventoRefs,
+          })
+        > {
+  $$NominaEmpleadoTableTableManager(
+    _$AppDatabase db,
+    $NominaEmpleadoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$NominaEmpleadoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$NominaEmpleadoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$NominaEmpleadoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> nominaId = const Value.absent(),
+                Value<String> empleadoId = const Value.absent(),
+                Value<int> numeroEmpleado = const Value.absent(),
+                Value<String> nombreCompleto = const Value.absent(),
+                Value<String?> puestoNombre = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<String?> servicioNombre = const Value.absent(),
+                Value<String?> turnoNombre = const Value.absent(),
+                Value<String?> bancoNombre = const Value.absent(),
+                Value<String?> numeroCuentaTarjeta = const Value.absent(),
+                Value<String?> clabe = const Value.absent(),
+                Value<String> fuenteSueldoUtilizada = const Value.absent(),
+                Value<int> diasPagables = const Value.absent(),
+                Value<int> sueldoMensualUtilizado = const Value.absent(),
+                Value<int> sueldoQuincenalReferencia = const Value.absent(),
+                Value<int> pagoPorDia = const Value.absent(),
+                Value<int> importeBase = const Value.absent(),
+                Value<int> prestamo = const Value.absent(),
+                Value<int> tiempoExtra = const Value.absent(),
+                Value<int> bono = const Value.absent(),
+                Value<bool> bonoModificadoManualmente = const Value.absent(),
+                Value<int> faltas = const Value.absent(),
+                Value<int> descuentoPorFaltas = const Value.absent(),
+                Value<int> otrosDescuentos = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> montoFiscal = const Value.absent(),
+                Value<int> montoNoFiscal = const Value.absent(),
+                Value<bool> distribucionModificadaManualmente =
+                    const Value.absent(),
+                Value<bool> distribucionPendienteRevision =
+                    const Value.absent(),
+                Value<int> totalAPagar = const Value.absent(),
+                Value<String> estatusPago = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NominaEmpleadoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nominaId: nominaId,
+                empleadoId: empleadoId,
+                numeroEmpleado: numeroEmpleado,
+                nombreCompleto: nombreCompleto,
+                puestoNombre: puestoNombre,
+                servicioId: servicioId,
+                servicioNombre: servicioNombre,
+                turnoNombre: turnoNombre,
+                bancoNombre: bancoNombre,
+                numeroCuentaTarjeta: numeroCuentaTarjeta,
+                clabe: clabe,
+                fuenteSueldoUtilizada: fuenteSueldoUtilizada,
+                diasPagables: diasPagables,
+                sueldoMensualUtilizado: sueldoMensualUtilizado,
+                sueldoQuincenalReferencia: sueldoQuincenalReferencia,
+                pagoPorDia: pagoPorDia,
+                importeBase: importeBase,
+                prestamo: prestamo,
+                tiempoExtra: tiempoExtra,
+                bono: bono,
+                bonoModificadoManualmente: bonoModificadoManualmente,
+                faltas: faltas,
+                descuentoPorFaltas: descuentoPorFaltas,
+                otrosDescuentos: otrosDescuentos,
+                observaciones: observaciones,
+                montoFiscal: montoFiscal,
+                montoNoFiscal: montoNoFiscal,
+                distribucionModificadaManualmente:
+                    distribucionModificadaManualmente,
+                distribucionPendienteRevision: distribucionPendienteRevision,
+                totalAPagar: totalAPagar,
+                estatusPago: estatusPago,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String nominaId,
+                required String empleadoId,
+                required int numeroEmpleado,
+                required String nombreCompleto,
+                Value<String?> puestoNombre = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<String?> servicioNombre = const Value.absent(),
+                Value<String?> turnoNombre = const Value.absent(),
+                Value<String?> bancoNombre = const Value.absent(),
+                Value<String?> numeroCuentaTarjeta = const Value.absent(),
+                Value<String?> clabe = const Value.absent(),
+                required String fuenteSueldoUtilizada,
+                required int diasPagables,
+                required int sueldoMensualUtilizado,
+                required int sueldoQuincenalReferencia,
+                required int pagoPorDia,
+                required int importeBase,
+                Value<int> prestamo = const Value.absent(),
+                Value<int> tiempoExtra = const Value.absent(),
+                Value<int> bono = const Value.absent(),
+                Value<bool> bonoModificadoManualmente = const Value.absent(),
+                Value<int> faltas = const Value.absent(),
+                Value<int> descuentoPorFaltas = const Value.absent(),
+                Value<int> otrosDescuentos = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> montoFiscal = const Value.absent(),
+                Value<int> montoNoFiscal = const Value.absent(),
+                Value<bool> distribucionModificadaManualmente =
+                    const Value.absent(),
+                Value<bool> distribucionPendienteRevision =
+                    const Value.absent(),
+                required int totalAPagar,
+                Value<String> estatusPago = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NominaEmpleadoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nominaId: nominaId,
+                empleadoId: empleadoId,
+                numeroEmpleado: numeroEmpleado,
+                nombreCompleto: nombreCompleto,
+                puestoNombre: puestoNombre,
+                servicioId: servicioId,
+                servicioNombre: servicioNombre,
+                turnoNombre: turnoNombre,
+                bancoNombre: bancoNombre,
+                numeroCuentaTarjeta: numeroCuentaTarjeta,
+                clabe: clabe,
+                fuenteSueldoUtilizada: fuenteSueldoUtilizada,
+                diasPagables: diasPagables,
+                sueldoMensualUtilizado: sueldoMensualUtilizado,
+                sueldoQuincenalReferencia: sueldoQuincenalReferencia,
+                pagoPorDia: pagoPorDia,
+                importeBase: importeBase,
+                prestamo: prestamo,
+                tiempoExtra: tiempoExtra,
+                bono: bono,
+                bonoModificadoManualmente: bonoModificadoManualmente,
+                faltas: faltas,
+                descuentoPorFaltas: descuentoPorFaltas,
+                otrosDescuentos: otrosDescuentos,
+                observaciones: observaciones,
+                montoFiscal: montoFiscal,
+                montoNoFiscal: montoNoFiscal,
+                distribucionModificadaManualmente:
+                    distribucionModificadaManualmente,
+                distribucionPendienteRevision: distribucionPendienteRevision,
+                totalAPagar: totalAPagar,
+                estatusPago: estatusPago,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$NominaEmpleadoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            nominaId = false,
+            empleadoId = false,
+            servicioId = false,
+            nominaEmpleadoTramoRefs = false,
+            nominaEventoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (nominaEmpleadoTramoRefs) db.nominaEmpleadoTramo,
+                if (nominaEventoRefs) db.nominaEvento,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (nominaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.nominaId,
+                            referencedTable: $$NominaEmpleadoTableReferences
+                                ._nominaIdTable(db),
+                            referencedColumn:
+                                $$NominaEmpleadoTableReferences
+                                    ._nominaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (empleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empleadoId,
+                            referencedTable: $$NominaEmpleadoTableReferences
+                                ._empleadoIdTable(db),
+                            referencedColumn:
+                                $$NominaEmpleadoTableReferences
+                                    ._empleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable: $$NominaEmpleadoTableReferences
+                                ._servicioIdTable(db),
+                            referencedColumn:
+                                $$NominaEmpleadoTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (nominaEmpleadoTramoRefs)
+                    await $_getPrefetchedData<
+                      NominaEmpleadoData,
+                      $NominaEmpleadoTable,
+                      NominaEmpleadoTramoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$NominaEmpleadoTableReferences
+                          ._nominaEmpleadoTramoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$NominaEmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).nominaEmpleadoTramoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.nominaEmpleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (nominaEventoRefs)
+                    await $_getPrefetchedData<
+                      NominaEmpleadoData,
+                      $NominaEmpleadoTable,
+                      NominaEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$NominaEmpleadoTableReferences
+                          ._nominaEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$NominaEmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).nominaEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.nominaEmpleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$NominaEmpleadoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NominaEmpleadoTable,
+      NominaEmpleadoData,
+      $$NominaEmpleadoTableFilterComposer,
+      $$NominaEmpleadoTableOrderingComposer,
+      $$NominaEmpleadoTableAnnotationComposer,
+      $$NominaEmpleadoTableCreateCompanionBuilder,
+      $$NominaEmpleadoTableUpdateCompanionBuilder,
+      (NominaEmpleadoData, $$NominaEmpleadoTableReferences),
+      NominaEmpleadoData,
+      PrefetchHooks Function({
+        bool nominaId,
+        bool empleadoId,
+        bool servicioId,
+        bool nominaEmpleadoTramoRefs,
+        bool nominaEventoRefs,
+      })
+    >;
+typedef $$NominaEmpleadoTramoTableCreateCompanionBuilder =
+    NominaEmpleadoTramoCompanion Function({
+      Value<int> id,
+      required String nominaEmpleadoId,
+      required DateTime fechaInicio,
+      required DateTime fechaFin,
+      Value<String?> servicioId,
+      Value<String?> servicioNombre,
+      Value<String?> turnoNombre,
+      required String fuenteSueldo,
+      required int sueldoMensual,
+      required int bonoMensual,
+      required int diasReales,
+      required int importeTramo,
+    });
+typedef $$NominaEmpleadoTramoTableUpdateCompanionBuilder =
+    NominaEmpleadoTramoCompanion Function({
+      Value<int> id,
+      Value<String> nominaEmpleadoId,
+      Value<DateTime> fechaInicio,
+      Value<DateTime> fechaFin,
+      Value<String?> servicioId,
+      Value<String?> servicioNombre,
+      Value<String?> turnoNombre,
+      Value<String> fuenteSueldo,
+      Value<int> sueldoMensual,
+      Value<int> bonoMensual,
+      Value<int> diasReales,
+      Value<int> importeTramo,
+    });
+
+final class $$NominaEmpleadoTramoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $NominaEmpleadoTramoTable,
+          NominaEmpleadoTramoData
+        > {
+  $$NominaEmpleadoTramoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $NominaEmpleadoTable _nominaEmpleadoIdTable(_$AppDatabase db) =>
+      db.nominaEmpleado.createAlias(
+        $_aliasNameGenerator(
+          db.nominaEmpleadoTramo.nominaEmpleadoId,
+          db.nominaEmpleado.id,
+        ),
+      );
+
+  $$NominaEmpleadoTableProcessedTableManager get nominaEmpleadoId {
+    final $_column = $_itemColumn<String>('nomina_empleado_id')!;
+
+    final manager = $$NominaEmpleadoTableTableManager(
+      $_db,
+      $_db.nominaEmpleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_nominaEmpleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(db.nominaEmpleadoTramo.servicioId, db.servicio.id),
+      );
+
+  $$ServicioTableProcessedTableManager? get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id');
+    if ($_column == null) return null;
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$NominaEmpleadoTramoTableFilterComposer
+    extends Composer<_$AppDatabase, $NominaEmpleadoTramoTable> {
+  $$NominaEmpleadoTramoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaFin => $composableBuilder(
+    column: $table.fechaFin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get servicioNombre => $composableBuilder(
+    column: $table.servicioNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get turnoNombre => $composableBuilder(
+    column: $table.turnoNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fuenteSueldo => $composableBuilder(
+    column: $table.fuenteSueldo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sueldoMensual => $composableBuilder(
+    column: $table.sueldoMensual,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bonoMensual => $composableBuilder(
+    column: $table.bonoMensual,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diasReales => $composableBuilder(
+    column: $table.diasReales,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importeTramo => $composableBuilder(
+    column: $table.importeTramo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$NominaEmpleadoTableFilterComposer get nominaEmpleadoId {
+    final $$NominaEmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaEmpleadoId,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NominaEmpleadoTramoTableOrderingComposer
+    extends Composer<_$AppDatabase, $NominaEmpleadoTramoTable> {
+  $$NominaEmpleadoTramoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaFin => $composableBuilder(
+    column: $table.fechaFin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get servicioNombre => $composableBuilder(
+    column: $table.servicioNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get turnoNombre => $composableBuilder(
+    column: $table.turnoNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fuenteSueldo => $composableBuilder(
+    column: $table.fuenteSueldo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sueldoMensual => $composableBuilder(
+    column: $table.sueldoMensual,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bonoMensual => $composableBuilder(
+    column: $table.bonoMensual,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diasReales => $composableBuilder(
+    column: $table.diasReales,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importeTramo => $composableBuilder(
+    column: $table.importeTramo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$NominaEmpleadoTableOrderingComposer get nominaEmpleadoId {
+    final $$NominaEmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaEmpleadoId,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NominaEmpleadoTramoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NominaEmpleadoTramoTable> {
+  $$NominaEmpleadoTramoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaFin =>
+      $composableBuilder(column: $table.fechaFin, builder: (column) => column);
+
+  GeneratedColumn<String> get servicioNombre => $composableBuilder(
+    column: $table.servicioNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get turnoNombre => $composableBuilder(
+    column: $table.turnoNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fuenteSueldo => $composableBuilder(
+    column: $table.fuenteSueldo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sueldoMensual => $composableBuilder(
+    column: $table.sueldoMensual,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get bonoMensual => $composableBuilder(
+    column: $table.bonoMensual,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get diasReales => $composableBuilder(
+    column: $table.diasReales,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get importeTramo => $composableBuilder(
+    column: $table.importeTramo,
+    builder: (column) => column,
+  );
+
+  $$NominaEmpleadoTableAnnotationComposer get nominaEmpleadoId {
+    final $$NominaEmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaEmpleadoId,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NominaEmpleadoTramoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NominaEmpleadoTramoTable,
+          NominaEmpleadoTramoData,
+          $$NominaEmpleadoTramoTableFilterComposer,
+          $$NominaEmpleadoTramoTableOrderingComposer,
+          $$NominaEmpleadoTramoTableAnnotationComposer,
+          $$NominaEmpleadoTramoTableCreateCompanionBuilder,
+          $$NominaEmpleadoTramoTableUpdateCompanionBuilder,
+          (NominaEmpleadoTramoData, $$NominaEmpleadoTramoTableReferences),
+          NominaEmpleadoTramoData,
+          PrefetchHooks Function({bool nominaEmpleadoId, bool servicioId})
+        > {
+  $$NominaEmpleadoTramoTableTableManager(
+    _$AppDatabase db,
+    $NominaEmpleadoTramoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$NominaEmpleadoTramoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$NominaEmpleadoTramoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$NominaEmpleadoTramoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> nominaEmpleadoId = const Value.absent(),
+                Value<DateTime> fechaInicio = const Value.absent(),
+                Value<DateTime> fechaFin = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<String?> servicioNombre = const Value.absent(),
+                Value<String?> turnoNombre = const Value.absent(),
+                Value<String> fuenteSueldo = const Value.absent(),
+                Value<int> sueldoMensual = const Value.absent(),
+                Value<int> bonoMensual = const Value.absent(),
+                Value<int> diasReales = const Value.absent(),
+                Value<int> importeTramo = const Value.absent(),
+              }) => NominaEmpleadoTramoCompanion(
+                id: id,
+                nominaEmpleadoId: nominaEmpleadoId,
+                fechaInicio: fechaInicio,
+                fechaFin: fechaFin,
+                servicioId: servicioId,
+                servicioNombre: servicioNombre,
+                turnoNombre: turnoNombre,
+                fuenteSueldo: fuenteSueldo,
+                sueldoMensual: sueldoMensual,
+                bonoMensual: bonoMensual,
+                diasReales: diasReales,
+                importeTramo: importeTramo,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String nominaEmpleadoId,
+                required DateTime fechaInicio,
+                required DateTime fechaFin,
+                Value<String?> servicioId = const Value.absent(),
+                Value<String?> servicioNombre = const Value.absent(),
+                Value<String?> turnoNombre = const Value.absent(),
+                required String fuenteSueldo,
+                required int sueldoMensual,
+                required int bonoMensual,
+                required int diasReales,
+                required int importeTramo,
+              }) => NominaEmpleadoTramoCompanion.insert(
+                id: id,
+                nominaEmpleadoId: nominaEmpleadoId,
+                fechaInicio: fechaInicio,
+                fechaFin: fechaFin,
+                servicioId: servicioId,
+                servicioNombre: servicioNombre,
+                turnoNombre: turnoNombre,
+                fuenteSueldo: fuenteSueldo,
+                sueldoMensual: sueldoMensual,
+                bonoMensual: bonoMensual,
+                diasReales: diasReales,
+                importeTramo: importeTramo,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$NominaEmpleadoTramoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            nominaEmpleadoId = false,
+            servicioId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (nominaEmpleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.nominaEmpleadoId,
+                            referencedTable:
+                                $$NominaEmpleadoTramoTableReferences
+                                    ._nominaEmpleadoIdTable(db),
+                            referencedColumn:
+                                $$NominaEmpleadoTramoTableReferences
+                                    ._nominaEmpleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable:
+                                $$NominaEmpleadoTramoTableReferences
+                                    ._servicioIdTable(db),
+                            referencedColumn:
+                                $$NominaEmpleadoTramoTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$NominaEmpleadoTramoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NominaEmpleadoTramoTable,
+      NominaEmpleadoTramoData,
+      $$NominaEmpleadoTramoTableFilterComposer,
+      $$NominaEmpleadoTramoTableOrderingComposer,
+      $$NominaEmpleadoTramoTableAnnotationComposer,
+      $$NominaEmpleadoTramoTableCreateCompanionBuilder,
+      $$NominaEmpleadoTramoTableUpdateCompanionBuilder,
+      (NominaEmpleadoTramoData, $$NominaEmpleadoTramoTableReferences),
+      NominaEmpleadoTramoData,
+      PrefetchHooks Function({bool nominaEmpleadoId, bool servicioId})
+    >;
+typedef $$NominaEventoTableCreateCompanionBuilder =
+    NominaEventoCompanion Function({
+      Value<int> id,
+      required String nominaId,
+      Value<String?> nominaEmpleadoId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+typedef $$NominaEventoTableUpdateCompanionBuilder =
+    NominaEventoCompanion Function({
+      Value<int> id,
+      Value<String> nominaId,
+      Value<String?> nominaEmpleadoId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$NominaEventoTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $NominaEventoTable, NominaEventoData> {
+  $$NominaEventoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $NominaTable _nominaIdTable(_$AppDatabase db) => db.nomina.createAlias(
+    $_aliasNameGenerator(db.nominaEvento.nominaId, db.nomina.id),
+  );
+
+  $$NominaTableProcessedTableManager get nominaId {
+    final $_column = $_itemColumn<String>('nomina_id')!;
+
+    final manager = $$NominaTableTableManager(
+      $_db,
+      $_db.nomina,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_nominaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $NominaEmpleadoTable _nominaEmpleadoIdTable(_$AppDatabase db) =>
+      db.nominaEmpleado.createAlias(
+        $_aliasNameGenerator(
+          db.nominaEvento.nominaEmpleadoId,
+          db.nominaEmpleado.id,
+        ),
+      );
+
+  $$NominaEmpleadoTableProcessedTableManager? get nominaEmpleadoId {
+    final $_column = $_itemColumn<String>('nomina_empleado_id');
+    if ($_column == null) return null;
+    final manager = $$NominaEmpleadoTableTableManager(
+      $_db,
+      $_db.nominaEmpleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_nominaEmpleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$NominaEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $NominaEventoTable> {
+  $$NominaEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$NominaTableFilterComposer get nominaId {
+    final $$NominaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaId,
+      referencedTable: $db.nomina,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaTableFilterComposer(
+            $db: $db,
+            $table: $db.nomina,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$NominaEmpleadoTableFilterComposer get nominaEmpleadoId {
+    final $$NominaEmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaEmpleadoId,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NominaEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $NominaEventoTable> {
+  $$NominaEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$NominaTableOrderingComposer get nominaId {
+    final $$NominaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaId,
+      referencedTable: $db.nomina,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaTableOrderingComposer(
+            $db: $db,
+            $table: $db.nomina,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$NominaEmpleadoTableOrderingComposer get nominaEmpleadoId {
+    final $$NominaEmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaEmpleadoId,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NominaEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NominaEventoTable> {
+  $$NominaEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$NominaTableAnnotationComposer get nominaId {
+    final $$NominaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaId,
+      referencedTable: $db.nomina,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nomina,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$NominaEmpleadoTableAnnotationComposer get nominaEmpleadoId {
+    final $$NominaEmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.nominaEmpleadoId,
+      referencedTable: $db.nominaEmpleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NominaEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NominaEventoTable,
+          NominaEventoData,
+          $$NominaEventoTableFilterComposer,
+          $$NominaEventoTableOrderingComposer,
+          $$NominaEventoTableAnnotationComposer,
+          $$NominaEventoTableCreateCompanionBuilder,
+          $$NominaEventoTableUpdateCompanionBuilder,
+          (NominaEventoData, $$NominaEventoTableReferences),
+          NominaEventoData,
+          PrefetchHooks Function({bool nominaId, bool nominaEmpleadoId})
+        > {
+  $$NominaEventoTableTableManager(_$AppDatabase db, $NominaEventoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$NominaEventoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$NominaEventoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () =>
+                  $$NominaEventoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> nominaId = const Value.absent(),
+                Value<String?> nominaEmpleadoId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => NominaEventoCompanion(
+                id: id,
+                nominaId: nominaId,
+                nominaEmpleadoId: nominaEmpleadoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String nominaId,
+                Value<String?> nominaEmpleadoId = const Value.absent(),
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => NominaEventoCompanion.insert(
+                id: id,
+                nominaId: nominaId,
+                nominaEmpleadoId: nominaEmpleadoId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$NominaEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            nominaId = false,
+            nominaEmpleadoId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (nominaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.nominaId,
+                            referencedTable: $$NominaEventoTableReferences
+                                ._nominaIdTable(db),
+                            referencedColumn:
+                                $$NominaEventoTableReferences
+                                    ._nominaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (nominaEmpleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.nominaEmpleadoId,
+                            referencedTable: $$NominaEventoTableReferences
+                                ._nominaEmpleadoIdTable(db),
+                            referencedColumn:
+                                $$NominaEventoTableReferences
+                                    ._nominaEmpleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$NominaEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NominaEventoTable,
+      NominaEventoData,
+      $$NominaEventoTableFilterComposer,
+      $$NominaEventoTableOrderingComposer,
+      $$NominaEventoTableAnnotationComposer,
+      $$NominaEventoTableCreateCompanionBuilder,
+      $$NominaEventoTableUpdateCompanionBuilder,
+      (NominaEventoData, $$NominaEventoTableReferences),
+      NominaEventoData,
+      PrefetchHooks Function({bool nominaId, bool nominaEmpleadoId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -78553,4 +86138,12 @@ class $AppDatabaseManager {
       $$EgresoAttachmentTableTableManager(_db, _db.egresoAttachment);
   $$EmpleadoAttachmentTableTableManager get empleadoAttachment =>
       $$EmpleadoAttachmentTableTableManager(_db, _db.empleadoAttachment);
+  $$NominaTableTableManager get nomina =>
+      $$NominaTableTableManager(_db, _db.nomina);
+  $$NominaEmpleadoTableTableManager get nominaEmpleado =>
+      $$NominaEmpleadoTableTableManager(_db, _db.nominaEmpleado);
+  $$NominaEmpleadoTramoTableTableManager get nominaEmpleadoTramo =>
+      $$NominaEmpleadoTramoTableTableManager(_db, _db.nominaEmpleadoTramo);
+  $$NominaEventoTableTableManager get nominaEvento =>
+      $$NominaEventoTableTableManager(_db, _db.nominaEvento);
 }

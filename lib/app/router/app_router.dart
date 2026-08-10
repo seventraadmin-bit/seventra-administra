@@ -9,8 +9,9 @@ import '../../features/organizacion/presentation/organizacion_shell_screen.dart'
 import '../../features/organizacion/presentation/puestos/puesto_expediente_screen.dart';
 import '../../features/organizacion/presentation/servicios/servicio_expediente_screen.dart';
 import '../../features/organizacion/presentation/sucursales/sucursal_expediente_screen.dart';
+import '../../features/nomina/presentation/nominas/nomina_detalle_screen.dart';
 import '../../features/personal/presentation/empleados/empleado_expediente_screen.dart';
-import '../../features/personal/presentation/empleados/empleados_list_screen.dart';
+import '../../features/personal/presentation/personal_shell_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
 import '../shell/app_shell_screen.dart';
 import '../shell/dashboard_welcome_screen.dart';
@@ -185,15 +186,14 @@ GoRouter createAppRouter() {
                     ],
                   )
                 else if (def.path == '/personal')
-                  // Personal es un dominio propio, nuevo, separado de
+                  // Personal es un dominio propio, separado de
                   // Organización/Comercial/Finanzas (Etapa 5A, mismo
                   // criterio que la Resolución B de Marlon para
                   // Finanzas en 4J.1). `/personal` en sí redirige a
                   // `/personal/empleados` — mismo patrón que
-                  // `/comercial`/`/finanzas`. Sin subnavegación de
-                  // pestañas todavía: Empleados es la única sección de
-                  // esta etapa (Nómina y las demás llegarán en etapas
-                  // futuras, cada una con su propia pestaña).
+                  // `/comercial`/`/finanzas`. Desde la Etapa 6C gana
+                  // subnavegación de pestañas (Empleados | Nómina),
+                  // mismo patrón `PersonalShellScreen`/`FinanzasShellScreen`.
                   GoRoute(
                     path: def.path,
                     redirect: (context, state) =>
@@ -201,12 +201,23 @@ GoRouter createAppRouter() {
                     routes: [
                       GoRoute(
                         path: 'empleados',
-                        builder: (context, state) => const EmpleadosListScreen(),
+                        builder: (context, state) => const PersonalShellScreen(tab: PersonalTab.empleados),
                         routes: [
                           GoRoute(
                             path: ':id',
                             builder: (context, state) =>
                                 EmpleadoExpedienteScreen(empleadoId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'nomina',
+                        builder: (context, state) => const PersonalShellScreen(tab: PersonalTab.nomina),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                NominaDetalleScreen(nominaId: state.pathParameters['id']!),
                           ),
                         ],
                       ),
