@@ -311,4 +311,35 @@ void main() {
       expect(find.byKey(const Key('inventario_boton_nuevo_articulo')), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'Vehículos permite dar de alta un vehículo y navega a su expediente (Etapa 8A)',
+    (tester) async {
+      await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      await tester.tap(find.byKey(const Key('nav_item_vehiculos')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('vehiculos_boton_nuevo_vehiculo')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('vehiculos_boton_nuevo_vehiculo')));
+      await tester.pumpAndSettle();
+
+      final campos = find.byType(TextFormField);
+      await tester.enterText(campos.at(0), 'BMW');
+      await tester.enterText(campos.at(1), '320i');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.vehiculoBotonGuardar));
+      await tester.pumpAndSettle();
+
+      expect(find.text('VEH-000001'), findsOneWidget);
+
+      await tester.tap(find.text('VEH-000001'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('vehiculos_boton_nuevo_vehiculo')), findsNothing);
+      expect(find.text(l10n.vehiculoExpedienteSeccionDatosGenerales), findsOneWidget);
+    },
+  );
 }

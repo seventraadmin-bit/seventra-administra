@@ -159,6 +159,20 @@ class AttachmentRepository {
     return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
+  /// Adjuntos generales activos de un Vehículo (Etapa 8A) — incluye la
+  /// fotografía (también apuntada directo por
+  /// `Vehiculo.fotografiaAttachmentId` para acceso O(1)). Documentos con
+  /// vencimiento (Etapa 8C) y comprobantes de mantenimiento (Etapa 8D)
+  /// usan sus propias tablas puente, no esta.
+  Future<List<AttachmentData>> listarActivosPorVehiculo(String vehiculoId) {
+    final query = _db.select(_db.attachment).join([
+      innerJoin(_db.vehiculoAttachment, _db.vehiculoAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.vehiculoAttachment.vehiculoId.equals(vehiculoId) & _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
+  }
+
   Future<void> archivar(String id) {
     return (_db.update(_db.attachment)..where((t) => t.id.equals(id))).write(
       const AttachmentCompanion(estado: Value('archivado')),

@@ -52398,6 +52398,1460 @@ class AsignacionAttachmentCompanion
   }
 }
 
+class $VehiculoTable extends Vehiculo
+    with TableInfo<$VehiculoTable, VehiculoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VehiculoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _marcaMeta = const VerificationMeta('marca');
+  @override
+  late final GeneratedColumn<String> marca = GeneratedColumn<String>(
+    'marca',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modeloMeta = const VerificationMeta('modelo');
+  @override
+  late final GeneratedColumn<String> modelo = GeneratedColumn<String>(
+    'modelo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _anioMeta = const VerificationMeta('anio');
+  @override
+  late final GeneratedColumn<int> anio = GeneratedColumn<int>(
+    'anio',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+    'color',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _placasMeta = const VerificationMeta('placas');
+  @override
+  late final GeneratedColumn<String> placas = GeneratedColumn<String>(
+    'placas',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _vinMeta = const VerificationMeta('vin');
+  @override
+  late final GeneratedColumn<String> vin = GeneratedColumn<String>(
+    'vin',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _numeroMotorMeta = const VerificationMeta(
+    'numeroMotor',
+  );
+  @override
+  late final GeneratedColumn<String> numeroMotor = GeneratedColumn<String>(
+    'numero_motor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tipoVehiculoMeta = const VerificationMeta(
+    'tipoVehiculo',
+  );
+  @override
+  late final GeneratedColumn<String> tipoVehiculo = GeneratedColumn<String>(
+    'tipo_vehiculo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('disponible'),
+  );
+  static const VerificationMeta _fechaAdquisicionMeta = const VerificationMeta(
+    'fechaAdquisicion',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaAdquisicion =
+      GeneratedColumn<DateTime>(
+        'fecha_adquisicion',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _costoAdquisicionMeta = const VerificationMeta(
+    'costoAdquisicion',
+  );
+  @override
+  late final GeneratedColumn<int> costoAdquisicion = GeneratedColumn<int>(
+    'costo_adquisicion',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fotografiaAttachmentIdMeta =
+      const VerificationMeta('fotografiaAttachmentId');
+  @override
+  late final GeneratedColumn<String> fotografiaAttachmentId =
+      GeneratedColumn<String>(
+        'fotografia_attachment_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES attachment (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _fechaBajaMeta = const VerificationMeta(
+    'fechaBaja',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaBaja = GeneratedColumn<DateTime>(
+    'fecha_baja',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _motivoBajaMeta = const VerificationMeta(
+    'motivoBaja',
+  );
+  @override
+  late final GeneratedColumn<String> motivoBaja = GeneratedColumn<String>(
+    'motivo_baja',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesBajaMeta = const VerificationMeta(
+    'observacionesBaja',
+  );
+  @override
+  late final GeneratedColumn<String> observacionesBaja =
+      GeneratedColumn<String>(
+        'observaciones_baja',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    marca,
+    modelo,
+    anio,
+    color,
+    placas,
+    vin,
+    numeroMotor,
+    tipoVehiculo,
+    estatus,
+    fechaAdquisicion,
+    costoAdquisicion,
+    observaciones,
+    fotografiaAttachmentId,
+    fechaBaja,
+    motivoBaja,
+    observacionesBaja,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vehiculo';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VehiculoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoMeta);
+    }
+    if (data.containsKey('marca')) {
+      context.handle(
+        _marcaMeta,
+        marca.isAcceptableOrUnknown(data['marca']!, _marcaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_marcaMeta);
+    }
+    if (data.containsKey('modelo')) {
+      context.handle(
+        _modeloMeta,
+        modelo.isAcceptableOrUnknown(data['modelo']!, _modeloMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeloMeta);
+    }
+    if (data.containsKey('anio')) {
+      context.handle(
+        _anioMeta,
+        anio.isAcceptableOrUnknown(data['anio']!, _anioMeta),
+      );
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+        _colorMeta,
+        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+      );
+    }
+    if (data.containsKey('placas')) {
+      context.handle(
+        _placasMeta,
+        placas.isAcceptableOrUnknown(data['placas']!, _placasMeta),
+      );
+    }
+    if (data.containsKey('vin')) {
+      context.handle(
+        _vinMeta,
+        vin.isAcceptableOrUnknown(data['vin']!, _vinMeta),
+      );
+    }
+    if (data.containsKey('numero_motor')) {
+      context.handle(
+        _numeroMotorMeta,
+        numeroMotor.isAcceptableOrUnknown(
+          data['numero_motor']!,
+          _numeroMotorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tipo_vehiculo')) {
+      context.handle(
+        _tipoVehiculoMeta,
+        tipoVehiculo.isAcceptableOrUnknown(
+          data['tipo_vehiculo']!,
+          _tipoVehiculoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoVehiculoMeta);
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('fecha_adquisicion')) {
+      context.handle(
+        _fechaAdquisicionMeta,
+        fechaAdquisicion.isAcceptableOrUnknown(
+          data['fecha_adquisicion']!,
+          _fechaAdquisicionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('costo_adquisicion')) {
+      context.handle(
+        _costoAdquisicionMeta,
+        costoAdquisicion.isAcceptableOrUnknown(
+          data['costo_adquisicion']!,
+          _costoAdquisicionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fotografia_attachment_id')) {
+      context.handle(
+        _fotografiaAttachmentIdMeta,
+        fotografiaAttachmentId.isAcceptableOrUnknown(
+          data['fotografia_attachment_id']!,
+          _fotografiaAttachmentIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_baja')) {
+      context.handle(
+        _fechaBajaMeta,
+        fechaBaja.isAcceptableOrUnknown(data['fecha_baja']!, _fechaBajaMeta),
+      );
+    }
+    if (data.containsKey('motivo_baja')) {
+      context.handle(
+        _motivoBajaMeta,
+        motivoBaja.isAcceptableOrUnknown(data['motivo_baja']!, _motivoBajaMeta),
+      );
+    }
+    if (data.containsKey('observaciones_baja')) {
+      context.handle(
+        _observacionesBajaMeta,
+        observacionesBaja.isAcceptableOrUnknown(
+          data['observaciones_baja']!,
+          _observacionesBajaMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VehiculoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VehiculoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      codigo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}codigo'],
+          )!,
+      marca:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}marca'],
+          )!,
+      modelo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}modelo'],
+          )!,
+      anio: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}anio'],
+      ),
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color'],
+      ),
+      placas: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}placas'],
+      ),
+      vin: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vin'],
+      ),
+      numeroMotor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}numero_motor'],
+      ),
+      tipoVehiculo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_vehiculo'],
+          )!,
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      fechaAdquisicion: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_adquisicion'],
+      ),
+      costoAdquisicion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}costo_adquisicion'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      fotografiaAttachmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fotografia_attachment_id'],
+      ),
+      fechaBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_baja'],
+      ),
+      motivoBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_baja'],
+      ),
+      observacionesBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_baja'],
+      ),
+    );
+  }
+
+  @override
+  $VehiculoTable createAlias(String alias) {
+    return $VehiculoTable(attachedDatabase, alias);
+  }
+}
+
+class VehiculoData extends DataClass implements Insertable<VehiculoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String codigo;
+  final String marca;
+  final String modelo;
+  final int? anio;
+  final String? color;
+  final String? placas;
+  final String? vin;
+  final String? numeroMotor;
+  final String tipoVehiculo;
+  final String estatus;
+  final DateTime? fechaAdquisicion;
+  final int? costoAdquisicion;
+  final String? observaciones;
+  final String? fotografiaAttachmentId;
+  final DateTime? fechaBaja;
+  final String? motivoBaja;
+  final String? observacionesBaja;
+  const VehiculoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.codigo,
+    required this.marca,
+    required this.modelo,
+    this.anio,
+    this.color,
+    this.placas,
+    this.vin,
+    this.numeroMotor,
+    required this.tipoVehiculo,
+    required this.estatus,
+    this.fechaAdquisicion,
+    this.costoAdquisicion,
+    this.observaciones,
+    this.fotografiaAttachmentId,
+    this.fechaBaja,
+    this.motivoBaja,
+    this.observacionesBaja,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['codigo'] = Variable<String>(codigo);
+    map['marca'] = Variable<String>(marca);
+    map['modelo'] = Variable<String>(modelo);
+    if (!nullToAbsent || anio != null) {
+      map['anio'] = Variable<int>(anio);
+    }
+    if (!nullToAbsent || color != null) {
+      map['color'] = Variable<String>(color);
+    }
+    if (!nullToAbsent || placas != null) {
+      map['placas'] = Variable<String>(placas);
+    }
+    if (!nullToAbsent || vin != null) {
+      map['vin'] = Variable<String>(vin);
+    }
+    if (!nullToAbsent || numeroMotor != null) {
+      map['numero_motor'] = Variable<String>(numeroMotor);
+    }
+    map['tipo_vehiculo'] = Variable<String>(tipoVehiculo);
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || fechaAdquisicion != null) {
+      map['fecha_adquisicion'] = Variable<DateTime>(fechaAdquisicion);
+    }
+    if (!nullToAbsent || costoAdquisicion != null) {
+      map['costo_adquisicion'] = Variable<int>(costoAdquisicion);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || fotografiaAttachmentId != null) {
+      map['fotografia_attachment_id'] = Variable<String>(
+        fotografiaAttachmentId,
+      );
+    }
+    if (!nullToAbsent || fechaBaja != null) {
+      map['fecha_baja'] = Variable<DateTime>(fechaBaja);
+    }
+    if (!nullToAbsent || motivoBaja != null) {
+      map['motivo_baja'] = Variable<String>(motivoBaja);
+    }
+    if (!nullToAbsent || observacionesBaja != null) {
+      map['observaciones_baja'] = Variable<String>(observacionesBaja);
+    }
+    return map;
+  }
+
+  VehiculoCompanion toCompanion(bool nullToAbsent) {
+    return VehiculoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      codigo: Value(codigo),
+      marca: Value(marca),
+      modelo: Value(modelo),
+      anio: anio == null && nullToAbsent ? const Value.absent() : Value(anio),
+      color:
+          color == null && nullToAbsent ? const Value.absent() : Value(color),
+      placas:
+          placas == null && nullToAbsent ? const Value.absent() : Value(placas),
+      vin: vin == null && nullToAbsent ? const Value.absent() : Value(vin),
+      numeroMotor:
+          numeroMotor == null && nullToAbsent
+              ? const Value.absent()
+              : Value(numeroMotor),
+      tipoVehiculo: Value(tipoVehiculo),
+      estatus: Value(estatus),
+      fechaAdquisicion:
+          fechaAdquisicion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaAdquisicion),
+      costoAdquisicion:
+          costoAdquisicion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(costoAdquisicion),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      fotografiaAttachmentId:
+          fotografiaAttachmentId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fotografiaAttachmentId),
+      fechaBaja:
+          fechaBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaBaja),
+      motivoBaja:
+          motivoBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoBaja),
+      observacionesBaja:
+          observacionesBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesBaja),
+    );
+  }
+
+  factory VehiculoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VehiculoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      codigo: serializer.fromJson<String>(json['codigo']),
+      marca: serializer.fromJson<String>(json['marca']),
+      modelo: serializer.fromJson<String>(json['modelo']),
+      anio: serializer.fromJson<int?>(json['anio']),
+      color: serializer.fromJson<String?>(json['color']),
+      placas: serializer.fromJson<String?>(json['placas']),
+      vin: serializer.fromJson<String?>(json['vin']),
+      numeroMotor: serializer.fromJson<String?>(json['numeroMotor']),
+      tipoVehiculo: serializer.fromJson<String>(json['tipoVehiculo']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      fechaAdquisicion: serializer.fromJson<DateTime?>(
+        json['fechaAdquisicion'],
+      ),
+      costoAdquisicion: serializer.fromJson<int?>(json['costoAdquisicion']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      fotografiaAttachmentId: serializer.fromJson<String?>(
+        json['fotografiaAttachmentId'],
+      ),
+      fechaBaja: serializer.fromJson<DateTime?>(json['fechaBaja']),
+      motivoBaja: serializer.fromJson<String?>(json['motivoBaja']),
+      observacionesBaja: serializer.fromJson<String?>(
+        json['observacionesBaja'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'codigo': serializer.toJson<String>(codigo),
+      'marca': serializer.toJson<String>(marca),
+      'modelo': serializer.toJson<String>(modelo),
+      'anio': serializer.toJson<int?>(anio),
+      'color': serializer.toJson<String?>(color),
+      'placas': serializer.toJson<String?>(placas),
+      'vin': serializer.toJson<String?>(vin),
+      'numeroMotor': serializer.toJson<String?>(numeroMotor),
+      'tipoVehiculo': serializer.toJson<String>(tipoVehiculo),
+      'estatus': serializer.toJson<String>(estatus),
+      'fechaAdquisicion': serializer.toJson<DateTime?>(fechaAdquisicion),
+      'costoAdquisicion': serializer.toJson<int?>(costoAdquisicion),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'fotografiaAttachmentId': serializer.toJson<String?>(
+        fotografiaAttachmentId,
+      ),
+      'fechaBaja': serializer.toJson<DateTime?>(fechaBaja),
+      'motivoBaja': serializer.toJson<String?>(motivoBaja),
+      'observacionesBaja': serializer.toJson<String?>(observacionesBaja),
+    };
+  }
+
+  VehiculoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? codigo,
+    String? marca,
+    String? modelo,
+    Value<int?> anio = const Value.absent(),
+    Value<String?> color = const Value.absent(),
+    Value<String?> placas = const Value.absent(),
+    Value<String?> vin = const Value.absent(),
+    Value<String?> numeroMotor = const Value.absent(),
+    String? tipoVehiculo,
+    String? estatus,
+    Value<DateTime?> fechaAdquisicion = const Value.absent(),
+    Value<int?> costoAdquisicion = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+    Value<String?> fotografiaAttachmentId = const Value.absent(),
+    Value<DateTime?> fechaBaja = const Value.absent(),
+    Value<String?> motivoBaja = const Value.absent(),
+    Value<String?> observacionesBaja = const Value.absent(),
+  }) => VehiculoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    codigo: codigo ?? this.codigo,
+    marca: marca ?? this.marca,
+    modelo: modelo ?? this.modelo,
+    anio: anio.present ? anio.value : this.anio,
+    color: color.present ? color.value : this.color,
+    placas: placas.present ? placas.value : this.placas,
+    vin: vin.present ? vin.value : this.vin,
+    numeroMotor: numeroMotor.present ? numeroMotor.value : this.numeroMotor,
+    tipoVehiculo: tipoVehiculo ?? this.tipoVehiculo,
+    estatus: estatus ?? this.estatus,
+    fechaAdquisicion:
+        fechaAdquisicion.present
+            ? fechaAdquisicion.value
+            : this.fechaAdquisicion,
+    costoAdquisicion:
+        costoAdquisicion.present
+            ? costoAdquisicion.value
+            : this.costoAdquisicion,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    fotografiaAttachmentId:
+        fotografiaAttachmentId.present
+            ? fotografiaAttachmentId.value
+            : this.fotografiaAttachmentId,
+    fechaBaja: fechaBaja.present ? fechaBaja.value : this.fechaBaja,
+    motivoBaja: motivoBaja.present ? motivoBaja.value : this.motivoBaja,
+    observacionesBaja:
+        observacionesBaja.present
+            ? observacionesBaja.value
+            : this.observacionesBaja,
+  );
+  VehiculoData copyWithCompanion(VehiculoCompanion data) {
+    return VehiculoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+      marca: data.marca.present ? data.marca.value : this.marca,
+      modelo: data.modelo.present ? data.modelo.value : this.modelo,
+      anio: data.anio.present ? data.anio.value : this.anio,
+      color: data.color.present ? data.color.value : this.color,
+      placas: data.placas.present ? data.placas.value : this.placas,
+      vin: data.vin.present ? data.vin.value : this.vin,
+      numeroMotor:
+          data.numeroMotor.present ? data.numeroMotor.value : this.numeroMotor,
+      tipoVehiculo:
+          data.tipoVehiculo.present
+              ? data.tipoVehiculo.value
+              : this.tipoVehiculo,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      fechaAdquisicion:
+          data.fechaAdquisicion.present
+              ? data.fechaAdquisicion.value
+              : this.fechaAdquisicion,
+      costoAdquisicion:
+          data.costoAdquisicion.present
+              ? data.costoAdquisicion.value
+              : this.costoAdquisicion,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      fotografiaAttachmentId:
+          data.fotografiaAttachmentId.present
+              ? data.fotografiaAttachmentId.value
+              : this.fotografiaAttachmentId,
+      fechaBaja: data.fechaBaja.present ? data.fechaBaja.value : this.fechaBaja,
+      motivoBaja:
+          data.motivoBaja.present ? data.motivoBaja.value : this.motivoBaja,
+      observacionesBaja:
+          data.observacionesBaja.present
+              ? data.observacionesBaja.value
+              : this.observacionesBaja,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiculoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('marca: $marca, ')
+          ..write('modelo: $modelo, ')
+          ..write('anio: $anio, ')
+          ..write('color: $color, ')
+          ..write('placas: $placas, ')
+          ..write('vin: $vin, ')
+          ..write('numeroMotor: $numeroMotor, ')
+          ..write('tipoVehiculo: $tipoVehiculo, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaAdquisicion: $fechaAdquisicion, ')
+          ..write('costoAdquisicion: $costoAdquisicion, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('fotografiaAttachmentId: $fotografiaAttachmentId, ')
+          ..write('fechaBaja: $fechaBaja, ')
+          ..write('motivoBaja: $motivoBaja, ')
+          ..write('observacionesBaja: $observacionesBaja')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    marca,
+    modelo,
+    anio,
+    color,
+    placas,
+    vin,
+    numeroMotor,
+    tipoVehiculo,
+    estatus,
+    fechaAdquisicion,
+    costoAdquisicion,
+    observaciones,
+    fotografiaAttachmentId,
+    fechaBaja,
+    motivoBaja,
+    observacionesBaja,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VehiculoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.codigo == this.codigo &&
+          other.marca == this.marca &&
+          other.modelo == this.modelo &&
+          other.anio == this.anio &&
+          other.color == this.color &&
+          other.placas == this.placas &&
+          other.vin == this.vin &&
+          other.numeroMotor == this.numeroMotor &&
+          other.tipoVehiculo == this.tipoVehiculo &&
+          other.estatus == this.estatus &&
+          other.fechaAdquisicion == this.fechaAdquisicion &&
+          other.costoAdquisicion == this.costoAdquisicion &&
+          other.observaciones == this.observaciones &&
+          other.fotografiaAttachmentId == this.fotografiaAttachmentId &&
+          other.fechaBaja == this.fechaBaja &&
+          other.motivoBaja == this.motivoBaja &&
+          other.observacionesBaja == this.observacionesBaja);
+}
+
+class VehiculoCompanion extends UpdateCompanion<VehiculoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> codigo;
+  final Value<String> marca;
+  final Value<String> modelo;
+  final Value<int?> anio;
+  final Value<String?> color;
+  final Value<String?> placas;
+  final Value<String?> vin;
+  final Value<String?> numeroMotor;
+  final Value<String> tipoVehiculo;
+  final Value<String> estatus;
+  final Value<DateTime?> fechaAdquisicion;
+  final Value<int?> costoAdquisicion;
+  final Value<String?> observaciones;
+  final Value<String?> fotografiaAttachmentId;
+  final Value<DateTime?> fechaBaja;
+  final Value<String?> motivoBaja;
+  final Value<String?> observacionesBaja;
+  final Value<int> rowid;
+  const VehiculoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.marca = const Value.absent(),
+    this.modelo = const Value.absent(),
+    this.anio = const Value.absent(),
+    this.color = const Value.absent(),
+    this.placas = const Value.absent(),
+    this.vin = const Value.absent(),
+    this.numeroMotor = const Value.absent(),
+    this.tipoVehiculo = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.fechaAdquisicion = const Value.absent(),
+    this.costoAdquisicion = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.fotografiaAttachmentId = const Value.absent(),
+    this.fechaBaja = const Value.absent(),
+    this.motivoBaja = const Value.absent(),
+    this.observacionesBaja = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VehiculoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String codigo,
+    required String marca,
+    required String modelo,
+    this.anio = const Value.absent(),
+    this.color = const Value.absent(),
+    this.placas = const Value.absent(),
+    this.vin = const Value.absent(),
+    this.numeroMotor = const Value.absent(),
+    required String tipoVehiculo,
+    this.estatus = const Value.absent(),
+    this.fechaAdquisicion = const Value.absent(),
+    this.costoAdquisicion = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.fotografiaAttachmentId = const Value.absent(),
+    this.fechaBaja = const Value.absent(),
+    this.motivoBaja = const Value.absent(),
+    this.observacionesBaja = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : codigo = Value(codigo),
+       marca = Value(marca),
+       modelo = Value(modelo),
+       tipoVehiculo = Value(tipoVehiculo);
+  static Insertable<VehiculoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? codigo,
+    Expression<String>? marca,
+    Expression<String>? modelo,
+    Expression<int>? anio,
+    Expression<String>? color,
+    Expression<String>? placas,
+    Expression<String>? vin,
+    Expression<String>? numeroMotor,
+    Expression<String>? tipoVehiculo,
+    Expression<String>? estatus,
+    Expression<DateTime>? fechaAdquisicion,
+    Expression<int>? costoAdquisicion,
+    Expression<String>? observaciones,
+    Expression<String>? fotografiaAttachmentId,
+    Expression<DateTime>? fechaBaja,
+    Expression<String>? motivoBaja,
+    Expression<String>? observacionesBaja,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (codigo != null) 'codigo': codigo,
+      if (marca != null) 'marca': marca,
+      if (modelo != null) 'modelo': modelo,
+      if (anio != null) 'anio': anio,
+      if (color != null) 'color': color,
+      if (placas != null) 'placas': placas,
+      if (vin != null) 'vin': vin,
+      if (numeroMotor != null) 'numero_motor': numeroMotor,
+      if (tipoVehiculo != null) 'tipo_vehiculo': tipoVehiculo,
+      if (estatus != null) 'estatus': estatus,
+      if (fechaAdquisicion != null) 'fecha_adquisicion': fechaAdquisicion,
+      if (costoAdquisicion != null) 'costo_adquisicion': costoAdquisicion,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (fotografiaAttachmentId != null)
+        'fotografia_attachment_id': fotografiaAttachmentId,
+      if (fechaBaja != null) 'fecha_baja': fechaBaja,
+      if (motivoBaja != null) 'motivo_baja': motivoBaja,
+      if (observacionesBaja != null) 'observaciones_baja': observacionesBaja,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VehiculoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? codigo,
+    Value<String>? marca,
+    Value<String>? modelo,
+    Value<int?>? anio,
+    Value<String?>? color,
+    Value<String?>? placas,
+    Value<String?>? vin,
+    Value<String?>? numeroMotor,
+    Value<String>? tipoVehiculo,
+    Value<String>? estatus,
+    Value<DateTime?>? fechaAdquisicion,
+    Value<int?>? costoAdquisicion,
+    Value<String?>? observaciones,
+    Value<String?>? fotografiaAttachmentId,
+    Value<DateTime?>? fechaBaja,
+    Value<String?>? motivoBaja,
+    Value<String?>? observacionesBaja,
+    Value<int>? rowid,
+  }) {
+    return VehiculoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      codigo: codigo ?? this.codigo,
+      marca: marca ?? this.marca,
+      modelo: modelo ?? this.modelo,
+      anio: anio ?? this.anio,
+      color: color ?? this.color,
+      placas: placas ?? this.placas,
+      vin: vin ?? this.vin,
+      numeroMotor: numeroMotor ?? this.numeroMotor,
+      tipoVehiculo: tipoVehiculo ?? this.tipoVehiculo,
+      estatus: estatus ?? this.estatus,
+      fechaAdquisicion: fechaAdquisicion ?? this.fechaAdquisicion,
+      costoAdquisicion: costoAdquisicion ?? this.costoAdquisicion,
+      observaciones: observaciones ?? this.observaciones,
+      fotografiaAttachmentId:
+          fotografiaAttachmentId ?? this.fotografiaAttachmentId,
+      fechaBaja: fechaBaja ?? this.fechaBaja,
+      motivoBaja: motivoBaja ?? this.motivoBaja,
+      observacionesBaja: observacionesBaja ?? this.observacionesBaja,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (marca.present) {
+      map['marca'] = Variable<String>(marca.value);
+    }
+    if (modelo.present) {
+      map['modelo'] = Variable<String>(modelo.value);
+    }
+    if (anio.present) {
+      map['anio'] = Variable<int>(anio.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (placas.present) {
+      map['placas'] = Variable<String>(placas.value);
+    }
+    if (vin.present) {
+      map['vin'] = Variable<String>(vin.value);
+    }
+    if (numeroMotor.present) {
+      map['numero_motor'] = Variable<String>(numeroMotor.value);
+    }
+    if (tipoVehiculo.present) {
+      map['tipo_vehiculo'] = Variable<String>(tipoVehiculo.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (fechaAdquisicion.present) {
+      map['fecha_adquisicion'] = Variable<DateTime>(fechaAdquisicion.value);
+    }
+    if (costoAdquisicion.present) {
+      map['costo_adquisicion'] = Variable<int>(costoAdquisicion.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (fotografiaAttachmentId.present) {
+      map['fotografia_attachment_id'] = Variable<String>(
+        fotografiaAttachmentId.value,
+      );
+    }
+    if (fechaBaja.present) {
+      map['fecha_baja'] = Variable<DateTime>(fechaBaja.value);
+    }
+    if (motivoBaja.present) {
+      map['motivo_baja'] = Variable<String>(motivoBaja.value);
+    }
+    if (observacionesBaja.present) {
+      map['observaciones_baja'] = Variable<String>(observacionesBaja.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiculoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('marca: $marca, ')
+          ..write('modelo: $modelo, ')
+          ..write('anio: $anio, ')
+          ..write('color: $color, ')
+          ..write('placas: $placas, ')
+          ..write('vin: $vin, ')
+          ..write('numeroMotor: $numeroMotor, ')
+          ..write('tipoVehiculo: $tipoVehiculo, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaAdquisicion: $fechaAdquisicion, ')
+          ..write('costoAdquisicion: $costoAdquisicion, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('fotografiaAttachmentId: $fotografiaAttachmentId, ')
+          ..write('fechaBaja: $fechaBaja, ')
+          ..write('motivoBaja: $motivoBaja, ')
+          ..write('observacionesBaja: $observacionesBaja, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $VehiculoAttachmentTable extends VehiculoAttachment
+    with TableInfo<$VehiculoAttachmentTable, VehiculoAttachmentData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VehiculoAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _vehiculoIdMeta = const VerificationMeta(
+    'vehiculoId',
+  );
+  @override
+  late final GeneratedColumn<String> vehiculoId = GeneratedColumn<String>(
+    'vehiculo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES vehiculo (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, vehiculoId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vehiculo_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VehiculoAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('vehiculo_id')) {
+      context.handle(
+        _vehiculoIdMeta,
+        vehiculoId.isAcceptableOrUnknown(data['vehiculo_id']!, _vehiculoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_vehiculoIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  VehiculoAttachmentData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VehiculoAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      vehiculoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}vehiculo_id'],
+          )!,
+    );
+  }
+
+  @override
+  $VehiculoAttachmentTable createAlias(String alias) {
+    return $VehiculoAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class VehiculoAttachmentData extends DataClass
+    implements Insertable<VehiculoAttachmentData> {
+  final String attachmentId;
+  final String vehiculoId;
+  const VehiculoAttachmentData({
+    required this.attachmentId,
+    required this.vehiculoId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['vehiculo_id'] = Variable<String>(vehiculoId);
+    return map;
+  }
+
+  VehiculoAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return VehiculoAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      vehiculoId: Value(vehiculoId),
+    );
+  }
+
+  factory VehiculoAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VehiculoAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      vehiculoId: serializer.fromJson<String>(json['vehiculoId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'vehiculoId': serializer.toJson<String>(vehiculoId),
+    };
+  }
+
+  VehiculoAttachmentData copyWith({String? attachmentId, String? vehiculoId}) =>
+      VehiculoAttachmentData(
+        attachmentId: attachmentId ?? this.attachmentId,
+        vehiculoId: vehiculoId ?? this.vehiculoId,
+      );
+  VehiculoAttachmentData copyWithCompanion(VehiculoAttachmentCompanion data) {
+    return VehiculoAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      vehiculoId:
+          data.vehiculoId.present ? data.vehiculoId.value : this.vehiculoId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiculoAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('vehiculoId: $vehiculoId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, vehiculoId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VehiculoAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.vehiculoId == this.vehiculoId);
+}
+
+class VehiculoAttachmentCompanion
+    extends UpdateCompanion<VehiculoAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> vehiculoId;
+  final Value<int> rowid;
+  const VehiculoAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.vehiculoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VehiculoAttachmentCompanion.insert({
+    required String attachmentId,
+    required String vehiculoId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       vehiculoId = Value(vehiculoId);
+  static Insertable<VehiculoAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? vehiculoId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (vehiculoId != null) 'vehiculo_id': vehiculoId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VehiculoAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? vehiculoId,
+    Value<int>? rowid,
+  }) {
+    return VehiculoAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      vehiculoId: vehiculoId ?? this.vehiculoId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (vehiculoId.present) {
+      map['vehiculo_id'] = Variable<String>(vehiculoId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiculoAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('vehiculoId: $vehiculoId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -52531,6 +53985,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $DescuentoInventarioTable(this);
   late final $AsignacionAttachmentTable asignacionAttachment =
       $AsignacionAttachmentTable(this);
+  late final $VehiculoTable vehiculo = $VehiculoTable(this);
+  late final $VehiculoAttachmentTable vehiculoAttachment =
+      $VehiculoAttachmentTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -52554,6 +54011,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxAsignacionUnidadActiva = Index(
     'idx_asignacion_unidad_activa',
     'CREATE UNIQUE INDEX idx_asignacion_unidad_activa ON asignacion (unidad_id) WHERE unidad_id IS NOT NULL AND estatus = \'activa\'',
+  );
+  late final Index idxVehiculoPlacasUnica = Index(
+    'idx_vehiculo_placas_unica',
+    'CREATE UNIQUE INDEX idx_vehiculo_placas_unica ON vehiculo (placas) WHERE placas IS NOT NULL',
+  );
+  late final Index idxVehiculoVinUnico = Index(
+    'idx_vehiculo_vin_unico',
+    'CREATE UNIQUE INDEX idx_vehiculo_vin_unico ON vehiculo (vin) WHERE vin IS NOT NULL',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -52639,12 +54104,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     asignacion,
     descuentoInventario,
     asignacionAttachment,
+    vehiculo,
+    vehiculoAttachment,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
     idxContactoClienteTipoPrincipalActivo,
     idxAsignacionServicioEmpleadoActiva,
     idxAsignacionUnidadActiva,
+    idxVehiculoPlacasUnica,
+    idxVehiculoVinUnico,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -52990,6 +54459,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('asignacion_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('vehiculo_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'vehiculo',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('vehiculo_attachment', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -57649,6 +59132,53 @@ final class $$AttachmentTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$VehiculoTable, List<VehiculoData>>
+  _vehiculoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.vehiculo,
+    aliasName: $_aliasNameGenerator(
+      db.attachment.id,
+      db.vehiculo.fotografiaAttachmentId,
+    ),
+  );
+
+  $$VehiculoTableProcessedTableManager get vehiculoRefs {
+    final manager = $$VehiculoTableTableManager($_db, $_db.vehiculo).filter(
+      (f) => f.fotografiaAttachmentId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(_vehiculoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $VehiculoAttachmentTable,
+    List<VehiculoAttachmentData>
+  >
+  _vehiculoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.vehiculoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.vehiculoAttachment.attachmentId,
+        ),
+      );
+
+  $$VehiculoAttachmentTableProcessedTableManager get vehiculoAttachmentRefs {
+    final manager = $$VehiculoAttachmentTableTableManager(
+      $_db,
+      $_db.vehiculoAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _vehiculoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AttachmentTableFilterComposer
@@ -58061,6 +59591,56 @@ class $$AttachmentTableFilterComposer
           }) => $$AsignacionAttachmentTableFilterComposer(
             $db: $db,
             $table: $db.asignacionAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> vehiculoRefs(
+    Expression<bool> Function($$VehiculoTableFilterComposer f) f,
+  ) {
+    final $$VehiculoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.vehiculo,
+      getReferencedColumn: (t) => t.fotografiaAttachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoTableFilterComposer(
+            $db: $db,
+            $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> vehiculoAttachmentRefs(
+    Expression<bool> Function($$VehiculoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$VehiculoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.vehiculoAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.vehiculoAttachment,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -58540,6 +60120,57 @@ class $$AttachmentTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> vehiculoRefs<T extends Object>(
+    Expression<T> Function($$VehiculoTableAnnotationComposer a) f,
+  ) {
+    final $$VehiculoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.vehiculo,
+      getReferencedColumn: (t) => t.fotografiaAttachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> vehiculoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$VehiculoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$VehiculoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.vehiculoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AttachmentTableTableManager
@@ -58570,6 +60201,8 @@ class $$AttachmentTableTableManager
             bool pagoNominaAttachmentRefs,
             bool movimientoInventarioAttachmentRefs,
             bool asignacionAttachmentRefs,
+            bool vehiculoRefs,
+            bool vehiculoAttachmentRefs,
           })
         > {
   $$AttachmentTableTableManager(_$AppDatabase db, $AttachmentTable table)
@@ -58660,6 +60293,8 @@ class $$AttachmentTableTableManager
             pagoNominaAttachmentRefs = false,
             movimientoInventarioAttachmentRefs = false,
             asignacionAttachmentRefs = false,
+            vehiculoRefs = false,
+            vehiculoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -58680,6 +60315,8 @@ class $$AttachmentTableTableManager
                 if (movimientoInventarioAttachmentRefs)
                   db.movimientoInventarioAttachment,
                 if (asignacionAttachmentRefs) db.asignacionAttachment,
+                if (vehiculoRefs) db.vehiculo,
+                if (vehiculoAttachmentRefs) db.vehiculoAttachment,
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -58992,6 +60629,50 @@ class $$AttachmentTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (vehiculoRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      VehiculoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._vehiculoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).vehiculoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.fotografiaAttachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (vehiculoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      VehiculoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._vehiculoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).vehiculoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -59027,6 +60708,8 @@ typedef $$AttachmentTableProcessedTableManager =
         bool pagoNominaAttachmentRefs,
         bool movimientoInventarioAttachmentRefs,
         bool asignacionAttachmentRefs,
+        bool vehiculoRefs,
+        bool vehiculoAttachmentRefs,
       })
     >;
 typedef $$HorarioTableCreateCompanionBuilder =
@@ -103679,6 +105362,1140 @@ typedef $$AsignacionAttachmentTableProcessedTableManager =
       AsignacionAttachmentData,
       PrefetchHooks Function({bool attachmentId, bool asignacionId})
     >;
+typedef $$VehiculoTableCreateCompanionBuilder =
+    VehiculoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String codigo,
+      required String marca,
+      required String modelo,
+      Value<int?> anio,
+      Value<String?> color,
+      Value<String?> placas,
+      Value<String?> vin,
+      Value<String?> numeroMotor,
+      required String tipoVehiculo,
+      Value<String> estatus,
+      Value<DateTime?> fechaAdquisicion,
+      Value<int?> costoAdquisicion,
+      Value<String?> observaciones,
+      Value<String?> fotografiaAttachmentId,
+      Value<DateTime?> fechaBaja,
+      Value<String?> motivoBaja,
+      Value<String?> observacionesBaja,
+      Value<int> rowid,
+    });
+typedef $$VehiculoTableUpdateCompanionBuilder =
+    VehiculoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> codigo,
+      Value<String> marca,
+      Value<String> modelo,
+      Value<int?> anio,
+      Value<String?> color,
+      Value<String?> placas,
+      Value<String?> vin,
+      Value<String?> numeroMotor,
+      Value<String> tipoVehiculo,
+      Value<String> estatus,
+      Value<DateTime?> fechaAdquisicion,
+      Value<int?> costoAdquisicion,
+      Value<String?> observaciones,
+      Value<String?> fotografiaAttachmentId,
+      Value<DateTime?> fechaBaja,
+      Value<String?> motivoBaja,
+      Value<String?> observacionesBaja,
+      Value<int> rowid,
+    });
+
+final class $$VehiculoTableReferences
+    extends BaseReferences<_$AppDatabase, $VehiculoTable, VehiculoData> {
+  $$VehiculoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $AttachmentTable _fotografiaAttachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.vehiculo.fotografiaAttachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager? get fotografiaAttachmentId {
+    final $_column = $_itemColumn<String>('fotografia_attachment_id');
+    if ($_column == null) return null;
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _fotografiaAttachmentIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $VehiculoAttachmentTable,
+    List<VehiculoAttachmentData>
+  >
+  _vehiculoAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.vehiculoAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.vehiculo.id,
+          db.vehiculoAttachment.vehiculoId,
+        ),
+      );
+
+  $$VehiculoAttachmentTableProcessedTableManager get vehiculoAttachmentRefs {
+    final manager = $$VehiculoAttachmentTableTableManager(
+      $_db,
+      $_db.vehiculoAttachment,
+    ).filter((f) => f.vehiculoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _vehiculoAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$VehiculoTableFilterComposer
+    extends Composer<_$AppDatabase, $VehiculoTable> {
+  $$VehiculoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get marca => $composableBuilder(
+    column: $table.marca,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelo => $composableBuilder(
+    column: $table.modelo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get anio => $composableBuilder(
+    column: $table.anio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get placas => $composableBuilder(
+    column: $table.placas,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get vin => $composableBuilder(
+    column: $table.vin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get numeroMotor => $composableBuilder(
+    column: $table.numeroMotor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoVehiculo => $composableBuilder(
+    column: $table.tipoVehiculo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaAdquisicion => $composableBuilder(
+    column: $table.fechaAdquisicion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get costoAdquisicion => $composableBuilder(
+    column: $table.costoAdquisicion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaBaja => $composableBuilder(
+    column: $table.fechaBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AttachmentTableFilterComposer get fotografiaAttachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fotografiaAttachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> vehiculoAttachmentRefs(
+    Expression<bool> Function($$VehiculoAttachmentTableFilterComposer f) f,
+  ) {
+    final $$VehiculoAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.vehiculoAttachment,
+      getReferencedColumn: (t) => t.vehiculoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.vehiculoAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$VehiculoTableOrderingComposer
+    extends Composer<_$AppDatabase, $VehiculoTable> {
+  $$VehiculoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get marca => $composableBuilder(
+    column: $table.marca,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelo => $composableBuilder(
+    column: $table.modelo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get anio => $composableBuilder(
+    column: $table.anio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get placas => $composableBuilder(
+    column: $table.placas,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get vin => $composableBuilder(
+    column: $table.vin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get numeroMotor => $composableBuilder(
+    column: $table.numeroMotor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoVehiculo => $composableBuilder(
+    column: $table.tipoVehiculo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaAdquisicion => $composableBuilder(
+    column: $table.fechaAdquisicion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get costoAdquisicion => $composableBuilder(
+    column: $table.costoAdquisicion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaBaja => $composableBuilder(
+    column: $table.fechaBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AttachmentTableOrderingComposer get fotografiaAttachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fotografiaAttachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VehiculoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VehiculoTable> {
+  $$VehiculoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  GeneratedColumn<String> get marca =>
+      $composableBuilder(column: $table.marca, builder: (column) => column);
+
+  GeneratedColumn<String> get modelo =>
+      $composableBuilder(column: $table.modelo, builder: (column) => column);
+
+  GeneratedColumn<int> get anio =>
+      $composableBuilder(column: $table.anio, builder: (column) => column);
+
+  GeneratedColumn<String> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<String> get placas =>
+      $composableBuilder(column: $table.placas, builder: (column) => column);
+
+  GeneratedColumn<String> get vin =>
+      $composableBuilder(column: $table.vin, builder: (column) => column);
+
+  GeneratedColumn<String> get numeroMotor => $composableBuilder(
+    column: $table.numeroMotor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tipoVehiculo => $composableBuilder(
+    column: $table.tipoVehiculo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaAdquisicion => $composableBuilder(
+    column: $table.fechaAdquisicion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get costoAdquisicion => $composableBuilder(
+    column: $table.costoAdquisicion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaBaja =>
+      $composableBuilder(column: $table.fechaBaja, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => column,
+  );
+
+  $$AttachmentTableAnnotationComposer get fotografiaAttachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fotografiaAttachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> vehiculoAttachmentRefs<T extends Object>(
+    Expression<T> Function($$VehiculoAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$VehiculoAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoAttachment,
+          getReferencedColumn: (t) => t.vehiculoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.vehiculoAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$VehiculoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VehiculoTable,
+          VehiculoData,
+          $$VehiculoTableFilterComposer,
+          $$VehiculoTableOrderingComposer,
+          $$VehiculoTableAnnotationComposer,
+          $$VehiculoTableCreateCompanionBuilder,
+          $$VehiculoTableUpdateCompanionBuilder,
+          (VehiculoData, $$VehiculoTableReferences),
+          VehiculoData,
+          PrefetchHooks Function({
+            bool fotografiaAttachmentId,
+            bool vehiculoAttachmentRefs,
+          })
+        > {
+  $$VehiculoTableTableManager(_$AppDatabase db, $VehiculoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$VehiculoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$VehiculoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$VehiculoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> codigo = const Value.absent(),
+                Value<String> marca = const Value.absent(),
+                Value<String> modelo = const Value.absent(),
+                Value<int?> anio = const Value.absent(),
+                Value<String?> color = const Value.absent(),
+                Value<String?> placas = const Value.absent(),
+                Value<String?> vin = const Value.absent(),
+                Value<String?> numeroMotor = const Value.absent(),
+                Value<String> tipoVehiculo = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaAdquisicion = const Value.absent(),
+                Value<int?> costoAdquisicion = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> fotografiaAttachmentId = const Value.absent(),
+                Value<DateTime?> fechaBaja = const Value.absent(),
+                Value<String?> motivoBaja = const Value.absent(),
+                Value<String?> observacionesBaja = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehiculoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                marca: marca,
+                modelo: modelo,
+                anio: anio,
+                color: color,
+                placas: placas,
+                vin: vin,
+                numeroMotor: numeroMotor,
+                tipoVehiculo: tipoVehiculo,
+                estatus: estatus,
+                fechaAdquisicion: fechaAdquisicion,
+                costoAdquisicion: costoAdquisicion,
+                observaciones: observaciones,
+                fotografiaAttachmentId: fotografiaAttachmentId,
+                fechaBaja: fechaBaja,
+                motivoBaja: motivoBaja,
+                observacionesBaja: observacionesBaja,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String codigo,
+                required String marca,
+                required String modelo,
+                Value<int?> anio = const Value.absent(),
+                Value<String?> color = const Value.absent(),
+                Value<String?> placas = const Value.absent(),
+                Value<String?> vin = const Value.absent(),
+                Value<String?> numeroMotor = const Value.absent(),
+                required String tipoVehiculo,
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaAdquisicion = const Value.absent(),
+                Value<int?> costoAdquisicion = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> fotografiaAttachmentId = const Value.absent(),
+                Value<DateTime?> fechaBaja = const Value.absent(),
+                Value<String?> motivoBaja = const Value.absent(),
+                Value<String?> observacionesBaja = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehiculoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                marca: marca,
+                modelo: modelo,
+                anio: anio,
+                color: color,
+                placas: placas,
+                vin: vin,
+                numeroMotor: numeroMotor,
+                tipoVehiculo: tipoVehiculo,
+                estatus: estatus,
+                fechaAdquisicion: fechaAdquisicion,
+                costoAdquisicion: costoAdquisicion,
+                observaciones: observaciones,
+                fotografiaAttachmentId: fotografiaAttachmentId,
+                fechaBaja: fechaBaja,
+                motivoBaja: motivoBaja,
+                observacionesBaja: observacionesBaja,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$VehiculoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            fotografiaAttachmentId = false,
+            vehiculoAttachmentRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (vehiculoAttachmentRefs) db.vehiculoAttachment,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (fotografiaAttachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.fotografiaAttachmentId,
+                            referencedTable: $$VehiculoTableReferences
+                                ._fotografiaAttachmentIdTable(db),
+                            referencedColumn:
+                                $$VehiculoTableReferences
+                                    ._fotografiaAttachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (vehiculoAttachmentRefs)
+                    await $_getPrefetchedData<
+                      VehiculoData,
+                      $VehiculoTable,
+                      VehiculoAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$VehiculoTableReferences
+                          ._vehiculoAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$VehiculoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).vehiculoAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.vehiculoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$VehiculoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VehiculoTable,
+      VehiculoData,
+      $$VehiculoTableFilterComposer,
+      $$VehiculoTableOrderingComposer,
+      $$VehiculoTableAnnotationComposer,
+      $$VehiculoTableCreateCompanionBuilder,
+      $$VehiculoTableUpdateCompanionBuilder,
+      (VehiculoData, $$VehiculoTableReferences),
+      VehiculoData,
+      PrefetchHooks Function({
+        bool fotografiaAttachmentId,
+        bool vehiculoAttachmentRefs,
+      })
+    >;
+typedef $$VehiculoAttachmentTableCreateCompanionBuilder =
+    VehiculoAttachmentCompanion Function({
+      required String attachmentId,
+      required String vehiculoId,
+      Value<int> rowid,
+    });
+typedef $$VehiculoAttachmentTableUpdateCompanionBuilder =
+    VehiculoAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> vehiculoId,
+      Value<int> rowid,
+    });
+
+final class $$VehiculoAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $VehiculoAttachmentTable,
+          VehiculoAttachmentData
+        > {
+  $$VehiculoAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.vehiculoAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $VehiculoTable _vehiculoIdTable(_$AppDatabase db) =>
+      db.vehiculo.createAlias(
+        $_aliasNameGenerator(db.vehiculoAttachment.vehiculoId, db.vehiculo.id),
+      );
+
+  $$VehiculoTableProcessedTableManager get vehiculoId {
+    final $_column = $_itemColumn<String>('vehiculo_id')!;
+
+    final manager = $$VehiculoTableTableManager(
+      $_db,
+      $_db.vehiculo,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_vehiculoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$VehiculoAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $VehiculoAttachmentTable> {
+  $$VehiculoAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$VehiculoTableFilterComposer get vehiculoId {
+    final $$VehiculoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehiculoId,
+      referencedTable: $db.vehiculo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoTableFilterComposer(
+            $db: $db,
+            $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VehiculoAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $VehiculoAttachmentTable> {
+  $$VehiculoAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$VehiculoTableOrderingComposer get vehiculoId {
+    final $$VehiculoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehiculoId,
+      referencedTable: $db.vehiculo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoTableOrderingComposer(
+            $db: $db,
+            $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VehiculoAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VehiculoAttachmentTable> {
+  $$VehiculoAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$VehiculoTableAnnotationComposer get vehiculoId {
+    final $$VehiculoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehiculoId,
+      referencedTable: $db.vehiculo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VehiculoAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VehiculoAttachmentTable,
+          VehiculoAttachmentData,
+          $$VehiculoAttachmentTableFilterComposer,
+          $$VehiculoAttachmentTableOrderingComposer,
+          $$VehiculoAttachmentTableAnnotationComposer,
+          $$VehiculoAttachmentTableCreateCompanionBuilder,
+          $$VehiculoAttachmentTableUpdateCompanionBuilder,
+          (VehiculoAttachmentData, $$VehiculoAttachmentTableReferences),
+          VehiculoAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool vehiculoId})
+        > {
+  $$VehiculoAttachmentTableTableManager(
+    _$AppDatabase db,
+    $VehiculoAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$VehiculoAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$VehiculoAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$VehiculoAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> vehiculoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehiculoAttachmentCompanion(
+                attachmentId: attachmentId,
+                vehiculoId: vehiculoId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String vehiculoId,
+                Value<int> rowid = const Value.absent(),
+              }) => VehiculoAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                vehiculoId: vehiculoId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$VehiculoAttachmentTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({attachmentId = false, vehiculoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable: $$VehiculoAttachmentTableReferences
+                                ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$VehiculoAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (vehiculoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.vehiculoId,
+                            referencedTable: $$VehiculoAttachmentTableReferences
+                                ._vehiculoIdTable(db),
+                            referencedColumn:
+                                $$VehiculoAttachmentTableReferences
+                                    ._vehiculoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$VehiculoAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VehiculoAttachmentTable,
+      VehiculoAttachmentData,
+      $$VehiculoAttachmentTableFilterComposer,
+      $$VehiculoAttachmentTableOrderingComposer,
+      $$VehiculoAttachmentTableAnnotationComposer,
+      $$VehiculoAttachmentTableCreateCompanionBuilder,
+      $$VehiculoAttachmentTableUpdateCompanionBuilder,
+      (VehiculoAttachmentData, $$VehiculoAttachmentTableReferences),
+      VehiculoAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool vehiculoId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -103899,4 +106716,8 @@ class $AppDatabaseManager {
       $$DescuentoInventarioTableTableManager(_db, _db.descuentoInventario);
   $$AsignacionAttachmentTableTableManager get asignacionAttachment =>
       $$AsignacionAttachmentTableTableManager(_db, _db.asignacionAttachment);
+  $$VehiculoTableTableManager get vehiculo =>
+      $$VehiculoTableTableManager(_db, _db.vehiculo);
+  $$VehiculoAttachmentTableTableManager get vehiculoAttachment =>
+      $$VehiculoAttachmentTableTableManager(_db, _db.vehiculoAttachment);
 }

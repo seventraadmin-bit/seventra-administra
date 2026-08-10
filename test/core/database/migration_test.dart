@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 29;
+const _currentSchemaVersion = 30;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -157,7 +157,7 @@ void main() {
       expect(areas, hasLength(6));
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(18));
+      expect(codigosSecuencia, hasLength(19));
 
       await db.close();
     },
@@ -6791,7 +6791,12 @@ void main() {
       expect(descuentos, isEmpty);
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(18), reason: '7B no agrega ninguna entrada nueva de CodigoSecuencia');
+      expect(
+        codigosSecuencia,
+        hasLength(19),
+        reason: '7B no agrega ninguna entrada nueva de CodigoSecuencia (la migración corre hasta '
+            '_currentSchemaVersion, así que sí incluye la de vehiculo sembrada en 8A)',
+      );
 
       final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
@@ -7096,6 +7101,191 @@ void main() {
             ),
         throwsA(anything),
         reason: 'el mismo par (attachment_id, asignacion_id) no puede repetirse',
+      );
+
+      await db.close();
+    },
+  );
+
+  test(
+    '30.json coincide con el esquema final de la Etapa 8A (tablas nuevas Vehiculo, VehiculoAttachment + '
+    'índices únicos parciales idx_vehiculo_placas_unica/idx_vehiculo_vin_unico)',
+    () async {
+      final schema = await verifier.schemaAt(30);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['vehiculo', 'vehiculo_attachment']));
+
+      final sqlVehiculo =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo'")
+                  .single['sql']
+              as String;
+      expect(sqlVehiculo, contains('"codigo" TEXT NOT NULL UNIQUE'));
+      expect(sqlVehiculo, contains('CHECK (costo_adquisicion IS NULL OR costo_adquisicion >= 0)'));
+      expect(
+        sqlVehiculo,
+        contains(
+          "CHECK ((estatus = 'baja' AND fecha_baja IS NOT NULL) OR "
+          "(estatus != 'baja' AND fecha_baja IS NULL))",
+        ),
+      );
+
+      final sqlIndicePlacas =
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_vehiculo_placas_unica'",
+                  )
+                  .single['sql']
+              as String;
+      expect(
+        sqlIndicePlacas,
+        'CREATE UNIQUE INDEX idx_vehiculo_placas_unica '
+        'ON vehiculo (placas) WHERE placas IS NOT NULL',
+      );
+
+      final sqlIndiceVin =
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_vehiculo_vin_unico'",
+                  )
+                  .single['sql']
+              as String;
+      expect(
+        sqlIndiceVin,
+        'CREATE UNIQUE INDEX idx_vehiculo_vin_unico '
+        'ON vehiculo (vin) WHERE vin IS NOT NULL',
+      );
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 29 → 30 conserva una Asignacion real y crea las tablas de Vehículos vacías, sembrando '
+    'CodigoSecuencia(vehiculo)',
+    () async {
+      final schemaV29 = await verifier.schemaAt(29);
+      final raw = schemaV29.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO categoria_articulo (id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('categoria-real', 'Radios', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO articulo (
+        id, folio, categoria_id, nombre, maneja_variante, maneja_serie, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'articulo-real', 'ART-000001', 'categoria-real', 'Radio Motorola', 0, 0, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss, estado_civil,
+        fecha_ingreso, anios_experiencia_seguridad, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01', 'PEXJ900101AB1',
+        '12345678901', 'soltero', 1735689600, 3, 'activo', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO asignacion (
+        id, articulo_id, cantidad, empleado_id, fecha_entrega, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'asignacion-real', 'articulo-real', 1, 'empleado-real', 1735689600, 'activa', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV29.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final asignaciones = await db.select(db.asignacion).get();
+      expect(asignaciones, hasLength(1), reason: 'ninguna Asignacion real debe perderse en una migración puramente aditiva');
+
+      final vehiculos = await db.select(db.vehiculo).get();
+      expect(vehiculos, isEmpty, reason: 'Vehiculo es tabla nueva en 8A, sin backfill');
+      final vehiculoAttachments = await db.select(db.vehiculoAttachment).get();
+      expect(vehiculoAttachments, isEmpty);
+
+      final codigoVehiculo =
+          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('vehiculo'))).getSingleOrNull();
+      expect(codigoVehiculo, isNotNull, reason: 'runSeed debe sembrar el contador de código de vehiculo');
+      expect(codigoVehiculo!.prefijo, 'VEH');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de Vehiculo tras la migración: costo_adquisicion >= 0, fecha_baja consistente con estatus, '
+    'placas/VIN únicos solo cuando se capturan',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final baseVehiculo = VehiculoCompanion.insert(
+        codigo: 'VEH-000001',
+        marca: 'BMW',
+        modelo: '320i',
+        tipoVehiculo: 'sedan',
+      );
+
+      await expectLater(
+        db.into(db.vehiculo).insert(baseVehiculo.copyWith(costoAdquisicion: const Value(-100))),
+        throwsA(anything),
+        reason: 'costo_adquisicion negativo debe rechazarse',
+      );
+      await expectLater(
+        db.into(db.vehiculo).insert(baseVehiculo.copyWith(estatus: const Value('baja'))),
+        throwsA(anything),
+        reason: 'estatus = baja exige fecha_baja poblada',
+      );
+      await expectLater(
+        db.into(db.vehiculo).insert(baseVehiculo.copyWith(fechaBaja: Value(DateTime(2026, 1, 1)))),
+        throwsA(anything),
+        reason: 'fecha_baja poblada exige estatus = baja',
+      );
+
+      final vehiculo1 = await db.into(db.vehiculo).insertReturning(
+            baseVehiculo.copyWith(codigo: const Value('VEH-000001'), placas: const Value('ABC-123'), vin: const Value('VIN-0001')),
+          );
+      expect(vehiculo1.estatus, 'disponible');
+
+      // Dos vehículos sin placas/VIN capturados deben coexistir sin problema.
+      await db.into(db.vehiculo).insertReturning(
+            baseVehiculo.copyWith(codigo: const Value('VEH-000002')),
+          );
+      await db.into(db.vehiculo).insertReturning(
+            baseVehiculo.copyWith(codigo: const Value('VEH-000003')),
+          );
+
+      await expectLater(
+        db.into(db.vehiculo).insert(baseVehiculo.copyWith(codigo: const Value('VEH-000004'), placas: const Value('ABC-123'))),
+        throwsA(anything),
+        reason: 'idx_vehiculo_placas_unica rechaza placas duplicadas',
+      );
+      await expectLater(
+        db.into(db.vehiculo).insert(baseVehiculo.copyWith(codigo: const Value('VEH-000005'), vin: const Value('VIN-0001'))),
+        throwsA(anything),
+        reason: 'idx_vehiculo_vin_unico rechaza VIN duplicado',
       );
 
       await db.close();

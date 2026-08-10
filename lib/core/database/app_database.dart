@@ -54,7 +54,9 @@ import '../../features/inventario/data/tables/categoria_articulo_table.dart';
 import '../../features/inventario/data/tables/descuento_inventario_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_attachment_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
+import '../../features/vehiculos/data/tables/vehiculo_table.dart';
 import 'migrations/migrar_asignacion_attachment_v29.dart';
+import 'migrations/migrar_vehiculo_v30.dart';
 import 'migrations/migrar_asignacion_servicio_v21.dart';
 import 'migrations/migrar_asignacion_v28.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
@@ -183,12 +185,14 @@ class AppMetadata extends Table {
   Asignacion,
   DescuentoInventario,
   AsignacionAttachment,
+  Vehiculo,
+  VehiculoAttachment,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 30;
 
   @override
   MigrationStrategy get migration {
@@ -657,6 +661,16 @@ class AppDatabase extends _$AppDatabase {
         // 28` exacto, nunca `from <= 28`.
         if (to >= 29 && from == 28) {
           await migrarAsignacionAttachmentV29(this, m);
+        }
+        // Aditiva (Etapa 8A): fundación del dominio Vehículos — nueva,
+        // independiente de Inventario, + sus 2 índices únicos parciales
+        // (`migrarVehiculoV30`, con verificación de FK/integridad,
+        // mismo criterio que `migrarAsignacionV28`). Tablas enteramente
+        // nuevas, así que `from <= 29` es seguro sin acotar un origen
+        // exacto. `CodigoSecuencia('vehiculo')` se siembra vía
+        // `runSeed()` normal, arriba en este mismo `onUpgrade`.
+        if (to >= 30 && from <= 29) {
+          await migrarVehiculoV30(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

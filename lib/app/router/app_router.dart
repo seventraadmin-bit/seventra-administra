@@ -14,6 +14,8 @@ import '../../features/organizacion/presentation/sucursales/sucursal_expediente_
 import '../../features/nomina/presentation/nominas/nomina_detalle_screen.dart';
 import '../../features/personal/presentation/empleados/empleado_expediente_screen.dart';
 import '../../features/personal/presentation/personal_shell_screen.dart';
+import '../../features/vehiculos/presentation/vehiculo_expediente_screen.dart';
+import '../../features/vehiculos/presentation/vehiculos_list_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
 import '../shell/app_shell_screen.dart';
 import '../shell/dashboard_welcome_screen.dart';
@@ -249,6 +251,24 @@ GoRouter createAppRouter() {
                       GoRoute(
                         path: 'reportes',
                         builder: (context, state) => const InventarioShellScreen(tab: InventarioTab.reportes),
+                      ),
+                    ],
+                  )
+                else if (def.path == '/vehiculos')
+                  // Vehículos es un dominio nuevo (Etapa 8A). Sin
+                  // subnavegación de pestañas todavía — mismo criterio
+                  // que Inventario en su propia Etapa 7A: la
+                  // subnavegación (Alertas, etc.) llega en una etapa
+                  // futura cuando exista más de una sección real, no
+                  // antes.
+                  GoRoute(
+                    path: def.path,
+                    builder: (context, state) => const VehiculosListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) =>
+                            VehiculoExpedienteScreen(vehiculoId: state.pathParameters['id']!),
                       ),
                     ],
                   )
