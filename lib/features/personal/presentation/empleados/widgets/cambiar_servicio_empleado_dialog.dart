@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,8 @@ import 'package:riseg_one/features/personal/domain/usecases/cambiar_servicio_emp
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../personal_providers.dart';
+import 'crear_empleado_dialog.dart' show centavosDesdeTexto;
+import 'sueldo_acordado_fields.dart';
 
 /// Diálogo "Cambiar de servicio" (Etapa 5D) — solo cuando el Empleado
 /// tiene una asignación vigente. Cierra la asignación anterior (motivo
@@ -29,8 +33,12 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
   String? turnoId;
   DateTime? fecha = DateTime.now();
   final observacionesController = TextEditingController();
+  final sueldoController = TextEditingController();
+  final bonoController = TextEditingController();
   String? errorServicio;
   String? errorFecha;
+  String? errorSueldo;
+  String? errorBono;
 
   final servicios = (await ref.read(servicioRepositoryProvider).listar())
       .where((item) => item.servicio.estatus == EstatusServicio.activo.name && item.servicio.id != servicioActualId)
@@ -59,6 +67,13 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
               onChanged: (valor) => setState(() {
                 servicioId = valor;
                 errorServicio = null;
+                errorSueldo = null;
+                errorBono = null;
+                precargarSueldoAcordado(
+                  servicio: buscarServicioPorId(servicios, valor),
+                  sueldoController: sueldoController,
+                  bonoController: bonoController,
+                );
               }),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -82,19 +97,31 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
               }),
             ),
             const SizedBox(height: AppSpacing.md),
+            SueldoAcordadoFields(
+              servicio: buscarServicioPorId(servicios, servicioId),
+              sueldoController: sueldoController,
+              bonoController: bonoController,
+              errorSueldo: errorSueldo,
+              errorBono: errorBono,
+            ),
+            const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.empleadoCampoObservaciones, controller: observacionesController),
           ],
         );
       },
     ),
     onConfirm: () async {
+      // Mismo criterio que `asignar_servicio_empleado_dialog.dart`:
+      // `showForm` solo mantiene el diálogo abierto cuando `onConfirm`
+      // devuelve `null`; todo error corregible in situ debe devolver
+      // `null`, nunca `false`.
       if (servicioId == null) {
         errorServicio = l10n.empleadoCampoServicioNuevo;
-        return false;
+        return null;
       }
       if (fecha == null) {
         errorFecha = l10n.empleadoCampoFechaCambioServicio;
-        return false;
+        return null;
       }
 
       final resultado = await ref.read(cambiarServicioEmpleadoUseCaseProvider).ejecutar(
@@ -103,9 +130,11 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
             fecha: fecha!,
             turnoId: turnoId,
             observaciones: observacionesController.text,
+            sueldoMensual: centavosDesdeTexto(sueldoController.text),
+            bonoMensual: centavosDesdeTexto(bonoController.text),
           );
 
-      if (!context.mounted) return false;
+      if (!context.mounted) return null;
 
       switch (resultado) {
         case CambiarServicioEmpleadoExitoso():
@@ -114,26 +143,36 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
         case CambiarServicioEmpleadoEmpleadoNoExiste():
         case CambiarServicioEmpleadoNoTieneAsignacionVigente():
         case CambiarServicioEmpleadoErrorInesperado():
-        // TODO(Etapa 6B UI): mensaje dedicado cuando el nuevo Servicio no
-        // tiene sueldo de referencia capturado — pendiente junto con la
-        // UI de captura de `Servicio.sueldoMensualReferenciaPersonal`.
-        case CambiarServicioEmpleadoSueldoRequerido():
-        case CambiarServicioEmpleadoSueldoInvalido():
-        case CambiarServicioEmpleadoBonoInvalido():
           RisegFeedback.showError(context, l10n.cambiarServicioEmpleadoErrorInesperado);
           return false;
+        case CambiarServicioEmpleadoSueldoRequerido():
+          errorSueldo = l10n.empleadoErrorSueldoRequerido;
+          return null;
+        case CambiarServicioEmpleadoSueldoInvalido():
+          errorSueldo = l10n.empleadoErrorSueldoAcordadoInvalido;
+          return null;
+        case CambiarServicioEmpleadoBonoInvalido():
+          errorBono = l10n.empleadoErrorBonoAcordadoInvalido;
+          return null;
         case CambiarServicioEmpleadoServicioNoExiste():
         case CambiarServicioEmpleadoServicioNoActivo():
         case CambiarServicioEmpleadoMismoServicio():
           errorServicio = l10n.empleadoErrorServicioNoActivo;
-          return false;
+          return null;
         case CambiarServicioEmpleadoFechaInvalida():
           errorFecha = l10n.cambiarServicioEmpleadoErrorFechaInvalida;
-          return false;
+          return null;
       }
     },
   );
 
-  observacionesController.dispose();
+  // Deferred — mismo criterio que `asignar_servicio_empleado_dialog.dart`.
+  unawaited(
+    Future.delayed(const Duration(milliseconds: 300), () {
+      observacionesController.dispose();
+      sueldoController.dispose();
+      bonoController.dispose();
+    }),
+  );
   return resultado ?? false;
 }

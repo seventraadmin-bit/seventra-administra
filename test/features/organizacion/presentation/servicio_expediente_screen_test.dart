@@ -376,6 +376,47 @@ void main() {
     expect(find.text(l10n.servicioResponsableInternoGuardadoExito), findsOneWidget);
   });
 
+  testWidgets('Condiciones de Personal: sin configurar por defecto, muestra el mensaje claro', (tester) async {
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    expect(find.text(l10n.servicioCondicionesPersonalSinConfigurar), findsOneWidget);
+  });
+
+  testWidgets('Condiciones de Personal: capturar sueldo/bono los muestra formateados', (tester) async {
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.ensureVisible(find.byKey(const Key('servicio_condiciones_personal_boton_editar')));
+    await tester.tap(find.byKey(const Key('servicio_condiciones_personal_boton_editar')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), '15000');
+    await tester.enterText(find.byType(TextFormField).at(1), '800');
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioCondicionesPersonalGuardadoExito), findsOneWidget);
+    expect(find.text(l10n.servicioCondicionesPersonalSinConfigurar), findsNothing);
+    expect(find.textContaining('15,000'), findsOneWidget);
+    expect(find.textContaining('800'), findsWidgets);
+  });
+
+  testWidgets('Condiciones de Personal: rechaza un sueldo de referencia en 0', (tester) async {
+    await _pumpScreen(tester, db, servicioId);
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+    await tester.ensureVisible(find.byKey(const Key('servicio_condiciones_personal_boton_editar')));
+    await tester.tap(find.byKey(const Key('servicio_condiciones_personal_boton_editar')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), '0');
+    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.servicioCondicionesPersonalErrorSueldoInvalido), findsOneWidget);
+  });
+
   testWidgets('agregar una Dirección operativa completa habilita el botón Activar', (tester) async {
     await _pumpScreen(tester, db, servicioId);
     final l10n = await AppLocalizations.delegate.load(const Locale('es'));

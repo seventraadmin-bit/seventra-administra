@@ -21,6 +21,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/crear_configurac
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_sueldo_referencia_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_expediente_data.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
@@ -373,6 +374,25 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
       state = state.copyWith(operandoRelacion: false);
       return false;
     }
+  }
+
+  Future<GuardarSueldoReferenciaServicioResultado?> guardarSueldoReferencia({
+    required int? sueldoMensualReferenciaPersonal,
+    required int? bonoMensualReferenciaPersonal,
+  }) async {
+    if (state.operandoRelacion) return null;
+    state = state.copyWith(operandoRelacion: true);
+
+    final resultado = await ref.read(guardarSueldoReferenciaServicioUseCaseProvider).ejecutar(
+          servicioId: servicioId,
+          sueldoMensualReferenciaPersonal: sueldoMensualReferenciaPersonal,
+          bonoMensualReferenciaPersonal: bonoMensualReferenciaPersonal,
+        );
+    if (resultado is GuardarSueldoReferenciaServicioExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoRelacion: false);
+    return resultado;
   }
 
   /// Reemplaza únicamente el `ServicioData` dentro del expediente ya

@@ -83,6 +83,7 @@ import 'domain/usecases/guardar_expediente_cliente_usecase.dart';
 import 'domain/usecases/guardar_expediente_empresa_usecase.dart';
 import 'domain/usecases/guardar_expediente_sucursal_usecase.dart';
 import 'domain/usecases/guardar_responsable_interno_usecase.dart';
+import 'domain/usecases/guardar_sueldo_referencia_servicio_usecase.dart';
 import 'domain/usecases/linea_comercial_validator.dart';
 import 'domain/usecases/listar_areas_activas_usecase.dart';
 import 'domain/usecases/listar_areas_usecase.dart';
@@ -403,6 +404,10 @@ final guardarDireccionOperativaServicioUseCaseProvider = Provider<GuardarDirecci
 
 final guardarResponsableInternoUseCaseProvider = Provider<GuardarResponsableInternoUseCase>((ref) {
   return GuardarResponsableInternoUseCase(ref.watch(servicioRepositoryProvider));
+});
+
+final guardarSueldoReferenciaServicioUseCaseProvider = Provider<GuardarSueldoReferenciaServicioUseCase>((ref) {
+  return GuardarSueldoReferenciaServicioUseCase(ref.watch(servicioRepositoryProvider), ref.watch(servicioValidatorProvider));
 });
 
 final lineaComercialValidatorProvider = Provider<LineaComercialValidator>((ref) {

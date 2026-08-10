@@ -10,6 +10,7 @@ import 'package:riseg_one/features/organizacion/presentation/shared/campo_consul
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/actualizar_fotografia_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/alerta_recontratacion_empleado.dart';
+import 'package:riseg_one/features/personal/domain/usecases/asignacion_sueldo_con_vigencia.dart';
 import 'package:riseg_one/features/personal/domain/usecases/calcular_ciclo_laboral_empleado.dart';
 import 'package:riseg_one/features/personal/domain/usecases/calcular_edad.dart';
 
@@ -17,6 +18,7 @@ import '../../../organizacion/organizacion_providers.dart';
 import '../../personal_providers.dart';
 import 'empleados_list_controller.dart';
 import 'empleados_list_screen.dart';
+import 'widgets/actualizar_sueldo_asignacion_dialog.dart';
 import 'widgets/adjuntar_documento_empleado_dialog.dart';
 import 'widgets/antidoping_empleado_dialog.dart';
 import 'widgets/asignar_servicio_empleado_dialog.dart';
@@ -57,6 +59,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   List<EmpleadoEventoData> _eventos = const [];
   List<EmpleadoPeriodoLaboralData> _periodosArchivados = const [];
   AsignacionServicioData? _asignacionVigente;
+  AsignacionServicioSueldoVigenciaData? _sueldoVigente;
   List<AsignacionServicioData> _historialAsignaciones = const [];
   Map<String, String> _serviciosPorId = const {};
   Map<String, String> _turnosPorId = const {};
@@ -102,6 +105,14 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     final asignacionRepo = ref.read(asignacionServicioRepositoryProvider);
     final asignacionVigente = await asignacionRepo.obtenerActivaPorEmpleado(widget.empleadoId);
     final historialAsignaciones = await asignacionRepo.listarPorEmpleado(widget.empleadoId);
+    // Sueldo/bono acordado de la asignación vigente (Etapa 6B, ajuste
+    // funcional final) — se muestra tal cual junto con Servicio/Turno,
+    // nunca duplicado en Empleado.
+    AsignacionServicioSueldoVigenciaData? sueldoVigente;
+    if (asignacionVigente != null) {
+      final vigenciasSueldo = await asignacionRepo.listarVigenciasSueldoActivas(asignacionVigente.id);
+      sueldoVigente = clasificarVigenciasSueldo(vigenciasSueldo, DateTime.now()).vigente;
+    }
 
     final serviciosPorId = <String, String>{};
     for (final servicioId in historialAsignaciones.map((a) => a.servicioId).toSet()) {
@@ -146,6 +157,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       _eventos = eventos;
       _periodosArchivados = periodosArchivados;
       _asignacionVigente = asignacionVigente;
+      _sueldoVigente = sueldoVigente;
       _historialAsignaciones = historialAsignaciones;
       _serviciosPorId = serviciosPorId;
       _turnosPorId = turnosPorId;
@@ -276,6 +288,11 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
 
   Future<void> _retirarServicio() async {
     final actualizo = await mostrarDialogoRetirarServicioEmpleado(context, ref, _empleado!);
+    if (actualizo) await _cargar();
+  }
+
+  Future<void> _actualizarSueldoAsignacion() async {
+    final actualizo = await mostrarDialogoActualizarSueldoAsignacion(context, ref, _asignacionVigente!);
     if (actualizo) await _cargar();
   }
 
@@ -601,6 +618,11 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                               spacing: AppSpacing.xs,
                               children: [
                                 RisegButton(
+                                  label: l10n.empleadoBotonActualizarSueldo,
+                                  variant: RisegButtonVariant.ghost,
+                                  onPressed: _actualizarSueldoAsignacion,
+                                ),
+                                RisegButton(
                                   label: l10n.empleadoBotonCambiarServicio,
                                   variant: RisegButtonVariant.ghost,
                                   onPressed: _cambiarServicio,
@@ -629,6 +651,14 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                         if (_asignacionVigente!.turnoId != null)
                           Text(
                             _turnosPorId[_asignacionVigente!.turnoId] ?? _asignacionVigente!.turnoId!,
+                            style: AppTypography.caption.copyWith(color: colors.textMuted),
+                          ),
+                        if (_sueldoVigente != null)
+                          Text(
+                            l10n.empleadoAsignacionSueldoBono(
+                              _formatoMonedaEmpleado.format(_sueldoVigente!.sueldoMensual / 100),
+                              _formatoMonedaEmpleado.format(_sueldoVigente!.bonoMensual / 100),
+                            ),
                             style: AppTypography.caption.copyWith(color: colors.textMuted),
                           ),
                       ],

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,8 @@ import 'package:riseg_one/features/personal/domain/usecases/asignar_empleado_ser
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../personal_providers.dart';
+import 'crear_empleado_dialog.dart' show centavosDesdeTexto;
+import 'sueldo_acordado_fields.dart';
 
 /// Diálogo "Asignar a servicio" (Etapa 5D) — solo cuando el Empleado no
 /// tiene una asignación vigente. Registra Servicio/Turno/Fecha de
@@ -23,8 +27,12 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
   String? turnoId;
   DateTime? fecha = DateTime.now();
   final observacionesController = TextEditingController();
+  final sueldoController = TextEditingController();
+  final bonoController = TextEditingController();
   String? errorServicio;
   String? errorFecha;
+  String? errorSueldo;
+  String? errorBono;
 
   final servicios = (await ref.read(servicioRepositoryProvider).listar())
       .where((item) => item.servicio.estatus == EstatusServicio.activo.name)
@@ -53,6 +61,13 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
               onChanged: (valor) => setState(() {
                 servicioId = valor;
                 errorServicio = null;
+                errorSueldo = null;
+                errorBono = null;
+                precargarSueldoAcordado(
+                  servicio: buscarServicioPorId(servicios, valor),
+                  sueldoController: sueldoController,
+                  bonoController: bonoController,
+                );
               }),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -76,19 +91,33 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
               }),
             ),
             const SizedBox(height: AppSpacing.md),
+            SueldoAcordadoFields(
+              servicio: buscarServicioPorId(servicios, servicioId),
+              sueldoController: sueldoController,
+              bonoController: bonoController,
+              errorSueldo: errorSueldo,
+              errorBono: errorBono,
+            ),
+            const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.empleadoCampoObservaciones, controller: observacionesController),
           ],
         );
       },
     ),
     onConfirm: () async {
+      // `RisegDialog.showForm` solo mantiene el diálogo abierto cuando
+      // `onConfirm` devuelve `null` — un `false` (aunque parezca "no
+      // válido") lo cierra de inmediato, descartando el error de campo
+      // antes de mostrarlo. Todo error corregible in situ debe devolver
+      // `null`; `false` queda reservado para los casos que ya muestran
+      // su propio aviso (`RisegFeedback.showError`) y cierran a propósito.
       if (servicioId == null) {
         errorServicio = l10n.empleadoCampoServicio;
-        return false;
+        return null;
       }
       if (fecha == null) {
         errorFecha = l10n.empleadoCampoFechaInicioAsignacion;
-        return false;
+        return null;
       }
 
       final resultado = await ref.read(asignarEmpleadoServicioUseCaseProvider).ejecutar(
@@ -97,9 +126,11 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
             fechaInicio: fecha!,
             turnoId: turnoId,
             observaciones: observacionesController.text,
+            sueldoMensual: centavosDesdeTexto(sueldoController.text),
+            bonoMensual: centavosDesdeTexto(bonoController.text),
           );
 
-      if (!context.mounted) return false;
+      if (!context.mounted) return null;
 
       switch (resultado) {
         case AsignarEmpleadoServicioExitoso():
@@ -109,25 +140,40 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
         case AsignarEmpleadoServicioEmpleadoNoActivo():
         case AsignarEmpleadoServicioYaTieneAsignacionVigente():
         case AsignarEmpleadoServicioErrorInesperado():
-        // TODO(Etapa 6B UI): mensaje dedicado cuando el Servicio no tiene
-        // sueldo de referencia capturado — pendiente junto con la UI de
-        // captura de `Servicio.sueldoMensualReferenciaPersonal`.
-        case AsignarEmpleadoServicioSueldoRequerido():
-        case AsignarEmpleadoServicioSueldoInvalido():
-        case AsignarEmpleadoServicioBonoInvalido():
           RisegFeedback.showError(context, l10n.asignarServicioEmpleadoErrorInesperado);
           return false;
+        case AsignarEmpleadoServicioSueldoRequerido():
+          errorSueldo = l10n.empleadoErrorSueldoRequerido;
+          return null;
+        case AsignarEmpleadoServicioSueldoInvalido():
+          errorSueldo = l10n.empleadoErrorSueldoAcordadoInvalido;
+          return null;
+        case AsignarEmpleadoServicioBonoInvalido():
+          errorBono = l10n.empleadoErrorBonoAcordadoInvalido;
+          return null;
         case AsignarEmpleadoServicioServicioNoExiste():
         case AsignarEmpleadoServicioServicioNoActivo():
           errorServicio = l10n.empleadoErrorServicioNoActivo;
-          return false;
+          return null;
         case AsignarEmpleadoServicioFechaInvalida():
           errorFecha = l10n.asignarServicioEmpleadoErrorFechaInvalida;
-          return false;
+          return null;
       }
     },
   );
 
-  observacionesController.dispose();
+  // Deferred: el diálogo sigue montado unos instantes durante su
+  // animación de salida — liberar los controllers de inmediato puede
+  // reproducir el crash "A TextEditingController was used after being
+  // disposed" (mismo criterio que `crear_empleado_dialog.dart`, Etapa
+  // 5D.1), y este diálogo ahora también intercambia condicionalmente
+  // los campos de sueldo/bono acordado según el Servicio elegido.
+  unawaited(
+    Future.delayed(const Duration(milliseconds: 300), () {
+      observacionesController.dispose();
+      sueldoController.dispose();
+      bonoController.dispose();
+    }),
+  );
   return resultado ?? false;
 }

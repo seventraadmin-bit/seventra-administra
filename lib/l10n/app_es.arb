@@ -567,6 +567,18 @@
   "servicioResponsableInternoGuardadoExito": "Responsable interno guardado correctamente.",
   "servicioResponsableInternoGuardadoError": "No se pudo guardar el Responsable interno. Intenta de nuevo.",
 
+  "servicioSeccionCondicionesPersonalTitulo": "Condiciones de Personal",
+  "servicioCondicionesPersonalSinConfigurar": "Condiciones salariales sin configurar",
+  "servicioCampoSueldoReferencia": "Sueldo mensual de referencia",
+  "servicioCampoBonoReferencia": "Bono mensual de referencia",
+  "servicioCondicionesPersonalValorSinConfigurar": "Sin configurar",
+  "servicioCondicionesPersonalDialogoTitulo": "Condiciones de Personal",
+  "servicioCondicionesPersonalAyuda": "Se precargan automáticamente al asignar personal a este Servicio — cada asignación puede capturar una excepción individual sin modificar esta referencia.",
+  "servicioCondicionesPersonalGuardadoExito": "Condiciones de Personal guardadas correctamente.",
+  "servicioCondicionesPersonalErrorSueldoInvalido": "El sueldo de referencia debe ser mayor a \\$0 cuando se configura.",
+  "servicioCondicionesPersonalErrorBonoInvalido": "El bono de referencia no puede ser negativo.",
+  "servicioCondicionesPersonalErrorInesperado": "No se pudieron guardar las Condiciones de Personal. Intenta de nuevo.",
+
   "servicioSeccionConfiguracionComercialTitulo": "Configuración comercial",
   "servicioComercialSinLineas": "Sin líneas comerciales registradas.",
   "servicioComercialBotonAgregarLinea": "Agregar línea",
@@ -1613,8 +1625,15 @@
   "empleadoCampoServicio": "Servicio",
   "empleadoCampoServicioNuevo": "Nuevo servicio",
   "empleadoCampoTurno": "Turno",
+  "empleadoCampoSueldoReferenciaServicio": "Sueldo de referencia del Servicio",
+  "empleadoCampoSueldoAcordado": "Sueldo acordado",
+  "empleadoCampoBonoReferenciaServicio": "Bono de referencia del Servicio",
+  "empleadoCampoBonoAcordado": "Bono acordado",
   "empleadoErrorAdscripcionAmbigua": "Elige Servicio o Sucursal, no ambos.",
   "empleadoErrorServicioNoActivo": "El Servicio no existe o no está activo.",
+  "empleadoErrorSueldoRequerido": "Este Servicio todavía no tiene sueldo de referencia configurado. Configura las Condiciones de Personal del Servicio, o captura un sueldo acordado manualmente.",
+  "empleadoErrorSueldoAcordadoInvalido": "El sueldo acordado debe ser mayor a \\$0.",
+  "empleadoErrorBonoAcordadoInvalido": "El bono acordado no puede ser negativo.",
   "empleadoErrorCodigoPostalFiscalInvalido": "El código postal fiscal debe tener 5 dígitos.",
   "empleadoCampoNivelEstudios": "Nivel de estudios",
   "empleadoCampoObservacionesEscolaridad": "Observaciones de escolaridad",
@@ -1853,6 +1872,7 @@
   "empleadoBotonAsignarServicio": "Asignar a servicio",
   "empleadoBotonCambiarServicio": "Cambiar de servicio",
   "empleadoBotonRetirarServicio": "Retirar del servicio",
+  "empleadoBotonActualizarSueldo": "Actualizar sueldo/bono",
   "empleadoSinServicioAsignado": "Sin servicio asignado",
   "empleadoAsignacionDesde": "Desde: {fecha}",
   "@empleadoAsignacionDesde": {
@@ -1861,6 +1881,13 @@
     }
   },
   "empleadoAsignacionActual": "Actual",
+  "empleadoAsignacionSueldoBono": "Sueldo acordado: {sueldo} · Bono acordado: {bono}",
+  "@empleadoAsignacionSueldoBono": {
+    "placeholders": {
+      "sueldo": {"type": "String"},
+      "bono": {"type": "String"}
+    }
+  },
   "empleadoSeccionHistorialAsignaciones": "Historial de asignaciones",
   "empleadoCampoFechaInicioAsignacion": "Fecha de inicio",
   "empleadoCampoFechaTerminoAsignacion": "Fecha de término",
@@ -1888,6 +1915,17 @@
   "retirarServicioEmpleadoErrorInesperado": "No se pudo registrar el retiro. Intenta de nuevo.",
   "retirarServicioEmpleadoErrorFechaInvalida": "Ingresa una fecha de término válida (no anterior al inicio de la asignación, no futura).",
   "retirarServicioEmpleadoErrorObservacionesRequeridas": "Las observaciones son obligatorias para el motivo \"Otro\".",
+
+  "actualizarSueldoAsignacionDialogoTitulo": "Actualizar sueldo/bono",
+  "actualizarSueldoAsignacionBotonConfirmar": "Confirmar",
+  "actualizarSueldoAsignacionBotonCancelar": "Cancelar",
+  "actualizarSueldoAsignacionAyuda": "Registra un nuevo sueldo/bono para esta asignación a partir de la fecha indicada — los periodos anteriores no se modifican.",
+  "actualizarSueldoAsignacionCampoFechaVigencia": "Fecha de inicio de vigencia",
+  "actualizarSueldoAsignacionExito": "Sueldo/bono actualizado correctamente.",
+  "actualizarSueldoAsignacionExitoProgramada": "Sueldo/bono programado correctamente para la fecha indicada.",
+  "actualizarSueldoAsignacionErrorFechaInvalida": "La fecha de vigencia no puede ser anterior al inicio de esta asignación.",
+  "actualizarSueldoAsignacionErrorFechaDuplicada": "Ya existe una vigencia registrada que comienza exactamente esa fecha.",
+  "actualizarSueldoAsignacionErrorInesperado": "No se pudo registrar el cambio de sueldo/bono. Intenta de nuevo.",
 
   "motivoTerminoAsignacionSolicitudCliente": "Solicitud del cliente",
   "motivoTerminoAsignacionReestructuracionOperativa": "Reestructuración operativa",

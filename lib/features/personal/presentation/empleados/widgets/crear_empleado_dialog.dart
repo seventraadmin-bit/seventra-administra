@@ -16,6 +16,7 @@ import 'package:riseg_one/features/personal/domain/usecases/crear_empleado_useca
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../personal_providers.dart';
 import 'adjuntar_documento_empleado_dialog.dart' show categoriaDocumentoEmpleadoLabel;
+import 'sueldo_acordado_fields.dart';
 
 /// Tipo de adscripción capturada en la Alta (Etapa 5D) — Servicio *o*
 /// Sucursal, nunca ambas. Puramente de UI: nunca se persiste como tal,
@@ -171,6 +172,12 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   // `Empleado`). ---
   final sueldoMensualAdministrativoController = TextEditingController();
   final bonoMensualAdministrativoController = TextEditingController();
+  // --- Sueldo/bono acordado de la asignación inicial (Etapa 6B) — solo
+  // relevante cuando la adscripción es a Servicio; se precarga desde la
+  // referencia del Servicio elegido, editable como excepción individual
+  // (ver `SueldoAcordadoFields`). ---
+  final sueldoAcordadoController = TextEditingController();
+  final bonoAcordadoController = TextEditingController();
   final observacionesController = TextEditingController();
 
   NivelEstudiosEmpleado? nivelEstudios;
@@ -204,6 +211,8 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   String? errorDatosBancarios;
   String? errorSueldoAdministrativo;
   String? errorBonoAdministrativo;
+  String? errorSueldoAcordado;
+  String? errorBonoAcordado;
 
   final bancos = await ref.read(catalogoRepositoryProvider).listarBancos();
   final puestos = await ref.read(puestoRepositoryProvider).listarActivos();
@@ -428,6 +437,13 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
                         onChanged: (valor) => setState(() {
                           servicioId = valor;
                           errorAdscripcion = null;
+                          errorSueldoAcordado = null;
+                          errorBonoAcordado = null;
+                          precargarSueldoAcordado(
+                            servicio: buscarServicioPorId(servicios, valor),
+                            sueldoController: sueldoAcordadoController,
+                            bonoController: bonoAcordadoController,
+                          );
                         }),
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -439,6 +455,14 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
                           for (final m in modalidadesTurno) RisegSelectItem(value: m.id, label: m.nombre),
                         ],
                         onChanged: (valor) => setState(() => turnoId = valor),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      SueldoAcordadoFields(
+                        servicio: buscarServicioPorId(servicios, servicioId),
+                        sueldoController: sueldoAcordadoController,
+                        bonoController: bonoAcordadoController,
+                        errorSueldo: errorSueldoAcordado,
+                        errorBono: errorBonoAcordado,
                       ),
                     ],
                   ),
@@ -690,6 +714,12 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
             servicioId: tipoAdscripcion == _TipoAdscripcion.servicio ? servicioId : null,
             turnoId: tipoAdscripcion == _TipoAdscripcion.servicio ? turnoId : null,
             sucursalId: tipoAdscripcion == _TipoAdscripcion.sucursal ? sucursalId : null,
+            sueldoMensualAsignacion: tipoAdscripcion == _TipoAdscripcion.servicio
+                ? centavosDesdeTexto(sueldoAcordadoController.text)
+                : null,
+            bonoMensualAsignacion: tipoAdscripcion == _TipoAdscripcion.servicio
+                ? centavosDesdeTexto(bonoAcordadoController.text)
+                : null,
             sueldoMensualAdministrativo: tipoAdscripcion == _TipoAdscripcion.servicio
                 ? null
                 : centavosDesdeTexto(sueldoMensualAdministrativoController.text),
@@ -783,14 +813,14 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         case CrearEmpleadoServicioNoActivo():
           errorAdscripcion = l10n.empleadoErrorServicioNoActivo;
           return null;
-        // TODO(Etapa 6B UI): mensaje dedicado cuando el Servicio de
-        // adscripción no tiene sueldo de referencia capturado —
-        // pendiente junto con la UI de captura de
-        // `Servicio.sueldoMensualReferenciaPersonal`.
         case CrearEmpleadoSueldoAsignacionRequerido():
+          errorSueldoAcordado = l10n.empleadoErrorSueldoRequerido;
+          return null;
         case CrearEmpleadoSueldoAsignacionInvalido():
+          errorSueldoAcordado = l10n.empleadoErrorSueldoAcordadoInvalido;
+          return null;
         case CrearEmpleadoBonoAsignacionInvalido():
-          errorAdscripcion = l10n.empleadoErrorServicioNoActivo;
+          errorBonoAcordado = l10n.empleadoErrorBonoAcordadoInvalido;
           return null;
         case CrearEmpleadoDatosBancariosInvalidos():
           errorDatosBancarios = l10n.empleadoErrorDatosBancariosInvalidos;
@@ -838,6 +868,8 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         clabeController,
         sueldoMensualAdministrativoController,
         bonoMensualAdministrativoController,
+        sueldoAcordadoController,
+        bonoAcordadoController,
         observacionesController,
         observacionesEscolaridadController,
         aniosExperienciaController,

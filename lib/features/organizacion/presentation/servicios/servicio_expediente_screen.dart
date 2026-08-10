@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +30,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_co
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_sueldo_referencia_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/obtener_historial_configuracion_cobro_usecase.dart';
@@ -39,6 +42,7 @@ import 'servicio_expediente_controller.dart';
 import 'servicio_expediente_form_controllers.dart';
 import 'servicio_expediente_state.dart';
 import 'widgets/servicio_auditoria_section.dart';
+import 'widgets/servicio_condiciones_personal_section.dart';
 import 'widgets/servicio_configuracion_comercial_section.dart';
 import 'widgets/servicio_configuracion_cobro_section.dart';
 import 'widgets/servicio_personal_asignado_section.dart';
@@ -50,6 +54,22 @@ import 'widgets/servicio_referencias_section.dart';
 import 'widgets/servicio_vinculaciones_section.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
+
+/// Mismo criterio de parseo/precarga que `_precioEnCentavos` (Etapa
+/// 4G.1) — duplicado deliberadamente, no compartido entre diálogos
+/// (mismo precedente que `centavosDesdeTexto` en Personal).
+int? _centavosDesdeTexto(String texto) {
+  final normalizado = texto.trim().replaceAll(',', '');
+  if (normalizado.isEmpty) return null;
+  final pesos = double.tryParse(normalizado);
+  if (pesos == null) return null;
+  return (pesos * 100).round();
+}
+
+String _pesosDesdeCentavosParaEditar(int? centavos) {
+  if (centavos == null) return '';
+  return (centavos / 100).toStringAsFixed(2);
+}
 
 /// Pantalla de expediente de Servicio — mismo patrón consulta/edición
 /// que Cliente/Puesto/Sucursal; se apila (`push`) sobre el listado.
@@ -407,6 +427,97 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       RisegFeedback.showSuccess(context, l10n.servicioResponsableInternoGuardadoExito);
     } else if (confirmado == false) {
       RisegFeedback.showError(context, l10n.servicioResponsableInternoGuardadoError);
+    }
+  }
+
+  Future<void> _editarCondicionesPersonal() async {
+    final l10n = AppLocalizations.of(context)!;
+    final datos = ref.read(servicioExpedienteControllerProvider(widget.servicioId)).datos!;
+
+    final sueldoController = TextEditingController(
+      text: _pesosDesdeCentavosParaEditar(datos.servicio.sueldoMensualReferenciaPersonal),
+    );
+    final bonoController = TextEditingController(
+      text: _pesosDesdeCentavosParaEditar(datos.servicio.bonoMensualReferenciaPersonal),
+    );
+    String? errorSueldo;
+    String? errorBono;
+
+    final confirmado = await RisegDialog.showForm<bool>(
+      context: context,
+      title: l10n.servicioCondicionesPersonalDialogoTitulo,
+      confirmLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+      cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      contentBuilder: (_) => StatefulBuilder(
+        builder: (dialogContext, setState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.servicioCondicionesPersonalAyuda,
+                style: AppTypography.caption.copyWith(color: dialogContext.colors.textMuted),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              RisegTextField(
+                label: l10n.servicioCampoSueldoReferencia,
+                controller: sueldoController,
+                errorText: errorSueldo,
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              RisegTextField(
+                label: l10n.servicioCampoBonoReferencia,
+                controller: bonoController,
+                errorText: errorBono,
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          );
+        },
+      ),
+      onConfirm: () async {
+        // `RisegDialog.showForm` solo mantiene el diálogo abierto cuando
+        // `onConfirm` devuelve `null` — mismo criterio ya corregido en
+        // los diálogos de Asignar/Cambiar Servicio (Etapa 6B, ajuste
+        // funcional final).
+        final resultado = await _notifier.guardarSueldoReferencia(
+          sueldoMensualReferenciaPersonal: _centavosDesdeTexto(sueldoController.text),
+          bonoMensualReferenciaPersonal: _centavosDesdeTexto(bonoController.text),
+        );
+        switch (resultado) {
+          case GuardarSueldoReferenciaServicioExitoso():
+            return true;
+          case GuardarSueldoReferenciaServicioSueldoInvalido():
+            errorSueldo = l10n.servicioCondicionesPersonalErrorSueldoInvalido;
+            return null;
+          case GuardarSueldoReferenciaServicioBonoInvalido():
+            errorBono = l10n.servicioCondicionesPersonalErrorBonoInvalido;
+            return null;
+          case GuardarSueldoReferenciaServicioNoExiste():
+          case null:
+            return false;
+        }
+      },
+    );
+
+    // Deferred: el diálogo sigue montado unos instantes durante su
+    // animación de salida — liberar los controllers de inmediato
+    // reproduce el crash "A TextEditingController was used after being
+    // disposed" ya documentado en `crear_empleado_dialog.dart` (Etapa
+    // 5D.1). Mismo criterio, mismo remedio.
+    unawaited(
+      Future.delayed(const Duration(milliseconds: 300), () {
+        sueldoController.dispose();
+        bonoController.dispose();
+      }),
+    );
+
+    if (!mounted) return;
+    if (confirmado == true) {
+      RisegFeedback.showSuccess(context, l10n.servicioCondicionesPersonalGuardadoExito);
+    } else if (confirmado == false) {
+      RisegFeedback.showError(context, l10n.servicioCondicionesPersonalErrorInesperado);
     }
   }
 
@@ -1167,6 +1278,14 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
                   onNuevaVigencia: _nuevaVigenciaConfiguracionCobro,
                   onCerrar: _cerrarConfiguracionCobro,
                   onVerHistorial: _verHistorialConfiguracionCobro,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              RisegCard(
+                child: ServicioCondicionesPersonalSection(
+                  servicio: servicio,
+                  deshabilitado: state.operandoRelacion,
+                  onEditar: _editarCondicionesPersonal,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),

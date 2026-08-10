@@ -14,6 +14,7 @@ import 'domain/usecases/adjuntar_documento_empleado_usecase.dart';
 import 'domain/usecases/asignacion_servicio_validator.dart';
 import 'domain/usecases/asignar_empleado_servicio_usecase.dart';
 import 'domain/usecases/cambiar_servicio_empleado_usecase.dart';
+import 'domain/usecases/cambiar_vigencia_sueldo_asignacion_usecase.dart';
 import 'domain/usecases/corregir_empleado_usecase.dart';
 import 'domain/usecases/crear_empleado_usecase.dart';
 import 'domain/usecases/empleado_validator.dart';
@@ -75,6 +76,13 @@ final cambiarServicioEmpleadoUseCaseProvider = Provider<CambiarServicioEmpleadoU
 final retirarEmpleadoServicioUseCaseProvider = Provider<RetirarEmpleadoServicioUseCase>((ref) {
   return RetirarEmpleadoServicioUseCase(
     ref.watch(empleadoRepositoryProvider),
+    ref.watch(asignacionServicioRepositoryProvider),
+    ref.watch(asignacionServicioValidatorProvider),
+  );
+});
+
+final cambiarVigenciaSueldoAsignacionUseCaseProvider = Provider<CambiarVigenciaSueldoAsignacionUseCase>((ref) {
+  return CambiarVigenciaSueldoAsignacionUseCase(
     ref.watch(asignacionServicioRepositoryProvider),
     ref.watch(asignacionServicioValidatorProvider),
   );
