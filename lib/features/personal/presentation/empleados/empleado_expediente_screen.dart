@@ -6,6 +6,11 @@ import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
+import 'package:riseg_one/features/inventario/inventario_providers.dart';
+import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/asignar_articulo_dialog.dart';
+import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/cerrar_asignacion_dialog.dart';
+import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/reemplazar_asignacion_dialog.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/actualizar_fotografia_empleado_usecase.dart';
@@ -69,6 +74,10 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   String? _bancoNombre;
   List<FichaTecnicaEmpleadoData> _fichasTecnicas = const [];
   Map<String, String> _fichaTecnicaRutasPorAttachmentId = const {};
+  List<AsignacionData> _inventarioAsignado = const [];
+  Map<String, ArticuloData> _articulosInventarioPorId = const {};
+  Map<String, String> _variantesInventarioPorId = const {};
+  Map<String, String> _unidadesInventarioPorId = const {};
   bool _cargando = true;
   bool _procesando = false;
 
@@ -149,6 +158,29 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       }
     }
 
+    // Inventario asignado (Etapa 7B) — solo consulta, nunca duplica
+    // nombre de Artículo/talla/serie: se resuelve contra sus propios
+    // repositorios, mismo criterio que Servicio/Turno arriba.
+    final inventarioAsignado = await ref.read(asignacionRepositoryProvider).listarActivasPorEmpleado(widget.empleadoId);
+    final articuloRepo = ref.read(articuloRepositoryProvider);
+    final articulosInventarioPorId = <String, ArticuloData>{};
+    for (final articuloId in inventarioAsignado.map((a) => a.articuloId).toSet()) {
+      final articulo = await articuloRepo.obtenerPorId(articuloId);
+      if (articulo != null) articulosInventarioPorId[articuloId] = articulo;
+    }
+    final variantesInventarioPorId = <String, String>{};
+    for (final varianteId in inventarioAsignado.map((a) => a.varianteId).whereType<String>().toSet()) {
+      final articuloId = inventarioAsignado.firstWhere((a) => a.varianteId == varianteId).articuloId;
+      final variantes = await articuloRepo.listarVariantes(articuloId, soloActivas: false);
+      final variante = variantes.where((v) => v.id == varianteId).firstOrNull;
+      if (variante != null) variantesInventarioPorId[varianteId] = variante.valor;
+    }
+    final unidadesInventarioPorId = <String, String>{};
+    for (final unidadId in inventarioAsignado.map((a) => a.unidadId).whereType<String>().toSet()) {
+      final unidad = await ref.read(inventarioRepositoryProvider).obtenerUnidadPorId(unidadId);
+      if (unidad != null) unidadesInventarioPorId[unidadId] = '${unidad.codigo} · ${unidad.numeroSerie}';
+    }
+
     if (!mounted) return;
     setState(() {
       _empleado = empleado;
@@ -167,6 +199,10 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       _bancoNombre = bancoNombre;
       _fichasTecnicas = fichasTecnicas;
       _fichaTecnicaRutasPorAttachmentId = fichaTecnicaRutasPorAttachmentId;
+      _inventarioAsignado = inventarioAsignado;
+      _articulosInventarioPorId = articulosInventarioPorId;
+      _variantesInventarioPorId = variantesInventarioPorId;
+      _unidadesInventarioPorId = unidadesInventarioPorId;
       _cargando = false;
     });
   }
@@ -296,6 +332,55 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     if (actualizo) await _cargar();
   }
 
+  Future<void> _asignarInventario() async {
+    final asignado = await mostrarDialogoAsignarArticulo(context, ref, empleadoId: widget.empleadoId);
+    if (asignado) await _cargar();
+  }
+
+  Future<void> _devolverInventario(AsignacionData asignacion) async {
+    final l10n = AppLocalizations.of(context)!;
+    final cerrado = await mostrarDialogoCerrarAsignacion(
+      context,
+      ref,
+      asignacion: asignacion,
+      titulo: l10n.cerrarAsignacionDialogoTituloDevolver,
+      motivosDisponibles: const [
+        MotivoCierreAsignacion.desgaste,
+        MotivoCierreAsignacion.cambioTalla,
+        MotivoCierreAsignacion.defecto,
+        MotivoCierreAsignacion.otro,
+      ],
+    );
+    if (cerrado) await _cargar();
+  }
+
+  Future<void> _reportarDanoPerdidaInventario(AsignacionData asignacion) async {
+    final l10n = AppLocalizations.of(context)!;
+    final cerrado = await mostrarDialogoCerrarAsignacion(
+      context,
+      ref,
+      asignacion: asignacion,
+      titulo: l10n.cerrarAsignacionDialogoTituloDanoPerdida,
+      motivosDisponibles: const [MotivoCierreAsignacion.dano, MotivoCierreAsignacion.perdida],
+    );
+    if (cerrado) await _cargar();
+  }
+
+  Future<void> _reemplazarInventario(AsignacionData asignacion) async {
+    final reemplazado = await mostrarDialogoReemplazarAsignacion(context, ref, asignacion: asignacion);
+    if (reemplazado) await _cargar();
+  }
+
+  String _inventarioDetalle(AsignacionData asignacion) {
+    final articulo = _articulosInventarioPorId[asignacion.articuloId];
+    final nombre = articulo?.nombre ?? asignacion.articuloId;
+    final variante = asignacion.varianteId == null ? null : _variantesInventarioPorId[asignacion.varianteId];
+    final unidad = asignacion.unidadId == null ? null : _unidadesInventarioPorId[asignacion.unidadId];
+    if (unidad != null) return '$nombre · $unidad';
+    if (variante != null) return '${asignacion.cantidad} × $nombre ($variante)';
+    return '${asignacion.cantidad} × $nombre';
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -377,6 +462,22 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                       ),
                   ],
                 ),
+                if (cancelado && _inventarioAsignado.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(color: colors.errorBg, borderRadius: AppRadius.mdRadius),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber_outlined, color: colors.error, size: AppSizes.iconSm),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(l10n.asignacionAvisoPendientesBaja, style: AppTypography.body.copyWith(color: colors.error)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.xl),
                 RisegCard(
                   child: Column(
@@ -677,6 +778,59 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                             ),
                           ),
                       ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RisegSectionHeader(
+                        title: l10n.asignacionSeccionTitulo,
+                        primaryAction: RisegButton(
+                          label: l10n.asignacionBotonAsignar,
+                          variant: RisegButtonVariant.ghost,
+                          size: RisegButtonSize.compact,
+                          onPressed: _asignarInventario,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      if (_inventarioAsignado.isEmpty)
+                        Text(l10n.asignacionSeccionVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      else
+                        for (final asignacion in _inventarioAsignado)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: Row(
+                              children: [
+                                Expanded(child: Text(_inventarioDetalle(asignacion), style: AppTypography.body)),
+                                Wrap(
+                                  spacing: AppSpacing.xxs,
+                                  children: [
+                                    RisegButton(
+                                      label: l10n.asignacionBotonDevolver,
+                                      variant: RisegButtonVariant.ghost,
+                                      size: RisegButtonSize.compact,
+                                      onPressed: () => _devolverInventario(asignacion),
+                                    ),
+                                    RisegButton(
+                                      label: l10n.asignacionBotonReemplazar,
+                                      variant: RisegButtonVariant.ghost,
+                                      size: RisegButtonSize.compact,
+                                      onPressed: () => _reemplazarInventario(asignacion),
+                                    ),
+                                    RisegButton(
+                                      label: l10n.asignacionBotonReportarDanoPerdida,
+                                      variant: RisegButtonVariant.ghost,
+                                      size: RisegButtonSize.compact,
+                                      onPressed: () => _reportarDanoPerdidaInventario(asignacion),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                     ],
                   ),
                 ),

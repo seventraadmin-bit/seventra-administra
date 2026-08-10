@@ -50276,6 +50276,2128 @@ class MovimientoInventarioAttachmentCompanion
   }
 }
 
+class $AsignacionTable extends Asignacion
+    with TableInfo<$AsignacionTable, AsignacionData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AsignacionTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _articuloIdMeta = const VerificationMeta(
+    'articuloId',
+  );
+  @override
+  late final GeneratedColumn<String> articuloId = GeneratedColumn<String>(
+    'articulo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _varianteIdMeta = const VerificationMeta(
+    'varianteId',
+  );
+  @override
+  late final GeneratedColumn<String> varianteId = GeneratedColumn<String>(
+    'variante_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo_variante (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _unidadIdMeta = const VerificationMeta(
+    'unidadId',
+  );
+  @override
+  late final GeneratedColumn<String> unidadId = GeneratedColumn<String>(
+    'unidad_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo_unidad (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _cantidadMeta = const VerificationMeta(
+    'cantidad',
+  );
+  @override
+  late final GeneratedColumn<int> cantidad = GeneratedColumn<int>(
+    'cantidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empleado (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _fechaEntregaMeta = const VerificationMeta(
+    'fechaEntrega',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaEntrega = GeneratedColumn<DateTime>(
+    'fecha_entrega',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _condicionEntregaMeta = const VerificationMeta(
+    'condicionEntrega',
+  );
+  @override
+  late final GeneratedColumn<String> condicionEntrega = GeneratedColumn<String>(
+    'condicion_entrega',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('activa'),
+  );
+  static const VerificationMeta _fechaCierreMeta = const VerificationMeta(
+    'fechaCierre',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaCierre = GeneratedColumn<DateTime>(
+    'fecha_cierre',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _motivoCierreMeta = const VerificationMeta(
+    'motivoCierre',
+  );
+  @override
+  late final GeneratedColumn<String> motivoCierre = GeneratedColumn<String>(
+    'motivo_cierre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesCierreMeta =
+      const VerificationMeta('observacionesCierre');
+  @override
+  late final GeneratedColumn<String> observacionesCierre =
+      GeneratedColumn<String>(
+        'observaciones_cierre',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _atribuibleAlEmpleadoMeta =
+      const VerificationMeta('atribuibleAlEmpleado');
+  @override
+  late final GeneratedColumn<bool> atribuibleAlEmpleado = GeneratedColumn<bool>(
+    'atribuible_al_empleado',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("atribuible_al_empleado" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _asignacionReemplazoIdMeta =
+      const VerificationMeta('asignacionReemplazoId');
+  @override
+  late final GeneratedColumn<String> asignacionReemplazoId =
+      GeneratedColumn<String>(
+        'asignacion_reemplazo_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES asignacion (id) ON DELETE RESTRICT',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    articuloId,
+    varianteId,
+    unidadId,
+    cantidad,
+    empleadoId,
+    servicioId,
+    fechaEntrega,
+    condicionEntrega,
+    observaciones,
+    estatus,
+    fechaCierre,
+    motivoCierre,
+    observacionesCierre,
+    atribuibleAlEmpleado,
+    asignacionReemplazoId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'asignacion';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AsignacionData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('articulo_id')) {
+      context.handle(
+        _articuloIdMeta,
+        articuloId.isAcceptableOrUnknown(data['articulo_id']!, _articuloIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_articuloIdMeta);
+    }
+    if (data.containsKey('variante_id')) {
+      context.handle(
+        _varianteIdMeta,
+        varianteId.isAcceptableOrUnknown(data['variante_id']!, _varianteIdMeta),
+      );
+    }
+    if (data.containsKey('unidad_id')) {
+      context.handle(
+        _unidadIdMeta,
+        unidadId.isAcceptableOrUnknown(data['unidad_id']!, _unidadIdMeta),
+      );
+    }
+    if (data.containsKey('cantidad')) {
+      context.handle(
+        _cantidadMeta,
+        cantidad.isAcceptableOrUnknown(data['cantidad']!, _cantidadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cantidadMeta);
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
+      );
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    }
+    if (data.containsKey('fecha_entrega')) {
+      context.handle(
+        _fechaEntregaMeta,
+        fechaEntrega.isAcceptableOrUnknown(
+          data['fecha_entrega']!,
+          _fechaEntregaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaEntregaMeta);
+    }
+    if (data.containsKey('condicion_entrega')) {
+      context.handle(
+        _condicionEntregaMeta,
+        condicionEntrega.isAcceptableOrUnknown(
+          data['condicion_entrega']!,
+          _condicionEntregaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('fecha_cierre')) {
+      context.handle(
+        _fechaCierreMeta,
+        fechaCierre.isAcceptableOrUnknown(
+          data['fecha_cierre']!,
+          _fechaCierreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('motivo_cierre')) {
+      context.handle(
+        _motivoCierreMeta,
+        motivoCierre.isAcceptableOrUnknown(
+          data['motivo_cierre']!,
+          _motivoCierreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones_cierre')) {
+      context.handle(
+        _observacionesCierreMeta,
+        observacionesCierre.isAcceptableOrUnknown(
+          data['observaciones_cierre']!,
+          _observacionesCierreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('atribuible_al_empleado')) {
+      context.handle(
+        _atribuibleAlEmpleadoMeta,
+        atribuibleAlEmpleado.isAcceptableOrUnknown(
+          data['atribuible_al_empleado']!,
+          _atribuibleAlEmpleadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('asignacion_reemplazo_id')) {
+      context.handle(
+        _asignacionReemplazoIdMeta,
+        asignacionReemplazoId.isAcceptableOrUnknown(
+          data['asignacion_reemplazo_id']!,
+          _asignacionReemplazoIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AsignacionData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AsignacionData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      articuloId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}articulo_id'],
+          )!,
+      varianteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variante_id'],
+      ),
+      unidadId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unidad_id'],
+      ),
+      cantidad:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}cantidad'],
+          )!,
+      empleadoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empleado_id'],
+      ),
+      servicioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servicio_id'],
+      ),
+      fechaEntrega:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_entrega'],
+          )!,
+      condicionEntrega: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}condicion_entrega'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      fechaCierre: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_cierre'],
+      ),
+      motivoCierre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_cierre'],
+      ),
+      observacionesCierre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_cierre'],
+      ),
+      atribuibleAlEmpleado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}atribuible_al_empleado'],
+      ),
+      asignacionReemplazoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asignacion_reemplazo_id'],
+      ),
+    );
+  }
+
+  @override
+  $AsignacionTable createAlias(String alias) {
+    return $AsignacionTable(attachedDatabase, alias);
+  }
+}
+
+class AsignacionData extends DataClass implements Insertable<AsignacionData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String articuloId;
+  final String? varianteId;
+  final String? unidadId;
+  final int cantidad;
+  final String? empleadoId;
+  final String? servicioId;
+  final DateTime fechaEntrega;
+
+  /// Condición física del artículo/unidad al momento de entregarlo —
+  /// texto libre ("Nuevo", "Usado - buen estado"), sin catálogo propio
+  /// (no aporta valor operativo forzar un enum aquí, mismo criterio
+  /// que `Articulo.unidadMedida`).
+  final String? condicionEntrega;
+  final String? observaciones;
+  final String estatus;
+  final DateTime? fechaCierre;
+  final String? motivoCierre;
+  final String? observacionesCierre;
+  final bool? atribuibleAlEmpleado;
+  final String? asignacionReemplazoId;
+  const AsignacionData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.articuloId,
+    this.varianteId,
+    this.unidadId,
+    required this.cantidad,
+    this.empleadoId,
+    this.servicioId,
+    required this.fechaEntrega,
+    this.condicionEntrega,
+    this.observaciones,
+    required this.estatus,
+    this.fechaCierre,
+    this.motivoCierre,
+    this.observacionesCierre,
+    this.atribuibleAlEmpleado,
+    this.asignacionReemplazoId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['articulo_id'] = Variable<String>(articuloId);
+    if (!nullToAbsent || varianteId != null) {
+      map['variante_id'] = Variable<String>(varianteId);
+    }
+    if (!nullToAbsent || unidadId != null) {
+      map['unidad_id'] = Variable<String>(unidadId);
+    }
+    map['cantidad'] = Variable<int>(cantidad);
+    if (!nullToAbsent || empleadoId != null) {
+      map['empleado_id'] = Variable<String>(empleadoId);
+    }
+    if (!nullToAbsent || servicioId != null) {
+      map['servicio_id'] = Variable<String>(servicioId);
+    }
+    map['fecha_entrega'] = Variable<DateTime>(fechaEntrega);
+    if (!nullToAbsent || condicionEntrega != null) {
+      map['condicion_entrega'] = Variable<String>(condicionEntrega);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || fechaCierre != null) {
+      map['fecha_cierre'] = Variable<DateTime>(fechaCierre);
+    }
+    if (!nullToAbsent || motivoCierre != null) {
+      map['motivo_cierre'] = Variable<String>(motivoCierre);
+    }
+    if (!nullToAbsent || observacionesCierre != null) {
+      map['observaciones_cierre'] = Variable<String>(observacionesCierre);
+    }
+    if (!nullToAbsent || atribuibleAlEmpleado != null) {
+      map['atribuible_al_empleado'] = Variable<bool>(atribuibleAlEmpleado);
+    }
+    if (!nullToAbsent || asignacionReemplazoId != null) {
+      map['asignacion_reemplazo_id'] = Variable<String>(asignacionReemplazoId);
+    }
+    return map;
+  }
+
+  AsignacionCompanion toCompanion(bool nullToAbsent) {
+    return AsignacionCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      articuloId: Value(articuloId),
+      varianteId:
+          varianteId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(varianteId),
+      unidadId:
+          unidadId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(unidadId),
+      cantidad: Value(cantidad),
+      empleadoId:
+          empleadoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(empleadoId),
+      servicioId:
+          servicioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(servicioId),
+      fechaEntrega: Value(fechaEntrega),
+      condicionEntrega:
+          condicionEntrega == null && nullToAbsent
+              ? const Value.absent()
+              : Value(condicionEntrega),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      estatus: Value(estatus),
+      fechaCierre:
+          fechaCierre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaCierre),
+      motivoCierre:
+          motivoCierre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoCierre),
+      observacionesCierre:
+          observacionesCierre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesCierre),
+      atribuibleAlEmpleado:
+          atribuibleAlEmpleado == null && nullToAbsent
+              ? const Value.absent()
+              : Value(atribuibleAlEmpleado),
+      asignacionReemplazoId:
+          asignacionReemplazoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(asignacionReemplazoId),
+    );
+  }
+
+  factory AsignacionData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AsignacionData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      articuloId: serializer.fromJson<String>(json['articuloId']),
+      varianteId: serializer.fromJson<String?>(json['varianteId']),
+      unidadId: serializer.fromJson<String?>(json['unidadId']),
+      cantidad: serializer.fromJson<int>(json['cantidad']),
+      empleadoId: serializer.fromJson<String?>(json['empleadoId']),
+      servicioId: serializer.fromJson<String?>(json['servicioId']),
+      fechaEntrega: serializer.fromJson<DateTime>(json['fechaEntrega']),
+      condicionEntrega: serializer.fromJson<String?>(json['condicionEntrega']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      fechaCierre: serializer.fromJson<DateTime?>(json['fechaCierre']),
+      motivoCierre: serializer.fromJson<String?>(json['motivoCierre']),
+      observacionesCierre: serializer.fromJson<String?>(
+        json['observacionesCierre'],
+      ),
+      atribuibleAlEmpleado: serializer.fromJson<bool?>(
+        json['atribuibleAlEmpleado'],
+      ),
+      asignacionReemplazoId: serializer.fromJson<String?>(
+        json['asignacionReemplazoId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'articuloId': serializer.toJson<String>(articuloId),
+      'varianteId': serializer.toJson<String?>(varianteId),
+      'unidadId': serializer.toJson<String?>(unidadId),
+      'cantidad': serializer.toJson<int>(cantidad),
+      'empleadoId': serializer.toJson<String?>(empleadoId),
+      'servicioId': serializer.toJson<String?>(servicioId),
+      'fechaEntrega': serializer.toJson<DateTime>(fechaEntrega),
+      'condicionEntrega': serializer.toJson<String?>(condicionEntrega),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'estatus': serializer.toJson<String>(estatus),
+      'fechaCierre': serializer.toJson<DateTime?>(fechaCierre),
+      'motivoCierre': serializer.toJson<String?>(motivoCierre),
+      'observacionesCierre': serializer.toJson<String?>(observacionesCierre),
+      'atribuibleAlEmpleado': serializer.toJson<bool?>(atribuibleAlEmpleado),
+      'asignacionReemplazoId': serializer.toJson<String?>(
+        asignacionReemplazoId,
+      ),
+    };
+  }
+
+  AsignacionData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? articuloId,
+    Value<String?> varianteId = const Value.absent(),
+    Value<String?> unidadId = const Value.absent(),
+    int? cantidad,
+    Value<String?> empleadoId = const Value.absent(),
+    Value<String?> servicioId = const Value.absent(),
+    DateTime? fechaEntrega,
+    Value<String?> condicionEntrega = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+    String? estatus,
+    Value<DateTime?> fechaCierre = const Value.absent(),
+    Value<String?> motivoCierre = const Value.absent(),
+    Value<String?> observacionesCierre = const Value.absent(),
+    Value<bool?> atribuibleAlEmpleado = const Value.absent(),
+    Value<String?> asignacionReemplazoId = const Value.absent(),
+  }) => AsignacionData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    articuloId: articuloId ?? this.articuloId,
+    varianteId: varianteId.present ? varianteId.value : this.varianteId,
+    unidadId: unidadId.present ? unidadId.value : this.unidadId,
+    cantidad: cantidad ?? this.cantidad,
+    empleadoId: empleadoId.present ? empleadoId.value : this.empleadoId,
+    servicioId: servicioId.present ? servicioId.value : this.servicioId,
+    fechaEntrega: fechaEntrega ?? this.fechaEntrega,
+    condicionEntrega:
+        condicionEntrega.present
+            ? condicionEntrega.value
+            : this.condicionEntrega,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    estatus: estatus ?? this.estatus,
+    fechaCierre: fechaCierre.present ? fechaCierre.value : this.fechaCierre,
+    motivoCierre: motivoCierre.present ? motivoCierre.value : this.motivoCierre,
+    observacionesCierre:
+        observacionesCierre.present
+            ? observacionesCierre.value
+            : this.observacionesCierre,
+    atribuibleAlEmpleado:
+        atribuibleAlEmpleado.present
+            ? atribuibleAlEmpleado.value
+            : this.atribuibleAlEmpleado,
+    asignacionReemplazoId:
+        asignacionReemplazoId.present
+            ? asignacionReemplazoId.value
+            : this.asignacionReemplazoId,
+  );
+  AsignacionData copyWithCompanion(AsignacionCompanion data) {
+    return AsignacionData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      articuloId:
+          data.articuloId.present ? data.articuloId.value : this.articuloId,
+      varianteId:
+          data.varianteId.present ? data.varianteId.value : this.varianteId,
+      unidadId: data.unidadId.present ? data.unidadId.value : this.unidadId,
+      cantidad: data.cantidad.present ? data.cantidad.value : this.cantidad,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      fechaEntrega:
+          data.fechaEntrega.present
+              ? data.fechaEntrega.value
+              : this.fechaEntrega,
+      condicionEntrega:
+          data.condicionEntrega.present
+              ? data.condicionEntrega.value
+              : this.condicionEntrega,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      fechaCierre:
+          data.fechaCierre.present ? data.fechaCierre.value : this.fechaCierre,
+      motivoCierre:
+          data.motivoCierre.present
+              ? data.motivoCierre.value
+              : this.motivoCierre,
+      observacionesCierre:
+          data.observacionesCierre.present
+              ? data.observacionesCierre.value
+              : this.observacionesCierre,
+      atribuibleAlEmpleado:
+          data.atribuibleAlEmpleado.present
+              ? data.atribuibleAlEmpleado.value
+              : this.atribuibleAlEmpleado,
+      asignacionReemplazoId:
+          data.asignacionReemplazoId.present
+              ? data.asignacionReemplazoId.value
+              : this.asignacionReemplazoId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('varianteId: $varianteId, ')
+          ..write('unidadId: $unidadId, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('fechaEntrega: $fechaEntrega, ')
+          ..write('condicionEntrega: $condicionEntrega, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaCierre: $fechaCierre, ')
+          ..write('motivoCierre: $motivoCierre, ')
+          ..write('observacionesCierre: $observacionesCierre, ')
+          ..write('atribuibleAlEmpleado: $atribuibleAlEmpleado, ')
+          ..write('asignacionReemplazoId: $asignacionReemplazoId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    articuloId,
+    varianteId,
+    unidadId,
+    cantidad,
+    empleadoId,
+    servicioId,
+    fechaEntrega,
+    condicionEntrega,
+    observaciones,
+    estatus,
+    fechaCierre,
+    motivoCierre,
+    observacionesCierre,
+    atribuibleAlEmpleado,
+    asignacionReemplazoId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AsignacionData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.articuloId == this.articuloId &&
+          other.varianteId == this.varianteId &&
+          other.unidadId == this.unidadId &&
+          other.cantidad == this.cantidad &&
+          other.empleadoId == this.empleadoId &&
+          other.servicioId == this.servicioId &&
+          other.fechaEntrega == this.fechaEntrega &&
+          other.condicionEntrega == this.condicionEntrega &&
+          other.observaciones == this.observaciones &&
+          other.estatus == this.estatus &&
+          other.fechaCierre == this.fechaCierre &&
+          other.motivoCierre == this.motivoCierre &&
+          other.observacionesCierre == this.observacionesCierre &&
+          other.atribuibleAlEmpleado == this.atribuibleAlEmpleado &&
+          other.asignacionReemplazoId == this.asignacionReemplazoId);
+}
+
+class AsignacionCompanion extends UpdateCompanion<AsignacionData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> articuloId;
+  final Value<String?> varianteId;
+  final Value<String?> unidadId;
+  final Value<int> cantidad;
+  final Value<String?> empleadoId;
+  final Value<String?> servicioId;
+  final Value<DateTime> fechaEntrega;
+  final Value<String?> condicionEntrega;
+  final Value<String?> observaciones;
+  final Value<String> estatus;
+  final Value<DateTime?> fechaCierre;
+  final Value<String?> motivoCierre;
+  final Value<String?> observacionesCierre;
+  final Value<bool?> atribuibleAlEmpleado;
+  final Value<String?> asignacionReemplazoId;
+  final Value<int> rowid;
+  const AsignacionCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.articuloId = const Value.absent(),
+    this.varianteId = const Value.absent(),
+    this.unidadId = const Value.absent(),
+    this.cantidad = const Value.absent(),
+    this.empleadoId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.fechaEntrega = const Value.absent(),
+    this.condicionEntrega = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.fechaCierre = const Value.absent(),
+    this.motivoCierre = const Value.absent(),
+    this.observacionesCierre = const Value.absent(),
+    this.atribuibleAlEmpleado = const Value.absent(),
+    this.asignacionReemplazoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AsignacionCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String articuloId,
+    this.varianteId = const Value.absent(),
+    this.unidadId = const Value.absent(),
+    required int cantidad,
+    this.empleadoId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    required DateTime fechaEntrega,
+    this.condicionEntrega = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.fechaCierre = const Value.absent(),
+    this.motivoCierre = const Value.absent(),
+    this.observacionesCierre = const Value.absent(),
+    this.atribuibleAlEmpleado = const Value.absent(),
+    this.asignacionReemplazoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : articuloId = Value(articuloId),
+       cantidad = Value(cantidad),
+       fechaEntrega = Value(fechaEntrega);
+  static Insertable<AsignacionData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? articuloId,
+    Expression<String>? varianteId,
+    Expression<String>? unidadId,
+    Expression<int>? cantidad,
+    Expression<String>? empleadoId,
+    Expression<String>? servicioId,
+    Expression<DateTime>? fechaEntrega,
+    Expression<String>? condicionEntrega,
+    Expression<String>? observaciones,
+    Expression<String>? estatus,
+    Expression<DateTime>? fechaCierre,
+    Expression<String>? motivoCierre,
+    Expression<String>? observacionesCierre,
+    Expression<bool>? atribuibleAlEmpleado,
+    Expression<String>? asignacionReemplazoId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (articuloId != null) 'articulo_id': articuloId,
+      if (varianteId != null) 'variante_id': varianteId,
+      if (unidadId != null) 'unidad_id': unidadId,
+      if (cantidad != null) 'cantidad': cantidad,
+      if (empleadoId != null) 'empleado_id': empleadoId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (fechaEntrega != null) 'fecha_entrega': fechaEntrega,
+      if (condicionEntrega != null) 'condicion_entrega': condicionEntrega,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (estatus != null) 'estatus': estatus,
+      if (fechaCierre != null) 'fecha_cierre': fechaCierre,
+      if (motivoCierre != null) 'motivo_cierre': motivoCierre,
+      if (observacionesCierre != null)
+        'observaciones_cierre': observacionesCierre,
+      if (atribuibleAlEmpleado != null)
+        'atribuible_al_empleado': atribuibleAlEmpleado,
+      if (asignacionReemplazoId != null)
+        'asignacion_reemplazo_id': asignacionReemplazoId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AsignacionCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? articuloId,
+    Value<String?>? varianteId,
+    Value<String?>? unidadId,
+    Value<int>? cantidad,
+    Value<String?>? empleadoId,
+    Value<String?>? servicioId,
+    Value<DateTime>? fechaEntrega,
+    Value<String?>? condicionEntrega,
+    Value<String?>? observaciones,
+    Value<String>? estatus,
+    Value<DateTime?>? fechaCierre,
+    Value<String?>? motivoCierre,
+    Value<String?>? observacionesCierre,
+    Value<bool?>? atribuibleAlEmpleado,
+    Value<String?>? asignacionReemplazoId,
+    Value<int>? rowid,
+  }) {
+    return AsignacionCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      articuloId: articuloId ?? this.articuloId,
+      varianteId: varianteId ?? this.varianteId,
+      unidadId: unidadId ?? this.unidadId,
+      cantidad: cantidad ?? this.cantidad,
+      empleadoId: empleadoId ?? this.empleadoId,
+      servicioId: servicioId ?? this.servicioId,
+      fechaEntrega: fechaEntrega ?? this.fechaEntrega,
+      condicionEntrega: condicionEntrega ?? this.condicionEntrega,
+      observaciones: observaciones ?? this.observaciones,
+      estatus: estatus ?? this.estatus,
+      fechaCierre: fechaCierre ?? this.fechaCierre,
+      motivoCierre: motivoCierre ?? this.motivoCierre,
+      observacionesCierre: observacionesCierre ?? this.observacionesCierre,
+      atribuibleAlEmpleado: atribuibleAlEmpleado ?? this.atribuibleAlEmpleado,
+      asignacionReemplazoId:
+          asignacionReemplazoId ?? this.asignacionReemplazoId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (articuloId.present) {
+      map['articulo_id'] = Variable<String>(articuloId.value);
+    }
+    if (varianteId.present) {
+      map['variante_id'] = Variable<String>(varianteId.value);
+    }
+    if (unidadId.present) {
+      map['unidad_id'] = Variable<String>(unidadId.value);
+    }
+    if (cantidad.present) {
+      map['cantidad'] = Variable<int>(cantidad.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (fechaEntrega.present) {
+      map['fecha_entrega'] = Variable<DateTime>(fechaEntrega.value);
+    }
+    if (condicionEntrega.present) {
+      map['condicion_entrega'] = Variable<String>(condicionEntrega.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (fechaCierre.present) {
+      map['fecha_cierre'] = Variable<DateTime>(fechaCierre.value);
+    }
+    if (motivoCierre.present) {
+      map['motivo_cierre'] = Variable<String>(motivoCierre.value);
+    }
+    if (observacionesCierre.present) {
+      map['observaciones_cierre'] = Variable<String>(observacionesCierre.value);
+    }
+    if (atribuibleAlEmpleado.present) {
+      map['atribuible_al_empleado'] = Variable<bool>(
+        atribuibleAlEmpleado.value,
+      );
+    }
+    if (asignacionReemplazoId.present) {
+      map['asignacion_reemplazo_id'] = Variable<String>(
+        asignacionReemplazoId.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('varianteId: $varianteId, ')
+          ..write('unidadId: $unidadId, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('fechaEntrega: $fechaEntrega, ')
+          ..write('condicionEntrega: $condicionEntrega, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaCierre: $fechaCierre, ')
+          ..write('motivoCierre: $motivoCierre, ')
+          ..write('observacionesCierre: $observacionesCierre, ')
+          ..write('atribuibleAlEmpleado: $atribuibleAlEmpleado, ')
+          ..write('asignacionReemplazoId: $asignacionReemplazoId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DescuentoInventarioTable extends DescuentoInventario
+    with TableInfo<$DescuentoInventarioTable, DescuentoInventarioData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DescuentoInventarioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _asignacionIdMeta = const VerificationMeta(
+    'asignacionId',
+  );
+  @override
+  late final GeneratedColumn<String> asignacionId = GeneratedColumn<String>(
+    'asignacion_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES asignacion (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empleado (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _motivoMeta = const VerificationMeta('motivo');
+  @override
+  late final GeneratedColumn<String> motivo = GeneratedColumn<String>(
+    'motivo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _importeMeta = const VerificationMeta(
+    'importe',
+  );
+  @override
+  late final GeneratedColumn<int> importe = GeneratedColumn<int>(
+    'importe',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pendiente'),
+  );
+  static const VerificationMeta _fechaAplicacionMeta = const VerificationMeta(
+    'fechaAplicacion',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaAplicacion =
+      GeneratedColumn<DateTime>(
+        'fecha_aplicacion',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    asignacionId,
+    empleadoId,
+    motivo,
+    importe,
+    estatus,
+    fechaAplicacion,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'descuento_inventario';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DescuentoInventarioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('asignacion_id')) {
+      context.handle(
+        _asignacionIdMeta,
+        asignacionId.isAcceptableOrUnknown(
+          data['asignacion_id']!,
+          _asignacionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_asignacionIdMeta);
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_empleadoIdMeta);
+    }
+    if (data.containsKey('motivo')) {
+      context.handle(
+        _motivoMeta,
+        motivo.isAcceptableOrUnknown(data['motivo']!, _motivoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_motivoMeta);
+    }
+    if (data.containsKey('importe')) {
+      context.handle(
+        _importeMeta,
+        importe.isAcceptableOrUnknown(data['importe']!, _importeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_importeMeta);
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('fecha_aplicacion')) {
+      context.handle(
+        _fechaAplicacionMeta,
+        fechaAplicacion.isAcceptableOrUnknown(
+          data['fecha_aplicacion']!,
+          _fechaAplicacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DescuentoInventarioData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DescuentoInventarioData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      asignacionId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}asignacion_id'],
+          )!,
+      empleadoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}empleado_id'],
+          )!,
+      motivo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}motivo'],
+          )!,
+      importe:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}importe'],
+          )!,
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      fechaAplicacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_aplicacion'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $DescuentoInventarioTable createAlias(String alias) {
+    return $DescuentoInventarioTable(attachedDatabase, alias);
+  }
+}
+
+class DescuentoInventarioData extends DataClass
+    implements Insertable<DescuentoInventarioData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String asignacionId;
+  final String empleadoId;
+
+  /// Snapshot del motivo de cierre que lo originó (`dano`/`perdida`).
+  final String motivo;
+  final int importe;
+  final String estatus;
+
+  /// La escribe una futura integración con Nómina — nunca en 7B.
+  final DateTime? fechaAplicacion;
+  final String? observaciones;
+  const DescuentoInventarioData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.asignacionId,
+    required this.empleadoId,
+    required this.motivo,
+    required this.importe,
+    required this.estatus,
+    this.fechaAplicacion,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['asignacion_id'] = Variable<String>(asignacionId);
+    map['empleado_id'] = Variable<String>(empleadoId);
+    map['motivo'] = Variable<String>(motivo);
+    map['importe'] = Variable<int>(importe);
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || fechaAplicacion != null) {
+      map['fecha_aplicacion'] = Variable<DateTime>(fechaAplicacion);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  DescuentoInventarioCompanion toCompanion(bool nullToAbsent) {
+    return DescuentoInventarioCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      asignacionId: Value(asignacionId),
+      empleadoId: Value(empleadoId),
+      motivo: Value(motivo),
+      importe: Value(importe),
+      estatus: Value(estatus),
+      fechaAplicacion:
+          fechaAplicacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaAplicacion),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory DescuentoInventarioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DescuentoInventarioData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      asignacionId: serializer.fromJson<String>(json['asignacionId']),
+      empleadoId: serializer.fromJson<String>(json['empleadoId']),
+      motivo: serializer.fromJson<String>(json['motivo']),
+      importe: serializer.fromJson<int>(json['importe']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      fechaAplicacion: serializer.fromJson<DateTime?>(json['fechaAplicacion']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'asignacionId': serializer.toJson<String>(asignacionId),
+      'empleadoId': serializer.toJson<String>(empleadoId),
+      'motivo': serializer.toJson<String>(motivo),
+      'importe': serializer.toJson<int>(importe),
+      'estatus': serializer.toJson<String>(estatus),
+      'fechaAplicacion': serializer.toJson<DateTime?>(fechaAplicacion),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  DescuentoInventarioData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? asignacionId,
+    String? empleadoId,
+    String? motivo,
+    int? importe,
+    String? estatus,
+    Value<DateTime?> fechaAplicacion = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => DescuentoInventarioData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    asignacionId: asignacionId ?? this.asignacionId,
+    empleadoId: empleadoId ?? this.empleadoId,
+    motivo: motivo ?? this.motivo,
+    importe: importe ?? this.importe,
+    estatus: estatus ?? this.estatus,
+    fechaAplicacion:
+        fechaAplicacion.present ? fechaAplicacion.value : this.fechaAplicacion,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  DescuentoInventarioData copyWithCompanion(DescuentoInventarioCompanion data) {
+    return DescuentoInventarioData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      asignacionId:
+          data.asignacionId.present
+              ? data.asignacionId.value
+              : this.asignacionId,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
+      motivo: data.motivo.present ? data.motivo.value : this.motivo,
+      importe: data.importe.present ? data.importe.value : this.importe,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      fechaAplicacion:
+          data.fechaAplicacion.present
+              ? data.fechaAplicacion.value
+              : this.fechaAplicacion,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DescuentoInventarioData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('asignacionId: $asignacionId, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('motivo: $motivo, ')
+          ..write('importe: $importe, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaAplicacion: $fechaAplicacion, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    asignacionId,
+    empleadoId,
+    motivo,
+    importe,
+    estatus,
+    fechaAplicacion,
+    observaciones,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DescuentoInventarioData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.asignacionId == this.asignacionId &&
+          other.empleadoId == this.empleadoId &&
+          other.motivo == this.motivo &&
+          other.importe == this.importe &&
+          other.estatus == this.estatus &&
+          other.fechaAplicacion == this.fechaAplicacion &&
+          other.observaciones == this.observaciones);
+}
+
+class DescuentoInventarioCompanion
+    extends UpdateCompanion<DescuentoInventarioData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> asignacionId;
+  final Value<String> empleadoId;
+  final Value<String> motivo;
+  final Value<int> importe;
+  final Value<String> estatus;
+  final Value<DateTime?> fechaAplicacion;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const DescuentoInventarioCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.asignacionId = const Value.absent(),
+    this.empleadoId = const Value.absent(),
+    this.motivo = const Value.absent(),
+    this.importe = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.fechaAplicacion = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DescuentoInventarioCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String asignacionId,
+    required String empleadoId,
+    required String motivo,
+    required int importe,
+    this.estatus = const Value.absent(),
+    this.fechaAplicacion = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : asignacionId = Value(asignacionId),
+       empleadoId = Value(empleadoId),
+       motivo = Value(motivo),
+       importe = Value(importe);
+  static Insertable<DescuentoInventarioData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? asignacionId,
+    Expression<String>? empleadoId,
+    Expression<String>? motivo,
+    Expression<int>? importe,
+    Expression<String>? estatus,
+    Expression<DateTime>? fechaAplicacion,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (asignacionId != null) 'asignacion_id': asignacionId,
+      if (empleadoId != null) 'empleado_id': empleadoId,
+      if (motivo != null) 'motivo': motivo,
+      if (importe != null) 'importe': importe,
+      if (estatus != null) 'estatus': estatus,
+      if (fechaAplicacion != null) 'fecha_aplicacion': fechaAplicacion,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DescuentoInventarioCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? asignacionId,
+    Value<String>? empleadoId,
+    Value<String>? motivo,
+    Value<int>? importe,
+    Value<String>? estatus,
+    Value<DateTime?>? fechaAplicacion,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return DescuentoInventarioCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      asignacionId: asignacionId ?? this.asignacionId,
+      empleadoId: empleadoId ?? this.empleadoId,
+      motivo: motivo ?? this.motivo,
+      importe: importe ?? this.importe,
+      estatus: estatus ?? this.estatus,
+      fechaAplicacion: fechaAplicacion ?? this.fechaAplicacion,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (asignacionId.present) {
+      map['asignacion_id'] = Variable<String>(asignacionId.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
+    }
+    if (motivo.present) {
+      map['motivo'] = Variable<String>(motivo.value);
+    }
+    if (importe.present) {
+      map['importe'] = Variable<int>(importe.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (fechaAplicacion.present) {
+      map['fecha_aplicacion'] = Variable<DateTime>(fechaAplicacion.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DescuentoInventarioCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('asignacionId: $asignacionId, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('motivo: $motivo, ')
+          ..write('importe: $importe, ')
+          ..write('estatus: $estatus, ')
+          ..write('fechaAplicacion: $fechaAplicacion, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AsignacionAttachmentTable extends AsignacionAttachment
+    with TableInfo<$AsignacionAttachmentTable, AsignacionAttachmentData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AsignacionAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _asignacionIdMeta = const VerificationMeta(
+    'asignacionId',
+  );
+  @override
+  late final GeneratedColumn<String> asignacionId = GeneratedColumn<String>(
+    'asignacion_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES asignacion (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, asignacionId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'asignacion_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AsignacionAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('asignacion_id')) {
+      context.handle(
+        _asignacionIdMeta,
+        asignacionId.isAcceptableOrUnknown(
+          data['asignacion_id']!,
+          _asignacionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_asignacionIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  AsignacionAttachmentData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AsignacionAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      asignacionId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}asignacion_id'],
+          )!,
+    );
+  }
+
+  @override
+  $AsignacionAttachmentTable createAlias(String alias) {
+    return $AsignacionAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class AsignacionAttachmentData extends DataClass
+    implements Insertable<AsignacionAttachmentData> {
+  final String attachmentId;
+  final String asignacionId;
+  const AsignacionAttachmentData({
+    required this.attachmentId,
+    required this.asignacionId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['asignacion_id'] = Variable<String>(asignacionId);
+    return map;
+  }
+
+  AsignacionAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return AsignacionAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      asignacionId: Value(asignacionId),
+    );
+  }
+
+  factory AsignacionAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AsignacionAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      asignacionId: serializer.fromJson<String>(json['asignacionId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'asignacionId': serializer.toJson<String>(asignacionId),
+    };
+  }
+
+  AsignacionAttachmentData copyWith({
+    String? attachmentId,
+    String? asignacionId,
+  }) => AsignacionAttachmentData(
+    attachmentId: attachmentId ?? this.attachmentId,
+    asignacionId: asignacionId ?? this.asignacionId,
+  );
+  AsignacionAttachmentData copyWithCompanion(
+    AsignacionAttachmentCompanion data,
+  ) {
+    return AsignacionAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      asignacionId:
+          data.asignacionId.present
+              ? data.asignacionId.value
+              : this.asignacionId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('asignacionId: $asignacionId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, asignacionId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AsignacionAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.asignacionId == this.asignacionId);
+}
+
+class AsignacionAttachmentCompanion
+    extends UpdateCompanion<AsignacionAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> asignacionId;
+  final Value<int> rowid;
+  const AsignacionAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.asignacionId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AsignacionAttachmentCompanion.insert({
+    required String attachmentId,
+    required String asignacionId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       asignacionId = Value(asignacionId);
+  static Insertable<AsignacionAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? asignacionId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (asignacionId != null) 'asignacion_id': asignacionId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AsignacionAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? asignacionId,
+    Value<int>? rowid,
+  }) {
+    return AsignacionAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      asignacionId: asignacionId ?? this.asignacionId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (asignacionId.present) {
+      map['asignacion_id'] = Variable<String>(asignacionId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('asignacionId: $asignacionId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -50404,6 +52526,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $MovimientoInventarioTable(this);
   late final $MovimientoInventarioAttachmentTable
   movimientoInventarioAttachment = $MovimientoInventarioAttachmentTable(this);
+  late final $AsignacionTable asignacion = $AsignacionTable(this);
+  late final $DescuentoInventarioTable descuentoInventario =
+      $DescuentoInventarioTable(this);
+  late final $AsignacionAttachmentTable asignacionAttachment =
+      $AsignacionAttachmentTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -50423,6 +52550,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxAsignacionServicioEmpleadoActiva = Index(
     'idx_asignacion_servicio_empleado_activa',
     'CREATE UNIQUE INDEX idx_asignacion_servicio_empleado_activa ON asignacion_servicio (empleado_id) WHERE fecha_termino IS NULL',
+  );
+  late final Index idxAsignacionUnidadActiva = Index(
+    'idx_asignacion_unidad_activa',
+    'CREATE UNIQUE INDEX idx_asignacion_unidad_activa ON asignacion (unidad_id) WHERE unidad_id IS NOT NULL AND estatus = \'activa\'',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -50505,11 +52636,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     articuloUnidadTelefono,
     movimientoInventario,
     movimientoInventarioAttachment,
+    asignacion,
+    descuentoInventario,
+    asignacionAttachment,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
     idxContactoClienteTipoPrincipalActivo,
     idxAsignacionServicioEmpleadoActiva,
+    idxAsignacionUnidadActiva,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -50841,6 +52976,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
           kind: UpdateKind.delete,
         ),
       ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('asignacion_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'asignacion',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('asignacion_attachment', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -55472,6 +57621,34 @@ final class $$AttachmentTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $AsignacionAttachmentTable,
+    List<AsignacionAttachmentData>
+  >
+  _asignacionAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.asignacionAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.attachment.id,
+          db.asignacionAttachment.attachmentId,
+        ),
+      );
+
+  $$AsignacionAttachmentTableProcessedTableManager
+  get asignacionAttachmentRefs {
+    final manager = $$AsignacionAttachmentTableTableManager(
+      $_db,
+      $_db.asignacionAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _asignacionAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AttachmentTableFilterComposer
@@ -55865,6 +58042,31 @@ class $$AttachmentTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionAttachmentRefs(
+    Expression<bool> Function($$AsignacionAttachmentTableFilterComposer f) f,
+  ) {
+    final $$AsignacionAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacionAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacionAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -56312,6 +58514,32 @@ class $$AttachmentTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionAttachmentRefs<T extends Object>(
+    Expression<T> Function($$AsignacionAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionAttachment,
+          getReferencedColumn: (t) => t.attachmentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.asignacionAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AttachmentTableTableManager
@@ -56341,6 +58569,7 @@ class $$AttachmentTableTableManager
             bool empleadoAttachmentRefs,
             bool pagoNominaAttachmentRefs,
             bool movimientoInventarioAttachmentRefs,
+            bool asignacionAttachmentRefs,
           })
         > {
   $$AttachmentTableTableManager(_$AppDatabase db, $AttachmentTable table)
@@ -56430,6 +58659,7 @@ class $$AttachmentTableTableManager
             empleadoAttachmentRefs = false,
             pagoNominaAttachmentRefs = false,
             movimientoInventarioAttachmentRefs = false,
+            asignacionAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -56449,6 +58679,7 @@ class $$AttachmentTableTableManager
                 if (pagoNominaAttachmentRefs) db.pagoNominaAttachment,
                 if (movimientoInventarioAttachmentRefs)
                   db.movimientoInventarioAttachment,
+                if (asignacionAttachmentRefs) db.asignacionAttachment,
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -56739,6 +58970,28 @@ class $$AttachmentTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      AsignacionAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._asignacionAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -56773,6 +59026,7 @@ typedef $$AttachmentTableProcessedTableManager =
         bool empleadoAttachmentRefs,
         bool pagoNominaAttachmentRefs,
         bool movimientoInventarioAttachmentRefs,
+        bool asignacionAttachmentRefs,
       })
     >;
 typedef $$HorarioTableCreateCompanionBuilder =
@@ -61705,6 +63959,24 @@ final class $$ServicioTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$AsignacionTable, List<AsignacionData>>
+  _asignacionRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.asignacion,
+    aliasName: $_aliasNameGenerator(db.servicio.id, db.asignacion.servicioId),
+  );
+
+  $$AsignacionTableProcessedTableManager get asignacionRefs {
+    final manager = $$AsignacionTableTableManager(
+      $_db,
+      $_db.asignacion,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_asignacionRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ServicioTableFilterComposer
@@ -62210,6 +64482,31 @@ class $$ServicioTableFilterComposer
           }) => $$NominaEmpleadoTramoTableFilterComposer(
             $db: $db,
             $table: $db.nominaEmpleadoTramo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionRefs(
+    Expression<bool> Function($$AsignacionTableFilterComposer f) f,
+  ) {
+    final $$AsignacionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacion,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -62933,6 +65230,31 @@ class $$ServicioTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionRefs<T extends Object>(
+    Expression<T> Function($$AsignacionTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.servicioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableAnnotationComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ServicioTableTableManager
@@ -62966,6 +65288,7 @@ class $$ServicioTableTableManager
             bool fichaTecnicaEmpleadoRefs,
             bool nominaEmpleadoRefs,
             bool nominaEmpleadoTramoRefs,
+            bool asignacionRefs,
           })
         > {
   $$ServicioTableTableManager(_$AppDatabase db, $ServicioTable table)
@@ -63111,6 +65434,7 @@ class $$ServicioTableTableManager
             fichaTecnicaEmpleadoRefs = false,
             nominaEmpleadoRefs = false,
             nominaEmpleadoTramoRefs = false,
+            asignacionRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -63129,6 +65453,7 @@ class $$ServicioTableTableManager
                 if (fichaTecnicaEmpleadoRefs) db.fichaTecnicaEmpleado,
                 if (nominaEmpleadoRefs) db.nominaEmpleado,
                 if (nominaEmpleadoTramoRefs) db.nominaEmpleadoTramo,
+                if (asignacionRefs) db.asignacion,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -63484,6 +65809,28 @@ class $$ServicioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      AsignacionData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._asignacionRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -63522,6 +65869,7 @@ typedef $$ServicioTableProcessedTableManager =
         bool fichaTecnicaEmpleadoRefs,
         bool nominaEmpleadoRefs,
         bool nominaEmpleadoTramoRefs,
+        bool asignacionRefs,
       })
     >;
 typedef $$UbicacionTableCreateCompanionBuilder =
@@ -81642,6 +83990,51 @@ final class $$EmpleadoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$AsignacionTable, List<AsignacionData>>
+  _asignacionRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.asignacion,
+    aliasName: $_aliasNameGenerator(db.empleado.id, db.asignacion.empleadoId),
+  );
+
+  $$AsignacionTableProcessedTableManager get asignacionRefs {
+    final manager = $$AsignacionTableTableManager(
+      $_db,
+      $_db.asignacion,
+    ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_asignacionRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DescuentoInventarioTable,
+    List<DescuentoInventarioData>
+  >
+  _descuentoInventarioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.descuentoInventario,
+        aliasName: $_aliasNameGenerator(
+          db.empleado.id,
+          db.descuentoInventario.empleadoId,
+        ),
+      );
+
+  $$DescuentoInventarioTableProcessedTableManager get descuentoInventarioRefs {
+    final manager = $$DescuentoInventarioTableTableManager(
+      $_db,
+      $_db.descuentoInventario,
+    ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _descuentoInventarioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$EmpleadoTableFilterComposer
@@ -82166,6 +84559,56 @@ class $$EmpleadoTableFilterComposer
           }) => $$NominaEmpleadoTableFilterComposer(
             $db: $db,
             $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionRefs(
+    Expression<bool> Function($$AsignacionTableFilterComposer f) f,
+  ) {
+    final $$AsignacionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> descuentoInventarioRefs(
+    Expression<bool> Function($$DescuentoInventarioTableFilterComposer f) f,
+  ) {
+    final $$DescuentoInventarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.descuentoInventario,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DescuentoInventarioTableFilterComposer(
+            $db: $db,
+            $table: $db.descuentoInventario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -83072,6 +85515,57 @@ class $$EmpleadoTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> asignacionRefs<T extends Object>(
+    Expression<T> Function($$AsignacionTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.empleadoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableAnnotationComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> descuentoInventarioRefs<T extends Object>(
+    Expression<T> Function($$DescuentoInventarioTableAnnotationComposer a) f,
+  ) {
+    final $$DescuentoInventarioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.descuentoInventario,
+          getReferencedColumn: (t) => t.empleadoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DescuentoInventarioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.descuentoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$EmpleadoTableTableManager
@@ -83099,6 +85593,8 @@ class $$EmpleadoTableTableManager
             bool fichaTecnicaEmpleadoRefs,
             bool empleadoAttachmentRefs,
             bool nominaEmpleadoRefs,
+            bool asignacionRefs,
+            bool descuentoInventarioRefs,
           })
         > {
   $$EmpleadoTableTableManager(_$AppDatabase db, $EmpleadoTable table)
@@ -83380,6 +85876,8 @@ class $$EmpleadoTableTableManager
             fichaTecnicaEmpleadoRefs = false,
             empleadoAttachmentRefs = false,
             nominaEmpleadoRefs = false,
+            asignacionRefs = false,
+            descuentoInventarioRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -83390,6 +85888,8 @@ class $$EmpleadoTableTableManager
                 if (fichaTecnicaEmpleadoRefs) db.fichaTecnicaEmpleado,
                 if (empleadoAttachmentRefs) db.empleadoAttachment,
                 if (nominaEmpleadoRefs) db.nominaEmpleado,
+                if (asignacionRefs) db.asignacion,
+                if (descuentoInventarioRefs) db.descuentoInventario,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -83609,6 +86109,50 @@ class $$EmpleadoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionRefs)
+                    await $_getPrefetchedData<
+                      EmpleadoData,
+                      $EmpleadoTable,
+                      AsignacionData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpleadoTableReferences
+                          ._asignacionRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (descuentoInventarioRefs)
+                    await $_getPrefetchedData<
+                      EmpleadoData,
+                      $EmpleadoTable,
+                      DescuentoInventarioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpleadoTableReferences
+                          ._descuentoInventarioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).descuentoInventarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -83641,6 +86185,8 @@ typedef $$EmpleadoTableProcessedTableManager =
         bool fichaTecnicaEmpleadoRefs,
         bool empleadoAttachmentRefs,
         bool nominaEmpleadoRefs,
+        bool asignacionRefs,
+        bool descuentoInventarioRefs,
       })
     >;
 typedef $$EmpleadoEventoTableCreateCompanionBuilder =
@@ -95314,6 +97860,24 @@ final class $$ArticuloTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$AsignacionTable, List<AsignacionData>>
+  _asignacionRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.asignacion,
+    aliasName: $_aliasNameGenerator(db.articulo.id, db.asignacion.articuloId),
+  );
+
+  $$AsignacionTableProcessedTableManager get asignacionRefs {
+    final manager = $$AsignacionTableTableManager(
+      $_db,
+      $_db.asignacion,
+    ).filter((f) => f.articuloId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_asignacionRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ArticuloTableFilterComposer
@@ -95469,6 +98033,31 @@ class $$ArticuloTableFilterComposer
           }) => $$MovimientoInventarioTableFilterComposer(
             $db: $db,
             $table: $db.movimientoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionRefs(
+    Expression<bool> Function($$AsignacionTableFilterComposer f) f,
+  ) {
+    final $$AsignacionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.articuloId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacion,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -95720,6 +98309,31 @@ class $$ArticuloTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionRefs<T extends Object>(
+    Expression<T> Function($$AsignacionTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.articuloId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableAnnotationComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ArticuloTableTableManager
@@ -95740,6 +98354,7 @@ class $$ArticuloTableTableManager
             bool articuloVarianteRefs,
             bool articuloUnidadRefs,
             bool movimientoInventarioRefs,
+            bool asignacionRefs,
           })
         > {
   $$ArticuloTableTableManager(_$AppDatabase db, $ArticuloTable table)
@@ -95828,6 +98443,7 @@ class $$ArticuloTableTableManager
             articuloVarianteRefs = false,
             articuloUnidadRefs = false,
             movimientoInventarioRefs = false,
+            asignacionRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -95835,6 +98451,7 @@ class $$ArticuloTableTableManager
                 if (articuloVarianteRefs) db.articuloVariante,
                 if (articuloUnidadRefs) db.articuloUnidad,
                 if (movimientoInventarioRefs) db.movimientoInventario,
+                if (asignacionRefs) db.asignacion,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -95936,6 +98553,28 @@ class $$ArticuloTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionRefs)
+                    await $_getPrefetchedData<
+                      ArticuloData,
+                      $ArticuloTable,
+                      AsignacionData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloTableReferences
+                          ._asignacionRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.articuloId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -95961,6 +98600,7 @@ typedef $$ArticuloTableProcessedTableManager =
         bool articuloVarianteRefs,
         bool articuloUnidadRefs,
         bool movimientoInventarioRefs,
+        bool asignacionRefs,
       })
     >;
 typedef $$ArticuloVarianteTableCreateCompanionBuilder =
@@ -96043,6 +98683,27 @@ final class $$ArticuloVarianteTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$AsignacionTable, List<AsignacionData>>
+  _asignacionRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.asignacion,
+    aliasName: $_aliasNameGenerator(
+      db.articuloVariante.id,
+      db.asignacion.varianteId,
+    ),
+  );
+
+  $$AsignacionTableProcessedTableManager get asignacionRefs {
+    final manager = $$AsignacionTableTableManager(
+      $_db,
+      $_db.asignacion,
+    ).filter((f) => f.varianteId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_asignacionRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ArticuloVarianteTableFilterComposer
@@ -96118,6 +98779,31 @@ class $$ArticuloVarianteTableFilterComposer
           }) => $$MovimientoInventarioTableFilterComposer(
             $db: $db,
             $table: $db.movimientoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionRefs(
+    Expression<bool> Function($$AsignacionTableFilterComposer f) f,
+  ) {
+    final $$AsignacionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.varianteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacion,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -96260,6 +98946,31 @@ class $$ArticuloVarianteTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionRefs<T extends Object>(
+    Expression<T> Function($$AsignacionTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.varianteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableAnnotationComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ArticuloVarianteTableTableManager
@@ -96278,6 +98989,7 @@ class $$ArticuloVarianteTableTableManager
           PrefetchHooks Function({
             bool articuloId,
             bool movimientoInventarioRefs,
+            bool asignacionRefs,
           })
         > {
   $$ArticuloVarianteTableTableManager(
@@ -96349,11 +99061,13 @@ class $$ArticuloVarianteTableTableManager
           prefetchHooksCallback: ({
             articuloId = false,
             movimientoInventarioRefs = false,
+            asignacionRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (movimientoInventarioRefs) db.movimientoInventario,
+                if (asignacionRefs) db.asignacion,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -96411,6 +99125,28 @@ class $$ArticuloVarianteTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionRefs)
+                    await $_getPrefetchedData<
+                      ArticuloVarianteData,
+                      $ArticuloVarianteTable,
+                      AsignacionData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloVarianteTableReferences
+                          ._asignacionRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloVarianteTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.varianteId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -96431,7 +99167,11 @@ typedef $$ArticuloVarianteTableProcessedTableManager =
       $$ArticuloVarianteTableUpdateCompanionBuilder,
       (ArticuloVarianteData, $$ArticuloVarianteTableReferences),
       ArticuloVarianteData,
-      PrefetchHooks Function({bool articuloId, bool movimientoInventarioRefs})
+      PrefetchHooks Function({
+        bool articuloId,
+        bool movimientoInventarioRefs,
+        bool asignacionRefs,
+      })
     >;
 typedef $$ArticuloUnidadTableCreateCompanionBuilder =
     ArticuloUnidadCompanion Function({
@@ -96545,6 +99285,27 @@ final class $$ArticuloUnidadTableReferences
     final cache = $_typedResult.readTableOrNull(
       _movimientoInventarioRefsTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AsignacionTable, List<AsignacionData>>
+  _asignacionRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.asignacion,
+    aliasName: $_aliasNameGenerator(
+      db.articuloUnidad.id,
+      db.asignacion.unidadId,
+    ),
+  );
+
+  $$AsignacionTableProcessedTableManager get asignacionRefs {
+    final manager = $$AsignacionTableTableManager(
+      $_db,
+      $_db.asignacion,
+    ).filter((f) => f.unidadId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_asignacionRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -96670,6 +99431,31 @@ class $$ArticuloUnidadTableFilterComposer
           }) => $$MovimientoInventarioTableFilterComposer(
             $db: $db,
             $table: $db.movimientoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionRefs(
+    Expression<bool> Function($$AsignacionTableFilterComposer f) f,
+  ) {
+    final $$AsignacionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.unidadId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacion,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -96872,6 +99658,31 @@ class $$ArticuloUnidadTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionRefs<T extends Object>(
+    Expression<T> Function($$AsignacionTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.unidadId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableAnnotationComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ArticuloUnidadTableTableManager
@@ -96891,6 +99702,7 @@ class $$ArticuloUnidadTableTableManager
             bool articuloId,
             bool articuloUnidadTelefonoRefs,
             bool movimientoInventarioRefs,
+            bool asignacionRefs,
           })
         > {
   $$ArticuloUnidadTableTableManager(
@@ -96976,12 +99788,14 @@ class $$ArticuloUnidadTableTableManager
             articuloId = false,
             articuloUnidadTelefonoRefs = false,
             movimientoInventarioRefs = false,
+            asignacionRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (articuloUnidadTelefonoRefs) db.articuloUnidadTelefono,
                 if (movimientoInventarioRefs) db.movimientoInventario,
+                if (asignacionRefs) db.asignacion,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -97061,6 +99875,28 @@ class $$ArticuloUnidadTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionRefs)
+                    await $_getPrefetchedData<
+                      ArticuloUnidadData,
+                      $ArticuloUnidadTable,
+                      AsignacionData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloUnidadTableReferences
+                          ._asignacionRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloUnidadTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.unidadId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -97085,6 +99921,7 @@ typedef $$ArticuloUnidadTableProcessedTableManager =
         bool articuloId,
         bool articuloUnidadTelefonoRefs,
         bool movimientoInventarioRefs,
+        bool asignacionRefs,
       })
     >;
 typedef $$ArticuloUnidadTelefonoTableCreateCompanionBuilder =
@@ -98618,6 +101455,2230 @@ typedef $$MovimientoInventarioAttachmentTableProcessedTableManager =
       MovimientoInventarioAttachmentData,
       PrefetchHooks Function({bool attachmentId, bool movimientoInventarioId})
     >;
+typedef $$AsignacionTableCreateCompanionBuilder =
+    AsignacionCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String articuloId,
+      Value<String?> varianteId,
+      Value<String?> unidadId,
+      required int cantidad,
+      Value<String?> empleadoId,
+      Value<String?> servicioId,
+      required DateTime fechaEntrega,
+      Value<String?> condicionEntrega,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<DateTime?> fechaCierre,
+      Value<String?> motivoCierre,
+      Value<String?> observacionesCierre,
+      Value<bool?> atribuibleAlEmpleado,
+      Value<String?> asignacionReemplazoId,
+      Value<int> rowid,
+    });
+typedef $$AsignacionTableUpdateCompanionBuilder =
+    AsignacionCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> articuloId,
+      Value<String?> varianteId,
+      Value<String?> unidadId,
+      Value<int> cantidad,
+      Value<String?> empleadoId,
+      Value<String?> servicioId,
+      Value<DateTime> fechaEntrega,
+      Value<String?> condicionEntrega,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<DateTime?> fechaCierre,
+      Value<String?> motivoCierre,
+      Value<String?> observacionesCierre,
+      Value<bool?> atribuibleAlEmpleado,
+      Value<String?> asignacionReemplazoId,
+      Value<int> rowid,
+    });
+
+final class $$AsignacionTableReferences
+    extends BaseReferences<_$AppDatabase, $AsignacionTable, AsignacionData> {
+  $$AsignacionTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ArticuloTable _articuloIdTable(_$AppDatabase db) =>
+      db.articulo.createAlias(
+        $_aliasNameGenerator(db.asignacion.articuloId, db.articulo.id),
+      );
+
+  $$ArticuloTableProcessedTableManager get articuloId {
+    final $_column = $_itemColumn<String>('articulo_id')!;
+
+    final manager = $$ArticuloTableTableManager(
+      $_db,
+      $_db.articulo,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_articuloIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ArticuloVarianteTable _varianteIdTable(_$AppDatabase db) =>
+      db.articuloVariante.createAlias(
+        $_aliasNameGenerator(db.asignacion.varianteId, db.articuloVariante.id),
+      );
+
+  $$ArticuloVarianteTableProcessedTableManager? get varianteId {
+    final $_column = $_itemColumn<String>('variante_id');
+    if ($_column == null) return null;
+    final manager = $$ArticuloVarianteTableTableManager(
+      $_db,
+      $_db.articuloVariante,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_varianteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ArticuloUnidadTable _unidadIdTable(_$AppDatabase db) =>
+      db.articuloUnidad.createAlias(
+        $_aliasNameGenerator(db.asignacion.unidadId, db.articuloUnidad.id),
+      );
+
+  $$ArticuloUnidadTableProcessedTableManager? get unidadId {
+    final $_column = $_itemColumn<String>('unidad_id');
+    if ($_column == null) return null;
+    final manager = $$ArticuloUnidadTableTableManager(
+      $_db,
+      $_db.articuloUnidad,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_unidadIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EmpleadoTable _empleadoIdTable(_$AppDatabase db) =>
+      db.empleado.createAlias(
+        $_aliasNameGenerator(db.asignacion.empleadoId, db.empleado.id),
+      );
+
+  $$EmpleadoTableProcessedTableManager? get empleadoId {
+    final $_column = $_itemColumn<String>('empleado_id');
+    if ($_column == null) return null;
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(db.asignacion.servicioId, db.servicio.id),
+      );
+
+  $$ServicioTableProcessedTableManager? get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id');
+    if ($_column == null) return null;
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AsignacionTable _asignacionReemplazoIdTable(_$AppDatabase db) =>
+      db.asignacion.createAlias(
+        $_aliasNameGenerator(
+          db.asignacion.asignacionReemplazoId,
+          db.asignacion.id,
+        ),
+      );
+
+  $$AsignacionTableProcessedTableManager? get asignacionReemplazoId {
+    final $_column = $_itemColumn<String>('asignacion_reemplazo_id');
+    if ($_column == null) return null;
+    final manager = $$AsignacionTableTableManager(
+      $_db,
+      $_db.asignacion,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _asignacionReemplazoIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DescuentoInventarioTable,
+    List<DescuentoInventarioData>
+  >
+  _descuentoInventarioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.descuentoInventario,
+        aliasName: $_aliasNameGenerator(
+          db.asignacion.id,
+          db.descuentoInventario.asignacionId,
+        ),
+      );
+
+  $$DescuentoInventarioTableProcessedTableManager get descuentoInventarioRefs {
+    final manager = $$DescuentoInventarioTableTableManager(
+      $_db,
+      $_db.descuentoInventario,
+    ).filter((f) => f.asignacionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _descuentoInventarioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $AsignacionAttachmentTable,
+    List<AsignacionAttachmentData>
+  >
+  _asignacionAttachmentRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.asignacionAttachment,
+        aliasName: $_aliasNameGenerator(
+          db.asignacion.id,
+          db.asignacionAttachment.asignacionId,
+        ),
+      );
+
+  $$AsignacionAttachmentTableProcessedTableManager
+  get asignacionAttachmentRefs {
+    final manager = $$AsignacionAttachmentTableTableManager(
+      $_db,
+      $_db.asignacionAttachment,
+    ).filter((f) => f.asignacionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _asignacionAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$AsignacionTableFilterComposer
+    extends Composer<_$AppDatabase, $AsignacionTable> {
+  $$AsignacionTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaEntrega => $composableBuilder(
+    column: $table.fechaEntrega,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get condicionEntrega => $composableBuilder(
+    column: $table.condicionEntrega,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaCierre => $composableBuilder(
+    column: $table.fechaCierre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoCierre => $composableBuilder(
+    column: $table.motivoCierre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesCierre => $composableBuilder(
+    column: $table.observacionesCierre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get atribuibleAlEmpleado => $composableBuilder(
+    column: $table.atribuibleAlEmpleado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ArticuloTableFilterComposer get articuloId {
+    final $$ArticuloTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableFilterComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloVarianteTableFilterComposer get varianteId {
+    final $$ArticuloVarianteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.varianteId,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableFilterComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloUnidadTableFilterComposer get unidadId {
+    final $$ArticuloUnidadTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableFilterComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableFilterComposer get empleadoId {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AsignacionTableFilterComposer get asignacionReemplazoId {
+    final $$AsignacionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.asignacionReemplazoId,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> descuentoInventarioRefs(
+    Expression<bool> Function($$DescuentoInventarioTableFilterComposer f) f,
+  ) {
+    final $$DescuentoInventarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.descuentoInventario,
+      getReferencedColumn: (t) => t.asignacionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DescuentoInventarioTableFilterComposer(
+            $db: $db,
+            $table: $db.descuentoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionAttachmentRefs(
+    Expression<bool> Function($$AsignacionAttachmentTableFilterComposer f) f,
+  ) {
+    final $$AsignacionAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacionAttachment,
+      getReferencedColumn: (t) => t.asignacionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacionAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$AsignacionTableOrderingComposer
+    extends Composer<_$AppDatabase, $AsignacionTable> {
+  $$AsignacionTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaEntrega => $composableBuilder(
+    column: $table.fechaEntrega,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get condicionEntrega => $composableBuilder(
+    column: $table.condicionEntrega,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaCierre => $composableBuilder(
+    column: $table.fechaCierre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoCierre => $composableBuilder(
+    column: $table.motivoCierre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesCierre => $composableBuilder(
+    column: $table.observacionesCierre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get atribuibleAlEmpleado => $composableBuilder(
+    column: $table.atribuibleAlEmpleado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ArticuloTableOrderingComposer get articuloId {
+    final $$ArticuloTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableOrderingComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloVarianteTableOrderingComposer get varianteId {
+    final $$ArticuloVarianteTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.varianteId,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableOrderingComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloUnidadTableOrderingComposer get unidadId {
+    final $$ArticuloUnidadTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableOrderingComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableOrderingComposer get empleadoId {
+    final $$EmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AsignacionTableOrderingComposer get asignacionReemplazoId {
+    final $$AsignacionTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.asignacionReemplazoId,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableOrderingComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AsignacionTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AsignacionTable> {
+  $$AsignacionTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cantidad =>
+      $composableBuilder(column: $table.cantidad, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaEntrega => $composableBuilder(
+    column: $table.fechaEntrega,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get condicionEntrega => $composableBuilder(
+    column: $table.condicionEntrega,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaCierre => $composableBuilder(
+    column: $table.fechaCierre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get motivoCierre => $composableBuilder(
+    column: $table.motivoCierre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesCierre => $composableBuilder(
+    column: $table.observacionesCierre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get atribuibleAlEmpleado => $composableBuilder(
+    column: $table.atribuibleAlEmpleado,
+    builder: (column) => column,
+  );
+
+  $$ArticuloTableAnnotationComposer get articuloId {
+    final $$ArticuloTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloVarianteTableAnnotationComposer get varianteId {
+    final $$ArticuloVarianteTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.varianteId,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloUnidadTableAnnotationComposer get unidadId {
+    final $$ArticuloUnidadTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableAnnotationComposer get empleadoId {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AsignacionTableAnnotationComposer get asignacionReemplazoId {
+    final $$AsignacionTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.asignacionReemplazoId,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableAnnotationComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> descuentoInventarioRefs<T extends Object>(
+    Expression<T> Function($$DescuentoInventarioTableAnnotationComposer a) f,
+  ) {
+    final $$DescuentoInventarioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.descuentoInventario,
+          getReferencedColumn: (t) => t.asignacionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DescuentoInventarioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.descuentoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> asignacionAttachmentRefs<T extends Object>(
+    Expression<T> Function($$AsignacionAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionAttachmentTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionAttachment,
+          getReferencedColumn: (t) => t.asignacionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionAttachmentTableAnnotationComposer(
+                $db: $db,
+                $table: $db.asignacionAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$AsignacionTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AsignacionTable,
+          AsignacionData,
+          $$AsignacionTableFilterComposer,
+          $$AsignacionTableOrderingComposer,
+          $$AsignacionTableAnnotationComposer,
+          $$AsignacionTableCreateCompanionBuilder,
+          $$AsignacionTableUpdateCompanionBuilder,
+          (AsignacionData, $$AsignacionTableReferences),
+          AsignacionData,
+          PrefetchHooks Function({
+            bool articuloId,
+            bool varianteId,
+            bool unidadId,
+            bool empleadoId,
+            bool servicioId,
+            bool asignacionReemplazoId,
+            bool descuentoInventarioRefs,
+            bool asignacionAttachmentRefs,
+          })
+        > {
+  $$AsignacionTableTableManager(_$AppDatabase db, $AsignacionTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$AsignacionTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$AsignacionTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$AsignacionTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> articuloId = const Value.absent(),
+                Value<String?> varianteId = const Value.absent(),
+                Value<String?> unidadId = const Value.absent(),
+                Value<int> cantidad = const Value.absent(),
+                Value<String?> empleadoId = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<DateTime> fechaEntrega = const Value.absent(),
+                Value<String?> condicionEntrega = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaCierre = const Value.absent(),
+                Value<String?> motivoCierre = const Value.absent(),
+                Value<String?> observacionesCierre = const Value.absent(),
+                Value<bool?> atribuibleAlEmpleado = const Value.absent(),
+                Value<String?> asignacionReemplazoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                articuloId: articuloId,
+                varianteId: varianteId,
+                unidadId: unidadId,
+                cantidad: cantidad,
+                empleadoId: empleadoId,
+                servicioId: servicioId,
+                fechaEntrega: fechaEntrega,
+                condicionEntrega: condicionEntrega,
+                observaciones: observaciones,
+                estatus: estatus,
+                fechaCierre: fechaCierre,
+                motivoCierre: motivoCierre,
+                observacionesCierre: observacionesCierre,
+                atribuibleAlEmpleado: atribuibleAlEmpleado,
+                asignacionReemplazoId: asignacionReemplazoId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String articuloId,
+                Value<String?> varianteId = const Value.absent(),
+                Value<String?> unidadId = const Value.absent(),
+                required int cantidad,
+                Value<String?> empleadoId = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                required DateTime fechaEntrega,
+                Value<String?> condicionEntrega = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaCierre = const Value.absent(),
+                Value<String?> motivoCierre = const Value.absent(),
+                Value<String?> observacionesCierre = const Value.absent(),
+                Value<bool?> atribuibleAlEmpleado = const Value.absent(),
+                Value<String?> asignacionReemplazoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                articuloId: articuloId,
+                varianteId: varianteId,
+                unidadId: unidadId,
+                cantidad: cantidad,
+                empleadoId: empleadoId,
+                servicioId: servicioId,
+                fechaEntrega: fechaEntrega,
+                condicionEntrega: condicionEntrega,
+                observaciones: observaciones,
+                estatus: estatus,
+                fechaCierre: fechaCierre,
+                motivoCierre: motivoCierre,
+                observacionesCierre: observacionesCierre,
+                atribuibleAlEmpleado: atribuibleAlEmpleado,
+                asignacionReemplazoId: asignacionReemplazoId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$AsignacionTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            articuloId = false,
+            varianteId = false,
+            unidadId = false,
+            empleadoId = false,
+            servicioId = false,
+            asignacionReemplazoId = false,
+            descuentoInventarioRefs = false,
+            asignacionAttachmentRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (descuentoInventarioRefs) db.descuentoInventario,
+                if (asignacionAttachmentRefs) db.asignacionAttachment,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (articuloId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.articuloId,
+                            referencedTable: $$AsignacionTableReferences
+                                ._articuloIdTable(db),
+                            referencedColumn:
+                                $$AsignacionTableReferences
+                                    ._articuloIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (varianteId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.varianteId,
+                            referencedTable: $$AsignacionTableReferences
+                                ._varianteIdTable(db),
+                            referencedColumn:
+                                $$AsignacionTableReferences
+                                    ._varianteIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (unidadId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.unidadId,
+                            referencedTable: $$AsignacionTableReferences
+                                ._unidadIdTable(db),
+                            referencedColumn:
+                                $$AsignacionTableReferences
+                                    ._unidadIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (empleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empleadoId,
+                            referencedTable: $$AsignacionTableReferences
+                                ._empleadoIdTable(db),
+                            referencedColumn:
+                                $$AsignacionTableReferences
+                                    ._empleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable: $$AsignacionTableReferences
+                                ._servicioIdTable(db),
+                            referencedColumn:
+                                $$AsignacionTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (asignacionReemplazoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.asignacionReemplazoId,
+                            referencedTable: $$AsignacionTableReferences
+                                ._asignacionReemplazoIdTable(db),
+                            referencedColumn:
+                                $$AsignacionTableReferences
+                                    ._asignacionReemplazoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (descuentoInventarioRefs)
+                    await $_getPrefetchedData<
+                      AsignacionData,
+                      $AsignacionTable,
+                      DescuentoInventarioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AsignacionTableReferences
+                          ._descuentoInventarioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AsignacionTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).descuentoInventarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.asignacionId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (asignacionAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AsignacionData,
+                      $AsignacionTable,
+                      AsignacionAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AsignacionTableReferences
+                          ._asignacionAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AsignacionTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.asignacionId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AsignacionTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AsignacionTable,
+      AsignacionData,
+      $$AsignacionTableFilterComposer,
+      $$AsignacionTableOrderingComposer,
+      $$AsignacionTableAnnotationComposer,
+      $$AsignacionTableCreateCompanionBuilder,
+      $$AsignacionTableUpdateCompanionBuilder,
+      (AsignacionData, $$AsignacionTableReferences),
+      AsignacionData,
+      PrefetchHooks Function({
+        bool articuloId,
+        bool varianteId,
+        bool unidadId,
+        bool empleadoId,
+        bool servicioId,
+        bool asignacionReemplazoId,
+        bool descuentoInventarioRefs,
+        bool asignacionAttachmentRefs,
+      })
+    >;
+typedef $$DescuentoInventarioTableCreateCompanionBuilder =
+    DescuentoInventarioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String asignacionId,
+      required String empleadoId,
+      required String motivo,
+      required int importe,
+      Value<String> estatus,
+      Value<DateTime?> fechaAplicacion,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$DescuentoInventarioTableUpdateCompanionBuilder =
+    DescuentoInventarioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> asignacionId,
+      Value<String> empleadoId,
+      Value<String> motivo,
+      Value<int> importe,
+      Value<String> estatus,
+      Value<DateTime?> fechaAplicacion,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$DescuentoInventarioTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DescuentoInventarioTable,
+          DescuentoInventarioData
+        > {
+  $$DescuentoInventarioTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AsignacionTable _asignacionIdTable(_$AppDatabase db) =>
+      db.asignacion.createAlias(
+        $_aliasNameGenerator(
+          db.descuentoInventario.asignacionId,
+          db.asignacion.id,
+        ),
+      );
+
+  $$AsignacionTableProcessedTableManager get asignacionId {
+    final $_column = $_itemColumn<String>('asignacion_id')!;
+
+    final manager = $$AsignacionTableTableManager(
+      $_db,
+      $_db.asignacion,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_asignacionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EmpleadoTable _empleadoIdTable(_$AppDatabase db) =>
+      db.empleado.createAlias(
+        $_aliasNameGenerator(db.descuentoInventario.empleadoId, db.empleado.id),
+      );
+
+  $$EmpleadoTableProcessedTableManager get empleadoId {
+    final $_column = $_itemColumn<String>('empleado_id')!;
+
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DescuentoInventarioTableFilterComposer
+    extends Composer<_$AppDatabase, $DescuentoInventarioTable> {
+  $$DescuentoInventarioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivo => $composableBuilder(
+    column: $table.motivo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importe => $composableBuilder(
+    column: $table.importe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaAplicacion => $composableBuilder(
+    column: $table.fechaAplicacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AsignacionTableFilterComposer get asignacionId {
+    final $$AsignacionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.asignacionId,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableFilterComposer get empleadoId {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DescuentoInventarioTableOrderingComposer
+    extends Composer<_$AppDatabase, $DescuentoInventarioTable> {
+  $$DescuentoInventarioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivo => $composableBuilder(
+    column: $table.motivo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importe => $composableBuilder(
+    column: $table.importe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaAplicacion => $composableBuilder(
+    column: $table.fechaAplicacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AsignacionTableOrderingComposer get asignacionId {
+    final $$AsignacionTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.asignacionId,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableOrderingComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableOrderingComposer get empleadoId {
+    final $$EmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DescuentoInventarioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DescuentoInventarioTable> {
+  $$DescuentoInventarioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get motivo =>
+      $composableBuilder(column: $table.motivo, builder: (column) => column);
+
+  GeneratedColumn<int> get importe =>
+      $composableBuilder(column: $table.importe, builder: (column) => column);
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaAplicacion => $composableBuilder(
+    column: $table.fechaAplicacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  $$AsignacionTableAnnotationComposer get asignacionId {
+    final $$AsignacionTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.asignacionId,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableAnnotationComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableAnnotationComposer get empleadoId {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DescuentoInventarioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DescuentoInventarioTable,
+          DescuentoInventarioData,
+          $$DescuentoInventarioTableFilterComposer,
+          $$DescuentoInventarioTableOrderingComposer,
+          $$DescuentoInventarioTableAnnotationComposer,
+          $$DescuentoInventarioTableCreateCompanionBuilder,
+          $$DescuentoInventarioTableUpdateCompanionBuilder,
+          (DescuentoInventarioData, $$DescuentoInventarioTableReferences),
+          DescuentoInventarioData,
+          PrefetchHooks Function({bool asignacionId, bool empleadoId})
+        > {
+  $$DescuentoInventarioTableTableManager(
+    _$AppDatabase db,
+    $DescuentoInventarioTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DescuentoInventarioTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DescuentoInventarioTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DescuentoInventarioTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> asignacionId = const Value.absent(),
+                Value<String> empleadoId = const Value.absent(),
+                Value<String> motivo = const Value.absent(),
+                Value<int> importe = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaAplicacion = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DescuentoInventarioCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                asignacionId: asignacionId,
+                empleadoId: empleadoId,
+                motivo: motivo,
+                importe: importe,
+                estatus: estatus,
+                fechaAplicacion: fechaAplicacion,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String asignacionId,
+                required String empleadoId,
+                required String motivo,
+                required int importe,
+                Value<String> estatus = const Value.absent(),
+                Value<DateTime?> fechaAplicacion = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DescuentoInventarioCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                asignacionId: asignacionId,
+                empleadoId: empleadoId,
+                motivo: motivo,
+                importe: importe,
+                estatus: estatus,
+                fechaAplicacion: fechaAplicacion,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DescuentoInventarioTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({asignacionId = false, empleadoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (asignacionId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.asignacionId,
+                            referencedTable:
+                                $$DescuentoInventarioTableReferences
+                                    ._asignacionIdTable(db),
+                            referencedColumn:
+                                $$DescuentoInventarioTableReferences
+                                    ._asignacionIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (empleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empleadoId,
+                            referencedTable:
+                                $$DescuentoInventarioTableReferences
+                                    ._empleadoIdTable(db),
+                            referencedColumn:
+                                $$DescuentoInventarioTableReferences
+                                    ._empleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DescuentoInventarioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DescuentoInventarioTable,
+      DescuentoInventarioData,
+      $$DescuentoInventarioTableFilterComposer,
+      $$DescuentoInventarioTableOrderingComposer,
+      $$DescuentoInventarioTableAnnotationComposer,
+      $$DescuentoInventarioTableCreateCompanionBuilder,
+      $$DescuentoInventarioTableUpdateCompanionBuilder,
+      (DescuentoInventarioData, $$DescuentoInventarioTableReferences),
+      DescuentoInventarioData,
+      PrefetchHooks Function({bool asignacionId, bool empleadoId})
+    >;
+typedef $$AsignacionAttachmentTableCreateCompanionBuilder =
+    AsignacionAttachmentCompanion Function({
+      required String attachmentId,
+      required String asignacionId,
+      Value<int> rowid,
+    });
+typedef $$AsignacionAttachmentTableUpdateCompanionBuilder =
+    AsignacionAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> asignacionId,
+      Value<int> rowid,
+    });
+
+final class $$AsignacionAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $AsignacionAttachmentTable,
+          AsignacionAttachmentData
+        > {
+  $$AsignacionAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.asignacionAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AsignacionTable _asignacionIdTable(_$AppDatabase db) =>
+      db.asignacion.createAlias(
+        $_aliasNameGenerator(
+          db.asignacionAttachment.asignacionId,
+          db.asignacion.id,
+        ),
+      );
+
+  $$AsignacionTableProcessedTableManager get asignacionId {
+    final $_column = $_itemColumn<String>('asignacion_id')!;
+
+    final manager = $$AsignacionTableTableManager(
+      $_db,
+      $_db.asignacion,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_asignacionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AsignacionAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $AsignacionAttachmentTable> {
+  $$AsignacionAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AsignacionTableFilterComposer get asignacionId {
+    final $$AsignacionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.asignacionId,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AsignacionAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $AsignacionAttachmentTable> {
+  $$AsignacionAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AsignacionTableOrderingComposer get asignacionId {
+    final $$AsignacionTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.asignacionId,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableOrderingComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AsignacionAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AsignacionAttachmentTable> {
+  $$AsignacionAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AsignacionTableAnnotationComposer get asignacionId {
+    final $$AsignacionTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.asignacionId,
+      referencedTable: $db.asignacion,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionTableAnnotationComposer(
+            $db: $db,
+            $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AsignacionAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AsignacionAttachmentTable,
+          AsignacionAttachmentData,
+          $$AsignacionAttachmentTableFilterComposer,
+          $$AsignacionAttachmentTableOrderingComposer,
+          $$AsignacionAttachmentTableAnnotationComposer,
+          $$AsignacionAttachmentTableCreateCompanionBuilder,
+          $$AsignacionAttachmentTableUpdateCompanionBuilder,
+          (AsignacionAttachmentData, $$AsignacionAttachmentTableReferences),
+          AsignacionAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool asignacionId})
+        > {
+  $$AsignacionAttachmentTableTableManager(
+    _$AppDatabase db,
+    $AsignacionAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$AsignacionAttachmentTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$AsignacionAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$AsignacionAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> asignacionId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionAttachmentCompanion(
+                attachmentId: attachmentId,
+                asignacionId: asignacionId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String asignacionId,
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                asignacionId: asignacionId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$AsignacionAttachmentTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            attachmentId = false,
+            asignacionId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable:
+                                $$AsignacionAttachmentTableReferences
+                                    ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$AsignacionAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (asignacionId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.asignacionId,
+                            referencedTable:
+                                $$AsignacionAttachmentTableReferences
+                                    ._asignacionIdTable(db),
+                            referencedColumn:
+                                $$AsignacionAttachmentTableReferences
+                                    ._asignacionIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AsignacionAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AsignacionAttachmentTable,
+      AsignacionAttachmentData,
+      $$AsignacionAttachmentTableFilterComposer,
+      $$AsignacionAttachmentTableOrderingComposer,
+      $$AsignacionAttachmentTableAnnotationComposer,
+      $$AsignacionAttachmentTableCreateCompanionBuilder,
+      $$AsignacionAttachmentTableUpdateCompanionBuilder,
+      (AsignacionAttachmentData, $$AsignacionAttachmentTableReferences),
+      AsignacionAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool asignacionId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -98832,4 +103893,10 @@ class $AppDatabaseManager {
         _db,
         _db.movimientoInventarioAttachment,
       );
+  $$AsignacionTableTableManager get asignacion =>
+      $$AsignacionTableTableManager(_db, _db.asignacion);
+  $$DescuentoInventarioTableTableManager get descuentoInventario =>
+      $$DescuentoInventarioTableTableManager(_db, _db.descuentoInventario);
+  $$AsignacionAttachmentTableTableManager get asignacionAttachment =>
+      $$AsignacionAttachmentTableTableManager(_db, _db.asignacionAttachment);
 }

@@ -5,19 +5,32 @@ import 'articulo_table.dart';
 import 'articulo_unidad_table.dart';
 import 'articulo_variante_table.dart';
 
-/// Vocabulario fijo y pequeño de movimientos (Etapa 7A). `entrada` es
-/// la forma normal de aumentar la existencia (con costo, de una
-/// compra); `baja` es la forma normal de sacarla definitivamente del
-/// Total (decomiso, daño/pérdida detectados antes de asignar). Sin
-/// `cantidad` con signo: `ajusteEntrada`/`ajusteSalida` cubren
-/// correcciones (conteo físico, mermas) con el mismo efecto en el
-/// bucket que `entrada`/`baja` pero se reportan por separado — nunca
-/// se confunde una compra real con una corrección de conteo. Los
-/// tipos ligados a asignación/devolución/daño/pérdida atribuible
-/// (Etapa 7B) se agregan cuando `Asignacion` exista — agregar un valor
-/// de enum no requiere migración (columna literal, sin `CHECK` que
-/// restrinja valores, mismo criterio que el resto del proyecto).
-enum TipoMovimientoInventario { entrada, baja, ajusteEntrada, ajusteSalida }
+/// Vocabulario fijo y pequeño de movimientos. `entrada` es la forma
+/// normal de aumentar la existencia (con costo, de una compra); `baja`
+/// es la forma normal de sacarla definitivamente del Total (decomiso,
+/// daño/pérdida detectados antes de asignar). Sin `cantidad` con
+/// signo: `ajusteEntrada`/`ajusteSalida` cubren correcciones (conteo
+/// físico, mermas) con el mismo efecto en el bucket que `entrada`/
+/// `baja` pero se reportan por separado — nunca se confunde una
+/// compra real con una corrección de conteo.
+///
+/// `salidaAsignacion`/`entradaDevolucion`/`salidaDano`/`salidaPerdida`
+/// (Etapa 7B) siempre se originan cerrando/creando una `Asignacion` —
+/// nunca de forma suelta — y por eso siempre parten de/hacia el
+/// bucket Asignado, nunca directo Disponible↔Dañado (ver
+/// `AsignacionRepositoryImpl`). Agregarlos no requirió migración
+/// (columna literal, sin `CHECK` que restrinja valores, mismo
+/// criterio que el resto del proyecto).
+enum TipoMovimientoInventario {
+  entrada,
+  baja,
+  ajusteEntrada,
+  ajusteSalida,
+  salidaAsignacion,
+  entradaDevolucion,
+  salidaDano,
+  salidaPerdida,
+}
 
 /// El ledger de existencias de Inventario (Etapa 7A) — la única fuente
 /// de verdad de cuánto hay de un `Articulo`/`ArticuloVariante`, o en

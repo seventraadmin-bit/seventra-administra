@@ -218,6 +218,9 @@ class InventarioRepositoryImpl implements InventarioRepository {
     final movimientos = await query.get();
 
     var disponible = 0;
+    var asignado = 0;
+    var danado = 0;
+    var perdido = 0;
     for (final m in movimientos) {
       final tipo = TipoMovimientoInventario.values.byName(m.tipoMovimiento);
       switch (tipo) {
@@ -227,10 +230,22 @@ class InventarioRepositoryImpl implements InventarioRepository {
         case TipoMovimientoInventario.baja:
         case TipoMovimientoInventario.ajusteSalida:
           disponible -= m.cantidad;
+        case TipoMovimientoInventario.salidaAsignacion:
+          disponible -= m.cantidad;
+          asignado += m.cantidad;
+        case TipoMovimientoInventario.entradaDevolucion:
+          asignado -= m.cantidad;
+          disponible += m.cantidad;
+        case TipoMovimientoInventario.salidaDano:
+          asignado -= m.cantidad;
+          danado += m.cantidad;
+        case TipoMovimientoInventario.salidaPerdida:
+          asignado -= m.cantidad;
+          perdido += m.cantidad;
       }
     }
 
-    return ExistenciaArticulo(disponible: disponible);
+    return ExistenciaArticulo(disponible: disponible, asignado: asignado, danado: danado, perdido: perdido);
   }
 
   @override

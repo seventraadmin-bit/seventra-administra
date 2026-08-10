@@ -3,17 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../organizacion/organizacion_providers.dart';
 import 'data/repositories/articulo_repository_impl.dart';
+import 'data/repositories/asignacion_repository_impl.dart';
 import 'data/repositories/categoria_articulo_repository_impl.dart';
 import 'data/repositories/inventario_repository_impl.dart';
 import 'domain/repositories/articulo_repository.dart';
+import 'domain/repositories/asignacion_repository.dart';
 import 'domain/repositories/categoria_articulo_repository.dart';
 import 'domain/repositories/inventario_repository.dart';
 import 'domain/usecases/adjuntar_comprobante_movimiento_usecase.dart';
 import 'domain/usecases/archivar_articulo_usecase.dart';
 import 'domain/usecases/archivar_categoria_articulo_usecase.dart';
 import 'domain/usecases/archivar_variante_articulo_usecase.dart';
+import 'domain/usecases/cancelar_descuento_inventario_usecase.dart';
+import 'domain/usecases/cerrar_asignacion_usecase.dart';
 import 'domain/usecases/corregir_articulo_usecase.dart';
 import 'domain/usecases/crear_articulo_usecase.dart';
+import 'domain/usecases/crear_asignacion_usecase.dart';
 import 'domain/usecases/crear_categoria_articulo_usecase.dart';
 import 'domain/usecases/crear_variante_articulo_usecase.dart';
 import 'domain/usecases/registrar_ajuste_usecase.dart';
@@ -21,6 +26,7 @@ import 'domain/usecases/registrar_baja_unidad_usecase.dart';
 import 'domain/usecases/registrar_baja_usecase.dart';
 import 'domain/usecases/registrar_entrada_unidad_usecase.dart';
 import 'domain/usecases/registrar_entrada_usecase.dart';
+import 'domain/usecases/reemplazar_asignacion_usecase.dart';
 
 /// Providers del dominio Inventario (Etapa 7A) — nace aquí, separado
 /// de `organizacion`/`personal`/`finanzas`/`nomina` (mismo criterio
@@ -95,4 +101,33 @@ final registrarAjusteUseCaseProvider = Provider<RegistrarAjusteUseCase>((ref) {
 
 final adjuntarComprobanteMovimientoUseCaseProvider = Provider<AdjuntarComprobanteMovimientoUseCase>((ref) {
   return AdjuntarComprobanteMovimientoUseCase(ref.watch(inventarioRepositoryProvider), ref.watch(attachmentStorageProvider));
+});
+
+/// Providers de Asignaciones (Etapa 7B).
+final asignacionRepositoryProvider = Provider<AsignacionRepository>((ref) {
+  return AsignacionRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final crearAsignacionUseCaseProvider = Provider<CrearAsignacionUseCase>((ref) {
+  return CrearAsignacionUseCase(
+    ref.watch(asignacionRepositoryProvider),
+    ref.watch(articuloRepositoryProvider),
+    ref.watch(inventarioRepositoryProvider),
+  );
+});
+
+final cerrarAsignacionUseCaseProvider = Provider<CerrarAsignacionUseCase>((ref) {
+  return CerrarAsignacionUseCase(ref.watch(asignacionRepositoryProvider));
+});
+
+final reemplazarAsignacionUseCaseProvider = Provider<ReemplazarAsignacionUseCase>((ref) {
+  return ReemplazarAsignacionUseCase(
+    ref.watch(asignacionRepositoryProvider),
+    ref.watch(articuloRepositoryProvider),
+    ref.watch(inventarioRepositoryProvider),
+  );
+});
+
+final cancelarDescuentoInventarioUseCaseProvider = Provider<CancelarDescuentoInventarioUseCase>((ref) {
+  return CancelarDescuentoInventarioUseCase(ref.watch(asignacionRepositoryProvider));
 });

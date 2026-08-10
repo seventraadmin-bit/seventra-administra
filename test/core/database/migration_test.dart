@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 27;
+const _currentSchemaVersion = 28;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -6688,6 +6688,255 @@ void main() {
             ),
           );
       expect(movimiento.cantidad, 20);
+
+      await db.close();
+    },
+  );
+
+  test(
+    '28.json coincide con el esquema final de la Etapa 7B (tablas nuevas Asignacion, DescuentoInventario, '
+    'AsignacionAttachment + índice único parcial idx_asignacion_unidad_activa)',
+    () async {
+      final schema = await verifier.schemaAt(28);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['asignacion', 'descuento_inventario', 'asignacion_attachment']));
+
+      final sqlAsignacion =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion'")
+                  .single['sql']
+              as String;
+      expect(
+        sqlAsignacion,
+        contains(
+          'CHECK ((empleado_id IS NOT NULL AND servicio_id IS NULL) OR '
+          '(empleado_id IS NULL AND servicio_id IS NOT NULL))',
+        ),
+      );
+      expect(sqlAsignacion, contains('CHECK (variante_id IS NULL OR unidad_id IS NULL)'));
+      expect(sqlAsignacion, contains('CHECK (unidad_id IS NULL OR cantidad = 1)'));
+      expect(
+        sqlAsignacion,
+        contains(
+          "CHECK ((estatus = 'activa' AND fecha_cierre IS NULL) OR "
+          "(estatus != 'activa' AND fecha_cierre IS NOT NULL))",
+        ),
+      );
+      expect(
+        sqlAsignacion,
+        contains("CHECK (atribuible_al_empleado IS NULL OR estatus = 'danada' OR estatus = 'perdida')"),
+      );
+
+      final sqlDescuento =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'descuento_inventario'")
+                  .single['sql']
+              as String;
+      expect(sqlDescuento, contains('CHECK (importe > 0)'));
+
+      final sqlIndice =
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_asignacion_unidad_activa'",
+                  )
+                  .single['sql']
+              as String;
+      expect(
+        sqlIndice,
+        'CREATE UNIQUE INDEX idx_asignacion_unidad_activa '
+        "ON asignacion (unidad_id) WHERE unidad_id IS NOT NULL AND estatus = 'activa'",
+      );
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 27 → 28 conserva una Nómina real y crea las tablas de Asignaciones vacías, sin nuevas '
+    'entradas de CodigoSecuencia',
+    () async {
+      final schemaV27 = await verifier.schemaAt(27);
+      final raw = schemaV27.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO nomina (
+        id, folio, anio, mes, tipo_periodo, fecha_inicio_periodo, fecha_fin_periodo, fecha_pago_ordinaria,
+        estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'nomina-real', 'NOM-000001', 2026, 1, 'primera', 1735689600, 1736812800, 1737331200,
+        'cerrada', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV27.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final nominas = await db.select(db.nomina).get();
+      expect(nominas, hasLength(1), reason: 'ninguna Nómina real debe perderse en una migración puramente aditiva');
+
+      final asignaciones = await db.select(db.asignacion).get();
+      expect(asignaciones, isEmpty, reason: 'Asignacion es tabla nueva en 7B, sin backfill');
+      final descuentos = await db.select(db.descuentoInventario).get();
+      expect(descuentos, isEmpty);
+
+      final codigosSecuencia = await db.select(db.codigoSecuencia).get();
+      expect(codigosSecuencia, hasLength(18), reason: '7B no agrega ninguna entrada nueva de CodigoSecuencia');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK y protección de unidad serializada tras la migración: empleado/servicio mutuamente excluyentes, '
+    'cierre consistente con fecha_cierre, atribución solo en danada/perdida, importe de descuento positivo, '
+    'índice único rechaza una segunda asignación activa sobre la misma unidad',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final categoria = await db.into(db.categoriaArticulo).insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Radios'),
+          );
+      final articulo = await db.into(db.articulo).insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              categoriaId: categoria.id,
+              nombre: 'Radio Motorola',
+              manejaSerie: const Value(true),
+            ),
+          );
+      final unidad = await db.into(db.articuloUnidad).insertReturning(
+            ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-0001'),
+          );
+
+      final tipoServicio = await db.into(db.tipoServicio).insertReturning(
+            TipoServicioCompanion.insert(id: 'tipo-servicio-real', codigo: 'VIGILANCIA_FIJA', nombre: 'Vigilancia fija'),
+          );
+      final cliente = await db.into(db.cliente).insertReturning(
+            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+          );
+      final servicio = await db.into(db.servicio).insertReturning(
+            ServicioCompanion.insert(
+              codigo: 'SER-000001',
+              clienteId: cliente.id,
+              nombre: 'Vigilancia Sportium Toluca',
+              tipoServicioId: tipoServicio.id,
+              fechaInicio: DateTime(2026, 1, 1),
+            ),
+          );
+      final empleado = await db.into(db.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+
+      final baseAsignacion = AsignacionCompanion.insert(
+        articuloId: articulo.id,
+        cantidad: 1,
+        unidadId: const Value('placeholder'),
+        empleadoId: Value(empleado.id),
+        fechaEntrega: DateTime(2026, 1, 1),
+      );
+
+      await expectLater(
+        db.into(db.asignacion).insert(
+              baseAsignacion.copyWith(unidadId: Value(unidad.id), servicioId: Value(servicio.id)),
+            ),
+        throwsA(anything),
+        reason: 'empleado_id y servicio_id nunca pueden venir poblados a la vez',
+      );
+      await expectLater(
+        db.into(db.asignacion).insert(
+              baseAsignacion.copyWith(unidadId: Value(unidad.id), empleadoId: const Value(null)),
+            ),
+        throwsA(anything),
+        reason: 'exactamente uno de empleado_id/servicio_id debe venir poblado',
+      );
+      await expectLater(
+        db.into(db.asignacion).insert(
+              baseAsignacion.copyWith(unidadId: Value(unidad.id), estatus: const Value('devuelta')),
+            ),
+        throwsA(anything),
+        reason: 'estatus != activa exige fecha_cierre poblada',
+      );
+      await expectLater(
+        db.into(db.asignacion).insert(
+              baseAsignacion.copyWith(unidadId: Value(unidad.id), atribuibleAlEmpleado: const Value(true)),
+            ),
+        throwsA(anything),
+        reason: 'atribuible_al_empleado solo tiene sentido en danada/perdida',
+      );
+
+      final asignacion = await db.into(db.asignacion).insertReturning(
+            baseAsignacion.copyWith(unidadId: Value(unidad.id)),
+          );
+      expect(asignacion.estatus, 'activa');
+
+      await expectLater(
+        db.into(db.asignacion).insert(
+              AsignacionCompanion.insert(
+                articuloId: articulo.id,
+                cantidad: 1,
+                unidadId: Value(unidad.id),
+                empleadoId: Value(empleado.id),
+                fechaEntrega: DateTime(2026, 1, 2),
+              ),
+            ),
+        throwsA(anything),
+        reason: 'idx_asignacion_unidad_activa rechaza una segunda asignación activa sobre la misma unidad',
+      );
+
+      await expectLater(
+        db.into(db.descuentoInventario).insert(
+              DescuentoInventarioCompanion.insert(
+                asignacionId: asignacion.id,
+                empleadoId: empleado.id,
+                motivo: 'dano',
+                importe: 0,
+              ),
+            ),
+        throwsA(anything),
+        reason: 'importe de un DescuentoInventario siempre debe ser positivo',
+      );
+
+      final descuento = await db.into(db.descuentoInventario).insertReturning(
+            DescuentoInventarioCompanion.insert(
+              asignacionId: asignacion.id,
+              empleadoId: empleado.id,
+              motivo: 'dano',
+              importe: 150000,
+            ),
+          );
+      expect(descuento.estatus, 'pendiente');
 
       await db.close();
     },

@@ -48,10 +48,14 @@ import '../../features/inventario/data/tables/articulo_table.dart';
 import '../../features/inventario/data/tables/articulo_unidad_table.dart';
 import '../../features/inventario/data/tables/articulo_unidad_telefono_table.dart';
 import '../../features/inventario/data/tables/articulo_variante_table.dart';
+import '../../features/inventario/data/tables/asignacion_attachment_table.dart';
+import '../../features/inventario/data/tables/asignacion_table.dart';
 import '../../features/inventario/data/tables/categoria_articulo_table.dart';
+import '../../features/inventario/data/tables/descuento_inventario_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_attachment_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
 import 'migrations/migrar_asignacion_servicio_v21.dart';
+import 'migrations/migrar_asignacion_v28.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_empleado_v21.dart';
 import 'migrations/migrar_empleado_v23.dart';
@@ -175,12 +179,15 @@ class AppMetadata extends Table {
   ArticuloUnidadTelefono,
   MovimientoInventario,
   MovimientoInventarioAttachment,
+  Asignacion,
+  DescuentoInventario,
+  AsignacionAttachment,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration {
@@ -627,6 +634,19 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(articuloUnidadTelefono);
           await m.createTable(movimientoInventario);
           await m.createTable(movimientoInventarioAttachment);
+        }
+        // Aditiva (Etapa 7B): `Asignacion` (relación Inventario↔
+        // Empleado/Servicio) + su índice único parcial —
+        // `migrarAsignacionV28` corre en su propia transacción con
+        // verificación de FK/integridad (mismo criterio que
+        // `migrarAsignacionServicioV21`, Etapa 5D). `DescuentoInventario`/
+        // `AsignacionAttachment` son puramente aditivas, sin índice
+        // propio, y requieren que `asignacion` ya exista (ambas la
+        // referencian) — por eso corren después.
+        if (to >= 28 && from <= 27) {
+          await migrarAsignacionV28(this, m);
+          await m.createTable(descuentoInventario);
+          await m.createTable(asignacionAttachment);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

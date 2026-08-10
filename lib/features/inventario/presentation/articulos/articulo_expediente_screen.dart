@@ -8,6 +8,7 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/existencia_articulo.dart';
 
+import '../asignaciones/widgets/historial_unidad_dialog.dart';
 import 'articulos_controller.dart';
 import 'articulos_list_screen.dart';
 import 'widgets/crear_variante_dialog.dart';
@@ -313,6 +314,12 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                         emptyState: RisegEmptyState(
                           title: l10n.articuloExpedienteUnidadesVacio,
                           message: '',
+                        ),
+                        rowActionsBuilder: (u) => RisegButton(
+                          label: l10n.asignacionSeccionHistorial,
+                          variant: RisegButtonVariant.ghost,
+                          size: RisegButtonSize.compact,
+                          onPressed: () => mostrarDialogoHistorialUnidad(context, ref, u),
                         ),
                         columns: [
                           RisegColumn<ArticuloUnidadData>(
