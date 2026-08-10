@@ -9,6 +9,7 @@ import 'package:riseg_one/features/vehiculos/domain/usecases/crear_vehiculo_usec
 import 'package:riseg_one/features/vehiculos/domain/usecases/asignar_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/cambiar_asignacion_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/dar_de_baja_vehiculo_usecase.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/finalizar_mantenimiento_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/registrar_kilometraje_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/retirar_asignacion_vehiculo_usecase.dart';
 
@@ -130,6 +131,15 @@ class VehiculosController extends _$VehiculosController {
           estatus: estatus,
         );
     if (resultado is CambiarEstatusVehiculoExitoso) await _cargar();
+    return resultado;
+  }
+
+  /// Cierra el paso por `enMantenimiento` recalculando el estatus
+  /// correcto (Etapa 8D, punto 3) — ver el doc comment de
+  /// `FinalizarMantenimientoVehiculoUseCase`.
+  Future<FinalizarMantenimientoVehiculoResultado> finalizarMantenimiento({required String vehiculoId}) async {
+    final resultado = await ref.read(finalizarMantenimientoVehiculoUseCaseProvider).ejecutar(vehiculoId: vehiculoId);
+    if (resultado is FinalizarMantenimientoVehiculoExitoso) await _cargar();
     return resultado;
   }
 

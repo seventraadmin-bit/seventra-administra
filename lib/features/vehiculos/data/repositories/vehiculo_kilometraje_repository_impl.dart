@@ -27,6 +27,13 @@ class VehiculoKilometrajeRepositoryImpl implements VehiculoKilometrajeRepository
   }
 
   @override
+  Future<List<VehiculoKilometrajeData>> listarTodos() {
+    return (_db.select(_db.vehiculoKilometraje)
+          ..orderBy([(t) => OrderingTerm.desc(t.fecha), (t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+  }
+
+  @override
   Future<VehiculoKilometrajeData> registrar({
     required String vehiculoId,
     required DateTime fecha,

@@ -57,6 +57,7 @@ import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
 import '../../features/vehiculos/data/tables/asignacion_vehiculo_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_documento_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_kilometraje_table.dart';
+import '../../features/vehiculos/data/tables/vehiculo_mantenimiento_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_table.dart';
 import 'migrations/migrar_asignacion_attachment_v29.dart';
 import 'migrations/migrar_asignacion_vehiculo_v31.dart';
@@ -195,12 +196,14 @@ class AppMetadata extends Table {
   VehiculoKilometraje,
   VehiculoDocumento,
   VehiculoDocumentoAttachment,
+  VehiculoMantenimiento,
+  VehiculoMantenimientoAttachment,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 33;
 
   @override
   MigrationStrategy get migration {
@@ -698,6 +701,15 @@ class AppDatabase extends _$AppDatabase {
         if (to >= 32 && from <= 31) {
           await m.createTable(vehiculoDocumento);
           await m.createTable(vehiculoDocumentoAttachment);
+        }
+        // Aditiva (Etapa 8D): `VehiculoMantenimiento`/
+        // `VehiculoMantenimientoAttachment` — ninguna con índice propio,
+        // mismo criterio que la Etapa 8C. Tablas enteramente nuevas, así
+        // que `from <= 32` es seguro sin acotar un origen exacto. Cierra
+        // funcionalmente el dominio Vehículos (8A→8D).
+        if (to >= 33 && from <= 32) {
+          await m.createTable(vehiculoMantenimiento);
+          await m.createTable(vehiculoMantenimientoAttachment);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

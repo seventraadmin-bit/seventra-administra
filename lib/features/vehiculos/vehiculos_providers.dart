@@ -6,22 +6,27 @@ import '../personal/personal_providers.dart';
 import 'data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'data/repositories/vehiculo_documento_repository_impl.dart';
 import 'data/repositories/vehiculo_kilometraje_repository_impl.dart';
+import 'data/repositories/vehiculo_mantenimiento_repository_impl.dart';
 import 'data/repositories/vehiculo_repository_impl.dart';
 import 'domain/repositories/asignacion_vehiculo_repository.dart';
 import 'domain/repositories/vehiculo_documento_repository.dart';
 import 'domain/repositories/vehiculo_kilometraje_repository.dart';
+import 'domain/repositories/vehiculo_mantenimiento_repository.dart';
 import 'domain/repositories/vehiculo_repository.dart';
 import 'domain/usecases/actualizar_fotografia_vehiculo_usecase.dart';
 import 'domain/usecases/adjuntar_archivo_documento_vehiculo_usecase.dart';
+import 'domain/usecases/adjuntar_comprobante_mantenimiento_vehiculo_usecase.dart';
 import 'domain/usecases/asignar_vehiculo_usecase.dart';
 import 'domain/usecases/cambiar_asignacion_vehiculo_usecase.dart';
 import 'domain/usecases/cambiar_estatus_vehiculo_usecase.dart';
 import 'domain/usecases/corregir_vehiculo_usecase.dart';
 import 'domain/usecases/crear_vehiculo_usecase.dart';
 import 'domain/usecases/dar_de_baja_vehiculo_usecase.dart';
+import 'domain/usecases/finalizar_mantenimiento_vehiculo_usecase.dart';
 import 'domain/usecases/obtener_opciones_asignacion_vehiculo_usecase.dart';
 import 'domain/usecases/registrar_documento_vehiculo_usecase.dart';
 import 'domain/usecases/registrar_kilometraje_vehiculo_usecase.dart';
+import 'domain/usecases/registrar_mantenimiento_vehiculo_usecase.dart';
 import 'domain/usecases/retirar_asignacion_vehiculo_usecase.dart';
 
 /// Providers del dominio Vehículos (Etapa 8A) — nace aquí, separado de
@@ -124,5 +129,33 @@ final adjuntarArchivoDocumentoVehiculoUseCaseProvider = Provider<AdjuntarArchivo
   return AdjuntarArchivoDocumentoVehiculoUseCase(
     ref.watch(vehiculoDocumentoRepositoryProvider),
     ref.watch(attachmentStorageProvider),
+  );
+});
+
+/// Providers de Mantenimiento e incidencias (Etapa 8D).
+final vehiculoMantenimientoRepositoryProvider = Provider<VehiculoMantenimientoRepository>((ref) {
+  return VehiculoMantenimientoRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final registrarMantenimientoVehiculoUseCaseProvider = Provider<RegistrarMantenimientoVehiculoUseCase>((ref) {
+  return RegistrarMantenimientoVehiculoUseCase(
+    ref.watch(vehiculoMantenimientoRepositoryProvider),
+    ref.watch(vehiculoRepositoryProvider),
+    ref.watch(vehiculoKilometrajeRepositoryProvider),
+  );
+});
+
+final adjuntarComprobanteMantenimientoVehiculoUseCaseProvider =
+    Provider<AdjuntarComprobanteMantenimientoVehiculoUseCase>((ref) {
+  return AdjuntarComprobanteMantenimientoVehiculoUseCase(
+    ref.watch(vehiculoMantenimientoRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+  );
+});
+
+final finalizarMantenimientoVehiculoUseCaseProvider = Provider<FinalizarMantenimientoVehiculoUseCase>((ref) {
+  return FinalizarMantenimientoVehiculoUseCase(
+    ref.watch(vehiculoRepositoryProvider),
+    ref.watch(asignacionVehiculoRepositoryProvider),
   );
 });

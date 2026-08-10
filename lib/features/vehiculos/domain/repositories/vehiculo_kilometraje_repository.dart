@@ -11,6 +11,13 @@ abstract interface class VehiculoKilometrajeRepository {
   /// Historial completo, orden descendente por `fecha`.
   Future<List<VehiculoKilometrajeData>> listarPorVehiculo(String vehiculoId);
 
+  /// Todas las lecturas de todos los Vehículos, sin acotar — misma
+  /// consulta masiva de una sola vez que `VehiculoMantenimientoRepository
+  /// .listarTodos` (Etapa 8D): la pantalla de Alertas deriva el
+  /// kilometraje actual de cada Vehículo agrupando en memoria, nunca con
+  /// `obtenerActual` por fila (evita N+1).
+  Future<List<VehiculoKilometrajeData>> listarTodos();
+
   /// Escritura cruda — sin la validación de "nunca disminuye salvo
   /// corrección explícita" (vive en `RegistrarKilometrajeVehiculoUseCase`).
   /// El kilometraje opcional de entrega/devolución (Etapa 8B, punto 10)

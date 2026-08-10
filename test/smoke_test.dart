@@ -462,4 +462,56 @@ void main() {
       expect(find.textContaining('VEH-B'), findsNothing, reason: 'el vehículo dado de baja no debe generar ruido de alertas');
     },
   );
+
+  testWidgets(
+    'Vehículos: la pestaña Alertas muestra mantenimiento vencido pero excluye vehículos dados de baja (Etapa 8D, punto 15)',
+    (tester) async {
+      final db = await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      final activo = await db.into(db.vehiculo).insertReturning(
+            VehiculoCompanion.insert(codigo: 'VEH-C', marca: 'BMW', modelo: '320i', tipoVehiculo: 'sedan'),
+          );
+      final baja = await db.into(db.vehiculo).insertReturning(
+            VehiculoCompanion.insert(
+              codigo: 'VEH-D',
+              marca: 'Nissan',
+              modelo: 'Versa',
+              tipoVehiculo: 'sedan',
+              estatus: const Value('baja'),
+              fechaBaja: Value(DateTime(2026, 1, 1)),
+              motivoBaja: const Value('venta'),
+            ),
+          );
+
+      // Próximo mantenimiento fijo en el pasado lejano — siempre
+      // "vencido" sin importar la fecha real en la que corra la prueba.
+      await db.into(db.vehiculoMantenimiento).insert(
+            VehiculoMantenimientoCompanion.insert(
+              vehiculoId: activo.id,
+              fecha: DateTime(1999, 1, 1),
+              tipo: 'preventivo',
+              descripcion: 'Servicio de prueba',
+              proximoMantenimientoFecha: Value(DateTime(2000, 1, 1)),
+            ),
+          );
+      await db.into(db.vehiculoMantenimiento).insert(
+            VehiculoMantenimientoCompanion.insert(
+              vehiculoId: baja.id,
+              fecha: DateTime(1999, 1, 1),
+              tipo: 'preventivo',
+              descripcion: 'Servicio de prueba',
+              proximoMantenimientoFecha: Value(DateTime(2000, 1, 1)),
+            ),
+          );
+
+      await tester.tap(find.byKey(const Key('nav_item_vehiculos')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.vehiculosTabAlertas));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('VEH-C'), findsOneWidget, reason: 'el vehículo activo con mantenimiento vencido sí genera alerta');
+      expect(find.textContaining('VEH-D'), findsNothing, reason: 'el vehículo dado de baja no debe generar nuevas alertas operativas');
+    },
+  );
 }

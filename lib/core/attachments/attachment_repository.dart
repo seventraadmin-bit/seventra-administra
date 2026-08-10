@@ -192,6 +192,25 @@ class AttachmentRepository {
     return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
+  /// Adjuntos activos de un `VehiculoMantenimiento` puntual (Etapa 8D) —
+  /// mismo criterio que `listarActivosPorVehiculoDocumento`: el
+  /// comprobante/evidencia pertenece al registro concreto, no al
+  /// Vehículo directo.
+  Future<List<AttachmentData>> listarActivosPorVehiculoMantenimiento(String vehiculoMantenimientoId) {
+    final query = _db.select(_db.attachment).join([
+      innerJoin(
+        _db.vehiculoMantenimientoAttachment,
+        _db.vehiculoMantenimientoAttachment.attachmentId.equalsExp(_db.attachment.id),
+      ),
+    ])
+      ..where(
+        _db.vehiculoMantenimientoAttachment.vehiculoMantenimientoId.equals(vehiculoMantenimientoId) &
+            _db.attachment.estado.equals('activo'),
+      )
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
+  }
+
   Future<void> archivar(String id) {
     return (_db.update(_db.attachment)..where((t) => t.id.equals(id))).write(
       const AttachmentCompanion(estado: Value('archivado')),

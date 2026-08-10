@@ -9,11 +9,15 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_documento_table.dart';
+import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_mantenimiento_table.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart' show MotivoBajaVehiculo;
 import 'package:riseg_one/features/vehiculos/domain/usecases/actualizar_fotografia_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/agrupar_documentos_vehiculo.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/calcular_costos_vehiculo.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/calcular_estado_vigencia_documento.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/calcular_proximo_mantenimiento.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/cambiar_estatus_vehiculo_usecase.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/finalizar_mantenimiento_vehiculo_usecase.dart';
 
 import 'vehiculo_labels.dart';
 import 'vehiculos_controller.dart';
@@ -25,7 +29,10 @@ import 'widgets/gestionar_vehiculo_dialog.dart';
 import 'widgets/historial_documento_vehiculo_dialog.dart';
 import 'widgets/registrar_documento_vehiculo_dialog.dart';
 import 'widgets/registrar_kilometraje_vehiculo_dialog.dart';
+import 'widgets/registrar_mantenimiento_vehiculo_dialog.dart';
 import 'widgets/retirar_asignacion_vehiculo_dialog.dart';
+
+enum _FiltroMantenimiento { todos, mantenimiento, incidencias }
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 
@@ -52,6 +59,9 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
   List<VehiculoKilometrajeData> _historialKilometraje = const [];
   List<VehiculoDocumentoData> _documentos = const [];
   Map<String, AttachmentData> _adjuntoPorDocumento = const {};
+  List<VehiculoMantenimientoData> _mantenimientos = const [];
+  Map<String, AttachmentData> _comprobantePorMantenimiento = const {};
+  _FiltroMantenimiento _filtroMantenimiento = _FiltroMantenimiento.todos;
   bool _cargando = true;
   bool _procesando = false;
 
@@ -70,6 +80,7 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
     final opciones = ref.read(obtenerOpcionesAsignacionVehiculoUseCaseProvider);
     final documentoRepo = ref.read(vehiculoDocumentoRepositoryProvider);
     final attachmentRepo = ref.read(attachmentRepositoryProvider);
+    final mantenimientoRepo = ref.read(vehiculoMantenimientoRepositoryProvider);
 
     final asignacionVigente = await asignacionRepo.obtenerActivaPorVehiculo(widget.vehiculoId);
     final historialAsignaciones = await asignacionRepo.listarPorVehiculo(widget.vehiculoId);
@@ -78,11 +89,18 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
     final kilometrajeActual = await kilometrajeRepo.obtenerActual(widget.vehiculoId);
     final historialKilometraje = await kilometrajeRepo.listarPorVehiculo(widget.vehiculoId);
     final documentos = await documentoRepo.listarPorVehiculo(widget.vehiculoId);
+    final mantenimientos = await mantenimientoRepo.listarPorVehiculo(widget.vehiculoId);
 
     final adjuntoPorDocumento = <String, AttachmentData>{};
     for (final documento in documentosVigentesPorTipo(documentos)) {
       final adjuntos = await attachmentRepo.listarActivosPorVehiculoDocumento(documento.id);
       if (adjuntos.isNotEmpty) adjuntoPorDocumento[documento.id] = adjuntos.first;
+    }
+
+    final comprobantePorMantenimiento = <String, AttachmentData>{};
+    for (final registro in mantenimientos) {
+      final adjuntos = await attachmentRepo.listarActivosPorVehiculoMantenimiento(registro.id);
+      if (adjuntos.isNotEmpty) comprobantePorMantenimiento[registro.id] = adjuntos.first;
     }
 
     if (!mounted) return;
@@ -96,6 +114,8 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
       _historialKilometraje = historialKilometraje;
       _documentos = documentos;
       _adjuntoPorDocumento = adjuntoPorDocumento;
+      _mantenimientos = mantenimientos;
+      _comprobantePorMantenimiento = comprobantePorMantenimiento;
       _cargando = false;
     });
   }
@@ -142,6 +162,29 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
   Future<void> _verHistorialDocumento(String tipo) async {
     final documentosDelTipo = _documentos.where((d) => d.tipo == tipo).toList();
     await mostrarDialogoHistorialDocumentoVehiculo(context, ref, documentosDelTipo);
+  }
+
+  Future<void> _registrarMantenimiento() async {
+    final registrado = await mostrarDialogoRegistrarMantenimientoVehiculo(context, ref, widget.vehiculoId);
+    if (registrado) await _cargar();
+  }
+
+  Future<void> _finalizarMantenimiento() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _procesando = true);
+    final resultado =
+        await ref.read(vehiculosControllerProvider.notifier).finalizarMantenimiento(vehiculoId: widget.vehiculoId);
+    if (!mounted) return;
+    setState(() => _procesando = false);
+    switch (resultado) {
+      case FinalizarMantenimientoVehiculoExitoso():
+        RisegFeedback.showSuccess(context, l10n.vehiculoExpedienteEstatusActualizado);
+        await _cargar();
+      case FinalizarMantenimientoVehiculoNoExiste():
+      case FinalizarMantenimientoVehiculoNoEstaEnMantenimiento():
+      case FinalizarMantenimientoVehiculoErrorInesperado():
+        RisegFeedback.showError(context, l10n.vehiculoErrorInesperado);
+    }
   }
 
   Future<void> _editar() async {
@@ -275,7 +318,20 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                         variant: RisegButtonVariant.ghost,
                         onPressed: () => _cambiarEstatus('fueraDeServicio'),
                       ),
-                    if (!esBaja && vehiculo.estatus != 'disponible')
+                    // Al salir de mantenimiento, el destino se calcula
+                    // (asignado si hay una AsignacionVehiculo vigente,
+                    // disponible si no) en vez de un botón crudo "marcar
+                    // disponible" — ver el doc comment de
+                    // `FinalizarMantenimientoVehiculoUseCase` (punto 3,
+                    // Etapa 8D: "no quiero que los estados queden
+                    // inconsistentes").
+                    if (!esBaja && vehiculo.estatus == 'enMantenimiento')
+                      RisegButton(
+                        label: l10n.vehiculoExpedienteBotonFinalizarMantenimiento,
+                        variant: RisegButtonVariant.ghost,
+                        onPressed: _finalizarMantenimiento,
+                      )
+                    else if (!esBaja && vehiculo.estatus != 'disponible')
                       RisegButton(
                         label: l10n.vehiculoExpedienteBotonDisponible,
                         variant: RisegButtonVariant.ghost,
@@ -483,6 +539,12 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
+                _buildSeccionMantenimiento(l10n, colors, esBaja),
+                const SizedBox(height: AppSpacing.xl),
+                _buildSeccionProximoMantenimiento(l10n, colors),
+                const SizedBox(height: AppSpacing.xl),
+                _buildSeccionCostos(l10n, colors, vehiculo),
+                const SizedBox(height: AppSpacing.xl),
                 RisegCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -548,6 +610,154 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Historial combinado de Mantenimiento e Incidencias (Etapa 8D,
+  /// punto 9: "un solo historial con filtros" en vez de dos pantallas
+  /// separadas) — el filtro Todos/Mantenimiento/Incidencias es estado
+  /// local de la pantalla, no una consulta distinta.
+  Widget _buildSeccionMantenimiento(AppLocalizations l10n, AppColorScheme colors, bool esBaja) {
+    final filtrados = switch (_filtroMantenimiento) {
+      _FiltroMantenimiento.todos => _mantenimientos,
+      _FiltroMantenimiento.mantenimiento =>
+        _mantenimientos.where((m) => !TipoMantenimientoVehiculo.values.byName(m.tipo).esIncidencia).toList(),
+      _FiltroMantenimiento.incidencias =>
+        _mantenimientos.where((m) => TipoMantenimientoVehiculo.values.byName(m.tipo).esIncidencia).toList(),
+    };
+
+    return RisegCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RisegSectionHeader(
+            title: l10n.vehiculoMantenimientoSeccionTitulo,
+            primaryAction: esBaja
+                ? null
+                : RisegButton(
+                    label: l10n.vehiculoBotonRegistrarMantenimiento,
+                    variant: RisegButtonVariant.secondary,
+                    size: RisegButtonSize.compact,
+                    onPressed: _registrarMantenimiento,
+                  ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.xs,
+            children: [
+              for (final filtro in _FiltroMantenimiento.values)
+                RisegButton(
+                  label: switch (filtro) {
+                    _FiltroMantenimiento.todos => l10n.vehiculoMantenimientoFiltroTodos,
+                    _FiltroMantenimiento.mantenimiento => l10n.vehiculoMantenimientoFiltroMantenimiento,
+                    _FiltroMantenimiento.incidencias => l10n.vehiculoMantenimientoFiltroIncidencias,
+                  },
+                  variant: _filtroMantenimiento == filtro ? RisegButtonVariant.secondary : RisegButtonVariant.ghost,
+                  size: RisegButtonSize.compact,
+                  onPressed: () => setState(() => _filtroMantenimiento = filtro),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          RisegTableBase<VehiculoMantenimientoData>(
+            rows: filtrados,
+            emptyState: RisegEmptyState(title: l10n.vehiculoMantenimientoVacio, message: ''),
+            columns: [
+              RisegColumn<VehiculoMantenimientoData>(
+                label: l10n.vehiculoMantenimientoColumnaFecha,
+                width: 100,
+                cellBuilder: (m) => Text(_formatoFecha.format(m.fecha)),
+              ),
+              RisegColumn<VehiculoMantenimientoData>(
+                label: l10n.vehiculoMantenimientoColumnaTipo,
+                width: 170,
+                cellBuilder: (m) {
+                  final esIncidencia = TipoMantenimientoVehiculo.values.byName(m.tipo).esIncidencia;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(tipoMantenimientoVehiculoLabel(l10n, m.tipo)),
+                      RisegStatusBadge(
+                        label: categoriaMantenimientoVehiculoLabel(l10n, esIncidencia: esIncidencia),
+                        tone: categoriaMantenimientoVehiculoTono(esIncidencia: esIncidencia),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              RisegColumn<VehiculoMantenimientoData>(
+                label: l10n.vehiculoMantenimientoColumnaDescripcion,
+                cellBuilder: (m) => Text(m.descripcion),
+              ),
+              RisegColumn<VehiculoMantenimientoData>(
+                label: l10n.vehiculoMantenimientoColumnaCosto,
+                width: 100,
+                alignment: TextAlign.right,
+                cellBuilder: (m) => Text(m.costo == null ? '—' : formatoCosto(m.costo!)),
+              ),
+              RisegColumn<VehiculoMantenimientoData>(
+                label: l10n.vehiculoMantenimientoColumnaComprobante,
+                width: 90,
+                cellBuilder: (m) => _comprobantePorMantenimiento.containsKey(m.id)
+                    ? RisegButton(
+                        label: l10n.vehiculoMantenimientoBotonAbrirComprobante,
+                        variant: RisegButtonVariant.ghost,
+                        size: RisegButtonSize.compact,
+                        onPressed: () =>
+                            ref.read(attachmentStorageProvider).abrir(_comprobantePorMantenimiento[m.id]!.path),
+                      )
+                    : const Text('—'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeccionProximoMantenimiento(AppLocalizations l10n, AppColorScheme colors) {
+    final proximo = calcularProximoMantenimiento(_mantenimientos, _kilometrajeActual?.kilometraje);
+    return RisegCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.vehiculoProximoMantenimientoSeccionTitulo, style: AppTypography.heading3),
+          const SizedBox(height: AppSpacing.sm),
+          if (proximo == null)
+            Text(l10n.vehiculoProximoMantenimientoVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+          else ...[
+            if (proximo.fecha != null)
+              Text(l10n.vehiculoProximoMantenimientoFecha(_formatoFecha.format(proximo.fecha!)), style: AppTypography.body),
+            if (proximo.kilometraje != null)
+              Text(l10n.vehiculoProximoMantenimientoKilometraje(proximo.kilometraje!), style: AppTypography.body),
+            const SizedBox(height: AppSpacing.xs),
+            RisegStatusBadge(
+              label: estadoProximoMantenimientoLabel(l10n, proximo.estado),
+              tone: estadoProximoMantenimientoTono(proximo.estado),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeccionCostos(AppLocalizations l10n, AppColorScheme colors, VehiculoData vehiculo) {
+    final costos = calcularCostosVehiculo(vehiculo, _mantenimientos);
+    return RisegCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.vehiculoCostosSeccionTitulo, style: AppTypography.heading3),
+          const SizedBox(height: AppSpacing.sm),
+          _campo(
+            l10n.vehiculoCampoCostoAdquisicion,
+            costos.costoAdquisicion == null ? '—' : formatoCosto(costos.costoAdquisicion!),
+          ),
+          _campo(l10n.vehiculoCostoTotalMantenimientos, formatoCosto(costos.totalMantenimientos)),
+          _campo(l10n.vehiculoCostoTotalIncidencias, formatoCosto(costos.totalIncidencias)),
+          _campo(l10n.vehiculoCostoOperativoAcumulado, formatoCosto(costos.costoOperativoAcumulado)),
+        ],
       ),
     );
   }

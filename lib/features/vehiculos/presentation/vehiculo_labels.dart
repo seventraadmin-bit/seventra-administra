@@ -6,6 +6,7 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 
 import '../data/tables/vehiculo_table.dart';
 import '../domain/usecases/calcular_estado_vigencia_documento.dart';
+import '../domain/usecases/calcular_proximo_mantenimiento.dart';
 
 final _formatoFechaDocumento = DateFormat('dd/MM/yyyy');
 
@@ -147,4 +148,50 @@ int _diasRestantes(DateTime fechaVencimiento, DateTime? hoy) {
   final hoySoloFecha = DateTime(referencia.year, referencia.month, referencia.day);
   final vencimientoSoloFecha = DateTime(fechaVencimiento.year, fechaVencimiento.month, fechaVencimiento.day);
   return vencimientoSoloFecha.difference(hoySoloFecha).inDays;
+}
+
+String tipoMantenimientoVehiculoLabel(AppLocalizations l10n, String tipo) {
+  return switch (tipo) {
+    'preventivo' => l10n.tipoMantenimientoVehiculoPreventivo,
+    'correctivo' => l10n.tipoMantenimientoVehiculoCorrectivo,
+    'servicioGeneral' => l10n.tipoMantenimientoVehiculoServicioGeneral,
+    'llantas' => l10n.tipoMantenimientoVehiculoLlantas,
+    'frenos' => l10n.tipoMantenimientoVehiculoFrenos,
+    'bateria' => l10n.tipoMantenimientoVehiculoBateria,
+    'otro' => l10n.tipoMantenimientoVehiculoOtro,
+    'averia' => l10n.tipoMantenimientoVehiculoAveria,
+    'golpe' => l10n.tipoMantenimientoVehiculoGolpe,
+    'accidente' => l10n.tipoMantenimientoVehiculoAccidente,
+    'dano' => l10n.tipoMantenimientoVehiculoDano,
+    'reparacion' => l10n.tipoMantenimientoVehiculoReparacion,
+    _ => tipo,
+  };
+}
+
+/// Distingue las dos mitades del catálogo unificado (ver el doc comment
+/// de `TipoMantenimientoVehiculo`) — usado para el badge de categoría en
+/// el historial combinado y para el filtro Todos/Mantenimiento/
+/// Incidencias (punto 9).
+String categoriaMantenimientoVehiculoLabel(AppLocalizations l10n, {required bool esIncidencia}) {
+  return esIncidencia ? l10n.vehiculoMantenimientoCategoriaIncidencia : l10n.vehiculoMantenimientoCategoriaMantenimiento;
+}
+
+RisegStatusTone categoriaMantenimientoVehiculoTono({required bool esIncidencia}) {
+  return esIncidencia ? RisegStatusTone.warning : RisegStatusTone.neutral;
+}
+
+String estadoProximoMantenimientoLabel(AppLocalizations l10n, EstadoProximoMantenimiento estado) {
+  return switch (estado) {
+    EstadoProximoMantenimiento.alDia => l10n.estadoProximoMantenimientoAlDia,
+    EstadoProximoMantenimiento.proximo => l10n.estadoProximoMantenimientoProximo,
+    EstadoProximoMantenimiento.vencido => l10n.estadoProximoMantenimientoVencido,
+  };
+}
+
+RisegStatusTone estadoProximoMantenimientoTono(EstadoProximoMantenimiento estado) {
+  return switch (estado) {
+    EstadoProximoMantenimiento.alDia => RisegStatusTone.success,
+    EstadoProximoMantenimiento.proximo => RisegStatusTone.warning,
+    EstadoProximoMantenimiento.vencido => RisegStatusTone.error,
+  };
 }

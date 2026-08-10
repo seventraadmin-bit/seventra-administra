@@ -2688,10 +2688,93 @@
   "vehiculoDocumentoHistorialVacio": "Sin historial.",
   "vehiculoDocumentoHistorialBotonCerrar": "Cerrar",
 
-  "vehiculosAlertasTitulo": "Alertas de documentos",
+  "vehiculosAlertasTitulo": "Alertas",
+  "vehiculosAlertasSeccionDocumentos": "Documentos",
   "vehiculosAlertasVacio": "Sin documentos vencidos ni próximos a vencer.",
   "vehiculosAlertasColumnaVehiculo": "Vehículo",
   "vehiculosAlertasColumnaDocumento": "Documento",
   "vehiculosAlertasColumnaEstado": "Estado",
-  "vehiculosAlertasColumnaVencimiento": "Vencimiento"
+  "vehiculosAlertasColumnaVencimiento": "Vencimiento",
+
+  "vehiculosAlertasResumenEnMantenimiento": "En mantenimiento",
+  "vehiculosAlertasResumenFueraDeServicio": "Fuera de servicio",
+  "vehiculosAlertasResumenMantenimientoProximo": "Mantenimiento próximo",
+  "vehiculosAlertasResumenMantenimientoVencido": "Mantenimiento vencido",
+
+  "vehiculosAlertasSeccionMantenimiento": "Mantenimiento",
+  "vehiculosAlertasMantenimientoVacio": "Sin mantenimientos próximos ni vencidos.",
+  "vehiculosAlertasColumnaProximoMantenimiento": "Próximo mantenimiento",
+
+  "vehiculoExpedienteBotonFinalizarMantenimiento": "Finalizar mantenimiento",
+
+  "tipoMantenimientoVehiculoPreventivo": "Preventivo",
+  "tipoMantenimientoVehiculoCorrectivo": "Correctivo",
+  "tipoMantenimientoVehiculoServicioGeneral": "Servicio general",
+  "tipoMantenimientoVehiculoLlantas": "Llantas",
+  "tipoMantenimientoVehiculoFrenos": "Frenos",
+  "tipoMantenimientoVehiculoBateria": "Batería",
+  "tipoMantenimientoVehiculoOtro": "Otro",
+  "tipoMantenimientoVehiculoAveria": "Avería",
+  "tipoMantenimientoVehiculoGolpe": "Golpe",
+  "tipoMantenimientoVehiculoAccidente": "Accidente",
+  "tipoMantenimientoVehiculoDano": "Daño",
+  "tipoMantenimientoVehiculoReparacion": "Reparación",
+
+  "vehiculoMantenimientoCategoriaMantenimiento": "Mantenimiento",
+  "vehiculoMantenimientoCategoriaIncidencia": "Incidencia",
+
+  "estadoProximoMantenimientoAlDia": "Al día",
+  "estadoProximoMantenimientoProximo": "Próximo",
+  "estadoProximoMantenimientoVencido": "Vencido",
+
+  "vehiculoMantenimientoSeccionTitulo": "Mantenimiento e incidencias",
+  "vehiculoBotonRegistrarMantenimiento": "Registrar",
+  "vehiculoMantenimientoVacio": "Sin mantenimientos ni incidencias registrados.",
+  "vehiculoMantenimientoFiltroTodos": "Todos",
+  "vehiculoMantenimientoFiltroMantenimiento": "Mantenimiento",
+  "vehiculoMantenimientoFiltroIncidencias": "Incidencias",
+  "vehiculoMantenimientoColumnaFecha": "Fecha",
+  "vehiculoMantenimientoColumnaTipo": "Tipo",
+  "vehiculoMantenimientoColumnaDescripcion": "Descripción",
+  "vehiculoMantenimientoColumnaCosto": "Costo",
+  "vehiculoMantenimientoColumnaComprobante": "Comprobante",
+  "vehiculoMantenimientoBotonAbrirComprobante": "Abrir",
+
+  "vehiculoMantenimientoDialogoTitulo": "Registrar mantenimiento o incidencia",
+  "vehiculoMantenimientoCampoFecha": "Fecha",
+  "vehiculoMantenimientoCampoKilometraje": "Kilometraje (opcional)",
+  "vehiculoMantenimientoCampoTipo": "Tipo",
+  "vehiculoMantenimientoCampoDescripcion": "Descripción",
+  "vehiculoMantenimientoCampoTallerProveedor": "Taller / Proveedor (opcional)",
+  "vehiculoMantenimientoCampoCosto": "Costo (opcional)",
+  "vehiculoMantenimientoCampoProximoFecha": "Próximo mantenimiento — fecha (opcional)",
+  "vehiculoMantenimientoCampoProximoKilometraje": "Próximo mantenimiento — kilometraje (opcional)",
+  "vehiculoMantenimientoCampoObservaciones": "Observaciones",
+  "vehiculoMantenimientoCampoComprobante": "Comprobante (opcional)",
+  "vehiculoMantenimientoBotonSeleccionarComprobante": "Seleccionar archivo",
+  "vehiculoMantenimientoBotonGuardar": "Guardar registro",
+  "vehiculoMantenimientoGuardadoExito": "Registro guardado.",
+  "vehiculoMantenimientoErrorDescripcionRequerida": "La descripción es obligatoria.",
+  "vehiculoMantenimientoErrorProximoInvalido": "El próximo mantenimiento programado no puede ser anterior a esta captura.",
+  "vehiculoMantenimientoErrorKilometrajeMenorAlActual": "El kilometraje no puede ser menor al último registrado ({actual} km).",
+  "@vehiculoMantenimientoErrorKilometrajeMenorAlActual": {
+    "placeholders": { "actual": { "type": "int" } }
+  },
+  "vehiculoMantenimientoErrorInesperado": "Ocurrió un error inesperado.",
+
+  "vehiculoProximoMantenimientoSeccionTitulo": "Próximo mantenimiento",
+  "vehiculoProximoMantenimientoVacio": "Sin próximo mantenimiento programado.",
+  "vehiculoProximoMantenimientoFecha": "Fecha programada: {fecha}",
+  "@vehiculoProximoMantenimientoFecha": {
+    "placeholders": { "fecha": { "type": "String" } }
+  },
+  "vehiculoProximoMantenimientoKilometraje": "Kilometraje programado: {km} km",
+  "@vehiculoProximoMantenimientoKilometraje": {
+    "placeholders": { "km": { "type": "int" } }
+  },
+
+  "vehiculoCostosSeccionTitulo": "Costos acumulados",
+  "vehiculoCostoTotalMantenimientos": "Total mantenimientos",
+  "vehiculoCostoTotalIncidencias": "Total incidencias/reparaciones",
+  "vehiculoCostoOperativoAcumulado": "Costo operativo aproximado acumulado"
 }
