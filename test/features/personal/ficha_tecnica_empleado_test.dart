@@ -7,6 +7,7 @@ import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
+import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/empresa_repository_impl.dart';
@@ -38,14 +39,16 @@ void main() {
     final catalogoRepo = CatalogoRepositoryImpl(db);
     final empresaRepo = EmpresaRepositoryImpl(db);
     final attachmentRepo = AttachmentRepository(db);
-    final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
+    final codigoSecuencia = CodigoSecuenciaService(db);
+    final generarCodigo = GenerarCodigoUseCase(codigoSecuencia);
+    final generarNumero = GenerarNumeroUseCase(codigoSecuencia);
     const validator = EmpleadoValidator();
 
     tempDir = Directory.systemTemp.createTempSync('riseg_ficha_tecnica_test_');
     final storage = AttachmentStorage(tempDir.path);
 
     fichaTecnicaRepo = FichaTecnicaEmpleadoRepositoryImpl(db);
-    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarCodigo, validator, servicioRepo);
+    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, validator, servicioRepo);
     generarFichaTecnica = GenerarFichaTecnicaEmpleadoUseCase(
       empleadoRepo,
       asignacionServicioRepo,

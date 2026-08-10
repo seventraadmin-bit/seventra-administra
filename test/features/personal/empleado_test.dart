@@ -6,8 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
-import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
+import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
@@ -48,10 +49,10 @@ void main() {
     final asignacionServicioRepo = AsignacionServicioRepositoryImpl(db);
     empleadoRepo = EmpleadoRepositoryImpl(db, asignacionServicioRepo);
     final servicioRepo = ServicioRepositoryImpl(db, asignacionServicioRepo);
-    final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
+    final generarNumero = GenerarNumeroUseCase(CodigoSecuenciaService(db));
     const validator = EmpleadoValidator();
 
-    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarCodigo, validator, servicioRepo);
+    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, validator, servicioRepo);
     corregirEmpleado = CorregirEmpleadoUseCase(empleadoRepo, validator);
     registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, validator);
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, validator);
@@ -101,12 +102,46 @@ void main() {
     );
   }
 
+  group('EmpleadoValidator', () {
+    const validator = EmpleadoValidator();
+
+    test('datosBancariosValidos acepta que no se capture nada', () {
+      expect(validator.datosBancariosValidos(), isTrue);
+    });
+
+    test('datosBancariosValidos rechaza tarjeta/CLABE sin banco', () {
+      expect(validator.datosBancariosValidos(numeroCuentaTarjeta: '1234567890123456'), isFalse);
+    });
+
+    test('datosBancariosValidos rechaza banco sin tarjeta ni CLABE', () {
+      expect(validator.datosBancariosValidos(bancoId: 'banco-x'), isFalse);
+    });
+
+    test('datosBancariosValidos acepta banco + solo tarjeta, o banco + solo CLABE', () {
+      expect(validator.datosBancariosValidos(bancoId: 'banco-x', numeroCuentaTarjeta: '1234567890123456'), isTrue);
+      expect(validator.datosBancariosValidos(bancoId: 'banco-x', clabe: '123456789012345678'), isTrue);
+    });
+
+    test('sueldoAdministrativoValido rechaza 0 pero acepta null y valores positivos', () {
+      expect(validator.sueldoAdministrativoValido(null), isTrue);
+      expect(validator.sueldoAdministrativoValido(0), isFalse);
+      expect(validator.sueldoAdministrativoValido(1500000), isTrue);
+    });
+
+    test('bonoAdministrativoValido acepta 0, null y valores positivos, rechaza negativos', () {
+      expect(validator.bonoAdministrativoValido(null), isTrue);
+      expect(validator.bonoAdministrativoValido(0), isTrue);
+      expect(validator.bonoAdministrativoValido(500000), isTrue);
+      expect(validator.bonoAdministrativoValido(-1), isFalse);
+    });
+  });
+
   group('CrearEmpleadoUseCase', () {
-    test('registra un Empleado con folio EMP-######', () async {
+    test('registra un Empleado con numeroEmpleado numérico consecutivo', () async {
       final resultado = await crearEmpleadoDePrueba();
       expect(resultado, isA<CrearEmpleadoExitoso>());
       final empleado = (resultado as CrearEmpleadoExitoso).empleado;
-      expect(empleado.codigoEmpleado, matches(RegExp(r'^EMP-\d{6}$')));
+      expect(empleado.numeroEmpleado, 1);
       expect(empleado.estatus, 'activo');
       expect(empleado.aniosExperienciaSeguridad, 3);
 
@@ -115,11 +150,11 @@ void main() {
       expect(eventos.single.tipoEvento, 'creado');
     });
 
-    test('folio se genera secuencialmente', () async {
+    test('numeroEmpleado se genera secuencialmente, empezando en 1', () async {
       final primero = await crearEmpleadoDePrueba(curp: 'PEXJ900101HDFXXX01', rfc: 'PEXJ900101AB1');
       final segundo = await crearEmpleadoDePrueba(curp: 'GOMJ900101HDFXXX02', rfc: 'GOMJ900101AB2');
-      expect((primero as CrearEmpleadoExitoso).empleado.codigoEmpleado, 'EMP-000001');
-      expect((segundo as CrearEmpleadoExitoso).empleado.codigoEmpleado, 'EMP-000002');
+      expect((primero as CrearEmpleadoExitoso).empleado.numeroEmpleado, 1);
+      expect((segundo as CrearEmpleadoExitoso).empleado.numeroEmpleado, 2);
     });
 
     test('rechaza nombres vacíos', () async {
@@ -189,10 +224,84 @@ void main() {
       final resultado = await crearEmpleadoDePrueba(servicioId: 'servicio-inexistente');
       expect(resultado, isA<CrearEmpleadoServicioNoExiste>());
     });
+
+    test('acepta datos bancarios completos y los persiste', () async {
+      final resultado = await crearEmpleado.ejecutar(
+        nombres: 'Juan',
+        apellidoPaterno: 'Pérez',
+        sexo: SexoEmpleado.masculino,
+        fechaNacimiento: DateTime(1990, 1, 1),
+        curp: 'PEXJ900101HDFXXX01',
+        rfc: 'PEXJ900101AB1',
+        nss: '12345678901',
+        estadoCivil: EstadoCivilEmpleado.soltero,
+        fechaIngreso: DateTime(2026, 1, 1),
+        aniosExperienciaSeguridad: 3,
+        bancoId: SeedIds.bancoBbva,
+        clabe: '123456789012345678',
+      );
+      expect(resultado, isA<CrearEmpleadoExitoso>());
+      final empleado = (resultado as CrearEmpleadoExitoso).empleado;
+      expect(empleado.bancoId, SeedIds.bancoBbva);
+      expect(empleado.clabe, '123456789012345678');
+    });
+
+    test('rechaza datos bancarios incompletos (tarjeta/CLABE sin banco)', () async {
+      final resultado = await crearEmpleado.ejecutar(
+        nombres: 'Juan',
+        apellidoPaterno: 'Pérez',
+        sexo: SexoEmpleado.masculino,
+        fechaNacimiento: DateTime(1990, 1, 1),
+        curp: 'PEXJ900101HDFXXX01',
+        rfc: 'PEXJ900101AB1',
+        nss: '12345678901',
+        estadoCivil: EstadoCivilEmpleado.soltero,
+        fechaIngreso: DateTime(2026, 1, 1),
+        aniosExperienciaSeguridad: 3,
+        clabe: '123456789012345678',
+      );
+      expect(resultado, isA<CrearEmpleadoDatosBancariosInvalidos>());
+    });
+
+    test('rechaza sueldoMensualAdministrativo = 0 pero acepta bonoMensualAdministrativo = 0', () async {
+      final conSueldoCero = await crearEmpleado.ejecutar(
+        nombres: 'Juan',
+        apellidoPaterno: 'Pérez',
+        sexo: SexoEmpleado.masculino,
+        fechaNacimiento: DateTime(1990, 1, 1),
+        curp: 'PEXJ900101HDFXXX01',
+        rfc: 'PEXJ900101AB1',
+        nss: '12345678901',
+        estadoCivil: EstadoCivilEmpleado.soltero,
+        fechaIngreso: DateTime(2026, 1, 1),
+        aniosExperienciaSeguridad: 3,
+        sueldoMensualAdministrativo: 0,
+      );
+      expect(conSueldoCero, isA<CrearEmpleadoSueldoAdministrativoInvalido>());
+
+      final conBonoCero = await crearEmpleado.ejecutar(
+        nombres: 'Juan',
+        apellidoPaterno: 'Pérez',
+        sexo: SexoEmpleado.masculino,
+        fechaNacimiento: DateTime(1990, 1, 1),
+        curp: 'PEXJ900101HDFXXX01',
+        rfc: 'PEXJ900101AB1',
+        nss: '12345678901',
+        estadoCivil: EstadoCivilEmpleado.soltero,
+        fechaIngreso: DateTime(2026, 1, 1),
+        aniosExperienciaSeguridad: 3,
+        sueldoMensualAdministrativo: 1500000,
+        bonoMensualAdministrativo: 0,
+      );
+      expect(conBonoCero, isA<CrearEmpleadoExitoso>());
+      final empleado = (conBonoCero as CrearEmpleadoExitoso).empleado;
+      expect(empleado.sueldoMensualAdministrativo, 1500000);
+      expect(empleado.bonoMensualAdministrativo, 0);
+    });
   });
 
   group('CorregirEmpleadoUseCase', () {
-    test('corrige metadatos administrativos pero nunca codigoEmpleado', () async {
+    test('corrige metadatos administrativos pero nunca numeroEmpleado', () async {
       final creado = await crearEmpleadoDePrueba();
       final empleado = (creado as CrearEmpleadoExitoso).empleado;
 
@@ -205,7 +314,7 @@ void main() {
       expect(resultado, isA<CorregirEmpleadoExitoso>());
       final actualizado = (resultado as CorregirEmpleadoExitoso).empleado;
       expect(actualizado.telefono, '5555555555');
-      expect(actualizado.codigoEmpleado, empleado.codigoEmpleado);
+      expect(actualizado.numeroEmpleado, empleado.numeroEmpleado);
 
       final eventos = await empleadoRepo.listarEventos(empleado.id);
       expect(eventos.last.tipoEvento, 'corregido');
@@ -223,6 +332,81 @@ void main() {
 
       final resultado = await corregirEmpleado.ejecutar(empleadoId: empleado.id, curp: 'X', motivo: 'x');
       expect(resultado, isA<CorregirEmpleadoCurpInvalido>());
+    });
+
+    test('acepta y persiste datos bancarios completos', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        bancoId: SeedIds.bancoBbva,
+        numeroCuentaTarjeta: '1234567890123456',
+        motivo: 'Captura de datos bancarios',
+      );
+
+      expect(resultado, isA<CorregirEmpleadoExitoso>());
+      final actualizado = (resultado as CorregirEmpleadoExitoso).empleado;
+      expect(actualizado.bancoId, SeedIds.bancoBbva);
+      expect(actualizado.numeroCuentaTarjeta, '1234567890123456');
+    });
+
+    test('rechaza datos bancarios incompletos (banco sin tarjeta ni CLABE)', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        bancoId: SeedIds.bancoBbva,
+        motivo: 'x',
+      );
+      expect(resultado, isA<CorregirEmpleadoDatosBancariosInvalidos>());
+    });
+
+    test('rechaza sueldoMensualAdministrativo = 0 pero acepta bonoMensualAdministrativo = 0', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final conSueldoCero = await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        sueldoMensualAdministrativo: 0,
+        motivo: 'x',
+      );
+      expect(conSueldoCero, isA<CorregirEmpleadoSueldoAdministrativoInvalido>());
+
+      final conBonoCero = await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        sueldoMensualAdministrativo: 1500000,
+        bonoMensualAdministrativo: 0,
+        motivo: 'x',
+      );
+      expect(conBonoCero, isA<CorregirEmpleadoExitoso>());
+      final actualizado = (conBonoCero as CorregirEmpleadoExitoso).empleado;
+      expect(actualizado.sueldoMensualAdministrativo, 1500000);
+      expect(actualizado.bonoMensualAdministrativo, 0);
+    });
+
+    test('limpiarBanco/limpiarClabe/limpiarNumeroCuentaTarjeta borran los datos bancarios previos', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+      await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        bancoId: SeedIds.bancoBbva,
+        clabe: '123456789012345678',
+        motivo: 'x',
+      );
+
+      final resultado = await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        limpiarBanco: true,
+        limpiarClabe: true,
+        motivo: 'x',
+      );
+
+      expect(resultado, isA<CorregirEmpleadoExitoso>());
+      final actualizado = (resultado as CorregirEmpleadoExitoso).empleado;
+      expect(actualizado.bancoId, isNull);
+      expect(actualizado.clabe, isNull);
     });
   });
 
@@ -333,7 +517,7 @@ void main() {
       expect(resultado, isA<RegistrarReingresoExitoso>());
       final actualizado = (resultado as RegistrarReingresoExitoso).empleado;
       expect(actualizado.id, empleado.id, reason: 'nunca debe crear un Empleado nuevo');
-      expect(actualizado.codigoEmpleado, empleado.codigoEmpleado);
+      expect(actualizado.numeroEmpleado, empleado.numeroEmpleado);
       expect(actualizado.estatus, 'activo');
       expect(actualizado.fechaIngreso, DateTime(2026, 7, 1));
       expect(actualizado.fechaBaja, isNull);
@@ -390,6 +574,25 @@ void main() {
     test('rechaza un Empleado inexistente', () async {
       final resultado = await registrarReingreso.ejecutar(empleadoId: 'no-existe', fechaIngreso: DateTime(2026, 7, 1));
       expect(resultado, isA<RegistrarReingresoNoExiste>());
+    });
+
+    test('un numeroEmpleado utilizado nunca vuelve a asignarse: la baja no lo libera', () async {
+      final primero = (await crearEmpleadoDePrueba(curp: 'PEXJ900101HDFXXX01', rfc: 'PEXJ900101AB1') as CrearEmpleadoExitoso)
+          .empleado;
+      final segundo = await crearYDarDeBaja(); // numeroEmpleado 2, ahora de baja
+      expect(segundo.numeroEmpleado, 2);
+
+      final reingreso = await registrarReingreso.ejecutar(empleadoId: segundo.id, fechaIngreso: DateTime(2026, 7, 1));
+      final reingresado = (reingreso as RegistrarReingresoExitoso).empleado;
+      expect(reingresado.numeroEmpleado, 2, reason: 'el reingreso conserva el mismo número, nunca genera uno nuevo');
+
+      final tercero = await crearEmpleadoDePrueba(curp: 'GOMJ900101HDFXXX02', rfc: 'GOMJ900101AB2');
+      expect(
+        (tercero as CrearEmpleadoExitoso).empleado.numeroEmpleado,
+        3,
+        reason: 'la secuencia sigue avanzando; el número 2 nunca se reutiliza para un Empleado distinto',
+      );
+      expect(primero.numeroEmpleado, 1);
     });
   });
 

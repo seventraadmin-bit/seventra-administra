@@ -3906,6 +3906,518 @@ class TipoFrecuenciaCobroCompanion
   }
 }
 
+class $BancoTable extends Banco with TableInfo<$BancoTable, BancoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BancoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descripcionMeta = const VerificationMeta(
+    'descripcion',
+  );
+  @override
+  late final GeneratedColumn<String> descripcion = GeneratedColumn<String>(
+    'descripcion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _activoMeta = const VerificationMeta('activo');
+  @override
+  late final GeneratedColumn<bool> activo = GeneratedColumn<bool>(
+    'activo',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("activo" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    codigo,
+    nombre,
+    descripcion,
+    activo,
+    orden,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'banco';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BancoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('descripcion')) {
+      context.handle(
+        _descripcionMeta,
+        descripcion.isAcceptableOrUnknown(
+          data['descripcion']!,
+          _descripcionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('activo')) {
+      context.handle(
+        _activoMeta,
+        activo.isAcceptableOrUnknown(data['activo']!, _activoMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BancoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BancoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      codigo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}codigo'],
+          )!,
+      nombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre'],
+          )!,
+      descripcion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}descripcion'],
+      ),
+      activo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}activo'],
+          )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      ),
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+    );
+  }
+
+  @override
+  $BancoTable createAlias(String alias) {
+    return $BancoTable(attachedDatabase, alias);
+  }
+}
+
+class BancoData extends DataClass implements Insertable<BancoData> {
+  final String id;
+  final String codigo;
+  final String nombre;
+  final String? descripcion;
+  final bool activo;
+  final int? orden;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const BancoData({
+    required this.id,
+    required this.codigo,
+    required this.nombre,
+    this.descripcion,
+    required this.activo,
+    this.orden,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['codigo'] = Variable<String>(codigo);
+    map['nombre'] = Variable<String>(nombre);
+    if (!nullToAbsent || descripcion != null) {
+      map['descripcion'] = Variable<String>(descripcion);
+    }
+    map['activo'] = Variable<bool>(activo);
+    if (!nullToAbsent || orden != null) {
+      map['orden'] = Variable<int>(orden);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  BancoCompanion toCompanion(bool nullToAbsent) {
+    return BancoCompanion(
+      id: Value(id),
+      codigo: Value(codigo),
+      nombre: Value(nombre),
+      descripcion:
+          descripcion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(descripcion),
+      activo: Value(activo),
+      orden:
+          orden == null && nullToAbsent ? const Value.absent() : Value(orden),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory BancoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BancoData(
+      id: serializer.fromJson<String>(json['id']),
+      codigo: serializer.fromJson<String>(json['codigo']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      descripcion: serializer.fromJson<String?>(json['descripcion']),
+      activo: serializer.fromJson<bool>(json['activo']),
+      orden: serializer.fromJson<int?>(json['orden']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'codigo': serializer.toJson<String>(codigo),
+      'nombre': serializer.toJson<String>(nombre),
+      'descripcion': serializer.toJson<String?>(descripcion),
+      'activo': serializer.toJson<bool>(activo),
+      'orden': serializer.toJson<int?>(orden),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  BancoData copyWith({
+    String? id,
+    String? codigo,
+    String? nombre,
+    Value<String?> descripcion = const Value.absent(),
+    bool? activo,
+    Value<int?> orden = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => BancoData(
+    id: id ?? this.id,
+    codigo: codigo ?? this.codigo,
+    nombre: nombre ?? this.nombre,
+    descripcion: descripcion.present ? descripcion.value : this.descripcion,
+    activo: activo ?? this.activo,
+    orden: orden.present ? orden.value : this.orden,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  BancoData copyWithCompanion(BancoCompanion data) {
+    return BancoData(
+      id: data.id.present ? data.id.value : this.id,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      descripcion:
+          data.descripcion.present ? data.descripcion.value : this.descripcion,
+      activo: data.activo.present ? data.activo.value : this.activo,
+      orden: data.orden.present ? data.orden.value : this.orden,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BancoData(')
+          ..write('id: $id, ')
+          ..write('codigo: $codigo, ')
+          ..write('nombre: $nombre, ')
+          ..write('descripcion: $descripcion, ')
+          ..write('activo: $activo, ')
+          ..write('orden: $orden, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    codigo,
+    nombre,
+    descripcion,
+    activo,
+    orden,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BancoData &&
+          other.id == this.id &&
+          other.codigo == this.codigo &&
+          other.nombre == this.nombre &&
+          other.descripcion == this.descripcion &&
+          other.activo == this.activo &&
+          other.orden == this.orden &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BancoCompanion extends UpdateCompanion<BancoData> {
+  final Value<String> id;
+  final Value<String> codigo;
+  final Value<String> nombre;
+  final Value<String?> descripcion;
+  final Value<bool> activo;
+  final Value<int?> orden;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const BancoCompanion({
+    this.id = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.descripcion = const Value.absent(),
+    this.activo = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BancoCompanion.insert({
+    required String id,
+    required String codigo,
+    required String nombre,
+    this.descripcion = const Value.absent(),
+    this.activo = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       codigo = Value(codigo),
+       nombre = Value(nombre);
+  static Insertable<BancoData> custom({
+    Expression<String>? id,
+    Expression<String>? codigo,
+    Expression<String>? nombre,
+    Expression<String>? descripcion,
+    Expression<bool>? activo,
+    Expression<int>? orden,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (codigo != null) 'codigo': codigo,
+      if (nombre != null) 'nombre': nombre,
+      if (descripcion != null) 'descripcion': descripcion,
+      if (activo != null) 'activo': activo,
+      if (orden != null) 'orden': orden,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BancoCompanion copyWith({
+    Value<String>? id,
+    Value<String>? codigo,
+    Value<String>? nombre,
+    Value<String?>? descripcion,
+    Value<bool>? activo,
+    Value<int?>? orden,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return BancoCompanion(
+      id: id ?? this.id,
+      codigo: codigo ?? this.codigo,
+      nombre: nombre ?? this.nombre,
+      descripcion: descripcion ?? this.descripcion,
+      activo: activo ?? this.activo,
+      orden: orden ?? this.orden,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (descripcion.present) {
+      map['descripcion'] = Variable<String>(descripcion.value);
+    }
+    if (activo.present) {
+      map['activo'] = Variable<bool>(activo.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BancoCompanion(')
+          ..write('id: $id, ')
+          ..write('codigo: $codigo, ')
+          ..write('nombre: $nombre, ')
+          ..write('descripcion: $descripcion, ')
+          ..write('activo: $activo, ')
+          ..write('orden: $orden, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DireccionTable extends Direccion
     with TableInfo<$DireccionTable, DireccionData> {
   @override
@@ -30966,15 +31478,15 @@ class $EmpleadoTable extends Empleado
         requiredDuringInsert: false,
         defaultValue: const Constant('activo'),
       );
-  static const VerificationMeta _codigoEmpleadoMeta = const VerificationMeta(
-    'codigoEmpleado',
+  static const VerificationMeta _numeroEmpleadoMeta = const VerificationMeta(
+    'numeroEmpleado',
   );
   @override
-  late final GeneratedColumn<String> codigoEmpleado = GeneratedColumn<String>(
-    'codigo_empleado',
+  late final GeneratedColumn<int> numeroEmpleado = GeneratedColumn<int>(
+    'numero_empleado',
     aliasedName,
     false,
-    type: DriftSqlType.string,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
@@ -31163,6 +31675,40 @@ class $EmpleadoTable extends Empleado
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _bancoIdMeta = const VerificationMeta(
+    'bancoId',
+  );
+  @override
+  late final GeneratedColumn<String> bancoId = GeneratedColumn<String>(
+    'banco_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES banco (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _numeroCuentaTarjetaMeta =
+      const VerificationMeta('numeroCuentaTarjeta');
+  @override
+  late final GeneratedColumn<String> numeroCuentaTarjeta =
+      GeneratedColumn<String>(
+        'numero_cuenta_tarjeta',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _clabeMeta = const VerificationMeta('clabe');
+  @override
+  late final GeneratedColumn<String> clabe = GeneratedColumn<String>(
+    'clabe',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _fechaIngresoMeta = const VerificationMeta(
     'fechaIngreso',
   );
@@ -31228,6 +31774,28 @@ class $EmpleadoTable extends Empleado
       'REFERENCES sucursal (id) ON DELETE RESTRICT',
     ),
   );
+  static const VerificationMeta _sueldoMensualAdministrativoMeta =
+      const VerificationMeta('sueldoMensualAdministrativo');
+  @override
+  late final GeneratedColumn<int> sueldoMensualAdministrativo =
+      GeneratedColumn<int>(
+        'sueldo_mensual_administrativo',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _bonoMensualAdministrativoMeta =
+      const VerificationMeta('bonoMensualAdministrativo');
+  @override
+  late final GeneratedColumn<int> bonoMensualAdministrativo =
+      GeneratedColumn<int>(
+        'bono_mensual_administrativo',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _observacionesMeta = const VerificationMeta(
     'observaciones',
   );
@@ -31500,7 +32068,7 @@ class $EmpleadoTable extends Empleado
     createdAt,
     updatedAt,
     cicloVidaRegistro,
-    codigoEmpleado,
+    numeroEmpleado,
     fotografiaAttachmentId,
     nombres,
     apellidoPaterno,
@@ -31518,11 +32086,16 @@ class $EmpleadoTable extends Empleado
     contactoEmergenciaNombre,
     telefonoEmergencia,
     parentescoEmergencia,
+    bancoId,
+    numeroCuentaTarjeta,
+    clabe,
     fechaIngreso,
     estatus,
     puestoId,
     empresaId,
     sucursalId,
+    sueldoMensualAdministrativo,
+    bonoMensualAdministrativo,
     observaciones,
     fechaBaja,
     motivoBaja,
@@ -31584,16 +32157,16 @@ class $EmpleadoTable extends Empleado
         ),
       );
     }
-    if (data.containsKey('codigo_empleado')) {
+    if (data.containsKey('numero_empleado')) {
       context.handle(
-        _codigoEmpleadoMeta,
-        codigoEmpleado.isAcceptableOrUnknown(
-          data['codigo_empleado']!,
-          _codigoEmpleadoMeta,
+        _numeroEmpleadoMeta,
+        numeroEmpleado.isAcceptableOrUnknown(
+          data['numero_empleado']!,
+          _numeroEmpleadoMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_codigoEmpleadoMeta);
+      context.missing(_numeroEmpleadoMeta);
     }
     if (data.containsKey('fotografia_attachment_id')) {
       context.handle(
@@ -31746,6 +32319,27 @@ class $EmpleadoTable extends Empleado
         ),
       );
     }
+    if (data.containsKey('banco_id')) {
+      context.handle(
+        _bancoIdMeta,
+        bancoId.isAcceptableOrUnknown(data['banco_id']!, _bancoIdMeta),
+      );
+    }
+    if (data.containsKey('numero_cuenta_tarjeta')) {
+      context.handle(
+        _numeroCuentaTarjetaMeta,
+        numeroCuentaTarjeta.isAcceptableOrUnknown(
+          data['numero_cuenta_tarjeta']!,
+          _numeroCuentaTarjetaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('clabe')) {
+      context.handle(
+        _clabeMeta,
+        clabe.isAcceptableOrUnknown(data['clabe']!, _clabeMeta),
+      );
+    }
     if (data.containsKey('fecha_ingreso')) {
       context.handle(
         _fechaIngresoMeta,
@@ -31779,6 +32373,24 @@ class $EmpleadoTable extends Empleado
       context.handle(
         _sucursalIdMeta,
         sucursalId.isAcceptableOrUnknown(data['sucursal_id']!, _sucursalIdMeta),
+      );
+    }
+    if (data.containsKey('sueldo_mensual_administrativo')) {
+      context.handle(
+        _sueldoMensualAdministrativoMeta,
+        sueldoMensualAdministrativo.isAcceptableOrUnknown(
+          data['sueldo_mensual_administrativo']!,
+          _sueldoMensualAdministrativoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bono_mensual_administrativo')) {
+      context.handle(
+        _bonoMensualAdministrativoMeta,
+        bonoMensualAdministrativo.isAcceptableOrUnknown(
+          data['bono_mensual_administrativo']!,
+          _bonoMensualAdministrativoMeta,
+        ),
       );
     }
     if (data.containsKey('observaciones')) {
@@ -32022,10 +32634,10 @@ class $EmpleadoTable extends Empleado
             DriftSqlType.string,
             data['${effectivePrefix}ciclo_vida_registro'],
           )!,
-      codigoEmpleado:
+      numeroEmpleado:
           attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}codigo_empleado'],
+            DriftSqlType.int,
+            data['${effectivePrefix}numero_empleado'],
           )!,
       fotografiaAttachmentId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -32104,6 +32716,18 @@ class $EmpleadoTable extends Empleado
         DriftSqlType.string,
         data['${effectivePrefix}parentesco_emergencia'],
       ),
+      bancoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}banco_id'],
+      ),
+      numeroCuentaTarjeta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}numero_cuenta_tarjeta'],
+      ),
+      clabe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}clabe'],
+      ),
       fechaIngreso:
           attachedDatabase.typeMapping.read(
             DriftSqlType.dateTime,
@@ -32125,6 +32749,14 @@ class $EmpleadoTable extends Empleado
       sucursalId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sucursal_id'],
+      ),
+      sueldoMensualAdministrativo: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sueldo_mensual_administrativo'],
+      ),
+      bonoMensualAdministrativo: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bono_mensual_administrativo'],
       ),
       observaciones: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -32237,7 +32869,17 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String cicloVidaRegistro;
-  final String codigoEmpleado;
+
+  /// Identificador visible del empleado (Etapa 6A) — entero simple,
+  /// consecutivo desde 1, **nunca** con prefijo ni relleno de ceros
+  /// (Resolución explícita de Marlon: reemplaza el antiguo
+  /// `codigoEmpleado` tipo `EMP-000001`). Se asigna una sola vez, al
+  /// alta, vía `CodigoSecuenciaService.siguienteNumero('empleado')` —
+  /// el mismo contador atómico/transaccional/nunca-reutilizado que ya
+  /// usa `siguienteCodigo`, no un `MAX(numero_empleado) + 1`. Un
+  /// reingreso (`RegistrarReingresoUseCase`) nunca vuelve a tocar esta
+  /// columna — el mismo empleado conserva siempre el mismo número.
+  final int numeroEmpleado;
 
   /// Puntero directo a *la* fotografía vigente — mismo patrón que
   /// `Empresa.logoAttachmentId`. La fotografía también existe como fila
@@ -32267,11 +32909,27 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
   final String? contactoEmergenciaNombre;
   final String? telefonoEmergencia;
   final String? parentescoEmergencia;
+  final String? bancoId;
+  final String? numeroCuentaTarjeta;
+  final String? clabe;
   final DateTime fechaIngreso;
   final String estatus;
   final String? puestoId;
   final String? empresaId;
   final String? sucursalId;
+
+  /// Condición laboral administrativa (Etapa 6A) — fuente de sueldo/
+  /// bono **únicamente** para empleados sin ninguna `AsignacionServicio`
+  /// (adscritos a Sucursal, sin Servicio operativo asignado). Un
+  /// empleado con `AsignacionServicio` obtiene su sueldo/bono de ahí
+  /// (`AsignacionServicioSueldoVigencia`, Etapa 6B) — estos dos campos
+  /// se ignoran en ese caso, nunca se combinan con la asignación. Sin
+  /// vigencia/historial propio (Resolución explícita de Marlon: "no
+  /// quiero crear una estructura de vigencias de Sucursal solo para
+  /// esto") — el valor vigente vive aquí; el histórico protegido lo da
+  /// el snapshot de cada Nómina ya generada, no esta tabla.
+  final int? sueldoMensualAdministrativo;
+  final int? bonoMensualAdministrativo;
   final String? observaciones;
   final DateTime? fechaBaja;
   final String? motivoBaja;
@@ -32301,7 +32959,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     required this.createdAt,
     required this.updatedAt,
     required this.cicloVidaRegistro,
-    required this.codigoEmpleado,
+    required this.numeroEmpleado,
     this.fotografiaAttachmentId,
     required this.nombres,
     required this.apellidoPaterno,
@@ -32319,11 +32977,16 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     this.contactoEmergenciaNombre,
     this.telefonoEmergencia,
     this.parentescoEmergencia,
+    this.bancoId,
+    this.numeroCuentaTarjeta,
+    this.clabe,
     required this.fechaIngreso,
     required this.estatus,
     this.puestoId,
     this.empresaId,
     this.sucursalId,
+    this.sueldoMensualAdministrativo,
+    this.bonoMensualAdministrativo,
     this.observaciones,
     this.fechaBaja,
     this.motivoBaja,
@@ -32356,7 +33019,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
-    map['codigo_empleado'] = Variable<String>(codigoEmpleado);
+    map['numero_empleado'] = Variable<int>(numeroEmpleado);
     if (!nullToAbsent || fotografiaAttachmentId != null) {
       map['fotografia_attachment_id'] = Variable<String>(
         fotografiaAttachmentId,
@@ -32394,6 +33057,15 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     if (!nullToAbsent || parentescoEmergencia != null) {
       map['parentesco_emergencia'] = Variable<String>(parentescoEmergencia);
     }
+    if (!nullToAbsent || bancoId != null) {
+      map['banco_id'] = Variable<String>(bancoId);
+    }
+    if (!nullToAbsent || numeroCuentaTarjeta != null) {
+      map['numero_cuenta_tarjeta'] = Variable<String>(numeroCuentaTarjeta);
+    }
+    if (!nullToAbsent || clabe != null) {
+      map['clabe'] = Variable<String>(clabe);
+    }
     map['fecha_ingreso'] = Variable<DateTime>(fechaIngreso);
     map['estatus'] = Variable<String>(estatus);
     if (!nullToAbsent || puestoId != null) {
@@ -32404,6 +33076,16 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     }
     if (!nullToAbsent || sucursalId != null) {
       map['sucursal_id'] = Variable<String>(sucursalId);
+    }
+    if (!nullToAbsent || sueldoMensualAdministrativo != null) {
+      map['sueldo_mensual_administrativo'] = Variable<int>(
+        sueldoMensualAdministrativo,
+      );
+    }
+    if (!nullToAbsent || bonoMensualAdministrativo != null) {
+      map['bono_mensual_administrativo'] = Variable<int>(
+        bonoMensualAdministrativo,
+      );
     }
     if (!nullToAbsent || observaciones != null) {
       map['observaciones'] = Variable<String>(observaciones);
@@ -32506,7 +33188,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       cicloVidaRegistro: Value(cicloVidaRegistro),
-      codigoEmpleado: Value(codigoEmpleado),
+      numeroEmpleado: Value(numeroEmpleado),
       fotografiaAttachmentId:
           fotografiaAttachmentId == null && nullToAbsent
               ? const Value.absent()
@@ -32548,6 +33230,16 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           parentescoEmergencia == null && nullToAbsent
               ? const Value.absent()
               : Value(parentescoEmergencia),
+      bancoId:
+          bancoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(bancoId),
+      numeroCuentaTarjeta:
+          numeroCuentaTarjeta == null && nullToAbsent
+              ? const Value.absent()
+              : Value(numeroCuentaTarjeta),
+      clabe:
+          clabe == null && nullToAbsent ? const Value.absent() : Value(clabe),
       fechaIngreso: Value(fechaIngreso),
       estatus: Value(estatus),
       puestoId:
@@ -32562,6 +33254,14 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           sucursalId == null && nullToAbsent
               ? const Value.absent()
               : Value(sucursalId),
+      sueldoMensualAdministrativo:
+          sueldoMensualAdministrativo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(sueldoMensualAdministrativo),
+      bonoMensualAdministrativo:
+          bonoMensualAdministrativo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(bonoMensualAdministrativo),
       observaciones:
           observaciones == null && nullToAbsent
               ? const Value.absent()
@@ -32668,7 +33368,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
-      codigoEmpleado: serializer.fromJson<String>(json['codigoEmpleado']),
+      numeroEmpleado: serializer.fromJson<int>(json['numeroEmpleado']),
       fotografiaAttachmentId: serializer.fromJson<String?>(
         json['fotografiaAttachmentId'],
       ),
@@ -32698,11 +33398,22 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       parentescoEmergencia: serializer.fromJson<String?>(
         json['parentescoEmergencia'],
       ),
+      bancoId: serializer.fromJson<String?>(json['bancoId']),
+      numeroCuentaTarjeta: serializer.fromJson<String?>(
+        json['numeroCuentaTarjeta'],
+      ),
+      clabe: serializer.fromJson<String?>(json['clabe']),
       fechaIngreso: serializer.fromJson<DateTime>(json['fechaIngreso']),
       estatus: serializer.fromJson<String>(json['estatus']),
       puestoId: serializer.fromJson<String?>(json['puestoId']),
       empresaId: serializer.fromJson<String?>(json['empresaId']),
       sucursalId: serializer.fromJson<String?>(json['sucursalId']),
+      sueldoMensualAdministrativo: serializer.fromJson<int?>(
+        json['sueldoMensualAdministrativo'],
+      ),
+      bonoMensualAdministrativo: serializer.fromJson<int?>(
+        json['bonoMensualAdministrativo'],
+      ),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
       fechaBaja: serializer.fromJson<DateTime?>(json['fechaBaja']),
       motivoBaja: serializer.fromJson<String?>(json['motivoBaja']),
@@ -32765,7 +33476,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
-      'codigoEmpleado': serializer.toJson<String>(codigoEmpleado),
+      'numeroEmpleado': serializer.toJson<int>(numeroEmpleado),
       'fotografiaAttachmentId': serializer.toJson<String?>(
         fotografiaAttachmentId,
       ),
@@ -32787,11 +33498,20 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       ),
       'telefonoEmergencia': serializer.toJson<String?>(telefonoEmergencia),
       'parentescoEmergencia': serializer.toJson<String?>(parentescoEmergencia),
+      'bancoId': serializer.toJson<String?>(bancoId),
+      'numeroCuentaTarjeta': serializer.toJson<String?>(numeroCuentaTarjeta),
+      'clabe': serializer.toJson<String?>(clabe),
       'fechaIngreso': serializer.toJson<DateTime>(fechaIngreso),
       'estatus': serializer.toJson<String>(estatus),
       'puestoId': serializer.toJson<String?>(puestoId),
       'empresaId': serializer.toJson<String?>(empresaId),
       'sucursalId': serializer.toJson<String?>(sucursalId),
+      'sueldoMensualAdministrativo': serializer.toJson<int?>(
+        sueldoMensualAdministrativo,
+      ),
+      'bonoMensualAdministrativo': serializer.toJson<int?>(
+        bonoMensualAdministrativo,
+      ),
       'observaciones': serializer.toJson<String?>(observaciones),
       'fechaBaja': serializer.toJson<DateTime?>(fechaBaja),
       'motivoBaja': serializer.toJson<String?>(motivoBaja),
@@ -32846,7 +33566,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? cicloVidaRegistro,
-    String? codigoEmpleado,
+    int? numeroEmpleado,
     Value<String?> fotografiaAttachmentId = const Value.absent(),
     String? nombres,
     String? apellidoPaterno,
@@ -32864,11 +33584,16 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     Value<String?> contactoEmergenciaNombre = const Value.absent(),
     Value<String?> telefonoEmergencia = const Value.absent(),
     Value<String?> parentescoEmergencia = const Value.absent(),
+    Value<String?> bancoId = const Value.absent(),
+    Value<String?> numeroCuentaTarjeta = const Value.absent(),
+    Value<String?> clabe = const Value.absent(),
     DateTime? fechaIngreso,
     String? estatus,
     Value<String?> puestoId = const Value.absent(),
     Value<String?> empresaId = const Value.absent(),
     Value<String?> sucursalId = const Value.absent(),
+    Value<int?> sueldoMensualAdministrativo = const Value.absent(),
+    Value<int?> bonoMensualAdministrativo = const Value.absent(),
     Value<String?> observaciones = const Value.absent(),
     Value<DateTime?> fechaBaja = const Value.absent(),
     Value<String?> motivoBaja = const Value.absent(),
@@ -32898,7 +33623,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
-    codigoEmpleado: codigoEmpleado ?? this.codigoEmpleado,
+    numeroEmpleado: numeroEmpleado ?? this.numeroEmpleado,
     fotografiaAttachmentId:
         fotografiaAttachmentId.present
             ? fotografiaAttachmentId.value
@@ -32935,11 +33660,25 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
         parentescoEmergencia.present
             ? parentescoEmergencia.value
             : this.parentescoEmergencia,
+    bancoId: bancoId.present ? bancoId.value : this.bancoId,
+    numeroCuentaTarjeta:
+        numeroCuentaTarjeta.present
+            ? numeroCuentaTarjeta.value
+            : this.numeroCuentaTarjeta,
+    clabe: clabe.present ? clabe.value : this.clabe,
     fechaIngreso: fechaIngreso ?? this.fechaIngreso,
     estatus: estatus ?? this.estatus,
     puestoId: puestoId.present ? puestoId.value : this.puestoId,
     empresaId: empresaId.present ? empresaId.value : this.empresaId,
     sucursalId: sucursalId.present ? sucursalId.value : this.sucursalId,
+    sueldoMensualAdministrativo:
+        sueldoMensualAdministrativo.present
+            ? sueldoMensualAdministrativo.value
+            : this.sueldoMensualAdministrativo,
+    bonoMensualAdministrativo:
+        bonoMensualAdministrativo.present
+            ? bonoMensualAdministrativo.value
+            : this.bonoMensualAdministrativo,
     observaciones:
         observaciones.present ? observaciones.value : this.observaciones,
     fechaBaja: fechaBaja.present ? fechaBaja.value : this.fechaBaja,
@@ -33017,10 +33756,10 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           data.cicloVidaRegistro.present
               ? data.cicloVidaRegistro.value
               : this.cicloVidaRegistro,
-      codigoEmpleado:
-          data.codigoEmpleado.present
-              ? data.codigoEmpleado.value
-              : this.codigoEmpleado,
+      numeroEmpleado:
+          data.numeroEmpleado.present
+              ? data.numeroEmpleado.value
+              : this.numeroEmpleado,
       fotografiaAttachmentId:
           data.fotografiaAttachmentId.present
               ? data.fotografiaAttachmentId.value
@@ -33069,6 +33808,12 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           data.parentescoEmergencia.present
               ? data.parentescoEmergencia.value
               : this.parentescoEmergencia,
+      bancoId: data.bancoId.present ? data.bancoId.value : this.bancoId,
+      numeroCuentaTarjeta:
+          data.numeroCuentaTarjeta.present
+              ? data.numeroCuentaTarjeta.value
+              : this.numeroCuentaTarjeta,
+      clabe: data.clabe.present ? data.clabe.value : this.clabe,
       fechaIngreso:
           data.fechaIngreso.present
               ? data.fechaIngreso.value
@@ -33078,6 +33823,14 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
       sucursalId:
           data.sucursalId.present ? data.sucursalId.value : this.sucursalId,
+      sueldoMensualAdministrativo:
+          data.sueldoMensualAdministrativo.present
+              ? data.sueldoMensualAdministrativo.value
+              : this.sueldoMensualAdministrativo,
+      bonoMensualAdministrativo:
+          data.bonoMensualAdministrativo.present
+              ? data.bonoMensualAdministrativo.value
+              : this.bonoMensualAdministrativo,
       observaciones:
           data.observaciones.present
               ? data.observaciones.value
@@ -33179,7 +33932,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
-          ..write('codigoEmpleado: $codigoEmpleado, ')
+          ..write('numeroEmpleado: $numeroEmpleado, ')
           ..write('fotografiaAttachmentId: $fotografiaAttachmentId, ')
           ..write('nombres: $nombres, ')
           ..write('apellidoPaterno: $apellidoPaterno, ')
@@ -33197,11 +33950,16 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           ..write('contactoEmergenciaNombre: $contactoEmergenciaNombre, ')
           ..write('telefonoEmergencia: $telefonoEmergencia, ')
           ..write('parentescoEmergencia: $parentescoEmergencia, ')
+          ..write('bancoId: $bancoId, ')
+          ..write('numeroCuentaTarjeta: $numeroCuentaTarjeta, ')
+          ..write('clabe: $clabe, ')
           ..write('fechaIngreso: $fechaIngreso, ')
           ..write('estatus: $estatus, ')
           ..write('puestoId: $puestoId, ')
           ..write('empresaId: $empresaId, ')
           ..write('sucursalId: $sucursalId, ')
+          ..write('sueldoMensualAdministrativo: $sueldoMensualAdministrativo, ')
+          ..write('bonoMensualAdministrativo: $bonoMensualAdministrativo, ')
           ..write('observaciones: $observaciones, ')
           ..write('fechaBaja: $fechaBaja, ')
           ..write('motivoBaja: $motivoBaja, ')
@@ -33240,7 +33998,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     createdAt,
     updatedAt,
     cicloVidaRegistro,
-    codigoEmpleado,
+    numeroEmpleado,
     fotografiaAttachmentId,
     nombres,
     apellidoPaterno,
@@ -33258,11 +34016,16 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     contactoEmergenciaNombre,
     telefonoEmergencia,
     parentescoEmergencia,
+    bancoId,
+    numeroCuentaTarjeta,
+    clabe,
     fechaIngreso,
     estatus,
     puestoId,
     empresaId,
     sucursalId,
+    sueldoMensualAdministrativo,
+    bonoMensualAdministrativo,
     observaciones,
     fechaBaja,
     motivoBaja,
@@ -33296,7 +34059,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.cicloVidaRegistro == this.cicloVidaRegistro &&
-          other.codigoEmpleado == this.codigoEmpleado &&
+          other.numeroEmpleado == this.numeroEmpleado &&
           other.fotografiaAttachmentId == this.fotografiaAttachmentId &&
           other.nombres == this.nombres &&
           other.apellidoPaterno == this.apellidoPaterno &&
@@ -33314,11 +34077,17 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           other.contactoEmergenciaNombre == this.contactoEmergenciaNombre &&
           other.telefonoEmergencia == this.telefonoEmergencia &&
           other.parentescoEmergencia == this.parentescoEmergencia &&
+          other.bancoId == this.bancoId &&
+          other.numeroCuentaTarjeta == this.numeroCuentaTarjeta &&
+          other.clabe == this.clabe &&
           other.fechaIngreso == this.fechaIngreso &&
           other.estatus == this.estatus &&
           other.puestoId == this.puestoId &&
           other.empresaId == this.empresaId &&
           other.sucursalId == this.sucursalId &&
+          other.sueldoMensualAdministrativo ==
+              this.sueldoMensualAdministrativo &&
+          other.bonoMensualAdministrativo == this.bonoMensualAdministrativo &&
           other.observaciones == this.observaciones &&
           other.fechaBaja == this.fechaBaja &&
           other.motivoBaja == this.motivoBaja &&
@@ -33353,7 +34122,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<String> cicloVidaRegistro;
-  final Value<String> codigoEmpleado;
+  final Value<int> numeroEmpleado;
   final Value<String?> fotografiaAttachmentId;
   final Value<String> nombres;
   final Value<String> apellidoPaterno;
@@ -33371,11 +34140,16 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
   final Value<String?> contactoEmergenciaNombre;
   final Value<String?> telefonoEmergencia;
   final Value<String?> parentescoEmergencia;
+  final Value<String?> bancoId;
+  final Value<String?> numeroCuentaTarjeta;
+  final Value<String?> clabe;
   final Value<DateTime> fechaIngreso;
   final Value<String> estatus;
   final Value<String?> puestoId;
   final Value<String?> empresaId;
   final Value<String?> sucursalId;
+  final Value<int?> sueldoMensualAdministrativo;
+  final Value<int?> bonoMensualAdministrativo;
   final Value<String?> observaciones;
   final Value<DateTime?> fechaBaja;
   final Value<String?> motivoBaja;
@@ -33406,7 +34180,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.cicloVidaRegistro = const Value.absent(),
-    this.codigoEmpleado = const Value.absent(),
+    this.numeroEmpleado = const Value.absent(),
     this.fotografiaAttachmentId = const Value.absent(),
     this.nombres = const Value.absent(),
     this.apellidoPaterno = const Value.absent(),
@@ -33424,11 +34198,16 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.contactoEmergenciaNombre = const Value.absent(),
     this.telefonoEmergencia = const Value.absent(),
     this.parentescoEmergencia = const Value.absent(),
+    this.bancoId = const Value.absent(),
+    this.numeroCuentaTarjeta = const Value.absent(),
+    this.clabe = const Value.absent(),
     this.fechaIngreso = const Value.absent(),
     this.estatus = const Value.absent(),
     this.puestoId = const Value.absent(),
     this.empresaId = const Value.absent(),
     this.sucursalId = const Value.absent(),
+    this.sueldoMensualAdministrativo = const Value.absent(),
+    this.bonoMensualAdministrativo = const Value.absent(),
     this.observaciones = const Value.absent(),
     this.fechaBaja = const Value.absent(),
     this.motivoBaja = const Value.absent(),
@@ -33460,7 +34239,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.cicloVidaRegistro = const Value.absent(),
-    required String codigoEmpleado,
+    required int numeroEmpleado,
     this.fotografiaAttachmentId = const Value.absent(),
     required String nombres,
     required String apellidoPaterno,
@@ -33478,11 +34257,16 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.contactoEmergenciaNombre = const Value.absent(),
     this.telefonoEmergencia = const Value.absent(),
     this.parentescoEmergencia = const Value.absent(),
+    this.bancoId = const Value.absent(),
+    this.numeroCuentaTarjeta = const Value.absent(),
+    this.clabe = const Value.absent(),
     required DateTime fechaIngreso,
     this.estatus = const Value.absent(),
     this.puestoId = const Value.absent(),
     this.empresaId = const Value.absent(),
     this.sucursalId = const Value.absent(),
+    this.sueldoMensualAdministrativo = const Value.absent(),
+    this.bonoMensualAdministrativo = const Value.absent(),
     this.observaciones = const Value.absent(),
     this.fechaBaja = const Value.absent(),
     this.motivoBaja = const Value.absent(),
@@ -33508,7 +34292,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.resultadoOpi = const Value.absent(),
     this.observacionesAntidoping = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : codigoEmpleado = Value(codigoEmpleado),
+  }) : numeroEmpleado = Value(numeroEmpleado),
        nombres = Value(nombres),
        apellidoPaterno = Value(apellidoPaterno),
        sexo = Value(sexo),
@@ -33524,7 +34308,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? cicloVidaRegistro,
-    Expression<String>? codigoEmpleado,
+    Expression<int>? numeroEmpleado,
     Expression<String>? fotografiaAttachmentId,
     Expression<String>? nombres,
     Expression<String>? apellidoPaterno,
@@ -33542,11 +34326,16 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Expression<String>? contactoEmergenciaNombre,
     Expression<String>? telefonoEmergencia,
     Expression<String>? parentescoEmergencia,
+    Expression<String>? bancoId,
+    Expression<String>? numeroCuentaTarjeta,
+    Expression<String>? clabe,
     Expression<DateTime>? fechaIngreso,
     Expression<String>? estatus,
     Expression<String>? puestoId,
     Expression<String>? empresaId,
     Expression<String>? sucursalId,
+    Expression<int>? sueldoMensualAdministrativo,
+    Expression<int>? bonoMensualAdministrativo,
     Expression<String>? observaciones,
     Expression<DateTime>? fechaBaja,
     Expression<String>? motivoBaja,
@@ -33578,7 +34367,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
-      if (codigoEmpleado != null) 'codigo_empleado': codigoEmpleado,
+      if (numeroEmpleado != null) 'numero_empleado': numeroEmpleado,
       if (fotografiaAttachmentId != null)
         'fotografia_attachment_id': fotografiaAttachmentId,
       if (nombres != null) 'nombres': nombres,
@@ -33600,11 +34389,19 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       if (telefonoEmergencia != null) 'telefono_emergencia': telefonoEmergencia,
       if (parentescoEmergencia != null)
         'parentesco_emergencia': parentescoEmergencia,
+      if (bancoId != null) 'banco_id': bancoId,
+      if (numeroCuentaTarjeta != null)
+        'numero_cuenta_tarjeta': numeroCuentaTarjeta,
+      if (clabe != null) 'clabe': clabe,
       if (fechaIngreso != null) 'fecha_ingreso': fechaIngreso,
       if (estatus != null) 'estatus': estatus,
       if (puestoId != null) 'puesto_id': puestoId,
       if (empresaId != null) 'empresa_id': empresaId,
       if (sucursalId != null) 'sucursal_id': sucursalId,
+      if (sueldoMensualAdministrativo != null)
+        'sueldo_mensual_administrativo': sueldoMensualAdministrativo,
+      if (bonoMensualAdministrativo != null)
+        'bono_mensual_administrativo': bonoMensualAdministrativo,
       if (observaciones != null) 'observaciones': observaciones,
       if (fechaBaja != null) 'fecha_baja': fechaBaja,
       if (motivoBaja != null) 'motivo_baja': motivoBaja,
@@ -33650,7 +34447,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<String>? cicloVidaRegistro,
-    Value<String>? codigoEmpleado,
+    Value<int>? numeroEmpleado,
     Value<String?>? fotografiaAttachmentId,
     Value<String>? nombres,
     Value<String>? apellidoPaterno,
@@ -33668,11 +34465,16 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Value<String?>? contactoEmergenciaNombre,
     Value<String?>? telefonoEmergencia,
     Value<String?>? parentescoEmergencia,
+    Value<String?>? bancoId,
+    Value<String?>? numeroCuentaTarjeta,
+    Value<String?>? clabe,
     Value<DateTime>? fechaIngreso,
     Value<String>? estatus,
     Value<String?>? puestoId,
     Value<String?>? empresaId,
     Value<String?>? sucursalId,
+    Value<int?>? sueldoMensualAdministrativo,
+    Value<int?>? bonoMensualAdministrativo,
     Value<String?>? observaciones,
     Value<DateTime?>? fechaBaja,
     Value<String?>? motivoBaja,
@@ -33704,7 +34506,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
-      codigoEmpleado: codigoEmpleado ?? this.codigoEmpleado,
+      numeroEmpleado: numeroEmpleado ?? this.numeroEmpleado,
       fotografiaAttachmentId:
           fotografiaAttachmentId ?? this.fotografiaAttachmentId,
       nombres: nombres ?? this.nombres,
@@ -33724,11 +34526,18 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
           contactoEmergenciaNombre ?? this.contactoEmergenciaNombre,
       telefonoEmergencia: telefonoEmergencia ?? this.telefonoEmergencia,
       parentescoEmergencia: parentescoEmergencia ?? this.parentescoEmergencia,
+      bancoId: bancoId ?? this.bancoId,
+      numeroCuentaTarjeta: numeroCuentaTarjeta ?? this.numeroCuentaTarjeta,
+      clabe: clabe ?? this.clabe,
       fechaIngreso: fechaIngreso ?? this.fechaIngreso,
       estatus: estatus ?? this.estatus,
       puestoId: puestoId ?? this.puestoId,
       empresaId: empresaId ?? this.empresaId,
       sucursalId: sucursalId ?? this.sucursalId,
+      sueldoMensualAdministrativo:
+          sueldoMensualAdministrativo ?? this.sueldoMensualAdministrativo,
+      bonoMensualAdministrativo:
+          bonoMensualAdministrativo ?? this.bonoMensualAdministrativo,
       observaciones: observaciones ?? this.observaciones,
       fechaBaja: fechaBaja ?? this.fechaBaja,
       motivoBaja: motivoBaja ?? this.motivoBaja,
@@ -33784,8 +34593,8 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     if (cicloVidaRegistro.present) {
       map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
     }
-    if (codigoEmpleado.present) {
-      map['codigo_empleado'] = Variable<String>(codigoEmpleado.value);
+    if (numeroEmpleado.present) {
+      map['numero_empleado'] = Variable<int>(numeroEmpleado.value);
     }
     if (fotografiaAttachmentId.present) {
       map['fotografia_attachment_id'] = Variable<String>(
@@ -33844,6 +34653,17 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
         parentescoEmergencia.value,
       );
     }
+    if (bancoId.present) {
+      map['banco_id'] = Variable<String>(bancoId.value);
+    }
+    if (numeroCuentaTarjeta.present) {
+      map['numero_cuenta_tarjeta'] = Variable<String>(
+        numeroCuentaTarjeta.value,
+      );
+    }
+    if (clabe.present) {
+      map['clabe'] = Variable<String>(clabe.value);
+    }
     if (fechaIngreso.present) {
       map['fecha_ingreso'] = Variable<DateTime>(fechaIngreso.value);
     }
@@ -33858,6 +34678,16 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     }
     if (sucursalId.present) {
       map['sucursal_id'] = Variable<String>(sucursalId.value);
+    }
+    if (sueldoMensualAdministrativo.present) {
+      map['sueldo_mensual_administrativo'] = Variable<int>(
+        sueldoMensualAdministrativo.value,
+      );
+    }
+    if (bonoMensualAdministrativo.present) {
+      map['bono_mensual_administrativo'] = Variable<int>(
+        bonoMensualAdministrativo.value,
+      );
     }
     if (observaciones.present) {
       map['observaciones'] = Variable<String>(observaciones.value);
@@ -33966,7 +34796,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
-          ..write('codigoEmpleado: $codigoEmpleado, ')
+          ..write('numeroEmpleado: $numeroEmpleado, ')
           ..write('fotografiaAttachmentId: $fotografiaAttachmentId, ')
           ..write('nombres: $nombres, ')
           ..write('apellidoPaterno: $apellidoPaterno, ')
@@ -33984,11 +34814,16 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
           ..write('contactoEmergenciaNombre: $contactoEmergenciaNombre, ')
           ..write('telefonoEmergencia: $telefonoEmergencia, ')
           ..write('parentescoEmergencia: $parentescoEmergencia, ')
+          ..write('bancoId: $bancoId, ')
+          ..write('numeroCuentaTarjeta: $numeroCuentaTarjeta, ')
+          ..write('clabe: $clabe, ')
           ..write('fechaIngreso: $fechaIngreso, ')
           ..write('estatus: $estatus, ')
           ..write('puestoId: $puestoId, ')
           ..write('empresaId: $empresaId, ')
           ..write('sucursalId: $sucursalId, ')
+          ..write('sueldoMensualAdministrativo: $sueldoMensualAdministrativo, ')
+          ..write('bonoMensualAdministrativo: $bonoMensualAdministrativo, ')
           ..write('observaciones: $observaciones, ')
           ..write('fechaBaja: $fechaBaja, ')
           ..write('motivoBaja: $motivoBaja, ')
@@ -38376,6 +39211,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TipoModalidadTurnoTable(this);
   late final $TipoFrecuenciaCobroTable tipoFrecuenciaCobro =
       $TipoFrecuenciaCobroTable(this);
+  late final $BancoTable banco = $BancoTable(this);
   late final $DireccionTable direccion = $DireccionTable(this);
   late final $MedioContactoTable medioContacto = $MedioContactoTable(this);
   late final $AttachmentTable attachment = $AttachmentTable(this);
@@ -38491,6 +39327,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     area,
     tipoModalidadTurno,
     tipoFrecuenciaCobro,
+    banco,
     direccion,
     medioContacto,
     attachment,
@@ -41828,6 +42665,370 @@ typedef $$TipoFrecuenciaCobroTableProcessedTableManager =
       (TipoFrecuenciaCobroData, $$TipoFrecuenciaCobroTableReferences),
       TipoFrecuenciaCobroData,
       PrefetchHooks Function({bool configuracionCobroVigenciaRefs})
+    >;
+typedef $$BancoTableCreateCompanionBuilder =
+    BancoCompanion Function({
+      required String id,
+      required String codigo,
+      required String nombre,
+      Value<String?> descripcion,
+      Value<bool> activo,
+      Value<int?> orden,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$BancoTableUpdateCompanionBuilder =
+    BancoCompanion Function({
+      Value<String> id,
+      Value<String> codigo,
+      Value<String> nombre,
+      Value<String?> descripcion,
+      Value<bool> activo,
+      Value<int?> orden,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$BancoTableReferences
+    extends BaseReferences<_$AppDatabase, $BancoTable, BancoData> {
+  $$BancoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$EmpleadoTable, List<EmpleadoData>>
+  _empleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.empleado,
+    aliasName: $_aliasNameGenerator(db.banco.id, db.empleado.bancoId),
+  );
+
+  $$EmpleadoTableProcessedTableManager get empleadoRefs {
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.bancoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_empleadoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BancoTableFilterComposer extends Composer<_$AppDatabase, $BancoTable> {
+  $$BancoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get activo => $composableBuilder(
+    column: $table.activo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> empleadoRefs(
+    Expression<bool> Function($$EmpleadoTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.bancoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BancoTableOrderingComposer
+    extends Composer<_$AppDatabase, $BancoTable> {
+  $$BancoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get activo => $composableBuilder(
+    column: $table.activo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BancoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BancoTable> {
+  $$BancoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get activo =>
+      $composableBuilder(column: $table.activo, builder: (column) => column);
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  Expression<T> empleadoRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.bancoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BancoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BancoTable,
+          BancoData,
+          $$BancoTableFilterComposer,
+          $$BancoTableOrderingComposer,
+          $$BancoTableAnnotationComposer,
+          $$BancoTableCreateCompanionBuilder,
+          $$BancoTableUpdateCompanionBuilder,
+          (BancoData, $$BancoTableReferences),
+          BancoData,
+          PrefetchHooks Function({bool empleadoRefs})
+        > {
+  $$BancoTableTableManager(_$AppDatabase db, $BancoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$BancoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$BancoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$BancoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> codigo = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<String?> descripcion = const Value.absent(),
+                Value<bool> activo = const Value.absent(),
+                Value<int?> orden = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BancoCompanion(
+                id: id,
+                codigo: codigo,
+                nombre: nombre,
+                descripcion: descripcion,
+                activo: activo,
+                orden: orden,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String codigo,
+                required String nombre,
+                Value<String?> descripcion = const Value.absent(),
+                Value<bool> activo = const Value.absent(),
+                Value<int?> orden = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BancoCompanion.insert(
+                id: id,
+                codigo: codigo,
+                nombre: nombre,
+                descripcion: descripcion,
+                activo: activo,
+                orden: orden,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$BancoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({empleadoRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (empleadoRefs) db.empleado],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (empleadoRefs)
+                    await $_getPrefetchedData<
+                      BancoData,
+                      $BancoTable,
+                      EmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$BancoTableReferences
+                          ._empleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$BancoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.bancoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BancoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BancoTable,
+      BancoData,
+      $$BancoTableFilterComposer,
+      $$BancoTableOrderingComposer,
+      $$BancoTableAnnotationComposer,
+      $$BancoTableCreateCompanionBuilder,
+      $$BancoTableUpdateCompanionBuilder,
+      (BancoData, $$BancoTableReferences),
+      BancoData,
+      PrefetchHooks Function({bool empleadoRefs})
     >;
 typedef $$DireccionTableCreateCompanionBuilder =
     DireccionCompanion Function({
@@ -68304,7 +69505,7 @@ typedef $$EmpleadoTableCreateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<String> cicloVidaRegistro,
-      required String codigoEmpleado,
+      required int numeroEmpleado,
       Value<String?> fotografiaAttachmentId,
       required String nombres,
       required String apellidoPaterno,
@@ -68322,11 +69523,16 @@ typedef $$EmpleadoTableCreateCompanionBuilder =
       Value<String?> contactoEmergenciaNombre,
       Value<String?> telefonoEmergencia,
       Value<String?> parentescoEmergencia,
+      Value<String?> bancoId,
+      Value<String?> numeroCuentaTarjeta,
+      Value<String?> clabe,
       required DateTime fechaIngreso,
       Value<String> estatus,
       Value<String?> puestoId,
       Value<String?> empresaId,
       Value<String?> sucursalId,
+      Value<int?> sueldoMensualAdministrativo,
+      Value<int?> bonoMensualAdministrativo,
       Value<String?> observaciones,
       Value<DateTime?> fechaBaja,
       Value<String?> motivoBaja,
@@ -68359,7 +69565,7 @@ typedef $$EmpleadoTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<String> cicloVidaRegistro,
-      Value<String> codigoEmpleado,
+      Value<int> numeroEmpleado,
       Value<String?> fotografiaAttachmentId,
       Value<String> nombres,
       Value<String> apellidoPaterno,
@@ -68377,11 +69583,16 @@ typedef $$EmpleadoTableUpdateCompanionBuilder =
       Value<String?> contactoEmergenciaNombre,
       Value<String?> telefonoEmergencia,
       Value<String?> parentescoEmergencia,
+      Value<String?> bancoId,
+      Value<String?> numeroCuentaTarjeta,
+      Value<String?> clabe,
       Value<DateTime> fechaIngreso,
       Value<String> estatus,
       Value<String?> puestoId,
       Value<String?> empresaId,
       Value<String?> sucursalId,
+      Value<int?> sueldoMensualAdministrativo,
+      Value<int?> bonoMensualAdministrativo,
       Value<String?> observaciones,
       Value<DateTime?> fechaBaja,
       Value<String?> motivoBaja,
@@ -68431,6 +69642,24 @@ final class $$EmpleadoTableReferences
     final item = $_typedResult.readTableOrNull(
       _fotografiaAttachmentIdTable($_db),
     );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $BancoTable _bancoIdTable(_$AppDatabase db) => db.banco.createAlias(
+    $_aliasNameGenerator(db.empleado.bancoId, db.banco.id),
+  );
+
+  $$BancoTableProcessedTableManager? get bancoId {
+    final $_column = $_itemColumn<String>('banco_id');
+    if ($_column == null) return null;
+    final manager = $$BancoTableTableManager(
+      $_db,
+      $_db.banco,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bancoIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -68652,8 +69881,8 @@ class $$EmpleadoTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get codigoEmpleado => $composableBuilder(
-    column: $table.codigoEmpleado,
+  ColumnFilters<int> get numeroEmpleado => $composableBuilder(
+    column: $table.numeroEmpleado,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -68737,6 +69966,16 @@ class $$EmpleadoTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get numeroCuentaTarjeta => $composableBuilder(
+    column: $table.numeroCuentaTarjeta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clabe => $composableBuilder(
+    column: $table.clabe,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get fechaIngreso => $composableBuilder(
     column: $table.fechaIngreso,
     builder: (column) => ColumnFilters(column),
@@ -68744,6 +69983,16 @@ class $$EmpleadoTableFilterComposer
 
   ColumnFilters<String> get estatus => $composableBuilder(
     column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sueldoMensualAdministrativo => $composableBuilder(
+    column: $table.sueldoMensualAdministrativo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bonoMensualAdministrativo => $composableBuilder(
+    column: $table.bonoMensualAdministrativo,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -68882,6 +70131,29 @@ class $$EmpleadoTableFilterComposer
           }) => $$AttachmentTableFilterComposer(
             $db: $db,
             $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BancoTableFilterComposer get bancoId {
+    final $$BancoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bancoId,
+      referencedTable: $db.banco,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BancoTableFilterComposer(
+            $db: $db,
+            $table: $db.banco,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -69116,8 +70388,8 @@ class $$EmpleadoTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get codigoEmpleado => $composableBuilder(
-    column: $table.codigoEmpleado,
+  ColumnOrderings<int> get numeroEmpleado => $composableBuilder(
+    column: $table.numeroEmpleado,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -69201,6 +70473,16 @@ class $$EmpleadoTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get numeroCuentaTarjeta => $composableBuilder(
+    column: $table.numeroCuentaTarjeta,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clabe => $composableBuilder(
+    column: $table.clabe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get fechaIngreso => $composableBuilder(
     column: $table.fechaIngreso,
     builder: (column) => ColumnOrderings(column),
@@ -69208,6 +70490,16 @@ class $$EmpleadoTableOrderingComposer
 
   ColumnOrderings<String> get estatus => $composableBuilder(
     column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sueldoMensualAdministrativo => $composableBuilder(
+    column: $table.sueldoMensualAdministrativo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bonoMensualAdministrativo => $composableBuilder(
+    column: $table.bonoMensualAdministrativo,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -69358,6 +70650,29 @@ class $$EmpleadoTableOrderingComposer
     return composer;
   }
 
+  $$BancoTableOrderingComposer get bancoId {
+    final $$BancoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bancoId,
+      referencedTable: $db.banco,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BancoTableOrderingComposer(
+            $db: $db,
+            $table: $db.banco,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   $$PuestoTableOrderingComposer get puestoId {
     final $$PuestoTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -69451,8 +70766,8 @@ class $$EmpleadoTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get codigoEmpleado => $composableBuilder(
-    column: $table.codigoEmpleado,
+  GeneratedColumn<int> get numeroEmpleado => $composableBuilder(
+    column: $table.numeroEmpleado,
     builder: (column) => column,
   );
 
@@ -69524,6 +70839,14 @@ class $$EmpleadoTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get numeroCuentaTarjeta => $composableBuilder(
+    column: $table.numeroCuentaTarjeta,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get clabe =>
+      $composableBuilder(column: $table.clabe, builder: (column) => column);
+
   GeneratedColumn<DateTime> get fechaIngreso => $composableBuilder(
     column: $table.fechaIngreso,
     builder: (column) => column,
@@ -69531,6 +70854,16 @@ class $$EmpleadoTableAnnotationComposer
 
   GeneratedColumn<String> get estatus =>
       $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<int> get sueldoMensualAdministrativo => $composableBuilder(
+    column: $table.sueldoMensualAdministrativo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get bonoMensualAdministrativo => $composableBuilder(
+    column: $table.bonoMensualAdministrativo,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get observaciones => $composableBuilder(
     column: $table.observaciones,
@@ -69668,6 +71001,29 @@ class $$EmpleadoTableAnnotationComposer
           }) => $$AttachmentTableAnnotationComposer(
             $db: $db,
             $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BancoTableAnnotationComposer get bancoId {
+    final $$BancoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bancoId,
+      referencedTable: $db.banco,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BancoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.banco,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -69891,6 +71247,7 @@ class $$EmpleadoTableTableManager
           EmpleadoData,
           PrefetchHooks Function({
             bool fotografiaAttachmentId,
+            bool bancoId,
             bool puestoId,
             bool empresaId,
             bool sucursalId,
@@ -69918,7 +71275,7 @@ class $$EmpleadoTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> cicloVidaRegistro = const Value.absent(),
-                Value<String> codigoEmpleado = const Value.absent(),
+                Value<int> numeroEmpleado = const Value.absent(),
                 Value<String?> fotografiaAttachmentId = const Value.absent(),
                 Value<String> nombres = const Value.absent(),
                 Value<String> apellidoPaterno = const Value.absent(),
@@ -69936,11 +71293,16 @@ class $$EmpleadoTableTableManager
                 Value<String?> contactoEmergenciaNombre = const Value.absent(),
                 Value<String?> telefonoEmergencia = const Value.absent(),
                 Value<String?> parentescoEmergencia = const Value.absent(),
+                Value<String?> bancoId = const Value.absent(),
+                Value<String?> numeroCuentaTarjeta = const Value.absent(),
+                Value<String?> clabe = const Value.absent(),
                 Value<DateTime> fechaIngreso = const Value.absent(),
                 Value<String> estatus = const Value.absent(),
                 Value<String?> puestoId = const Value.absent(),
                 Value<String?> empresaId = const Value.absent(),
                 Value<String?> sucursalId = const Value.absent(),
+                Value<int?> sueldoMensualAdministrativo = const Value.absent(),
+                Value<int?> bonoMensualAdministrativo = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
                 Value<DateTime?> fechaBaja = const Value.absent(),
                 Value<String?> motivoBaja = const Value.absent(),
@@ -69975,7 +71337,7 @@ class $$EmpleadoTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 cicloVidaRegistro: cicloVidaRegistro,
-                codigoEmpleado: codigoEmpleado,
+                numeroEmpleado: numeroEmpleado,
                 fotografiaAttachmentId: fotografiaAttachmentId,
                 nombres: nombres,
                 apellidoPaterno: apellidoPaterno,
@@ -69993,11 +71355,16 @@ class $$EmpleadoTableTableManager
                 contactoEmergenciaNombre: contactoEmergenciaNombre,
                 telefonoEmergencia: telefonoEmergencia,
                 parentescoEmergencia: parentescoEmergencia,
+                bancoId: bancoId,
+                numeroCuentaTarjeta: numeroCuentaTarjeta,
+                clabe: clabe,
                 fechaIngreso: fechaIngreso,
                 estatus: estatus,
                 puestoId: puestoId,
                 empresaId: empresaId,
                 sucursalId: sucursalId,
+                sueldoMensualAdministrativo: sueldoMensualAdministrativo,
+                bonoMensualAdministrativo: bonoMensualAdministrativo,
                 observaciones: observaciones,
                 fechaBaja: fechaBaja,
                 motivoBaja: motivoBaja,
@@ -70031,7 +71398,7 @@ class $$EmpleadoTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> cicloVidaRegistro = const Value.absent(),
-                required String codigoEmpleado,
+                required int numeroEmpleado,
                 Value<String?> fotografiaAttachmentId = const Value.absent(),
                 required String nombres,
                 required String apellidoPaterno,
@@ -70049,11 +71416,16 @@ class $$EmpleadoTableTableManager
                 Value<String?> contactoEmergenciaNombre = const Value.absent(),
                 Value<String?> telefonoEmergencia = const Value.absent(),
                 Value<String?> parentescoEmergencia = const Value.absent(),
+                Value<String?> bancoId = const Value.absent(),
+                Value<String?> numeroCuentaTarjeta = const Value.absent(),
+                Value<String?> clabe = const Value.absent(),
                 required DateTime fechaIngreso,
                 Value<String> estatus = const Value.absent(),
                 Value<String?> puestoId = const Value.absent(),
                 Value<String?> empresaId = const Value.absent(),
                 Value<String?> sucursalId = const Value.absent(),
+                Value<int?> sueldoMensualAdministrativo = const Value.absent(),
+                Value<int?> bonoMensualAdministrativo = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
                 Value<DateTime?> fechaBaja = const Value.absent(),
                 Value<String?> motivoBaja = const Value.absent(),
@@ -70088,7 +71460,7 @@ class $$EmpleadoTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 cicloVidaRegistro: cicloVidaRegistro,
-                codigoEmpleado: codigoEmpleado,
+                numeroEmpleado: numeroEmpleado,
                 fotografiaAttachmentId: fotografiaAttachmentId,
                 nombres: nombres,
                 apellidoPaterno: apellidoPaterno,
@@ -70106,11 +71478,16 @@ class $$EmpleadoTableTableManager
                 contactoEmergenciaNombre: contactoEmergenciaNombre,
                 telefonoEmergencia: telefonoEmergencia,
                 parentescoEmergencia: parentescoEmergencia,
+                bancoId: bancoId,
+                numeroCuentaTarjeta: numeroCuentaTarjeta,
+                clabe: clabe,
                 fechaIngreso: fechaIngreso,
                 estatus: estatus,
                 puestoId: puestoId,
                 empresaId: empresaId,
                 sucursalId: sucursalId,
+                sueldoMensualAdministrativo: sueldoMensualAdministrativo,
+                bonoMensualAdministrativo: bonoMensualAdministrativo,
                 observaciones: observaciones,
                 fechaBaja: fechaBaja,
                 motivoBaja: motivoBaja,
@@ -70150,6 +71527,7 @@ class $$EmpleadoTableTableManager
                       .toList(),
           prefetchHooksCallback: ({
             fotografiaAttachmentId = false,
+            bancoId = false,
             puestoId = false,
             empresaId = false,
             sucursalId = false,
@@ -70194,6 +71572,18 @@ class $$EmpleadoTableTableManager
                                 $$EmpleadoTableReferences
                                     ._fotografiaAttachmentIdTable(db)
                                     .id,
+                          )
+                          as T;
+                }
+                if (bancoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.bancoId,
+                            referencedTable: $$EmpleadoTableReferences
+                                ._bancoIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoTableReferences._bancoIdTable(db).id,
                           )
                           as T;
                 }
@@ -70374,6 +71764,7 @@ typedef $$EmpleadoTableProcessedTableManager =
       EmpleadoData,
       PrefetchHooks Function({
         bool fotografiaAttachmentId,
+        bool bancoId,
         bool puestoId,
         bool empresaId,
         bool sucursalId,
@@ -75518,6 +76909,8 @@ class $AppDatabaseManager {
       $$TipoModalidadTurnoTableTableManager(_db, _db.tipoModalidadTurno);
   $$TipoFrecuenciaCobroTableTableManager get tipoFrecuenciaCobro =>
       $$TipoFrecuenciaCobroTableTableManager(_db, _db.tipoFrecuenciaCobro);
+  $$BancoTableTableManager get banco =>
+      $$BancoTableTableManager(_db, _db.banco);
   $$DireccionTableTableManager get direccion =>
       $$DireccionTableTableManager(_db, _db.direccion);
   $$MedioContactoTableTableManager get medioContacto =>

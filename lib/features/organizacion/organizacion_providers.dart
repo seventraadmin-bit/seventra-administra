@@ -4,6 +4,7 @@ import '../../core/attachments/attachment_repository.dart';
 import '../../core/attachments/attachment_storage.dart';
 import '../../core/codigos/codigo_secuencia_service.dart';
 import '../../core/codigos/generar_codigo_usecase.dart';
+import '../../core/codigos/generar_numero_usecase.dart';
 import '../../core/di/providers.dart';
 import '../finanzas/finanzas_providers.dart';
 import '../personal/personal_providers.dart';
@@ -119,6 +120,10 @@ final codigoSecuenciaServiceProvider = Provider<CodigoSecuenciaService>((ref) {
 
 final generarCodigoUseCaseProvider = Provider<GenerarCodigoUseCase>((ref) {
   return GenerarCodigoUseCase(ref.watch(codigoSecuenciaServiceProvider));
+});
+
+final generarNumeroUseCaseProvider = Provider<GenerarNumeroUseCase>((ref) {
+  return GenerarNumeroUseCase(ref.watch(codigoSecuenciaServiceProvider));
 });
 
 final empresaRepositoryProvider = Provider<EmpresaRepository>((ref) {

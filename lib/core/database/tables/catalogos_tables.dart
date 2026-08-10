@@ -27,3 +27,13 @@ class TipoModalidadTurno extends Table with CatalogoColumns {}
 /// reales conocidos confirman. Catálogo abierto, mismo motivo que
 /// [TipoModalidadTurno].
 class TipoFrecuenciaCobro extends Table with CatalogoColumns {}
+
+/// Banco de los datos bancarios de un Empleado (Etapa 6A) — catálogo
+/// simple y cerrado (sin pantalla de administración en esta etapa,
+/// Resolución explícita de Marlon), reutilizable a futuro por
+/// Finanzas si algún día formaliza `Pago.cuentaBancariaDestino`/
+/// `Ingreso.cuentaCaja`/`Egreso.cuentaCaja` (hoy texto libre, sin
+/// tocarse en esta etapa). Catálogo abierto, mismo motivo que
+/// [TipoModalidadTurno] — RISEG puede necesitar agregar un banco sin
+/// una actualización de la aplicación.
+class Banco extends Table with CatalogoColumns {}

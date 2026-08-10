@@ -1590,6 +1590,15 @@
   "empleadoCampoContactoEmergenciaNombre": "Contacto de emergencia",
   "empleadoCampoTelefonoEmergencia": "Teléfono de emergencia",
   "empleadoCampoParentescoEmergencia": "Parentesco",
+  "empleadoSeccionDatosBancarios": "Datos bancarios",
+  "empleadoCampoBanco": "Banco",
+  "empleadoCampoNumeroCuentaTarjeta": "Número de tarjeta o cuenta",
+  "empleadoCampoClabe": "CLABE",
+  "empleadoErrorDatosBancariosInvalidos": "Si capturas datos bancarios, indica el banco y al menos una forma de pago (tarjeta/cuenta o CLABE).",
+  "empleadoCampoSueldoMensualAdministrativo": "Sueldo mensual",
+  "empleadoCampoBonoMensualAdministrativo": "Bono mensual",
+  "empleadoErrorSueldoAdministrativoInvalido": "El sueldo mensual debe ser mayor a 0.",
+  "empleadoErrorBonoAdministrativoInvalido": "El bono mensual no puede ser negativo.",
   "empleadoCampoFechaIngreso": "Fecha de ingreso",
   "empleadoCampoPuesto": "Puesto",
   "empleadoCampoEmpresa": "Empresa",
@@ -1709,7 +1718,7 @@
   "empleadosFiltroEstatusTodos": "Todos",
   "empleadosListadoVacioTitulo": "Sin empleados registrados",
   "empleadosListadoVacioMensaje": "Registra el primer Empleado de RISEG.",
-  "empleadosColumnaCodigo": "Código",
+  "empleadosColumnaNumero": "No. empleado",
   "empleadosColumnaNombre": "Nombre",
   "empleadosColumnaPuesto": "Puesto",
   "empleadosColumnaEstatus": "Estatus",
@@ -1717,6 +1726,14 @@
   "empleadosColumnaEvaluacionesPendientes": "Pendiente",
 
   "empleadoExpedienteTitulo": "Expediente del empleado",
+  "empleadoDetalleNumeroEmpleado": "No. de empleado {numero}",
+  "@empleadoDetalleNumeroEmpleado": {
+    "placeholders": {
+      "numero": {
+        "type": "int"
+      }
+    }
+  },
   "empleadoDetalleBotonCorregir": "Corregir",
   "empleadoDetalleBotonDarDeBaja": "Dar de baja",
   "empleadoDetalleBotonRegistrarReingreso": "Registrar reingreso",

@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 22;
+const _currentSchemaVersion = 23;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -5077,7 +5077,7 @@ void main() {
           .into(db.empleado)
           .insertReturning(
             EmpleadoCompanion.insert(
-              codigoEmpleado: 'EMP-000001',
+              numeroEmpleado: 1,
               nombres: 'Juan',
               apellidoPaterno: 'Pérez',
               sexo: 'masculino',
@@ -5142,7 +5142,7 @@ void main() {
       expect(
         () => db.into(db.empleado).insert(
               EmpleadoCompanion.insert(
-                codigoEmpleado: 'EMP-000001',
+                numeroEmpleado: 1,
                 nombres: 'Juan',
                 apellidoPaterno: 'Pérez',
                 sexo: 'masculino',
@@ -5174,7 +5174,7 @@ void main() {
           .into(db.empleado)
           .insertReturning(
             EmpleadoCompanion.insert(
-              codigoEmpleado: 'EMP-000001',
+              numeroEmpleado: 1,
               nombres: 'Juan',
               apellidoPaterno: 'Pérez',
               sexo: 'masculino',
@@ -5292,7 +5292,7 @@ void main() {
       final empleados = await db.select(db.empleado).get();
       expect(empleados, hasLength(1), reason: 'ningún Empleado real debe perderse en una migración aditiva');
       final empleado = empleados.single;
-      expect(empleado.codigoEmpleado, 'EMP-000001');
+      expect(empleado.numeroEmpleado, 1);
       expect(empleado.fechaEvaluacionPsicologica, isNull);
       expect(empleado.resumenPsicologico, isNull);
       expect(empleado.fechaEstudioSocioeconomico, isNull);
@@ -5322,7 +5322,7 @@ void main() {
           .into(db.empleado)
           .insertReturning(
             EmpleadoCompanion.insert(
-              codigoEmpleado: 'EMP-000001',
+              numeroEmpleado: 1,
               nombres: 'Juan',
               apellidoPaterno: 'Pérez',
               sexo: 'masculino',
@@ -5475,7 +5475,7 @@ void main() {
           .into(db.empleado)
           .insertReturning(
             EmpleadoCompanion.insert(
-              codigoEmpleado: 'EMP-000001',
+              numeroEmpleado: 1,
               nombres: 'Juan',
               apellidoPaterno: 'Pérez',
               sexo: 'masculino',
@@ -5525,7 +5525,7 @@ void main() {
           .into(db.empleado)
           .insertReturning(
             EmpleadoCompanion.insert(
-              codigoEmpleado: 'EMP-000001',
+              numeroEmpleado: 1,
               nombres: 'Juan',
               apellidoPaterno: 'Pérez',
               sexo: 'masculino',
@@ -5676,7 +5676,7 @@ void main() {
           .into(db.empleado)
           .insertReturning(
             EmpleadoCompanion.insert(
-              codigoEmpleado: 'EMP-000001',
+              numeroEmpleado: 1,
               nombres: 'Juan',
               apellidoPaterno: 'Pérez',
               sexo: 'masculino',
@@ -5797,6 +5797,137 @@ void main() {
       final integridad =
           await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
       expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    '23.json coincide con el esquema final de la Etapa 6A (numeroEmpleado + datos bancarios + '
+    'condición administrativa en Empleado, catálogo Banco)',
+    () async {
+      final schema = await verifier.schemaAt(23);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, contains('banco'));
+
+      final sqlEmpleado =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado'")
+                  .single['sql']
+              as String;
+      expect(sqlEmpleado, isNot(contains('codigo_empleado')));
+      expect(sqlEmpleado, contains('"numero_empleado" INTEGER NOT NULL UNIQUE'));
+      expect(sqlEmpleado, contains('"banco_id" TEXT NULL REFERENCES banco (id)'));
+      expect(sqlEmpleado, contains('"numero_cuenta_tarjeta" TEXT NULL'));
+      expect(sqlEmpleado, contains('"clabe" TEXT NULL'));
+      expect(sqlEmpleado, contains('CHECK (sueldo_mensual_administrativo IS NULL OR sueldo_mensual_administrativo > 0)'));
+      expect(sqlEmpleado, contains('CHECK (bono_mensual_administrativo IS NULL OR bono_mensual_administrativo >= 0)'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 22 → 23 conserva Empleados reales, asigna numeroEmpleado consecutivo por orden de alta y siembra Banco',
+    () async {
+      final schemaV22 = await verifier.schemaAt(22);
+      final raw = schemaV22.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      // Dos Empleados reales, insertados en orden inverso a su
+      // `created_at` real — el backfill debe respetar `created_at`, no
+      // el orden físico de inserción en esta migración.
+      raw.execute('''
+      INSERT INTO empleado (
+        id, codigo_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-2', 'EMP-000002', 'Ana', 'García', 'femenino', 631152000, 'GAGA900101MDFXXX02',
+        'GAGA900101AB2', '10000000002', 'soltero', 1735689600, 2, 'activo',
+        1700000100, 1700000100, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO empleado (
+        id, codigo_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-1', 'EMP-000001', 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '10000000001', 'soltero', 1735689600, 3, 'activo',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV22.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleados = await db.select(db.empleado).get()
+        ..sort((a, b) => a.numeroEmpleado.compareTo(b.numeroEmpleado));
+      expect(empleados, hasLength(2), reason: 'ningún Empleado real debe perderse en una migración estructural');
+      expect(empleados[0].id, 'empleado-1', reason: 'creado primero (created_at menor) → numeroEmpleado 1');
+      expect(empleados[0].numeroEmpleado, 1);
+      expect(empleados[1].id, 'empleado-2');
+      expect(empleados[1].numeroEmpleado, 2);
+      expect(empleados[0].bancoId, isNull);
+      expect(empleados[0].sueldoMensualAdministrativo, isNull);
+
+      final bancos = await db.select(db.banco).get();
+      expect(bancos, isNotEmpty, reason: 'runSeed/seedBanco debe sembrar el catálogo Banco en la migración');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de sueldo/bono administrativo tras la migración: sueldo debe ser > 0, bono acepta 0',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final base = EmpleadoCompanion.insert(
+        numeroEmpleado: 1,
+        nombres: 'Juan',
+        apellidoPaterno: 'Pérez',
+        sexo: 'masculino',
+        fechaNacimiento: DateTime(1990, 1, 1),
+        curp: 'PEXJ900101HDFXXX01',
+        rfc: 'PEXJ900101AB1',
+        nss: '12345678901',
+        estadoCivil: 'soltero',
+        fechaIngreso: DateTime(2026, 1, 1),
+        aniosExperienciaSeguridad: 0,
+      );
+
+      await expectLater(
+        db.into(db.empleado).insert(base.copyWith(sueldoMensualAdministrativo: const Value(0))),
+        throwsA(anything),
+        reason: 'sueldo_mensual_administrativo = 0 debe rechazarse (debe ser > 0)',
+      );
+
+      final conBonoCero = await db.into(db.empleado).insertReturning(
+            base.copyWith(bonoMensualAdministrativo: const Value(0)),
+          );
+      expect(conBonoCero.bonoMensualAdministrativo, 0, reason: 'bono_mensual_administrativo = 0 sí es válido');
 
       await db.close();
     },

@@ -28,6 +28,14 @@ class CorregirEmpleadoCodigoPostalFiscalInvalido extends CorregirEmpleadoResulta
 
 class CorregirEmpleadoExperienciaInvalida extends CorregirEmpleadoResultado {}
 
+/// Datos bancarios (Etapa 6A): tras aplicar los cambios, se capturó
+/// algo pero falta el banco, o falta tanto tarjeta/cuenta como CLABE.
+class CorregirEmpleadoDatosBancariosInvalidos extends CorregirEmpleadoResultado {}
+
+class CorregirEmpleadoSueldoAdministrativoInvalido extends CorregirEmpleadoResultado {}
+
+class CorregirEmpleadoBonoAdministrativoInvalido extends CorregirEmpleadoResultado {}
+
 class CorregirEmpleadoErrorInesperado extends CorregirEmpleadoResultado {
   CorregirEmpleadoErrorInesperado(this.mensaje);
   final String mensaje;
@@ -39,7 +47,7 @@ String? _vacioANull(String? valor) {
 }
 
 /// Corrige el expediente de un Empleado (Etapa 5A) — nunca
-/// `codigoEmpleado` (inmutable después de creado, mismo criterio que
+/// `numeroEmpleado` (inmutable después de creado, mismo criterio que
 /// `clienteId` en `ActualizarServicioUseCase`) ni `estatus` (vía
 /// `CambiarEstatusEmpleadoUseCase`, acción explícita separada). Cubre
 /// datos generales, contacto, laboral, escolaridad y experiencia en un
@@ -77,6 +85,16 @@ class CorregirEmpleadoUseCase {
     bool limpiarEmpresa = false,
     String? sucursalId,
     bool limpiarSucursal = false,
+    String? bancoId,
+    bool limpiarBanco = false,
+    String? numeroCuentaTarjeta,
+    bool limpiarNumeroCuentaTarjeta = false,
+    String? clabe,
+    bool limpiarClabe = false,
+    int? sueldoMensualAdministrativo,
+    bool limpiarSueldoMensualAdministrativo = false,
+    int? bonoMensualAdministrativo,
+    bool limpiarBonoMensualAdministrativo = false,
     String? observaciones,
     NivelEstudiosEmpleado? nivelEstudios,
     String? observacionesEscolaridad,
@@ -114,6 +132,32 @@ class CorregirEmpleadoUseCase {
       return CorregirEmpleadoExperienciaInvalida();
     }
 
+    // Datos bancarios (Etapa 6A) — se valida el estado *efectivo* tras
+    // aplicar los cambios (fusionando con lo ya existente), no solo lo
+    // que llega en esta llamada: la regla es sobre el conjunto final.
+    final bancoIdEfectivo = limpiarBanco ? null : (bancoId ?? actual.bancoId);
+    final numeroCuentaTarjetaEfectivo =
+        limpiarNumeroCuentaTarjeta ? null : (numeroCuentaTarjeta != null ? _vacioANull(numeroCuentaTarjeta) : actual.numeroCuentaTarjeta);
+    final clabeEfectiva = limpiarClabe ? null : (clabe != null ? _vacioANull(clabe) : actual.clabe);
+    if (!_validator.datosBancariosValidos(
+      bancoId: bancoIdEfectivo,
+      numeroCuentaTarjeta: numeroCuentaTarjetaEfectivo,
+      clabe: clabeEfectiva,
+    )) {
+      return CorregirEmpleadoDatosBancariosInvalidos();
+    }
+
+    final sueldoAdministrativoEfectivo =
+        limpiarSueldoMensualAdministrativo ? null : (sueldoMensualAdministrativo ?? actual.sueldoMensualAdministrativo);
+    if (!_validator.sueldoAdministrativoValido(sueldoAdministrativoEfectivo)) {
+      return CorregirEmpleadoSueldoAdministrativoInvalido();
+    }
+    final bonoAdministrativoEfectivo =
+        limpiarBonoMensualAdministrativo ? null : (bonoMensualAdministrativo ?? actual.bonoMensualAdministrativo);
+    if (!_validator.bonoAdministrativoValido(bonoAdministrativoEfectivo)) {
+      return CorregirEmpleadoBonoAdministrativoInvalido();
+    }
+
     try {
       final cambios = EmpleadoCompanion(
         nombres: nombres == null ? const Value.absent() : Value(nombres.trim()),
@@ -136,11 +180,22 @@ class CorregirEmpleadoUseCase {
         telefonoEmergencia: telefonoEmergencia == null ? const Value.absent() : Value(_vacioANull(telefonoEmergencia)),
         parentescoEmergencia:
             parentescoEmergencia == null ? const Value.absent() : Value(_vacioANull(parentescoEmergencia)),
+        bancoId: limpiarBanco ? const Value(null) : (bancoId == null ? const Value.absent() : Value(bancoId)),
+        numeroCuentaTarjeta: limpiarNumeroCuentaTarjeta
+            ? const Value(null)
+            : (numeroCuentaTarjeta == null ? const Value.absent() : Value(_vacioANull(numeroCuentaTarjeta))),
+        clabe: limpiarClabe ? const Value(null) : (clabe == null ? const Value.absent() : Value(_vacioANull(clabe))),
         fechaIngreso: fechaIngreso == null ? const Value.absent() : Value(fechaIngreso),
         puestoId: limpiarPuesto ? const Value(null) : (puestoId == null ? const Value.absent() : Value(puestoId)),
         empresaId: limpiarEmpresa ? const Value(null) : (empresaId == null ? const Value.absent() : Value(empresaId)),
         sucursalId:
             limpiarSucursal ? const Value(null) : (sucursalId == null ? const Value.absent() : Value(sucursalId)),
+        sueldoMensualAdministrativo: limpiarSueldoMensualAdministrativo
+            ? const Value(null)
+            : (sueldoMensualAdministrativo == null ? const Value.absent() : Value(sueldoMensualAdministrativo)),
+        bonoMensualAdministrativo: limpiarBonoMensualAdministrativo
+            ? const Value(null)
+            : (bonoMensualAdministrativo == null ? const Value.absent() : Value(bonoMensualAdministrativo)),
         observaciones: observaciones == null ? const Value.absent() : Value(_vacioANull(observaciones)),
         nivelEstudios: nivelEstudios == null ? const Value.absent() : Value(nivelEstudios.name),
         observacionesEscolaridad:

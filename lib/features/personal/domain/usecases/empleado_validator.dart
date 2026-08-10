@@ -69,4 +69,31 @@ class EmpleadoValidator {
     if (fechaBajaAnterior == null) return true;
     return !fechaIngreso.isBefore(fechaBajaAnterior);
   }
+
+  /// Datos bancarios (Etapa 6A) — el bloque completo es opcional; si se
+  /// captura algo, `bancoId` es obligatorio y se necesita al menos uno
+  /// de `numeroCuentaTarjeta`/`clabe` (Resolución explícita de Marlon:
+  /// nunca exigir ambos a la vez).
+  bool datosBancariosValidos({String? bancoId, String? numeroCuentaTarjeta, String? clabe}) {
+    final tarjeta = numeroCuentaTarjeta?.trim();
+    final clabeLimpia = clabe?.trim();
+    final tieneAlgo = bancoId != null || (tarjeta?.isNotEmpty ?? false) || (clabeLimpia?.isNotEmpty ?? false);
+    if (!tieneAlgo) return true;
+    if (bancoId == null) return false;
+    return (tarjeta?.isNotEmpty ?? false) || (clabeLimpia?.isNotEmpty ?? false);
+  }
+
+  /// Condición laboral administrativa (Etapa 6A) — solo relevante para
+  /// empleados sin `AsignacionServicio`. `> 0` cuando se captura,
+  /// nunca `0` (Resolución explícita de Marlon).
+  bool sueldoAdministrativoValido(int? sueldoMensualAdministrativo) {
+    return sueldoMensualAdministrativo == null || sueldoMensualAdministrativo > 0;
+  }
+
+  /// A diferencia del sueldo, el bono administrativo sí acepta `0`
+  /// (Resolución explícita de Marlon: "existen personas/servicios sin
+  /// bono").
+  bool bonoAdministrativoValido(int? bonoMensualAdministrativo) {
+    return bonoMensualAdministrativo == null || bonoMensualAdministrativo >= 0;
+  }
 }

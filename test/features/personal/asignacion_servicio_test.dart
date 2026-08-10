@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
+import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
@@ -48,12 +49,14 @@ void main() {
     servicioRepo = ServicioRepositoryImpl(db, asignacionRepo);
     clienteRepo = ClienteRepositoryImpl(db);
     final catalogoRepo = CatalogoRepositoryImpl(db);
-    final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
+    final codigoSecuencia = CodigoSecuenciaService(db);
+    final generarCodigo = GenerarCodigoUseCase(codigoSecuencia);
+    final generarNumero = GenerarNumeroUseCase(codigoSecuencia);
     const empleadoValidator = EmpleadoValidator();
     const asignacionValidator = AsignacionServicioValidator();
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
 
-    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarCodigo, empleadoValidator, servicioRepo);
+    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, empleadoValidator, servicioRepo);
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);
     registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator);

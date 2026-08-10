@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/attachment_table.dart';
 import '../../../../core/database/tables/audit_columns.dart';
+import '../../../../core/database/tables/catalogos_tables.dart';
 import '../../../organizacion/data/tables/empresa_table.dart';
 import '../../../organizacion/data/tables/puesto_table.dart';
 import '../../../organizacion/data/tables/sucursal_table.dart';
@@ -116,7 +117,16 @@ enum TipoEventoEmpleado {
 /// Escolaridad/Experiencia: solo el valor vigente, nunca un historial
 /// de evaluaciones repetidas.
 class Empleado extends Table with AuditColumns {
-  TextColumn get codigoEmpleado => text().unique()();
+  /// Identificador visible del empleado (Etapa 6A) — entero simple,
+  /// consecutivo desde 1, **nunca** con prefijo ni relleno de ceros
+  /// (Resolución explícita de Marlon: reemplaza el antiguo
+  /// `codigoEmpleado` tipo `EMP-000001`). Se asigna una sola vez, al
+  /// alta, vía `CodigoSecuenciaService.siguienteNumero('empleado')` —
+  /// el mismo contador atómico/transaccional/nunca-reutilizado que ya
+  /// usa `siguienteCodigo`, no un `MAX(numero_empleado) + 1`. Un
+  /// reingreso (`RegistrarReingresoUseCase`) nunca vuelve a tocar esta
+  /// columna — el mismo empleado conserva siempre el mismo número.
+  IntColumn get numeroEmpleado => integer().unique()();
 
   /// Puntero directo a *la* fotografía vigente — mismo patrón que
   /// `Empresa.logoAttachmentId`. La fotografía también existe como fila
@@ -167,6 +177,19 @@ class Empleado extends Table with AuditColumns {
 
   TextColumn get parentescoEmergencia => text().nullable()();
 
+  // --- Datos bancarios (Etapa 6A) — pertenecen a Personal; Nómina
+  // solo los consulta, nunca los vuelve a capturar. Todo el bloque es
+  // opcional; si se captura algo, `bancoId` es obligatorio y se
+  // necesita al menos uno de `numeroCuentaTarjeta`/`clabe` (validado en
+  // `EmpleadoValidator`, no como `CHECK` — es una regla condicional
+  // entre columnas, no un invariante estructural simple). ---
+
+  TextColumn get bancoId => text().nullable().references(Banco, #id, onDelete: KeyAction.restrict)();
+
+  TextColumn get numeroCuentaTarjeta => text().nullable()();
+
+  TextColumn get clabe => text().nullable()();
+
   // --- Información laboral ---
 
   DateTimeColumn get fechaIngreso => dateTime()();
@@ -178,6 +201,20 @@ class Empleado extends Table with AuditColumns {
   TextColumn get empresaId => text().nullable().references(Empresa, #id, onDelete: KeyAction.restrict)();
 
   TextColumn get sucursalId => text().nullable().references(Sucursal, #id, onDelete: KeyAction.restrict)();
+
+  /// Condición laboral administrativa (Etapa 6A) — fuente de sueldo/
+  /// bono **únicamente** para empleados sin ninguna `AsignacionServicio`
+  /// (adscritos a Sucursal, sin Servicio operativo asignado). Un
+  /// empleado con `AsignacionServicio` obtiene su sueldo/bono de ahí
+  /// (`AsignacionServicioSueldoVigencia`, Etapa 6B) — estos dos campos
+  /// se ignoran en ese caso, nunca se combinan con la asignación. Sin
+  /// vigencia/historial propio (Resolución explícita de Marlon: "no
+  /// quiero crear una estructura de vigencias de Sucursal solo para
+  /// esto") — el valor vigente vive aquí; el histórico protegido lo da
+  /// el snapshot de cada Nómina ya generada, no esta tabla.
+  IntColumn get sueldoMensualAdministrativo => integer().nullable()();
+
+  IntColumn get bonoMensualAdministrativo => integer().nullable()();
 
   TextColumn get observaciones => text().nullable()();
 
@@ -255,6 +292,8 @@ class Empleado extends Table with AuditColumns {
         'CHECK (anios_experiencia_seguridad >= 0)',
         'CHECK (meses_experiencia_adicionales IS NULL OR '
             '(meses_experiencia_adicionales >= 0 AND meses_experiencia_adicionales <= 11))',
+        'CHECK (sueldo_mensual_administrativo IS NULL OR sueldo_mensual_administrativo > 0)',
+        'CHECK (bono_mensual_administrativo IS NULL OR bono_mensual_administrativo >= 0)',
       ];
 }
 

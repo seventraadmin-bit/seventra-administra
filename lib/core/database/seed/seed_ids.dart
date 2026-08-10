@@ -45,4 +45,19 @@ abstract final class SeedIds {
 
   // TipoFrecuenciaCobro
   static const frecuenciaCobroMensual = '00000000-0000-4000-8000-000000000601';
+
+  // Banco (Etapa 6A) — lista sujeta a confirmación de Marlon antes del
+  // cierre de la etapa; `bancoOtro` siempre existe como categoría de
+  // respaldo, mismo criterio que `industriaOtro`.
+  static const bancoBbva = '00000000-0000-4000-8000-000000000701';
+  static const bancoSantander = '00000000-0000-4000-8000-000000000702';
+  static const bancoBanorte = '00000000-0000-4000-8000-000000000703';
+  static const bancoHsbc = '00000000-0000-4000-8000-000000000704';
+  static const bancoCitibanamex = '00000000-0000-4000-8000-000000000705';
+  static const bancoScotiabank = '00000000-0000-4000-8000-000000000706';
+  static const bancoBanregio = '00000000-0000-4000-8000-000000000707';
+  static const bancoInbursa = '00000000-0000-4000-8000-000000000708';
+  static const bancoAzteca = '00000000-0000-4000-8000-000000000709';
+  static const bancoAfirme = '00000000-0000-4000-8000-000000000710';
+  static const bancoOtro = '00000000-0000-4000-8000-000000000711';
 }

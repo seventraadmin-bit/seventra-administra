@@ -40,6 +40,7 @@ import '../../features/personal/data/tables/ficha_tecnica_empleado_table.dart';
 import 'migrations/migrar_asignacion_servicio_v21.dart';
 import 'migrations/migrar_cliente_contacto_v4.dart';
 import 'migrations/migrar_empleado_v21.dart';
+import 'migrations/migrar_empleado_v23.dart';
 import 'migrations/migrar_ficha_tecnica_empleado_v22.dart';
 import 'migrations/migrar_codigos_area_v3.dart';
 import 'migrations/migrar_direccion_v5.dart';
@@ -91,6 +92,7 @@ class AppMetadata extends Table {
   Area,
   TipoModalidadTurno,
   TipoFrecuenciaCobro,
+  Banco,
   Direccion,
   MedioContacto,
   Attachment,
@@ -147,7 +149,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration {
@@ -157,6 +159,7 @@ class AppDatabase extends _$AppDatabase {
         await runSeed(this);
         await seedTipoModalidadTurno(this);
         await seedTipoFrecuenciaCobro(this);
+        await seedBanco(this);
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from == 1) {
@@ -508,6 +511,23 @@ class AppDatabase extends _$AppDatabase {
         // `onUpgrade`.
         if (to >= 22 && from <= 21) {
           await migrarFichaTecnicaEmpleadoV22(this, m);
+        }
+        // Aditiva (Etapa 6A): catálogo Banco — tabla completamente
+        // nueva, `from <= 22` es seguro sin acotar un origen exacto.
+        // Corre antes de `migrarEmpleadoV23` porque `Empleado.bancoId`
+        // la referencia.
+        if (to >= 23 && from <= 22) {
+          await m.createTable(banco);
+          await seedBanco(this);
+        }
+        // Estructural (Etapa 6A): `numeroEmpleado` reemplaza
+        // `codigoEmpleado` + datos bancarios + condición laboral
+        // administrativa. Gotcha de rango exacto de siempre: `from ==
+        // 18` a `from == 22` — un origen `from <= 17` ya crea
+        // `empleado` con la forma *actual* en el bloque `to >= 18` de
+        // arriba, que para cuando se ejecuta ya incluye estas columnas.
+        if (to >= 23 && from >= 18 && from <= 22) {
+          await migrarEmpleadoV23(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

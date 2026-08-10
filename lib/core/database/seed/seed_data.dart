@@ -185,6 +185,32 @@ Future<void> seedTipoFrecuenciaCobro(AppDatabase db) async {
   }
 }
 
+/// Mismo motivo que `seedTipoModalidadTurno`/`seedTipoFrecuenciaCobro`:
+/// fuera de `runSeed()`, llamada explícitamente donde la tabla ya
+/// existe (`onCreate` y el paso `to >= 23` de `onUpgrade`).
+Future<void> seedBanco(AppDatabase db) async {
+  final filas = [
+    (SeedIds.bancoBbva, 'BBVA', 'BBVA'),
+    (SeedIds.bancoSantander, 'SANTANDER', 'Santander'),
+    (SeedIds.bancoBanorte, 'BANORTE', 'Banorte'),
+    (SeedIds.bancoHsbc, 'HSBC', 'HSBC'),
+    (SeedIds.bancoCitibanamex, 'CITIBANAMEX', 'Citibanamex'),
+    (SeedIds.bancoScotiabank, 'SCOTIABANK', 'Scotiabank'),
+    (SeedIds.bancoBanregio, 'BANREGIO', 'Banregio'),
+    (SeedIds.bancoInbursa, 'INBURSA', 'Inbursa'),
+    (SeedIds.bancoAzteca, 'AZTECA', 'Banco Azteca'),
+    (SeedIds.bancoAfirme, 'AFIRME', 'Afirme'),
+    (SeedIds.bancoOtro, 'OTRO', 'Otro'),
+  ];
+
+  for (final (id, codigo, nombre) in filas) {
+    await db.into(db.banco).insert(
+          BancoCompanion.insert(id: id, codigo: codigo, nombre: nombre),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+}
+
 Future<void> _seedEmpresa(AppDatabase db) async {
   // Sin datos legales inventados: razonSocial/rfc/representanteLegal/
   // eslogan quedan pendientes de captura real en la Etapa 4B.

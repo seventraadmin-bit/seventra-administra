@@ -140,9 +140,9 @@ class _EmpleadosListScreenState extends ConsumerState<EmpleadosListScreen> {
               ),
               columns: [
                 RisegColumn<EmpleadoData>(
-                  label: l10n.empleadosColumnaCodigo,
-                  width: 110,
-                  cellBuilder: (e) => Text(e.codigoEmpleado),
+                  label: l10n.empleadosColumnaNumero,
+                  width: 90,
+                  cellBuilder: (e) => Text('${e.numeroEmpleado}'),
                 ),
                 RisegColumn<EmpleadoData>(
                   label: l10n.empleadosColumnaNombre,

@@ -69,6 +69,64 @@ int? _enteroDesdeTexto(String texto) {
   return int.tryParse(normalizado);
 }
 
+/// Convierte texto capturado en pesos (ej. "10000.00") a centavos —
+/// misma unidad monetaria del resto del proyecto. `null` si el campo
+/// está vacío o no es un número válido (mismo criterio que
+/// `centavosDesdeTexto` en Finanzas — duplicado aquí a propósito, ya
+/// es el patrón establecido por cada diálogo con montos, ver
+/// `registrar_pago_aplicado_dialog.dart`).
+int? centavosDesdeTexto(String texto) {
+  final normalizado = texto.trim().replaceAll(',', '');
+  if (normalizado.isEmpty) return null;
+  final pesos = double.tryParse(normalizado);
+  if (pesos == null) return null;
+  return (pesos * 100).round();
+}
+
+/// Texto editable en pesos a partir de centavos — para precargar un
+/// campo de corrección. Sin símbolo de moneda ni separador de miles
+/// (eso es para lectura, ver `formatoCentavos`); esto es para volver a
+/// capturarse.
+String pesosDesdeCentavosParaEditar(int? centavos) {
+  if (centavos == null) return '';
+  return (centavos / 100).toStringAsFixed(2);
+}
+
+/// Campos de sueldo/bono mensual administrativo (Etapa 6A) — solo
+/// tienen sentido cuando la adscripción **no** es a Servicio (ver el
+/// doc comment de `Empleado.sueldoMensualAdministrativo`); reutilizado
+/// tal cual por `mostrarDialogoCrearEmpleado`/`mostrarDialogoCorregirEmpleado`
+/// para no duplicar el layout entre ambos diálogos.
+List<Widget> camposCondicionAdministrativa({
+  required AppLocalizations l10n,
+  required TextEditingController sueldoController,
+  required TextEditingController bonoController,
+  required String? errorSueldo,
+  required String? errorBono,
+  required StateSetter setState,
+  required VoidCallback limpiarErrorSueldo,
+  required VoidCallback limpiarErrorBono,
+}) {
+  return [
+    const SizedBox(height: AppSpacing.md),
+    RisegTextField(
+      label: l10n.empleadoCampoSueldoMensualAdministrativo,
+      controller: sueldoController,
+      errorText: errorSueldo,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      onChanged: (_) => setState(limpiarErrorSueldo),
+    ),
+    const SizedBox(height: AppSpacing.md),
+    RisegTextField(
+      label: l10n.empleadoCampoBonoMensualAdministrativo,
+      controller: bonoController,
+      errorText: errorBono,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      onChanged: (_) => setState(limpiarErrorBono),
+    ),
+  ];
+}
+
 /// Diálogo "Registrar empleado" (Etapa 5A) — información general,
 /// contacto, laboral, escolaridad y experiencia general en seguridad
 /// privada. Domicilio y documentación se capturan después, desde el
@@ -96,12 +154,23 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   final telefonoEmergenciaController = TextEditingController();
   final parentescoEmergenciaController = TextEditingController();
 
+  // --- Datos bancarios (Etapa 6A) — todo opcional; ver
+  // `EmpleadoValidator.datosBancariosValidos`. ---
+  String? bancoId;
+  final numeroCuentaTarjetaController = TextEditingController();
+  final clabeController = TextEditingController();
+
   DateTime? fechaIngreso;
   String? puestoId;
   _TipoAdscripcion tipoAdscripcion = _TipoAdscripcion.ninguna;
   String? servicioId;
   String? turnoId;
   String? sucursalId;
+  // --- Condición laboral administrativa (Etapa 6A) — solo relevante
+  // cuando la adscripción no es a Servicio (ver doc comment de
+  // `Empleado`). ---
+  final sueldoMensualAdministrativoController = TextEditingController();
+  final bonoMensualAdministrativoController = TextEditingController();
   final observacionesController = TextEditingController();
 
   NivelEstudiosEmpleado? nivelEstudios;
@@ -132,7 +201,11 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   String? errorFechaNacimiento;
   String? errorFechaIngreso;
   String? errorAdscripcion;
+  String? errorDatosBancarios;
+  String? errorSueldoAdministrativo;
+  String? errorBonoAdministrativo;
 
+  final bancos = await ref.read(catalogoRepositoryProvider).listarBancos();
   final puestos = await ref.read(puestoRepositoryProvider).listarActivos();
   final sucursales = await ref.read(sucursalRepositoryProvider).listarActivas();
   // RISEG ONE opera con una sola Empresa activa a la vez (ver el doc
@@ -255,6 +328,34 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
             const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.empleadoCampoParentescoEmergencia, controller: parentescoEmergenciaController),
             const SizedBox(height: AppSpacing.lg),
+            Text(l10n.empleadoSeccionDatosBancarios, style: AppTypography.heading3),
+            const SizedBox(height: AppSpacing.sm),
+            RisegSelect<String?>(
+              label: l10n.empleadoCampoBanco,
+              value: bancoId,
+              errorText: errorDatosBancarios,
+              items: [
+                RisegSelectItem(value: null, label: l10n.empleadoCampoSinAsignar),
+                for (final b in bancos) RisegSelectItem(value: b.id, label: b.nombre),
+              ],
+              onChanged: (valor) => setState(() {
+                bancoId = valor;
+                errorDatosBancarios = null;
+              }),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RisegTextField(
+              label: l10n.empleadoCampoNumeroCuentaTarjeta,
+              controller: numeroCuentaTarjetaController,
+              onChanged: (_) => setState(() => errorDatosBancarios = null),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RisegTextField(
+              label: l10n.empleadoCampoClabe,
+              controller: clabeController,
+              onChanged: (_) => setState(() => errorDatosBancarios = null),
+            ),
+            const SizedBox(height: AppSpacing.lg),
             Text(l10n.empleadoSeccionLaboral, style: AppTypography.heading3),
             const SizedBox(height: AppSpacing.sm),
             RisegDateField(
@@ -358,9 +459,32 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
                           errorAdscripcion = null;
                         }),
                       ),
+                      ...camposCondicionAdministrativa(
+                        l10n: l10n,
+                        sueldoController: sueldoMensualAdministrativoController,
+                        bonoController: bonoMensualAdministrativoController,
+                        errorSueldo: errorSueldoAdministrativo,
+                        errorBono: errorBonoAdministrativo,
+                        setState: setState,
+                        limpiarErrorSueldo: () => errorSueldoAdministrativo = null,
+                        limpiarErrorBono: () => errorBonoAdministrativo = null,
+                      ),
                     ],
                   ),
-                _TipoAdscripcion.ninguna => const SizedBox.shrink(),
+                _TipoAdscripcion.ninguna => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: camposCondicionAdministrativa(
+                      l10n: l10n,
+                      sueldoController: sueldoMensualAdministrativoController,
+                      bonoController: bonoMensualAdministrativoController,
+                      errorSueldo: errorSueldoAdministrativo,
+                      errorBono: errorBonoAdministrativo,
+                      setState: setState,
+                      limpiarErrorSueldo: () => errorSueldoAdministrativo = null,
+                      limpiarErrorBono: () => errorBonoAdministrativo = null,
+                    ),
+                  ),
               },
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -557,12 +681,21 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
             contactoEmergenciaNombre: contactoEmergenciaNombreController.text,
             telefonoEmergencia: telefonoEmergenciaController.text,
             parentescoEmergencia: parentescoEmergenciaController.text,
+            bancoId: bancoId,
+            numeroCuentaTarjeta: numeroCuentaTarjetaController.text,
+            clabe: clabeController.text,
             fechaIngreso: fechaIngreso!,
             puestoId: puestoId,
             empresaId: empresaActiva.id,
             servicioId: tipoAdscripcion == _TipoAdscripcion.servicio ? servicioId : null,
             turnoId: tipoAdscripcion == _TipoAdscripcion.servicio ? turnoId : null,
             sucursalId: tipoAdscripcion == _TipoAdscripcion.sucursal ? sucursalId : null,
+            sueldoMensualAdministrativo: tipoAdscripcion == _TipoAdscripcion.servicio
+                ? null
+                : centavosDesdeTexto(sueldoMensualAdministrativoController.text),
+            bonoMensualAdministrativo: tipoAdscripcion == _TipoAdscripcion.servicio
+                ? null
+                : centavosDesdeTexto(bonoMensualAdministrativoController.text),
             observaciones: observacionesController.text,
             nivelEstudios: nivelEstudios,
             observacionesEscolaridad: observacionesEscolaridadController.text,
@@ -650,6 +783,15 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         case CrearEmpleadoServicioNoActivo():
           errorAdscripcion = l10n.empleadoErrorServicioNoActivo;
           return null;
+        case CrearEmpleadoDatosBancariosInvalidos():
+          errorDatosBancarios = l10n.empleadoErrorDatosBancariosInvalidos;
+          return null;
+        case CrearEmpleadoSueldoAdministrativoInvalido():
+          errorSueldoAdministrativo = l10n.empleadoErrorSueldoAdministrativoInvalido;
+          return null;
+        case CrearEmpleadoBonoAdministrativoInvalido():
+          errorBonoAdministrativo = l10n.empleadoErrorBonoAdministrativoInvalido;
+          return null;
         case CrearEmpleadoErrorInesperado():
           RisegFeedback.showError(context, l10n.crearEmpleadoErrorInesperado);
           return null;
@@ -683,6 +825,10 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         contactoEmergenciaNombreController,
         telefonoEmergenciaController,
         parentescoEmergenciaController,
+        numeroCuentaTarjetaController,
+        clabeController,
+        sueldoMensualAdministrativoController,
+        bonoMensualAdministrativoController,
         observacionesController,
         observacionesEscolaridadController,
         aniosExperienciaController,

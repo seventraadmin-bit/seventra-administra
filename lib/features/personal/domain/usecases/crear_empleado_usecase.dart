@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
+import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
@@ -41,6 +41,14 @@ class CrearEmpleadoServicioNoExiste extends CrearEmpleadoResultado {}
 
 class CrearEmpleadoServicioNoActivo extends CrearEmpleadoResultado {}
 
+/// Datos bancarios (Etapa 6A): se capturó algo pero falta el banco, o
+/// falta tanto tarjeta/cuenta como CLABE.
+class CrearEmpleadoDatosBancariosInvalidos extends CrearEmpleadoResultado {}
+
+class CrearEmpleadoSueldoAdministrativoInvalido extends CrearEmpleadoResultado {}
+
+class CrearEmpleadoBonoAdministrativoInvalido extends CrearEmpleadoResultado {}
+
 class CrearEmpleadoErrorInesperado extends CrearEmpleadoResultado {
   CrearEmpleadoErrorInesperado(this.mensaje);
   final String mensaje;
@@ -59,10 +67,10 @@ String? _vacioANull(String? valor) {
 /// `AdjuntarDocumentoEmpleadoUseCase`) — un expediente puede existir
 /// sin ninguno de los dos todavía.
 class CrearEmpleadoUseCase {
-  CrearEmpleadoUseCase(this._repository, this._generarCodigo, this._validator, this._servicioRepository);
+  CrearEmpleadoUseCase(this._repository, this._generarNumero, this._validator, this._servicioRepository);
 
   final EmpleadoRepository _repository;
-  final GenerarCodigoUseCase _generarCodigo;
+  final GenerarNumeroUseCase _generarNumero;
   final EmpleadoValidator _validator;
   final ServicioRepository _servicioRepository;
 
@@ -93,6 +101,17 @@ class CrearEmpleadoUseCase {
     String? servicioId,
     String? turnoId,
     String? sucursalId,
+    // --- Datos bancarios (Etapa 6A) — todo opcional; si se captura
+    // algo, banco es obligatorio y se necesita al menos uno de
+    // tarjeta/cuenta o CLABE. ---
+    String? bancoId,
+    String? numeroCuentaTarjeta,
+    String? clabe,
+    // --- Condición laboral administrativa (Etapa 6A) — solo relevante
+    // para empleados sin AsignacionServicio; ver doc comment de
+    // `Empleado`. ---
+    int? sueldoMensualAdministrativo,
+    int? bonoMensualAdministrativo,
     String? observaciones,
     NivelEstudiosEmpleado? nivelEstudios,
     String? observacionesEscolaridad,
@@ -119,6 +138,15 @@ class CrearEmpleadoUseCase {
     if (mesesExperienciaAdicionales != null && (mesesExperienciaAdicionales < 0 || mesesExperienciaAdicionales > 11)) {
       return CrearEmpleadoExperienciaInvalida();
     }
+    if (!_validator.datosBancariosValidos(bancoId: bancoId, numeroCuentaTarjeta: numeroCuentaTarjeta, clabe: clabe)) {
+      return CrearEmpleadoDatosBancariosInvalidos();
+    }
+    if (!_validator.sueldoAdministrativoValido(sueldoMensualAdministrativo)) {
+      return CrearEmpleadoSueldoAdministrativoInvalido();
+    }
+    if (!_validator.bonoAdministrativoValido(bonoMensualAdministrativo)) {
+      return CrearEmpleadoBonoAdministrativoInvalido();
+    }
 
     if (servicioId != null && sucursalId != null) return CrearEmpleadoAdscripcionAmbigua();
     if (servicioId != null) {
@@ -130,12 +158,12 @@ class CrearEmpleadoUseCase {
     }
 
     try {
-      final codigoResultado = await _generarCodigo.ejecutar('empleado');
-      final codigoEmpleado = codigoResultado.when(ok: (c) => c, failure: (f) => throw StateError(f.message));
+      final numeroResultado = await _generarNumero.ejecutar('empleado');
+      final numeroEmpleado = numeroResultado.when(ok: (n) => n, failure: (f) => throw StateError(f.message));
 
       final empleado = await _repository.crear(
         EmpleadoCompanion.insert(
-          codigoEmpleado: codigoEmpleado,
+          numeroEmpleado: numeroEmpleado,
           nombres: nombres.trim(),
           apellidoPaterno: apellidoPaterno.trim(),
           apellidoMaterno: Value(_vacioANull(apellidoMaterno)),
@@ -152,10 +180,15 @@ class CrearEmpleadoUseCase {
           contactoEmergenciaNombre: Value(_vacioANull(contactoEmergenciaNombre)),
           telefonoEmergencia: Value(_vacioANull(telefonoEmergencia)),
           parentescoEmergencia: Value(_vacioANull(parentescoEmergencia)),
+          bancoId: Value(bancoId),
+          numeroCuentaTarjeta: Value(_vacioANull(numeroCuentaTarjeta)),
+          clabe: Value(_vacioANull(clabe)),
           fechaIngreso: fechaIngreso,
           puestoId: Value(puestoId),
           empresaId: Value(empresaId),
           sucursalId: Value(sucursalId),
+          sueldoMensualAdministrativo: Value(sueldoMensualAdministrativo),
+          bonoMensualAdministrativo: Value(bonoMensualAdministrativo),
           observaciones: Value(_vacioANull(observaciones)),
           nivelEstudios: Value(nivelEstudios?.name),
           observacionesEscolaridad: Value(_vacioANull(observacionesEscolaridad)),

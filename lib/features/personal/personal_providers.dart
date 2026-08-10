@@ -48,7 +48,7 @@ final empleadoValidatorProvider = Provider<EmpleadoValidator>((ref) {
 final crearEmpleadoUseCaseProvider = Provider<CrearEmpleadoUseCase>((ref) {
   return CrearEmpleadoUseCase(
     ref.watch(empleadoRepositoryProvider),
-    ref.watch(generarCodigoUseCaseProvider),
+    ref.watch(generarNumeroUseCaseProvider),
     ref.watch(empleadoValidatorProvider),
     ref.watch(servicioRepositoryProvider),
   );

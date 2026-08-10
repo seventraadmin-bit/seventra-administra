@@ -33,6 +33,7 @@ import 'widgets/retirar_servicio_empleado_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
+final _formatoMonedaEmpleado = NumberFormat.currency(locale: 'es_MX', symbol: r'$');
 
 /// Expediente del Empleado (Etapa 5A) — información general, contacto,
 /// domicilio, laboral, escolaridad, experiencia en seguridad privada,
@@ -62,6 +63,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   PuestoData? _puesto;
   EmpresaData? _empresa;
   SucursalData? _sucursal;
+  String? _bancoNombre;
   List<FichaTecnicaEmpleadoData> _fichasTecnicas = const [];
   Map<String, String> _fichaTecnicaRutasPorAttachmentId = const {};
   bool _cargando = true;
@@ -128,6 +130,13 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     if (empleado?.sucursalId != null) {
       sucursal = await ref.read(sucursalRepositoryProvider).obtenerPorId(empleado!.sucursalId!);
     }
+    String? bancoNombre;
+    if (empleado?.bancoId != null) {
+      final bancos = await ref.read(catalogoRepositoryProvider).listarBancos();
+      for (final b in bancos) {
+        if (b.id == empleado!.bancoId) bancoNombre = b.nombre;
+      }
+    }
 
     if (!mounted) return;
     setState(() {
@@ -143,6 +152,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       _puesto = puesto;
       _empresa = empresa;
       _sucursal = sucursal;
+      _bancoNombre = bancoNombre;
       _fichasTecnicas = fichasTecnicas;
       _fichaTecnicaRutasPorAttachmentId = fichaTecnicaRutasPorAttachmentId;
       _cargando = false;
@@ -318,7 +328,10 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(empleadoNombreCompleto(empleado), style: AppTypography.heading2.copyWith(color: colors.textPrimary)),
-                          Text(empleado.codigoEmpleado, style: AppTypography.body.copyWith(color: colors.textMuted)),
+                          Text(
+                            l10n.empleadoDetalleNumeroEmpleado(empleado.numeroEmpleado),
+                            style: AppTypography.body.copyWith(color: colors.textMuted),
+                          ),
                         ],
                       ),
                     ),
@@ -414,6 +427,21 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(l10n.empleadoSeccionDatosBancarios, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+                      const SizedBox(height: AppSpacing.sm),
+                      CampoConsulta(label: l10n.empleadoCampoBanco, value: _bancoNombre),
+                      const SizedBox(height: AppSpacing.sm),
+                      CampoConsulta(label: l10n.empleadoCampoNumeroCuentaTarjeta, value: empleado.numeroCuentaTarjeta),
+                      const SizedBox(height: AppSpacing.sm),
+                      CampoConsulta(label: l10n.empleadoCampoClabe, value: empleado.clabe),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Row(
                         children: [
                           Expanded(
@@ -455,6 +483,27 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                       CampoConsulta(label: l10n.empleadoCampoEmpresa, value: _empresa?.nombreComercial),
                       const SizedBox(height: AppSpacing.sm),
                       CampoConsulta(label: l10n.empleadoCampoSucursal, value: _sucursal?.nombre),
+                      // Sueldo/bono administrativo — solo tienen sentido
+                      // sin AsignacionServicio vigente (ver doc comment
+                      // de `Empleado.sueldoMensualAdministrativo`); con
+                      // asignación vigente, esos datos vienen de ahí
+                      // (Etapa 6B, expediente de esa asignación).
+                      if (_asignacionVigente == null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(
+                          label: l10n.empleadoCampoSueldoMensualAdministrativo,
+                          value: empleado.sueldoMensualAdministrativo == null
+                              ? null
+                              : _formatoMonedaEmpleado.format(empleado.sueldoMensualAdministrativo! / 100),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(
+                          label: l10n.empleadoCampoBonoMensualAdministrativo,
+                          value: empleado.bonoMensualAdministrativo == null
+                              ? null
+                              : _formatoMonedaEmpleado.format(empleado.bonoMensualAdministrativo! / 100),
+                        ),
+                      ],
                       const SizedBox(height: AppSpacing.sm),
                       CampoConsulta(label: l10n.empleadoCampoObservaciones, value: empleado.observaciones),
                       const SizedBox(height: AppSpacing.sm),

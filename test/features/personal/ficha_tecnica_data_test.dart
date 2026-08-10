@@ -34,7 +34,7 @@ EmpleadoData _empleado({
     createdAt: ahora,
     updatedAt: ahora,
     cicloVidaRegistro: 'activo',
-    codigoEmpleado: 'EMP-000001',
+    numeroEmpleado: 1,
     fotografiaAttachmentId: fotografiaAttachmentId,
     nombres: nombres,
     apellidoPaterno: apellidoPaterno,
