@@ -17,6 +17,7 @@ import 'domain/usecases/adjuntar_resguardo_firmado_usecase.dart';
 import 'domain/usecases/archivar_articulo_usecase.dart';
 import 'domain/usecases/archivar_categoria_articulo_usecase.dart';
 import 'domain/usecases/archivar_variante_articulo_usecase.dart';
+import 'domain/usecases/buscar_inventario_usecase.dart';
 import 'domain/usecases/cancelar_descuento_inventario_usecase.dart';
 import 'domain/usecases/cerrar_asignacion_usecase.dart';
 import 'domain/usecases/corregir_articulo_usecase.dart';
@@ -168,4 +169,15 @@ final generarDocumentoResguardoUseCaseProvider = Provider<GenerarDocumentoResgua
 
 final adjuntarResguardoFirmadoUseCaseProvider = Provider<AdjuntarResguardoFirmadoUseCase>((ref) {
   return AdjuntarResguardoFirmadoUseCase(ref.watch(asignacionRepositoryProvider), ref.watch(attachmentStorageProvider));
+});
+
+/// Providers de Reportes (Etapa 7D) — cero tablas nuevas, todo se
+/// deriva de los repositorios ya existentes.
+final buscarInventarioUseCaseProvider = Provider<BuscarInventarioUseCase>((ref) {
+  return BuscarInventarioUseCase(
+    ref.watch(articuloRepositoryProvider),
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+  );
 });

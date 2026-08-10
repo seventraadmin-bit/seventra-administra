@@ -36,6 +36,22 @@ abstract interface class AsignacionRepository {
   /// escribe hacia Nómina en esta etapa.
   Future<List<DescuentoInventarioData>> listarDescuentosPendientesPorEmpleado(String empleadoId);
 
+  /// Todas las `Asignacion` activas, sin importar Empleado/Servicio —
+  /// la versión global de `listarActivasPorEmpleado`/
+  /// `listarActivasPorServicio` (Etapa 7D, reporte "pendientes de
+  /// devolución"). Ninguna tabla de resumen: la misma fuente de verdad
+  /// de siempre, sin acotar.
+  Future<List<AsignacionData>> listarTodasActivas();
+
+  /// Todas las `Asignacion` con `estatus` `danada`/`perdida` — reporte
+  /// global de daños/pérdidas (Etapa 7D).
+  Future<List<AsignacionData>> listarDanadasPerdidas();
+
+  /// Todos los `DescuentoInventario` con `estatus = pendiente`, sin
+  /// acotar por Empleado — versión global de
+  /// `listarDescuentosPendientesPorEmpleado` (Etapa 7D).
+  Future<List<DescuentoInventarioData>> listarTodosDescuentosPendientes();
+
   /// La `Asignacion` que [asignacionId] reemplazó, si la hay —
   /// `asignacionReemplazoId` vive en la fila VIEJA apuntando hacia la
   /// nueva (ver el doc comment de `Asignacion`), así que encontrar el

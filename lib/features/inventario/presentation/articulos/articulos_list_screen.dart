@@ -81,7 +81,7 @@ class ArticulosListScreen extends ConsumerWidget {
             child: RisegTableBase<ArticuloResumen>(
               loading: state.cargando,
               rows: state.articulos,
-              onRowTap: (r) => context.go('/inventario/${r.articulo.id}'),
+              onRowTap: (r) => context.go('/inventario/articulos/${r.articulo.id}'),
               emptyState: RisegEmptyState(
                 title: l10n.inventarioListadoVacioTitulo,
                 message: l10n.inventarioListadoVacioMensaje,

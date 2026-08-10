@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/config/env.dart';
 import '../../features/finanzas/presentation/finanzas_shell_screen.dart';
 import '../../features/inventario/presentation/articulos/articulo_expediente_screen.dart';
-import '../../features/inventario/presentation/articulos/articulos_list_screen.dart';
+import '../../features/inventario/presentation/inventario_shell_screen.dart';
 import '../../features/organizacion/presentation/clientes/cliente_expediente_screen.dart';
 import '../../features/organizacion/presentation/comercial_shell_screen.dart';
 import '../../features/organizacion/presentation/organizacion_shell_screen.dart';
@@ -226,18 +226,29 @@ GoRouter createAppRouter() {
                     ],
                   )
                 else if (def.path == '/inventario')
-                  // Inventario es un dominio propio, nuevo (Etapa 7A).
-                  // Sin subnavegación de pestañas todavía (a diferencia
-                  // de Personal/Finanzas) — Artículos es la única
-                  // pantalla hasta que 7B agregue Asignaciones.
+                  // Inventario es un dominio propio (Etapa 7A). Desde la
+                  // Etapa 7D gana subnavegación de pestañas (Artículos |
+                  // Reportes), mismo patrón `PersonalShellScreen` —
+                  // `/inventario` en sí redirige a `/inventario/articulos`.
                   GoRoute(
                     path: def.path,
-                    builder: (context, state) => const ArticulosListScreen(),
+                    redirect: (context, state) =>
+                        state.uri.path == '/inventario' ? '/inventario/articulos' : null,
                     routes: [
                       GoRoute(
-                        path: ':id',
-                        builder: (context, state) =>
-                            ArticuloExpedienteScreen(articuloId: state.pathParameters['id']!),
+                        path: 'articulos',
+                        builder: (context, state) => const InventarioShellScreen(tab: InventarioTab.articulos),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                ArticuloExpedienteScreen(articuloId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'reportes',
+                        builder: (context, state) => const InventarioShellScreen(tab: InventarioTab.reportes),
                       ),
                     ],
                   )

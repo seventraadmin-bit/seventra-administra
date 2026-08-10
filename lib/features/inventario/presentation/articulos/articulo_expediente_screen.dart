@@ -9,6 +9,7 @@ import 'package:riseg_one/features/inventario/domain/usecases/archivar_articulo_
 import 'package:riseg_one/features/inventario/domain/usecases/existencia_articulo.dart';
 
 import '../asignaciones/widgets/historial_unidad_dialog.dart';
+import '../movimiento_tipo_label.dart';
 import 'articulos_controller.dart';
 import 'articulos_list_screen.dart';
 import 'widgets/crear_variante_dialog.dart';
@@ -371,7 +372,7 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                         RisegColumn<MovimientoInventarioData>(
                           label: l10n.articuloExpedienteColumnaTipoMovimiento,
                           width: 140,
-                          cellBuilder: (m) => Text(_tipoMovimientoLabel(l10n, m.tipoMovimiento)),
+                          cellBuilder: (m) => Text(movimientoTipoLabel(l10n, m.tipoMovimiento)),
                         ),
                         RisegColumn<MovimientoInventarioData>(
                           label: l10n.articuloExpedienteColumnaVarianteUnidad,
@@ -411,16 +412,6 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
       return variante?.valor ?? '—';
     }
     return '—';
-  }
-
-  String _tipoMovimientoLabel(AppLocalizations l10n, String tipo) {
-    return switch (tipo) {
-      'entrada' => l10n.movimientoTipoEntrada,
-      'baja' => l10n.movimientoTipoBaja,
-      'ajusteEntrada' => l10n.movimientoTipoAjusteEntrada,
-      'ajusteSalida' => l10n.movimientoTipoAjusteSalida,
-      _ => tipo,
-    };
   }
 
   String _estatusUnidadLabel(AppLocalizations l10n, String estatus) {

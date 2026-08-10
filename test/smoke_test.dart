@@ -13,6 +13,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:riseg_one/app/app.dart';
 import 'package:riseg_one/app/router/app_router.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
 
@@ -272,6 +273,42 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('cliente_expediente_boton_editar')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Inventario redirige a Artículos y expone la pestaña Reportes (Etapa 7D)',
+    (tester) async {
+      await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      await tester.tap(find.byKey(const Key('nav_item_inventario')));
+      await tester.pumpAndSettle();
+
+      // `/inventario` en sí redirige a `/inventario/articulos` — mismo
+      // patrón que `/personal`/`/comercial`.
+      expect(find.byKey(const Key('inventario_boton_nuevo_articulo')), findsOneWidget);
+
+      // "Reportes" también es el nombre de un destino distinto del
+      // sidebar (módulo pendiente) — se acota la pestaña a las tabs de
+      // Inventario para no ambigüar el tap.
+      final tabReportes = find.descendant(of: find.byType(RisegTabs), matching: find.text(l10n.inventarioTabReportes));
+      await tester.tap(tabReportes);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('inventario_boton_nuevo_articulo')), findsNothing);
+      expect(find.text(l10n.reportesSeccionExistencias), findsOneWidget);
+      expect(find.text(l10n.reportesExistenciasVacio), findsOneWidget);
+      expect(find.text(l10n.reportesSeccionAsignacionesVigentes), findsOneWidget);
+      expect(find.text(l10n.reportesSeccionDanadosPerdidos), findsOneWidget);
+      expect(find.text(l10n.reportesSeccionDescuentosPendientes), findsOneWidget);
+      expect(find.text(l10n.reportesSeccionMovimientos), findsOneWidget);
+
+      final tabArticulos = find.descendant(of: find.byType(RisegTabs), matching: find.text(l10n.inventarioTabArticulos));
+      await tester.tap(tabArticulos);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('inventario_boton_nuevo_articulo')), findsOneWidget);
     },
   );
 }

@@ -31,6 +31,11 @@ class InventarioRepositoryImpl implements InventarioRepository {
   }
 
   @override
+  Future<List<ArticuloUnidadData>> listarTodasUnidades() {
+    return (_db.select(_db.articuloUnidad)..orderBy([(t) => OrderingTerm.asc(t.codigo)])).get();
+  }
+
+  @override
   Future<List<MovimientoInventarioData>> listarMovimientos({String? articuloId, String? varianteId, String? unidadId}) {
     final query = _db.select(_db.movimientoInventario);
     if (articuloId != null) query.where((t) => t.articuloId.equals(articuloId));
@@ -272,6 +277,30 @@ class InventarioRepositoryImpl implements InventarioRepository {
     }
 
     return ExistenciaArticulo(disponible: disponible, asignado: asignado, danado: danado, perdido: perdido);
+  }
+
+  @override
+  Future<int?> calcularCostoPromedio({required String articuloId, String? varianteId}) async {
+    final query = _db.select(_db.movimientoInventario)
+      ..where((t) => t.articuloId.equals(articuloId) & t.tipoMovimiento.equals(TipoMovimientoInventario.entrada.name));
+    if (varianteId == null) {
+      query.where((t) => t.varianteId.isNull());
+    } else {
+      query.where((t) => t.varianteId.equals(varianteId));
+    }
+    final entradas = await query.get();
+
+    var cantidadTotal = 0;
+    var costoTotal = 0;
+    for (final entrada in entradas) {
+      final costo = entrada.costoUnitario;
+      if (costo == null) continue;
+      cantidadTotal += entrada.cantidad;
+      costoTotal += entrada.cantidad * costo;
+    }
+
+    if (cantidadTotal == 0) return null;
+    return (costoTotal / cantidadTotal).round();
   }
 
   @override

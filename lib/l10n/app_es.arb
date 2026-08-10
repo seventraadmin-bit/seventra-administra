@@ -2152,6 +2152,10 @@
   "movimientoTipoBaja": "Baja",
   "movimientoTipoAjusteEntrada": "Ajuste (entrada)",
   "movimientoTipoAjusteSalida": "Ajuste (salida)",
+  "movimientoTipoSalidaAsignacion": "Asignado",
+  "movimientoTipoEntradaDevolucion": "Devuelto",
+  "movimientoTipoSalidaDano": "Dañado",
+  "movimientoTipoSalidaPerdida": "Perdido",
   "estatusArticuloUnidadDisponible": "Disponible",
   "estatusArticuloUnidadAsignado": "Asignado",
   "estatusArticuloUnidadDanado": "Dañado",
@@ -2398,5 +2402,52 @@
   "descuentosPendientesSeccionTitulo": "Descuentos pendientes",
   "descuentosPendientesVacio": "Sin descuentos pendientes.",
   "descuentosPendientesEstadoPendiente": "Pendiente",
-  "descuentosPendientesAvisoNoAplicado": "Aún no se aplica a Nómina."
+  "descuentosPendientesAvisoNoAplicado": "Aún no se aplica a Nómina.",
+
+  "inventarioTabArticulos": "Artículos",
+  "inventarioTabReportes": "Reportes",
+
+  "reportesBusquedaEtiqueta": "Buscar artículo, UNI-, empleado o Servicio",
+  "reportesBusquedaVacia": "Sin coincidencias.",
+  "reportesBusquedaGrupoArticulos": "Artículos",
+  "reportesBusquedaGrupoUnidades": "Unidades",
+  "reportesBusquedaGrupoEmpleados": "Empleados",
+  "reportesBusquedaGrupoServicios": "Servicios",
+
+  "reportesCargaErrorTitulo": "No se pudieron cargar los reportes",
+  "reportesCargaErrorMensaje": "Ocurrió un error al calcular los reportes de Inventario.",
+  "reportesBotonReintentar": "Reintentar",
+
+  "reportesSeccionExistencias": "Existencias actuales",
+  "reportesExistenciasVacio": "Sin artículos capturados todavía.",
+  "reportesColumnaArticulo": "Artículo",
+  "reportesColumnaCategoria": "Categoría",
+  "reportesColumnaTotal": "Total",
+  "reportesColumnaDisponible": "Disponible",
+  "reportesColumnaAsignado": "Asignado",
+  "reportesColumnaDanadoPerdido": "Dañado/Perdido",
+  "reportesColumnaCostoPromedio": "Costo promedio",
+
+  "reportesSeccionAsignacionesVigentes": "Asignaciones vigentes (pendientes de devolución)",
+  "reportesAsignacionesVigentesVacio": "Sin asignaciones activas — no hay nada pendiente de devolución.",
+  "reportesColumnaDestino": "Empleado / Servicio",
+  "reportesColumnaFechaEntrega": "Entrega",
+
+  "reportesSeccionDanadosPerdidos": "Dañados / perdidos",
+  "reportesDanadosPerdidosVacio": "Sin registros de daño o pérdida.",
+  "reportesColumnaFechaCierre": "Fecha",
+  "reportesColumnaEstatus": "Estatus",
+
+  "reportesSeccionDescuentosPendientes": "Descuentos pendientes",
+  "reportesDescuentosPendientesVacio": "Sin descuentos pendientes en todo Inventario.",
+  "reportesColumnaEmpleado": "Empleado",
+  "reportesColumnaImporte": "Importe",
+  "reportesColumnaMotivo": "Motivo",
+
+  "reportesSeccionMovimientos": "Historial de movimientos",
+  "reportesMovimientosVacio": "Sin movimientos capturados todavía.",
+  "reportesMovimientosNota": "Muestra los 100 más recientes.",
+  "reportesColumnaFecha": "Fecha",
+  "reportesColumnaTipoMovimiento": "Tipo",
+  "reportesColumnaCantidad": "Cantidad"
 }

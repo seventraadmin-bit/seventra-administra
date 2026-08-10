@@ -78,6 +78,33 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
   }
 
   @override
+  Future<List<AsignacionData>> listarTodasActivas() {
+    final query = _db.select(_db.asignacion)
+      ..where((t) => t.estatus.equals(EstatusAsignacion.activa.name))
+      ..orderBy([(t) => OrderingTerm.desc(t.fechaEntrega)]);
+    return query.get();
+  }
+
+  @override
+  Future<List<AsignacionData>> listarDanadasPerdidas() {
+    final query = _db.select(_db.asignacion)
+      ..where(
+        (t) =>
+            t.estatus.equals(EstatusAsignacion.danada.name) | t.estatus.equals(EstatusAsignacion.perdida.name),
+      )
+      ..orderBy([(t) => OrderingTerm.desc(t.fechaCierre)]);
+    return query.get();
+  }
+
+  @override
+  Future<List<DescuentoInventarioData>> listarTodosDescuentosPendientes() {
+    final query = _db.select(_db.descuentoInventario)
+      ..where((t) => t.estatus.equals(EstatusDescuentoInventario.pendiente.name))
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
+    return query.get();
+  }
+
+  @override
   Future<AsignacionData?> obtenerAsignacionReemplazada(String asignacionId) {
     return (_db.select(_db.asignacion)..where((t) => t.asignacionReemplazoId.equals(asignacionId))).getSingleOrNull();
   }

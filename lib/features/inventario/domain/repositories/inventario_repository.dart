@@ -18,6 +18,12 @@ abstract interface class InventarioRepository {
 
   Future<List<ArticuloUnidadData>> listarUnidades(String articuloId, {String? estatus});
 
+  /// Todas las unidades serializadas, sin acotar por Artículo — usado
+  /// por la búsqueda contextual de Inventario (Etapa 7D) para resolver
+  /// un código `UNI-######`/número de serie sin que el usuario tenga
+  /// que saber primero a qué Artículo pertenece.
+  Future<List<ArticuloUnidadData>> listarTodasUnidades();
+
   Future<List<MovimientoInventarioData>> listarMovimientos({String? articuloId, String? varianteId, String? unidadId});
 
   /// Entrada de un Artículo por cantidad (con o sin variante) — crea
@@ -87,6 +93,15 @@ abstract interface class InventarioRepository {
   /// Existencia derivada de un Artículo serializado — cuenta
   /// `ArticuloUnidad.estatus`.
   Future<ExistenciaArticulo> calcularExistenciaUnidades(String articuloId);
+
+  /// Costo promedio ponderado (centavos), derivado únicamente de
+  /// movimientos `entrada` con `costoUnitario` capturado — nunca
+  /// FIFO/LIFO, nunca guardado (Etapa 7D, mismo criterio ya
+  /// documentado desde el plan original de Inventario). `null` cuando
+  /// no hay ninguna entrada con costo capturado todavía — nunca se
+  /// inventa un valor ("solo cuando puedan derivarse de forma
+  /// consistente", instrucción explícita de Marlon).
+  Future<int?> calcularCostoPromedio({required String articuloId, String? varianteId});
 
   Future<AttachmentData> adjuntarComprobante({
     required String movimientoInventarioId,
