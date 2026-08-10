@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 30;
+const _currentSchemaVersion = 31;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -7287,6 +7287,216 @@ void main() {
         throwsA(anything),
         reason: 'idx_vehiculo_vin_unico rechaza VIN duplicado',
       );
+
+      await db.close();
+    },
+  );
+
+  test(
+    '31.json coincide con el esquema final de la Etapa 8B (tablas nuevas AsignacionVehiculo, VehiculoKilometraje '
+    '+ índice único parcial idx_asignacion_vehiculo_vigente)',
+    () async {
+      final schema = await verifier.schemaAt(31);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['asignacion_vehiculo', 'vehiculo_kilometraje']));
+
+      final sqlAsignacion =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_vehiculo'")
+                  .single['sql']
+              as String;
+      expect(
+        sqlAsignacion,
+        contains(
+          'CHECK ((empleado_id IS NOT NULL AND servicio_id IS NULL) OR '
+          '(empleado_id IS NULL AND servicio_id IS NOT NULL))',
+        ),
+      );
+      expect(sqlAsignacion, contains('CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)'));
+
+      final sqlKilometraje =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo_kilometraje'")
+                  .single['sql']
+              as String;
+      expect(sqlKilometraje, contains('CHECK (kilometraje >= 0)'));
+
+      final sqlIndice =
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_asignacion_vehiculo_vigente'",
+                  )
+                  .single['sql']
+              as String;
+      expect(
+        sqlIndice,
+        'CREATE UNIQUE INDEX idx_asignacion_vehiculo_vigente '
+        'ON asignacion_vehiculo (vehiculo_id) WHERE fecha_termino IS NULL',
+      );
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 30 → 31 conserva un Vehículo real y crea las tablas de Asignaciones/Kilometraje vacías',
+    () async {
+      final schemaV30 = await verifier.schemaAt(30);
+      final raw = schemaV30.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO vehiculo (
+        id, codigo, marca, modelo, tipo_vehiculo, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vehiculo-real', 'VEH-000001', 'BMW', '320i', 'sedan', 'disponible', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV30.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final vehiculos = await db.select(db.vehiculo).get();
+      expect(vehiculos, hasLength(1), reason: 'ningún Vehículo real debe perderse en una migración puramente aditiva');
+
+      final asignaciones = await db.select(db.asignacionVehiculo).get();
+      expect(asignaciones, isEmpty, reason: 'AsignacionVehiculo es tabla nueva en 8B, sin backfill');
+      final lecturas = await db.select(db.vehiculoKilometraje).get();
+      expect(lecturas, isEmpty);
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de AsignacionVehiculo/VehiculoKilometraje tras la migración: empleado/servicio mutuamente '
+    'excluyentes, fecha_termino >= fecha_inicio, kilometraje >= 0, índice único rechaza una segunda '
+    'asignación vigente sobre el mismo Vehículo',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final vehiculo = await db.into(db.vehiculo).insertReturning(
+            VehiculoCompanion.insert(codigo: 'VEH-000001', marca: 'BMW', modelo: '320i', tipoVehiculo: 'sedan'),
+          );
+      final empleado = await db.into(db.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+      final tipoServicio = await db.into(db.tipoServicio).insertReturning(
+            TipoServicioCompanion.insert(id: 'tipo-servicio-real', codigo: 'VIGILANCIA_FIJA', nombre: 'Vigilancia fija'),
+          );
+      final cliente = await db.into(db.cliente).insertReturning(
+            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+          );
+      final servicio = await db.into(db.servicio).insertReturning(
+            ServicioCompanion.insert(
+              codigo: 'SER-000001',
+              clienteId: cliente.id,
+              nombre: 'Vigilancia Sportium Toluca',
+              tipoServicioId: tipoServicio.id,
+              fechaInicio: DateTime(2026, 1, 1),
+            ),
+          );
+
+      final baseAsignacion = AsignacionVehiculoCompanion.insert(
+        vehiculoId: vehiculo.id,
+        fechaInicio: DateTime(2026, 1, 1),
+        empleadoId: const Value('placeholder'),
+      );
+
+      await expectLater(
+        db.into(db.asignacionVehiculo).insert(
+              baseAsignacion.copyWith(empleadoId: Value(empleado.id), servicioId: Value(servicio.id)),
+            ),
+        throwsA(anything),
+        reason: 'empleado_id y servicio_id nunca pueden venir poblados a la vez',
+      );
+      await expectLater(
+        db.into(db.asignacionVehiculo).insert(baseAsignacion.copyWith(empleadoId: const Value(null))),
+        throwsA(anything),
+        reason: 'exactamente uno de empleado_id/servicio_id debe venir poblado',
+      );
+      await expectLater(
+        db.into(db.asignacionVehiculo).insert(
+              baseAsignacion.copyWith(
+                empleadoId: Value(empleado.id),
+                fechaTermino: Value(DateTime(2025, 12, 1)),
+              ),
+            ),
+        throwsA(anything),
+        reason: 'fecha_termino no puede ser anterior a fecha_inicio',
+      );
+
+      final asignacion = await db.into(db.asignacionVehiculo).insertReturning(
+            baseAsignacion.copyWith(empleadoId: Value(empleado.id)),
+          );
+      expect(asignacion.fechaTermino, isNull);
+
+      await expectLater(
+        db.into(db.asignacionVehiculo).insert(
+              AsignacionVehiculoCompanion.insert(
+                vehiculoId: vehiculo.id,
+                empleadoId: const Value(null),
+                servicioId: Value(servicio.id),
+                fechaInicio: DateTime(2026, 1, 2),
+              ),
+            ),
+        throwsA(anything),
+        reason: 'idx_asignacion_vehiculo_vigente rechaza una segunda asignación vigente para el mismo Vehículo',
+      );
+
+      await expectLater(
+        db.into(db.vehiculoKilometraje).insert(
+              VehiculoKilometrajeCompanion.insert(
+                vehiculoId: vehiculo.id,
+                fecha: DateTime(2026, 1, 1),
+                kilometraje: -1,
+                origen: 'lecturaManual',
+              ),
+            ),
+        throwsA(anything),
+        reason: 'kilometraje nunca puede ser negativo',
+      );
+
+      final lectura = await db.into(db.vehiculoKilometraje).insertReturning(
+            VehiculoKilometrajeCompanion.insert(
+              vehiculoId: vehiculo.id,
+              fecha: DateTime(2026, 1, 1),
+              kilometraje: 15000,
+              origen: 'lecturaManual',
+            ),
+          );
+      expect(lectura.kilometraje, 15000);
 
       await db.close();
     },

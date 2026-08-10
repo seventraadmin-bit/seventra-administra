@@ -2524,5 +2524,99 @@
   "vehiculoBajaBotonConfirmar": "Confirmar baja",
   "vehiculoBajaExito": "Vehículo dado de baja.",
   "vehiculoBajaErrorObservacionesRequeridas": "Este motivo requiere observaciones.",
-  "vehiculoBajaErrorYaDeBaja": "Este vehículo ya está dado de baja."
+  "vehiculoBajaErrorYaDeBaja": "Este vehículo ya está dado de baja.",
+
+  "vehiculoAsignacionSeccionTitulo": "Asignación actual",
+  "vehiculoAsignacionVacio": "Sin asignación — disponible.",
+  "vehiculoAsignacionDestino": "Asignado a",
+  "vehiculoAsignacionDesde": "Desde",
+  "vehiculoBotonAsignar": "Asignar",
+  "vehiculoBotonCambiarAsignacion": "Cambiar asignación",
+  "vehiculoBotonRetirarAsignacion": "Retirar asignación",
+
+  "vehiculoHistorialAsignacionesTitulo": "Historial de asignaciones",
+  "vehiculoHistorialAsignacionesVacio": "Sin asignaciones registradas.",
+  "vehiculoColumnaDestino": "Destino",
+  "vehiculoColumnaFechaInicio": "Inicio",
+  "vehiculoColumnaFechaTermino": "Término",
+
+  "vehiculoKilometrajeSeccionTitulo": "Kilometraje actual",
+  "vehiculoKilometrajeVacio": "Sin lecturas registradas.",
+  "vehiculoBotonRegistrarKilometraje": "Registrar kilometraje",
+  "vehiculoHistorialKilometrajeTitulo": "Historial de kilometraje",
+  "vehiculoColumnaFecha": "Fecha",
+  "vehiculoColumnaKilometraje": "Kilometraje",
+  "vehiculoColumnaOrigen": "Origen",
+
+  "origenKilometrajeLecturaManual": "Lectura manual",
+  "origenKilometrajeEntrega": "Entrega",
+  "origenKilometrajeDevolucion": "Devolución",
+  "origenKilometrajeMantenimiento": "Mantenimiento",
+  "origenKilometrajeCorreccion": "Corrección",
+
+  "vehiculoAsignarDialogoTitulo": "Asignar vehículo",
+  "vehiculoAsignarCampoDestinoTipo": "Asignar a",
+  "vehiculoAsignarOpcionEmpleado": "Empleado",
+  "vehiculoAsignarOpcionServicio": "Servicio",
+  "vehiculoAsignarCampoEmpleado": "Empleado",
+  "vehiculoAsignarCampoServicio": "Servicio",
+  "vehiculoAsignarCampoFechaInicio": "Fecha de inicio",
+  "vehiculoAsignarCampoObservaciones": "Observaciones",
+  "vehiculoAsignarCampoKilometrajeEntrega": "Kilometraje de entrega (opcional)",
+  "vehiculoAsignarBotonConfirmar": "Confirmar asignación",
+  "vehiculoAsignarExito": "Vehículo asignado.",
+  "vehiculoAsignarErrorDestinoInvalido": "Selecciona un Empleado o un Servicio.",
+  "vehiculoAsignarErrorNoDisponible": "El vehículo no está disponible (estatus: {estatus}).",
+  "@vehiculoAsignarErrorNoDisponible": {
+    "placeholders": {
+      "estatus": {
+        "type": "String"
+      }
+    }
+  },
+  "vehiculoAsignarErrorKilometrajeMenor": "El kilometraje no puede ser menor al actual ({actual} km).",
+  "@vehiculoAsignarErrorKilometrajeMenor": {
+    "placeholders": {
+      "actual": {
+        "type": "int"
+      }
+    }
+  },
+
+  "vehiculoCambiarAsignacionDialogoTitulo": "Cambiar asignación",
+  "vehiculoCambiarAsignacionCampoFecha": "Fecha del cambio",
+  "vehiculoCambiarAsignacionCampoObservacionesTermino": "Observaciones del cierre",
+  "vehiculoCambiarAsignacionCampoObservacionesNueva": "Observaciones de la nueva asignación",
+  "vehiculoCambiarAsignacionBotonConfirmar": "Confirmar cambio",
+  "vehiculoCambiarAsignacionExito": "Asignación actualizada.",
+
+  "vehiculoRetirarAsignacionDialogoTitulo": "Retirar asignación",
+  "vehiculoRetirarAsignacionCampoFecha": "Fecha de retiro",
+  "vehiculoRetirarAsignacionCampoObservaciones": "Observaciones",
+  "vehiculoRetirarAsignacionCampoKilometrajeDevolucion": "Kilometraje de devolución (opcional)",
+  "vehiculoRetirarAsignacionBotonConfirmar": "Retirar",
+  "vehiculoRetirarAsignacionExito": "Asignación retirada.",
+
+  "vehiculoRegistrarKilometrajeDialogoTitulo": "Registrar kilometraje",
+  "vehiculoRegistrarKilometrajeCampoFecha": "Fecha",
+  "vehiculoRegistrarKilometrajeCampoKilometraje": "Kilometraje",
+  "vehiculoRegistrarKilometrajeCampoOrigen": "Origen",
+  "vehiculoRegistrarKilometrajeCampoObservaciones": "Observaciones",
+  "vehiculoRegistrarKilometrajeBotonConfirmar": "Registrar",
+  "vehiculoRegistrarKilometrajeExito": "Kilometraje registrado.",
+  "vehiculoRegistrarKilometrajeErrorMenor": "El kilometraje no puede ser menor al actual ({actual} km). Usa el origen \"Corrección\" si es intencional.",
+  "@vehiculoRegistrarKilometrajeErrorMenor": {
+    "placeholders": {
+      "actual": {
+        "type": "int"
+      }
+    }
+  },
+  "vehiculoRegistrarKilometrajeErrorObservacionesRequeridas": "Una corrección requiere observaciones.",
+  "vehiculoRegistrarKilometrajeErrorInvalido": "El kilometraje no puede ser negativo.",
+
+  "vehiculoAsignadoSeccionTitulo": "Vehículo asignado",
+  "vehiculoAsignadoVacio": "Sin vehículo asignado.",
+  "vehiculoAsignadoDesde": "Desde",
+  "vehiculoAsignadoBotonVerExpediente": "Ver expediente"
 }

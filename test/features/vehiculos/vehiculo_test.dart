@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'package:riseg_one/features/vehiculos/data/repositories/vehiculo_repository_impl.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/cambiar_estatus_vehiculo_usecase.dart';
@@ -25,7 +26,7 @@ void main() {
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
-    vehiculoRepo = VehiculoRepositoryImpl(db);
+    vehiculoRepo = VehiculoRepositoryImpl(db, AsignacionVehiculoRepositoryImpl(db));
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
     crearVehiculo = CrearVehiculoUseCase(vehiculoRepo, generarCodigo);

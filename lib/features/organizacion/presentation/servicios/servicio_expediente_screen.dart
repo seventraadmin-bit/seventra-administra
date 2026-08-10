@@ -37,6 +37,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/obtener_historia
 import 'package:riseg_one/features/organizacion/domain/usecases/obtener_historial_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_errors.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/inventario_asignado_servicio_section.dart';
+import 'package:riseg_one/features/vehiculos/presentation/widgets/vehiculo_asignado_servicio_section.dart';
 
 import '../../organizacion_providers.dart';
 import 'servicio_expediente_controller.dart';
@@ -1296,6 +1297,8 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
               ),
               const SizedBox(height: AppSpacing.xl),
               RisegCard(child: InventarioAsignadoServicioSection(servicioId: widget.servicioId)),
+              const SizedBox(height: AppSpacing.xl),
+              RisegCard(child: VehiculoAsignadoServicioSection(servicioId: widget.servicioId)),
               const SizedBox(height: AppSpacing.xl),
               RisegCard(child: ServicioAuditoriaSection(servicio: servicio)),
             ],

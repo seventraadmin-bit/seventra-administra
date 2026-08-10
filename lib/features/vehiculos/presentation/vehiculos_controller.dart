@@ -6,7 +6,11 @@ import 'package:riseg_one/features/vehiculos/domain/usecases/actualizar_fotograf
 import 'package:riseg_one/features/vehiculos/domain/usecases/cambiar_estatus_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/corregir_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/crear_vehiculo_usecase.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/asignar_vehiculo_usecase.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/cambiar_asignacion_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/dar_de_baja_vehiculo_usecase.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/registrar_kilometraje_vehiculo_usecase.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/retirar_asignacion_vehiculo_usecase.dart';
 
 import '../vehiculos_providers.dart';
 import 'vehiculos_state.dart';
@@ -159,5 +163,82 @@ class VehiculosController extends _$VehiculosController {
         );
     if (resultado is ActualizarFotografiaVehiculoExitoso) await _cargar();
     return resultado;
+  }
+
+  // --- Asignaciones y kilometraje (Etapa 8B) ---
+
+  Future<AsignarVehiculoResultado> asignar({
+    required String vehiculoId,
+    String? empleadoId,
+    String? servicioId,
+    required DateTime fechaInicio,
+    String? observaciones,
+    int? kilometrajeEntrega,
+  }) async {
+    final resultado = await ref.read(asignarVehiculoUseCaseProvider).ejecutar(
+          vehiculoId: vehiculoId,
+          empleadoId: empleadoId,
+          servicioId: servicioId,
+          fechaInicio: fechaInicio,
+          observaciones: observaciones,
+          kilometrajeEntrega: kilometrajeEntrega,
+        );
+    if (resultado is AsignarVehiculoExitoso) await _cargar();
+    return resultado;
+  }
+
+  Future<CambiarAsignacionVehiculoResultado> cambiarAsignacion({
+    required String asignacionVehiculoActualId,
+    required DateTime fecha,
+    String? observacionesTermino,
+    String? nuevoEmpleadoId,
+    String? nuevoServicioId,
+    String? observacionesNueva,
+  }) async {
+    final resultado = await ref.read(cambiarAsignacionVehiculoUseCaseProvider).ejecutar(
+          asignacionVehiculoActualId: asignacionVehiculoActualId,
+          fecha: fecha,
+          observacionesTermino: observacionesTermino,
+          nuevoEmpleadoId: nuevoEmpleadoId,
+          nuevoServicioId: nuevoServicioId,
+          observacionesNueva: observacionesNueva,
+        );
+    if (resultado is CambiarAsignacionVehiculoExitoso) await _cargar();
+    return resultado;
+  }
+
+  Future<RetirarAsignacionVehiculoResultado> retirarAsignacion({
+    required String asignacionVehiculoId,
+    required DateTime fechaTermino,
+    String? observacionesTermino,
+    int? kilometrajeDevolucion,
+  }) async {
+    final resultado = await ref.read(retirarAsignacionVehiculoUseCaseProvider).ejecutar(
+          asignacionVehiculoId: asignacionVehiculoId,
+          fechaTermino: fechaTermino,
+          observacionesTermino: observacionesTermino,
+          kilometrajeDevolucion: kilometrajeDevolucion,
+        );
+    if (resultado is RetirarAsignacionVehiculoExitoso) await _cargar();
+    return resultado;
+  }
+
+  Future<RegistrarKilometrajeVehiculoResultado> registrarKilometraje({
+    required String vehiculoId,
+    required DateTime fecha,
+    required int kilometraje,
+    required String origen,
+    String? observaciones,
+  }) async {
+    // No afecta el listado (kilometraje no es una columna de Vehiculo),
+    // pero sí puede afectar el estatus si en el futuro se deriva de
+    // aquí — se refresca por consistencia con el resto de acciones.
+    return ref.read(registrarKilometrajeVehiculoUseCaseProvider).ejecutar(
+          vehiculoId: vehiculoId,
+          fecha: fecha,
+          kilometraje: kilometraje,
+          origen: origen,
+          observaciones: observaciones,
+        );
   }
 }

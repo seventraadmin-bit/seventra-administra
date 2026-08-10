@@ -13,6 +13,7 @@ import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/cerrar_asignacion_dialog.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/generar_resguardo_dialog.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/reemplazar_asignacion_dialog.dart';
+import 'package:riseg_one/features/vehiculos/presentation/widgets/vehiculo_asignado_empleado_section.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/actualizar_fotografia_empleado_usecase.dart';
@@ -914,6 +915,8 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                     ],
                   ),
                 ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(child: VehiculoAsignadoEmpleadoSection(empleadoId: widget.empleadoId)),
                 if (_descuentosPendientes.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
                   RisegCard(

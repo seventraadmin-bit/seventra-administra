@@ -54,8 +54,11 @@ import '../../features/inventario/data/tables/categoria_articulo_table.dart';
 import '../../features/inventario/data/tables/descuento_inventario_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_attachment_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
+import '../../features/vehiculos/data/tables/asignacion_vehiculo_table.dart';
+import '../../features/vehiculos/data/tables/vehiculo_kilometraje_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_table.dart';
 import 'migrations/migrar_asignacion_attachment_v29.dart';
+import 'migrations/migrar_asignacion_vehiculo_v31.dart';
 import 'migrations/migrar_vehiculo_v30.dart';
 import 'migrations/migrar_asignacion_servicio_v21.dart';
 import 'migrations/migrar_asignacion_v28.dart';
@@ -187,12 +190,14 @@ class AppMetadata extends Table {
   AsignacionAttachment,
   Vehiculo,
   VehiculoAttachment,
+  AsignacionVehiculo,
+  VehiculoKilometraje,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 31;
 
   @override
   MigrationStrategy get migration {
@@ -671,6 +676,15 @@ class AppDatabase extends _$AppDatabase {
         // `runSeed()` normal, arriba en este mismo `onUpgrade`.
         if (to >= 30 && from <= 29) {
           await migrarVehiculoV30(this, m);
+        }
+        // Aditiva (Etapa 8B): `AsignacionVehiculo` (relación
+        // Vehículo↔Empleado/Servicio) + su índice único parcial, y
+        // `VehiculoKilometraje` (ledger, sin índice propio) —
+        // `migrarAsignacionVehiculoV31`, mismo criterio que
+        // `migrarVehiculoV30`. Tablas enteramente nuevas, así que
+        // `from <= 30` es seguro sin acotar un origen exacto.
+        if (to >= 31 && from <= 30) {
+          await migrarAsignacionVehiculoV31(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

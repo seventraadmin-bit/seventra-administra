@@ -1,5 +1,6 @@
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 
 import '../data/tables/vehiculo_table.dart';
@@ -46,4 +47,31 @@ String motivoBajaVehiculoLabel(AppLocalizations l10n, MotivoBajaVehiculo motivo)
     MotivoBajaVehiculo.finVidaUtil => l10n.motivoBajaVehiculoFinVidaUtil,
     MotivoBajaVehiculo.otro => l10n.motivoBajaVehiculoOtro,
   };
+}
+
+String origenKilometrajeLabel(AppLocalizations l10n, String origen) {
+  return switch (origen) {
+    'lecturaManual' => l10n.origenKilometrajeLecturaManual,
+    'entrega' => l10n.origenKilometrajeEntrega,
+    'devolucion' => l10n.origenKilometrajeDevolucion,
+    'mantenimiento' => l10n.origenKilometrajeMantenimiento,
+    'correccion' => l10n.origenKilometrajeCorreccion,
+    _ => origen,
+  };
+}
+
+/// El "destino" de una `AsignacionVehiculo` ya resuelto para mostrar —
+/// el llamador es responsable de pasar el nombre ya buscado
+/// (`empleadosPorId`/`serviciosPorId`), esta función solo decide cuál
+/// de los dos aplica. Mismo criterio que `ReportesController` en
+/// Inventario (7D): mapas de resolución cargados una sola vez, nunca
+/// N+1 por fila.
+String destinoAsignacionVehiculoLabel(
+  AsignacionVehiculoData asignacion, {
+  required Map<String, String> empleadosPorId,
+  required Map<String, String> serviciosPorId,
+}) {
+  if (asignacion.empleadoId != null) return empleadosPorId[asignacion.empleadoId] ?? asignacion.empleadoId!;
+  if (asignacion.servicioId != null) return serviciosPorId[asignacion.servicioId] ?? asignacion.servicioId!;
+  return '—';
 }

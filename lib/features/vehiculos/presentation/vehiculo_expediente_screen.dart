@@ -13,16 +13,20 @@ import 'package:riseg_one/features/vehiculos/domain/usecases/cambiar_estatus_veh
 
 import 'vehiculo_labels.dart';
 import 'vehiculos_controller.dart';
+import '../vehiculos_providers.dart';
+import 'widgets/asignar_vehiculo_dialog.dart';
+import 'widgets/cambiar_asignacion_vehiculo_dialog.dart';
 import 'widgets/dar_de_baja_vehiculo_dialog.dart';
 import 'widgets/gestionar_vehiculo_dialog.dart';
+import 'widgets/registrar_kilometraje_vehiculo_dialog.dart';
+import 'widgets/retirar_asignacion_vehiculo_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 
-/// Expediente de un Vehículo (Etapa 8A) — una sola pantalla desplazable
+/// Expediente de un Vehículo (Etapa 8B) — una sola pantalla desplazable
 /// con secciones, sin pestañas internas (mismo criterio que
-/// `ArticuloExpedienteScreen`/`EmpleadoExpedienteScreen`). Asignación
-/// actual/Kilometraje/Documentos/Mantenimiento/Historial llegan en
-/// etapas futuras (8B-8E).
+/// `ArticuloExpedienteScreen`/`EmpleadoExpedienteScreen`). Documentos/
+/// Mantenimiento/Historial de costos llegan en etapas futuras (8C-8E).
 class VehiculoExpedienteScreen extends ConsumerStatefulWidget {
   const VehiculoExpedienteScreen({required this.vehiculoId, super.key});
 
@@ -34,6 +38,12 @@ class VehiculoExpedienteScreen extends ConsumerStatefulWidget {
 
 class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScreen> {
   VehiculoData? _vehiculo;
+  AsignacionVehiculoData? _asignacionVigente;
+  List<AsignacionVehiculoData> _historialAsignaciones = const [];
+  Map<String, String> _empleadosPorId = const {};
+  Map<String, String> _serviciosPorId = const {};
+  VehiculoKilometrajeData? _kilometrajeActual;
+  List<VehiculoKilometrajeData> _historialKilometraje = const [];
   bool _cargando = true;
   bool _procesando = false;
 
@@ -46,11 +56,53 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
   Future<void> _cargar() async {
     setState(() => _cargando = true);
     final vehiculo = await ref.read(vehiculosControllerProvider.notifier).obtenerVehiculo(widget.vehiculoId);
+
+    final asignacionRepo = ref.read(asignacionVehiculoRepositoryProvider);
+    final kilometrajeRepo = ref.read(vehiculoKilometrajeRepositoryProvider);
+    final opciones = ref.read(obtenerOpcionesAsignacionVehiculoUseCaseProvider);
+
+    final asignacionVigente = await asignacionRepo.obtenerActivaPorVehiculo(widget.vehiculoId);
+    final historialAsignaciones = await asignacionRepo.listarPorVehiculo(widget.vehiculoId);
+    final empleados = await opciones.obtenerEmpleados();
+    final servicios = await opciones.obtenerServicios();
+    final kilometrajeActual = await kilometrajeRepo.obtenerActual(widget.vehiculoId);
+    final historialKilometraje = await kilometrajeRepo.listarPorVehiculo(widget.vehiculoId);
+
     if (!mounted) return;
     setState(() {
       _vehiculo = vehiculo;
+      _asignacionVigente = asignacionVigente;
+      _historialAsignaciones = historialAsignaciones;
+      _empleadosPorId = {for (final e in empleados) e.id: e.nombre};
+      _serviciosPorId = {for (final s in servicios) s.id: s.nombre};
+      _kilometrajeActual = kilometrajeActual;
+      _historialKilometraje = historialKilometraje;
       _cargando = false;
     });
+  }
+
+  String _destino(AsignacionVehiculoData asignacion) {
+    return destinoAsignacionVehiculoLabel(asignacion, empleadosPorId: _empleadosPorId, serviciosPorId: _serviciosPorId);
+  }
+
+  Future<void> _asignar() async {
+    final asignado = await mostrarDialogoAsignarVehiculo(context, ref, widget.vehiculoId);
+    if (asignado) await _cargar();
+  }
+
+  Future<void> _cambiarAsignacion() async {
+    final cambiado = await mostrarDialogoCambiarAsignacionVehiculo(context, ref, _asignacionVigente!);
+    if (cambiado) await _cargar();
+  }
+
+  Future<void> _retirarAsignacion() async {
+    final retirado = await mostrarDialogoRetirarAsignacionVehiculo(context, ref, _asignacionVigente!);
+    if (retirado) await _cargar();
+  }
+
+  Future<void> _registrarKilometraje() async {
+    final registrado = await mostrarDialogoRegistrarKilometrajeVehiculo(context, ref, widget.vehiculoId);
+    if (registrado) await _cargar();
   }
 
   Future<void> _editar() async {
@@ -231,6 +283,142 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                         ),
                         _campo(l10n.vehiculoBajaCampoObservaciones, vehiculo.observacionesBaja ?? '—'),
                       ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RisegSectionHeader(
+                        title: l10n.vehiculoAsignacionSeccionTitulo,
+                        primaryAction: esBaja
+                            ? null
+                            : (_asignacionVigente == null
+                                ? RisegButton(
+                                    label: l10n.vehiculoBotonAsignar,
+                                    variant: RisegButtonVariant.secondary,
+                                    size: RisegButtonSize.compact,
+                                    onPressed: vehiculo.estatus == 'disponible' ? _asignar : null,
+                                  )
+                                : null),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (_asignacionVigente == null)
+                        Text(l10n.vehiculoAsignacionVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      else ...[
+                        _campo(l10n.vehiculoAsignacionDestino, _destino(_asignacionVigente!)),
+                        _campo(l10n.vehiculoAsignacionDesde, _formatoFecha.format(_asignacionVigente!.fechaInicio)),
+                        const SizedBox(height: AppSpacing.sm),
+                        Wrap(
+                          spacing: AppSpacing.xs,
+                          runSpacing: AppSpacing.xs,
+                          children: [
+                            RisegButton(
+                              label: l10n.vehiculoBotonCambiarAsignacion,
+                              variant: RisegButtonVariant.ghost,
+                              size: RisegButtonSize.compact,
+                              onPressed: _cambiarAsignacion,
+                            ),
+                            RisegButton(
+                              label: l10n.vehiculoBotonRetirarAsignacion,
+                              variant: RisegButtonVariant.ghost,
+                              size: RisegButtonSize.compact,
+                              onPressed: _retirarAsignacion,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RisegSectionHeader(
+                        title: l10n.vehiculoKilometrajeSeccionTitulo,
+                        primaryAction: esBaja
+                            ? null
+                            : RisegButton(
+                                label: l10n.vehiculoBotonRegistrarKilometraje,
+                                variant: RisegButtonVariant.secondary,
+                                size: RisegButtonSize.compact,
+                                onPressed: _registrarKilometraje,
+                              ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (_kilometrajeActual == null)
+                        Text(l10n.vehiculoKilometrajeVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      else
+                        Text(
+                          '${_kilometrajeActual!.kilometraje} km',
+                          style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.vehiculoHistorialAsignacionesTitulo, style: AppTypography.heading3),
+                      const SizedBox(height: AppSpacing.sm),
+                      RisegTableBase<AsignacionVehiculoData>(
+                        rows: _historialAsignaciones,
+                        emptyState: RisegEmptyState(title: l10n.vehiculoHistorialAsignacionesVacio, message: ''),
+                        columns: [
+                          RisegColumn<AsignacionVehiculoData>(
+                            label: l10n.vehiculoColumnaDestino,
+                            cellBuilder: (a) => Text(_destino(a)),
+                          ),
+                          RisegColumn<AsignacionVehiculoData>(
+                            label: l10n.vehiculoColumnaFechaInicio,
+                            width: 110,
+                            cellBuilder: (a) => Text(_formatoFecha.format(a.fechaInicio)),
+                          ),
+                          RisegColumn<AsignacionVehiculoData>(
+                            label: l10n.vehiculoColumnaFechaTermino,
+                            width: 110,
+                            cellBuilder: (a) => Text(a.fechaTermino == null ? '—' : _formatoFecha.format(a.fechaTermino!)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.vehiculoHistorialKilometrajeTitulo, style: AppTypography.heading3),
+                      const SizedBox(height: AppSpacing.sm),
+                      RisegTableBase<VehiculoKilometrajeData>(
+                        rows: _historialKilometraje,
+                        emptyState: RisegEmptyState(title: l10n.vehiculoKilometrajeVacio, message: ''),
+                        columns: [
+                          RisegColumn<VehiculoKilometrajeData>(
+                            label: l10n.vehiculoColumnaFecha,
+                            width: 110,
+                            cellBuilder: (k) => Text(_formatoFecha.format(k.fecha)),
+                          ),
+                          RisegColumn<VehiculoKilometrajeData>(
+                            label: l10n.vehiculoColumnaKilometraje,
+                            width: 110,
+                            alignment: TextAlign.right,
+                            cellBuilder: (k) => Text('${k.kilometraje} km'),
+                          ),
+                          RisegColumn<VehiculoKilometrajeData>(
+                            label: l10n.vehiculoColumnaOrigen,
+                            width: 140,
+                            cellBuilder: (k) => Text(origenKilometrajeLabel(l10n, k.origen)),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

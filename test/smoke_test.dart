@@ -24,7 +24,7 @@ import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
 /// Sobrescribe [appDatabaseProvider] con una base en memoria — desde que
 /// `/organizacion` abre `EmpresaExpedienteScreen` (Etapa 4B), el Shell ya
 /// depende de la base de datos incluso en estas pruebas de navegación.
-Future<void> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 900)}) async {
+Future<AppDatabase> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 900)}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
@@ -43,6 +43,7 @@ Future<void> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 900)}) 
     ),
   );
   await tester.pumpAndSettle();
+  return db;
 }
 
 void main() {
@@ -340,6 +341,84 @@ void main() {
 
       expect(find.byKey(const Key('vehiculos_boton_nuevo_vehiculo')), findsNothing);
       expect(find.text(l10n.vehiculoExpedienteSeccionDatosGenerales), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Vehículos permite asignar a un Empleado y retirar la asignación (Etapa 8B)',
+    (tester) async {
+      final db = await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      final empleado = await db.into(db.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Ricardo',
+              apellidoPaterno: 'Gómez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'GORR900101HDFXXX01',
+              rfc: 'GORR900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+
+      await tester.tap(find.byKey(const Key('nav_item_vehiculos')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('vehiculos_boton_nuevo_vehiculo')));
+      await tester.pumpAndSettle();
+      final campos = find.byType(TextFormField);
+      await tester.enterText(campos.at(0), 'BMW');
+      await tester.enterText(campos.at(1), '320i');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.vehiculoBotonGuardar));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('VEH-000001'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.vehiculoAsignacionVacio), findsOneWidget);
+
+      await tester.tap(find.text(l10n.vehiculoBotonAsignar));
+      await tester.pumpAndSettle();
+      // El destino por defecto ya es "Empleado" — solo hace falta
+      // elegir cuál en el segundo selector.
+      final selectorEmpleado = find.byType(DropdownButtonFormField<String?>).last;
+      await tester.tap(selectorEmpleado);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ricardo Gómez').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.vehiculoAsignarBotonConfirmar));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.estatusVehiculoAsignado), findsWidgets);
+      expect(find.text('Ricardo Gómez'), findsWidgets);
+      expect(find.text(l10n.vehiculoBotonRetirarAsignacion), findsOneWidget);
+
+      await tester.ensureVisible(find.text(l10n.vehiculoBotonRetirarAsignacion));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.vehiculoBotonRetirarAsignacion));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.vehiculoRetirarAsignacionBotonConfirmar));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.vehiculoAsignacionVacio), findsOneWidget);
+      expect(find.text(l10n.estatusVehiculoDisponible), findsWidgets);
+
+      // Consulta de solo lectura desde el Empleado (punto 5).
+      await tester.tap(find.byKey(const Key('nav_item_personal')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ricardo Gómez'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.vehiculoAsignadoSeccionTitulo), findsOneWidget);
+      expect(find.text(l10n.vehiculoAsignadoVacio), findsOneWidget);
+
+      // Confirma que el Empleado creado directo en BD sí aparece en el
+      // listado (sanity check del setup de la prueba).
+      expect(empleado.id, isNotEmpty);
     },
   );
 }

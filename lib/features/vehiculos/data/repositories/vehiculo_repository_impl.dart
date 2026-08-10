@@ -3,12 +3,19 @@ import 'package:uuid/uuid.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../../domain/repositories/asignacion_vehiculo_repository.dart';
 import '../../domain/repositories/vehiculo_repository.dart';
 
 class VehiculoRepositoryImpl implements VehiculoRepository {
-  VehiculoRepositoryImpl(this._db);
+  VehiculoRepositoryImpl(this._db, this._asignacionVehiculoRepository);
 
   final AppDatabase _db;
+
+  /// Repositorio compone repositorio (Etapa 8B) — mismo criterio que
+  /// `EmpleadoRepositoryImpl` con `AsignacionServicioRepository` (5D):
+  /// `darDeBaja` necesita cerrar la asignación vigente del Vehículo (si
+  /// existe) en la misma transacción que la baja misma.
+  final AsignacionVehiculoRepository _asignacionVehiculoRepository;
 
   @override
   Future<VehiculoData?> obtenerPorId(String id) {
@@ -136,6 +143,7 @@ class VehiculoRepositoryImpl implements VehiculoRepository {
     String? observacionesBaja,
   }) {
     return _db.transaction(() async {
+      await _asignacionVehiculoRepository.cerrarPorBajaVehiculo(vehiculoId: vehiculoId, fecha: fechaBaja);
       await (_db.update(_db.vehiculo)..where((t) => t.id.equals(vehiculoId))).write(
         VehiculoCompanion(
           estatus: const Value('baja'),
