@@ -7,12 +7,13 @@ import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
 import 'data/repositories/asignacion_linea_telefonica_repository_impl.dart';
 import 'data/repositories/linea_telefonica_equipo_repository_impl.dart';
-import 'data/repositories/linea_telefonica_plan_repository_impl.dart';
 import 'data/repositories/linea_telefonica_repository_impl.dart';
+import 'data/repositories/recarga_linea_telefonica_repository_impl.dart';
 import 'domain/repositories/asignacion_linea_telefonica_repository.dart';
 import 'domain/repositories/linea_telefonica_equipo_repository.dart';
-import 'domain/repositories/linea_telefonica_plan_repository.dart';
 import 'domain/repositories/linea_telefonica_repository.dart';
+import 'domain/repositories/recarga_linea_telefonica_repository.dart';
+import 'domain/usecases/adjuntar_comprobante_recarga_linea_telefonica_usecase.dart';
 import 'domain/usecases/asignar_linea_telefonica_usecase.dart';
 import 'domain/usecases/asociar_equipo_linea_telefonica_usecase.dart';
 import 'domain/usecases/cambiar_asignacion_linea_telefonica_usecase.dart';
@@ -23,7 +24,7 @@ import 'domain/usecases/crear_linea_telefonica_usecase.dart';
 import 'domain/usecases/dar_de_baja_linea_telefonica_usecase.dart';
 import 'domain/usecases/obtener_equipos_disponibles_linea_telefonica_usecase.dart';
 import 'domain/usecases/obtener_opciones_asignacion_linea_telefonica_usecase.dart';
-import 'domain/usecases/registrar_plan_linea_telefonica_usecase.dart';
+import 'domain/usecases/registrar_recarga_linea_telefonica_usecase.dart';
 import 'domain/usecases/retirar_asignacion_linea_telefonica_usecase.dart';
 import 'domain/usecases/retirar_equipo_linea_telefonica_usecase.dart';
 
@@ -76,14 +77,23 @@ final darDeBajaLineaTelefonicaUseCaseProvider = Provider<DarDeBajaLineaTelefonic
   return DarDeBajaLineaTelefonicaUseCase(ref.watch(lineaTelefonicaRepositoryProvider));
 });
 
-final lineaTelefonicaPlanRepositoryProvider = Provider<LineaTelefonicaPlanRepository>((ref) {
-  return LineaTelefonicaPlanRepositoryImpl(ref.watch(appDatabaseProvider));
+/// Recargas (Etapa 9C) — operación prepago, sin planes/contratos.
+final recargaLineaTelefonicaRepositoryProvider = Provider<RecargaLineaTelefonicaRepository>((ref) {
+  return RecargaLineaTelefonicaRepositoryImpl(ref.watch(appDatabaseProvider));
 });
 
-final registrarPlanLineaTelefonicaUseCaseProvider = Provider<RegistrarPlanLineaTelefonicaUseCase>((ref) {
-  return RegistrarPlanLineaTelefonicaUseCase(
-    ref.watch(lineaTelefonicaPlanRepositoryProvider),
+final registrarRecargaLineaTelefonicaUseCaseProvider = Provider<RegistrarRecargaLineaTelefonicaUseCase>((ref) {
+  return RegistrarRecargaLineaTelefonicaUseCase(
+    ref.watch(recargaLineaTelefonicaRepositoryProvider),
     ref.watch(lineaTelefonicaRepositoryProvider),
+  );
+});
+
+final adjuntarComprobanteRecargaLineaTelefonicaUseCaseProvider =
+    Provider<AdjuntarComprobanteRecargaLineaTelefonicaUseCase>((ref) {
+  return AdjuntarComprobanteRecargaLineaTelefonicaUseCase(
+    ref.watch(recargaLineaTelefonicaRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
   );
 });
 

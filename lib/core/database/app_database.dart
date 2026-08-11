@@ -56,8 +56,8 @@ import '../../features/inventario/data/tables/movimiento_inventario_attachment_t
 import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
 import '../../features/telefonia/data/tables/asignacion_linea_telefonica_table.dart';
 import '../../features/telefonia/data/tables/linea_telefonica_equipo_table.dart';
-import '../../features/telefonia/data/tables/linea_telefonica_plan_table.dart';
 import '../../features/telefonia/data/tables/linea_telefonica_table.dart';
+import '../../features/telefonia/data/tables/recarga_linea_telefonica_table.dart';
 import '../../features/vehiculos/data/tables/asignacion_vehiculo_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_documento_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_kilometraje_table.dart';
@@ -67,6 +67,7 @@ import 'migrations/migrar_asignacion_attachment_v29.dart';
 import 'migrations/migrar_asignacion_linea_telefonica_v35.dart';
 import 'migrations/migrar_asignacion_vehiculo_v31.dart';
 import 'migrations/migrar_linea_telefonica_v34.dart';
+import 'migrations/migrar_recarga_linea_telefonica_v36.dart';
 import 'migrations/migrar_vehiculo_v30.dart';
 import 'migrations/migrar_asignacion_servicio_v21.dart';
 import 'migrations/migrar_asignacion_v28.dart';
@@ -205,15 +206,16 @@ class AppMetadata extends Table {
   VehiculoMantenimiento,
   VehiculoMantenimientoAttachment,
   LineaTelefonica,
-  LineaTelefonicaPlan,
   AsignacionLineaTelefonica,
   LineaTelefonicaEquipo,
+  RecargaLineaTelefonica,
+  RecargaLineaTelefonicaAttachment,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 35;
+  int get schemaVersion => 36;
 
   @override
   MigrationStrategy get migration {
@@ -722,11 +724,12 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(vehiculoMantenimientoAttachment);
         }
         // Aditiva (Etapa 9A): funda el dominio Telefonía —
-        // `LineaTelefonica`/`LineaTelefonicaPlan` + índice único parcial
-        // de `LineaTelefonica.numero` (`migrarLineaTelefonicaV34`,
-        // mismo criterio que `migrarVehiculoV30`). Tablas enteramente
-        // nuevas, así que `from <= 33` es seguro sin acotar un origen
-        // exacto.
+        // `LineaTelefonica`/`LineaTelefonicaPlan` (`LineaTelefonicaPlan`
+        // retirada en la Etapa 9C, ver `migrarRecargaLineaTelefonicaV36`)
+        // + índice único parcial de `LineaTelefonica.numero`
+        // (`migrarLineaTelefonicaV34`, mismo criterio que
+        // `migrarVehiculoV30`). Tablas enteramente nuevas, así que
+        // `from <= 33` es seguro sin acotar un origen exacto.
         if (to >= 34 && from <= 33) {
           await migrarLineaTelefonicaV34(this, m);
         }
@@ -736,6 +739,15 @@ class AppDatabase extends _$AppDatabase {
         // `from <= 34` es seguro sin acotar un origen exacto.
         if (to >= 35 && from <= 34) {
           await migrarAsignacionLineaTelefonicaV35(this, m);
+        }
+        // Etapa 9C: confirma que la operación real de Telefonía es
+        // prepago — retira `LineaTelefonicaPlan` (9A, sin uso funcional
+        // real) y funda `RecargaLineaTelefonica`/
+        // `RecargaLineaTelefonicaAttachment`. Tablas nuevas enteramente
+        // aditivas, así que `from <= 35` es seguro sin acotar un origen
+        // exacto.
+        if (to >= 36 && from <= 35) {
+          await migrarRecargaLineaTelefonicaV36(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

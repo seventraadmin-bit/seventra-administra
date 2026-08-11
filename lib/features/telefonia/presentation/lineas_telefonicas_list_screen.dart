@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
@@ -76,27 +77,27 @@ class _LineasTable extends ConsumerStatefulWidget {
 }
 
 class _LineasTableState extends ConsumerState<_LineasTable> {
-  Map<String, LineaTelefonicaPlanData> _planVigentePorLinea = const {};
-  bool _cargandoPlanes = true;
+  Map<String, RecargaLineaTelefonicaData> _ultimaRecargaPorLinea = const {};
+  bool _cargandoRecargas = true;
 
   @override
   void initState() {
     super.initState();
-    _cargarPlanes();
+    _cargarUltimasRecargas();
   }
 
   @override
   void didUpdateWidget(covariant _LineasTable oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.state.lineas != widget.state.lineas) _cargarPlanes();
+    if (oldWidget.state.lineas != widget.state.lineas) _cargarUltimasRecargas();
   }
 
-  Future<void> _cargarPlanes() async {
-    final planes = await ref.read(lineaTelefonicaPlanRepositoryProvider).listarVigentes();
+  Future<void> _cargarUltimasRecargas() async {
+    final recargas = await ref.read(recargaLineaTelefonicaRepositoryProvider).obtenerUltimasPorTodasLasLineas();
     if (!mounted) return;
     setState(() {
-      _planVigentePorLinea = {for (final p in planes) p.lineaTelefonicaId: p};
-      _cargandoPlanes = false;
+      _ultimaRecargaPorLinea = recargas;
+      _cargandoRecargas = false;
     });
   }
 
@@ -105,7 +106,7 @@ class _LineasTableState extends ConsumerState<_LineasTable> {
     final l10n = AppLocalizations.of(context)!;
 
     return RisegTableBase<LineaTelefonicaData>(
-      loading: widget.state.cargando || _cargandoPlanes,
+      loading: widget.state.cargando || _cargandoRecargas,
       rows: widget.state.lineas,
       onRowTap: (l) => context.go('/telefonia/${l.id}'),
       emptyState: RisegEmptyState(
@@ -129,16 +130,12 @@ class _LineasTableState extends ConsumerState<_LineasTable> {
           cellBuilder: (l) => Text(operadorLineaTelefonicaLabel(l10n, l)),
         ),
         RisegColumn<LineaTelefonicaData>(
-          label: l10n.telefoniaColumnaPlan,
-          cellBuilder: (l) => Text(_planVigentePorLinea[l.id]?.nombre ?? '—'),
-        ),
-        RisegColumn<LineaTelefonicaData>(
-          label: l10n.telefoniaColumnaCostoMensual,
-          width: 120,
-          alignment: TextAlign.right,
+          label: l10n.telefoniaColumnaUltimaRecarga,
+          width: 160,
           cellBuilder: (l) {
-            final costo = _planVigentePorLinea[l.id]?.costoMensual;
-            return Text(costo == null ? '—' : formatoCosto(costo));
+            final ultima = _ultimaRecargaPorLinea[l.id];
+            if (ultima == null) return const Text('—');
+            return Text('${DateFormat('dd/MM/yyyy').format(ultima.fecha)} — ${formatoCosto(ultima.importe)}');
           },
         ),
         RisegColumn<LineaTelefonicaData>(

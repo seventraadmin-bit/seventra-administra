@@ -8,29 +8,28 @@ import 'package:riseg_one/features/inventario/data/repositories/asignacion_repos
 import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/asignacion_linea_telefonica_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_equipo_repository_impl.dart';
-import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_plan_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/tables/linea_telefonica_table.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/cambiar_estatus_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/corregir_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/crear_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/dar_de_baja_linea_telefonica_usecase.dart';
-import 'package:riseg_one/features/telefonia/domain/usecases/registrar_plan_linea_telefonica_usecase.dart';
 
 /// Cubre la fundación del dominio Telefonía (Etapa 9A) — alta,
 /// unicidad condicional del número, `operador == otro`, corrección,
-/// cambios de estatus manuales, baja terminal y plan/costo (variante
-/// simplificada de vigencia). Asignación/equipo/documentos llegan en
-/// etapas futuras (9B/9C).
+/// cambios de estatus manuales y baja terminal. Asignación/equipo
+/// llegan en la Etapa 9B; recargas en la 9C (`LineaTelefonicaPlan`,
+/// creada originalmente aquí bajo la suposición de planes/contratos,
+/// fue retirada por completo en 9C al confirmarse que la operación
+/// real es prepago — ver `asignacion_equipo_linea_telefonica_test.dart`
+/// y `recarga_linea_telefonica_test.dart`).
 void main() {
   late AppDatabase db;
   late LineaTelefonicaRepositoryImpl lineaRepo;
-  late LineaTelefonicaPlanRepositoryImpl planRepo;
   late CrearLineaTelefonicaUseCase crearLinea;
   late CorregirLineaTelefonicaUseCase corregirLinea;
   late CambiarEstatusLineaTelefonicaUseCase cambiarEstatus;
   late DarDeBajaLineaTelefonicaUseCase darDeBaja;
-  late RegistrarPlanLineaTelefonicaUseCase registrarPlan;
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
@@ -42,14 +41,12 @@ void main() {
       InventarioRepositoryImpl(db),
     );
     lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoRepo);
-    planRepo = LineaTelefonicaPlanRepositoryImpl(db);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
     crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, generarCodigo);
     corregirLinea = CorregirLineaTelefonicaUseCase(lineaRepo);
     cambiarEstatus = CambiarEstatusLineaTelefonicaUseCase(lineaRepo);
     darDeBaja = DarDeBajaLineaTelefonicaUseCase(lineaRepo);
-    registrarPlan = RegistrarPlanLineaTelefonicaUseCase(planRepo, lineaRepo);
   });
 
   tearDown(() => db.close());
@@ -187,95 +184,4 @@ void main() {
     });
   });
 
-  group('RegistrarPlanLineaTelefonicaUseCase', () {
-    test('registra el primer plan de una línea', () async {
-      final linea = await crearLineaDePrueba();
-
-      final resultado = await registrarPlan.ejecutar(
-        lineaTelefonicaId: linea.id,
-        nombre: 'Plan Amigo 399',
-        costoMensual: 39900,
-        fechaInicioVigencia: DateTime(2026, 1, 1),
-      );
-      expect(resultado, isA<RegistrarPlanLineaTelefonicaExitoso>());
-
-      final vigente = await planRepo.obtenerVigentePorLinea(linea.id);
-      expect(vigente!.costoMensual, 39900);
-      expect(vigente.fechaFinVigencia, isNull);
-    });
-
-    test('cambiar plan cierra el anterior y abre uno nuevo, histórico intacto', () async {
-      final linea = await crearLineaDePrueba();
-      await registrarPlan.ejecutar(
-        lineaTelefonicaId: linea.id,
-        nombre: 'Plan 399',
-        costoMensual: 39900,
-        fechaInicioVigencia: DateTime(2026, 1, 1),
-      );
-
-      await registrarPlan.ejecutar(
-        lineaTelefonicaId: linea.id,
-        nombre: 'Plan 449',
-        costoMensual: 44900,
-        fechaInicioVigencia: DateTime(2026, 7, 1),
-      );
-
-      final historial = await planRepo.listarPorLinea(linea.id);
-      expect(historial, hasLength(2), reason: 'la renovación es una fila nueva, la anterior no se toca');
-
-      final anterior = historial.singleWhere((p) => p.nombre == 'Plan 399');
-      expect(anterior.fechaFinVigencia, DateTime(2026, 6, 30), reason: 'se cierra el día anterior al nuevo inicio');
-      expect(anterior.costoMensual, 39900, reason: 'el histórico nunca se edita');
-
-      final vigente = await planRepo.obtenerVigentePorLinea(linea.id);
-      expect(vigente!.nombre, 'Plan 449');
-    });
-
-    test('rechaza nombre vacío', () async {
-      final linea = await crearLineaDePrueba();
-      final resultado = await registrarPlan.ejecutar(
-        lineaTelefonicaId: linea.id,
-        nombre: '   ',
-        costoMensual: 39900,
-        fechaInicioVigencia: DateTime(2026, 1, 1),
-      );
-      expect(resultado, isA<RegistrarPlanLineaTelefonicaNombreRequerido>());
-    });
-
-    test('rechaza costo mensual negativo', () async {
-      final linea = await crearLineaDePrueba();
-      final resultado = await registrarPlan.ejecutar(
-        lineaTelefonicaId: linea.id,
-        nombre: 'Plan',
-        costoMensual: -1,
-        fechaInicioVigencia: DateTime(2026, 1, 1),
-      );
-      expect(resultado, isA<RegistrarPlanLineaTelefonicaCostoInvalido>());
-    });
-
-    test('rechaza fecha de fin de permanencia anterior al inicio de vigencia', () async {
-      final linea = await crearLineaDePrueba();
-      final resultado = await registrarPlan.ejecutar(
-        lineaTelefonicaId: linea.id,
-        nombre: 'Plan',
-        costoMensual: 39900,
-        fechaInicioVigencia: DateTime(2026, 6, 1),
-        fechaFinPermanencia: DateTime(2026, 1, 1),
-      );
-      expect(resultado, isA<RegistrarPlanLineaTelefonicaPermanenciaInvalida>());
-    });
-
-    test('rechaza registrar plan para una línea dada de baja', () async {
-      final linea = await crearLineaDePrueba();
-      await darDeBaja.ejecutar(lineaTelefonicaId: linea.id, fechaBaja: DateTime(2026, 1, 1), motivoBaja: MotivoBajaLineaTelefonica.cancelacion);
-
-      final resultado = await registrarPlan.ejecutar(
-        lineaTelefonicaId: linea.id,
-        nombre: 'Plan',
-        costoMensual: 39900,
-        fechaInicioVigencia: DateTime(2026, 2, 1),
-      );
-      expect(resultado, isA<RegistrarPlanLineaTelefonicaLineaDeBaja>());
-    });
-  });
 }

@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 35;
+const _currentSchemaVersion = 36;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -7809,8 +7809,6 @@ void main() {
 
       final lineas = await db.select(db.lineaTelefonica).get();
       expect(lineas, isEmpty, reason: 'LineaTelefonica es tabla nueva en 9A, sin backfill');
-      final planes = await db.select(db.lineaTelefonicaPlan).get();
-      expect(planes, isEmpty);
 
       final codigoLinea = await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('linea_telefonica')))
           .getSingleOrNull();
@@ -7829,8 +7827,8 @@ void main() {
   );
 
   test(
-    'CHECK de LineaTelefonica/LineaTelefonicaPlan tras la migración: fecha_baja consistente con estatus, '
-    'número único solo cuando se captura, costo_mensual >= 0, fechas de vigencia/permanencia coherentes',
+    'CHECK de LineaTelefonica tras la migración: fecha_baja consistente con estatus, '
+    'número único solo cuando se captura',
     () async {
       final schemaV1 = await verifier.schemaAt(1);
       final db = AppDatabase(schemaV1.newConnection());
@@ -7849,7 +7847,7 @@ void main() {
         reason: 'fecha_baja poblada exige estatus = baja',
       );
 
-      final linea1 = await db.into(db.lineaTelefonica).insertReturning(
+      await db.into(db.lineaTelefonica).insertReturning(
             baseLinea.copyWith(numero: const Value('7221234567')),
           );
 
@@ -7864,34 +7862,6 @@ void main() {
         throwsA(anything),
         reason: 'idx_linea_telefonica_numero_unico rechaza número duplicado',
       );
-
-      final basePlan = LineaTelefonicaPlanCompanion.insert(
-        lineaTelefonicaId: linea1.id,
-        nombre: 'Plan 399',
-        costoMensual: 39900,
-        fechaInicioVigencia: DateTime(2026, 1, 1),
-      );
-
-      await expectLater(
-        db.into(db.lineaTelefonicaPlan).insert(basePlan.copyWith(costoMensual: const Value(-1))),
-        throwsA(anything),
-        reason: 'costo_mensual negativo debe rechazarse',
-      );
-      await expectLater(
-        db.into(db.lineaTelefonicaPlan).insert(basePlan.copyWith(fechaFinVigencia: Value(DateTime(2025, 12, 1)))),
-        throwsA(anything),
-        reason: 'fecha_fin_vigencia no puede ser anterior a fecha_inicio_vigencia',
-      );
-      await expectLater(
-        db.into(db.lineaTelefonicaPlan).insert(basePlan.copyWith(fechaFinPermanencia: Value(DateTime(2025, 12, 1)))),
-        throwsA(anything),
-        reason: 'fecha_fin_permanencia no puede ser anterior a fecha_inicio_vigencia',
-      );
-
-      final plan = await db.into(db.lineaTelefonicaPlan).insertReturning(
-            basePlan.copyWith(fechaFinPermanencia: Value(DateTime(2027, 1, 1))),
-          );
-      expect(plan.costoMensual, 39900);
 
       await db.close();
     },
@@ -8099,6 +8069,122 @@ void main() {
 
       final equipo = await db.into(db.lineaTelefonicaEquipo).insertReturning(baseEquipo);
       expect(equipo.unidadId, unidad.id);
+
+      await db.close();
+    },
+  );
+
+  test(
+    '36.json coincide con el esquema final de la Etapa 9C (retira LineaTelefonicaPlan, tablas nuevas '
+    'RecargaLineaTelefonica/RecargaLineaTelefonicaAttachment) — Telefonía confirmada como operación prepago',
+    () async {
+      final schema = await verifier.schemaAt(36);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['recarga_linea_telefonica', 'recarga_linea_telefonica_attachment']));
+      expect(tablas, isNot(contains('linea_telefonica_plan')), reason: 'retirada por completo en 9C — operación prepago, sin planes');
+
+      final sqlRecarga =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'recarga_linea_telefonica'")
+                  .single['sql']
+              as String;
+      expect(sqlRecarga, contains('CHECK (importe > 0)'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 35 → 36 retira LineaTelefonicaPlan (incluso con filas reales) y crea las tablas de Recarga vacías, '
+    'conservando la LineaTelefonica real',
+    () async {
+      final schemaV35 = await verifier.schemaAt(35);
+      final raw = schemaV35.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO linea_telefonica (
+        id, codigo, numero, operador, modalidad_sim, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'linea-real', 'TEL-000001', '7221234567', 'telcel', 'fisica', 'activa', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      // Fila real en LineaTelefonicaPlan (Etapa 9A, antes de confirmarse
+      // que la operación es prepago) — debe perderse limpiamente al
+      // eliminar la tabla, sin romper la migración.
+      raw.execute('''
+      INSERT INTO linea_telefonica_plan (
+        id, linea_telefonica_id, nombre, costo_mensual, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'plan-real', 'linea-real', 'Plan 399', 39900, 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV35.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final lineas = await db.select(db.lineaTelefonica).get();
+      expect(lineas, hasLength(1), reason: 'ninguna LineaTelefonica real debe perderse al retirar LineaTelefonicaPlan');
+      expect(lineas.single.numero, '7221234567');
+
+      final tablasRestantes = await db
+          .customSelect("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica_plan'")
+          .get();
+      expect(tablasRestantes, isEmpty, reason: 'linea_telefonica_plan debe desaparecer por completo, con o sin filas reales');
+
+      final recargas = await db.select(db.recargaLineaTelefonica).get();
+      expect(recargas, isEmpty, reason: 'RecargaLineaTelefonica es tabla nueva en 9C, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de RecargaLineaTelefonica tras la migración: importe siempre > 0',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final linea = await db.into(db.lineaTelefonica).insertReturning(
+            LineaTelefonicaCompanion.insert(codigo: 'TEL-000001', operador: 'telcel', modalidadSim: 'fisica'),
+          );
+      final baseRecarga = RecargaLineaTelefonicaCompanion.insert(
+        lineaTelefonicaId: linea.id,
+        fecha: DateTime(2026, 8, 5),
+        importe: 20000,
+      );
+
+      await expectLater(
+        db.into(db.recargaLineaTelefonica).insert(baseRecarga.copyWith(importe: const Value(0))),
+        throwsA(anything),
+        reason: 'importe = 0 debe rechazarse',
+      );
+      await expectLater(
+        db.into(db.recargaLineaTelefonica).insert(baseRecarga.copyWith(importe: const Value(-100))),
+        throwsA(anything),
+        reason: 'importe negativo debe rechazarse',
+      );
+
+      final recarga = await db.into(db.recargaLineaTelefonica).insertReturning(baseRecarga);
+      expect(recarga.importe, 20000);
 
       await db.close();
     },

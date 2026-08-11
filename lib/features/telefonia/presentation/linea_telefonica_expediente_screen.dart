@@ -21,7 +21,7 @@ import 'widgets/cambiar_asignacion_linea_telefonica_dialog.dart';
 import 'widgets/cambiar_equipo_linea_telefonica_dialog.dart';
 import 'widgets/dar_de_baja_linea_telefonica_dialog.dart';
 import 'widgets/gestionar_linea_telefonica_dialog.dart';
-import 'widgets/registrar_plan_linea_telefonica_dialog.dart';
+import 'widgets/registrar_recarga_linea_telefonica_dialog.dart';
 import 'widgets/retirar_asignacion_linea_telefonica_dialog.dart';
 import 'widgets/retirar_equipo_linea_telefonica_dialog.dart';
 
@@ -41,8 +41,9 @@ class LineaTelefonicaExpedienteScreen extends ConsumerStatefulWidget {
 
 class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonicaExpedienteScreen> {
   LineaTelefonicaData? _linea;
-  LineaTelefonicaPlanData? _planVigente;
-  List<LineaTelefonicaPlanData> _historialPlanes = const [];
+  RecargaLineaTelefonicaData? _ultimaRecarga;
+  int _totalRecargas = 0;
+  List<RecargaLineaTelefonicaData> _historialRecargas = const [];
   AsignacionLineaTelefonicaData? _asignacionVigente;
   List<AsignacionLineaTelefonicaData> _historialAsignaciones = const [];
   Map<String, String> _empleadosPorId = const {};
@@ -64,9 +65,10 @@ class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonic
     setState(() => _cargando = true);
     final linea = await ref.read(telefoniaControllerProvider.notifier).obtenerLinea(widget.lineaTelefonicaId);
 
-    final planRepo = ref.read(lineaTelefonicaPlanRepositoryProvider);
-    final planVigente = await planRepo.obtenerVigentePorLinea(widget.lineaTelefonicaId);
-    final historialPlanes = await planRepo.listarPorLinea(widget.lineaTelefonicaId);
+    final recargaRepo = ref.read(recargaLineaTelefonicaRepositoryProvider);
+    final historialRecargas = await recargaRepo.listarPorLinea(widget.lineaTelefonicaId);
+    final ultimaRecarga = historialRecargas.isEmpty ? null : historialRecargas.first;
+    final totalRecargas = await recargaRepo.totalPorLinea(widget.lineaTelefonicaId);
 
     final asignacionRepo = ref.read(asignacionLineaTelefonicaRepositoryProvider);
     final asignacionVigente = await asignacionRepo.obtenerActivaPorLinea(widget.lineaTelefonicaId);
@@ -90,8 +92,9 @@ class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonic
     if (!mounted) return;
     setState(() {
       _linea = linea;
-      _planVigente = planVigente;
-      _historialPlanes = historialPlanes;
+      _ultimaRecarga = ultimaRecarga;
+      _totalRecargas = totalRecargas;
+      _historialRecargas = historialRecargas;
       _asignacionVigente = asignacionVigente;
       _historialAsignaciones = historialAsignaciones;
       _empleadosPorId = {for (final e in empleados) e.id: e.nombre};
@@ -139,9 +142,9 @@ class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonic
     if (dada) await _cargar();
   }
 
-  Future<void> _registrarPlan() async {
-    final registrado = await mostrarDialogoRegistrarPlanLineaTelefonica(context, ref, widget.lineaTelefonicaId);
-    if (registrado) await _cargar();
+  Future<void> _registrarRecarga() async {
+    final registrada = await mostrarDialogoRegistrarRecargaLineaTelefonica(context, ref, widget.lineaTelefonicaId);
+    if (registrada) await _cargar();
   }
 
   Future<void> _asignar() async {
@@ -296,31 +299,25 @@ class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonic
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       RisegSectionHeader(
-                        title: l10n.lineaTelefonicaPlanSeccionTitulo,
+                        title: l10n.lineaTelefonicaRecargaSeccionTitulo,
                         primaryAction: esBaja
                             ? null
                             : RisegButton(
-                                label: l10n.lineaTelefonicaBotonRegistrarPlan,
+                                label: l10n.lineaTelefonicaBotonRegistrarRecarga,
                                 variant: RisegButtonVariant.secondary,
                                 size: RisegButtonSize.compact,
-                                onPressed: _registrarPlan,
+                                onPressed: _registrarRecarga,
                               ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
-                      if (_planVigente == null)
-                        Text(l10n.lineaTelefonicaPlanVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      if (_ultimaRecarga == null)
+                        Text(l10n.lineaTelefonicaRecargaVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
                       else ...[
-                        _campo(l10n.lineaTelefonicaPlanCampoNombre, _planVigente!.nombre),
-                        _campo(l10n.lineaTelefonicaPlanCampoCostoMensual, formatoCosto(_planVigente!.costoMensual)),
                         _campo(
-                          l10n.lineaTelefonicaPlanCampoFechaInicioVigencia,
-                          _formatoFecha.format(_planVigente!.fechaInicioVigencia),
+                          l10n.lineaTelefonicaRecargaCampoUltima,
+                          '${_formatoFecha.format(_ultimaRecarga!.fecha)} — ${formatoCosto(_ultimaRecarga!.importe)}',
                         ),
-                        if (_planVigente!.fechaFinPermanencia != null)
-                          _campo(
-                            l10n.lineaTelefonicaPlanCampoFechaFinPermanencia,
-                            _formatoFecha.format(_planVigente!.fechaFinPermanencia!),
-                          ),
+                        _campo(l10n.lineaTelefonicaRecargaCampoTotal, formatoCosto(_totalRecargas)),
                       ],
                     ],
                   ),
@@ -330,31 +327,26 @@ class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonic
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(l10n.lineaTelefonicaPlanHistorialTitulo, style: AppTypography.heading3),
+                      Text(l10n.lineaTelefonicaRecargaHistorialTitulo, style: AppTypography.heading3),
                       const SizedBox(height: AppSpacing.sm),
-                      RisegTableBase<LineaTelefonicaPlanData>(
-                        rows: _historialPlanes,
-                        emptyState: RisegEmptyState(title: l10n.lineaTelefonicaPlanHistorialVacio, message: ''),
+                      RisegTableBase<RecargaLineaTelefonicaData>(
+                        rows: _historialRecargas,
+                        emptyState: RisegEmptyState(title: l10n.lineaTelefonicaRecargaHistorialVacio, message: ''),
                         columns: [
-                          RisegColumn<LineaTelefonicaPlanData>(
-                            label: l10n.lineaTelefonicaPlanColumnaNombre,
-                            cellBuilder: (p) => Text(p.nombre),
+                          RisegColumn<RecargaLineaTelefonicaData>(
+                            label: l10n.lineaTelefonicaRecargaColumnaFecha,
+                            width: 110,
+                            cellBuilder: (r) => Text(_formatoFecha.format(r.fecha)),
                           ),
-                          RisegColumn<LineaTelefonicaPlanData>(
-                            label: l10n.lineaTelefonicaPlanColumnaCosto,
+                          RisegColumn<RecargaLineaTelefonicaData>(
+                            label: l10n.lineaTelefonicaRecargaColumnaImporte,
                             width: 110,
                             alignment: TextAlign.right,
-                            cellBuilder: (p) => Text(formatoCosto(p.costoMensual)),
+                            cellBuilder: (r) => Text(formatoCosto(r.importe)),
                           ),
-                          RisegColumn<LineaTelefonicaPlanData>(
-                            label: l10n.lineaTelefonicaPlanColumnaVigenciaDesde,
-                            width: 110,
-                            cellBuilder: (p) => Text(_formatoFecha.format(p.fechaInicioVigencia)),
-                          ),
-                          RisegColumn<LineaTelefonicaPlanData>(
-                            label: l10n.lineaTelefonicaPlanColumnaVigenciaHasta,
-                            width: 110,
-                            cellBuilder: (p) => Text(p.fechaFinVigencia == null ? '—' : _formatoFecha.format(p.fechaFinVigencia!)),
+                          RisegColumn<RecargaLineaTelefonicaData>(
+                            label: l10n.lineaTelefonicaRecargaColumnaObservaciones,
+                            cellBuilder: (r) => Text(r.observaciones ?? '—'),
                           ),
                         ],
                       ),

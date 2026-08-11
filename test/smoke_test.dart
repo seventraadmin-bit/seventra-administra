@@ -557,6 +557,26 @@ void main() {
       await tester.tap(find.text(l10n.lineaTelefonicaBotonCancelar));
       await tester.pumpAndSettle();
       expect(find.text(l10n.lineaTelefonicaAsignarDialogoTitulo), findsNothing);
+
+      // Etapa 9C: Telefonía es prepago — Plan/costo fue retirado por
+      // completo (la propia ausencia de `lineaTelefonicaPlanSeccionTitulo`
+      // del l10n ya lo demuestra en tiempo de compilación), Recargas
+      // ocupa su lugar en el expediente.
+      expect(find.text(l10n.lineaTelefonicaRecargaSeccionTitulo), findsOneWidget);
+      expect(find.text(l10n.lineaTelefonicaBotonRegistrarRecarga), findsOneWidget);
+
+      await tester.ensureVisible(find.text(l10n.lineaTelefonicaBotonRegistrarRecarga));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.lineaTelefonicaBotonRegistrarRecarga));
+      await tester.pumpAndSettle();
+      // El diálogo comparte título con el botón que lo abre ("Registrar
+      // recarga") — se confirma que abrió por su botón de confirmación,
+      // que sí es único ("Guardar recarga").
+      expect(find.text(l10n.lineaTelefonicaRecargaBotonGuardar), findsOneWidget);
+
+      await tester.tap(find.text(l10n.lineaTelefonicaBotonCancelar));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.lineaTelefonicaRecargaBotonGuardar), findsNothing);
     },
   );
 }
