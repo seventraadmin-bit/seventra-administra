@@ -22,6 +22,7 @@
   "moduleFinanzas": "Finanzas",
   "modulePersonal": "Personal",
   "moduleInventario": "Inventario",
+  "moduleCompras": "Compras",
   "moduleActivos": "Activos",
   "moduleVehiculos": "Vehículos",
   "moduleTelefonia": "Telefonía",
@@ -2236,6 +2237,7 @@
   "articuloExpedienteColumnaVarianteUnidad": "Talla/unidad",
   "articuloExpedienteColumnaCantidad": "Cantidad",
   "articuloExpedienteColumnaCosto": "Costo",
+  "articuloExpedienteColumnaOrigen": "Origen",
   "articuloExpedienteBotonRegistrarEntrada": "Registrar entrada",
   "articuloExpedienteBotonRegistrarBaja": "Registrar baja",
   "articuloExpedienteBotonRegistrarAjuste": "Ajustar",
@@ -2951,5 +2953,165 @@
 
   "lineaTelefonicaEnUnidadSeccionTitulo": "Línea telefónica",
   "lineaTelefonicaEnUnidadVacio": "Sin línea telefónica asociada.",
-  "lineaTelefonicaEnUnidadAsignadoA": "Usada por"
+  "lineaTelefonicaEnUnidadAsignadoA": "Usada por",
+
+  "comprasListadoTitulo": "Compras",
+  "comprasListadoBotonRegistrar": "Registrar compra",
+  "comprasListadoVacioTitulo": "Sin compras registradas",
+  "comprasListadoVacioMensaje": "Registra la primera compra para comenzar.",
+  "comprasListadoCargaErrorTitulo": "No se pudo cargar Compras",
+  "comprasListadoCargaErrorMensaje": "Ocurrió un error al cargar las compras.",
+  "comprasListadoBotonReintentar": "Reintentar",
+  "comprasColumnaFolio": "Folio",
+  "comprasColumnaFecha": "Fecha",
+  "comprasColumnaProveedor": "Proveedor/establecimiento",
+  "comprasColumnaTotal": "Total",
+  "comprasColumnaFormaPago": "Forma de pago",
+  "comprasColumnaEstatus": "Estatus",
+
+  "comprasFiltroDesde": "Desde",
+  "comprasFiltroHasta": "Hasta",
+  "comprasFiltroFolio": "Folio",
+  "comprasFiltroProveedor": "Proveedor/establecimiento",
+  "comprasFiltroArticulo": "Artículo",
+  "comprasFiltroArticuloTodos": "Todos",
+  "comprasFiltroEstatus": "Estatus",
+  "comprasFiltroEstatusTodos": "Todos",
+  "comprasTotalEnRango": "Total comprado en el rango",
+
+  "compraEstatusRegistrada": "Registrada",
+  "compraEstatusCancelada": "Cancelada",
+
+  "compraBotonCancelarAccion": "Cancelar",
+
+  "compraRegistrarDialogoTitulo": "Registrar compra",
+  "compraCampoFecha": "Fecha",
+  "compraCampoProveedor": "Proveedor/establecimiento (opcional)",
+  "compraCampoFormaPago": "Forma de pago",
+  "compraCampoFormaPagoOtroDescripcion": "Descripción",
+  "compraCampoObservaciones": "Observaciones",
+
+  "compraPartidasSeccionTitulo": "Partidas",
+  "compraBotonAgregarPartida": "Agregar partida",
+  "compraBotonQuitarPartida": "Quitar",
+  "compraPartidaCampoDestino": "Destino",
+  "compraPartidaOpcionInventario": "Inventario",
+  "compraPartidaOpcionGastoDirecto": "Gasto directo",
+  "compraPartidaCampoArticulo": "Artículo",
+  "compraPartidaCampoVariante": "Variante/talla",
+  "compraPartidaCampoCantidad": "Cantidad",
+  "compraPartidaCampoCostoUnitario": "Costo unitario",
+  "compraPartidaCampoConcepto": "Concepto",
+  "compraPartidaCampoNumeroSerie": "Número de serie #{indice}",
+  "@compraPartidaCampoNumeroSerie": {
+    "placeholders": { "indice": { "type": "int" } }
+  },
+  "compraPartidaCampoMarca": "Marca (opcional)",
+  "compraPartidaCampoModelo": "Modelo (opcional)",
+  "compraPartidaSubtotal": "Subtotal: {monto}",
+  "@compraPartidaSubtotal": {
+    "placeholders": { "monto": { "type": "String" } }
+  },
+  "compraPartidaAyudaSeries": "Si todavía no conoces los números de serie, registra esta compra el día que puedas capturarlos.",
+
+  "compraTotalGeneral": "Total: {monto}",
+  "@compraTotalGeneral": {
+    "placeholders": { "monto": { "type": "String" } }
+  },
+
+  "compraResumenTitulo": "Resumen",
+  "compraResumenPartidasInventario": "{cantidad} {cantidad, plural, one{partida ingresará} other{partidas ingresarán}} a Inventario",
+  "@compraResumenPartidasInventario": {
+    "placeholders": { "cantidad": { "type": "int" } }
+  },
+  "compraResumenEgreso": "Se generará un Egreso por {monto}",
+  "@compraResumenEgreso": {
+    "placeholders": { "monto": { "type": "String" } }
+  },
+
+  "compraCampoComprobante": "Comprobante/Factura (PDF, opcional)",
+  "compraBotonSeleccionarComprobante": "Adjuntar comprobante",
+
+  "compraBotonGuardar": "Registrar compra",
+  "compraBotonCancelarFormulario": "Cancelar",
+  "compraGuardadaExito": "Compra registrada.",
+
+  "compraErrorListaVacia": "Agrega al menos una partida.",
+  "compraErrorFormaPagoInvalida": "Selecciona una forma de pago válida.",
+  "compraErrorFormaPagoOtroDescripcionRequerida": "Describe la forma de pago.",
+  "compraErrorPartidaDestinoInvalido": "Selecciona un destino para la partida {indice}.",
+  "@compraErrorPartidaDestinoInvalido": {
+    "placeholders": { "indice": { "type": "int" } }
+  },
+  "compraErrorPartidaArticuloNoExiste": "Selecciona un artículo válido en la partida {indice}.",
+  "@compraErrorPartidaArticuloNoExiste": {
+    "placeholders": { "indice": { "type": "int" } }
+  },
+  "compraErrorPartidaVarianteInvalida": "Revisa la variante/talla de la partida {indice}.",
+  "@compraErrorPartidaVarianteInvalida": {
+    "placeholders": { "indice": { "type": "int" } }
+  },
+  "compraErrorPartidaConceptoRequerido": "Escribe el concepto de la partida {indice}.",
+  "@compraErrorPartidaConceptoRequerido": {
+    "placeholders": { "indice": { "type": "int" } }
+  },
+  "compraErrorPartidaCantidadInvalida": "La cantidad de la partida {indice} debe ser mayor a cero.",
+  "@compraErrorPartidaCantidadInvalida": {
+    "placeholders": { "indice": { "type": "int" } }
+  },
+  "compraErrorPartidaCostoInvalido": "El costo unitario de la partida {indice} no puede ser negativo.",
+  "@compraErrorPartidaCostoInvalido": {
+    "placeholders": { "indice": { "type": "int" } }
+  },
+  "compraErrorPartidaNumerosSerieInvalidos": "Captura {cantidad} números de serie distintos y no vacíos en la partida {indice}.",
+  "@compraErrorPartidaNumerosSerieInvalidos": {
+    "placeholders": {
+      "cantidad": { "type": "int" },
+      "indice": { "type": "int" }
+    }
+  },
+  "compraErrorInesperado": "Ocurrió un error inesperado.",
+
+  "compraExpedienteSeccionDatos": "Datos de la compra",
+  "compraExpedienteSeccionPartidas": "Partidas",
+  "compraExpedienteSeccionIntegraciones": "Integraciones",
+  "compraExpedienteSeccionDocumento": "Documento",
+  "compraExpedienteSeccionObservaciones": "Observaciones",
+  "compraExpedienteBotonCorregir": "Corregir datos",
+  "compraExpedienteBotonCancelar": "Cancelar compra",
+  "compraExpedienteCargaErrorTitulo": "No se pudo cargar la compra",
+
+  "compraPartidaColumnaDestino": "Destino",
+  "compraPartidaColumnaArticulo": "Artículo/concepto",
+  "compraPartidaColumnaCantidad": "Cantidad",
+  "compraPartidaColumnaCostoUnitario": "Costo unitario",
+  "compraPartidaColumnaSubtotal": "Subtotal",
+
+  "compraIntegracionesEntradasTitulo": "Entradas de Inventario generadas",
+  "compraIntegracionesEntradasVacio": "Esta compra no generó entradas de Inventario.",
+  "compraIntegracionesEgresoTitulo": "Egreso relacionado",
+  "compraIntegracionesVerEgreso": "Ver en Finanzas",
+  "compraIntegracionesVerArticulo": "Ver artículo",
+
+  "compraDocumentoBotonAbrir": "Abrir PDF",
+  "compraDocumentoSinComprobante": "Sin comprobante adjunto.",
+
+  "compraCorregirDialogoTitulo": "Corregir datos de la compra",
+  "compraCorregirCampoMotivo": "Motivo de la corrección",
+  "compraCorregirBotonGuardar": "Guardar corrección",
+  "compraCorregirExito": "Compra corregida.",
+
+  "compraCancelarDialogoTitulo": "Cancelar compra",
+  "compraCancelarMensaje": "Esta acción revertirá las entradas de Inventario generadas y cancelará el Egreso relacionado. No se puede deshacer.",
+  "compraCancelarCampoMotivo": "Motivo de la cancelación",
+  "compraCancelarBotonConfirmar": "Cancelar compra",
+  "compraCancelarExito": "Compra cancelada.",
+  "compraCancelarYaCancelada": "Esta compra ya estaba cancelada.",
+  "compraCancelarBloqueadaTitulo": "No se puede cancelar esta compra",
+  "compraCancelarBloqueadaMensaje": "Las siguientes unidades ya no están disponibles:",
+
+  "inventarioMovimientoOrigenCompra": "Origen: Compra {folio}",
+  "@inventarioMovimientoOrigenCompra": {
+    "placeholders": { "folio": { "type": "String" } }
+  }
 }

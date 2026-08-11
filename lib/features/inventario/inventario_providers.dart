@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../compras/compras_providers.dart' show compraRepositoryProvider;
 import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
 import 'data/pdf/resguardo_pdf_renderer.dart';
@@ -27,6 +28,7 @@ import 'domain/usecases/crear_categoria_articulo_usecase.dart';
 import 'domain/usecases/crear_variante_articulo_usecase.dart';
 import 'domain/usecases/generar_documento_resguardo_usecase.dart';
 import 'domain/usecases/obtener_empleados_responsables_servicio_usecase.dart';
+import 'domain/usecases/obtener_origen_compra_usecase.dart';
 import 'domain/usecases/registrar_ajuste_usecase.dart';
 import 'domain/usecases/registrar_baja_unidad_usecase.dart';
 import 'domain/usecases/registrar_baja_usecase.dart';
@@ -83,6 +85,12 @@ final inventarioRepositoryProvider = Provider<InventarioRepository>((ref) {
 
 final registrarEntradaUseCaseProvider = Provider<RegistrarEntradaUseCase>((ref) {
   return RegistrarEntradaUseCase(ref.watch(inventarioRepositoryProvider), ref.watch(articuloRepositoryProvider));
+});
+
+/// Lectura cruzada hacia Compras (Etapa 10) — ver el doc comment de
+/// `ObtenerOrigenCompraUseCase`.
+final obtenerOrigenCompraUseCaseProvider = Provider<ObtenerOrigenCompraUseCase>((ref) {
+  return ObtenerOrigenCompraUseCase(ref.watch(compraRepositoryProvider));
 });
 
 final registrarEntradaUnidadUseCaseProvider = Provider<RegistrarEntradaUnidadUseCase>((ref) {

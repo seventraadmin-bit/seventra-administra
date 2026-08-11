@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart' show OrigenCompra;
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/existencia_articulo.dart';
 
 import '../asignaciones/widgets/historial_unidad_dialog.dart';
 import '../movimiento_tipo_label.dart';
+import '../../inventario_providers.dart' show obtenerOrigenCompraUseCaseProvider;
 import 'articulos_controller.dart';
 import 'articulos_list_screen.dart';
 import 'widgets/crear_variante_dialog.dart';
@@ -43,6 +46,7 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
   List<ArticuloVarianteData> _variantes = const [];
   List<ArticuloUnidadData> _unidades = const [];
   List<MovimientoInventarioData> _movimientos = const [];
+  Map<String, OrigenCompra> _origenesPorMovimiento = const {};
 
   @override
   void initState() {
@@ -74,6 +78,8 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
       final variantes = articulo.manejaVariante ? await _notifier.listarVariantes(articulo.id) : const <ArticuloVarianteData>[];
       final unidades = articulo.manejaSerie ? await _notifier.listarUnidades(articulo.id) : const <ArticuloUnidadData>[];
       final movimientos = await _notifier.listarMovimientos(articulo.id);
+      final origenesPorMovimiento =
+          await ref.read(obtenerOrigenCompraUseCaseProvider).obtenerParaMovimientos(movimientos.map((m) => m.id));
 
       if (!mounted) return;
       setState(() {
@@ -84,6 +90,7 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
         _variantes = variantes;
         _unidades = unidades;
         _movimientos = movimientos;
+        _origenesPorMovimiento = origenesPorMovimiento;
       });
     } catch (e) {
       if (!mounted) return;
@@ -389,6 +396,20 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                           width: 110,
                           alignment: TextAlign.right,
                           cellBuilder: (m) => Text(m.costoUnitario == null ? '—' : formatoCosto(m.costoUnitario!)),
+                        ),
+                        RisegColumn<MovimientoInventarioData>(
+                          label: l10n.articuloExpedienteColumnaOrigen,
+                          width: 150,
+                          cellBuilder: (m) {
+                            final origen = _origenesPorMovimiento[m.id];
+                            if (origen == null) return const Text('—');
+                            return RisegButton(
+                              label: l10n.inventarioMovimientoOrigenCompra(origen.folioCompra),
+                              variant: RisegButtonVariant.ghost,
+                              size: RisegButtonSize.compact,
+                              onPressed: () => context.go('/compras/${origen.compraId}'),
+                            );
+                          },
                         ),
                       ],
                     ),

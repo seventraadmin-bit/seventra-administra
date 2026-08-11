@@ -60553,6 +60553,2602 @@ class RecargaLineaTelefonicaAttachmentCompanion
   }
 }
 
+class $CompraTable extends Compra with TableInfo<$CompraTable, CompraData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CompraTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _folioCompraMeta = const VerificationMeta(
+    'folioCompra',
+  );
+  @override
+  late final GeneratedColumn<String> folioCompra = GeneratedColumn<String>(
+    'folio_compra',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
+    'fecha',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _proveedorMeta = const VerificationMeta(
+    'proveedor',
+  );
+  @override
+  late final GeneratedColumn<String> proveedor = GeneratedColumn<String>(
+    'proveedor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _formaPagoMeta = const VerificationMeta(
+    'formaPago',
+  );
+  @override
+  late final GeneratedColumn<String> formaPago = GeneratedColumn<String>(
+    'forma_pago',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formaPagoOtroDescripcionMeta =
+      const VerificationMeta('formaPagoOtroDescripcion');
+  @override
+  late final GeneratedColumn<String> formaPagoOtroDescripcion =
+      GeneratedColumn<String>(
+        'forma_pago_otro_descripcion',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('registrada'),
+  );
+  static const VerificationMeta _motivoCancelacionMeta = const VerificationMeta(
+    'motivoCancelacion',
+  );
+  @override
+  late final GeneratedColumn<String> motivoCancelacion =
+      GeneratedColumn<String>(
+        'motivo_cancelacion',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _egresoIdMeta = const VerificationMeta(
+    'egresoId',
+  );
+  @override
+  late final GeneratedColumn<String> egresoId = GeneratedColumn<String>(
+    'egreso_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'UNIQUE REFERENCES egreso (id) ON DELETE RESTRICT',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folioCompra,
+    fecha,
+    proveedor,
+    formaPago,
+    formaPagoOtroDescripcion,
+    observaciones,
+    estatus,
+    motivoCancelacion,
+    egresoId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'compra';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CompraData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folio_compra')) {
+      context.handle(
+        _folioCompraMeta,
+        folioCompra.isAcceptableOrUnknown(
+          data['folio_compra']!,
+          _folioCompraMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_folioCompraMeta);
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('proveedor')) {
+      context.handle(
+        _proveedorMeta,
+        proveedor.isAcceptableOrUnknown(data['proveedor']!, _proveedorMeta),
+      );
+    }
+    if (data.containsKey('forma_pago')) {
+      context.handle(
+        _formaPagoMeta,
+        formaPago.isAcceptableOrUnknown(data['forma_pago']!, _formaPagoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_formaPagoMeta);
+    }
+    if (data.containsKey('forma_pago_otro_descripcion')) {
+      context.handle(
+        _formaPagoOtroDescripcionMeta,
+        formaPagoOtroDescripcion.isAcceptableOrUnknown(
+          data['forma_pago_otro_descripcion']!,
+          _formaPagoOtroDescripcionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('motivo_cancelacion')) {
+      context.handle(
+        _motivoCancelacionMeta,
+        motivoCancelacion.isAcceptableOrUnknown(
+          data['motivo_cancelacion']!,
+          _motivoCancelacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('egreso_id')) {
+      context.handle(
+        _egresoIdMeta,
+        egresoId.isAcceptableOrUnknown(data['egreso_id']!, _egresoIdMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CompraData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CompraData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      folioCompra:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}folio_compra'],
+          )!,
+      fecha:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha'],
+          )!,
+      proveedor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}proveedor'],
+      ),
+      formaPago:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}forma_pago'],
+          )!,
+      formaPagoOtroDescripcion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}forma_pago_otro_descripcion'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      motivoCancelacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_cancelacion'],
+      ),
+      egresoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}egreso_id'],
+      ),
+    );
+  }
+
+  @override
+  $CompraTable createAlias(String alias) {
+    return $CompraTable(attachedDatabase, alias);
+  }
+}
+
+class CompraData extends DataClass implements Insertable<CompraData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String folioCompra;
+  final DateTime fecha;
+
+  /// Texto libre — sin catálogo de proveedores (Resolución explícita de
+  /// Marlon: "no obligues a crear primero una ficha de proveedor"),
+  /// mismo criterio que `Egreso.beneficiario`.
+  final String? proveedor;
+
+  /// Literal — reutiliza el enum `FormaPago` ya existente en
+  /// `pago_table.dart` (efectivo/transferencia/cheque/tarjeta/otro),
+  /// nunca uno nuevo.
+  final String formaPago;
+
+  /// Solo aplica cuando `formaPago == otro`.
+  final String? formaPagoOtroDescripcion;
+  final String? observaciones;
+  final String estatus;
+  final String? motivoCancelacion;
+  final String? egresoId;
+  const CompraData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.folioCompra,
+    required this.fecha,
+    this.proveedor,
+    required this.formaPago,
+    this.formaPagoOtroDescripcion,
+    this.observaciones,
+    required this.estatus,
+    this.motivoCancelacion,
+    this.egresoId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['folio_compra'] = Variable<String>(folioCompra);
+    map['fecha'] = Variable<DateTime>(fecha);
+    if (!nullToAbsent || proveedor != null) {
+      map['proveedor'] = Variable<String>(proveedor);
+    }
+    map['forma_pago'] = Variable<String>(formaPago);
+    if (!nullToAbsent || formaPagoOtroDescripcion != null) {
+      map['forma_pago_otro_descripcion'] = Variable<String>(
+        formaPagoOtroDescripcion,
+      );
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || motivoCancelacion != null) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion);
+    }
+    if (!nullToAbsent || egresoId != null) {
+      map['egreso_id'] = Variable<String>(egresoId);
+    }
+    return map;
+  }
+
+  CompraCompanion toCompanion(bool nullToAbsent) {
+    return CompraCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      folioCompra: Value(folioCompra),
+      fecha: Value(fecha),
+      proveedor:
+          proveedor == null && nullToAbsent
+              ? const Value.absent()
+              : Value(proveedor),
+      formaPago: Value(formaPago),
+      formaPagoOtroDescripcion:
+          formaPagoOtroDescripcion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(formaPagoOtroDescripcion),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      estatus: Value(estatus),
+      motivoCancelacion:
+          motivoCancelacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoCancelacion),
+      egresoId:
+          egresoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(egresoId),
+    );
+  }
+
+  factory CompraData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CompraData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      folioCompra: serializer.fromJson<String>(json['folioCompra']),
+      fecha: serializer.fromJson<DateTime>(json['fecha']),
+      proveedor: serializer.fromJson<String?>(json['proveedor']),
+      formaPago: serializer.fromJson<String>(json['formaPago']),
+      formaPagoOtroDescripcion: serializer.fromJson<String?>(
+        json['formaPagoOtroDescripcion'],
+      ),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      motivoCancelacion: serializer.fromJson<String?>(
+        json['motivoCancelacion'],
+      ),
+      egresoId: serializer.fromJson<String?>(json['egresoId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'folioCompra': serializer.toJson<String>(folioCompra),
+      'fecha': serializer.toJson<DateTime>(fecha),
+      'proveedor': serializer.toJson<String?>(proveedor),
+      'formaPago': serializer.toJson<String>(formaPago),
+      'formaPagoOtroDescripcion': serializer.toJson<String?>(
+        formaPagoOtroDescripcion,
+      ),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'estatus': serializer.toJson<String>(estatus),
+      'motivoCancelacion': serializer.toJson<String?>(motivoCancelacion),
+      'egresoId': serializer.toJson<String?>(egresoId),
+    };
+  }
+
+  CompraData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? folioCompra,
+    DateTime? fecha,
+    Value<String?> proveedor = const Value.absent(),
+    String? formaPago,
+    Value<String?> formaPagoOtroDescripcion = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+    String? estatus,
+    Value<String?> motivoCancelacion = const Value.absent(),
+    Value<String?> egresoId = const Value.absent(),
+  }) => CompraData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    folioCompra: folioCompra ?? this.folioCompra,
+    fecha: fecha ?? this.fecha,
+    proveedor: proveedor.present ? proveedor.value : this.proveedor,
+    formaPago: formaPago ?? this.formaPago,
+    formaPagoOtroDescripcion:
+        formaPagoOtroDescripcion.present
+            ? formaPagoOtroDescripcion.value
+            : this.formaPagoOtroDescripcion,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    estatus: estatus ?? this.estatus,
+    motivoCancelacion:
+        motivoCancelacion.present
+            ? motivoCancelacion.value
+            : this.motivoCancelacion,
+    egresoId: egresoId.present ? egresoId.value : this.egresoId,
+  );
+  CompraData copyWithCompanion(CompraCompanion data) {
+    return CompraData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      folioCompra:
+          data.folioCompra.present ? data.folioCompra.value : this.folioCompra,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      proveedor: data.proveedor.present ? data.proveedor.value : this.proveedor,
+      formaPago: data.formaPago.present ? data.formaPago.value : this.formaPago,
+      formaPagoOtroDescripcion:
+          data.formaPagoOtroDescripcion.present
+              ? data.formaPagoOtroDescripcion.value
+              : this.formaPagoOtroDescripcion,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      motivoCancelacion:
+          data.motivoCancelacion.present
+              ? data.motivoCancelacion.value
+              : this.motivoCancelacion,
+      egresoId: data.egresoId.present ? data.egresoId.value : this.egresoId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folioCompra: $folioCompra, ')
+          ..write('fecha: $fecha, ')
+          ..write('proveedor: $proveedor, ')
+          ..write('formaPago: $formaPago, ')
+          ..write('formaPagoOtroDescripcion: $formaPagoOtroDescripcion, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion, ')
+          ..write('egresoId: $egresoId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    folioCompra,
+    fecha,
+    proveedor,
+    formaPago,
+    formaPagoOtroDescripcion,
+    observaciones,
+    estatus,
+    motivoCancelacion,
+    egresoId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CompraData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.folioCompra == this.folioCompra &&
+          other.fecha == this.fecha &&
+          other.proveedor == this.proveedor &&
+          other.formaPago == this.formaPago &&
+          other.formaPagoOtroDescripcion == this.formaPagoOtroDescripcion &&
+          other.observaciones == this.observaciones &&
+          other.estatus == this.estatus &&
+          other.motivoCancelacion == this.motivoCancelacion &&
+          other.egresoId == this.egresoId);
+}
+
+class CompraCompanion extends UpdateCompanion<CompraData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> folioCompra;
+  final Value<DateTime> fecha;
+  final Value<String?> proveedor;
+  final Value<String> formaPago;
+  final Value<String?> formaPagoOtroDescripcion;
+  final Value<String?> observaciones;
+  final Value<String> estatus;
+  final Value<String?> motivoCancelacion;
+  final Value<String?> egresoId;
+  final Value<int> rowid;
+  const CompraCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.folioCompra = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.proveedor = const Value.absent(),
+    this.formaPago = const Value.absent(),
+    this.formaPagoOtroDescripcion = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.egresoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CompraCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String folioCompra,
+    required DateTime fecha,
+    this.proveedor = const Value.absent(),
+    required String formaPago,
+    this.formaPagoOtroDescripcion = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.motivoCancelacion = const Value.absent(),
+    this.egresoId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : folioCompra = Value(folioCompra),
+       fecha = Value(fecha),
+       formaPago = Value(formaPago);
+  static Insertable<CompraData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? folioCompra,
+    Expression<DateTime>? fecha,
+    Expression<String>? proveedor,
+    Expression<String>? formaPago,
+    Expression<String>? formaPagoOtroDescripcion,
+    Expression<String>? observaciones,
+    Expression<String>? estatus,
+    Expression<String>? motivoCancelacion,
+    Expression<String>? egresoId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (folioCompra != null) 'folio_compra': folioCompra,
+      if (fecha != null) 'fecha': fecha,
+      if (proveedor != null) 'proveedor': proveedor,
+      if (formaPago != null) 'forma_pago': formaPago,
+      if (formaPagoOtroDescripcion != null)
+        'forma_pago_otro_descripcion': formaPagoOtroDescripcion,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (estatus != null) 'estatus': estatus,
+      if (motivoCancelacion != null) 'motivo_cancelacion': motivoCancelacion,
+      if (egresoId != null) 'egreso_id': egresoId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CompraCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? folioCompra,
+    Value<DateTime>? fecha,
+    Value<String?>? proveedor,
+    Value<String>? formaPago,
+    Value<String?>? formaPagoOtroDescripcion,
+    Value<String?>? observaciones,
+    Value<String>? estatus,
+    Value<String?>? motivoCancelacion,
+    Value<String?>? egresoId,
+    Value<int>? rowid,
+  }) {
+    return CompraCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      folioCompra: folioCompra ?? this.folioCompra,
+      fecha: fecha ?? this.fecha,
+      proveedor: proveedor ?? this.proveedor,
+      formaPago: formaPago ?? this.formaPago,
+      formaPagoOtroDescripcion:
+          formaPagoOtroDescripcion ?? this.formaPagoOtroDescripcion,
+      observaciones: observaciones ?? this.observaciones,
+      estatus: estatus ?? this.estatus,
+      motivoCancelacion: motivoCancelacion ?? this.motivoCancelacion,
+      egresoId: egresoId ?? this.egresoId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (folioCompra.present) {
+      map['folio_compra'] = Variable<String>(folioCompra.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (proveedor.present) {
+      map['proveedor'] = Variable<String>(proveedor.value);
+    }
+    if (formaPago.present) {
+      map['forma_pago'] = Variable<String>(formaPago.value);
+    }
+    if (formaPagoOtroDescripcion.present) {
+      map['forma_pago_otro_descripcion'] = Variable<String>(
+        formaPagoOtroDescripcion.value,
+      );
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (motivoCancelacion.present) {
+      map['motivo_cancelacion'] = Variable<String>(motivoCancelacion.value);
+    }
+    if (egresoId.present) {
+      map['egreso_id'] = Variable<String>(egresoId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('folioCompra: $folioCompra, ')
+          ..write('fecha: $fecha, ')
+          ..write('proveedor: $proveedor, ')
+          ..write('formaPago: $formaPago, ')
+          ..write('formaPagoOtroDescripcion: $formaPagoOtroDescripcion, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('estatus: $estatus, ')
+          ..write('motivoCancelacion: $motivoCancelacion, ')
+          ..write('egresoId: $egresoId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CompraPartidaTable extends CompraPartida
+    with TableInfo<$CompraPartidaTable, CompraPartidaData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CompraPartidaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _compraIdMeta = const VerificationMeta(
+    'compraId',
+  );
+  @override
+  late final GeneratedColumn<String> compraId = GeneratedColumn<String>(
+    'compra_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES compra (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _destinoMeta = const VerificationMeta(
+    'destino',
+  );
+  @override
+  late final GeneratedColumn<String> destino = GeneratedColumn<String>(
+    'destino',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _articuloIdMeta = const VerificationMeta(
+    'articuloId',
+  );
+  @override
+  late final GeneratedColumn<String> articuloId = GeneratedColumn<String>(
+    'articulo_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _varianteIdMeta = const VerificationMeta(
+    'varianteId',
+  );
+  @override
+  late final GeneratedColumn<String> varianteId = GeneratedColumn<String>(
+    'variante_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo_variante (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _conceptoMeta = const VerificationMeta(
+    'concepto',
+  );
+  @override
+  late final GeneratedColumn<String> concepto = GeneratedColumn<String>(
+    'concepto',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cantidadMeta = const VerificationMeta(
+    'cantidad',
+  );
+  @override
+  late final GeneratedColumn<int> cantidad = GeneratedColumn<int>(
+    'cantidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _costoUnitarioMeta = const VerificationMeta(
+    'costoUnitario',
+  );
+  @override
+  late final GeneratedColumn<int> costoUnitario = GeneratedColumn<int>(
+    'costo_unitario',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    compraId,
+    destino,
+    articuloId,
+    varianteId,
+    concepto,
+    cantidad,
+    costoUnitario,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'compra_partida';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CompraPartidaData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('compra_id')) {
+      context.handle(
+        _compraIdMeta,
+        compraId.isAcceptableOrUnknown(data['compra_id']!, _compraIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_compraIdMeta);
+    }
+    if (data.containsKey('destino')) {
+      context.handle(
+        _destinoMeta,
+        destino.isAcceptableOrUnknown(data['destino']!, _destinoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_destinoMeta);
+    }
+    if (data.containsKey('articulo_id')) {
+      context.handle(
+        _articuloIdMeta,
+        articuloId.isAcceptableOrUnknown(data['articulo_id']!, _articuloIdMeta),
+      );
+    }
+    if (data.containsKey('variante_id')) {
+      context.handle(
+        _varianteIdMeta,
+        varianteId.isAcceptableOrUnknown(data['variante_id']!, _varianteIdMeta),
+      );
+    }
+    if (data.containsKey('concepto')) {
+      context.handle(
+        _conceptoMeta,
+        concepto.isAcceptableOrUnknown(data['concepto']!, _conceptoMeta),
+      );
+    }
+    if (data.containsKey('cantidad')) {
+      context.handle(
+        _cantidadMeta,
+        cantidad.isAcceptableOrUnknown(data['cantidad']!, _cantidadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cantidadMeta);
+    }
+    if (data.containsKey('costo_unitario')) {
+      context.handle(
+        _costoUnitarioMeta,
+        costoUnitario.isAcceptableOrUnknown(
+          data['costo_unitario']!,
+          _costoUnitarioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_costoUnitarioMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CompraPartidaData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CompraPartidaData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      compraId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}compra_id'],
+          )!,
+      destino:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}destino'],
+          )!,
+      articuloId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}articulo_id'],
+      ),
+      varianteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variante_id'],
+      ),
+      concepto: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}concepto'],
+      ),
+      cantidad:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}cantidad'],
+          )!,
+      costoUnitario:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}costo_unitario'],
+          )!,
+    );
+  }
+
+  @override
+  $CompraPartidaTable createAlias(String alias) {
+    return $CompraPartidaTable(attachedDatabase, alias);
+  }
+}
+
+class CompraPartidaData extends DataClass
+    implements Insertable<CompraPartidaData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String compraId;
+  final String destino;
+  final String? articuloId;
+  final String? varianteId;
+
+  /// Requerido si `destino == gastoDirecto`; `NULL` si `destino == inventario`.
+  final String? concepto;
+  final int cantidad;
+
+  /// Centavos.
+  final int costoUnitario;
+  const CompraPartidaData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.compraId,
+    required this.destino,
+    this.articuloId,
+    this.varianteId,
+    this.concepto,
+    required this.cantidad,
+    required this.costoUnitario,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['compra_id'] = Variable<String>(compraId);
+    map['destino'] = Variable<String>(destino);
+    if (!nullToAbsent || articuloId != null) {
+      map['articulo_id'] = Variable<String>(articuloId);
+    }
+    if (!nullToAbsent || varianteId != null) {
+      map['variante_id'] = Variable<String>(varianteId);
+    }
+    if (!nullToAbsent || concepto != null) {
+      map['concepto'] = Variable<String>(concepto);
+    }
+    map['cantidad'] = Variable<int>(cantidad);
+    map['costo_unitario'] = Variable<int>(costoUnitario);
+    return map;
+  }
+
+  CompraPartidaCompanion toCompanion(bool nullToAbsent) {
+    return CompraPartidaCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      compraId: Value(compraId),
+      destino: Value(destino),
+      articuloId:
+          articuloId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(articuloId),
+      varianteId:
+          varianteId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(varianteId),
+      concepto:
+          concepto == null && nullToAbsent
+              ? const Value.absent()
+              : Value(concepto),
+      cantidad: Value(cantidad),
+      costoUnitario: Value(costoUnitario),
+    );
+  }
+
+  factory CompraPartidaData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CompraPartidaData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      compraId: serializer.fromJson<String>(json['compraId']),
+      destino: serializer.fromJson<String>(json['destino']),
+      articuloId: serializer.fromJson<String?>(json['articuloId']),
+      varianteId: serializer.fromJson<String?>(json['varianteId']),
+      concepto: serializer.fromJson<String?>(json['concepto']),
+      cantidad: serializer.fromJson<int>(json['cantidad']),
+      costoUnitario: serializer.fromJson<int>(json['costoUnitario']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'compraId': serializer.toJson<String>(compraId),
+      'destino': serializer.toJson<String>(destino),
+      'articuloId': serializer.toJson<String?>(articuloId),
+      'varianteId': serializer.toJson<String?>(varianteId),
+      'concepto': serializer.toJson<String?>(concepto),
+      'cantidad': serializer.toJson<int>(cantidad),
+      'costoUnitario': serializer.toJson<int>(costoUnitario),
+    };
+  }
+
+  CompraPartidaData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? compraId,
+    String? destino,
+    Value<String?> articuloId = const Value.absent(),
+    Value<String?> varianteId = const Value.absent(),
+    Value<String?> concepto = const Value.absent(),
+    int? cantidad,
+    int? costoUnitario,
+  }) => CompraPartidaData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    compraId: compraId ?? this.compraId,
+    destino: destino ?? this.destino,
+    articuloId: articuloId.present ? articuloId.value : this.articuloId,
+    varianteId: varianteId.present ? varianteId.value : this.varianteId,
+    concepto: concepto.present ? concepto.value : this.concepto,
+    cantidad: cantidad ?? this.cantidad,
+    costoUnitario: costoUnitario ?? this.costoUnitario,
+  );
+  CompraPartidaData copyWithCompanion(CompraPartidaCompanion data) {
+    return CompraPartidaData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      compraId: data.compraId.present ? data.compraId.value : this.compraId,
+      destino: data.destino.present ? data.destino.value : this.destino,
+      articuloId:
+          data.articuloId.present ? data.articuloId.value : this.articuloId,
+      varianteId:
+          data.varianteId.present ? data.varianteId.value : this.varianteId,
+      concepto: data.concepto.present ? data.concepto.value : this.concepto,
+      cantidad: data.cantidad.present ? data.cantidad.value : this.cantidad,
+      costoUnitario:
+          data.costoUnitario.present
+              ? data.costoUnitario.value
+              : this.costoUnitario,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraPartidaData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('compraId: $compraId, ')
+          ..write('destino: $destino, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('varianteId: $varianteId, ')
+          ..write('concepto: $concepto, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('costoUnitario: $costoUnitario')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    compraId,
+    destino,
+    articuloId,
+    varianteId,
+    concepto,
+    cantidad,
+    costoUnitario,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CompraPartidaData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.compraId == this.compraId &&
+          other.destino == this.destino &&
+          other.articuloId == this.articuloId &&
+          other.varianteId == this.varianteId &&
+          other.concepto == this.concepto &&
+          other.cantidad == this.cantidad &&
+          other.costoUnitario == this.costoUnitario);
+}
+
+class CompraPartidaCompanion extends UpdateCompanion<CompraPartidaData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> compraId;
+  final Value<String> destino;
+  final Value<String?> articuloId;
+  final Value<String?> varianteId;
+  final Value<String?> concepto;
+  final Value<int> cantidad;
+  final Value<int> costoUnitario;
+  final Value<int> rowid;
+  const CompraPartidaCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.compraId = const Value.absent(),
+    this.destino = const Value.absent(),
+    this.articuloId = const Value.absent(),
+    this.varianteId = const Value.absent(),
+    this.concepto = const Value.absent(),
+    this.cantidad = const Value.absent(),
+    this.costoUnitario = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CompraPartidaCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String compraId,
+    required String destino,
+    this.articuloId = const Value.absent(),
+    this.varianteId = const Value.absent(),
+    this.concepto = const Value.absent(),
+    required int cantidad,
+    required int costoUnitario,
+    this.rowid = const Value.absent(),
+  }) : compraId = Value(compraId),
+       destino = Value(destino),
+       cantidad = Value(cantidad),
+       costoUnitario = Value(costoUnitario);
+  static Insertable<CompraPartidaData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? compraId,
+    Expression<String>? destino,
+    Expression<String>? articuloId,
+    Expression<String>? varianteId,
+    Expression<String>? concepto,
+    Expression<int>? cantidad,
+    Expression<int>? costoUnitario,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (compraId != null) 'compra_id': compraId,
+      if (destino != null) 'destino': destino,
+      if (articuloId != null) 'articulo_id': articuloId,
+      if (varianteId != null) 'variante_id': varianteId,
+      if (concepto != null) 'concepto': concepto,
+      if (cantidad != null) 'cantidad': cantidad,
+      if (costoUnitario != null) 'costo_unitario': costoUnitario,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CompraPartidaCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? compraId,
+    Value<String>? destino,
+    Value<String?>? articuloId,
+    Value<String?>? varianteId,
+    Value<String?>? concepto,
+    Value<int>? cantidad,
+    Value<int>? costoUnitario,
+    Value<int>? rowid,
+  }) {
+    return CompraPartidaCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      compraId: compraId ?? this.compraId,
+      destino: destino ?? this.destino,
+      articuloId: articuloId ?? this.articuloId,
+      varianteId: varianteId ?? this.varianteId,
+      concepto: concepto ?? this.concepto,
+      cantidad: cantidad ?? this.cantidad,
+      costoUnitario: costoUnitario ?? this.costoUnitario,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (compraId.present) {
+      map['compra_id'] = Variable<String>(compraId.value);
+    }
+    if (destino.present) {
+      map['destino'] = Variable<String>(destino.value);
+    }
+    if (articuloId.present) {
+      map['articulo_id'] = Variable<String>(articuloId.value);
+    }
+    if (varianteId.present) {
+      map['variante_id'] = Variable<String>(varianteId.value);
+    }
+    if (concepto.present) {
+      map['concepto'] = Variable<String>(concepto.value);
+    }
+    if (cantidad.present) {
+      map['cantidad'] = Variable<int>(cantidad.value);
+    }
+    if (costoUnitario.present) {
+      map['costo_unitario'] = Variable<int>(costoUnitario.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraPartidaCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('compraId: $compraId, ')
+          ..write('destino: $destino, ')
+          ..write('articuloId: $articuloId, ')
+          ..write('varianteId: $varianteId, ')
+          ..write('concepto: $concepto, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('costoUnitario: $costoUnitario, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CompraPartidaMovimientoTable extends CompraPartidaMovimiento
+    with TableInfo<$CompraPartidaMovimientoTable, CompraPartidaMovimientoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CompraPartidaMovimientoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _compraPartidaIdMeta = const VerificationMeta(
+    'compraPartidaId',
+  );
+  @override
+  late final GeneratedColumn<String> compraPartidaId = GeneratedColumn<String>(
+    'compra_partida_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES compra_partida (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _movimientoInventarioIdMeta =
+      const VerificationMeta('movimientoInventarioId');
+  @override
+  late final GeneratedColumn<String> movimientoInventarioId =
+      GeneratedColumn<String>(
+        'movimiento_inventario_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES movimiento_inventario (id) ON DELETE RESTRICT',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    compraPartidaId,
+    movimientoInventarioId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'compra_partida_movimiento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CompraPartidaMovimientoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('compra_partida_id')) {
+      context.handle(
+        _compraPartidaIdMeta,
+        compraPartidaId.isAcceptableOrUnknown(
+          data['compra_partida_id']!,
+          _compraPartidaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_compraPartidaIdMeta);
+    }
+    if (data.containsKey('movimiento_inventario_id')) {
+      context.handle(
+        _movimientoInventarioIdMeta,
+        movimientoInventarioId.isAcceptableOrUnknown(
+          data['movimiento_inventario_id']!,
+          _movimientoInventarioIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_movimientoInventarioIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {movimientoInventarioId};
+  @override
+  CompraPartidaMovimientoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CompraPartidaMovimientoData(
+      compraPartidaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}compra_partida_id'],
+          )!,
+      movimientoInventarioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}movimiento_inventario_id'],
+          )!,
+    );
+  }
+
+  @override
+  $CompraPartidaMovimientoTable createAlias(String alias) {
+    return $CompraPartidaMovimientoTable(attachedDatabase, alias);
+  }
+}
+
+class CompraPartidaMovimientoData extends DataClass
+    implements Insertable<CompraPartidaMovimientoData> {
+  final String compraPartidaId;
+  final String movimientoInventarioId;
+  const CompraPartidaMovimientoData({
+    required this.compraPartidaId,
+    required this.movimientoInventarioId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['compra_partida_id'] = Variable<String>(compraPartidaId);
+    map['movimiento_inventario_id'] = Variable<String>(movimientoInventarioId);
+    return map;
+  }
+
+  CompraPartidaMovimientoCompanion toCompanion(bool nullToAbsent) {
+    return CompraPartidaMovimientoCompanion(
+      compraPartidaId: Value(compraPartidaId),
+      movimientoInventarioId: Value(movimientoInventarioId),
+    );
+  }
+
+  factory CompraPartidaMovimientoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CompraPartidaMovimientoData(
+      compraPartidaId: serializer.fromJson<String>(json['compraPartidaId']),
+      movimientoInventarioId: serializer.fromJson<String>(
+        json['movimientoInventarioId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'compraPartidaId': serializer.toJson<String>(compraPartidaId),
+      'movimientoInventarioId': serializer.toJson<String>(
+        movimientoInventarioId,
+      ),
+    };
+  }
+
+  CompraPartidaMovimientoData copyWith({
+    String? compraPartidaId,
+    String? movimientoInventarioId,
+  }) => CompraPartidaMovimientoData(
+    compraPartidaId: compraPartidaId ?? this.compraPartidaId,
+    movimientoInventarioId:
+        movimientoInventarioId ?? this.movimientoInventarioId,
+  );
+  CompraPartidaMovimientoData copyWithCompanion(
+    CompraPartidaMovimientoCompanion data,
+  ) {
+    return CompraPartidaMovimientoData(
+      compraPartidaId:
+          data.compraPartidaId.present
+              ? data.compraPartidaId.value
+              : this.compraPartidaId,
+      movimientoInventarioId:
+          data.movimientoInventarioId.present
+              ? data.movimientoInventarioId.value
+              : this.movimientoInventarioId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraPartidaMovimientoData(')
+          ..write('compraPartidaId: $compraPartidaId, ')
+          ..write('movimientoInventarioId: $movimientoInventarioId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(compraPartidaId, movimientoInventarioId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CompraPartidaMovimientoData &&
+          other.compraPartidaId == this.compraPartidaId &&
+          other.movimientoInventarioId == this.movimientoInventarioId);
+}
+
+class CompraPartidaMovimientoCompanion
+    extends UpdateCompanion<CompraPartidaMovimientoData> {
+  final Value<String> compraPartidaId;
+  final Value<String> movimientoInventarioId;
+  final Value<int> rowid;
+  const CompraPartidaMovimientoCompanion({
+    this.compraPartidaId = const Value.absent(),
+    this.movimientoInventarioId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CompraPartidaMovimientoCompanion.insert({
+    required String compraPartidaId,
+    required String movimientoInventarioId,
+    this.rowid = const Value.absent(),
+  }) : compraPartidaId = Value(compraPartidaId),
+       movimientoInventarioId = Value(movimientoInventarioId);
+  static Insertable<CompraPartidaMovimientoData> custom({
+    Expression<String>? compraPartidaId,
+    Expression<String>? movimientoInventarioId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (compraPartidaId != null) 'compra_partida_id': compraPartidaId,
+      if (movimientoInventarioId != null)
+        'movimiento_inventario_id': movimientoInventarioId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CompraPartidaMovimientoCompanion copyWith({
+    Value<String>? compraPartidaId,
+    Value<String>? movimientoInventarioId,
+    Value<int>? rowid,
+  }) {
+    return CompraPartidaMovimientoCompanion(
+      compraPartidaId: compraPartidaId ?? this.compraPartidaId,
+      movimientoInventarioId:
+          movimientoInventarioId ?? this.movimientoInventarioId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (compraPartidaId.present) {
+      map['compra_partida_id'] = Variable<String>(compraPartidaId.value);
+    }
+    if (movimientoInventarioId.present) {
+      map['movimiento_inventario_id'] = Variable<String>(
+        movimientoInventarioId.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraPartidaMovimientoCompanion(')
+          ..write('compraPartidaId: $compraPartidaId, ')
+          ..write('movimientoInventarioId: $movimientoInventarioId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CompraAttachmentTable extends CompraAttachment
+    with TableInfo<$CompraAttachmentTable, CompraAttachmentData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CompraAttachmentTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES attachment (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _compraIdMeta = const VerificationMeta(
+    'compraId',
+  );
+  @override
+  late final GeneratedColumn<String> compraId = GeneratedColumn<String>(
+    'compra_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES compra (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [attachmentId, compraId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'compra_attachment';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CompraAttachmentData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attachmentIdMeta);
+    }
+    if (data.containsKey('compra_id')) {
+      context.handle(
+        _compraIdMeta,
+        compraId.isAcceptableOrUnknown(data['compra_id']!, _compraIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_compraIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {attachmentId};
+  @override
+  CompraAttachmentData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CompraAttachmentData(
+      attachmentId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attachment_id'],
+          )!,
+      compraId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}compra_id'],
+          )!,
+    );
+  }
+
+  @override
+  $CompraAttachmentTable createAlias(String alias) {
+    return $CompraAttachmentTable(attachedDatabase, alias);
+  }
+}
+
+class CompraAttachmentData extends DataClass
+    implements Insertable<CompraAttachmentData> {
+  final String attachmentId;
+  final String compraId;
+  const CompraAttachmentData({
+    required this.attachmentId,
+    required this.compraId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['attachment_id'] = Variable<String>(attachmentId);
+    map['compra_id'] = Variable<String>(compraId);
+    return map;
+  }
+
+  CompraAttachmentCompanion toCompanion(bool nullToAbsent) {
+    return CompraAttachmentCompanion(
+      attachmentId: Value(attachmentId),
+      compraId: Value(compraId),
+    );
+  }
+
+  factory CompraAttachmentData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CompraAttachmentData(
+      attachmentId: serializer.fromJson<String>(json['attachmentId']),
+      compraId: serializer.fromJson<String>(json['compraId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'attachmentId': serializer.toJson<String>(attachmentId),
+      'compraId': serializer.toJson<String>(compraId),
+    };
+  }
+
+  CompraAttachmentData copyWith({String? attachmentId, String? compraId}) =>
+      CompraAttachmentData(
+        attachmentId: attachmentId ?? this.attachmentId,
+        compraId: compraId ?? this.compraId,
+      );
+  CompraAttachmentData copyWithCompanion(CompraAttachmentCompanion data) {
+    return CompraAttachmentData(
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      compraId: data.compraId.present ? data.compraId.value : this.compraId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraAttachmentData(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('compraId: $compraId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(attachmentId, compraId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CompraAttachmentData &&
+          other.attachmentId == this.attachmentId &&
+          other.compraId == this.compraId);
+}
+
+class CompraAttachmentCompanion extends UpdateCompanion<CompraAttachmentData> {
+  final Value<String> attachmentId;
+  final Value<String> compraId;
+  final Value<int> rowid;
+  const CompraAttachmentCompanion({
+    this.attachmentId = const Value.absent(),
+    this.compraId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CompraAttachmentCompanion.insert({
+    required String attachmentId,
+    required String compraId,
+    this.rowid = const Value.absent(),
+  }) : attachmentId = Value(attachmentId),
+       compraId = Value(compraId);
+  static Insertable<CompraAttachmentData> custom({
+    Expression<String>? attachmentId,
+    Expression<String>? compraId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (compraId != null) 'compra_id': compraId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CompraAttachmentCompanion copyWith({
+    Value<String>? attachmentId,
+    Value<String>? compraId,
+    Value<int>? rowid,
+  }) {
+    return CompraAttachmentCompanion(
+      attachmentId: attachmentId ?? this.attachmentId,
+      compraId: compraId ?? this.compraId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (compraId.present) {
+      map['compra_id'] = Variable<String>(compraId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraAttachmentCompanion(')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('compraId: $compraId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CompraEventoTable extends CompraEvento
+    with TableInfo<$CompraEventoTable, CompraEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CompraEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _compraIdMeta = const VerificationMeta(
+    'compraId',
+  );
+  @override
+  late final GeneratedColumn<String> compraId = GeneratedColumn<String>(
+    'compra_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES compra (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoAnteriorMeta = const VerificationMeta(
+    'estadoAnterior',
+  );
+  @override
+  late final GeneratedColumn<String> estadoAnterior = GeneratedColumn<String>(
+    'estado_anterior',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estadoNuevoMeta = const VerificationMeta(
+    'estadoNuevo',
+  );
+  @override
+  late final GeneratedColumn<String> estadoNuevo = GeneratedColumn<String>(
+    'estado_nuevo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorMeta = const VerificationMeta('actor');
+  @override
+  late final GeneratedColumn<String> actor = GeneratedColumn<String>(
+    'actor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    compraId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'compra_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CompraEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('compra_id')) {
+      context.handle(
+        _compraIdMeta,
+        compraId.isAcceptableOrUnknown(data['compra_id']!, _compraIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_compraIdMeta);
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('estado_anterior')) {
+      context.handle(
+        _estadoAnteriorMeta,
+        estadoAnterior.isAcceptableOrUnknown(
+          data['estado_anterior']!,
+          _estadoAnteriorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estado_nuevo')) {
+      context.handle(
+        _estadoNuevoMeta,
+        estadoNuevo.isAcceptableOrUnknown(
+          data['estado_nuevo']!,
+          _estadoNuevoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor')) {
+      context.handle(
+        _actorMeta,
+        actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CompraEventoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CompraEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      compraId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}compra_id'],
+          )!,
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      estadoAnterior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_anterior'],
+      ),
+      estadoNuevo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado_nuevo'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      actor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $CompraEventoTable createAlias(String alias) {
+    return $CompraEventoTable(attachedDatabase, alias);
+  }
+}
+
+class CompraEventoData extends DataClass
+    implements Insertable<CompraEventoData> {
+  final int id;
+  final String compraId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? estadoAnterior;
+  final String? estadoNuevo;
+  final String? observacion;
+  final String? actor;
+  final String? datosRelevantes;
+  const CompraEventoData({
+    required this.id,
+    required this.compraId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.estadoAnterior,
+    this.estadoNuevo,
+    this.observacion,
+    this.actor,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['compra_id'] = Variable<String>(compraId);
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || estadoAnterior != null) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior);
+    }
+    if (!nullToAbsent || estadoNuevo != null) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || actor != null) {
+      map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  CompraEventoCompanion toCompanion(bool nullToAbsent) {
+    return CompraEventoCompanion(
+      id: Value(id),
+      compraId: Value(compraId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      estadoAnterior:
+          estadoAnterior == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoAnterior),
+      estadoNuevo:
+          estadoNuevo == null && nullToAbsent
+              ? const Value.absent()
+              : Value(estadoNuevo),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      actor:
+          actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory CompraEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CompraEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      compraId: serializer.fromJson<String>(json['compraId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      estadoAnterior: serializer.fromJson<String?>(json['estadoAnterior']),
+      estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      actor: serializer.fromJson<String?>(json['actor']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'compraId': serializer.toJson<String>(compraId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'estadoAnterior': serializer.toJson<String?>(estadoAnterior),
+      'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
+      'observacion': serializer.toJson<String?>(observacion),
+      'actor': serializer.toJson<String?>(actor),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  CompraEventoData copyWith({
+    int? id,
+    String? compraId,
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> estadoAnterior = const Value.absent(),
+    Value<String?> estadoNuevo = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> actor = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => CompraEventoData(
+    id: id ?? this.id,
+    compraId: compraId ?? this.compraId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    estadoAnterior:
+        estadoAnterior.present ? estadoAnterior.value : this.estadoAnterior,
+    estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    actor: actor.present ? actor.value : this.actor,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  CompraEventoData copyWithCompanion(CompraEventoCompanion data) {
+    return CompraEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      compraId: data.compraId.present ? data.compraId.value : this.compraId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      estadoAnterior:
+          data.estadoAnterior.present
+              ? data.estadoAnterior.value
+              : this.estadoAnterior,
+      estadoNuevo:
+          data.estadoNuevo.present ? data.estadoNuevo.value : this.estadoNuevo,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      actor: data.actor.present ? data.actor.value : this.actor,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraEventoData(')
+          ..write('id: $id, ')
+          ..write('compraId: $compraId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    compraId,
+    fechaHora,
+    tipoEvento,
+    estadoAnterior,
+    estadoNuevo,
+    observacion,
+    actor,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CompraEventoData &&
+          other.id == this.id &&
+          other.compraId == this.compraId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.estadoAnterior == this.estadoAnterior &&
+          other.estadoNuevo == this.estadoNuevo &&
+          other.observacion == this.observacion &&
+          other.actor == this.actor &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
+  final Value<int> id;
+  final Value<String> compraId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> estadoAnterior;
+  final Value<String?> estadoNuevo;
+  final Value<String?> observacion;
+  final Value<String?> actor;
+  final Value<String?> datosRelevantes;
+  const CompraEventoCompanion({
+    this.id = const Value.absent(),
+    this.compraId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  CompraEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String compraId,
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.estadoAnterior = const Value.absent(),
+    this.estadoNuevo = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.actor = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : compraId = Value(compraId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<CompraEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? compraId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? estadoAnterior,
+    Expression<String>? estadoNuevo,
+    Expression<String>? observacion,
+    Expression<String>? actor,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (compraId != null) 'compra_id': compraId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (estadoAnterior != null) 'estado_anterior': estadoAnterior,
+      if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
+      if (observacion != null) 'observacion': observacion,
+      if (actor != null) 'actor': actor,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  CompraEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? compraId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? estadoAnterior,
+    Value<String?>? estadoNuevo,
+    Value<String?>? observacion,
+    Value<String?>? actor,
+    Value<String?>? datosRelevantes,
+  }) {
+    return CompraEventoCompanion(
+      id: id ?? this.id,
+      compraId: compraId ?? this.compraId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      estadoAnterior: estadoAnterior ?? this.estadoAnterior,
+      estadoNuevo: estadoNuevo ?? this.estadoNuevo,
+      observacion: observacion ?? this.observacion,
+      actor: actor ?? this.actor,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (compraId.present) {
+      map['compra_id'] = Variable<String>(compraId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (estadoAnterior.present) {
+      map['estado_anterior'] = Variable<String>(estadoAnterior.value);
+    }
+    if (estadoNuevo.present) {
+      map['estado_nuevo'] = Variable<String>(estadoNuevo.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (actor.present) {
+      map['actor'] = Variable<String>(actor.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompraEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('compraId: $compraId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('estadoAnterior: $estadoAnterior, ')
+          ..write('estadoNuevo: $estadoNuevo, ')
+          ..write('observacion: $observacion, ')
+          ..write('actor: $actor, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -60714,6 +63310,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   recargaLineaTelefonicaAttachment = $RecargaLineaTelefonicaAttachmentTable(
     this,
   );
+  late final $CompraTable compra = $CompraTable(this);
+  late final $CompraPartidaTable compraPartida = $CompraPartidaTable(this);
+  late final $CompraPartidaMovimientoTable compraPartidaMovimiento =
+      $CompraPartidaMovimientoTable(this);
+  late final $CompraAttachmentTable compraAttachment = $CompraAttachmentTable(
+    this,
+  );
+  late final $CompraEventoTable compraEvento = $CompraEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -60855,6 +63459,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     lineaTelefonicaEquipo,
     recargaLineaTelefonica,
     recargaLineaTelefonicaAttachment,
+    compra,
+    compraPartida,
+    compraPartidaMovimiento,
+    compraAttachment,
+    compraEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -61291,6 +63900,27 @@ abstract class _$AppDatabase extends GeneratedDatabase {
           kind: UpdateKind.delete,
         ),
       ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'attachment',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('compra_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'compra',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('compra_attachment', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'compra',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('compra_evento', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -66081,6 +68711,29 @@ final class $$AttachmentTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$CompraAttachmentTable, List<CompraAttachmentData>>
+  _compraAttachmentRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.compraAttachment,
+    aliasName: $_aliasNameGenerator(
+      db.attachment.id,
+      db.compraAttachment.attachmentId,
+    ),
+  );
+
+  $$CompraAttachmentTableProcessedTableManager get compraAttachmentRefs {
+    final manager = $$CompraAttachmentTableTableManager(
+      $_db,
+      $_db.compraAttachment,
+    ).filter((f) => f.attachmentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _compraAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AttachmentTableFilterComposer
@@ -66636,6 +69289,31 @@ class $$AttachmentTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> compraAttachmentRefs(
+    Expression<bool> Function($$CompraAttachmentTableFilterComposer f) f,
+  ) {
+    final $$CompraAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.compraAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -67247,6 +69925,31 @@ class $$AttachmentTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> compraAttachmentRefs<T extends Object>(
+    Expression<T> Function($$CompraAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$CompraAttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraAttachment,
+      getReferencedColumn: (t) => t.attachmentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraAttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compraAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$AttachmentTableTableManager
@@ -67282,6 +69985,7 @@ class $$AttachmentTableTableManager
             bool vehiculoDocumentoAttachmentRefs,
             bool vehiculoMantenimientoAttachmentRefs,
             bool recargaLineaTelefonicaAttachmentRefs,
+            bool compraAttachmentRefs,
           })
         > {
   $$AttachmentTableTableManager(_$AppDatabase db, $AttachmentTable table)
@@ -67377,6 +70081,7 @@ class $$AttachmentTableTableManager
             vehiculoDocumentoAttachmentRefs = false,
             vehiculoMantenimientoAttachmentRefs = false,
             recargaLineaTelefonicaAttachmentRefs = false,
+            compraAttachmentRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -67405,6 +70110,7 @@ class $$AttachmentTableTableManager
                   db.vehiculoMantenimientoAttachment,
                 if (recargaLineaTelefonicaAttachmentRefs)
                   db.recargaLineaTelefonicaAttachment,
+                if (compraAttachmentRefs) db.compraAttachment,
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -67827,6 +70533,28 @@ class $$AttachmentTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (compraAttachmentRefs)
+                    await $_getPrefetchedData<
+                      AttachmentData,
+                      $AttachmentTable,
+                      CompraAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AttachmentTableReferences
+                          ._compraAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$AttachmentTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).compraAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.attachmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -67867,6 +70595,7 @@ typedef $$AttachmentTableProcessedTableManager =
         bool vehiculoDocumentoAttachmentRefs,
         bool vehiculoMantenimientoAttachmentRefs,
         bool recargaLineaTelefonicaAttachmentRefs,
+        bool compraAttachmentRefs,
       })
     >;
 typedef $$HorarioTableCreateCompanionBuilder =
@@ -91304,6 +94033,25 @@ final class $$EgresoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$CompraTable, List<CompraData>> _compraRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.compra,
+    aliasName: $_aliasNameGenerator(db.egreso.id, db.compra.egresoId),
+  );
+
+  $$CompraTableProcessedTableManager get compraRefs {
+    final manager = $$CompraTableTableManager(
+      $_db,
+      $_db.compra,
+    ).filter((f) => f.egresoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_compraRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$EgresoTableFilterComposer
@@ -91543,6 +94291,31 @@ class $$EgresoTableFilterComposer
           }) => $$PagoNominaTableFilterComposer(
             $db: $db,
             $table: $db.pagoNomina,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> compraRefs(
+    Expression<bool> Function($$CompraTableFilterComposer f) f,
+  ) {
+    final $$CompraTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.egresoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableFilterComposer(
+            $db: $db,
+            $table: $db.compra,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -91956,6 +94729,31 @@ class $$EgresoTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> compraRefs<T extends Object>(
+    Expression<T> Function($$CompraTableAnnotationComposer a) f,
+  ) {
+    final $$CompraTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.egresoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$EgresoTableTableManager
@@ -91979,6 +94777,7 @@ class $$EgresoTableTableManager
             bool egresoEventoRefs,
             bool egresoAttachmentRefs,
             bool pagoNominaRefs,
+            bool compraRefs,
           })
         > {
   $$EgresoTableTableManager(_$AppDatabase db, $EgresoTable table)
@@ -92094,6 +94893,7 @@ class $$EgresoTableTableManager
             egresoEventoRefs = false,
             egresoAttachmentRefs = false,
             pagoNominaRefs = false,
+            compraRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -92101,6 +94901,7 @@ class $$EgresoTableTableManager
                 if (egresoEventoRefs) db.egresoEvento,
                 if (egresoAttachmentRefs) db.egresoAttachment,
                 if (pagoNominaRefs) db.pagoNomina,
+                if (compraRefs) db.compra,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -92238,6 +95039,25 @@ class $$EgresoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (compraRefs)
+                    await $_getPrefetchedData<
+                      EgresoData,
+                      $EgresoTable,
+                      CompraData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EgresoTableReferences._compraRefsTable(
+                        db,
+                      ),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EgresoTableReferences(db, table, p0).compraRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.egresoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -92266,6 +95086,7 @@ typedef $$EgresoTableProcessedTableManager =
         bool egresoEventoRefs,
         bool egresoAttachmentRefs,
         bool pagoNominaRefs,
+        bool compraRefs,
       })
     >;
 typedef $$EgresoEventoTableCreateCompanionBuilder =
@@ -107142,6 +109963,27 @@ final class $$ArticuloTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$CompraPartidaTable, List<CompraPartidaData>>
+  _compraPartidaRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.compraPartida,
+    aliasName: $_aliasNameGenerator(
+      db.articulo.id,
+      db.compraPartida.articuloId,
+    ),
+  );
+
+  $$CompraPartidaTableProcessedTableManager get compraPartidaRefs {
+    final manager = $$CompraPartidaTableTableManager(
+      $_db,
+      $_db.compraPartida,
+    ).filter((f) => f.articuloId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_compraPartidaRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ArticuloTableFilterComposer
@@ -107322,6 +110164,31 @@ class $$ArticuloTableFilterComposer
           }) => $$AsignacionTableFilterComposer(
             $db: $db,
             $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> compraPartidaRefs(
+    Expression<bool> Function($$CompraPartidaTableFilterComposer f) f,
+  ) {
+    final $$CompraPartidaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraPartida,
+      getReferencedColumn: (t) => t.articuloId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraPartidaTableFilterComposer(
+            $db: $db,
+            $table: $db.compraPartida,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -107598,6 +110465,31 @@ class $$ArticuloTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> compraPartidaRefs<T extends Object>(
+    Expression<T> Function($$CompraPartidaTableAnnotationComposer a) f,
+  ) {
+    final $$CompraPartidaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraPartida,
+      getReferencedColumn: (t) => t.articuloId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraPartidaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compraPartida,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ArticuloTableTableManager
@@ -107619,6 +110511,7 @@ class $$ArticuloTableTableManager
             bool articuloUnidadRefs,
             bool movimientoInventarioRefs,
             bool asignacionRefs,
+            bool compraPartidaRefs,
           })
         > {
   $$ArticuloTableTableManager(_$AppDatabase db, $ArticuloTable table)
@@ -107708,6 +110601,7 @@ class $$ArticuloTableTableManager
             articuloUnidadRefs = false,
             movimientoInventarioRefs = false,
             asignacionRefs = false,
+            compraPartidaRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -107716,6 +110610,7 @@ class $$ArticuloTableTableManager
                 if (articuloUnidadRefs) db.articuloUnidad,
                 if (movimientoInventarioRefs) db.movimientoInventario,
                 if (asignacionRefs) db.asignacion,
+                if (compraPartidaRefs) db.compraPartida,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -107839,6 +110734,28 @@ class $$ArticuloTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (compraPartidaRefs)
+                    await $_getPrefetchedData<
+                      ArticuloData,
+                      $ArticuloTable,
+                      CompraPartidaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloTableReferences
+                          ._compraPartidaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).compraPartidaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.articuloId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -107865,6 +110782,7 @@ typedef $$ArticuloTableProcessedTableManager =
         bool articuloUnidadRefs,
         bool movimientoInventarioRefs,
         bool asignacionRefs,
+        bool compraPartidaRefs,
       })
     >;
 typedef $$ArticuloVarianteTableCreateCompanionBuilder =
@@ -107964,6 +110882,27 @@ final class $$ArticuloVarianteTableReferences
     ).filter((f) => f.varianteId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_asignacionRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CompraPartidaTable, List<CompraPartidaData>>
+  _compraPartidaRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.compraPartida,
+    aliasName: $_aliasNameGenerator(
+      db.articuloVariante.id,
+      db.compraPartida.varianteId,
+    ),
+  );
+
+  $$CompraPartidaTableProcessedTableManager get compraPartidaRefs {
+    final manager = $$CompraPartidaTableTableManager(
+      $_db,
+      $_db.compraPartida,
+    ).filter((f) => f.varianteId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_compraPartidaRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -108068,6 +111007,31 @@ class $$ArticuloVarianteTableFilterComposer
           }) => $$AsignacionTableFilterComposer(
             $db: $db,
             $table: $db.asignacion,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> compraPartidaRefs(
+    Expression<bool> Function($$CompraPartidaTableFilterComposer f) f,
+  ) {
+    final $$CompraPartidaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraPartida,
+      getReferencedColumn: (t) => t.varianteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraPartidaTableFilterComposer(
+            $db: $db,
+            $table: $db.compraPartida,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -108235,6 +111199,31 @@ class $$ArticuloVarianteTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> compraPartidaRefs<T extends Object>(
+    Expression<T> Function($$CompraPartidaTableAnnotationComposer a) f,
+  ) {
+    final $$CompraPartidaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraPartida,
+      getReferencedColumn: (t) => t.varianteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraPartidaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compraPartida,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ArticuloVarianteTableTableManager
@@ -108254,6 +111243,7 @@ class $$ArticuloVarianteTableTableManager
             bool articuloId,
             bool movimientoInventarioRefs,
             bool asignacionRefs,
+            bool compraPartidaRefs,
           })
         > {
   $$ArticuloVarianteTableTableManager(
@@ -108326,12 +111316,14 @@ class $$ArticuloVarianteTableTableManager
             articuloId = false,
             movimientoInventarioRefs = false,
             asignacionRefs = false,
+            compraPartidaRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (movimientoInventarioRefs) db.movimientoInventario,
                 if (asignacionRefs) db.asignacion,
+                if (compraPartidaRefs) db.compraPartida,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -108411,6 +111403,28 @@ class $$ArticuloVarianteTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (compraPartidaRefs)
+                    await $_getPrefetchedData<
+                      ArticuloVarianteData,
+                      $ArticuloVarianteTable,
+                      CompraPartidaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloVarianteTableReferences
+                          ._compraPartidaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloVarianteTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).compraPartidaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.varianteId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -108435,6 +111449,7 @@ typedef $$ArticuloVarianteTableProcessedTableManager =
         bool articuloId,
         bool movimientoInventarioRefs,
         bool asignacionRefs,
+        bool compraPartidaRefs,
       })
     >;
 typedef $$ArticuloUnidadTableCreateCompanionBuilder =
@@ -109746,6 +112761,36 @@ final class $$MovimientoInventarioTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $CompraPartidaMovimientoTable,
+    List<CompraPartidaMovimientoData>
+  >
+  _compraPartidaMovimientoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.compraPartidaMovimiento,
+        aliasName: $_aliasNameGenerator(
+          db.movimientoInventario.id,
+          db.compraPartidaMovimiento.movimientoInventarioId,
+        ),
+      );
+
+  $$CompraPartidaMovimientoTableProcessedTableManager
+  get compraPartidaMovimientoRefs {
+    final manager = $$CompraPartidaMovimientoTableTableManager(
+      $_db,
+      $_db.compraPartidaMovimiento,
+    ).filter(
+      (f) => f.movimientoInventarioId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _compraPartidaMovimientoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$MovimientoInventarioTableFilterComposer
@@ -109896,6 +112941,32 @@ class $$MovimientoInventarioTableFilterComposer
               }) => $$MovimientoInventarioAttachmentTableFilterComposer(
                 $db: $db,
                 $table: $db.movimientoInventarioAttachment,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> compraPartidaMovimientoRefs(
+    Expression<bool> Function($$CompraPartidaMovimientoTableFilterComposer f) f,
+  ) {
+    final $$CompraPartidaMovimientoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.compraPartidaMovimiento,
+          getReferencedColumn: (t) => t.movimientoInventarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CompraPartidaMovimientoTableFilterComposer(
+                $db: $db,
+                $table: $db.compraPartidaMovimiento,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -110179,6 +113250,33 @@ class $$MovimientoInventarioTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> compraPartidaMovimientoRefs<T extends Object>(
+    Expression<T> Function($$CompraPartidaMovimientoTableAnnotationComposer a)
+    f,
+  ) {
+    final $$CompraPartidaMovimientoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.compraPartidaMovimiento,
+          getReferencedColumn: (t) => t.movimientoInventarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CompraPartidaMovimientoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.compraPartidaMovimiento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$MovimientoInventarioTableTableManager
@@ -110199,6 +113297,7 @@ class $$MovimientoInventarioTableTableManager
             bool varianteId,
             bool unidadId,
             bool movimientoInventarioAttachmentRefs,
+            bool compraPartidaMovimientoRefs,
           })
         > {
   $$MovimientoInventarioTableTableManager(
@@ -110302,12 +113401,14 @@ class $$MovimientoInventarioTableTableManager
             varianteId = false,
             unidadId = false,
             movimientoInventarioAttachmentRefs = false,
+            compraPartidaMovimientoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (movimientoInventarioAttachmentRefs)
                   db.movimientoInventarioAttachment,
+                if (compraPartidaMovimientoRefs) db.compraPartidaMovimiento,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -110396,6 +113497,28 @@ class $$MovimientoInventarioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (compraPartidaMovimientoRefs)
+                    await $_getPrefetchedData<
+                      MovimientoInventarioData,
+                      $MovimientoInventarioTable,
+                      CompraPartidaMovimientoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$MovimientoInventarioTableReferences
+                          ._compraPartidaMovimientoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$MovimientoInventarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).compraPartidaMovimientoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.movimientoInventarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -110421,6 +113544,7 @@ typedef $$MovimientoInventarioTableProcessedTableManager =
         bool varianteId,
         bool unidadId,
         bool movimientoInventarioAttachmentRefs,
+        bool compraPartidaMovimientoRefs,
       })
     >;
 typedef $$MovimientoInventarioAttachmentTableCreateCompanionBuilder =
@@ -120713,6 +123837,2706 @@ typedef $$RecargaLineaTelefonicaAttachmentTableProcessedTableManager =
       RecargaLineaTelefonicaAttachmentData,
       PrefetchHooks Function({bool attachmentId, bool recargaLineaTelefonicaId})
     >;
+typedef $$CompraTableCreateCompanionBuilder =
+    CompraCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String folioCompra,
+      required DateTime fecha,
+      Value<String?> proveedor,
+      required String formaPago,
+      Value<String?> formaPagoOtroDescripcion,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<String?> egresoId,
+      Value<int> rowid,
+    });
+typedef $$CompraTableUpdateCompanionBuilder =
+    CompraCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> folioCompra,
+      Value<DateTime> fecha,
+      Value<String?> proveedor,
+      Value<String> formaPago,
+      Value<String?> formaPagoOtroDescripcion,
+      Value<String?> observaciones,
+      Value<String> estatus,
+      Value<String?> motivoCancelacion,
+      Value<String?> egresoId,
+      Value<int> rowid,
+    });
+
+final class $$CompraTableReferences
+    extends BaseReferences<_$AppDatabase, $CompraTable, CompraData> {
+  $$CompraTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $EgresoTable _egresoIdTable(_$AppDatabase db) => db.egreso.createAlias(
+    $_aliasNameGenerator(db.compra.egresoId, db.egreso.id),
+  );
+
+  $$EgresoTableProcessedTableManager? get egresoId {
+    final $_column = $_itemColumn<String>('egreso_id');
+    if ($_column == null) return null;
+    final manager = $$EgresoTableTableManager(
+      $_db,
+      $_db.egreso,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_egresoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$CompraPartidaTable, List<CompraPartidaData>>
+  _compraPartidaRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.compraPartida,
+    aliasName: $_aliasNameGenerator(db.compra.id, db.compraPartida.compraId),
+  );
+
+  $$CompraPartidaTableProcessedTableManager get compraPartidaRefs {
+    final manager = $$CompraPartidaTableTableManager(
+      $_db,
+      $_db.compraPartida,
+    ).filter((f) => f.compraId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_compraPartidaRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CompraAttachmentTable, List<CompraAttachmentData>>
+  _compraAttachmentRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.compraAttachment,
+    aliasName: $_aliasNameGenerator(db.compra.id, db.compraAttachment.compraId),
+  );
+
+  $$CompraAttachmentTableProcessedTableManager get compraAttachmentRefs {
+    final manager = $$CompraAttachmentTableTableManager(
+      $_db,
+      $_db.compraAttachment,
+    ).filter((f) => f.compraId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _compraAttachmentRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CompraEventoTable, List<CompraEventoData>>
+  _compraEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.compraEvento,
+    aliasName: $_aliasNameGenerator(db.compra.id, db.compraEvento.compraId),
+  );
+
+  $$CompraEventoTableProcessedTableManager get compraEventoRefs {
+    final manager = $$CompraEventoTableTableManager(
+      $_db,
+      $_db.compraEvento,
+    ).filter((f) => f.compraId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_compraEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CompraTableFilterComposer
+    extends Composer<_$AppDatabase, $CompraTable> {
+  $$CompraTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folioCompra => $composableBuilder(
+    column: $table.folioCompra,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get proveedor => $composableBuilder(
+    column: $table.proveedor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formaPago => $composableBuilder(
+    column: $table.formaPago,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formaPagoOtroDescripcion => $composableBuilder(
+    column: $table.formaPagoOtroDescripcion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$EgresoTableFilterComposer get egresoId {
+    final $$EgresoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.egresoId,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableFilterComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> compraPartidaRefs(
+    Expression<bool> Function($$CompraPartidaTableFilterComposer f) f,
+  ) {
+    final $$CompraPartidaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraPartida,
+      getReferencedColumn: (t) => t.compraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraPartidaTableFilterComposer(
+            $db: $db,
+            $table: $db.compraPartida,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> compraAttachmentRefs(
+    Expression<bool> Function($$CompraAttachmentTableFilterComposer f) f,
+  ) {
+    final $$CompraAttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraAttachment,
+      getReferencedColumn: (t) => t.compraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraAttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.compraAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> compraEventoRefs(
+    Expression<bool> Function($$CompraEventoTableFilterComposer f) f,
+  ) {
+    final $$CompraEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraEvento,
+      getReferencedColumn: (t) => t.compraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.compraEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CompraTableOrderingComposer
+    extends Composer<_$AppDatabase, $CompraTable> {
+  $$CompraTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folioCompra => $composableBuilder(
+    column: $table.folioCompra,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get proveedor => $composableBuilder(
+    column: $table.proveedor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formaPago => $composableBuilder(
+    column: $table.formaPago,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formaPagoOtroDescripcion => $composableBuilder(
+    column: $table.formaPagoOtroDescripcion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$EgresoTableOrderingComposer get egresoId {
+    final $$EgresoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.egresoId,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableOrderingComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CompraTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CompraTable> {
+  $$CompraTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get folioCompra => $composableBuilder(
+    column: $table.folioCompra,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get proveedor =>
+      $composableBuilder(column: $table.proveedor, builder: (column) => column);
+
+  GeneratedColumn<String> get formaPago =>
+      $composableBuilder(column: $table.formaPago, builder: (column) => column);
+
+  GeneratedColumn<String> get formaPagoOtroDescripcion => $composableBuilder(
+    column: $table.formaPagoOtroDescripcion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoCancelacion => $composableBuilder(
+    column: $table.motivoCancelacion,
+    builder: (column) => column,
+  );
+
+  $$EgresoTableAnnotationComposer get egresoId {
+    final $$EgresoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.egresoId,
+      referencedTable: $db.egreso,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> compraPartidaRefs<T extends Object>(
+    Expression<T> Function($$CompraPartidaTableAnnotationComposer a) f,
+  ) {
+    final $$CompraPartidaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraPartida,
+      getReferencedColumn: (t) => t.compraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraPartidaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compraPartida,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> compraAttachmentRefs<T extends Object>(
+    Expression<T> Function($$CompraAttachmentTableAnnotationComposer a) f,
+  ) {
+    final $$CompraAttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraAttachment,
+      getReferencedColumn: (t) => t.compraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraAttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compraAttachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> compraEventoRefs<T extends Object>(
+    Expression<T> Function($$CompraEventoTableAnnotationComposer a) f,
+  ) {
+    final $$CompraEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraEvento,
+      getReferencedColumn: (t) => t.compraId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compraEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CompraTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CompraTable,
+          CompraData,
+          $$CompraTableFilterComposer,
+          $$CompraTableOrderingComposer,
+          $$CompraTableAnnotationComposer,
+          $$CompraTableCreateCompanionBuilder,
+          $$CompraTableUpdateCompanionBuilder,
+          (CompraData, $$CompraTableReferences),
+          CompraData,
+          PrefetchHooks Function({
+            bool egresoId,
+            bool compraPartidaRefs,
+            bool compraAttachmentRefs,
+            bool compraEventoRefs,
+          })
+        > {
+  $$CompraTableTableManager(_$AppDatabase db, $CompraTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$CompraTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$CompraTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$CompraTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> folioCompra = const Value.absent(),
+                Value<DateTime> fecha = const Value.absent(),
+                Value<String?> proveedor = const Value.absent(),
+                Value<String> formaPago = const Value.absent(),
+                Value<String?> formaPagoOtroDescripcion = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<String?> egresoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CompraCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folioCompra: folioCompra,
+                fecha: fecha,
+                proveedor: proveedor,
+                formaPago: formaPago,
+                formaPagoOtroDescripcion: formaPagoOtroDescripcion,
+                observaciones: observaciones,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                egresoId: egresoId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String folioCompra,
+                required DateTime fecha,
+                Value<String?> proveedor = const Value.absent(),
+                required String formaPago,
+                Value<String?> formaPagoOtroDescripcion = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> motivoCancelacion = const Value.absent(),
+                Value<String?> egresoId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CompraCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                folioCompra: folioCompra,
+                fecha: fecha,
+                proveedor: proveedor,
+                formaPago: formaPago,
+                formaPagoOtroDescripcion: formaPagoOtroDescripcion,
+                observaciones: observaciones,
+                estatus: estatus,
+                motivoCancelacion: motivoCancelacion,
+                egresoId: egresoId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$CompraTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            egresoId = false,
+            compraPartidaRefs = false,
+            compraAttachmentRefs = false,
+            compraEventoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (compraPartidaRefs) db.compraPartida,
+                if (compraAttachmentRefs) db.compraAttachment,
+                if (compraEventoRefs) db.compraEvento,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (egresoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.egresoId,
+                            referencedTable: $$CompraTableReferences
+                                ._egresoIdTable(db),
+                            referencedColumn:
+                                $$CompraTableReferences._egresoIdTable(db).id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (compraPartidaRefs)
+                    await $_getPrefetchedData<
+                      CompraData,
+                      $CompraTable,
+                      CompraPartidaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CompraTableReferences
+                          ._compraPartidaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$CompraTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).compraPartidaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.compraId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (compraAttachmentRefs)
+                    await $_getPrefetchedData<
+                      CompraData,
+                      $CompraTable,
+                      CompraAttachmentData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CompraTableReferences
+                          ._compraAttachmentRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$CompraTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).compraAttachmentRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.compraId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (compraEventoRefs)
+                    await $_getPrefetchedData<
+                      CompraData,
+                      $CompraTable,
+                      CompraEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CompraTableReferences
+                          ._compraEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$CompraTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).compraEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.compraId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CompraTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CompraTable,
+      CompraData,
+      $$CompraTableFilterComposer,
+      $$CompraTableOrderingComposer,
+      $$CompraTableAnnotationComposer,
+      $$CompraTableCreateCompanionBuilder,
+      $$CompraTableUpdateCompanionBuilder,
+      (CompraData, $$CompraTableReferences),
+      CompraData,
+      PrefetchHooks Function({
+        bool egresoId,
+        bool compraPartidaRefs,
+        bool compraAttachmentRefs,
+        bool compraEventoRefs,
+      })
+    >;
+typedef $$CompraPartidaTableCreateCompanionBuilder =
+    CompraPartidaCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String compraId,
+      required String destino,
+      Value<String?> articuloId,
+      Value<String?> varianteId,
+      Value<String?> concepto,
+      required int cantidad,
+      required int costoUnitario,
+      Value<int> rowid,
+    });
+typedef $$CompraPartidaTableUpdateCompanionBuilder =
+    CompraPartidaCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> compraId,
+      Value<String> destino,
+      Value<String?> articuloId,
+      Value<String?> varianteId,
+      Value<String?> concepto,
+      Value<int> cantidad,
+      Value<int> costoUnitario,
+      Value<int> rowid,
+    });
+
+final class $$CompraPartidaTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $CompraPartidaTable, CompraPartidaData> {
+  $$CompraPartidaTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CompraTable _compraIdTable(_$AppDatabase db) => db.compra.createAlias(
+    $_aliasNameGenerator(db.compraPartida.compraId, db.compra.id),
+  );
+
+  $$CompraTableProcessedTableManager get compraId {
+    final $_column = $_itemColumn<String>('compra_id')!;
+
+    final manager = $$CompraTableTableManager(
+      $_db,
+      $_db.compra,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_compraIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ArticuloTable _articuloIdTable(_$AppDatabase db) =>
+      db.articulo.createAlias(
+        $_aliasNameGenerator(db.compraPartida.articuloId, db.articulo.id),
+      );
+
+  $$ArticuloTableProcessedTableManager? get articuloId {
+    final $_column = $_itemColumn<String>('articulo_id');
+    if ($_column == null) return null;
+    final manager = $$ArticuloTableTableManager(
+      $_db,
+      $_db.articulo,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_articuloIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ArticuloVarianteTable _varianteIdTable(_$AppDatabase db) =>
+      db.articuloVariante.createAlias(
+        $_aliasNameGenerator(
+          db.compraPartida.varianteId,
+          db.articuloVariante.id,
+        ),
+      );
+
+  $$ArticuloVarianteTableProcessedTableManager? get varianteId {
+    final $_column = $_itemColumn<String>('variante_id');
+    if ($_column == null) return null;
+    final manager = $$ArticuloVarianteTableTableManager(
+      $_db,
+      $_db.articuloVariante,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_varianteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CompraPartidaMovimientoTable,
+    List<CompraPartidaMovimientoData>
+  >
+  _compraPartidaMovimientoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.compraPartidaMovimiento,
+        aliasName: $_aliasNameGenerator(
+          db.compraPartida.id,
+          db.compraPartidaMovimiento.compraPartidaId,
+        ),
+      );
+
+  $$CompraPartidaMovimientoTableProcessedTableManager
+  get compraPartidaMovimientoRefs {
+    final manager = $$CompraPartidaMovimientoTableTableManager(
+      $_db,
+      $_db.compraPartidaMovimiento,
+    ).filter(
+      (f) => f.compraPartidaId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _compraPartidaMovimientoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CompraPartidaTableFilterComposer
+    extends Composer<_$AppDatabase, $CompraPartidaTable> {
+  $$CompraPartidaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get destino => $composableBuilder(
+    column: $table.destino,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get costoUnitario => $composableBuilder(
+    column: $table.costoUnitario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CompraTableFilterComposer get compraId {
+    final $$CompraTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraId,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableFilterComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloTableFilterComposer get articuloId {
+    final $$ArticuloTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableFilterComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloVarianteTableFilterComposer get varianteId {
+    final $$ArticuloVarianteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.varianteId,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableFilterComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> compraPartidaMovimientoRefs(
+    Expression<bool> Function($$CompraPartidaMovimientoTableFilterComposer f) f,
+  ) {
+    final $$CompraPartidaMovimientoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.compraPartidaMovimiento,
+          getReferencedColumn: (t) => t.compraPartidaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CompraPartidaMovimientoTableFilterComposer(
+                $db: $db,
+                $table: $db.compraPartidaMovimiento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$CompraPartidaTableOrderingComposer
+    extends Composer<_$AppDatabase, $CompraPartidaTable> {
+  $$CompraPartidaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get destino => $composableBuilder(
+    column: $table.destino,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get costoUnitario => $composableBuilder(
+    column: $table.costoUnitario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CompraTableOrderingComposer get compraId {
+    final $$CompraTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraId,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableOrderingComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloTableOrderingComposer get articuloId {
+    final $$ArticuloTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableOrderingComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloVarianteTableOrderingComposer get varianteId {
+    final $$ArticuloVarianteTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.varianteId,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableOrderingComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CompraPartidaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CompraPartidaTable> {
+  $$CompraPartidaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get destino =>
+      $composableBuilder(column: $table.destino, builder: (column) => column);
+
+  GeneratedColumn<String> get concepto =>
+      $composableBuilder(column: $table.concepto, builder: (column) => column);
+
+  GeneratedColumn<int> get cantidad =>
+      $composableBuilder(column: $table.cantidad, builder: (column) => column);
+
+  GeneratedColumn<int> get costoUnitario => $composableBuilder(
+    column: $table.costoUnitario,
+    builder: (column) => column,
+  );
+
+  $$CompraTableAnnotationComposer get compraId {
+    final $$CompraTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraId,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloTableAnnotationComposer get articuloId {
+    final $$ArticuloTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.articuloId,
+      referencedTable: $db.articulo,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articulo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloVarianteTableAnnotationComposer get varianteId {
+    final $$ArticuloVarianteTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.varianteId,
+      referencedTable: $db.articuloVariante,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloVarianteTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articuloVariante,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> compraPartidaMovimientoRefs<T extends Object>(
+    Expression<T> Function($$CompraPartidaMovimientoTableAnnotationComposer a)
+    f,
+  ) {
+    final $$CompraPartidaMovimientoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.compraPartidaMovimiento,
+          getReferencedColumn: (t) => t.compraPartidaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CompraPartidaMovimientoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.compraPartidaMovimiento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$CompraPartidaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CompraPartidaTable,
+          CompraPartidaData,
+          $$CompraPartidaTableFilterComposer,
+          $$CompraPartidaTableOrderingComposer,
+          $$CompraPartidaTableAnnotationComposer,
+          $$CompraPartidaTableCreateCompanionBuilder,
+          $$CompraPartidaTableUpdateCompanionBuilder,
+          (CompraPartidaData, $$CompraPartidaTableReferences),
+          CompraPartidaData,
+          PrefetchHooks Function({
+            bool compraId,
+            bool articuloId,
+            bool varianteId,
+            bool compraPartidaMovimientoRefs,
+          })
+        > {
+  $$CompraPartidaTableTableManager(_$AppDatabase db, $CompraPartidaTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$CompraPartidaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$CompraPartidaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$CompraPartidaTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> compraId = const Value.absent(),
+                Value<String> destino = const Value.absent(),
+                Value<String?> articuloId = const Value.absent(),
+                Value<String?> varianteId = const Value.absent(),
+                Value<String?> concepto = const Value.absent(),
+                Value<int> cantidad = const Value.absent(),
+                Value<int> costoUnitario = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CompraPartidaCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                compraId: compraId,
+                destino: destino,
+                articuloId: articuloId,
+                varianteId: varianteId,
+                concepto: concepto,
+                cantidad: cantidad,
+                costoUnitario: costoUnitario,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String compraId,
+                required String destino,
+                Value<String?> articuloId = const Value.absent(),
+                Value<String?> varianteId = const Value.absent(),
+                Value<String?> concepto = const Value.absent(),
+                required int cantidad,
+                required int costoUnitario,
+                Value<int> rowid = const Value.absent(),
+              }) => CompraPartidaCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                compraId: compraId,
+                destino: destino,
+                articuloId: articuloId,
+                varianteId: varianteId,
+                concepto: concepto,
+                cantidad: cantidad,
+                costoUnitario: costoUnitario,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$CompraPartidaTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            compraId = false,
+            articuloId = false,
+            varianteId = false,
+            compraPartidaMovimientoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (compraPartidaMovimientoRefs) db.compraPartidaMovimiento,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (compraId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.compraId,
+                            referencedTable: $$CompraPartidaTableReferences
+                                ._compraIdTable(db),
+                            referencedColumn:
+                                $$CompraPartidaTableReferences
+                                    ._compraIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (articuloId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.articuloId,
+                            referencedTable: $$CompraPartidaTableReferences
+                                ._articuloIdTable(db),
+                            referencedColumn:
+                                $$CompraPartidaTableReferences
+                                    ._articuloIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (varianteId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.varianteId,
+                            referencedTable: $$CompraPartidaTableReferences
+                                ._varianteIdTable(db),
+                            referencedColumn:
+                                $$CompraPartidaTableReferences
+                                    ._varianteIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (compraPartidaMovimientoRefs)
+                    await $_getPrefetchedData<
+                      CompraPartidaData,
+                      $CompraPartidaTable,
+                      CompraPartidaMovimientoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CompraPartidaTableReferences
+                          ._compraPartidaMovimientoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$CompraPartidaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).compraPartidaMovimientoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.compraPartidaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CompraPartidaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CompraPartidaTable,
+      CompraPartidaData,
+      $$CompraPartidaTableFilterComposer,
+      $$CompraPartidaTableOrderingComposer,
+      $$CompraPartidaTableAnnotationComposer,
+      $$CompraPartidaTableCreateCompanionBuilder,
+      $$CompraPartidaTableUpdateCompanionBuilder,
+      (CompraPartidaData, $$CompraPartidaTableReferences),
+      CompraPartidaData,
+      PrefetchHooks Function({
+        bool compraId,
+        bool articuloId,
+        bool varianteId,
+        bool compraPartidaMovimientoRefs,
+      })
+    >;
+typedef $$CompraPartidaMovimientoTableCreateCompanionBuilder =
+    CompraPartidaMovimientoCompanion Function({
+      required String compraPartidaId,
+      required String movimientoInventarioId,
+      Value<int> rowid,
+    });
+typedef $$CompraPartidaMovimientoTableUpdateCompanionBuilder =
+    CompraPartidaMovimientoCompanion Function({
+      Value<String> compraPartidaId,
+      Value<String> movimientoInventarioId,
+      Value<int> rowid,
+    });
+
+final class $$CompraPartidaMovimientoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CompraPartidaMovimientoTable,
+          CompraPartidaMovimientoData
+        > {
+  $$CompraPartidaMovimientoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CompraPartidaTable _compraPartidaIdTable(_$AppDatabase db) =>
+      db.compraPartida.createAlias(
+        $_aliasNameGenerator(
+          db.compraPartidaMovimiento.compraPartidaId,
+          db.compraPartida.id,
+        ),
+      );
+
+  $$CompraPartidaTableProcessedTableManager get compraPartidaId {
+    final $_column = $_itemColumn<String>('compra_partida_id')!;
+
+    final manager = $$CompraPartidaTableTableManager(
+      $_db,
+      $_db.compraPartida,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_compraPartidaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MovimientoInventarioTable _movimientoInventarioIdTable(
+    _$AppDatabase db,
+  ) => db.movimientoInventario.createAlias(
+    $_aliasNameGenerator(
+      db.compraPartidaMovimiento.movimientoInventarioId,
+      db.movimientoInventario.id,
+    ),
+  );
+
+  $$MovimientoInventarioTableProcessedTableManager get movimientoInventarioId {
+    final $_column = $_itemColumn<String>('movimiento_inventario_id')!;
+
+    final manager = $$MovimientoInventarioTableTableManager(
+      $_db,
+      $_db.movimientoInventario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _movimientoInventarioIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CompraPartidaMovimientoTableFilterComposer
+    extends Composer<_$AppDatabase, $CompraPartidaMovimientoTable> {
+  $$CompraPartidaMovimientoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CompraPartidaTableFilterComposer get compraPartidaId {
+    final $$CompraPartidaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraPartidaId,
+      referencedTable: $db.compraPartida,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraPartidaTableFilterComposer(
+            $db: $db,
+            $table: $db.compraPartida,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovimientoInventarioTableFilterComposer get movimientoInventarioId {
+    final $$MovimientoInventarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.movimientoInventarioId,
+      referencedTable: $db.movimientoInventario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovimientoInventarioTableFilterComposer(
+            $db: $db,
+            $table: $db.movimientoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CompraPartidaMovimientoTableOrderingComposer
+    extends Composer<_$AppDatabase, $CompraPartidaMovimientoTable> {
+  $$CompraPartidaMovimientoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CompraPartidaTableOrderingComposer get compraPartidaId {
+    final $$CompraPartidaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraPartidaId,
+      referencedTable: $db.compraPartida,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraPartidaTableOrderingComposer(
+            $db: $db,
+            $table: $db.compraPartida,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovimientoInventarioTableOrderingComposer get movimientoInventarioId {
+    final $$MovimientoInventarioTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.movimientoInventarioId,
+          referencedTable: $db.movimientoInventario,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioTableOrderingComposer(
+                $db: $db,
+                $table: $db.movimientoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CompraPartidaMovimientoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CompraPartidaMovimientoTable> {
+  $$CompraPartidaMovimientoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CompraPartidaTableAnnotationComposer get compraPartidaId {
+    final $$CompraPartidaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraPartidaId,
+      referencedTable: $db.compraPartida,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraPartidaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compraPartida,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovimientoInventarioTableAnnotationComposer get movimientoInventarioId {
+    final $$MovimientoInventarioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.movimientoInventarioId,
+          referencedTable: $db.movimientoInventario,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.movimientoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CompraPartidaMovimientoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CompraPartidaMovimientoTable,
+          CompraPartidaMovimientoData,
+          $$CompraPartidaMovimientoTableFilterComposer,
+          $$CompraPartidaMovimientoTableOrderingComposer,
+          $$CompraPartidaMovimientoTableAnnotationComposer,
+          $$CompraPartidaMovimientoTableCreateCompanionBuilder,
+          $$CompraPartidaMovimientoTableUpdateCompanionBuilder,
+          (
+            CompraPartidaMovimientoData,
+            $$CompraPartidaMovimientoTableReferences,
+          ),
+          CompraPartidaMovimientoData,
+          PrefetchHooks Function({
+            bool compraPartidaId,
+            bool movimientoInventarioId,
+          })
+        > {
+  $$CompraPartidaMovimientoTableTableManager(
+    _$AppDatabase db,
+    $CompraPartidaMovimientoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$CompraPartidaMovimientoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$CompraPartidaMovimientoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$CompraPartidaMovimientoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> compraPartidaId = const Value.absent(),
+                Value<String> movimientoInventarioId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CompraPartidaMovimientoCompanion(
+                compraPartidaId: compraPartidaId,
+                movimientoInventarioId: movimientoInventarioId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String compraPartidaId,
+                required String movimientoInventarioId,
+                Value<int> rowid = const Value.absent(),
+              }) => CompraPartidaMovimientoCompanion.insert(
+                compraPartidaId: compraPartidaId,
+                movimientoInventarioId: movimientoInventarioId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$CompraPartidaMovimientoTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            compraPartidaId = false,
+            movimientoInventarioId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (compraPartidaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.compraPartidaId,
+                            referencedTable:
+                                $$CompraPartidaMovimientoTableReferences
+                                    ._compraPartidaIdTable(db),
+                            referencedColumn:
+                                $$CompraPartidaMovimientoTableReferences
+                                    ._compraPartidaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (movimientoInventarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.movimientoInventarioId,
+                            referencedTable:
+                                $$CompraPartidaMovimientoTableReferences
+                                    ._movimientoInventarioIdTable(db),
+                            referencedColumn:
+                                $$CompraPartidaMovimientoTableReferences
+                                    ._movimientoInventarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CompraPartidaMovimientoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CompraPartidaMovimientoTable,
+      CompraPartidaMovimientoData,
+      $$CompraPartidaMovimientoTableFilterComposer,
+      $$CompraPartidaMovimientoTableOrderingComposer,
+      $$CompraPartidaMovimientoTableAnnotationComposer,
+      $$CompraPartidaMovimientoTableCreateCompanionBuilder,
+      $$CompraPartidaMovimientoTableUpdateCompanionBuilder,
+      (CompraPartidaMovimientoData, $$CompraPartidaMovimientoTableReferences),
+      CompraPartidaMovimientoData,
+      PrefetchHooks Function({
+        bool compraPartidaId,
+        bool movimientoInventarioId,
+      })
+    >;
+typedef $$CompraAttachmentTableCreateCompanionBuilder =
+    CompraAttachmentCompanion Function({
+      required String attachmentId,
+      required String compraId,
+      Value<int> rowid,
+    });
+typedef $$CompraAttachmentTableUpdateCompanionBuilder =
+    CompraAttachmentCompanion Function({
+      Value<String> attachmentId,
+      Value<String> compraId,
+      Value<int> rowid,
+    });
+
+final class $$CompraAttachmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CompraAttachmentTable,
+          CompraAttachmentData
+        > {
+  $$CompraAttachmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AttachmentTable _attachmentIdTable(_$AppDatabase db) =>
+      db.attachment.createAlias(
+        $_aliasNameGenerator(
+          db.compraAttachment.attachmentId,
+          db.attachment.id,
+        ),
+      );
+
+  $$AttachmentTableProcessedTableManager get attachmentId {
+    final $_column = $_itemColumn<String>('attachment_id')!;
+
+    final manager = $$AttachmentTableTableManager(
+      $_db,
+      $_db.attachment,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_attachmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CompraTable _compraIdTable(_$AppDatabase db) => db.compra.createAlias(
+    $_aliasNameGenerator(db.compraAttachment.compraId, db.compra.id),
+  );
+
+  $$CompraTableProcessedTableManager get compraId {
+    final $_column = $_itemColumn<String>('compra_id')!;
+
+    final manager = $$CompraTableTableManager(
+      $_db,
+      $_db.compra,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_compraIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CompraAttachmentTableFilterComposer
+    extends Composer<_$AppDatabase, $CompraAttachmentTable> {
+  $$CompraAttachmentTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableFilterComposer get attachmentId {
+    final $$AttachmentTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableFilterComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CompraTableFilterComposer get compraId {
+    final $$CompraTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraId,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableFilterComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CompraAttachmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $CompraAttachmentTable> {
+  $$CompraAttachmentTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableOrderingComposer get attachmentId {
+    final $$AttachmentTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableOrderingComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CompraTableOrderingComposer get compraId {
+    final $$CompraTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraId,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableOrderingComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CompraAttachmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CompraAttachmentTable> {
+  $$CompraAttachmentTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$AttachmentTableAnnotationComposer get attachmentId {
+    final $$AttachmentTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.attachmentId,
+      referencedTable: $db.attachment,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachment,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CompraTableAnnotationComposer get compraId {
+    final $$CompraTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraId,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CompraAttachmentTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CompraAttachmentTable,
+          CompraAttachmentData,
+          $$CompraAttachmentTableFilterComposer,
+          $$CompraAttachmentTableOrderingComposer,
+          $$CompraAttachmentTableAnnotationComposer,
+          $$CompraAttachmentTableCreateCompanionBuilder,
+          $$CompraAttachmentTableUpdateCompanionBuilder,
+          (CompraAttachmentData, $$CompraAttachmentTableReferences),
+          CompraAttachmentData,
+          PrefetchHooks Function({bool attachmentId, bool compraId})
+        > {
+  $$CompraAttachmentTableTableManager(
+    _$AppDatabase db,
+    $CompraAttachmentTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () =>
+                  $$CompraAttachmentTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$CompraAttachmentTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$CompraAttachmentTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> attachmentId = const Value.absent(),
+                Value<String> compraId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CompraAttachmentCompanion(
+                attachmentId: attachmentId,
+                compraId: compraId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String attachmentId,
+                required String compraId,
+                Value<int> rowid = const Value.absent(),
+              }) => CompraAttachmentCompanion.insert(
+                attachmentId: attachmentId,
+                compraId: compraId,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$CompraAttachmentTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({attachmentId = false, compraId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (attachmentId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.attachmentId,
+                            referencedTable: $$CompraAttachmentTableReferences
+                                ._attachmentIdTable(db),
+                            referencedColumn:
+                                $$CompraAttachmentTableReferences
+                                    ._attachmentIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (compraId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.compraId,
+                            referencedTable: $$CompraAttachmentTableReferences
+                                ._compraIdTable(db),
+                            referencedColumn:
+                                $$CompraAttachmentTableReferences
+                                    ._compraIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CompraAttachmentTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CompraAttachmentTable,
+      CompraAttachmentData,
+      $$CompraAttachmentTableFilterComposer,
+      $$CompraAttachmentTableOrderingComposer,
+      $$CompraAttachmentTableAnnotationComposer,
+      $$CompraAttachmentTableCreateCompanionBuilder,
+      $$CompraAttachmentTableUpdateCompanionBuilder,
+      (CompraAttachmentData, $$CompraAttachmentTableReferences),
+      CompraAttachmentData,
+      PrefetchHooks Function({bool attachmentId, bool compraId})
+    >;
+typedef $$CompraEventoTableCreateCompanionBuilder =
+    CompraEventoCompanion Function({
+      Value<int> id,
+      required String compraId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+typedef $$CompraEventoTableUpdateCompanionBuilder =
+    CompraEventoCompanion Function({
+      Value<int> id,
+      Value<String> compraId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> estadoAnterior,
+      Value<String?> estadoNuevo,
+      Value<String?> observacion,
+      Value<String?> actor,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$CompraEventoTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $CompraEventoTable, CompraEventoData> {
+  $$CompraEventoTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CompraTable _compraIdTable(_$AppDatabase db) => db.compra.createAlias(
+    $_aliasNameGenerator(db.compraEvento.compraId, db.compra.id),
+  );
+
+  $$CompraTableProcessedTableManager get compraId {
+    final $_column = $_itemColumn<String>('compra_id')!;
+
+    final manager = $$CompraTableTableManager(
+      $_db,
+      $_db.compra,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_compraIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CompraEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $CompraEventoTable> {
+  $$CompraEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CompraTableFilterComposer get compraId {
+    final $$CompraTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraId,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableFilterComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CompraEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $CompraEventoTable> {
+  $$CompraEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actor => $composableBuilder(
+    column: $table.actor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CompraTableOrderingComposer get compraId {
+    final $$CompraTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraId,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableOrderingComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CompraEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CompraEventoTable> {
+  $$CompraEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoAnterior => $composableBuilder(
+    column: $table.estadoAnterior,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadoNuevo => $composableBuilder(
+    column: $table.estadoNuevo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actor =>
+      $composableBuilder(column: $table.actor, builder: (column) => column);
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$CompraTableAnnotationComposer get compraId {
+    final $$CompraTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.compraId,
+      referencedTable: $db.compra,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CompraEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CompraEventoTable,
+          CompraEventoData,
+          $$CompraEventoTableFilterComposer,
+          $$CompraEventoTableOrderingComposer,
+          $$CompraEventoTableAnnotationComposer,
+          $$CompraEventoTableCreateCompanionBuilder,
+          $$CompraEventoTableUpdateCompanionBuilder,
+          (CompraEventoData, $$CompraEventoTableReferences),
+          CompraEventoData,
+          PrefetchHooks Function({bool compraId})
+        > {
+  $$CompraEventoTableTableManager(_$AppDatabase db, $CompraEventoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$CompraEventoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$CompraEventoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () =>
+                  $$CompraEventoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> compraId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => CompraEventoCompanion(
+                id: id,
+                compraId: compraId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String compraId,
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> estadoAnterior = const Value.absent(),
+                Value<String?> estadoNuevo = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> actor = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => CompraEventoCompanion.insert(
+                id: id,
+                compraId: compraId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                estadoAnterior: estadoAnterior,
+                estadoNuevo: estadoNuevo,
+                observacion: observacion,
+                actor: actor,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$CompraEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({compraId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (compraId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.compraId,
+                            referencedTable: $$CompraEventoTableReferences
+                                ._compraIdTable(db),
+                            referencedColumn:
+                                $$CompraEventoTableReferences
+                                    ._compraIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CompraEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CompraEventoTable,
+      CompraEventoData,
+      $$CompraEventoTableFilterComposer,
+      $$CompraEventoTableOrderingComposer,
+      $$CompraEventoTableAnnotationComposer,
+      $$CompraEventoTableCreateCompanionBuilder,
+      $$CompraEventoTableUpdateCompanionBuilder,
+      (CompraEventoData, $$CompraEventoTableReferences),
+      CompraEventoData,
+      PrefetchHooks Function({bool compraId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -120977,4 +126801,17 @@ class $AppDatabaseManager {
         _db,
         _db.recargaLineaTelefonicaAttachment,
       );
+  $$CompraTableTableManager get compra =>
+      $$CompraTableTableManager(_db, _db.compra);
+  $$CompraPartidaTableTableManager get compraPartida =>
+      $$CompraPartidaTableTableManager(_db, _db.compraPartida);
+  $$CompraPartidaMovimientoTableTableManager get compraPartidaMovimiento =>
+      $$CompraPartidaMovimientoTableTableManager(
+        _db,
+        _db.compraPartidaMovimiento,
+      );
+  $$CompraAttachmentTableTableManager get compraAttachment =>
+      $$CompraAttachmentTableTableManager(_db, _db.compraAttachment);
+  $$CompraEventoTableTableManager get compraEvento =>
+      $$CompraEventoTableTableManager(_db, _db.compraEvento);
 }

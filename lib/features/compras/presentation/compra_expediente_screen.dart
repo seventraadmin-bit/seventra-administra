@@ -1,0 +1,310 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+
+import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formaPagoLabel;
+import 'package:riseg_one/features/inventario/inventario_providers.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart'
+    show attachmentRepositoryProvider, attachmentStorageProvider;
+
+import '../../inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
+import '../data/tables/compra_partida_table.dart' show DestinoCompraPartida;
+import 'compras_controller.dart';
+import 'compras_list_screen.dart' show compraEstatusLabel, compraEstatusTono;
+import 'widgets/cancelar_compra_dialog.dart';
+import 'widgets/corregir_compra_dialog.dart';
+
+final _formatoFecha = DateFormat('dd/MM/yyyy');
+
+/// Expediente de una Compra (Etapa 10) — una sola pantalla desplazable
+/// con secciones, sin pestañas internas (mismo criterio que
+/// `LineaTelefonicaExpedienteScreen`).
+class CompraExpedienteScreen extends ConsumerStatefulWidget {
+  const CompraExpedienteScreen({required this.compraId, super.key});
+
+  final String compraId;
+
+  @override
+  ConsumerState<CompraExpedienteScreen> createState() => _CompraExpedienteScreenState();
+}
+
+class _CompraExpedienteScreenState extends ConsumerState<CompraExpedienteScreen> {
+  CompraData? _compra;
+  List<CompraPartidaData> _partidas = const [];
+  List<MovimientoInventarioData> _movimientos = const [];
+  Map<String, String> _articulosPorId = const {};
+  AttachmentData? _comprobante;
+  bool _cargando = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() => _cargando = true);
+    final notifier = ref.read(comprasControllerProvider.notifier);
+    final compra = await notifier.obtenerCompra(widget.compraId);
+    final partidas = await notifier.obtenerPartidas(widget.compraId);
+    final movimientos = await notifier.obtenerMovimientosGenerados(widget.compraId);
+
+    final articulos = await ref.read(articuloRepositoryProvider).listar();
+    final articulosPorId = {for (final a in articulos) a.id: a.nombre};
+
+    final comprobantes = await ref.read(attachmentRepositoryProvider).listarActivosPorCompra(widget.compraId);
+
+    if (!mounted) return;
+    setState(() {
+      _compra = compra;
+      _partidas = partidas;
+      _movimientos = movimientos;
+      _articulosPorId = articulosPorId;
+      _comprobante = comprobantes.firstOrNull;
+      _cargando = false;
+    });
+  }
+
+  String _partidaDescripcion(CompraPartidaData p) {
+    if (p.destino == DestinoCompraPartida.gastoDirecto.name) return p.concepto ?? '—';
+    return _articulosPorId[p.articuloId] ?? p.articuloId ?? '—';
+  }
+
+  Future<void> _corregir() async {
+    final corregida = await mostrarDialogoCorregirCompra(context, ref, widget.compraId);
+    if (corregida) await _cargar();
+  }
+
+  Future<void> _cancelar() async {
+    final cancelada = await mostrarDialogoCancelarCompra(context, ref, widget.compraId);
+    if (cancelada) await _cargar();
+  }
+
+  Widget _campo(String etiqueta, String valor) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 180, child: Text(etiqueta, style: AppTypography.label.copyWith(color: colors.textMuted))),
+          Expanded(child: Text(valor, style: AppTypography.body)),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.colors;
+
+    if (_cargando) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final compra = _compra;
+    if (compra == null) {
+      return Scaffold(appBar: AppBar(), body: RisegEmptyState(title: l10n.compraExpedienteCargaErrorTitulo, message: ''));
+    }
+
+    final esCancelada = compra.estatus == 'cancelada';
+    final total = _partidas.fold<int>(0, (s, p) => s + p.cantidad * p.costoUnitario);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(compra.folioCompra)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(compra.folioCompra, style: AppTypography.heading2.copyWith(color: colors.textPrimary)),
+                          Text(formatoCosto(total), style: AppTypography.body.copyWith(color: colors.textMuted)),
+                        ],
+                      ),
+                    ),
+                    RisegStatusBadge(label: compraEstatusLabel(l10n, compra.estatus), tone: compraEstatusTono(compra.estatus)),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    RisegButton(
+                      label: l10n.compraExpedienteBotonCorregir,
+                      variant: RisegButtonVariant.secondary,
+                      onPressed: esCancelada ? null : _corregir,
+                    ),
+                    RisegButton(
+                      label: l10n.compraExpedienteBotonCancelar,
+                      variant: RisegButtonVariant.danger,
+                      onPressed: esCancelada ? null : _cancelar,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.compraExpedienteSeccionDatos, style: AppTypography.heading3),
+                      const SizedBox(height: AppSpacing.sm),
+                      _campo(l10n.compraCampoFecha, _formatoFecha.format(compra.fecha)),
+                      _campo(l10n.compraCampoProveedor, compra.proveedor ?? '—'),
+                      _campo(
+                        l10n.compraCampoFormaPago,
+                        compra.formaPago == 'otro' && compra.formaPagoOtroDescripcion != null
+                            ? '${formaPagoLabel(l10n, compra.formaPago)} · ${compra.formaPagoOtroDescripcion}'
+                            : formaPagoLabel(l10n, compra.formaPago),
+                      ),
+                      if (esCancelada) _campo(l10n.compraCancelarCampoMotivo, compra.motivoCancelacion ?? '—'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.compraExpedienteSeccionPartidas, style: AppTypography.heading3),
+                      const SizedBox(height: AppSpacing.sm),
+                      RisegTableBase<CompraPartidaData>(
+                        rows: _partidas,
+                        emptyState: const RisegEmptyState(title: '', message: ''),
+                        columns: [
+                          RisegColumn<CompraPartidaData>(
+                            label: l10n.compraPartidaColumnaDestino,
+                            width: 120,
+                            cellBuilder: (p) => Text(
+                              p.destino == DestinoCompraPartida.inventario.name
+                                  ? l10n.compraPartidaOpcionInventario
+                                  : l10n.compraPartidaOpcionGastoDirecto,
+                            ),
+                          ),
+                          RisegColumn<CompraPartidaData>(
+                            label: l10n.compraPartidaColumnaArticulo,
+                            cellBuilder: (p) => Text(_partidaDescripcion(p)),
+                          ),
+                          RisegColumn<CompraPartidaData>(
+                            label: l10n.compraPartidaColumnaCantidad,
+                            width: 90,
+                            alignment: TextAlign.right,
+                            cellBuilder: (p) => Text('${p.cantidad}'),
+                          ),
+                          RisegColumn<CompraPartidaData>(
+                            label: l10n.compraPartidaColumnaCostoUnitario,
+                            width: 110,
+                            alignment: TextAlign.right,
+                            cellBuilder: (p) => Text(formatoCosto(p.costoUnitario)),
+                          ),
+                          RisegColumn<CompraPartidaData>(
+                            label: l10n.compraPartidaColumnaSubtotal,
+                            width: 110,
+                            alignment: TextAlign.right,
+                            cellBuilder: (p) => Text(formatoCosto(p.cantidad * p.costoUnitario)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.compraExpedienteSeccionIntegraciones, style: AppTypography.heading3),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(l10n.compraIntegracionesEntradasTitulo, style: AppTypography.label),
+                      const SizedBox(height: AppSpacing.xs),
+                      if (_movimientos.isEmpty)
+                        Text(l10n.compraIntegracionesEntradasVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      else
+                        for (final m in _movimientos)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${_articulosPorId[m.articuloId] ?? m.articuloId} · +${m.cantidad} · ${m.costoUnitario == null ? '—' : formatoCosto(m.costoUnitario!)}',
+                                  ),
+                                ),
+                                RisegButton(
+                                  label: l10n.compraIntegracionesVerArticulo,
+                                  variant: RisegButtonVariant.ghost,
+                                  size: RisegButtonSize.compact,
+                                  onPressed: () => context.go('/inventario/${m.articuloId}'),
+                                ),
+                              ],
+                            ),
+                          ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(l10n.compraIntegracionesEgresoTitulo, style: AppTypography.label),
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          Expanded(child: Text(formatoCosto(total))),
+                          RisegButton(
+                            label: l10n.compraIntegracionesVerEgreso,
+                            variant: RisegButtonVariant.ghost,
+                            size: RisegButtonSize.compact,
+                            onPressed: () => context.go('/finanzas'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.compraExpedienteSeccionDocumento, style: AppTypography.heading3),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (_comprobante == null)
+                        Text(l10n.compraDocumentoSinComprobante, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      else
+                        RisegButton(
+                          label: l10n.compraDocumentoBotonAbrir,
+                          variant: RisegButtonVariant.secondary,
+                          onPressed: () => ref.read(attachmentStorageProvider).abrir(_comprobante!.path),
+                        ),
+                    ],
+                  ),
+                ),
+                if ((compra.observaciones ?? '').isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  RisegCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.compraExpedienteSeccionObservaciones, style: AppTypography.heading3),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(compra.observaciones!, style: AppTypography.body),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

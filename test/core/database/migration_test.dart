@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 36;
+const _currentSchemaVersion = 37;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -157,7 +157,7 @@ void main() {
       expect(areas, hasLength(6));
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(20));
+      expect(codigosSecuencia, hasLength(21));
 
       await db.close();
     },
@@ -6793,9 +6793,9 @@ void main() {
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
       expect(
         codigosSecuencia,
-        hasLength(20),
+        hasLength(21),
         reason: '7B no agrega ninguna entrada nueva de CodigoSecuencia (la migración corre hasta '
-            '_currentSchemaVersion, así que sí incluye las de vehiculo/linea_telefonica sembradas en 8A/9A)',
+            '_currentSchemaVersion, así que sí incluye las de vehiculo/linea_telefonica/compra sembradas en 8A/9A/10)',
       );
 
       final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
@@ -8185,6 +8185,176 @@ void main() {
 
       final recarga = await db.into(db.recargaLineaTelefonica).insertReturning(baseRecarga);
       expect(recarga.importe, 20000);
+
+      await db.close();
+    },
+  );
+
+  test(
+    '37.json coincide con el esquema final de la Etapa 10 (tablas nuevas Compra, CompraPartida, '
+    'CompraPartidaMovimiento, CompraAttachment, CompraEvento) — funda el dominio Compras',
+    () async {
+      final schema = await verifier.schemaAt(37);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(
+        tablas,
+        containsAll(['compra', 'compra_partida', 'compra_partida_movimiento', 'compra_attachment', 'compra_evento']),
+      );
+
+      final sqlCompra =
+          schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra'").single['sql']
+              as String;
+      expect(sqlCompra, contains('"egreso_id" TEXT NULL UNIQUE REFERENCES egreso (id) ON DELETE RESTRICT'));
+
+      final sqlPartida =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra_partida'")
+                  .single['sql']
+              as String;
+      expect(sqlPartida, contains("CHECK (destino <> 'gastoDirecto' OR articulo_id IS NULL)"));
+      expect(sqlPartida, contains("CHECK (destino <> 'inventario' OR articulo_id IS NOT NULL)"));
+      expect(sqlPartida, contains('CHECK (cantidad > 0)'));
+      expect(sqlPartida, contains('CHECK (costo_unitario >= 0)'));
+
+      final sqlPuente =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra_partida_movimiento'")
+                  .single['sql']
+              as String;
+      expect(sqlPuente, contains('PRIMARY KEY ("movimiento_inventario_id")'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 36 → 37 conserva un Vehículo real y crea las tablas de Compras vacías, sin tocar '
+    'movimiento_inventario/articulo_unidad/egreso',
+    () async {
+      final schemaV36 = await verifier.schemaAt(36);
+      final raw = schemaV36.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO vehiculo (
+        id, codigo, marca, modelo, tipo_vehiculo, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vehiculo-real', 'VEH-000001', 'BMW', '320i', 'sedan', 'disponible', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV36.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final vehiculos = await db.select(db.vehiculo).get();
+      expect(vehiculos, hasLength(1), reason: 'ningún Vehículo real debe perderse en una migración puramente aditiva');
+
+      final compras = await db.select(db.compra).get();
+      expect(compras, isEmpty, reason: 'Compra es tabla nueva en la Etapa 10, sin backfill');
+      final partidas = await db.select(db.compraPartida).get();
+      expect(partidas, isEmpty);
+
+      final codigoCompra =
+          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('compra'))).getSingleOrNull();
+      expect(codigoCompra, isNotNull, reason: 'runSeed debe sembrar el contador de código de compra');
+      expect(codigoCompra!.prefijo, 'COM');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de CompraPartida tras la migración: destino/artículo coherentes, cantidad y costo válidos',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final categoria = await db.into(db.categoriaArticulo).insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Uniformes'),
+          );
+      final articulo = await db.into(db.articulo).insertReturning(
+            ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Camisola CH'),
+          );
+      final egreso = await db.into(db.egreso).insertReturning(
+            EgresoCompanion.insert(
+              folioEgreso: 'EGR-000001',
+              monto: 180000,
+              fecha: DateTime(2026, 8, 10),
+              formaPago: 'tarjeta',
+              concepto: 'Compra COM-000001',
+            ),
+          );
+      final compra = await db.into(db.compra).insertReturning(
+            CompraCompanion.insert(
+              folioCompra: 'COM-000001',
+              fecha: DateTime(2026, 8, 10),
+              formaPago: 'tarjeta',
+              egresoId: Value(egreso.id),
+            ),
+          );
+
+      final basePartida = CompraPartidaCompanion.insert(
+        compraId: compra.id,
+        destino: 'inventario',
+        cantidad: 10,
+        costoUnitario: 18000,
+        articuloId: Value(articulo.id),
+      );
+
+      await expectLater(
+        db.into(db.compraPartida).insert(basePartida.copyWith(destino: const Value('gastoDirecto'))),
+        throwsA(anything),
+        reason: 'destino gastoDirecto con articulo_id poblado debe rechazarse',
+      );
+      await expectLater(
+        db.into(db.compraPartida).insert(basePartida.copyWith(articuloId: const Value.absent(), destino: const Value('inventario'))),
+        throwsA(anything),
+        reason: 'destino inventario sin articulo_id debe rechazarse',
+      );
+      await expectLater(
+        db.into(db.compraPartida).insert(basePartida.copyWith(cantidad: const Value(0))),
+        throwsA(anything),
+        reason: 'cantidad = 0 debe rechazarse',
+      );
+      await expectLater(
+        db.into(db.compraPartida).insert(basePartida.copyWith(costoUnitario: const Value(-1))),
+        throwsA(anything),
+        reason: 'costo_unitario negativo debe rechazarse',
+      );
+
+      final partida = await db.into(db.compraPartida).insertReturning(basePartida);
+      expect(partida.cantidad, 10);
+
+      await expectLater(
+        db.into(db.compra).insert(
+              CompraCompanion.insert(
+                folioCompra: 'COM-000002',
+                fecha: DateTime(2026, 8, 11),
+                formaPago: 'efectivo',
+                egresoId: Value(egreso.id),
+              ),
+            ),
+        throwsA(anything),
+        reason: 'egreso_id debe ser único — un Egreso no puede pertenecer a dos Compras',
+      );
 
       await db.close();
     },

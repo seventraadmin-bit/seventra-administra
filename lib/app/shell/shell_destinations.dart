@@ -22,7 +22,7 @@ class ShellDestination {
   String get id => path.replaceFirst('/', '');
 }
 
-/// Definición estructural (ruta + ícono) de los 11 módulos, sin depender de
+/// Definición estructural (ruta + ícono) de los 12 módulos, sin depender de
 /// localización — la usa el router para construir las ramas del
 /// `StatefulShellRoute`, que se arma una sola vez sin `BuildContext`.
 ///
@@ -47,6 +47,7 @@ const List<({String path, IconData icon})> shellModuleDefs = [
   (path: '/finanzas', icon: Icons.account_balance_outlined),
   (path: '/personal', icon: Icons.people_outline),
   (path: '/inventario', icon: Icons.inventory_2_outlined),
+  (path: '/compras', icon: Icons.shopping_cart_outlined),
   (path: '/activos', icon: Icons.qr_code_2_outlined),
   (path: '/vehiculos', icon: Icons.directions_car_outlined),
   (path: '/telefonia', icon: Icons.phone_iphone_outlined),
@@ -62,6 +63,7 @@ String _labelFor(String path, AppLocalizations l10n) {
     '/finanzas' => l10n.moduleFinanzas,
     '/personal' => l10n.modulePersonal,
     '/inventario' => l10n.moduleInventario,
+    '/compras' => l10n.moduleCompras,
     '/activos' => l10n.moduleActivos,
     '/vehiculos' => l10n.moduleVehiculos,
     '/telefonia' => l10n.moduleTelefonia,
@@ -71,7 +73,7 @@ String _labelFor(String path, AppLocalizations l10n) {
   };
 }
 
-/// Construye los 10 destinos con sus etiquetas localizadas.
+/// Construye los 12 destinos con sus etiquetas localizadas.
 ///
 /// Se llama con el `BuildContext` disponible (en el Shell o en cada
 /// builder de rama) — no se puede memorizar como lista `const` porque

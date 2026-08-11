@@ -211,6 +211,19 @@ class AttachmentRepository {
     return query.map((row) => row.readTable(_db.attachment)).get();
   }
 
+  /// Comprobante/factura PDF activo de una Compra (Etapa 10) — único
+  /// por diseño (`CompraAttachment.attachmentId` es la PK), pero se
+  /// devuelve como lista por consistencia con el resto de estos
+  /// métodos.
+  Future<List<AttachmentData>> listarActivosPorCompra(String compraId) {
+    final query = _db.select(_db.attachment).join([
+      innerJoin(_db.compraAttachment, _db.compraAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.compraAttachment.compraId.equals(compraId) & _db.attachment.estado.equals('activo'))
+      ..orderBy([OrderingTerm.asc(_db.attachment.createdAt)]);
+    return query.map((row) => row.readTable(_db.attachment)).get();
+  }
+
   Future<void> archivar(String id) {
     return (_db.update(_db.attachment)..where((t) => t.id.equals(id))).write(
       const AttachmentCompanion(estado: Value('archivado')),

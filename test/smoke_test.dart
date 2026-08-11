@@ -579,4 +579,28 @@ void main() {
       expect(find.text(l10n.lineaTelefonicaRecargaBotonGuardar), findsNothing);
     },
   );
+
+  testWidgets(
+    'Compras permite abrir el formulario de registro de una compra (Etapa 10)',
+    (tester) async {
+      await _pumpApp(tester);
+
+      await tester.tap(find.byKey(const Key('nav_item_compras')));
+      await tester.pumpAndSettle();
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      expect(find.byKey(const Key('compras_boton_registrar')), findsOneWidget);
+      expect(find.text(l10n.comprasListadoVacioTitulo), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('compras_boton_registrar')));
+      await tester.pumpAndSettle();
+
+      // El título de la pantalla ("Registrar compra") repite el texto
+      // del botón que la abrió — se confirma que sí navegó por una
+      // sección propia de la pantalla ("Partidas"), no solo por texto
+      // compartido.
+      expect(find.text(l10n.compraPartidasSeccionTitulo), findsOneWidget);
+      expect(find.text(l10n.compraBotonAgregarPartida), findsOneWidget);
+    },
+  );
 }

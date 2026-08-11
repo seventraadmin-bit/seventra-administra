@@ -2,6 +2,9 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
+import '../../features/compras/presentation/compra_expediente_screen.dart';
+import '../../features/compras/presentation/compras_list_screen.dart';
+import '../../features/compras/presentation/registrar_compra_screen.dart';
 import '../../features/finanzas/presentation/finanzas_shell_screen.dart';
 import '../../features/inventario/presentation/articulos/articulo_expediente_screen.dart';
 import '../../features/inventario/presentation/inventario_shell_screen.dart';
@@ -33,7 +36,7 @@ import '../shell/shell_destinations.dart';
 /// [createAppRouter].
 ///
 /// Un `StatefulShellRoute.indexedStack` con una rama por cada uno de los
-/// 11 destinos del Shell — cada rama conserva su propia navegación interna
+/// 12 destinos del Shell — cada rama conserva su propia navegación interna
 /// y queda preparada para rutas anidadas (hoy solo tiene el placeholder).
 GoRouter createAppRouter() {
   return GoRouter(
@@ -297,6 +300,28 @@ GoRouter createAppRouter() {
                         path: ':id',
                         builder: (context, state) =>
                             LineaTelefonicaExpedienteScreen(lineaTelefonicaId: state.pathParameters['id']!),
+                      ),
+                    ],
+                  )
+                else if (def.path == '/compras')
+                  // Compras (Etapa 10) — una sola pantalla, sin
+                  // pestañas todavía (mismo criterio que Inventario
+                  // 7A/Vehículos 8A/Telefonía 9A). "Registrar compra"
+                  // es una pantalla completa propia (`/compras/nueva`),
+                  // no un diálogo modal — el volumen potencial de
+                  // partidas y captura de números de serie no cabe
+                  // cómodo en un `RisegDialog` pequeño.
+                  GoRoute(
+                    path: def.path,
+                    builder: (context, state) => const ComprasListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'nueva',
+                        builder: (context, state) => const RegistrarCompraScreen(),
+                      ),
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) => CompraExpedienteScreen(compraId: state.pathParameters['id']!),
                       ),
                     ],
                   )
