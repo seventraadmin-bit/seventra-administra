@@ -5,9 +5,14 @@ import '../../core/attachments/attachment_storage.dart';
 import '../../core/codigos/codigo_secuencia_service.dart';
 import '../../core/codigos/generar_codigo_usecase.dart';
 import '../../core/codigos/generar_numero_usecase.dart';
+import '../../core/database/app_database.dart';
 import '../../core/di/providers.dart';
+import '../../core/error/failure.dart';
+import '../../core/error/result.dart';
+import '../../core/permissions/authorization_service.dart';
 import '../finanzas/finanzas_providers.dart';
 import '../personal/personal_providers.dart';
+import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/area_repository_impl.dart';
 import 'data/repositories/catalogo_repository_impl.dart';
 import 'data/repositories/cliente_repository_impl.dart';
@@ -77,12 +82,15 @@ import 'domain/usecases/ensamblar_documento_por_emitir_usecase.dart';
 import 'domain/usecases/generar_agenda_usecase.dart';
 import 'domain/usecases/desactivar_area_usecase.dart';
 import 'domain/usecases/entidad_fiscal_validator.dart';
+import 'domain/usecases/guardar_area_resultado.dart';
 import 'domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'domain/usecases/guardar_domicilio_fiscal_usecase.dart';
 import 'domain/usecases/guardar_expediente_cliente_usecase.dart';
 import 'domain/usecases/guardar_expediente_empresa_usecase.dart';
 import 'domain/usecases/guardar_expediente_sucursal_usecase.dart';
+import 'domain/usecases/guardar_puesto_resultado.dart';
 import 'domain/usecases/guardar_responsable_interno_usecase.dart';
+import 'domain/usecases/guardar_servicio_resultado.dart';
 import 'domain/usecases/guardar_sueldo_referencia_servicio_usecase.dart';
 import 'domain/usecases/linea_comercial_validator.dart';
 import 'domain/usecases/listar_areas_activas_usecase.dart';
@@ -600,4 +608,143 @@ final reemplazarArchivoDocumentoPorEmitirUseCaseProvider = Provider<ReemplazarAr
     ref.watch(attachmentRepositoryProvider),
     ref.watch(attachmentStorageProvider),
   );
+});
+
+// --- Fachadas de aplicación autorizadas (Etapa 11C) ---
+//
+// Solo para operaciones de escritura que ninguna pantalla invoca a
+// través de un Controller — el alta de Área/Puesto/Sucursal/Cliente/
+// Servicio se llama directo desde el diálogo de alta contra su propio
+// caso de uso (el Controller de listado de cada uno solo carga/recarga,
+// nunca escribe), así que estas fachadas son el punto de entrada de
+// aplicación más bajo y reutilizable que representa cada operación
+// protegida. Mismo criterio que `personal_providers.dart` (Personal no
+// tiene Controller de escritura en absoluto) — expuestas como
+// `Provider<Función>`, nunca como función suelta que reciba `Ref`,
+// porque `WidgetRef` (diálogos) y `ProviderContainer` (pruebas) no
+// comparten más interfaz que `.read(provider)`.
+//
+// `ActivarAreaUseCase`/`ArchivarContactoUseCase`-style casos de uso sin
+// tipo sellado propio (aquí: `ActivarAreaUseCase`, que devuelve
+// `AreaData` a secas) usan `null` como su propio "no autorizado" en vez
+// de inventar un tipo nuevo; los que devuelven `Result<T>` (Cliente,
+// Sucursal) reutilizan `PermissionFailure`, ya definida en
+// `core/error/failure.dart` para exactamente este caso y hasta ahora sin
+// ningún uso real.
+
+typedef CrearAreaAutorizado = Future<GuardarAreaResultado> Function({required String nombre, String? descripcion});
+
+final crearAreaAutorizadoProvider = Provider<CrearAreaAutorizado>((ref) {
+  return ({required String nombre, String? descripcion}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.crear',
+      () => ref.read(crearAreaUseCaseProvider).ejecutar(nombre: nombre, descripcion: descripcion),
+      GuardarAreaErrorInesperado.new,
+    );
+  };
+});
+
+typedef ActualizarAreaAutorizado = Future<GuardarAreaResultado> Function({
+  required String id,
+  required String nombre,
+  String? descripcion,
+});
+
+final actualizarAreaAutorizadoProvider = Provider<ActualizarAreaAutorizado>((ref) {
+  return ({required String id, required String nombre, String? descripcion}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.modificar',
+      () => ref.read(actualizarAreaUseCaseProvider).ejecutar(id: id, nombre: nombre, descripcion: descripcion),
+      GuardarAreaErrorInesperado.new,
+    );
+  };
+});
+
+typedef ActivarAreaAutorizado = Future<AreaData?> Function(String areaId);
+
+final activarAreaAutorizadoProvider = Provider<ActivarAreaAutorizado>((ref) {
+  return (String areaId) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.archivar',
+      () => ref.read(activarAreaUseCaseProvider).ejecutar(areaId),
+      (mensaje) => null,
+    );
+  };
+});
+
+typedef DesactivarAreaAutorizado = Future<DesactivarAreaResultado> Function(String areaId);
+
+final desactivarAreaAutorizadoProvider = Provider<DesactivarAreaAutorizado>((ref) {
+  return (String areaId) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.archivar',
+      () => ref.read(desactivarAreaUseCaseProvider).ejecutar(areaId),
+      DesactivarAreaErrorInesperado.new,
+    );
+  };
+});
+
+typedef CrearPuestoAutorizado = Future<GuardarPuestoResultado> Function(PuestoBorrador borrador);
+
+final crearPuestoAutorizadoProvider = Provider<CrearPuestoAutorizado>((ref) {
+  return (PuestoBorrador borrador) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.crear',
+      () => ref.read(crearPuestoUseCaseProvider).ejecutar(borrador),
+      GuardarPuestoErrorInesperado.new,
+    );
+  };
+});
+
+typedef CrearSucursalAutorizado = Future<Result<SucursalData>> Function({
+  required String nombre,
+  required String tipoSucursalId,
+});
+
+final crearSucursalAutorizadoProvider = Provider<CrearSucursalAutorizado>((ref) {
+  return ({required String nombre, required String tipoSucursalId}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.crear',
+      () => ref.read(crearSucursalUseCaseProvider).ejecutar(nombre: nombre, tipoSucursalId: tipoSucursalId),
+      (mensaje) => Result<SucursalData>.failure(PermissionFailure(mensaje)),
+    );
+  };
+});
+
+typedef CrearClienteAutorizado = Future<Result<ClienteData>> Function({
+  required String nombreComercial,
+  String? observaciones,
+});
+
+final crearClienteAutorizadoProvider = Provider<CrearClienteAutorizado>((ref) {
+  return ({required String nombreComercial, String? observaciones}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.crear',
+      () => ref.read(crearClienteUseCaseProvider).ejecutar(nombreComercial: nombreComercial, observaciones: observaciones),
+      (mensaje) => Result<ClienteData>.failure(PermissionFailure(mensaje)),
+    );
+  };
+});
+
+typedef CrearServicioAutorizado = Future<GuardarServicioResultado> Function({
+  required String clienteId,
+  required ServicioBorrador borrador,
+});
+
+final crearServicioAutorizadoProvider = Provider<CrearServicioAutorizado>((ref) {
+  return ({required String clienteId, required ServicioBorrador borrador}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.crear',
+      () => ref.read(crearServicioUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador),
+      GuardarServicioErrorInesperado.new,
+    );
+  };
 });

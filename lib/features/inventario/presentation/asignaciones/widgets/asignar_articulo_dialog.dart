@@ -20,7 +20,7 @@ Future<bool> mostrarDialogoAsignarArticulo(
   final l10n = AppLocalizations.of(context)!;
   final articuloRepo = ref.read(articuloRepositoryProvider);
   final inventarioRepo = ref.read(inventarioRepositoryProvider);
-  final crearAsignacion = ref.read(crearAsignacionUseCaseProvider);
+  final crearAsignacion = ref.read(crearAsignacionAutorizadoProvider);
 
   final articulos = await articuloRepo.listar();
   if (!context.mounted) return false;
@@ -141,8 +141,7 @@ Future<bool> mostrarDialogoAsignarArticulo(
         errorGeneral = l10n.asignarArticuloErrorUnidadInvalida;
         return null;
       }
-
-      final resultado = await crearAsignacion.ejecutar(
+      final resultado = await crearAsignacion(
         articuloId: articulo!.id,
         varianteId: varianteId,
         unidadId: unidadId,

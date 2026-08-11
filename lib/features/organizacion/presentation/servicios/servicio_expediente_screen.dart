@@ -39,6 +39,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/servicio_errors.
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/inventario_asignado_servicio_section.dart';
 import 'package:riseg_one/features/telefonia/presentation/widgets/linea_telefonica_asignada_servicio_section.dart';
 import 'package:riseg_one/features/vehiculos/presentation/widgets/vehiculo_asignado_servicio_section.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'servicio_expediente_controller.dart';
@@ -283,7 +284,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         items: [for (final e in entidades) RisegSelectItem(value: e.entidadFiscal.id, label: e.entidadFiscal.razonSocial)],
         onCambio: (valor) => seleccionId = valor,
       ),
-      onConfirm: () => _notifier.asignarEntidadFiscal(seleccionId),
+      onConfirm: () {
+        return _notifier.asignarEntidadFiscal(seleccionId);
+      },
     );
 
     if (!mounted) return;
@@ -331,7 +334,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         items: [for (final c in contactos) RisegSelectItem(value: c.id, label: c.nombre)],
         onCambio: (valor) => seleccionId = valor,
       ),
-      onConfirm: () => _notifier.asignarResponsableCliente(seleccionId),
+      onConfirm: () {
+        return _notifier.asignarResponsableCliente(seleccionId);
+      },
     );
 
     if (!mounted) return;
@@ -379,7 +384,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         items: [for (final s in sucursales) RisegSelectItem(value: s.id, label: s.nombre)],
         onCambio: (valor) => seleccionId = valor,
       ),
-      onConfirm: () => _notifier.asignarSucursalAdministrativa(seleccionId),
+      onConfirm: () {
+        return _notifier.asignarSucursalAdministrativa(seleccionId);
+      },
     );
 
     if (!mounted) return;
@@ -422,7 +429,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         valorInicial: texto,
         onCambio: (valor) => texto = valor,
       ),
-      onConfirm: () => _notifier.guardarResponsableInterno(texto),
+      onConfirm: () {
+        return _notifier.guardarResponsableInterno(texto);
+      },
     );
 
     if (!mounted) return;
@@ -498,6 +507,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
             errorBono = l10n.servicioCondicionesPersonalErrorBonoInvalido;
             return null;
           case GuardarSueldoReferenciaServicioNoExiste():
+          case GuardarSueldoReferenciaServicioErrorInesperado():
           case null:
             return false;
         }
@@ -549,7 +559,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         direccionInicial: direccionActual,
         onCambio: (nuevo) => borrador = nuevo,
       ),
-      onConfirm: () => _notifier.guardarDireccionOperativa(borrador),
+      onConfirm: () {
+        return _notifier.guardarDireccionOperativa(borrador);
+      },
     );
 
     if (!mounted) return;
@@ -590,7 +602,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         modalidadesTurno: modalidades,
         onCambio: (nuevo) => borrador = nuevo,
       ),
-      onConfirm: () => _notifier.agregarLineaComercial(borrador),
+      onConfirm: () {
+        return _notifier.agregarLineaComercial(borrador);
+      },
     );
 
     if (!mounted) return;
@@ -643,7 +657,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
           reglas = nuevasReglas;
         },
       ),
-      onConfirm: () => _notifier.agregarConfiguracionCobro(borrador, reglas: reglas),
+      onConfirm: () {
+        return _notifier.agregarConfiguracionCobro(borrador, reglas: reglas);
+      },
     );
 
     if (!mounted) return;
@@ -746,8 +762,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       confirmLabel: l10n.servicioCobroCerrarBotonConfirmar,
       cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
       contentBuilder: (_) => ServicioCerrarConfiguracionCobroForm(onCambio: (valor) => fechaEfectiva = valor),
-      onConfirm: () =>
-          _notifier.cerrarConfiguracionCobro(configuracionCobro.configuracion.id, fechaEfectiva),
+      onConfirm: () {
+        return _notifier.cerrarConfiguracionCobro(configuracionCobro.configuracion.id, fechaEfectiva);
+      },
     );
 
     if (!mounted) return;
@@ -782,10 +799,12 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         vigencia: fila,
         onCambio: (nuevo) => observaciones = nuevo,
       ),
-      onConfirm: () => _notifier.actualizarObservacionesConfiguracionCobroVigencia(
-        vigenciaId: fila.vigencia.id,
-        observaciones: observaciones,
-      ),
+      onConfirm: () {
+        return _notifier.actualizarObservacionesConfiguracionCobroVigencia(
+          vigenciaId: fila.vigencia.id,
+          observaciones: observaciones,
+        );
+      },
     );
 
     if (!mounted) return;
@@ -945,7 +964,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       confirmLabel: l10n.servicioComercialCerrarLineaBotonConfirmar,
       cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
       contentBuilder: (_) => ServicioCerrarLineaForm(onCambio: (valor) => fechaEfectiva = valor),
-      onConfirm: () => _notifier.cerrarLineaComercial(linea.linea.id, fechaEfectiva),
+      onConfirm: () {
+        return _notifier.cerrarLineaComercial(linea.linea.id, fechaEfectiva);
+      },
     );
 
     if (!mounted) return;
@@ -984,11 +1005,13 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
           observaciones = nuevasObservaciones;
         },
       ),
-      onConfirm: () => _notifier.actualizarAnotacionesVigencia(
-        vigenciaId: fila.vigencia.id,
-        descripcion: descripcion,
-        observaciones: observaciones,
-      ),
+      onConfirm: () {
+        return _notifier.actualizarAnotacionesVigencia(
+          vigenciaId: fila.vigencia.id,
+          descripcion: descripcion,
+          observaciones: observaciones,
+        );
+      },
     );
 
     if (!mounted) return;
@@ -1291,17 +1314,29 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
                   onEditar: _editarCondicionesPersonal,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-              ServicioPersonalAsignadoSection(
-                personalVigente: datos.personalVigente,
-                historialPersonal: datos.personalAsignado,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              RisegCard(child: InventarioAsignadoServicioSection(servicioId: widget.servicioId)),
-              const SizedBox(height: AppSpacing.xl),
-              RisegCard(child: VehiculoAsignadoServicioSection(servicioId: widget.servicioId)),
-              const SizedBox(height: AppSpacing.xl),
-              RisegCard(child: LineaTelefonicaAsignadaServicioSection(servicioId: widget.servicioId)),
+              // Secciones de otro dominio embebidas aquí (Etapa 11C, frontera
+              // de lecturas protegidas) — mismo criterio que
+              // `empleado_expediente_screen.dart`: cada una respeta su propio
+              // `modulo.ver` aunque el usuario sí tenga acceso a Comercial.
+              if (ref.watch(permissionServiceProvider).hasCode('personal.ver')) ...[
+                const SizedBox(height: AppSpacing.xl),
+                ServicioPersonalAsignadoSection(
+                  personalVigente: datos.personalVigente,
+                  historialPersonal: datos.personalAsignado,
+                ),
+              ],
+              if (ref.watch(permissionServiceProvider).hasCode('inventario.ver')) ...[
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(child: InventarioAsignadoServicioSection(servicioId: widget.servicioId)),
+              ],
+              if (ref.watch(permissionServiceProvider).hasCode('vehiculos.ver')) ...[
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(child: VehiculoAsignadoServicioSection(servicioId: widget.servicioId)),
+              ],
+              if (ref.watch(permissionServiceProvider).hasCode('telefonia.ver')) ...[
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(child: LineaTelefonicaAsignadaServicioSection(servicioId: widget.servicioId)),
+              ],
               const SizedBox(height: AppSpacing.xl),
               RisegCard(child: ServicioAuditoriaSection(servicio: servicio)),
             ],

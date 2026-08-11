@@ -1,9 +1,14 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/error/failure.dart';
+import 'package:riseg_one/core/error/result.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/organizacion/data/tables/sucursal_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_expediente_sucursal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expediente_data.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expediente_input.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'sucursal_expediente_state.dart';
@@ -75,9 +80,12 @@ class SucursalExpedienteController extends _$SucursalExpedienteController {
 
     state = state.copyWith(guardando: true, erroresGuardado: const [], errorGuardadoGeneral: false);
 
-    final resultado = await ref
-        .read(guardarExpedienteSucursalUseCaseProvider)
-        .ejecutar(sucursalId: sucursalId, input: input);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.modificar',
+      () => ref.read(guardarExpedienteSucursalUseCaseProvider).ejecutar(sucursalId: sucursalId, input: input),
+      GuardarExpedienteSucursalErrorInesperado.new,
+    );
 
     switch (resultado) {
       case GuardarExpedienteSucursalExitoso(datos: final datos):
@@ -106,9 +114,12 @@ class SucursalExpedienteController extends _$SucursalExpedienteController {
     if (state.cambiandoEstadoOperativo || datosActuales == null) return false;
 
     state = state.copyWith(cambiandoEstadoOperativo: true);
-    final resultado = await ref
-        .read(cambiarEstadoOperativoSucursalUseCaseProvider)
-        .ejecutar(sucursalId: sucursalId, nuevo: nuevo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.modificar',
+      () => ref.read(cambiarEstadoOperativoSucursalUseCaseProvider).ejecutar(sucursalId: sucursalId, nuevo: nuevo),
+      (mensaje) => Result<SucursalData>.failure(PermissionFailure(mensaje)),
+    );
 
     return resultado.when(
       ok: (sucursalActualizada) {

@@ -36,7 +36,7 @@ Future<bool> mostrarDialogoCerrarAsignacion(
   List<EmpleadoOpcion> empleadosParaResponsable = const [],
 }) async {
   final l10n = AppLocalizations.of(context)!;
-  final cerrarAsignacion = ref.read(cerrarAsignacionUseCaseProvider);
+  final cerrarAsignacion = ref.read(cerrarAsignacionAutorizadoProvider);
 
   MotivoCierreAsignacion motivo = motivosDisponibles.first;
   bool? atribuibleAlEmpleado;
@@ -128,7 +128,7 @@ Future<bool> mostrarDialogoCerrarAsignacion(
     ),
     onConfirm: () async {
       final importe = double.tryParse(importeCtrl.text.trim().replaceAll(',', ''));
-      final resultado = await cerrarAsignacion.ejecutar(
+      final resultado = await cerrarAsignacion(
         asignacionId: asignacion.id,
         motivo: motivo,
         fechaCierre: fechaCierre ?? DateTime.now(),

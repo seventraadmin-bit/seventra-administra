@@ -14,8 +14,27 @@ import 'package:riseg_one/features/organizacion/domain/usecases/crear_sucursal_u
 import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expediente_input.dart';
 import 'package:riseg_one/features/organizacion/presentation/sucursales/sucursal_expediente_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/sucursales/sucursal_expediente_state.dart';
+import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 const _datosGeneralesValidos = SucursalDatosGeneralesInput(nombre: 'Sucursal Norte', tipoSucursalId: '');
+
+/// Sesión Maestro fija — Etapa 11C activó autorización real en
+/// `SucursalExpedienteController`; sin este override todas las acciones
+/// serían rechazadas por `AuthorizationService` (mismo criterio que
+/// `areas_list_screen_test.dart`).
+class _SesionControllerDePrueba extends SesionController {
+  @override
+  SesionUsuario? build() {
+    return const SesionUsuario(
+      usuarioId: 'usuario-prueba',
+      nombre: 'Usuario de prueba',
+      nombreUsuario: 'prueba',
+      esMaestro: true,
+      permisos: {},
+    );
+  }
+}
 
 void main() {
   late AppDatabase db;
@@ -31,7 +50,12 @@ void main() {
     final creada = await crear.ejecutar(nombre: 'Sucursal Norte', tipoSucursalId: SeedIds.tipoSucursalBaseOperativa);
     sucursalId = creada.when(ok: (s) => s.id, failure: (f) => throw StateError(f.message));
 
-    container = ProviderContainer(overrides: [appDatabaseProvider.overrideWithValue(db)]);
+    container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
+      ],
+    );
     addTearDown(container.dispose);
     container.listen(sucursalExpedienteControllerProvider(sucursalId), (_, _) {});
   });

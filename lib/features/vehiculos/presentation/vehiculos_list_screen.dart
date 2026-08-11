@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import 'vehiculo_labels.dart';
 import 'vehiculos_controller.dart';
@@ -49,7 +50,9 @@ class VehiculosListScreen extends ConsumerWidget {
             primaryAction: RisegButton(
               key: const Key('vehiculos_boton_nuevo_vehiculo'),
               label: l10n.vehiculosBotonNuevoVehiculo,
-              onPressed: () => _nuevoVehiculo(context, ref),
+              onPressed: ref.watch(permissionServiceProvider).hasCode('vehiculos.crear')
+                  ? () => _nuevoVehiculo(context, ref)
+                  : null,
             ),
           ),
           const SizedBox(height: AppSpacing.md),

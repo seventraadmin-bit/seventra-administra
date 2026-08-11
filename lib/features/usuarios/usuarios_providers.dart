@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/auth/password_hasher.dart';
 import 'package:riseg_one/core/di/providers.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/core/permissions/permission_service.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart' show puestoRepositoryProvider;
 
@@ -63,6 +64,15 @@ class SessionPermissionService implements PermissionService {
 
 final permissionServiceProvider = Provider<PermissionService>((ref) {
   return SessionPermissionService(ref.watch(sesionControllerProvider));
+});
+
+/// Punto único de autorización (Etapa 11C) — cualquier Controller que
+/// proteja una acción escribe (`ref.read(authorizationServiceProvider)
+/// .verificar('modulo.accion')`) en vez de leer `permissionServiceProvider`
+/// directo, para que la lógica de "cómo se autoriza" quede en un solo
+/// lugar. Ver el doc comment de `AuthorizationService`.
+final authorizationServiceProvider = Provider<AuthorizationService>((ref) {
+  return AuthorizationService(ref.watch(permissionServiceProvider));
 });
 
 final crearPrimerMaestroUseCaseProvider = Provider<CrearPrimerMaestroUseCase>((ref) {

@@ -100,7 +100,7 @@ Future<bool> mostrarDialogoActualizarSueldoAsignacion(
       }
       final bono = centavosDesdeTexto(bonoController.text) ?? 0;
 
-      final resultado = await ref.read(cambiarVigenciaSueldoAsignacionUseCaseProvider).ejecutar(
+      final resultado = await ref.read(cambiarVigenciaSueldoAsignacionAutorizadoProvider)(
             asignacionServicioId: asignacion.id,
             sueldoMensual: sueldo,
             bonoMensual: bono,

@@ -110,7 +110,7 @@ Future<bool> mostrarDialogoReingresoEmpleado(
         return false;
       }
 
-      final resultado = await ref.read(registrarReingresoUseCaseProvider).ejecutar(
+      final resultado = await ref.read(registrarReingresoAutorizadoProvider)(
             empleadoId: empleado.id,
             fechaIngreso: fecha!,
             puestoId: puestoId,

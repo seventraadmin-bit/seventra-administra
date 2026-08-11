@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/permissions/authorization_service.dart';
 import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
+import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'data/repositories/vehiculo_documento_repository_impl.dart';
 import 'data/repositories/vehiculo_kilometraje_repository_impl.dart';
@@ -158,4 +160,93 @@ final finalizarMantenimientoVehiculoUseCaseProvider = Provider<FinalizarMantenim
     ref.watch(vehiculoRepositoryProvider),
     ref.watch(asignacionVehiculoRepositoryProvider),
   );
+});
+
+// --- Fachadas autorizadas (Etapa 11C) ---
+//
+// `registrar_documento_vehiculo_dialog.dart`/
+// `registrar_mantenimiento_vehiculo_dialog.dart` llaman estos casos de
+// uso directo, sin pasar por `VehiculosController` — mismo motivo que
+// las fachadas de `personal_providers.dart`/`inventario_providers.dart`.
+typedef RegistrarDocumentoVehiculoAutorizado = Future<RegistrarDocumentoVehiculoResultado> Function({
+  required String vehiculoId,
+  required String tipo,
+  String? tipoOtroDescripcion,
+  String? numeroFolio,
+  DateTime? fechaEmision,
+  DateTime? fechaVencimiento,
+  String? observaciones,
+});
+
+final registrarDocumentoVehiculoAutorizadoProvider = Provider<RegistrarDocumentoVehiculoAutorizado>((ref) {
+  return ({
+    required String vehiculoId,
+    required String tipo,
+    String? tipoOtroDescripcion,
+    String? numeroFolio,
+    DateTime? fechaEmision,
+    DateTime? fechaVencimiento,
+    String? observaciones,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.crear',
+      () => ref.read(registrarDocumentoVehiculoUseCaseProvider).ejecutar(
+            vehiculoId: vehiculoId,
+            tipo: tipo,
+            tipoOtroDescripcion: tipoOtroDescripcion,
+            numeroFolio: numeroFolio,
+            fechaEmision: fechaEmision,
+            fechaVencimiento: fechaVencimiento,
+            observaciones: observaciones,
+          ),
+      RegistrarDocumentoVehiculoErrorInesperado.new,
+    );
+  };
+});
+
+typedef RegistrarMantenimientoVehiculoAutorizado = Future<RegistrarMantenimientoVehiculoResultado> Function({
+  required String vehiculoId,
+  required DateTime fecha,
+  int? kilometraje,
+  required String tipo,
+  required String descripcion,
+  String? tallerProveedor,
+  int? costo,
+  DateTime? proximoMantenimientoFecha,
+  int? proximoMantenimientoKilometraje,
+  String? observaciones,
+});
+
+final registrarMantenimientoVehiculoAutorizadoProvider = Provider<RegistrarMantenimientoVehiculoAutorizado>((ref) {
+  return ({
+    required String vehiculoId,
+    required DateTime fecha,
+    int? kilometraje,
+    required String tipo,
+    required String descripcion,
+    String? tallerProveedor,
+    int? costo,
+    DateTime? proximoMantenimientoFecha,
+    int? proximoMantenimientoKilometraje,
+    String? observaciones,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.crear',
+      () => ref.read(registrarMantenimientoVehiculoUseCaseProvider).ejecutar(
+            vehiculoId: vehiculoId,
+            fecha: fecha,
+            kilometraje: kilometraje,
+            tipo: tipo,
+            descripcion: descripcion,
+            tallerProveedor: tallerProveedor,
+            costo: costo,
+            proximoMantenimientoFecha: proximoMantenimientoFecha,
+            proximoMantenimientoKilometraje: proximoMantenimientoKilometraje,
+            observaciones: observaciones,
+          ),
+      RegistrarMantenimientoVehiculoErrorInesperado.new,
+    );
+  };
 });

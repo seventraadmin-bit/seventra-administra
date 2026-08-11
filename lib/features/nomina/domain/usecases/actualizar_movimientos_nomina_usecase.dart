@@ -17,6 +17,13 @@ class ActualizarMovimientosNominaNominaCerrada extends ActualizarMovimientosNomi
 
 class ActualizarMovimientosNominaValorInvalido extends ActualizarMovimientosNominaResultado {}
 
+/// Reservado para la frontera de autorización (Etapa 11C) — nunca lo
+/// produce el propio caso de uso.
+class ActualizarMovimientosNominaErrorInesperado extends ActualizarMovimientosNominaResultado {
+  ActualizarMovimientosNominaErrorInesperado(this.mensaje);
+  final String mensaje;
+}
+
 /// Captura los movimientos manuales de un renglón de Nómina (Etapa 6C)
 /// — préstamo, tiempo extra, bono, faltas, otros descuentos,
 /// observaciones. Solo permitido mientras la Nómina esté en Borrador.

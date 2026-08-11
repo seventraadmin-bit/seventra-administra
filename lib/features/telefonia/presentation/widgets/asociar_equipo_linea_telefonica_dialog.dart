@@ -68,8 +68,7 @@ Future<bool> mostrarDialogoAsociarEquipoLineaTelefonica(
         errorGeneral = l10n.lineaTelefonicaEquipoErrorUnidadRequerida;
         return null;
       }
-
-      final resultado = await ref.read(asociarEquipoLineaTelefonicaUseCaseProvider).ejecutar(
+      final resultado = await ref.read(asociarEquipoLineaTelefonicaAutorizadoProvider)(
             lineaTelefonicaId: lineaTelefonicaId,
             unidadId: unidadId!,
             fechaInicio: fechaInicio,

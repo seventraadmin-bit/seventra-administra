@@ -42,6 +42,25 @@ import 'package:riseg_one/features/personal/presentation/empleados/widgets/actua
 import 'package:riseg_one/features/personal/presentation/empleados/widgets/asignar_servicio_empleado_dialog.dart';
 import 'package:riseg_one/features/personal/presentation/empleados/widgets/cambiar_servicio_empleado_dialog.dart';
 import 'package:riseg_one/features/personal/presentation/empleados/widgets/crear_empleado_dialog.dart';
+import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+
+/// Sesión Maestro fija — Etapa 11C activó autorización real en las
+/// acciones de estos diálogos; sin este override todas serían
+/// rechazadas por `AuthorizationService` (mismo criterio que
+/// `smoke_test.dart`).
+class _SesionControllerDePrueba extends SesionController {
+  @override
+  SesionUsuario? build() {
+    return const SesionUsuario(
+      usuarioId: 'usuario-prueba',
+      nombre: 'Usuario de prueba',
+      nombreUsuario: 'prueba',
+      esMaestro: true,
+      permisos: {},
+    );
+  }
+}
 
 /// El campo de texto (`TextFormField`) que vive dentro del `RisegTextField`
 /// cuya propiedad `label` es exactamente [label] — se busca por la
@@ -80,7 +99,10 @@ Future<void> _pumpHost(WidgetTester tester, AppDatabase db, Widget Function(Buil
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
+      ],
       child: MaterialApp(
         theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,

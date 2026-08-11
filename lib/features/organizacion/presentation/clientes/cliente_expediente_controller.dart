@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_ciclo_vida_entidad_fiscal_usecase.dart';
@@ -13,6 +15,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/guardar_contacto
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_domicilio_fiscal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_expediente_cliente_usecase.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'cliente_expediente_state.dart';
@@ -85,9 +88,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
 
     state = state.copyWith(guardando: true, erroresGuardado: const [], errorGuardadoGeneral: false);
 
-    final resultado = await ref
-        .read(guardarExpedienteClienteUseCaseProvider)
-        .ejecutar(clienteId: clienteId, input: input);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(guardarExpedienteClienteUseCaseProvider).ejecutar(clienteId: clienteId, input: input),
+      GuardarExpedienteClienteErrorInesperado.new,
+    );
 
     switch (resultado) {
       case GuardarExpedienteClienteExitoso(datos: final actualizado):
@@ -119,7 +125,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     if (state.cambiandoEstatus || datosActuales == null) return false;
 
     state = state.copyWith(cambiandoEstatus: true);
-    final resultado = await ref.read(cambiarEstatusClienteUseCaseProvider).ejecutar(clienteId: clienteId, nuevo: nuevo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(cambiarEstatusClienteUseCaseProvider).ejecutar(clienteId: clienteId, nuevo: nuevo),
+      CambiarEstatusClienteErrorInesperado.new,
+    );
 
     switch (resultado) {
       case CambiarEstatusClienteExitoso(cliente: final cliente):
@@ -140,7 +151,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
   }
 
   Future<GuardarContactoResultado> agregarContacto(ContactoBorrador borrador) async {
-    final resultado = await ref.read(agregarContactoUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(agregarContactoUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador),
+      GuardarContactoErrorInesperado.new,
+    );
     if (resultado is GuardarContactoExitoso) {
       await _recargarExpediente();
     }
@@ -148,25 +164,44 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
   }
 
   Future<GuardarContactoResultado> actualizarContacto(String contactoId, ContactoBorrador borrador) async {
-    final resultado = await ref.read(actualizarContactoUseCaseProvider).ejecutar(id: contactoId, borrador: borrador);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(actualizarContactoUseCaseProvider).ejecutar(id: contactoId, borrador: borrador),
+      GuardarContactoErrorInesperado.new,
+    );
     if (resultado is GuardarContactoExitoso) {
       await _recargarExpediente();
     }
     return resultado;
   }
 
-  Future<void> archivarContacto(String contactoId) async {
-    await ref.read(archivarContactoUseCaseProvider).ejecutar(contactoId);
-    await _recargarExpediente();
+  /// Devuelve `true` si el archivado tuvo éxito — `ArchivarContactoUseCase`
+  /// no tiene un tipo sellado propio (archivar un Contacto nunca falla por
+  /// reglas de negocio), así que la frontera de autorización usa `null`
+  /// como su propio "no autorizado" en vez de introducir un tipo nuevo.
+  Future<bool> archivarContacto(String contactoId) async {
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.archivar',
+      () => ref.read(archivarContactoUseCaseProvider).ejecutar(contactoId).then<ContactoData?>((v) => v),
+      (mensaje) => null,
+    );
+    final exito = resultado != null;
+    if (exito) await _recargarExpediente();
+    return exito;
   }
 
   Future<GuardarEntidadFiscalResultado?> agregarEntidadFiscal(EntidadFiscalBorrador borrador) async {
     if (state.operandoEntidadFiscal) return null;
     state = state.copyWith(operandoEntidadFiscal: true);
 
-    final resultado = await ref
-        .read(crearEntidadFiscalUseCaseProvider)
-        .ejecutar(clienteId: clienteId, borrador: borrador);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(crearEntidadFiscalUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador),
+      GuardarEntidadFiscalErrorInesperado.new,
+    );
     if (resultado is GuardarEntidadFiscalExitoso) {
       await _recargarExpediente();
     }
@@ -181,9 +216,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     if (state.operandoEntidadFiscal) return null;
     state = state.copyWith(operandoEntidadFiscal: true);
 
-    final resultado = await ref
-        .read(actualizarEntidadFiscalUseCaseProvider)
-        .ejecutar(id: entidadFiscalId, borrador: borrador);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(actualizarEntidadFiscalUseCaseProvider).ejecutar(id: entidadFiscalId, borrador: borrador),
+      GuardarEntidadFiscalErrorInesperado.new,
+    );
     if (resultado is GuardarEntidadFiscalExitoso) {
       await _recargarExpediente();
     }
@@ -195,9 +233,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     if (state.operandoEntidadFiscal) return false;
     state = state.copyWith(operandoEntidadFiscal: true);
 
-    final resultado = await ref
-        .read(cambiarCicloVidaEntidadFiscalUseCaseProvider)
-        .ejecutar(entidadFiscalId: entidadFiscalId, nuevo: nuevo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.archivar',
+      () => ref.read(cambiarCicloVidaEntidadFiscalUseCaseProvider).ejecutar(entidadFiscalId: entidadFiscalId, nuevo: nuevo),
+      CambiarCicloVidaEntidadFiscalErrorInesperado.new,
+    );
     final exito = resultado is CambiarCicloVidaEntidadFiscalExitoso;
     if (exito) {
       await _recargarExpediente();
@@ -213,9 +254,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     if (state.operandoEntidadFiscal) return null;
     state = state.copyWith(operandoEntidadFiscal: true);
 
-    final resultado = await ref
-        .read(guardarDomicilioFiscalUseCaseProvider)
-        .ejecutar(entidadFiscalId: entidadFiscalId, domicilio: domicilio);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(guardarDomicilioFiscalUseCaseProvider).ejecutar(entidadFiscalId: entidadFiscalId, domicilio: domicilio),
+      GuardarDomicilioFiscalErrorInesperado.new,
+    );
     if (resultado is GuardarDomicilioFiscalExitoso) {
       await _recargarExpediente();
     }

@@ -313,7 +313,7 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
       },
     ),
     onConfirm: () async {
-      final resultado = await ref.read(corregirEmpleadoUseCaseProvider).ejecutar(
+      final resultado = await ref.read(corregirEmpleadoAutorizadoProvider)(
             empleadoId: empleado.id,
             nombres: nombresController.text,
             apellidoPaterno: apellidoPaternoController.text,

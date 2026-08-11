@@ -19,6 +19,13 @@ class DesactivarAreaBloqueadaPorPuestosActivos extends DesactivarAreaResultado {
   final int cantidad;
 }
 
+/// Reservado para la frontera de autorización (Etapa 11C) — nunca lo
+/// produce el propio caso de uso.
+class DesactivarAreaErrorInesperado extends DesactivarAreaResultado {
+  DesactivarAreaErrorInesperado(this.mensaje);
+  final String mensaje;
+}
+
 /// Única operación que saca a un Área de circulación — la regla de
 /// "sin Puestos activos" se aplica siempre aquí, sin excepción ni ruta
 /// alterna que la evite.

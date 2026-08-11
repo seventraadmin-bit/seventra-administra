@@ -37,8 +37,7 @@ Future<bool> mostrarDialogoAdjuntarResguardoFirmado(
   final archivo = seleccion?.files.singleOrNull;
   if (archivo?.path == null) return false;
   if (!context.mounted) return false;
-
-  final resultado = await ref.read(adjuntarResguardoFirmadoUseCaseProvider).ejecutar(
+  final resultado = await ref.read(adjuntarResguardoFirmadoAutorizadoProvider)(
         asignacionIds: seleccionadas,
         sourceFilePath: archivo!.path!,
         originalFileName: archivo.name,

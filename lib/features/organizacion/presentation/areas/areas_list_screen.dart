@@ -38,9 +38,9 @@ class AreasListScreen extends ConsumerWidget {
       ),
       onConfirm: () async {
         if (area == null) {
-          return ref.read(crearAreaUseCaseProvider).ejecutar(nombre: nombre, descripcion: descripcion);
+          return ref.read(crearAreaAutorizadoProvider)(nombre: nombre, descripcion: descripcion);
         }
-        return ref.read(actualizarAreaUseCaseProvider).ejecutar(id: area.id, nombre: nombre, descripcion: descripcion);
+        return ref.read(actualizarAreaAutorizadoProvider)(id: area.id, nombre: nombre, descripcion: descripcion);
       },
     );
 
@@ -69,8 +69,12 @@ class AreasListScreen extends ConsumerWidget {
     );
     if (confirmado != true) return;
 
-    await ref.read(activarAreaUseCaseProvider).ejecutar(area.id);
+    final actualizada = await ref.read(activarAreaAutorizadoProvider)(area.id);
     if (!context.mounted) return;
+    if (actualizada == null) {
+      RisegFeedback.showError(context, l10n.accesoDenegadoAccionMensaje);
+      return;
+    }
     ref.read(areasListControllerProvider.notifier).recargar();
     RisegFeedback.showSuccess(context, l10n.areaCicloVidaCambiadoExito);
   }
@@ -87,12 +91,16 @@ class AreasListScreen extends ConsumerWidget {
     );
     if (confirmado != true) return;
 
-    final resultado = await ref.read(desactivarAreaUseCaseProvider).ejecutar(area.id);
+    final resultado = await ref.read(desactivarAreaAutorizadoProvider)(area.id);
 
     if (!context.mounted) return;
 
     if (resultado is DesactivarAreaBloqueadaPorPuestosActivos) {
       RisegFeedback.showError(context, l10n.areaDesactivarBloqueadaError(resultado.cantidad));
+      return;
+    }
+    if (resultado is DesactivarAreaErrorInesperado) {
+      RisegFeedback.showError(context, l10n.accesoDenegadoAccionMensaje);
       return;
     }
 

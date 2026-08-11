@@ -152,7 +152,6 @@ Future<bool> mostrarDialogoRegistrarEgreso(
         errorConcepto = l10n.egresoErrorConceptoRequerido;
         return false;
       }
-
       final resultado = await ref.read(registrarEgresoUseCaseProvider).ejecutar(
             monto: monto,
             fecha: fechaSeleccionada!,

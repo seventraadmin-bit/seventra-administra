@@ -41,7 +41,7 @@ class _PuestosListScreenState extends ConsumerState<PuestosListScreen> {
       cancelLabel: l10n.puestoAltaBotonCancelar,
       contentBuilder: (_) => _AltaPuestoForm(areas: areas, onCambio: (nuevo) => borrador = nuevo),
       onConfirm: () async {
-        final resultado = await ref.read(crearPuestoUseCaseProvider).ejecutar(borrador);
+        final resultado = await ref.read(crearPuestoAutorizadoProvider)(borrador);
         return resultado is GuardarPuestoExitoso ? resultado.puesto : null;
       },
     );

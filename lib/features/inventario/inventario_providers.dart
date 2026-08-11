@@ -1,14 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/permissions/authorization_service.dart';
 import '../compras/compras_providers.dart' show compraRepositoryProvider;
 import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
+import '../usuarios/usuarios_providers.dart';
 import 'data/pdf/resguardo_pdf_renderer.dart';
 import 'data/repositories/articulo_repository_impl.dart';
 import 'data/repositories/asignacion_repository_impl.dart';
 import 'data/repositories/categoria_articulo_repository_impl.dart';
 import 'data/repositories/inventario_repository_impl.dart';
+import 'data/tables/asignacion_table.dart' show MotivoCierreAsignacion;
 import 'domain/repositories/articulo_repository.dart';
 import 'domain/repositories/asignacion_repository.dart';
 import 'domain/repositories/categoria_articulo_repository.dart';
@@ -188,4 +191,190 @@ final buscarInventarioUseCaseProvider = Provider<BuscarInventarioUseCase>((ref) 
     ref.watch(empleadoRepositoryProvider),
     ref.watch(servicioRepositoryProvider),
   );
+});
+
+// --- Fachadas autorizadas (Etapa 11C) ---
+//
+// Asignaciones se opera desde diálogos que llaman directamente a estos
+// casos de uso (sin pasar por `ArticulosController`), mismo motivo que
+// las fachadas de `personal_providers.dart`: la verificación tiene que
+// vivir en un punto reutilizable incluso sin UI, y `WidgetRef`/`Ref` no
+// son intercambiables, así que la fachada es un `Provider` que
+// devuelve un cierre ya cerrado sobre `ref`.
+typedef CrearAsignacionAutorizado = Future<CrearAsignacionResultado> Function({
+  required String articuloId,
+  String? varianteId,
+  String? unidadId,
+  required int cantidad,
+  String? empleadoId,
+  String? servicioId,
+  required DateTime fechaEntrega,
+  String? condicionEntrega,
+  String? observaciones,
+  String? actor,
+});
+
+final crearAsignacionAutorizadoProvider = Provider<CrearAsignacionAutorizado>((ref) {
+  return ({
+    required String articuloId,
+    String? varianteId,
+    String? unidadId,
+    required int cantidad,
+    String? empleadoId,
+    String? servicioId,
+    required DateTime fechaEntrega,
+    String? condicionEntrega,
+    String? observaciones,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.crear',
+      () => ref.read(crearAsignacionUseCaseProvider).ejecutar(
+            articuloId: articuloId,
+            varianteId: varianteId,
+            unidadId: unidadId,
+            cantidad: cantidad,
+            empleadoId: empleadoId,
+            servicioId: servicioId,
+            fechaEntrega: fechaEntrega,
+            condicionEntrega: condicionEntrega,
+            observaciones: observaciones,
+            actor: actor,
+          ),
+      CrearAsignacionErrorInesperado.new,
+    );
+  };
+});
+
+typedef CerrarAsignacionAutorizado = Future<CerrarAsignacionResultado> Function({
+  required String asignacionId,
+  required MotivoCierreAsignacion motivo,
+  required DateTime fechaCierre,
+  String? observacionesCierre,
+  bool? atribuibleAlEmpleado,
+  bool generaDescuento,
+  int? importeDescuento,
+  String? empleadoResponsableDescuentoId,
+  String? actor,
+});
+
+final cerrarAsignacionAutorizadoProvider = Provider<CerrarAsignacionAutorizado>((ref) {
+  return ({
+    required String asignacionId,
+    required MotivoCierreAsignacion motivo,
+    required DateTime fechaCierre,
+    String? observacionesCierre,
+    bool? atribuibleAlEmpleado,
+    bool generaDescuento = false,
+    int? importeDescuento,
+    String? empleadoResponsableDescuentoId,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.modificar',
+      () => ref.read(cerrarAsignacionUseCaseProvider).ejecutar(
+            asignacionId: asignacionId,
+            motivo: motivo,
+            fechaCierre: fechaCierre,
+            observacionesCierre: observacionesCierre,
+            atribuibleAlEmpleado: atribuibleAlEmpleado,
+            generaDescuento: generaDescuento,
+            importeDescuento: importeDescuento,
+            empleadoResponsableDescuentoId: empleadoResponsableDescuentoId,
+            actor: actor,
+          ),
+      CerrarAsignacionErrorInesperado.new,
+    );
+  };
+});
+
+typedef ReemplazarAsignacionAutorizado = Future<ReemplazarAsignacionResultado> Function({
+  required String asignacionId,
+  required MotivoCierreAsignacion motivo,
+  required DateTime fechaCierre,
+  String? observacionesCierre,
+  bool? atribuibleAlEmpleado,
+  bool generaDescuento,
+  int? importeDescuento,
+  String? empleadoResponsableDescuentoId,
+  required String articuloIdReemplazo,
+  String? varianteIdReemplazo,
+  String? unidadIdReemplazo,
+  required int cantidadReemplazo,
+  String? condicionEntregaReemplazo,
+  String? observacionesReemplazo,
+  String? actor,
+});
+
+final reemplazarAsignacionAutorizadoProvider = Provider<ReemplazarAsignacionAutorizado>((ref) {
+  return ({
+    required String asignacionId,
+    required MotivoCierreAsignacion motivo,
+    required DateTime fechaCierre,
+    String? observacionesCierre,
+    bool? atribuibleAlEmpleado,
+    bool generaDescuento = false,
+    int? importeDescuento,
+    String? empleadoResponsableDescuentoId,
+    required String articuloIdReemplazo,
+    String? varianteIdReemplazo,
+    String? unidadIdReemplazo,
+    required int cantidadReemplazo,
+    String? condicionEntregaReemplazo,
+    String? observacionesReemplazo,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.modificar',
+      () => ref.read(reemplazarAsignacionUseCaseProvider).ejecutar(
+            asignacionId: asignacionId,
+            motivo: motivo,
+            fechaCierre: fechaCierre,
+            observacionesCierre: observacionesCierre,
+            atribuibleAlEmpleado: atribuibleAlEmpleado,
+            generaDescuento: generaDescuento,
+            importeDescuento: importeDescuento,
+            empleadoResponsableDescuentoId: empleadoResponsableDescuentoId,
+            articuloIdReemplazo: articuloIdReemplazo,
+            varianteIdReemplazo: varianteIdReemplazo,
+            unidadIdReemplazo: unidadIdReemplazo,
+            cantidadReemplazo: cantidadReemplazo,
+            condicionEntregaReemplazo: condicionEntregaReemplazo,
+            observacionesReemplazo: observacionesReemplazo,
+            actor: actor,
+          ),
+      ReemplazarAsignacionErrorInesperado.new,
+    );
+  };
+});
+
+typedef AdjuntarResguardoFirmadoAutorizado = Future<AdjuntarResguardoFirmadoResultado> Function({
+  required List<String> asignacionIds,
+  required String sourceFilePath,
+  required String originalFileName,
+  required String mimeType,
+});
+
+final adjuntarResguardoFirmadoAutorizadoProvider = Provider<AdjuntarResguardoFirmadoAutorizado>((ref) {
+  return ({
+    required List<String> asignacionIds,
+    required String sourceFilePath,
+    required String originalFileName,
+    required String mimeType,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.modificar',
+      () => ref.read(adjuntarResguardoFirmadoUseCaseProvider).ejecutar(
+            asignacionIds: asignacionIds,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      AdjuntarResguardoFirmadoErrorInesperado.new,
+    );
+  };
 });

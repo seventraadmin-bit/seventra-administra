@@ -7,6 +7,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/empleado_alertas.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import 'empleados_list_controller.dart';
@@ -96,7 +97,7 @@ class _EmpleadosListScreenState extends ConsumerState<EmpleadosListScreen> {
             primaryAction: RisegButton(
               key: const Key('empleados_boton_registrar'),
               label: l10n.empleadosListadoBotonRegistrar,
-              onPressed: _registrar,
+              onPressed: ref.watch(permissionServiceProvider).hasCode('personal.crear') ? _registrar : null,
             ),
           ),
           const SizedBox(height: AppSpacing.md),

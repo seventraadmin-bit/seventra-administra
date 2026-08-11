@@ -5,6 +5,8 @@ import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_comprobante
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_aplicacion_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_pago_usecase.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import '../../finanzas_providers.dart';
@@ -87,16 +89,21 @@ class PagosController extends _$PagosController {
     String? observaciones,
     required String motivo,
   }) async {
-    final resultado = await ref.read(corregirPagoUseCaseProvider).ejecutar(
-          pagoId: pagoId,
-          fechaPago: fechaPago,
-          formaPago: formaPago,
-          referencia: referencia,
-          bancoOrigen: bancoOrigen,
-          cuentaBancariaDestino: cuentaBancariaDestino,
-          observaciones: observaciones,
-          motivo: motivo,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.modificar',
+      () => ref.read(corregirPagoUseCaseProvider).ejecutar(
+            pagoId: pagoId,
+            fechaPago: fechaPago,
+            formaPago: formaPago,
+            referencia: referencia,
+            bancoOrigen: bancoOrigen,
+            cuentaBancariaDestino: cuentaBancariaDestino,
+            observaciones: observaciones,
+            motivo: motivo,
+          ),
+      CorregirPagoErrorInesperado.new,
+    );
     if (resultado is CorregirPagoExitoso) {
       await _cargar();
     }
@@ -104,7 +111,12 @@ class PagosController extends _$PagosController {
   }
 
   Future<CancelarPagoResultado> cancelar({required String pagoId, required String motivo}) async {
-    final resultado = await ref.read(cancelarPagoUseCaseProvider).ejecutar(pagoId: pagoId, motivo: motivo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.archivar',
+      () => ref.read(cancelarPagoUseCaseProvider).ejecutar(pagoId: pagoId, motivo: motivo),
+      CancelarPagoErrorInesperado.new,
+    );
     if (resultado is CancelarPagoExitoso) {
       await _cargar();
     }
@@ -115,9 +127,12 @@ class PagosController extends _$PagosController {
     required String aplicacionPagoId,
     required String motivo,
   }) async {
-    final resultado = await ref
-        .read(cancelarAplicacionPagoUseCaseProvider)
-        .ejecutar(aplicacionPagoId: aplicacionPagoId, motivo: motivo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.archivar',
+      () => ref.read(cancelarAplicacionPagoUseCaseProvider).ejecutar(aplicacionPagoId: aplicacionPagoId, motivo: motivo),
+      CancelarAplicacionPagoErrorInesperado.new,
+    );
     if (resultado is CancelarAplicacionPagoExitoso) {
       await _cargar();
     }

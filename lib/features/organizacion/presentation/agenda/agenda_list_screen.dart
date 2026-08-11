@@ -99,7 +99,11 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
   Future<void> _generar(AgendaState state) async {
     final l10n = AppLocalizations.of(context)!;
     final resultado = await ref.read(agendaControllerProvider.notifier).generar();
-    if (!mounted || resultado == null) return;
+    if (!mounted) return;
+    if (resultado == null) {
+      RisegFeedback.showError(context, l10n.accesoDenegadoAccionMensaje);
+      return;
+    }
     RisegFeedback.showSuccess(
       context,
       l10n.agendaGenerarExito(resultado.creados.length, resultado.yaExistian),

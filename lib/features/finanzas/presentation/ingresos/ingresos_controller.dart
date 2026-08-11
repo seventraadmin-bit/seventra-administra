@@ -5,6 +5,8 @@ import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_comprobante
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_ingreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_ingreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_ingreso_manual_usecase.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import '../../finanzas_providers.dart';
@@ -82,18 +84,23 @@ class IngresosController extends _$IngresosController {
     required String concepto,
     String? observaciones,
   }) async {
-    final resultado = await ref.read(registrarIngresoManualUseCaseProvider).ejecutar(
-          monto: monto,
-          fecha: fecha,
-          categoriaFinancieraId: categoriaFinancieraId,
-          servicioId: servicioId,
-          sucursalId: sucursalId,
-          areaId: areaId,
-          cuentaCaja: cuentaCaja,
-          formaPago: formaPago,
-          concepto: concepto,
-          observaciones: observaciones,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.crear',
+      () => ref.read(registrarIngresoManualUseCaseProvider).ejecutar(
+            monto: monto,
+            fecha: fecha,
+            categoriaFinancieraId: categoriaFinancieraId,
+            servicioId: servicioId,
+            sucursalId: sucursalId,
+            areaId: areaId,
+            cuentaCaja: cuentaCaja,
+            formaPago: formaPago,
+            concepto: concepto,
+            observaciones: observaciones,
+          ),
+      RegistrarIngresoManualErrorInesperado.new,
+    );
     if (resultado is RegistrarIngresoManualExitoso) {
       await _cargar();
     }
@@ -113,19 +120,24 @@ class IngresosController extends _$IngresosController {
     String? observaciones,
     required String motivo,
   }) async {
-    final resultado = await ref.read(corregirIngresoUseCaseProvider).ejecutar(
-          ingresoId: ingresoId,
-          fecha: fecha,
-          categoriaFinancieraId: categoriaFinancieraId,
-          servicioId: servicioId,
-          sucursalId: sucursalId,
-          areaId: areaId,
-          cuentaCaja: cuentaCaja,
-          formaPago: formaPago,
-          concepto: concepto,
-          observaciones: observaciones,
-          motivo: motivo,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.modificar',
+      () => ref.read(corregirIngresoUseCaseProvider).ejecutar(
+            ingresoId: ingresoId,
+            fecha: fecha,
+            categoriaFinancieraId: categoriaFinancieraId,
+            servicioId: servicioId,
+            sucursalId: sucursalId,
+            areaId: areaId,
+            cuentaCaja: cuentaCaja,
+            formaPago: formaPago,
+            concepto: concepto,
+            observaciones: observaciones,
+            motivo: motivo,
+          ),
+      CorregirIngresoErrorInesperado.new,
+    );
     if (resultado is CorregirIngresoExitoso) {
       await _cargar();
     }
@@ -133,7 +145,12 @@ class IngresosController extends _$IngresosController {
   }
 
   Future<CancelarIngresoResultado> cancelar({required String ingresoId, required String motivo}) async {
-    final resultado = await ref.read(cancelarIngresoUseCaseProvider).ejecutar(ingresoId: ingresoId, motivo: motivo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.archivar',
+      () => ref.read(cancelarIngresoUseCaseProvider).ejecutar(ingresoId: ingresoId, motivo: motivo),
+      CancelarIngresoErrorInesperado.new,
+    );
     if (resultado is CancelarIngresoExitoso) {
       await _cargar();
     }

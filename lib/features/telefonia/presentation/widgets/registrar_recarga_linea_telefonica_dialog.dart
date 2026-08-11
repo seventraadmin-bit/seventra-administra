@@ -110,8 +110,7 @@ Future<bool> mostrarDialogoRegistrarRecargaLineaTelefonica(
         errorGeneral = l10n.lineaTelefonicaRecargaErrorImporteInvalido;
         return null;
       }
-
-      final registrado = await ref.read(registrarRecargaLineaTelefonicaUseCaseProvider).ejecutar(
+      final registrado = await ref.read(registrarRecargaLineaTelefonicaAutorizadoProvider)(
             lineaTelefonicaId: lineaTelefonicaId,
             fecha: fecha,
             importe: importe,

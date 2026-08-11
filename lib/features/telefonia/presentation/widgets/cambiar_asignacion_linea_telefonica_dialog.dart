@@ -115,8 +115,7 @@ Future<bool> mostrarDialogoCambiarAsignacionLineaTelefonica(
         errorGeneral = l10n.lineaTelefonicaAsignarErrorDestinoInvalido;
         return null;
       }
-
-      final resultado = await ref.read(cambiarAsignacionLineaTelefonicaUseCaseProvider).ejecutar(
+      final resultado = await ref.read(cambiarAsignacionLineaTelefonicaAutorizadoProvider)(
             asignacionLineaTelefonicaActualId: asignacionActual.id,
             fecha: fecha,
             observacionesTermino:

@@ -16,6 +16,7 @@ import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/
 import 'package:riseg_one/features/telefonia/presentation/widgets/linea_telefonica_asignada_empleado_section.dart';
 import 'package:riseg_one/features/vehiculos/presentation/widgets/vehiculo_asignado_empleado_section.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/actualizar_fotografia_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/alerta_recontratacion_empleado.dart';
@@ -819,13 +820,17 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xl),
-                RisegCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      RisegSectionHeader(
-                        title: l10n.asignacionSeccionTitulo,
+                // Fachada pública de Inventario embebida en Personal (Etapa
+                // 11C, frontera de lecturas protegidas) — mismo criterio que
+                // Vehículos/Telefonía más abajo.
+                if (ref.watch(permissionServiceProvider).hasCode('inventario.ver')) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  RisegCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RisegSectionHeader(
+                          title: l10n.asignacionSeccionTitulo,
                         primaryAction: RisegButton(
                           label: l10n.asignacionBotonAsignar,
                           variant: RisegButtonVariant.ghost,
@@ -915,11 +920,23 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                       ],
                     ],
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                RisegCard(child: VehiculoAsignadoEmpleadoSection(empleadoId: widget.empleadoId)),
-                const SizedBox(height: AppSpacing.xl),
-                RisegCard(child: LineaTelefonicaAsignadaEmpleadoSection(empleadoId: widget.empleadoId)),
+                  ),
+                ],
+                // Secciones de otro dominio embebidas aquí (Etapa 11C, frontera
+                // de lecturas protegidas) — Vehículos/Telefonía son fachadas
+                // públicas que muestran datos reales de esos módulos, así que
+                // respetan su propio `modulo.ver` aunque el usuario sí tenga
+                // acceso a Personal; a diferencia de una lectura interna de
+                // composición (ej. Compras leyendo Artículos), esto es
+                // información mostrada directo al usuario.
+                if (ref.watch(permissionServiceProvider).hasCode('vehiculos.ver')) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  RisegCard(child: VehiculoAsignadoEmpleadoSection(empleadoId: widget.empleadoId)),
+                ],
+                if (ref.watch(permissionServiceProvider).hasCode('telefonia.ver')) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  RisegCard(child: LineaTelefonicaAsignadaEmpleadoSection(empleadoId: widget.empleadoId)),
+                ],
                 if (_descuentosPendientes.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
                   RisegCard(

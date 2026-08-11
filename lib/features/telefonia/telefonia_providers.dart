@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/permissions/authorization_service.dart';
 import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
+import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/asignacion_linea_telefonica_repository_impl.dart';
 import 'data/repositories/linea_telefonica_equipo_repository_impl.dart';
 import 'data/repositories/linea_telefonica_repository_impl.dart';
@@ -155,4 +157,233 @@ final obtenerOpcionesAsignacionLineaTelefonicaUseCaseProvider =
 final obtenerEquiposDisponiblesLineaTelefonicaUseCaseProvider =
     Provider<ObtenerEquiposDisponiblesLineaTelefonicaUseCase>((ref) {
   return ObtenerEquiposDisponiblesLineaTelefonicaUseCase(ref.watch(inventarioRepositoryProvider));
+});
+
+// --- Fachadas autorizadas (Etapa 11C) ---
+//
+// Asignaciones/equipo/recargas se operan desde diálogos que llaman
+// directamente a estos casos de uso, sin pasar por `TelefoniaController`
+// — mismo motivo que las fachadas de `personal_providers.dart`/
+// `inventario_providers.dart`.
+typedef AsignarLineaTelefonicaAutorizado = Future<AsignarLineaTelefonicaResultado> Function({
+  required String lineaTelefonicaId,
+  String? empleadoId,
+  String? servicioId,
+  required DateTime fechaInicio,
+  String? observaciones,
+  bool moverEquipoAsociado,
+  String? actor,
+});
+
+final asignarLineaTelefonicaAutorizadoProvider = Provider<AsignarLineaTelefonicaAutorizado>((ref) {
+  return ({
+    required String lineaTelefonicaId,
+    String? empleadoId,
+    String? servicioId,
+    required DateTime fechaInicio,
+    String? observaciones,
+    bool moverEquipoAsociado = true,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.crear',
+      () => ref.read(asignarLineaTelefonicaUseCaseProvider).ejecutar(
+            lineaTelefonicaId: lineaTelefonicaId,
+            empleadoId: empleadoId,
+            servicioId: servicioId,
+            fechaInicio: fechaInicio,
+            observaciones: observaciones,
+            moverEquipoAsociado: moverEquipoAsociado,
+            actor: actor,
+          ),
+      AsignarLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+typedef CambiarAsignacionLineaTelefonicaAutorizado = Future<CambiarAsignacionLineaTelefonicaResultado> Function({
+  required String asignacionLineaTelefonicaActualId,
+  required DateTime fecha,
+  String? observacionesTermino,
+  String? nuevoEmpleadoId,
+  String? nuevoServicioId,
+  String? observacionesNueva,
+  bool moverEquipoAsociado,
+  String? actor,
+});
+
+final cambiarAsignacionLineaTelefonicaAutorizadoProvider = Provider<CambiarAsignacionLineaTelefonicaAutorizado>((ref) {
+  return ({
+    required String asignacionLineaTelefonicaActualId,
+    required DateTime fecha,
+    String? observacionesTermino,
+    String? nuevoEmpleadoId,
+    String? nuevoServicioId,
+    String? observacionesNueva,
+    bool moverEquipoAsociado = true,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(cambiarAsignacionLineaTelefonicaUseCaseProvider).ejecutar(
+            asignacionLineaTelefonicaActualId: asignacionLineaTelefonicaActualId,
+            fecha: fecha,
+            observacionesTermino: observacionesTermino,
+            nuevoEmpleadoId: nuevoEmpleadoId,
+            nuevoServicioId: nuevoServicioId,
+            observacionesNueva: observacionesNueva,
+            moverEquipoAsociado: moverEquipoAsociado,
+            actor: actor,
+          ),
+      CambiarAsignacionLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+typedef RetirarAsignacionLineaTelefonicaAutorizado = Future<RetirarAsignacionLineaTelefonicaResultado> Function({
+  required String asignacionLineaTelefonicaId,
+  required DateTime fechaTermino,
+  String? observacionesTermino,
+  bool moverEquipoAsociado,
+  String? actor,
+});
+
+final retirarAsignacionLineaTelefonicaAutorizadoProvider = Provider<RetirarAsignacionLineaTelefonicaAutorizado>((ref) {
+  return ({
+    required String asignacionLineaTelefonicaId,
+    required DateTime fechaTermino,
+    String? observacionesTermino,
+    bool moverEquipoAsociado = true,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(retirarAsignacionLineaTelefonicaUseCaseProvider).ejecutar(
+            asignacionLineaTelefonicaId: asignacionLineaTelefonicaId,
+            fechaTermino: fechaTermino,
+            observacionesTermino: observacionesTermino,
+            moverEquipoAsociado: moverEquipoAsociado,
+            actor: actor,
+          ),
+      RetirarAsignacionLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+typedef AsociarEquipoLineaTelefonicaAutorizado = Future<AsociarEquipoLineaTelefonicaResultado> Function({
+  required String lineaTelefonicaId,
+  required String unidadId,
+  required DateTime fechaInicio,
+  String? observaciones,
+  String? actor,
+});
+
+final asociarEquipoLineaTelefonicaAutorizadoProvider = Provider<AsociarEquipoLineaTelefonicaAutorizado>((ref) {
+  return ({
+    required String lineaTelefonicaId,
+    required String unidadId,
+    required DateTime fechaInicio,
+    String? observaciones,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(asociarEquipoLineaTelefonicaUseCaseProvider).ejecutar(
+            lineaTelefonicaId: lineaTelefonicaId,
+            unidadId: unidadId,
+            fechaInicio: fechaInicio,
+            observaciones: observaciones,
+            actor: actor,
+          ),
+      AsociarEquipoLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+typedef CambiarEquipoLineaTelefonicaAutorizado = Future<CambiarEquipoLineaTelefonicaResultado> Function({
+  required String lineaTelefonicaId,
+  required String nuevaUnidadId,
+  required DateTime fecha,
+  String? observaciones,
+  String? actor,
+});
+
+final cambiarEquipoLineaTelefonicaAutorizadoProvider = Provider<CambiarEquipoLineaTelefonicaAutorizado>((ref) {
+  return ({
+    required String lineaTelefonicaId,
+    required String nuevaUnidadId,
+    required DateTime fecha,
+    String? observaciones,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(cambiarEquipoLineaTelefonicaUseCaseProvider).ejecutar(
+            lineaTelefonicaId: lineaTelefonicaId,
+            nuevaUnidadId: nuevaUnidadId,
+            fecha: fecha,
+            observaciones: observaciones,
+            actor: actor,
+          ),
+      CambiarEquipoLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+typedef RetirarEquipoLineaTelefonicaAutorizado = Future<RetirarEquipoLineaTelefonicaResultado> Function({
+  required String lineaTelefonicaId,
+  required DateTime fechaFin,
+  String? actor,
+});
+
+final retirarEquipoLineaTelefonicaAutorizadoProvider = Provider<RetirarEquipoLineaTelefonicaAutorizado>((ref) {
+  return ({
+    required String lineaTelefonicaId,
+    required DateTime fechaFin,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(retirarEquipoLineaTelefonicaUseCaseProvider).ejecutar(
+            lineaTelefonicaId: lineaTelefonicaId,
+            fechaFin: fechaFin,
+            actor: actor,
+          ),
+      RetirarEquipoLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+typedef RegistrarRecargaLineaTelefonicaAutorizado = Future<RegistrarRecargaLineaTelefonicaResultado> Function({
+  required String lineaTelefonicaId,
+  required DateTime fecha,
+  required int importe,
+  String? observaciones,
+});
+
+final registrarRecargaLineaTelefonicaAutorizadoProvider = Provider<RegistrarRecargaLineaTelefonicaAutorizado>((ref) {
+  return ({
+    required String lineaTelefonicaId,
+    required DateTime fecha,
+    required int importe,
+    String? observaciones,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.crear',
+      () => ref.read(registrarRecargaLineaTelefonicaUseCaseProvider).ejecutar(
+            lineaTelefonicaId: lineaTelefonicaId,
+            fecha: fecha,
+            importe: importe,
+            observaciones: observaciones,
+          ),
+      RegistrarRecargaLineaTelefonicaErrorInesperado.new,
+    );
+  };
 });

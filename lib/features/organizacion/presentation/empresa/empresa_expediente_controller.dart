@@ -1,5 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+
 import '../../domain/usecases/empresa_expediente_input.dart';
 import '../../domain/usecases/guardar_expediente_empresa_usecase.dart';
 import '../../organizacion_providers.dart';
@@ -81,9 +84,12 @@ class EmpresaExpedienteController extends _$EmpresaExpedienteController {
 
     state = state.copyWith(guardando: true, erroresGuardado: const [], errorGuardadoGeneral: false);
 
-    final resultado = await ref
-        .read(guardarExpedienteEmpresaUseCaseProvider)
-        .ejecutar(empresaId: state.datos!.empresa.id, input: input);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.modificar',
+      () => ref.read(guardarExpedienteEmpresaUseCaseProvider).ejecutar(empresaId: state.datos!.empresa.id, input: input),
+      GuardarExpedienteErrorInesperado.new,
+    );
 
     switch (resultado) {
       case GuardarExpedienteExitoso(datos: final datos):

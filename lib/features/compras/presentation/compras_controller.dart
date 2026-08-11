@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../compras_providers.dart';
 import '../domain/repositories/compra_repository.dart';
@@ -108,14 +110,19 @@ class ComprasController extends _$ComprasController {
     String? observaciones,
     required List<PartidaCompraInput> partidas,
   }) async {
-    final resultado = await ref.read(registrarCompraUseCaseProvider).ejecutar(
-          fecha: fecha,
-          proveedor: proveedor,
-          formaPago: formaPago,
-          formaPagoOtroDescripcion: formaPagoOtroDescripcion,
-          observaciones: observaciones,
-          partidas: partidas,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'compras.crear',
+      () => ref.read(registrarCompraUseCaseProvider).ejecutar(
+            fecha: fecha,
+            proveedor: proveedor,
+            formaPago: formaPago,
+            formaPagoOtroDescripcion: formaPagoOtroDescripcion,
+            observaciones: observaciones,
+            partidas: partidas,
+          ),
+      RegistrarCompraErrorInesperado.new,
+    );
     if (resultado is RegistrarCompraExitosa) await _cargar();
     return resultado;
   }
@@ -128,20 +135,30 @@ class ComprasController extends _$ComprasController {
     String? observaciones,
     required String motivo,
   }) async {
-    final resultado = await ref.read(corregirCompraUseCaseProvider).ejecutar(
-          compraId: compraId,
-          proveedor: proveedor,
-          formaPago: formaPago,
-          formaPagoOtroDescripcion: formaPagoOtroDescripcion,
-          observaciones: observaciones,
-          motivo: motivo,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'compras.crear',
+      () => ref.read(corregirCompraUseCaseProvider).ejecutar(
+            compraId: compraId,
+            proveedor: proveedor,
+            formaPago: formaPago,
+            formaPagoOtroDescripcion: formaPagoOtroDescripcion,
+            observaciones: observaciones,
+            motivo: motivo,
+          ),
+      CorregirCompraErrorInesperado.new,
+    );
     if (resultado is CorregirCompraExitosa) await _cargar();
     return resultado;
   }
 
   Future<CancelarCompraResultado> cancelarCompra({required String compraId, required String motivo}) async {
-    final resultado = await ref.read(cancelarCompraUseCaseProvider).ejecutar(compraId: compraId, motivo: motivo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'compras.archivar',
+      () => ref.read(cancelarCompraUseCaseProvider).ejecutar(compraId: compraId, motivo: motivo),
+      CancelarCompraErrorInesperado.new,
+    );
     if (resultado is CancelarCompraExitosa) await _cargar();
     return resultado;
   }

@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart' show MotivoBajaVehiculo;
 import 'package:riseg_one/features/vehiculos/domain/usecases/actualizar_fotografia_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/cambiar_estatus_vehiculo_usecase.dart';
@@ -60,19 +62,24 @@ class VehiculosController extends _$VehiculosController {
     int? costoAdquisicion,
     String? observaciones,
   }) async {
-    final resultado = await ref.read(crearVehiculoUseCaseProvider).ejecutar(
-          marca: marca,
-          modelo: modelo,
-          anio: anio,
-          color: color,
-          placas: placas,
-          vin: vin,
-          numeroMotor: numeroMotor,
-          tipoVehiculo: tipoVehiculo,
-          fechaAdquisicion: fechaAdquisicion,
-          costoAdquisicion: costoAdquisicion,
-          observaciones: observaciones,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.crear',
+      () => ref.read(crearVehiculoUseCaseProvider).ejecutar(
+            marca: marca,
+            modelo: modelo,
+            anio: anio,
+            color: color,
+            placas: placas,
+            vin: vin,
+            numeroMotor: numeroMotor,
+            tipoVehiculo: tipoVehiculo,
+            fechaAdquisicion: fechaAdquisicion,
+            costoAdquisicion: costoAdquisicion,
+            observaciones: observaciones,
+          ),
+      CrearVehiculoErrorInesperado.new,
+    );
     if (resultado is CrearVehiculoExitoso) await _cargar();
     return resultado;
   }
@@ -99,37 +106,47 @@ class VehiculosController extends _$VehiculosController {
     bool limpiarCostoAdquisicion = false,
     bool limpiarObservaciones = false,
   }) async {
-    final resultado = await ref.read(corregirVehiculoUseCaseProvider).ejecutar(
-          vehiculoId: vehiculoId,
-          marca: marca,
-          modelo: modelo,
-          anio: anio,
-          color: color,
-          placas: placas,
-          vin: vin,
-          numeroMotor: numeroMotor,
-          tipoVehiculo: tipoVehiculo,
-          fechaAdquisicion: fechaAdquisicion,
-          costoAdquisicion: costoAdquisicion,
-          observaciones: observaciones,
-          limpiarAnio: limpiarAnio,
-          limpiarColor: limpiarColor,
-          limpiarPlacas: limpiarPlacas,
-          limpiarVin: limpiarVin,
-          limpiarNumeroMotor: limpiarNumeroMotor,
-          limpiarFechaAdquisicion: limpiarFechaAdquisicion,
-          limpiarCostoAdquisicion: limpiarCostoAdquisicion,
-          limpiarObservaciones: limpiarObservaciones,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.modificar',
+      () => ref.read(corregirVehiculoUseCaseProvider).ejecutar(
+            vehiculoId: vehiculoId,
+            marca: marca,
+            modelo: modelo,
+            anio: anio,
+            color: color,
+            placas: placas,
+            vin: vin,
+            numeroMotor: numeroMotor,
+            tipoVehiculo: tipoVehiculo,
+            fechaAdquisicion: fechaAdquisicion,
+            costoAdquisicion: costoAdquisicion,
+            observaciones: observaciones,
+            limpiarAnio: limpiarAnio,
+            limpiarColor: limpiarColor,
+            limpiarPlacas: limpiarPlacas,
+            limpiarVin: limpiarVin,
+            limpiarNumeroMotor: limpiarNumeroMotor,
+            limpiarFechaAdquisicion: limpiarFechaAdquisicion,
+            limpiarCostoAdquisicion: limpiarCostoAdquisicion,
+            limpiarObservaciones: limpiarObservaciones,
+          ),
+      CorregirVehiculoErrorInesperado.new,
+    );
     if (resultado is CorregirVehiculoExitoso) await _cargar();
     return resultado;
   }
 
   Future<CambiarEstatusVehiculoResultado> cambiarEstatus({required String vehiculoId, required String estatus}) async {
-    final resultado = await ref.read(cambiarEstatusVehiculoUseCaseProvider).ejecutar(
-          vehiculoId: vehiculoId,
-          estatus: estatus,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.modificar',
+      () => ref.read(cambiarEstatusVehiculoUseCaseProvider).ejecutar(
+            vehiculoId: vehiculoId,
+            estatus: estatus,
+          ),
+      CambiarEstatusVehiculoErrorInesperado.new,
+    );
     if (resultado is CambiarEstatusVehiculoExitoso) await _cargar();
     return resultado;
   }
@@ -138,7 +155,12 @@ class VehiculosController extends _$VehiculosController {
   /// correcto (Etapa 8D, punto 3) — ver el doc comment de
   /// `FinalizarMantenimientoVehiculoUseCase`.
   Future<FinalizarMantenimientoVehiculoResultado> finalizarMantenimiento({required String vehiculoId}) async {
-    final resultado = await ref.read(finalizarMantenimientoVehiculoUseCaseProvider).ejecutar(vehiculoId: vehiculoId);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.modificar',
+      () => ref.read(finalizarMantenimientoVehiculoUseCaseProvider).ejecutar(vehiculoId: vehiculoId),
+      FinalizarMantenimientoVehiculoErrorInesperado.new,
+    );
     if (resultado is FinalizarMantenimientoVehiculoExitoso) await _cargar();
     return resultado;
   }
@@ -149,12 +171,17 @@ class VehiculosController extends _$VehiculosController {
     required MotivoBajaVehiculo motivoBaja,
     String? observacionesBaja,
   }) async {
-    final resultado = await ref.read(darDeBajaVehiculoUseCaseProvider).ejecutar(
-          vehiculoId: vehiculoId,
-          fechaBaja: fechaBaja,
-          motivoBaja: motivoBaja,
-          observacionesBaja: observacionesBaja,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.archivar',
+      () => ref.read(darDeBajaVehiculoUseCaseProvider).ejecutar(
+            vehiculoId: vehiculoId,
+            fechaBaja: fechaBaja,
+            motivoBaja: motivoBaja,
+            observacionesBaja: observacionesBaja,
+          ),
+      DarDeBajaVehiculoErrorInesperado.new,
+    );
     if (resultado is DarDeBajaVehiculoExitoso) await _cargar();
     return resultado;
   }
@@ -165,12 +192,17 @@ class VehiculosController extends _$VehiculosController {
     required String originalFileName,
     required String mimeType,
   }) async {
-    final resultado = await ref.read(actualizarFotografiaVehiculoUseCaseProvider).ejecutar(
-          vehiculoId: vehiculoId,
-          sourceFilePath: sourceFilePath,
-          originalFileName: originalFileName,
-          mimeType: mimeType,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.modificar',
+      () => ref.read(actualizarFotografiaVehiculoUseCaseProvider).ejecutar(
+            vehiculoId: vehiculoId,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      ActualizarFotografiaVehiculoErrorInesperado.new,
+    );
     if (resultado is ActualizarFotografiaVehiculoExitoso) await _cargar();
     return resultado;
   }
@@ -185,14 +217,19 @@ class VehiculosController extends _$VehiculosController {
     String? observaciones,
     int? kilometrajeEntrega,
   }) async {
-    final resultado = await ref.read(asignarVehiculoUseCaseProvider).ejecutar(
-          vehiculoId: vehiculoId,
-          empleadoId: empleadoId,
-          servicioId: servicioId,
-          fechaInicio: fechaInicio,
-          observaciones: observaciones,
-          kilometrajeEntrega: kilometrajeEntrega,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.crear',
+      () => ref.read(asignarVehiculoUseCaseProvider).ejecutar(
+            vehiculoId: vehiculoId,
+            empleadoId: empleadoId,
+            servicioId: servicioId,
+            fechaInicio: fechaInicio,
+            observaciones: observaciones,
+            kilometrajeEntrega: kilometrajeEntrega,
+          ),
+      AsignarVehiculoErrorInesperado.new,
+    );
     if (resultado is AsignarVehiculoExitoso) await _cargar();
     return resultado;
   }
@@ -205,14 +242,19 @@ class VehiculosController extends _$VehiculosController {
     String? nuevoServicioId,
     String? observacionesNueva,
   }) async {
-    final resultado = await ref.read(cambiarAsignacionVehiculoUseCaseProvider).ejecutar(
-          asignacionVehiculoActualId: asignacionVehiculoActualId,
-          fecha: fecha,
-          observacionesTermino: observacionesTermino,
-          nuevoEmpleadoId: nuevoEmpleadoId,
-          nuevoServicioId: nuevoServicioId,
-          observacionesNueva: observacionesNueva,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.modificar',
+      () => ref.read(cambiarAsignacionVehiculoUseCaseProvider).ejecutar(
+            asignacionVehiculoActualId: asignacionVehiculoActualId,
+            fecha: fecha,
+            observacionesTermino: observacionesTermino,
+            nuevoEmpleadoId: nuevoEmpleadoId,
+            nuevoServicioId: nuevoServicioId,
+            observacionesNueva: observacionesNueva,
+          ),
+      CambiarAsignacionVehiculoErrorInesperado.new,
+    );
     if (resultado is CambiarAsignacionVehiculoExitoso) await _cargar();
     return resultado;
   }
@@ -223,12 +265,17 @@ class VehiculosController extends _$VehiculosController {
     String? observacionesTermino,
     int? kilometrajeDevolucion,
   }) async {
-    final resultado = await ref.read(retirarAsignacionVehiculoUseCaseProvider).ejecutar(
-          asignacionVehiculoId: asignacionVehiculoId,
-          fechaTermino: fechaTermino,
-          observacionesTermino: observacionesTermino,
-          kilometrajeDevolucion: kilometrajeDevolucion,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.modificar',
+      () => ref.read(retirarAsignacionVehiculoUseCaseProvider).ejecutar(
+            asignacionVehiculoId: asignacionVehiculoId,
+            fechaTermino: fechaTermino,
+            observacionesTermino: observacionesTermino,
+            kilometrajeDevolucion: kilometrajeDevolucion,
+          ),
+      RetirarAsignacionVehiculoErrorInesperado.new,
+    );
     if (resultado is RetirarAsignacionVehiculoExitoso) await _cargar();
     return resultado;
   }
@@ -243,12 +290,17 @@ class VehiculosController extends _$VehiculosController {
     // No afecta el listado (kilometraje no es una columna de Vehiculo),
     // pero sí puede afectar el estatus si en el futuro se deriva de
     // aquí — se refresca por consistencia con el resto de acciones.
-    return ref.read(registrarKilometrajeVehiculoUseCaseProvider).ejecutar(
-          vehiculoId: vehiculoId,
-          fecha: fecha,
-          kilometraje: kilometraje,
-          origen: origen,
-          observaciones: observaciones,
-        );
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.modificar',
+      () => ref.read(registrarKilometrajeVehiculoUseCaseProvider).ejecutar(
+            vehiculoId: vehiculoId,
+            fecha: fecha,
+            kilometraje: kilometraje,
+            origen: origen,
+            observaciones: observaciones,
+          ),
+      RegistrarKilometrajeVehiculoErrorInesperado.new,
+    );
   }
 }

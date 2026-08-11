@@ -49,8 +49,7 @@ Future<bool> mostrarDialogoRetirarEquipoLineaTelefonica(
     ),
     onConfirm: () async {
       final resultado = await ref
-          .read(retirarEquipoLineaTelefonicaUseCaseProvider)
-          .ejecutar(lineaTelefonicaId: lineaTelefonicaId, fechaFin: fechaFin);
+          .read(retirarEquipoLineaTelefonicaAutorizadoProvider)(lineaTelefonicaId: lineaTelefonicaId, fechaFin: fechaFin);
       switch (resultado) {
         case RetirarEquipoLineaTelefonicaExitoso():
           if (context.mounted) RisegFeedback.showSuccess(context, l10n.lineaTelefonicaRetirarEquipoExito);

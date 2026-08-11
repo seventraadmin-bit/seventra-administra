@@ -27,7 +27,7 @@ Future<bool> mostrarDialogoReemplazarAsignacion(
   final l10n = AppLocalizations.of(context)!;
   final articuloRepo = ref.read(articuloRepositoryProvider);
   final inventarioRepo = ref.read(inventarioRepositoryProvider);
-  final reemplazarAsignacion = ref.read(reemplazarAsignacionUseCaseProvider);
+  final reemplazarAsignacion = ref.read(reemplazarAsignacionAutorizadoProvider);
 
   final articulos = await articuloRepo.listar();
   if (!context.mounted) return false;
@@ -214,7 +214,7 @@ Future<bool> mostrarDialogoReemplazarAsignacion(
       }
 
       final importe = double.tryParse(importeCtrl.text.trim().replaceAll(',', ''));
-      final resultado = await reemplazarAsignacion.ejecutar(
+      final resultado = await reemplazarAsignacion(
         asignacionId: asignacion.id,
         motivo: motivo,
         fechaCierre: fechaCierre ?? DateTime.now(),

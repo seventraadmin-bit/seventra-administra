@@ -5,6 +5,8 @@ import 'package:riseg_one/features/finanzas/data/tables/complemento_pago_table.d
 import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_archivo_complemento_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_complemento_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_complemento_pago_usecase.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import '../../finanzas_providers.dart';
@@ -80,14 +82,19 @@ class ComplementosController extends _$ComplementosController {
     String? observaciones,
     required String motivo,
   }) async {
-    final resultado = await ref.read(corregirComplementoPagoUseCaseProvider).ejecutar(
-          complementoPagoId: complementoPagoId,
-          serieFiscal: serieFiscal,
-          folioFiscal: folioFiscal,
-          fechaTimbrado: fechaTimbrado,
-          observaciones: observaciones,
-          motivo: motivo,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.modificar',
+      () => ref.read(corregirComplementoPagoUseCaseProvider).ejecutar(
+            complementoPagoId: complementoPagoId,
+            serieFiscal: serieFiscal,
+            folioFiscal: folioFiscal,
+            fechaTimbrado: fechaTimbrado,
+            observaciones: observaciones,
+            motivo: motivo,
+          ),
+      CorregirComplementoPagoErrorInesperado.new,
+    );
     if (resultado is CorregirComplementoPagoExitoso) {
       await _cargar();
     }
@@ -95,8 +102,12 @@ class ComplementosController extends _$ComplementosController {
   }
 
   Future<CancelarComplementoPagoResultado> cancelar({required String complementoPagoId, required String motivo}) async {
-    final resultado =
-        await ref.read(cancelarComplementoPagoUseCaseProvider).ejecutar(complementoPagoId: complementoPagoId, motivo: motivo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.archivar',
+      () => ref.read(cancelarComplementoPagoUseCaseProvider).ejecutar(complementoPagoId: complementoPagoId, motivo: motivo),
+      CancelarComplementoPagoErrorInesperado.new,
+    );
     if (resultado is CancelarComplementoPagoExitoso) {
       await _cargar();
     }

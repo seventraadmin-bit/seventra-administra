@@ -3239,5 +3239,7 @@
 
   "accesoDenegadoTitulo": "Acceso denegado",
   "accesoDenegadoMensaje": "No tienes permiso para ver este módulo. Si crees que deberías tener acceso, contacta a un administrador.",
-  "accesoDenegadoBotonDashboard": "Ir al Dashboard"
+  "accesoDenegadoBotonDashboard": "Ir al Dashboard",
+
+  "accesoDenegadoAccionMensaje": "No tienes permiso para realizar esta acción."
 }

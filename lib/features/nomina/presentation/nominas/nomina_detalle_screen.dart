@@ -158,6 +158,7 @@ class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
       case CerrarNominaYaCerrada():
         RisegFeedback.showError(context, l10n.cerrarNominaYaCerrada);
       case CerrarNominaNoExiste():
+      case CerrarNominaErrorInesperado():
         RisegFeedback.showError(context, l10n.cerrarNominaErrorInesperado);
     }
   }

@@ -105,8 +105,7 @@ Future<bool> mostrarDialogoGenerarFichaTecnicaEmpleado(
     onConfirm: () async {
       final excluidas = seccionesDisponibles.where((c) => !seccionesIncluidas.contains(c)).toSet();
       final resultado = await ref
-          .read(generarFichaTecnicaEmpleadoUseCaseProvider)
-          .ejecutar(empleadoId: empleado.id, seccionesExcluidas: excluidas);
+          .read(generarFichaTecnicaEmpleadoAutorizadoProvider)(empleadoId: empleado.id, seccionesExcluidas: excluidas);
 
       if (!context.mounted) return null;
 

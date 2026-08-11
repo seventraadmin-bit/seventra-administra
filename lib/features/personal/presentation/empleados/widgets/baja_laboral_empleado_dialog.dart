@@ -88,7 +88,7 @@ Future<bool> mostrarDialogoBajaLaboralEmpleado(BuildContext context, WidgetRef r
         return false;
       }
 
-      final resultado = await ref.read(registrarBajaLaboralUseCaseProvider).ejecutar(
+      final resultado = await ref.read(registrarBajaLaboralAutorizadoProvider)(
             empleadoId: empleado.id,
             fechaBaja: fecha!,
             motivo: motivo,

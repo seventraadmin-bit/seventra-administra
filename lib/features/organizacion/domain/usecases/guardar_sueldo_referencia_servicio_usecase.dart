@@ -16,6 +16,13 @@ class GuardarSueldoReferenciaServicioSueldoInvalido extends GuardarSueldoReferen
 
 class GuardarSueldoReferenciaServicioBonoInvalido extends GuardarSueldoReferenciaServicioResultado {}
 
+/// Reservado para la frontera de autorización (Etapa 11C) — nunca lo
+/// produce el propio caso de uso.
+class GuardarSueldoReferenciaServicioErrorInesperado extends GuardarSueldoReferenciaServicioResultado {
+  GuardarSueldoReferenciaServicioErrorInesperado(this.mensaje);
+  final String mensaje;
+}
+
 /// Guarda el sueldo/bono mensual de referencia de un Servicio (Etapa
 /// 6B) — se precargan al crear una `AsignacionServicio` nueva contra
 /// este Servicio (`AsignarEmpleadoServicioUseCase`/

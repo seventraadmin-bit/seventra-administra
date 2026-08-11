@@ -11,6 +11,8 @@ import 'package:riseg_one/features/nomina/domain/usecases/cerrar_nomina_usecase.
 import 'package:riseg_one/features/nomina/domain/usecases/corregir_pago_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/generar_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/registrar_pago_nomina_usecase.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import '../../nomina_providers.dart';
@@ -50,7 +52,12 @@ class NominasController extends _$NominasController {
   Future<void> recargar() => _cargar();
 
   Future<GenerarNominaResultado> generar({required int anio, required int mes, required TipoPeriodoNomina tipo}) async {
-    final resultado = await ref.read(generarNominaUseCaseProvider).ejecutar(anio: anio, mes: mes, tipo: tipo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'nomina.crear',
+      () => ref.read(generarNominaUseCaseProvider).ejecutar(anio: anio, mes: mes, tipo: tipo),
+      GenerarNominaErrorInesperado.new,
+    );
     if (resultado is GenerarNominaExitoso) await _cargar();
     return resultado;
   }
@@ -68,11 +75,21 @@ class NominasController extends _$NominasController {
   }
 
   Future<ActualizarNominaDesdePersonalResultado> actualizarDesdePersonal(String nominaId) {
-    return ref.read(actualizarNominaDesdePersonalUseCaseProvider).ejecutar(nominaId: nominaId);
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'nomina.modificar',
+      () => ref.read(actualizarNominaDesdePersonalUseCaseProvider).ejecutar(nominaId: nominaId),
+      ActualizarNominaDesdePersonalErrorInesperado.new,
+    );
   }
 
   Future<CerrarNominaResultado> cerrar(String nominaId) async {
-    final resultado = await ref.read(cerrarNominaUseCaseProvider).ejecutar(nominaId: nominaId);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'nomina.cerrar',
+      () => ref.read(cerrarNominaUseCaseProvider).ejecutar(nominaId: nominaId),
+      CerrarNominaErrorInesperado.new,
+    );
     if (resultado is CerrarNominaExitoso) await _cargar();
     return resultado;
   }
@@ -91,16 +108,21 @@ class NominasController extends _$NominasController {
     String? observaciones,
     bool limpiarObservaciones = false,
   }) {
-    return ref.read(actualizarMovimientosNominaUseCaseProvider).ejecutar(
-          nominaEmpleadoId: nominaEmpleadoId,
-          prestamo: prestamo,
-          tiempoExtra: tiempoExtra,
-          bono: bono,
-          faltas: faltas,
-          otrosDescuentos: otrosDescuentos,
-          observaciones: observaciones,
-          limpiarObservaciones: limpiarObservaciones,
-        );
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'nomina.modificar',
+      () => ref.read(actualizarMovimientosNominaUseCaseProvider).ejecutar(
+            nominaEmpleadoId: nominaEmpleadoId,
+            prestamo: prestamo,
+            tiempoExtra: tiempoExtra,
+            bono: bono,
+            faltas: faltas,
+            otrosDescuentos: otrosDescuentos,
+            observaciones: observaciones,
+            limpiarObservaciones: limpiarObservaciones,
+          ),
+      ActualizarMovimientosNominaErrorInesperado.new,
+    );
   }
 
   Future<ActualizarDistribucionNominaResultado> actualizarDistribucion({
@@ -108,11 +130,16 @@ class NominasController extends _$NominasController {
     required int montoFiscal,
     required int montoNoFiscal,
   }) {
-    return ref.read(actualizarDistribucionNominaUseCaseProvider).ejecutar(
-          nominaEmpleadoId: nominaEmpleadoId,
-          montoFiscal: montoFiscal,
-          montoNoFiscal: montoNoFiscal,
-        );
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'nomina.modificar',
+      () => ref.read(actualizarDistribucionNominaUseCaseProvider).ejecutar(
+            nominaEmpleadoId: nominaEmpleadoId,
+            montoFiscal: montoFiscal,
+            montoNoFiscal: montoNoFiscal,
+          ),
+      ActualizarDistribucionNominaErrorInesperado.new,
+    );
   }
 
   // --- Etapa 6D — Pagos de Nómina ---
@@ -158,21 +185,31 @@ class NominasController extends _$NominasController {
     String? observaciones,
     required List<({String nominaEmpleadoId, int monto})> aplicaciones,
   }) async {
-    final resultado = await ref.read(registrarPagoNominaUseCaseProvider).ejecutar(
-          nominaId: nominaId,
-          fechaPago: fechaPago,
-          formaPago: formaPago,
-          referencia: referencia,
-          cuentaBancariaOrigen: cuentaBancariaOrigen,
-          observaciones: observaciones,
-          aplicaciones: aplicaciones,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'nomina.pagar',
+      () => ref.read(registrarPagoNominaUseCaseProvider).ejecutar(
+            nominaId: nominaId,
+            fechaPago: fechaPago,
+            formaPago: formaPago,
+            referencia: referencia,
+            cuentaBancariaOrigen: cuentaBancariaOrigen,
+            observaciones: observaciones,
+            aplicaciones: aplicaciones,
+          ),
+      RegistrarPagoNominaErrorInesperado.new,
+    );
     if (resultado is RegistrarPagoNominaExitoso) await _cargar();
     return resultado;
   }
 
   Future<CancelarPagoNominaResultado> cancelarPago({required String pagoNominaId, required String motivo}) async {
-    final resultado = await ref.read(cancelarPagoNominaUseCaseProvider).ejecutar(pagoNominaId: pagoNominaId, motivo: motivo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'nomina.pagar',
+      () => ref.read(cancelarPagoNominaUseCaseProvider).ejecutar(pagoNominaId: pagoNominaId, motivo: motivo),
+      CancelarPagoNominaErrorInesperado.new,
+    );
     if (resultado is CancelarPagoNominaExitoso) await _cargar();
     return resultado;
   }

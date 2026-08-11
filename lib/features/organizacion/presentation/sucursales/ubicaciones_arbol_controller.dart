@@ -1,7 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/error/failure.dart';
+import 'package:riseg_one/core/error/result.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/ubicacion_repository.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'ubicaciones_arbol_state.dart';
@@ -75,9 +80,12 @@ class UbicacionesArbolController extends _$UbicacionesArbolController {
     if (state.procesando) return false;
     state = state.copyWith(procesando: true);
 
-    final resultado = await ref
-        .read(crearUbicacionUseCaseProvider)
-        .ejecutar(nombre: nombre, tipo: tipo, parentId: parentId);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.crear',
+      () => ref.read(crearUbicacionUseCaseProvider).ejecutar(nombre: nombre, tipo: tipo, parentId: parentId),
+      (mensaje) => Result<UbicacionData>.failure(PermissionFailure(mensaje)),
+    );
 
     if (resultado.isOk) {
       await _recargarSilenciosa();
@@ -92,9 +100,12 @@ class UbicacionesArbolController extends _$UbicacionesArbolController {
     if (state.procesando) return false;
     state = state.copyWith(procesando: true);
 
-    final resultado = await ref
-        .read(moverUbicacionUseCaseProvider)
-        .ejecutar(ubicacionId: ubicacionId, nuevoParentId: nuevoParentId);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.modificar',
+      () => ref.read(moverUbicacionUseCaseProvider).ejecutar(ubicacionId: ubicacionId, nuevoParentId: nuevoParentId),
+      (mensaje) => Result<UbicacionData>.failure(PermissionFailure(mensaje)),
+    );
 
     if (resultado.isOk) {
       await _recargarSilenciosa();

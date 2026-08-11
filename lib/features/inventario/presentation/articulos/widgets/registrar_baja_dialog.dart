@@ -81,7 +81,6 @@ Future<bool> mostrarDialogoRegistrarBaja(
         errorGeneral = l10n.registrarBajaErrorObservacionesRequeridas;
         return null;
       }
-
       if (articulo.manejaSerie) {
         if (unidadId == null) {
           errorGeneral = l10n.registrarBajaCampoUnidad;

@@ -97,8 +97,7 @@ Future<bool> mostrarDialogoRegistrarPagoAplicado(
         errorFecha = l10n.pagoAplicadoCampoFecha;
         return false;
       }
-
-      final resultado = await ref.read(registrarPagoAplicadoUseCaseProvider).ejecutar(
+      final resultado = await ref.read(registrarPagoAplicadoAutorizadoProvider)(
             cuentaPorCobrarId: cuentaPorCobrarId,
             monto: monto,
             fechaPago: fechaSeleccionada!,

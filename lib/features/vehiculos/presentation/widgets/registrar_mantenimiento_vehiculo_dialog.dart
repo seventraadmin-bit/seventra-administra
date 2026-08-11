@@ -146,7 +146,7 @@ Future<bool> mostrarDialogoRegistrarMantenimientoVehiculo(BuildContext context, 
           proximoKilometrajeCtrl.text.trim().isEmpty ? null : int.tryParse(proximoKilometrajeCtrl.text.trim());
       final costo = _centavosDesdeTexto(costoCtrl.text);
 
-      final registrado = await ref.read(registrarMantenimientoVehiculoUseCaseProvider).ejecutar(
+      final registrado = await ref.read(registrarMantenimientoVehiculoAutorizadoProvider)(
             vehiculoId: vehiculoId,
             fecha: fecha,
             kilometraje: kilometraje,

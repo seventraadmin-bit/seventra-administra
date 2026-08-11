@@ -18,6 +18,13 @@ class ActualizarDistribucionNominaValorInvalido extends ActualizarDistribucionNo
 /// Fiscal + No fiscal no suman el total a pagar del renglón.
 class ActualizarDistribucionNominaNoBalancea extends ActualizarDistribucionNominaResultado {}
 
+/// Reservado para la frontera de autorización (Etapa 11C) — nunca lo
+/// produce el propio caso de uso.
+class ActualizarDistribucionNominaErrorInesperado extends ActualizarDistribucionNominaResultado {
+  ActualizarDistribucionNominaErrorInesperado(this.mensaje);
+  final String mensaje;
+}
+
 /// Captura la distribución Fiscal/No fiscal de un renglón de Nómina
 /// (Etapa 6C) — una sola Nómina, nunca dos separadas (Resolución
 /// explícita de Marlon); ambos montos deben sumar exactamente el total

@@ -47,6 +47,25 @@ import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/organizacion/presentation/servicios/servicio_expediente_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/servicios/servicio_expediente_state.dart';
+import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+
+/// Sesión Maestro fija — Etapa 11C activó autorización real en
+/// `ServicioExpedienteController`; sin este override todas las acciones
+/// serían rechazadas por `AuthorizationService` (mismo criterio que
+/// `areas_list_screen_test.dart`).
+class _SesionControllerDePrueba extends SesionController {
+  @override
+  SesionUsuario? build() {
+    return const SesionUsuario(
+      usuarioId: 'usuario-prueba',
+      nombre: 'Usuario de prueba',
+      nombreUsuario: 'prueba',
+      esMaestro: true,
+      permisos: {},
+    );
+  }
+}
 
 void main() {
   late AppDatabase db;
@@ -77,7 +96,12 @@ void main() {
     );
     servicioId = (creado as GuardarServicioExitoso).servicio.id;
 
-    container = ProviderContainer(overrides: [appDatabaseProvider.overrideWithValue(db)]);
+    container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
+      ],
+    );
     addTearDown(container.dispose);
     container.listen(servicioExpedienteControllerProvider(servicioId), (_, _) {});
   });

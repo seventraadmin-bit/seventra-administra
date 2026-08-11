@@ -1,11 +1,13 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/telefonia/data/tables/linea_telefonica_table.dart' show MotivoBajaLineaTelefonica;
 import 'package:riseg_one/features/telefonia/domain/usecases/cambiar_estatus_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/corregir_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/crear_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/dar_de_baja_linea_telefonica_usecase.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../telefonia_providers.dart';
 import 'telefonia_state.dart';
@@ -50,15 +52,20 @@ class TelefoniaController extends _$TelefoniaController {
     DateTime? fechaActivacion,
     String? observaciones,
   }) async {
-    final resultado = await ref.read(crearLineaTelefonicaUseCaseProvider).ejecutar(
-          numero: numero,
-          operador: operador,
-          operadorOtroNombre: operadorOtroNombre,
-          modalidadSim: modalidadSim,
-          iccid: iccid,
-          fechaActivacion: fechaActivacion,
-          observaciones: observaciones,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.crear',
+      () => ref.read(crearLineaTelefonicaUseCaseProvider).ejecutar(
+            numero: numero,
+            operador: operador,
+            operadorOtroNombre: operadorOtroNombre,
+            modalidadSim: modalidadSim,
+            iccid: iccid,
+            fechaActivacion: fechaActivacion,
+            observaciones: observaciones,
+          ),
+      CrearLineaTelefonicaErrorInesperado.new,
+    );
     if (resultado is CrearLineaTelefonicaExitoso) await _cargar();
     return resultado;
   }
@@ -78,21 +85,26 @@ class TelefoniaController extends _$TelefoniaController {
     bool limpiarFechaActivacion = false,
     bool limpiarObservaciones = false,
   }) async {
-    final resultado = await ref.read(corregirLineaTelefonicaUseCaseProvider).ejecutar(
-          lineaTelefonicaId: lineaTelefonicaId,
-          numero: numero,
-          operador: operador,
-          operadorOtroNombre: operadorOtroNombre,
-          modalidadSim: modalidadSim,
-          iccid: iccid,
-          fechaActivacion: fechaActivacion,
-          observaciones: observaciones,
-          limpiarNumero: limpiarNumero,
-          limpiarOperadorOtroNombre: limpiarOperadorOtroNombre,
-          limpiarIccid: limpiarIccid,
-          limpiarFechaActivacion: limpiarFechaActivacion,
-          limpiarObservaciones: limpiarObservaciones,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(corregirLineaTelefonicaUseCaseProvider).ejecutar(
+            lineaTelefonicaId: lineaTelefonicaId,
+            numero: numero,
+            operador: operador,
+            operadorOtroNombre: operadorOtroNombre,
+            modalidadSim: modalidadSim,
+            iccid: iccid,
+            fechaActivacion: fechaActivacion,
+            observaciones: observaciones,
+            limpiarNumero: limpiarNumero,
+            limpiarOperadorOtroNombre: limpiarOperadorOtroNombre,
+            limpiarIccid: limpiarIccid,
+            limpiarFechaActivacion: limpiarFechaActivacion,
+            limpiarObservaciones: limpiarObservaciones,
+          ),
+      CorregirLineaTelefonicaErrorInesperado.new,
+    );
     if (resultado is CorregirLineaTelefonicaExitoso) await _cargar();
     return resultado;
   }
@@ -101,9 +113,15 @@ class TelefoniaController extends _$TelefoniaController {
     required String lineaTelefonicaId,
     required String estatus,
   }) async {
-    final resultado = await ref
-        .read(cambiarEstatusLineaTelefonicaUseCaseProvider)
-        .ejecutar(lineaTelefonicaId: lineaTelefonicaId, estatus: estatus);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(cambiarEstatusLineaTelefonicaUseCaseProvider).ejecutar(
+            lineaTelefonicaId: lineaTelefonicaId,
+            estatus: estatus,
+          ),
+      CambiarEstatusLineaTelefonicaErrorInesperado.new,
+    );
     if (resultado is CambiarEstatusLineaTelefonicaExitoso) await _cargar();
     return resultado;
   }
@@ -114,12 +132,17 @@ class TelefoniaController extends _$TelefoniaController {
     required MotivoBajaLineaTelefonica motivoBaja,
     String? observacionesBaja,
   }) async {
-    final resultado = await ref.read(darDeBajaLineaTelefonicaUseCaseProvider).ejecutar(
-          lineaTelefonicaId: lineaTelefonicaId,
-          fechaBaja: fechaBaja,
-          motivoBaja: motivoBaja,
-          observacionesBaja: observacionesBaja,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.archivar',
+      () => ref.read(darDeBajaLineaTelefonicaUseCaseProvider).ejecutar(
+            lineaTelefonicaId: lineaTelefonicaId,
+            fechaBaja: fechaBaja,
+            motivoBaja: motivoBaja,
+            observacionesBaja: observacionesBaja,
+          ),
+      DarDeBajaLineaTelefonicaErrorInesperado.new,
+    );
     if (resultado is DarDeBajaLineaTelefonicaExitoso) await _cargar();
     return resultado;
   }

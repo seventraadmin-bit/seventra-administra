@@ -150,7 +150,6 @@ Future<bool> mostrarDialogoRegistrarIngreso(
         errorConcepto = l10n.ingresoErrorConceptoRequerido;
         return false;
       }
-
       final resultado = await ref.read(registrarIngresoManualUseCaseProvider).ejecutar(
             monto: monto,
             fecha: fechaSeleccionada!,

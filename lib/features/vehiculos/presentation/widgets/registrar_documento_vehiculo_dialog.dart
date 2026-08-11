@@ -123,7 +123,7 @@ Future<bool> mostrarDialogoRegistrarDocumentoVehiculo(
       },
     ),
     onConfirm: () async {
-      final registrado = await ref.read(registrarDocumentoVehiculoUseCaseProvider).ejecutar(
+      final registrado = await ref.read(registrarDocumentoVehiculoAutorizadoProvider)(
             vehiculoId: vehiculoId,
             tipo: tipo.name,
             tipoOtroDescripcion: descripcionOtroCtrl.text,

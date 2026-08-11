@@ -5,6 +5,8 @@ import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_comprobante
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_egreso_usecase.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import '../../finanzas_providers.dart';
@@ -83,19 +85,24 @@ class EgresosController extends _$EgresosController {
     required String concepto,
     String? observaciones,
   }) async {
-    final resultado = await ref.read(registrarEgresoUseCaseProvider).ejecutar(
-          monto: monto,
-          fecha: fecha,
-          categoriaFinancieraId: categoriaFinancieraId,
-          servicioId: servicioId,
-          sucursalId: sucursalId,
-          areaId: areaId,
-          cuentaCaja: cuentaCaja,
-          formaPago: formaPago,
-          beneficiario: beneficiario,
-          concepto: concepto,
-          observaciones: observaciones,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.crear',
+      () => ref.read(registrarEgresoUseCaseProvider).ejecutar(
+            monto: monto,
+            fecha: fecha,
+            categoriaFinancieraId: categoriaFinancieraId,
+            servicioId: servicioId,
+            sucursalId: sucursalId,
+            areaId: areaId,
+            cuentaCaja: cuentaCaja,
+            formaPago: formaPago,
+            beneficiario: beneficiario,
+            concepto: concepto,
+            observaciones: observaciones,
+          ),
+      RegistrarEgresoErrorInesperado.new,
+    );
     if (resultado is RegistrarEgresoExitoso) {
       await _cargar();
     }
@@ -116,20 +123,25 @@ class EgresosController extends _$EgresosController {
     String? observaciones,
     required String motivo,
   }) async {
-    final resultado = await ref.read(corregirEgresoUseCaseProvider).ejecutar(
-          egresoId: egresoId,
-          fecha: fecha,
-          categoriaFinancieraId: categoriaFinancieraId,
-          servicioId: servicioId,
-          sucursalId: sucursalId,
-          areaId: areaId,
-          cuentaCaja: cuentaCaja,
-          formaPago: formaPago,
-          beneficiario: beneficiario,
-          concepto: concepto,
-          observaciones: observaciones,
-          motivo: motivo,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.modificar',
+      () => ref.read(corregirEgresoUseCaseProvider).ejecutar(
+            egresoId: egresoId,
+            fecha: fecha,
+            categoriaFinancieraId: categoriaFinancieraId,
+            servicioId: servicioId,
+            sucursalId: sucursalId,
+            areaId: areaId,
+            cuentaCaja: cuentaCaja,
+            formaPago: formaPago,
+            beneficiario: beneficiario,
+            concepto: concepto,
+            observaciones: observaciones,
+            motivo: motivo,
+          ),
+      CorregirEgresoErrorInesperado.new,
+    );
     if (resultado is CorregirEgresoExitoso) {
       await _cargar();
     }
@@ -137,7 +149,12 @@ class EgresosController extends _$EgresosController {
   }
 
   Future<CancelarEgresoResultado> cancelar({required String egresoId, required String motivo}) async {
-    final resultado = await ref.read(cancelarEgresoUseCaseProvider).ejecutar(egresoId: egresoId, motivo: motivo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.archivar',
+      () => ref.read(cancelarEgresoUseCaseProvider).ejecutar(egresoId: egresoId, motivo: motivo),
+      CancelarEgresoErrorInesperado.new,
+    );
     if (resultado is CancelarEgresoExitoso) {
       await _cargar();
     }

@@ -47,8 +47,7 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
       ),
       onConfirm: () async {
         final resultado = await ref
-            .read(crearClienteUseCaseProvider)
-            .ejecutar(nombreComercial: nombreComercial, observaciones: observaciones);
+            .read(crearClienteAutorizadoProvider)(nombreComercial: nombreComercial, observaciones: observaciones);
         return resultado.when(ok: (c) => c, failure: (_) => null);
       },
     );

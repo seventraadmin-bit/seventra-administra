@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart' show puestoRepositoryProvider;
 
 import '../domain/usecases/activar_usuario_usecase.dart';
@@ -54,14 +55,19 @@ class UsuariosController extends _$UsuariosController {
     required String puestoId,
     bool esMaestro = false,
   }) async {
-    final resultado = await ref.read(crearUsuarioUseCaseProvider).ejecutar(
-          nombre: nombre,
-          nombreUsuario: nombreUsuario,
-          password: password,
-          puestoId: puestoId,
-          esMaestro: esMaestro,
-          actorUsuarioId: _actorUsuarioId,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'usuarios.administrar',
+      () => ref.read(crearUsuarioUseCaseProvider).ejecutar(
+            nombre: nombre,
+            nombreUsuario: nombreUsuario,
+            password: password,
+            puestoId: puestoId,
+            esMaestro: esMaestro,
+            actorUsuarioId: _actorUsuarioId,
+          ),
+      CrearUsuarioErrorInesperado.new,
+    );
     if (resultado is CrearUsuarioExitoso) await _cargar();
     return resultado;
   }
@@ -73,39 +79,56 @@ class UsuariosController extends _$UsuariosController {
     required String puestoId,
     required bool esMaestro,
   }) async {
-    final resultado = await ref.read(corregirUsuarioUseCaseProvider).ejecutar(
-          usuarioId: usuarioId,
-          nombre: nombre,
-          nombreUsuario: nombreUsuario,
-          puestoId: puestoId,
-          esMaestro: esMaestro,
-          actorUsuarioId: _actorUsuarioId,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'usuarios.administrar',
+      () => ref.read(corregirUsuarioUseCaseProvider).ejecutar(
+            usuarioId: usuarioId,
+            nombre: nombre,
+            nombreUsuario: nombreUsuario,
+            puestoId: puestoId,
+            esMaestro: esMaestro,
+            actorUsuarioId: _actorUsuarioId,
+          ),
+      CorregirUsuarioErrorInesperado.new,
+    );
     if (resultado is CorregirUsuarioExitoso) await _cargar();
     return resultado;
   }
 
   Future<CambiarContrasenaUsuarioResultado> cambiarContrasena({required String usuarioId, required String password}) async {
-    final resultado = await ref.read(cambiarContrasenaUsuarioUseCaseProvider).ejecutar(
-          usuarioId: usuarioId,
-          password: password,
-          actorUsuarioId: _actorUsuarioId,
-        );
-    return resultado;
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'usuarios.administrar',
+      () => ref.read(cambiarContrasenaUsuarioUseCaseProvider).ejecutar(
+            usuarioId: usuarioId,
+            password: password,
+            actorUsuarioId: _actorUsuarioId,
+          ),
+      CambiarContrasenaUsuarioErrorInesperado.new,
+    );
   }
 
   Future<ActivarUsuarioResultado> activar(String usuarioId) async {
-    final resultado = await ref
-        .read(activarUsuarioUseCaseProvider)
-        .ejecutar(usuarioId: usuarioId, actorUsuarioId: _actorUsuarioId);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'usuarios.administrar',
+      () => ref.read(activarUsuarioUseCaseProvider).ejecutar(usuarioId: usuarioId, actorUsuarioId: _actorUsuarioId),
+      ActivarUsuarioErrorInesperado.new,
+    );
     if (resultado is ActivarUsuarioExitoso) await _cargar();
     return resultado;
   }
 
   Future<DesactivarUsuarioResultado> desactivar({required String usuarioId, String? motivo}) async {
-    final resultado = await ref
-        .read(desactivarUsuarioUseCaseProvider)
-        .ejecutar(usuarioId: usuarioId, actorUsuarioId: _actorUsuarioId, motivo: motivo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'usuarios.administrar',
+      () => ref
+          .read(desactivarUsuarioUseCaseProvider)
+          .ejecutar(usuarioId: usuarioId, actorUsuarioId: _actorUsuarioId, motivo: motivo),
+      DesactivarUsuarioErrorInesperado.new,
+    );
     if (resultado is DesactivarUsuarioExitoso) await _cargar();
     return resultado;
   }
@@ -115,10 +138,15 @@ class UsuariosController extends _$UsuariosController {
   }
 
   Future<GuardarPermisosUsuarioResultado> guardarPermisos({required String usuarioId, required Set<String> codigos}) {
-    return ref.read(guardarPermisosUsuarioUseCaseProvider).ejecutar(
-          usuarioId: usuarioId,
-          codigos: codigos,
-          actorUsuarioId: _actorUsuarioId,
-        );
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'usuarios.administrar',
+      () => ref.read(guardarPermisosUsuarioUseCaseProvider).ejecutar(
+            usuarioId: usuarioId,
+            codigos: codigos,
+            actorUsuarioId: _actorUsuarioId,
+          ),
+      GuardarPermisosUsuarioErrorInesperado.new,
+    );
   }
 }

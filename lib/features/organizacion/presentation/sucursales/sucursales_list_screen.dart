@@ -50,7 +50,7 @@ class _SucursalesListScreenState extends ConsumerState<SucursalesListScreen> {
         final tipo = tipoSeleccionado;
         if (nombre.isEmpty || tipo == null) return null;
 
-        final resultado = await ref.read(crearSucursalUseCaseProvider).ejecutar(nombre: nombre, tipoSucursalId: tipo);
+        final resultado = await ref.read(crearSucursalAutorizadoProvider)(nombre: nombre, tipoSucursalId: tipo);
         return resultado.when(ok: (s) => s, failure: (_) => null);
       },
     );

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formatoCentavosPago;
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import 'articulos_controller.dart';
 import 'articulos_state.dart';
@@ -63,7 +64,9 @@ class ArticulosListScreen extends ConsumerWidget {
             primaryAction: RisegButton(
               key: const Key('inventario_boton_nuevo_articulo'),
               label: l10n.inventarioBotonNuevoArticulo,
-              onPressed: () => _nuevoArticulo(context, ref),
+              onPressed: ref.watch(permissionServiceProvider).hasCode('inventario.crear')
+                  ? () => _nuevoArticulo(context, ref)
+                  : null,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

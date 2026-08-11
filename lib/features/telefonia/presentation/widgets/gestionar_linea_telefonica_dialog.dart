@@ -98,7 +98,6 @@ Future<bool> mostrarDialogoGestionarLineaTelefonica(
       final operadorOtroNombre = operadorOtroNombreCtrl.text.trim().isEmpty ? null : operadorOtroNombreCtrl.text.trim();
       final iccid = iccidCtrl.text.trim().isEmpty ? null : iccidCtrl.text.trim();
       final observaciones = observacionesCtrl.text.trim().isEmpty ? null : observacionesCtrl.text.trim();
-
       if (esEdicion) {
         final resultadoCorregir = await notifier.corregirLinea(
           lineaTelefonicaId: linea.id,

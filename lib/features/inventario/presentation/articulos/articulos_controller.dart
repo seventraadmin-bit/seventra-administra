@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/adjuntar_comprobante_movimiento_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_categoria_articulo_usecase.dart';
@@ -15,6 +16,7 @@ import 'package:riseg_one/features/inventario/domain/usecases/registrar_baja_uni
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_baja_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_unidad_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_usecase.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../inventario_providers.dart';
 import 'articulos_state.dart';
@@ -100,13 +102,23 @@ class ArticulosController extends _$ArticulosController {
   // --- Categorías ---
 
   Future<CrearCategoriaArticuloResultado> crearCategoria(String nombre) async {
-    final resultado = await ref.read(crearCategoriaArticuloUseCaseProvider).ejecutar(nombre: nombre);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.crear',
+      () => ref.read(crearCategoriaArticuloUseCaseProvider).ejecutar(nombre: nombre),
+      CrearCategoriaArticuloErrorInesperado.new,
+    );
     if (resultado is CrearCategoriaArticuloExitoso) await _cargar();
     return resultado;
   }
 
   Future<ArchivarCategoriaArticuloResultado> archivarCategoria(String categoriaId) async {
-    final resultado = await ref.read(archivarCategoriaArticuloUseCaseProvider).ejecutar(categoriaId);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.archivar',
+      () => ref.read(archivarCategoriaArticuloUseCaseProvider).ejecutar(categoriaId),
+      ArchivarCategoriaArticuloErrorInesperado.new,
+    );
     if (resultado is ArchivarCategoriaArticuloExitoso) await _cargar();
     return resultado;
   }
@@ -122,15 +134,20 @@ class ArticulosController extends _$ArticulosController {
     required bool manejaSerie,
     int? costoReferencia,
   }) async {
-    final resultado = await ref.read(crearArticuloUseCaseProvider).ejecutar(
-          categoriaId: categoriaId,
-          nombre: nombre,
-          descripcion: descripcion,
-          unidadMedida: unidadMedida,
-          manejaVariante: manejaVariante,
-          manejaSerie: manejaSerie,
-          costoReferencia: costoReferencia,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.crear',
+      () => ref.read(crearArticuloUseCaseProvider).ejecutar(
+            categoriaId: categoriaId,
+            nombre: nombre,
+            descripcion: descripcion,
+            unidadMedida: unidadMedida,
+            manejaVariante: manejaVariante,
+            manejaSerie: manejaSerie,
+            costoReferencia: costoReferencia,
+          ),
+      CrearArticuloErrorInesperado.new,
+    );
     if (resultado is CrearArticuloExitoso) await _cargar();
     return resultado;
   }
@@ -145,22 +162,32 @@ class ArticulosController extends _$ArticulosController {
     bool limpiarDescripcion = false,
     bool limpiarCostoReferencia = false,
   }) async {
-    final resultado = await ref.read(corregirArticuloUseCaseProvider).ejecutar(
-          articuloId: articuloId,
-          categoriaId: categoriaId,
-          nombre: nombre,
-          descripcion: descripcion,
-          unidadMedida: unidadMedida,
-          costoReferencia: costoReferencia,
-          limpiarDescripcion: limpiarDescripcion,
-          limpiarCostoReferencia: limpiarCostoReferencia,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.modificar',
+      () => ref.read(corregirArticuloUseCaseProvider).ejecutar(
+            articuloId: articuloId,
+            categoriaId: categoriaId,
+            nombre: nombre,
+            descripcion: descripcion,
+            unidadMedida: unidadMedida,
+            costoReferencia: costoReferencia,
+            limpiarDescripcion: limpiarDescripcion,
+            limpiarCostoReferencia: limpiarCostoReferencia,
+          ),
+      CorregirArticuloErrorInesperado.new,
+    );
     if (resultado is CorregirArticuloExitoso) await _cargar();
     return resultado;
   }
 
   Future<ArchivarArticuloResultado> archivarArticulo(String articuloId) async {
-    final resultado = await ref.read(archivarArticuloUseCaseProvider).ejecutar(articuloId);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.archivar',
+      () => ref.read(archivarArticuloUseCaseProvider).ejecutar(articuloId),
+      ArchivarArticuloErrorInesperado.new,
+    );
     if (resultado is ArchivarArticuloExitoso) await _cargar();
     return resultado;
   }
@@ -168,11 +195,21 @@ class ArticulosController extends _$ArticulosController {
   // --- Variantes ---
 
   Future<CrearVarianteArticuloResultado> crearVariante({required String articuloId, required String valor}) {
-    return ref.read(crearVarianteArticuloUseCaseProvider).ejecutar(articuloId: articuloId, valor: valor);
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.crear',
+      () => ref.read(crearVarianteArticuloUseCaseProvider).ejecutar(articuloId: articuloId, valor: valor),
+      CrearVarianteArticuloErrorInesperado.new,
+    );
   }
 
   Future<ArchivarVarianteArticuloResultado> archivarVariante(String varianteId) {
-    return ref.read(archivarVarianteArticuloUseCaseProvider).ejecutar(varianteId);
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.archivar',
+      () => ref.read(archivarVarianteArticuloUseCaseProvider).ejecutar(varianteId),
+      ArchivarVarianteArticuloErrorInesperado.new,
+    );
   }
 
   // --- Movimientos ---
@@ -185,14 +222,19 @@ class ArticulosController extends _$ArticulosController {
     required DateTime fecha,
     String? observaciones,
   }) {
-    return ref.read(registrarEntradaUseCaseProvider).ejecutar(
-          articuloId: articuloId,
-          varianteId: varianteId,
-          cantidad: cantidad,
-          costoUnitario: costoUnitario,
-          fecha: fecha,
-          observaciones: observaciones,
-        );
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.crear',
+      () => ref.read(registrarEntradaUseCaseProvider).ejecutar(
+            articuloId: articuloId,
+            varianteId: varianteId,
+            cantidad: cantidad,
+            costoUnitario: costoUnitario,
+            fecha: fecha,
+            observaciones: observaciones,
+          ),
+      RegistrarEntradaErrorInesperado.new,
+    );
   }
 
   Future<RegistrarEntradaUnidadResultado> registrarEntradaUnidad({
@@ -206,17 +248,22 @@ class ArticulosController extends _$ArticulosController {
     required DateTime fecha,
     String? observaciones,
   }) {
-    return ref.read(registrarEntradaUnidadUseCaseProvider).ejecutar(
-          articuloId: articuloId,
-          numeroSerie: numeroSerie,
-          marca: marca,
-          modelo: modelo,
-          imei: imei,
-          numeroTelefonico: numeroTelefonico,
-          costoUnitario: costoUnitario,
-          fecha: fecha,
-          observaciones: observaciones,
-        );
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.crear',
+      () => ref.read(registrarEntradaUnidadUseCaseProvider).ejecutar(
+            articuloId: articuloId,
+            numeroSerie: numeroSerie,
+            marca: marca,
+            modelo: modelo,
+            imei: imei,
+            numeroTelefonico: numeroTelefonico,
+            costoUnitario: costoUnitario,
+            fecha: fecha,
+            observaciones: observaciones,
+          ),
+      RegistrarEntradaUnidadErrorInesperado.new,
+    );
   }
 
   Future<RegistrarBajaResultado> registrarBaja({
@@ -225,16 +272,26 @@ class ArticulosController extends _$ArticulosController {
     required int cantidad,
     required String observaciones,
   }) {
-    return ref.read(registrarBajaUseCaseProvider).ejecutar(
-          articuloId: articuloId,
-          varianteId: varianteId,
-          cantidad: cantidad,
-          observaciones: observaciones,
-        );
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.archivar',
+      () => ref.read(registrarBajaUseCaseProvider).ejecutar(
+            articuloId: articuloId,
+            varianteId: varianteId,
+            cantidad: cantidad,
+            observaciones: observaciones,
+          ),
+      RegistrarBajaErrorInesperado.new,
+    );
   }
 
   Future<RegistrarBajaUnidadResultado> registrarBajaUnidad({required String unidadId, required String observaciones}) {
-    return ref.read(registrarBajaUnidadUseCaseProvider).ejecutar(unidadId: unidadId, observaciones: observaciones);
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.archivar',
+      () => ref.read(registrarBajaUnidadUseCaseProvider).ejecutar(unidadId: unidadId, observaciones: observaciones),
+      RegistrarBajaUnidadErrorInesperado.new,
+    );
   }
 
   Future<RegistrarAjusteResultado> registrarAjuste({
@@ -244,13 +301,18 @@ class ArticulosController extends _$ArticulosController {
     required bool esEntrada,
     required String observaciones,
   }) {
-    return ref.read(registrarAjusteUseCaseProvider).ejecutar(
-          articuloId: articuloId,
-          varianteId: varianteId,
-          cantidad: cantidad,
-          esEntrada: esEntrada,
-          observaciones: observaciones,
-        );
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.modificar',
+      () => ref.read(registrarAjusteUseCaseProvider).ejecutar(
+            articuloId: articuloId,
+            varianteId: varianteId,
+            cantidad: cantidad,
+            esEntrada: esEntrada,
+            observaciones: observaciones,
+          ),
+      RegistrarAjusteErrorInesperado.new,
+    );
   }
 
   Future<AdjuntarComprobanteMovimientoResultado> adjuntarComprobante({
@@ -259,11 +321,16 @@ class ArticulosController extends _$ArticulosController {
     required String originalFileName,
     required String mimeType,
   }) {
-    return ref.read(adjuntarComprobanteMovimientoUseCaseProvider).ejecutar(
-          movimientoInventarioId: movimientoInventarioId,
-          sourceFilePath: sourceFilePath,
-          originalFileName: originalFileName,
-          mimeType: mimeType,
-        );
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.modificar',
+      () => ref.read(adjuntarComprobanteMovimientoUseCaseProvider).ejecutar(
+            movimientoInventarioId: movimientoInventarioId,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      AdjuntarComprobanteMovimientoErrorInesperado.new,
+    );
   }
 }

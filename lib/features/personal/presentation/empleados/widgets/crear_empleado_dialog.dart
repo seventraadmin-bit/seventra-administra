@@ -688,7 +688,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
       }
       if (!valido) return null;
 
-      final resultado = await ref.read(crearEmpleadoUseCaseProvider).ejecutar(
+      final resultado = await ref.read(crearEmpleadoAutorizadoProvider)(
             nombres: nombresController.text,
             apellidoPaterno: apellidoPaternoController.text,
             apellidoMaterno: apellidoMaternoController.text,

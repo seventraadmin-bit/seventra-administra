@@ -183,9 +183,13 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
     );
     if (confirmado != true) return;
 
-    await _notifier.archivarContacto(contacto.id);
+    final exito = await _notifier.archivarContacto(contacto.id);
     if (!mounted) return;
-    RisegFeedback.showSuccess(context, l10n.clienteContactoArchivadoExito);
+    if (exito) {
+      RisegFeedback.showSuccess(context, l10n.clienteContactoArchivadoExito);
+    } else {
+      RisegFeedback.showError(context, l10n.clienteContactoGuardadoError);
+    }
   }
 
   Future<void> _marcarComoPrincipal(ContactoData contacto) async {
@@ -275,7 +279,9 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
         domicilioInicial: domicilio,
         onCambio: (nuevo) => capturado = nuevo,
       ),
-      onConfirm: () => _notifier.guardarDomicilioFiscal(entidad.entidadFiscal.id, capturado),
+      onConfirm: () {
+        return _notifier.guardarDomicilioFiscal(entidad.entidadFiscal.id, capturado);
+      },
     );
 
     if (!mounted) return;

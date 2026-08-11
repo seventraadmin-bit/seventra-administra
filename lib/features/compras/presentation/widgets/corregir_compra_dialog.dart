@@ -6,6 +6,7 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formaPagoLabel;
 
+
 import '../../domain/usecases/corregir_compra_usecase.dart';
 import '../compras_controller.dart';
 

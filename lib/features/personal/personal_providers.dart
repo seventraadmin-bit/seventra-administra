@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/permissions/authorization_service.dart';
 import '../organizacion/organizacion_providers.dart';
+import '../usuarios/usuarios_providers.dart';
 import 'data/pdf/ficha_tecnica_pdf_renderer.dart';
+import 'data/tables/empleado_table.dart';
 import 'data/repositories/asignacion_servicio_repository_impl.dart';
 import 'data/repositories/empleado_repository_impl.dart';
 import 'data/repositories/ficha_tecnica_empleado_repository_impl.dart';
@@ -162,4 +165,420 @@ final generarFichaTecnicaEmpleadoUseCaseProvider = Provider<GenerarFichaTecnicaE
     ref.watch(generarCodigoUseCaseProvider),
     ref.watch(fichaTecnicaPdfRendererProvider),
   );
+});
+
+// --- Fachadas de aplicación autorizadas (Etapa 11C) ---
+//
+// Personal no tiene un Controller de escritura (los diálogos llaman los
+// UseCase providers directo) — así que estas fachadas son el punto de
+// entrada de aplicación más bajo y reutilizable que representa cada
+// operación protegida. Se exponen como `Provider<Función>` (no como
+// función suelta que reciba `Ref`) a propósito: `WidgetRef` (que tienen
+// los diálogos) y `ProviderContainer` (que usan las pruebas) no
+// comparten una interfaz común más allá de `.read(provider)`, así que
+// leer el Provider es lo único que necesita funcionar igual en ambos
+// lados — el cierre ya trae su propio `ref` capturado. `autorizarUseCase`
+// es el único punto del proyecto que evalúa el permiso — nunca se repite
+// el chequeo en el diálogo ni en el UseCase.
+
+typedef CrearEmpleadoAutorizado = Future<CrearEmpleadoResultado> Function({
+  required String nombres,
+  required String apellidoPaterno,
+  String? apellidoMaterno,
+  required SexoEmpleado sexo,
+  required DateTime fechaNacimiento,
+  required String curp,
+  required String rfc,
+  String? codigoPostalFiscal,
+  required String nss,
+  required EstadoCivilEmpleado estadoCivil,
+  String nacionalidad,
+  String? telefono,
+  String? correoElectronico,
+  String? contactoEmergenciaNombre,
+  String? telefonoEmergencia,
+  String? parentescoEmergencia,
+  required DateTime fechaIngreso,
+  String? puestoId,
+  String? empresaId,
+  String? servicioId,
+  String? turnoId,
+  int? sueldoMensualAsignacion,
+  int? bonoMensualAsignacion,
+  String? sucursalId,
+  String? bancoId,
+  String? numeroCuentaTarjeta,
+  String? clabe,
+  int? sueldoMensualAdministrativo,
+  int? bonoMensualAdministrativo,
+  String? observaciones,
+  NivelEstudiosEmpleado? nivelEstudios,
+  String? observacionesEscolaridad,
+  required int aniosExperienciaSeguridad,
+  int? mesesExperienciaAdicionales,
+  String? ultimoPuestoDesempenado,
+  String? resumenExperiencia,
+  String? observacionesExperiencia,
+  String? actor,
+});
+
+final crearEmpleadoAutorizadoProvider = Provider<CrearEmpleadoAutorizado>((ref) {
+  return ({
+    required String nombres,
+    required String apellidoPaterno,
+    String? apellidoMaterno,
+    required SexoEmpleado sexo,
+    required DateTime fechaNacimiento,
+    required String curp,
+    required String rfc,
+    String? codigoPostalFiscal,
+    required String nss,
+    required EstadoCivilEmpleado estadoCivil,
+    String nacionalidad = 'Mexicana',
+    String? telefono,
+    String? correoElectronico,
+    String? contactoEmergenciaNombre,
+    String? telefonoEmergencia,
+    String? parentescoEmergencia,
+    required DateTime fechaIngreso,
+    String? puestoId,
+    String? empresaId,
+    String? servicioId,
+    String? turnoId,
+    int? sueldoMensualAsignacion,
+    int? bonoMensualAsignacion,
+    String? sucursalId,
+    String? bancoId,
+    String? numeroCuentaTarjeta,
+    String? clabe,
+    int? sueldoMensualAdministrativo,
+    int? bonoMensualAdministrativo,
+    String? observaciones,
+    NivelEstudiosEmpleado? nivelEstudios,
+    String? observacionesEscolaridad,
+    required int aniosExperienciaSeguridad,
+    int? mesesExperienciaAdicionales,
+    String? ultimoPuestoDesempenado,
+    String? resumenExperiencia,
+    String? observacionesExperiencia,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.crear',
+      () => ref.read(crearEmpleadoUseCaseProvider).ejecutar(
+            nombres: nombres,
+            apellidoPaterno: apellidoPaterno,
+            apellidoMaterno: apellidoMaterno,
+            sexo: sexo,
+            fechaNacimiento: fechaNacimiento,
+            curp: curp,
+            rfc: rfc,
+            codigoPostalFiscal: codigoPostalFiscal,
+            nss: nss,
+            estadoCivil: estadoCivil,
+            nacionalidad: nacionalidad,
+            telefono: telefono,
+            correoElectronico: correoElectronico,
+            contactoEmergenciaNombre: contactoEmergenciaNombre,
+            telefonoEmergencia: telefonoEmergencia,
+            parentescoEmergencia: parentescoEmergencia,
+            fechaIngreso: fechaIngreso,
+            puestoId: puestoId,
+            empresaId: empresaId,
+            servicioId: servicioId,
+            turnoId: turnoId,
+            sueldoMensualAsignacion: sueldoMensualAsignacion,
+            bonoMensualAsignacion: bonoMensualAsignacion,
+            sucursalId: sucursalId,
+            bancoId: bancoId,
+            numeroCuentaTarjeta: numeroCuentaTarjeta,
+            clabe: clabe,
+            sueldoMensualAdministrativo: sueldoMensualAdministrativo,
+            bonoMensualAdministrativo: bonoMensualAdministrativo,
+            observaciones: observaciones,
+            nivelEstudios: nivelEstudios,
+            observacionesEscolaridad: observacionesEscolaridad,
+            aniosExperienciaSeguridad: aniosExperienciaSeguridad,
+            mesesExperienciaAdicionales: mesesExperienciaAdicionales,
+            ultimoPuestoDesempenado: ultimoPuestoDesempenado,
+            resumenExperiencia: resumenExperiencia,
+            observacionesExperiencia: observacionesExperiencia,
+            actor: actor,
+          ),
+      CrearEmpleadoErrorInesperado.new,
+    );
+  };
+});
+
+typedef CorregirEmpleadoAutorizado = Future<CorregirEmpleadoResultado> Function({
+  required String empleadoId,
+  String? nombres,
+  String? apellidoPaterno,
+  String? apellidoMaterno,
+  SexoEmpleado? sexo,
+  DateTime? fechaNacimiento,
+  String? curp,
+  String? rfc,
+  String? codigoPostalFiscal,
+  bool limpiarCodigoPostalFiscal,
+  String? nss,
+  EstadoCivilEmpleado? estadoCivil,
+  String? nacionalidad,
+  String? telefono,
+  String? correoElectronico,
+  String? contactoEmergenciaNombre,
+  String? telefonoEmergencia,
+  String? parentescoEmergencia,
+  DateTime? fechaIngreso,
+  String? puestoId,
+  bool limpiarPuesto,
+  String? empresaId,
+  bool limpiarEmpresa,
+  String? sucursalId,
+  bool limpiarSucursal,
+  String? bancoId,
+  bool limpiarBanco,
+  String? numeroCuentaTarjeta,
+  bool limpiarNumeroCuentaTarjeta,
+  String? clabe,
+  bool limpiarClabe,
+  int? sueldoMensualAdministrativo,
+  bool limpiarSueldoMensualAdministrativo,
+  int? bonoMensualAdministrativo,
+  bool limpiarBonoMensualAdministrativo,
+  String? observaciones,
+  NivelEstudiosEmpleado? nivelEstudios,
+  String? observacionesEscolaridad,
+  int? aniosExperienciaSeguridad,
+  int? mesesExperienciaAdicionales,
+  String? ultimoPuestoDesempenado,
+  String? resumenExperiencia,
+  String? observacionesExperiencia,
+  required String motivo,
+  String? actor,
+});
+
+final corregirEmpleadoAutorizadoProvider = Provider<CorregirEmpleadoAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    String? nombres,
+    String? apellidoPaterno,
+    String? apellidoMaterno,
+    SexoEmpleado? sexo,
+    DateTime? fechaNacimiento,
+    String? curp,
+    String? rfc,
+    String? codigoPostalFiscal,
+    bool limpiarCodigoPostalFiscal = false,
+    String? nss,
+    EstadoCivilEmpleado? estadoCivil,
+    String? nacionalidad,
+    String? telefono,
+    String? correoElectronico,
+    String? contactoEmergenciaNombre,
+    String? telefonoEmergencia,
+    String? parentescoEmergencia,
+    DateTime? fechaIngreso,
+    String? puestoId,
+    bool limpiarPuesto = false,
+    String? empresaId,
+    bool limpiarEmpresa = false,
+    String? sucursalId,
+    bool limpiarSucursal = false,
+    String? bancoId,
+    bool limpiarBanco = false,
+    String? numeroCuentaTarjeta,
+    bool limpiarNumeroCuentaTarjeta = false,
+    String? clabe,
+    bool limpiarClabe = false,
+    int? sueldoMensualAdministrativo,
+    bool limpiarSueldoMensualAdministrativo = false,
+    int? bonoMensualAdministrativo,
+    bool limpiarBonoMensualAdministrativo = false,
+    String? observaciones,
+    NivelEstudiosEmpleado? nivelEstudios,
+    String? observacionesEscolaridad,
+    int? aniosExperienciaSeguridad,
+    int? mesesExperienciaAdicionales,
+    String? ultimoPuestoDesempenado,
+    String? resumenExperiencia,
+    String? observacionesExperiencia,
+    required String motivo,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(corregirEmpleadoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            nombres: nombres,
+            apellidoPaterno: apellidoPaterno,
+            apellidoMaterno: apellidoMaterno,
+            sexo: sexo,
+            fechaNacimiento: fechaNacimiento,
+            curp: curp,
+            rfc: rfc,
+            codigoPostalFiscal: codigoPostalFiscal,
+            limpiarCodigoPostalFiscal: limpiarCodigoPostalFiscal,
+            nss: nss,
+            estadoCivil: estadoCivil,
+            nacionalidad: nacionalidad,
+            telefono: telefono,
+            correoElectronico: correoElectronico,
+            contactoEmergenciaNombre: contactoEmergenciaNombre,
+            telefonoEmergencia: telefonoEmergencia,
+            parentescoEmergencia: parentescoEmergencia,
+            fechaIngreso: fechaIngreso,
+            puestoId: puestoId,
+            limpiarPuesto: limpiarPuesto,
+            empresaId: empresaId,
+            limpiarEmpresa: limpiarEmpresa,
+            sucursalId: sucursalId,
+            limpiarSucursal: limpiarSucursal,
+            bancoId: bancoId,
+            limpiarBanco: limpiarBanco,
+            numeroCuentaTarjeta: numeroCuentaTarjeta,
+            limpiarNumeroCuentaTarjeta: limpiarNumeroCuentaTarjeta,
+            clabe: clabe,
+            limpiarClabe: limpiarClabe,
+            sueldoMensualAdministrativo: sueldoMensualAdministrativo,
+            limpiarSueldoMensualAdministrativo: limpiarSueldoMensualAdministrativo,
+            bonoMensualAdministrativo: bonoMensualAdministrativo,
+            limpiarBonoMensualAdministrativo: limpiarBonoMensualAdministrativo,
+            observaciones: observaciones,
+            nivelEstudios: nivelEstudios,
+            observacionesEscolaridad: observacionesEscolaridad,
+            aniosExperienciaSeguridad: aniosExperienciaSeguridad,
+            mesesExperienciaAdicionales: mesesExperienciaAdicionales,
+            ultimoPuestoDesempenado: ultimoPuestoDesempenado,
+            resumenExperiencia: resumenExperiencia,
+            observacionesExperiencia: observacionesExperiencia,
+            motivo: motivo,
+            actor: actor,
+          ),
+      CorregirEmpleadoErrorInesperado.new,
+    );
+  };
+});
+
+typedef RegistrarBajaLaboralAutorizado = Future<RegistrarBajaLaboralResultado> Function({
+  required String empleadoId,
+  required DateTime fechaBaja,
+  required MotivoBajaEmpleado motivo,
+  String? observaciones,
+  String? actor,
+});
+
+final registrarBajaLaboralAutorizadoProvider = Provider<RegistrarBajaLaboralAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required DateTime fechaBaja,
+    required MotivoBajaEmpleado motivo,
+    String? observaciones,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(registrarBajaLaboralUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            fechaBaja: fechaBaja,
+            motivo: motivo,
+            observaciones: observaciones,
+            actor: actor,
+          ),
+      RegistrarBajaLaboralErrorInesperado.new,
+    );
+  };
+});
+
+typedef RegistrarReingresoAutorizado = Future<RegistrarReingresoResultado> Function({
+  required String empleadoId,
+  required DateTime fechaIngreso,
+  String? puestoId,
+  bool limpiarPuesto,
+  String? sucursalId,
+  bool limpiarSucursal,
+  String? actor,
+});
+
+final registrarReingresoAutorizadoProvider = Provider<RegistrarReingresoAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required DateTime fechaIngreso,
+    String? puestoId,
+    bool limpiarPuesto = false,
+    String? sucursalId,
+    bool limpiarSucursal = false,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(registrarReingresoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            fechaIngreso: fechaIngreso,
+            puestoId: puestoId,
+            limpiarPuesto: limpiarPuesto,
+            sucursalId: sucursalId,
+            limpiarSucursal: limpiarSucursal,
+            actor: actor,
+          ),
+      RegistrarReingresoErrorInesperado.new,
+    );
+  };
+});
+
+typedef CambiarVigenciaSueldoAsignacionAutorizado = Future<CambiarVigenciaSueldoAsignacionResultado> Function({
+  required String asignacionServicioId,
+  required int sueldoMensual,
+  required int bonoMensual,
+  required DateTime fechaInicioVigencia,
+  String? observaciones,
+});
+
+final cambiarVigenciaSueldoAsignacionAutorizadoProvider = Provider<CambiarVigenciaSueldoAsignacionAutorizado>((ref) {
+  return ({
+    required String asignacionServicioId,
+    required int sueldoMensual,
+    required int bonoMensual,
+    required DateTime fechaInicioVigencia,
+    String? observaciones,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.cambiarSueldo',
+      () => ref.read(cambiarVigenciaSueldoAsignacionUseCaseProvider).ejecutar(
+            asignacionServicioId: asignacionServicioId,
+            sueldoMensual: sueldoMensual,
+            bonoMensual: bonoMensual,
+            fechaInicioVigencia: fechaInicioVigencia,
+            observaciones: observaciones,
+          ),
+      CambiarVigenciaSueldoAsignacionErrorInesperado.new,
+    );
+  };
+});
+
+typedef GenerarFichaTecnicaEmpleadoAutorizado = Future<GenerarFichaTecnicaEmpleadoResultado> Function({
+  required String empleadoId,
+  Set<String> seccionesExcluidas,
+});
+
+final generarFichaTecnicaEmpleadoAutorizadoProvider = Provider<GenerarFichaTecnicaEmpleadoAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    Set<String> seccionesExcluidas = const {},
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.crear',
+      () => ref.read(generarFichaTecnicaEmpleadoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            seccionesExcluidas: seccionesExcluidas,
+          ),
+      GenerarFichaTecnicaEmpleadoErrorInesperado.new,
+    );
+  };
 });

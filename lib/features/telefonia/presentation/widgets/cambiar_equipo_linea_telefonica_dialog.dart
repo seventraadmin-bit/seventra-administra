@@ -67,8 +67,7 @@ Future<bool> mostrarDialogoCambiarEquipoLineaTelefonica(
         errorGeneral = l10n.lineaTelefonicaEquipoErrorUnidadRequerida;
         return null;
       }
-
-      final resultado = await ref.read(cambiarEquipoLineaTelefonicaUseCaseProvider).ejecutar(
+      final resultado = await ref.read(cambiarEquipoLineaTelefonicaAutorizadoProvider)(
             lineaTelefonicaId: lineaTelefonicaId,
             nuevaUnidadId: unidadId!,
             fecha: fecha,

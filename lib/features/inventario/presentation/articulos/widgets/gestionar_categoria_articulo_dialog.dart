@@ -35,7 +35,6 @@ class _GestionarCategoriaArticuloDialogState extends ConsumerState<GestionarCate
       RisegFeedback.showError(context, l10n.categoriaArticuloErrorNombreRequerido);
       return;
     }
-
     setState(() => _guardando = true);
     final resultado = await ref.read(articulosControllerProvider.notifier).crearCategoria(_nombreCtrl.text.trim());
     if (!mounted) return;

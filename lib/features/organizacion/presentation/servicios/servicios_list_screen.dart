@@ -67,7 +67,7 @@ class _ServiciosListScreenState extends ConsumerState<ServiciosListScreen> {
             const [ErrorCampoServicio(campo: CampoServicio.cliente, codigo: CodigoErrorServicio.requerido)],
           );
         }
-        return ref.read(crearServicioUseCaseProvider).ejecutar(clienteId: clienteId!, borrador: servicioBorrador);
+        return ref.read(crearServicioAutorizadoProvider)(clienteId: clienteId!, borrador: servicioBorrador);
       },
     );
 

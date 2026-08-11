@@ -65,7 +65,7 @@ Future<bool> mostrarDialogoRetirarAsignacionLineaTelefonica(
       },
     ),
     onConfirm: () async {
-      final resultado = await ref.read(retirarAsignacionLineaTelefonicaUseCaseProvider).ejecutar(
+      final resultado = await ref.read(retirarAsignacionLineaTelefonicaAutorizadoProvider)(
             asignacionLineaTelefonicaId: asignacion.id,
             fechaTermino: fechaTermino,
             observacionesTermino: observacionesCtrl.text.trim().isEmpty ? null : observacionesCtrl.text.trim(),

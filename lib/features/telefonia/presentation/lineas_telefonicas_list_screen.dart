@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import 'linea_telefonica_labels.dart';
 import 'telefonia_controller.dart';
@@ -54,7 +55,9 @@ class LineasTelefonicasListScreen extends ConsumerWidget {
             primaryAction: RisegButton(
               key: const Key('telefonia_boton_nueva_linea'),
               label: l10n.telefoniaBotonNuevaLinea,
-              onPressed: () => _nuevaLinea(context, ref),
+              onPressed: ref.watch(permissionServiceProvider).hasCode('telefonia.crear')
+                  ? () => _nuevaLinea(context, ref)
+                  : null,
             ),
           ),
           const SizedBox(height: AppSpacing.md),

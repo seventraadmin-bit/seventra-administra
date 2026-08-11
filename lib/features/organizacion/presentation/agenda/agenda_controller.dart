@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/attachment_table.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
@@ -13,6 +14,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/generar_agenda_u
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_emision_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_envio_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/reemplazar_archivo_documento_por_emitir_usecase.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'agenda_state.dart';
@@ -80,12 +82,21 @@ class AgendaController extends _$AgendaController {
     if (state.generando) return null;
     state = state.copyWith(generando: true);
 
-    final resultado = await ref.read(generarAgendaUseCaseProvider).ejecutar(
-          rangoInicio: state.rangoInicio,
-          rangoFin: state.rangoFin,
-          servicioId: servicioId,
-          clienteId: clienteId,
-        );
+    // `GenerarAgendaResultado` no es un tipo sellado (nunca falla por
+    // reglas de negocio, siempre informa creados/ya existían) — la
+    // frontera de autorización usa `null` como su propio "no
+    // autorizado", mismo criterio que `ArchivarContactoUseCase`.
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.crear',
+      () => ref.read(generarAgendaUseCaseProvider).ejecutar(
+            rangoInicio: state.rangoInicio,
+            rangoFin: state.rangoFin,
+            servicioId: servicioId,
+            clienteId: clienteId,
+          ),
+      (mensaje) => null,
+    );
 
     await _cargar();
     state = state.copyWith(generando: false);
@@ -102,13 +113,18 @@ class AgendaController extends _$AgendaController {
     if (state.generando) return null;
     state = state.copyWith(generando: true);
 
-    final resultado = await ref.read(crearDocumentoManualUseCaseProvider).ejecutar(
-          clienteId: clienteId,
-          servicioIds: servicioIds,
-          periodoInicio: periodoInicio,
-          periodoFin: periodoFin,
-          entidadFiscalId: entidadFiscalId,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.crear',
+      () => ref.read(crearDocumentoManualUseCaseProvider).ejecutar(
+            clienteId: clienteId,
+            servicioIds: servicioIds,
+            periodoInicio: periodoInicio,
+            periodoFin: periodoFin,
+            entidadFiscalId: entidadFiscalId,
+          ),
+      CrearDocumentoManualErrorInesperado.new,
+    );
 
     if (resultado is CrearDocumentoManualExitoso) {
       await _cargar();
@@ -122,11 +138,16 @@ class AgendaController extends _$AgendaController {
     required EstatusDocumentoPorEmitir nuevo,
     String? motivo,
   }) async {
-    final resultado = await ref.read(cambiarEstatusDocumentoPorEmitirUseCaseProvider).ejecutar(
-          documentoPorEmitirId: documentoPorEmitirId,
-          nuevo: nuevo,
-          motivo: motivo,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(cambiarEstatusDocumentoPorEmitirUseCaseProvider).ejecutar(
+            documentoPorEmitirId: documentoPorEmitirId,
+            nuevo: nuevo,
+            motivo: motivo,
+          ),
+      CambiarEstatusDocumentoPorEmitirErrorInesperado.new,
+    );
     if (resultado is CambiarEstatusDocumentoPorEmitirExitoso) {
       await _cargar();
     }
@@ -138,11 +159,16 @@ class AgendaController extends _$AgendaController {
     int? ajusteManual,
     String? motivoAjuste,
   }) async {
-    final resultado = await ref.read(actualizarAjusteManualDocumentoPorEmitirUseCaseProvider).ejecutar(
-          documentoPorEmitirId: documentoPorEmitirId,
-          ajusteManual: ajusteManual,
-          motivoAjuste: motivoAjuste,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(actualizarAjusteManualDocumentoPorEmitirUseCaseProvider).ejecutar(
+            documentoPorEmitirId: documentoPorEmitirId,
+            ajusteManual: ajusteManual,
+            motivoAjuste: motivoAjuste,
+          ),
+      ActualizarAjusteManualDocumentoPorEmitirErrorInesperado.new,
+    );
     if (resultado is ActualizarAjusteManualDocumentoPorEmitirExitoso) {
       await _cargar();
     }
@@ -163,16 +189,21 @@ class AgendaController extends _$AgendaController {
     required int importeEmitido,
     String? observacionesEmision,
   }) async {
-    final resultado = await ref.read(registrarEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
-          documentoPorEmitirId: documentoPorEmitirId,
-          folioDocumento: folioDocumento,
-          serieFiscal: serieFiscal,
-          folioFiscal: folioFiscal,
-          uuid: uuid,
-          fechaEmisionReal: fechaEmisionReal,
-          importeEmitido: importeEmitido,
-          observacionesEmision: observacionesEmision,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(registrarEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
+            documentoPorEmitirId: documentoPorEmitirId,
+            folioDocumento: folioDocumento,
+            serieFiscal: serieFiscal,
+            folioFiscal: folioFiscal,
+            uuid: uuid,
+            fechaEmisionReal: fechaEmisionReal,
+            importeEmitido: importeEmitido,
+            observacionesEmision: observacionesEmision,
+          ),
+      RegistrarEmisionDocumentoPorEmitirErrorInesperado.new,
+    );
     if (resultado is RegistrarEmisionDocumentoPorEmitirExitoso) {
       await _cargar();
     }
@@ -190,17 +221,22 @@ class AgendaController extends _$AgendaController {
     int? importeEmitido,
     String? observacionesEmision,
   }) async {
-    final resultado = await ref.read(corregirDatosEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
-          documentoPorEmitirId: documentoPorEmitirId,
-          motivo: motivo,
-          folioDocumento: folioDocumento,
-          serieFiscal: serieFiscal,
-          folioFiscal: folioFiscal,
-          uuid: uuid,
-          fechaEmisionReal: fechaEmisionReal,
-          importeEmitido: importeEmitido,
-          observacionesEmision: observacionesEmision,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(corregirDatosEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
+            documentoPorEmitirId: documentoPorEmitirId,
+            motivo: motivo,
+            folioDocumento: folioDocumento,
+            serieFiscal: serieFiscal,
+            folioFiscal: folioFiscal,
+            uuid: uuid,
+            fechaEmisionReal: fechaEmisionReal,
+            importeEmitido: importeEmitido,
+            observacionesEmision: observacionesEmision,
+          ),
+      CorregirDatosEmisionDocumentoPorEmitirErrorInesperado.new,
+    );
     if (resultado is CorregirDatosEmisionDocumentoPorEmitirExitoso) {
       await _cargar();
     }
@@ -213,12 +249,17 @@ class AgendaController extends _$AgendaController {
     List<String> correos = const [],
     String? observacionesEnvio,
   }) async {
-    final resultado = await ref.read(registrarEnvioDocumentoPorEmitirUseCaseProvider).ejecutar(
-          documentoPorEmitirId: documentoPorEmitirId,
-          fechaEnvio: fechaEnvio,
-          correos: correos,
-          observacionesEnvio: observacionesEnvio,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(registrarEnvioDocumentoPorEmitirUseCaseProvider).ejecutar(
+            documentoPorEmitirId: documentoPorEmitirId,
+            fechaEnvio: fechaEnvio,
+            correos: correos,
+            observacionesEnvio: observacionesEnvio,
+          ),
+      RegistrarEnvioDocumentoPorEmitirErrorInesperado.new,
+    );
     if (resultado is RegistrarEnvioDocumentoPorEmitirExitoso) {
       await _cargar();
     }
@@ -245,13 +286,18 @@ class AgendaController extends _$AgendaController {
     required String originalFileName,
     required String mimeType,
   }) async {
-    final resultado = await ref.read(adjuntarArchivoDocumentoPorEmitirUseCaseProvider).ejecutar(
-          documentoPorEmitirId: documentoPorEmitirId,
-          categoria: categoria,
-          sourceFilePath: sourceFilePath,
-          originalFileName: originalFileName,
-          mimeType: mimeType,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(adjuntarArchivoDocumentoPorEmitirUseCaseProvider).ejecutar(
+            documentoPorEmitirId: documentoPorEmitirId,
+            categoria: categoria,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      AdjuntarArchivoDocumentoPorEmitirErrorInesperado.new,
+    );
     if (resultado is AdjuntarArchivoDocumentoPorEmitirExitoso) {
       await _cargar();
     }
@@ -267,15 +313,20 @@ class AgendaController extends _$AgendaController {
     required String mimeType,
     String? motivo,
   }) async {
-    final resultado = await ref.read(reemplazarArchivoDocumentoPorEmitirUseCaseProvider).ejecutar(
-          documentoPorEmitirId: documentoPorEmitirId,
-          attachmentAnteriorId: attachmentAnteriorId,
-          categoria: categoria,
-          sourceFilePath: sourceFilePath,
-          originalFileName: originalFileName,
-          mimeType: mimeType,
-          motivo: motivo,
-        );
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(reemplazarArchivoDocumentoPorEmitirUseCaseProvider).ejecutar(
+            documentoPorEmitirId: documentoPorEmitirId,
+            attachmentAnteriorId: attachmentAnteriorId,
+            categoria: categoria,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+            motivo: motivo,
+          ),
+      ReemplazarArchivoDocumentoPorEmitirErrorInesperado.new,
+    );
     if (resultado is ReemplazarArchivoDocumentoPorEmitirExitoso) {
       await _cargar();
     }

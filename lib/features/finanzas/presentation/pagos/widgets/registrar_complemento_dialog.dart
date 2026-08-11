@@ -85,8 +85,7 @@ Future<bool> mostrarDialogoRegistrarComplemento(BuildContext context, WidgetRef 
         errorFecha = l10n.registrarComplementoCampoFechaTimbrado;
         return false;
       }
-
-      final resultado = await ref.read(registrarComplementoPagoUseCaseProvider).ejecutar(
+      final resultado = await ref.read(registrarComplementoPagoAutorizadoProvider)(
             pagoId: pagoId,
             uuid: uuid,
             serieFiscal: serieFiscalController.text.trim().isEmpty ? null : serieFiscalController.text.trim(),

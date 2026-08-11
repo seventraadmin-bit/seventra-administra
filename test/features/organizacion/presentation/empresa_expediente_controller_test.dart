@@ -7,8 +7,27 @@ import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/empresa_expediente_input.dart';
 import 'package:riseg_one/features/organizacion/presentation/empresa/empresa_expediente_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/empresa/empresa_expediente_state.dart';
+import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 const _datosGeneralesValidos = EmpresaDatosGeneralesInput(nombreComercial: 'Seguridad Privada RISEG');
+
+/// Sesión Maestro fija — Etapa 11C activó autorización real en
+/// `EmpresaExpedienteController`; sin este override todas las acciones
+/// serían rechazadas por `AuthorizationService` (mismo criterio que
+/// `areas_list_screen_test.dart`).
+class _SesionControllerDePrueba extends SesionController {
+  @override
+  SesionUsuario? build() {
+    return const SesionUsuario(
+      usuarioId: 'usuario-prueba',
+      nombre: 'Usuario de prueba',
+      nombreUsuario: 'prueba',
+      esMaestro: true,
+      permisos: {},
+    );
+  }
+}
 
 void main() {
   late AppDatabase db;
@@ -16,7 +35,12 @@ void main() {
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
-    container = ProviderContainer(overrides: [appDatabaseProvider.overrideWithValue(db)]);
+    container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
+      ],
+    );
     addTearDown(container.dispose);
     // El provider es autoDispose: sin un listener persistente, cada
     // `container.read` suelto podría recrear su estado desde cero.

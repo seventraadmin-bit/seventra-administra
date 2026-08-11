@@ -82,7 +82,6 @@ Future<bool> mostrarDialogoRegistrarAjuste(
         errorGeneral = l10n.registrarAjusteErrorObservacionesRequeridas;
         return null;
       }
-
       final resultado = await notifier.registrarAjuste(
         articuloId: articuloId,
         varianteId: varianteId,

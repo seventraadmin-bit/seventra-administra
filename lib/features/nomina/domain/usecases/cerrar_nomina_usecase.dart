@@ -35,6 +35,13 @@ class CerrarNominaRequiereRevision extends CerrarNominaResultado {
   final List<NominaEmpleadoData> renglonesPendientes;
 }
 
+/// Reservado para la frontera de autorización (Etapa 11C) — nunca lo
+/// produce el propio caso de uso.
+class CerrarNominaErrorInesperado extends CerrarNominaResultado {
+  CerrarNominaErrorInesperado(this.mensaje);
+  final String mensaje;
+}
+
 /// Cierra una Nómina (Etapa 6C) — congela todos los renglones/tramos
 /// (ninguna acción posterior los vuelve a tocar, ni
 /// `ActualizarNominaDesdePersonalUseCase`, ver el doc comment de

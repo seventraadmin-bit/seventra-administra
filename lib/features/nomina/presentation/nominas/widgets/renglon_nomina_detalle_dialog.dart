@@ -156,6 +156,7 @@ class _RenglonNominaDetalleDialogState extends ConsumerState<RenglonNominaDetall
         RisegFeedback.showError(context, l10n.renglonNominaDetalleErrorValorInvalido);
       case ActualizarMovimientosNominaNoExiste():
       case ActualizarMovimientosNominaNominaCerrada():
+      case ActualizarMovimientosNominaErrorInesperado():
         RisegFeedback.showError(context, l10n.renglonNominaDetalleNominaCerrada);
     }
   }
@@ -189,6 +190,7 @@ class _RenglonNominaDetalleDialogState extends ConsumerState<RenglonNominaDetall
         RisegFeedback.showError(context, l10n.renglonNominaDetalleErrorValorInvalido);
       case ActualizarDistribucionNominaNoExiste():
       case ActualizarDistribucionNominaNominaCerrada():
+      case ActualizarDistribucionNominaErrorInesperado():
         RisegFeedback.showError(context, l10n.renglonNominaDetalleNominaCerrada);
     }
   }

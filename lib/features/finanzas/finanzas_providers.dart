@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/permissions/authorization_service.dart';
 import '../organizacion/organizacion_providers.dart';
+import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/categoria_financiera_repository_impl.dart';
 import 'data/repositories/complemento_pago_repository_impl.dart';
 import 'data/repositories/cuenta_por_cobrar_repository_impl.dart';
@@ -75,6 +77,53 @@ final registrarPagoAplicadoUseCaseProvider = Provider<RegistrarPagoAplicadoUseCa
   );
 });
 
+/// Fachada de aplicación autorizada (Etapa 11C) — Cuentas por cobrar no
+/// tiene Controller de escritura, así que este es el punto de entrada
+/// más bajo y reutilizable para `RegistrarPagoAplicadoUseCase` (mismo
+/// criterio que `personal_providers.dart`).
+typedef RegistrarPagoAplicadoAutorizado = Future<RegistrarPagoAplicadoResultado> Function({
+  required String cuentaPorCobrarId,
+  required int monto,
+  required DateTime fechaPago,
+  required String formaPago,
+  String? referencia,
+  String? bancoOrigen,
+  String? cuentaBancariaDestino,
+  String? observaciones,
+  String? actor,
+});
+
+final registrarPagoAplicadoAutorizadoProvider = Provider<RegistrarPagoAplicadoAutorizado>((ref) {
+  return ({
+    required String cuentaPorCobrarId,
+    required int monto,
+    required DateTime fechaPago,
+    required String formaPago,
+    String? referencia,
+    String? bancoOrigen,
+    String? cuentaBancariaDestino,
+    String? observaciones,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.crear',
+      () => ref.read(registrarPagoAplicadoUseCaseProvider).ejecutar(
+            cuentaPorCobrarId: cuentaPorCobrarId,
+            monto: monto,
+            fechaPago: fechaPago,
+            formaPago: formaPago,
+            referencia: referencia,
+            bancoOrigen: bancoOrigen,
+            cuentaBancariaDestino: cuentaBancariaDestino,
+            observaciones: observaciones,
+            actor: actor,
+          ),
+      RegistrarPagoAplicadoErrorInesperado.new,
+    );
+  };
+});
+
 final corregirPagoUseCaseProvider = Provider<CorregirPagoUseCase>((ref) {
   return CorregirPagoUseCase(ref.watch(pagoRepositoryProvider));
 });
@@ -99,6 +148,48 @@ final complementoPagoRepositoryProvider = Provider<ComplementoPagoRepository>((r
 
 final registrarComplementoPagoUseCaseProvider = Provider<RegistrarComplementoPagoUseCase>((ref) {
   return RegistrarComplementoPagoUseCase(ref.watch(complementoPagoRepositoryProvider), ref.watch(pagoRepositoryProvider));
+});
+
+/// Fachada de aplicación autorizada (Etapa 11C) — mismo criterio que
+/// `registrarPagoAplicadoAutorizadoProvider`.
+typedef RegistrarComplementoPagoAutorizado = Future<RegistrarComplementoPagoResultado> Function({
+  required String pagoId,
+  required String uuid,
+  String? serieFiscal,
+  String? folioFiscal,
+  required DateTime fechaTimbrado,
+  required int montoTotal,
+  String? observaciones,
+  String? actor,
+});
+
+final registrarComplementoPagoAutorizadoProvider = Provider<RegistrarComplementoPagoAutorizado>((ref) {
+  return ({
+    required String pagoId,
+    required String uuid,
+    String? serieFiscal,
+    String? folioFiscal,
+    required DateTime fechaTimbrado,
+    required int montoTotal,
+    String? observaciones,
+    String? actor,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'finanzas.crear',
+      () => ref.read(registrarComplementoPagoUseCaseProvider).ejecutar(
+            pagoId: pagoId,
+            uuid: uuid,
+            serieFiscal: serieFiscal,
+            folioFiscal: folioFiscal,
+            fechaTimbrado: fechaTimbrado,
+            montoTotal: montoTotal,
+            observaciones: observaciones,
+            actor: actor,
+          ),
+      RegistrarComplementoPagoErrorInesperado.new,
+    );
+  };
 });
 
 final corregirComplementoPagoUseCaseProvider = Provider<CorregirComplementoPagoUseCase>((ref) {

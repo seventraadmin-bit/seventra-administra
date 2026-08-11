@@ -1,9 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
+import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_ciclo_vida_puesto_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_puesto_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/puesto_validator.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'puesto_expediente_state.dart';
@@ -75,7 +77,12 @@ class PuestoExpedienteController extends _$PuestoExpedienteController {
 
     state = state.copyWith(guardando: true, erroresGuardado: const [], errorGuardadoGeneral: false);
 
-    final resultado = await ref.read(actualizarPuestoUseCaseProvider).ejecutar(id: puestoId, borrador: borrador);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.modificar',
+      () => ref.read(actualizarPuestoUseCaseProvider).ejecutar(id: puestoId, borrador: borrador),
+      GuardarPuestoErrorInesperado.new,
+    );
 
     switch (resultado) {
       case GuardarPuestoExitoso(puesto: final puesto):
@@ -106,9 +113,12 @@ class PuestoExpedienteController extends _$PuestoExpedienteController {
     if (state.cambiandoCicloVida || datosActuales == null) return false;
 
     state = state.copyWith(cambiandoCicloVida: true);
-    final resultado = await ref
-        .read(cambiarCicloVidaPuestoUseCaseProvider)
-        .ejecutar(puestoId: puestoId, nuevo: nuevo);
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.archivar',
+      () => ref.read(cambiarCicloVidaPuestoUseCaseProvider).ejecutar(puestoId: puestoId, nuevo: nuevo),
+      CambiarCicloVidaPuestoErrorInesperado.new,
+    );
 
     switch (resultado) {
       case CambiarCicloVidaPuestoExitoso(puesto: final puesto):

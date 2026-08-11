@@ -24,6 +24,25 @@ import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_us
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/organizacion/presentation/servicios/servicios_list_screen.dart';
+import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+
+/// Sesión Maestro fija — Etapa 11C activó autorización real en las
+/// acciones de esta pantalla; sin este override todas serían
+/// rechazadas por `AuthorizationService` (mismo criterio que
+/// `smoke_test.dart`).
+class _SesionControllerDePrueba extends SesionController {
+  @override
+  SesionUsuario? build() {
+    return const SesionUsuario(
+      usuarioId: 'usuario-prueba',
+      nombre: 'Usuario de prueba',
+      nombreUsuario: 'prueba',
+      esMaestro: true,
+      permisos: {},
+    );
+  }
+}
 
 Future<GoRouter> _pumpScreen(WidgetTester tester, AppDatabase db) async {
   tester.view.physicalSize = const Size(1440, 900);
@@ -44,7 +63,10 @@ Future<GoRouter> _pumpScreen(WidgetTester tester, AppDatabase db) async {
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
+      ],
       child: MaterialApp.router(
         theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
