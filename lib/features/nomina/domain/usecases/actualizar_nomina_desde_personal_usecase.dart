@@ -89,7 +89,7 @@ class ActualizarNominaDesdePersonalUseCase {
   final CatalogoRepository _catalogoRepository;
   final ResolverSueldoEmpleadoNomina _resolverSueldo;
 
-  Future<ActualizarNominaDesdePersonalResultado> ejecutar({required String nominaId, String? actor}) async {
+  Future<ActualizarNominaDesdePersonalResultado> ejecutar({required String nominaId, String? actorUsuarioId}) async {
     final nomina = await _nominaRepository.obtenerPorId(nominaId);
     if (nomina == null) return ActualizarNominaDesdePersonalNoExiste();
     if (nomina.estatus != 'borrador') return ActualizarNominaDesdePersonalNominaCerrada();
@@ -254,7 +254,7 @@ class ActualizarNominaDesdePersonalUseCase {
       await _nominaRepository.registrarEvento(
         nominaId: nominaId,
         tipoEvento: 'actualizadaDesdePersonal',
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         observacion: '$actualizados actualizados, $nuevos nuevos, $eliminados eliminados, '
             '$conservadosSinDias conservados sin días, $conDistribucionPendiente con distribución pendiente.',
       );

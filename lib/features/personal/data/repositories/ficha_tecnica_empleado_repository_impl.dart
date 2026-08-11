@@ -22,7 +22,7 @@ class FichaTecnicaEmpleadoRepositoryImpl implements FichaTecnicaEmpleadoReposito
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(
@@ -51,7 +51,7 @@ class FichaTecnicaEmpleadoRepositoryImpl implements FichaTecnicaEmpleadoReposito
         _db,
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.fichaTecnicaGenerada,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'folio': folio, if (servicioId != null) 'servicioId': servicioId},
       );
 

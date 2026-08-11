@@ -40,7 +40,7 @@ class VehiculoKilometrajeRepositoryImpl implements VehiculoKilometrajeRepository
     required int kilometraje,
     required String origen,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.into(_db.vehiculoKilometraje).insertReturning(
           VehiculoKilometrajeCompanion.insert(
@@ -49,7 +49,7 @@ class VehiculoKilometrajeRepositoryImpl implements VehiculoKilometrajeRepository
             kilometraje: kilometraje,
             origen: origen,
             observaciones: Value(observaciones),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
           ),
         );
   }

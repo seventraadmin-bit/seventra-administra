@@ -120,7 +120,7 @@ class UsuariosController extends _$UsuariosController {
     return resultado;
   }
 
-  Future<DesactivarUsuarioResultado> desactivar({required String usuarioId, String? motivo}) async {
+  Future<DesactivarUsuarioResultado> desactivar({required String usuarioId, required String motivo}) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'usuarios.administrar',

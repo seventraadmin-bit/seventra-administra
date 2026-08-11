@@ -425,6 +425,7 @@ void main() {
 
       expect(find.text(l10n.vehiculoAsignacionVacio), findsOneWidget);
 
+      await tester.ensureVisible(find.text(l10n.vehiculoBotonAsignar));
       await tester.tap(find.text(l10n.vehiculoBotonAsignar));
       await tester.pumpAndSettle();
       // El destino por defecto ya es "Empleado" — solo hace falta

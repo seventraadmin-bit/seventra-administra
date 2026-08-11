@@ -88,7 +88,7 @@ class RegistrarCompraUseCase {
     String? formaPagoOtroDescripcion,
     String? observaciones,
     required List<PartidaCompraInput> partidas,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     if (partidas.isEmpty) return RegistrarCompraListaVacia();
 
@@ -146,7 +146,7 @@ class RegistrarCompraUseCase {
         formaPagoOtroDescripcion: formaPagoOtroDescripcion?.trim().isEmpty ?? true ? null : formaPagoOtroDescripcion!.trim(),
         observaciones: observaciones?.trim().isEmpty ?? true ? null : observaciones!.trim(),
         partidas: partidas,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarCompraExitosa(compra);
     } catch (e) {

@@ -71,3 +71,23 @@ Future<R> autorizarUseCase<R>(
   }
   return operacion();
 }
+
+/// Facultad extraordinaria del Usuario Maestro (Etapa 11D) — mecanismo
+/// **deliberadamente distinto** de [autorizarUseCase]: no consulta
+/// ningún código de `PermisoUsuario` (usa
+/// [PermissionService.esMaestroActivo] directo, nunca [hasCode]), así
+/// que ninguna casilla de la matriz de permisos dinámicos puede volver
+/// a un usuario normal equivalente al Maestro. Hoy es exclusivo para
+/// los `EliminarXxxFisicamenteUseCase` — no un mecanismo genérico de
+/// "bypass": cada acción extraordinaria sigue siendo su propio
+/// UseCase dedicado, con su propia validación de negocio.
+Future<R> exigirMaestro<R>(
+  PermissionService permissionService,
+  Future<R> Function() operacion,
+  R Function(String mensaje) noAutorizado,
+) {
+  if (!permissionService.esMaestroActivo) {
+    return Future.value(noAutorizado('Esta acción requiere el Usuario Maestro.'));
+  }
+  return operacion();
+}

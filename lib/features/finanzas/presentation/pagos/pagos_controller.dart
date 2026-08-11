@@ -6,6 +6,7 @@ import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_aplicacion_
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_pago_usecase.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
@@ -23,6 +24,10 @@ class PagosController extends _$PagosController {
     Future.microtask(_cargar);
     return const PagosState();
   }
+
+  /// Usuario autenticado que ejecuta la operación (Etapa 11D) — mismo
+  /// criterio que `UsuariosController._actorUsuarioId`.
+  String? get _actorUsuarioId => ref.read(sesionControllerProvider)?.usuarioId;
 
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
@@ -101,6 +106,7 @@ class PagosController extends _$PagosController {
             cuentaBancariaDestino: cuentaBancariaDestino,
             observaciones: observaciones,
             motivo: motivo,
+            actorUsuarioId: _actorUsuarioId,
           ),
       CorregirPagoErrorInesperado.new,
     );
@@ -114,7 +120,9 @@ class PagosController extends _$PagosController {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'finanzas.archivar',
-      () => ref.read(cancelarPagoUseCaseProvider).ejecutar(pagoId: pagoId, motivo: motivo),
+      () => ref
+          .read(cancelarPagoUseCaseProvider)
+          .ejecutar(pagoId: pagoId, motivo: motivo, actorUsuarioId: _actorUsuarioId),
       CancelarPagoErrorInesperado.new,
     );
     if (resultado is CancelarPagoExitoso) {
@@ -130,7 +138,11 @@ class PagosController extends _$PagosController {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'finanzas.archivar',
-      () => ref.read(cancelarAplicacionPagoUseCaseProvider).ejecutar(aplicacionPagoId: aplicacionPagoId, motivo: motivo),
+      () => ref.read(cancelarAplicacionPagoUseCaseProvider).ejecutar(
+            aplicacionPagoId: aplicacionPagoId,
+            motivo: motivo,
+            actorUsuarioId: _actorUsuarioId,
+          ),
       CancelarAplicacionPagoErrorInesperado.new,
     );
     if (resultado is CancelarAplicacionPagoExitoso) {

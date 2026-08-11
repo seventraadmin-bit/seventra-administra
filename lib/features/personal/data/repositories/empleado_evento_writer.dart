@@ -18,7 +18,7 @@ Future<void> registrarEventoEmpleado(
   String? estadoAnterior,
   String? estadoNuevo,
   String? observacion,
-  String? actor,
+  String? actorUsuarioId,
   Map<String, dynamic>? datosRelevantes,
 }) {
   return db.into(db.empleadoEvento).insert(
@@ -29,7 +29,7 @@ Future<void> registrarEventoEmpleado(
           estadoAnterior: Value(estadoAnterior),
           estadoNuevo: Value(estadoNuevo),
           observacion: Value(observacion),
-          actor: Value(actor),
+          actorUsuarioId: Value(actorUsuarioId),
           datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
         ),
       );

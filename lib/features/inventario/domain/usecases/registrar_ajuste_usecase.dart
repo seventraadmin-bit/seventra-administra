@@ -47,7 +47,7 @@ class RegistrarAjusteUseCase {
     required int cantidad,
     required bool esEntrada,
     required String observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final articulo = await _articuloRepository.obtenerPorId(articuloId);
     if (articulo == null) return RegistrarAjusteArticuloNoExiste();
@@ -68,7 +68,7 @@ class RegistrarAjusteUseCase {
         cantidad: cantidad,
         esEntrada: esEntrada,
         observaciones: observaciones.trim(),
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarAjusteExitoso(movimiento);
     } catch (e) {

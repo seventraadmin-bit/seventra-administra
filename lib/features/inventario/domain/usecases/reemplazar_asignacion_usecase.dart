@@ -72,7 +72,7 @@ class ReemplazarAsignacionUseCase {
     required int cantidadReemplazo,
     String? condicionEntregaReemplazo,
     String? observacionesReemplazo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final asignacion = await _asignacionRepository.obtenerPorId(asignacionId);
     if (asignacion == null) return ReemplazarAsignacionNoExiste();
@@ -143,7 +143,7 @@ class ReemplazarAsignacionUseCase {
         cantidadReemplazo: cantidadReemplazo,
         condicionEntregaReemplazo: condicionEntregaReemplazo,
         observacionesReemplazo: observacionesReemplazo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return ReemplazarAsignacionExitoso(nueva);
     } catch (e) {

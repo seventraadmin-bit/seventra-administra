@@ -60,7 +60,7 @@ class AsignacionVehiculoRepositoryImpl implements AsignacionVehiculoRepository {
     required DateTime fecha,
     required int kilometraje,
     required String origen,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.into(_db.vehiculoKilometraje).insert(
           VehiculoKilometrajeCompanion.insert(
@@ -68,7 +68,7 @@ class AsignacionVehiculoRepositoryImpl implements AsignacionVehiculoRepository {
             fecha: fecha,
             kilometraje: kilometraje,
             origen: origen,
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
           ),
         );
   }
@@ -81,7 +81,7 @@ class AsignacionVehiculoRepositoryImpl implements AsignacionVehiculoRepository {
     required DateTime fechaInicio,
     String? observaciones,
     int? kilometrajeEntrega,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final asignacion = await _db.into(_db.asignacionVehiculo).insertReturning(
@@ -102,7 +102,7 @@ class AsignacionVehiculoRepositoryImpl implements AsignacionVehiculoRepository {
           fecha: fechaInicio,
           kilometraje: kilometrajeEntrega,
           origen: OrigenKilometrajeVehiculo.entrega.name,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         );
       }
       return asignacion;
@@ -116,7 +116,7 @@ class AsignacionVehiculoRepositoryImpl implements AsignacionVehiculoRepository {
     required String motivoTermino,
     String? observacionesTermino,
     int? kilometrajeDevolucion,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final actual = await (_db.select(_db.asignacionVehiculo)..where((t) => t.id.equals(asignacionVehiculoId)))
@@ -137,7 +137,7 @@ class AsignacionVehiculoRepositoryImpl implements AsignacionVehiculoRepository {
           fecha: fechaTermino,
           kilometraje: kilometrajeDevolucion,
           origen: OrigenKilometrajeVehiculo.devolucion.name,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         );
       }
 
@@ -153,7 +153,7 @@ class AsignacionVehiculoRepositoryImpl implements AsignacionVehiculoRepository {
     String? nuevoEmpleadoId,
     String? nuevoServicioId,
     String? observacionesNueva,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final actual = await (_db.select(_db.asignacionVehiculo)..where((t) => t.id.equals(asignacionVehiculoActualId)))

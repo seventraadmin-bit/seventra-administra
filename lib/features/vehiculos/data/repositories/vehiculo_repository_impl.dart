@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -5,6 +7,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 
 import '../../domain/repositories/asignacion_vehiculo_repository.dart';
 import '../../domain/repositories/vehiculo_repository.dart';
+import '../../domain/usecases/eliminar_vehiculo_fisicamente_usecase.dart';
 
 class VehiculoRepositoryImpl implements VehiculoRepository {
   VehiculoRepositoryImpl(this._db, this._asignacionVehiculoRepository);
@@ -193,6 +196,71 @@ class VehiculoRepositoryImpl implements VehiculoRepository {
         VehiculoCompanion(fotografiaAttachmentId: Value(attachmentId), updatedAt: Value(DateTime.now())),
       );
       return (_db.select(_db.vehiculo)..where((t) => t.id.equals(vehiculoId))).getSingle();
+    });
+  }
+
+  /// Eliminación física extraordinaria (Etapa 11D) — condiciones
+  /// exactas acordadas con Marlon: elegible solo si el Vehículo nunca
+  /// tuvo `AsignacionVehiculo`, `VehiculoDocumento`, `VehiculoKilometraje`,
+  /// `VehiculoMantenimiento` ni ningún `VehiculoAttachment` (activo o
+  /// archivado — una fotografía alguna vez subida ya es "uso real", no
+  /// un simple error de captura). Todo — validación, snapshot,
+  /// registro de auditoría y `DELETE` — ocurre en una sola transacción;
+  /// nunca `CASCADE` sobre ninguna de esas tablas.
+  @override
+  Future<EliminarVehiculoFisicamenteResultado> eliminarFisicamente({
+    required String vehiculoId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final vehiculo = await (_db.select(_db.vehiculo)..where((t) => t.id.equals(vehiculoId))).getSingleOrNull();
+      if (vehiculo == null) return EliminarVehiculoFisicamenteNoExiste();
+
+      final asignaciones = await (_db.select(_db.asignacionVehiculo)..where((t) => t.vehiculoId.equals(vehiculoId))).get();
+      if (asignaciones.isNotEmpty) {
+        return EliminarVehiculoFisicamenteTieneDependencias('Tiene ${asignaciones.length} asignación(es) registrada(s).');
+      }
+
+      final documentos = await (_db.select(_db.vehiculoDocumento)..where((t) => t.vehiculoId.equals(vehiculoId))).get();
+      if (documentos.isNotEmpty) {
+        return EliminarVehiculoFisicamenteTieneDependencias('Tiene ${documentos.length} documento(s) registrado(s).');
+      }
+
+      final kilometrajes =
+          await (_db.select(_db.vehiculoKilometraje)..where((t) => t.vehiculoId.equals(vehiculoId))).get();
+      if (kilometrajes.isNotEmpty) {
+        return EliminarVehiculoFisicamenteTieneDependencias(
+          'Tiene ${kilometrajes.length} lectura(s) de kilometraje registrada(s).',
+        );
+      }
+
+      final mantenimientos =
+          await (_db.select(_db.vehiculoMantenimiento)..where((t) => t.vehiculoId.equals(vehiculoId))).get();
+      if (mantenimientos.isNotEmpty) {
+        return EliminarVehiculoFisicamenteTieneDependencias(
+          'Tiene ${mantenimientos.length} mantenimiento(s)/incidencia(s) registrado(s).',
+        );
+      }
+
+      final adjuntos = await (_db.select(_db.vehiculoAttachment)..where((t) => t.vehiculoId.equals(vehiculoId))).get();
+      if (adjuntos.isNotEmpty || vehiculo.fotografiaAttachmentId != null) {
+        return EliminarVehiculoFisicamenteTieneDependencias('Tiene una fotografía u otro adjunto registrado.');
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'vehiculo',
+              entidadIdOriginal: vehiculoId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode(vehiculo.toJson()),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+      await (_db.delete(_db.vehiculo)..where((t) => t.id.equals(vehiculoId))).go();
+
+      return EliminarVehiculoFisicamenteExitoso();
     });
   }
 }

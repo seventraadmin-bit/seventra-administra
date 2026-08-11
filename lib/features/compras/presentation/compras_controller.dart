@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../compras_providers.dart';
@@ -24,6 +25,10 @@ class ComprasController extends _$ComprasController {
     Future.microtask(_cargar);
     return const ComprasState();
   }
+
+  /// Usuario autenticado que ejecuta la operación (Etapa 11D) — mismo
+  /// criterio que `UsuariosController._actorUsuarioId`.
+  String? get _actorUsuarioId => ref.read(sesionControllerProvider)?.usuarioId;
 
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
@@ -120,6 +125,7 @@ class ComprasController extends _$ComprasController {
             formaPagoOtroDescripcion: formaPagoOtroDescripcion,
             observaciones: observaciones,
             partidas: partidas,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RegistrarCompraErrorInesperado.new,
     );
@@ -145,6 +151,7 @@ class ComprasController extends _$ComprasController {
             formaPagoOtroDescripcion: formaPagoOtroDescripcion,
             observaciones: observaciones,
             motivo: motivo,
+            actorUsuarioId: _actorUsuarioId,
           ),
       CorregirCompraErrorInesperado.new,
     );
@@ -156,7 +163,7 @@ class ComprasController extends _$ComprasController {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'compras.archivar',
-      () => ref.read(cancelarCompraUseCaseProvider).ejecutar(compraId: compraId, motivo: motivo),
+      () => ref.read(cancelarCompraUseCaseProvider).ejecutar(compraId: compraId, motivo: motivo, actorUsuarioId: _actorUsuarioId),
       CancelarCompraErrorInesperado.new,
     );
     if (resultado is CancelarCompraExitosa) await _cargar();

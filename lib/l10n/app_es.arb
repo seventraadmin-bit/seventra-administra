@@ -3192,7 +3192,8 @@
   "@usuarioDesactivarDialogoTitulo": {
     "placeholders": { "nombre": { "type": "String" } }
   },
-  "usuarioDesactivarCampoMotivo": "Motivo (opcional)",
+  "usuarioDesactivarCampoMotivo": "Motivo",
+  "usuarioDesactivarErrorMotivoRequerido": "El motivo es obligatorio para desactivar un usuario.",
   "usuarioDesactivarBotonConfirmar": "Desactivar",
   "usuarioDesactivarExito": "Usuario desactivado.",
   "usuarioActivarExito": "Usuario activado.",
@@ -3241,5 +3242,35 @@
   "accesoDenegadoMensaje": "No tienes permiso para ver este módulo. Si crees que deberías tener acceso, contacta a un administrador.",
   "accesoDenegadoBotonDashboard": "Ir al Dashboard",
 
-  "accesoDenegadoAccionMensaje": "No tienes permiso para realizar esta acción."
+  "accesoDenegadoAccionMensaje": "No tienes permiso para realizar esta acción.",
+
+  "configuracionTabUsuarios": "Usuarios",
+  "configuracionTabAuditoria": "Auditoría",
+
+  "auditoriaTitulo": "Auditoría",
+  "auditoriaFiltroUsuario": "Usuario",
+  "auditoriaFiltroModulo": "Módulo",
+  "auditoriaFiltroAccion": "Acción",
+  "auditoriaFiltroDesde": "Desde",
+  "auditoriaFiltroHasta": "Hasta",
+  "auditoriaFiltroLimpiar": "Limpiar filtros",
+  "auditoriaVacioTitulo": "No hay eventos con estos filtros.",
+  "auditoriaColumnaFecha": "Fecha/hora",
+  "auditoriaColumnaUsuario": "Usuario",
+  "auditoriaColumnaModulo": "Módulo",
+  "auditoriaColumnaAccion": "Acción",
+  "auditoriaColumnaRegistro": "Registro",
+  "auditoriaColumnaMotivo": "Motivo",
+  "auditoriaDetalleDialogoTitulo": "Detalle del evento",
+  "auditoriaDetalleSeccionAdicional": "Información adicional",
+
+  "eliminacionFisicaBotonConfirmar": "Eliminar definitivamente",
+  "eliminacionFisicaCampoMotivo": "Motivo",
+  "eliminacionFisicaErrorMotivoRequerido": "El motivo es obligatorio para eliminar físicamente un registro.",
+  "eliminacionFisicaErrorNoExiste": "El registro ya no existe.",
+  "eliminacionFisicaErrorInesperado": "No se pudo completar la eliminación. Verifica que no tenga historial relacionado.",
+  "eliminacionFisicaAdvertenciaGenerica": "Esta acción es permanente y no se puede deshacer. Solo debe usarse para corregir un error de captura — un registro sin ninguna historia operativa, financiera o de trazabilidad real.",
+  "eliminacionFisicaBloqueadaTitulo": "No se puede eliminar",
+  "eliminacionFisicaAccionMenu": "Eliminar físicamente (Maestro)",
+  "eliminacionFisicaExito": "Registro eliminado definitivamente."
 }

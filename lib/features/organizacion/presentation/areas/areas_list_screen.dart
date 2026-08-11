@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../organizacion_providers.dart';
 import '../../domain/usecases/guardar_area_resultado.dart';
 import '../../domain/usecases/desactivar_area_usecase.dart';
 import 'areas_list_controller.dart';
+import 'widgets/eliminar_area_fisicamente_dialog.dart';
 
 /// Listado de Áreas — sin buscador (fuera de alcance), alta/edición vía
 /// el mismo diálogo, y activar/desactivar por fila. Desactivar primero
@@ -108,11 +110,17 @@ class AreasListScreen extends ConsumerWidget {
     RisegFeedback.showSuccess(context, l10n.areaCicloVidaCambiadoExito);
   }
 
+  Future<void> _eliminarFisicamente(BuildContext context, WidgetRef ref, AreaData area) async {
+    final eliminado = await mostrarDialogoEliminarAreaFisicamente(context, ref, area.id);
+    if (eliminado) ref.read(areasListControllerProvider.notifier).recargar();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(areasListControllerProvider);
     final notifier = ref.read(areasListControllerProvider.notifier);
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     if (state.errorCarga != null && state.areas.isEmpty) {
       return RisegEmptyState(
@@ -145,6 +153,7 @@ class AreasListScreen extends ConsumerWidget {
             child: RisegTableBase<AreaData>(
               loading: state.cargando,
               rows: state.areas,
+              actionsWidth: esMaestro ? 140 : 96,
               emptyState: RisegEmptyState(
                 title: l10n.areasListadoVacioTitulo,
                 message: l10n.areasListadoVacioMensaje,
@@ -176,6 +185,13 @@ class AreasListScreen extends ConsumerWidget {
                     visualDensity: VisualDensity.compact,
                     onPressed: () => area.activo ? _desactivar(context, ref, area) : _activar(context, ref, area),
                   ),
+                  if (esMaestro)
+                    IconButton(
+                      tooltip: l10n.eliminacionFisicaAccionMenu,
+                      icon: const Icon(Icons.delete_forever_outlined, size: 18),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _eliminarFisicamente(context, ref, area),
+                    ),
                 ],
               ),
             ),

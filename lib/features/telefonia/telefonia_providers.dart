@@ -6,6 +6,7 @@ import '../../core/di/providers.dart';
 import '../../core/permissions/authorization_service.dart';
 import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
+import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/asignacion_linea_telefonica_repository_impl.dart';
 import 'data/repositories/linea_telefonica_equipo_repository_impl.dart';
@@ -24,6 +25,7 @@ import 'domain/usecases/cambiar_estatus_linea_telefonica_usecase.dart';
 import 'domain/usecases/corregir_linea_telefonica_usecase.dart';
 import 'domain/usecases/crear_linea_telefonica_usecase.dart';
 import 'domain/usecases/dar_de_baja_linea_telefonica_usecase.dart';
+import 'domain/usecases/eliminar_linea_telefonica_fisicamente_usecase.dart';
 import 'domain/usecases/obtener_equipos_disponibles_linea_telefonica_usecase.dart';
 import 'domain/usecases/obtener_opciones_asignacion_linea_telefonica_usecase.dart';
 import 'domain/usecases/registrar_recarga_linea_telefonica_usecase.dart';
@@ -172,7 +174,6 @@ typedef AsignarLineaTelefonicaAutorizado = Future<AsignarLineaTelefonicaResultad
   required DateTime fechaInicio,
   String? observaciones,
   bool moverEquipoAsociado,
-  String? actor,
 });
 
 final asignarLineaTelefonicaAutorizadoProvider = Provider<AsignarLineaTelefonicaAutorizado>((ref) {
@@ -183,8 +184,8 @@ final asignarLineaTelefonicaAutorizadoProvider = Provider<AsignarLineaTelefonica
     required DateTime fechaInicio,
     String? observaciones,
     bool moverEquipoAsociado = true,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'telefonia.crear',
@@ -195,7 +196,7 @@ final asignarLineaTelefonicaAutorizadoProvider = Provider<AsignarLineaTelefonica
             fechaInicio: fechaInicio,
             observaciones: observaciones,
             moverEquipoAsociado: moverEquipoAsociado,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       AsignarLineaTelefonicaErrorInesperado.new,
     );
@@ -210,7 +211,6 @@ typedef CambiarAsignacionLineaTelefonicaAutorizado = Future<CambiarAsignacionLin
   String? nuevoServicioId,
   String? observacionesNueva,
   bool moverEquipoAsociado,
-  String? actor,
 });
 
 final cambiarAsignacionLineaTelefonicaAutorizadoProvider = Provider<CambiarAsignacionLineaTelefonicaAutorizado>((ref) {
@@ -222,8 +222,8 @@ final cambiarAsignacionLineaTelefonicaAutorizadoProvider = Provider<CambiarAsign
     String? nuevoServicioId,
     String? observacionesNueva,
     bool moverEquipoAsociado = true,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'telefonia.modificar',
@@ -235,7 +235,7 @@ final cambiarAsignacionLineaTelefonicaAutorizadoProvider = Provider<CambiarAsign
             nuevoServicioId: nuevoServicioId,
             observacionesNueva: observacionesNueva,
             moverEquipoAsociado: moverEquipoAsociado,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       CambiarAsignacionLineaTelefonicaErrorInesperado.new,
     );
@@ -247,7 +247,6 @@ typedef RetirarAsignacionLineaTelefonicaAutorizado = Future<RetirarAsignacionLin
   required DateTime fechaTermino,
   String? observacionesTermino,
   bool moverEquipoAsociado,
-  String? actor,
 });
 
 final retirarAsignacionLineaTelefonicaAutorizadoProvider = Provider<RetirarAsignacionLineaTelefonicaAutorizado>((ref) {
@@ -256,8 +255,8 @@ final retirarAsignacionLineaTelefonicaAutorizadoProvider = Provider<RetirarAsign
     required DateTime fechaTermino,
     String? observacionesTermino,
     bool moverEquipoAsociado = true,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'telefonia.modificar',
@@ -266,7 +265,7 @@ final retirarAsignacionLineaTelefonicaAutorizadoProvider = Provider<RetirarAsign
             fechaTermino: fechaTermino,
             observacionesTermino: observacionesTermino,
             moverEquipoAsociado: moverEquipoAsociado,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       RetirarAsignacionLineaTelefonicaErrorInesperado.new,
     );
@@ -278,7 +277,6 @@ typedef AsociarEquipoLineaTelefonicaAutorizado = Future<AsociarEquipoLineaTelefo
   required String unidadId,
   required DateTime fechaInicio,
   String? observaciones,
-  String? actor,
 });
 
 final asociarEquipoLineaTelefonicaAutorizadoProvider = Provider<AsociarEquipoLineaTelefonicaAutorizado>((ref) {
@@ -287,8 +285,8 @@ final asociarEquipoLineaTelefonicaAutorizadoProvider = Provider<AsociarEquipoLin
     required String unidadId,
     required DateTime fechaInicio,
     String? observaciones,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'telefonia.modificar',
@@ -297,7 +295,7 @@ final asociarEquipoLineaTelefonicaAutorizadoProvider = Provider<AsociarEquipoLin
             unidadId: unidadId,
             fechaInicio: fechaInicio,
             observaciones: observaciones,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       AsociarEquipoLineaTelefonicaErrorInesperado.new,
     );
@@ -309,7 +307,6 @@ typedef CambiarEquipoLineaTelefonicaAutorizado = Future<CambiarEquipoLineaTelefo
   required String nuevaUnidadId,
   required DateTime fecha,
   String? observaciones,
-  String? actor,
 });
 
 final cambiarEquipoLineaTelefonicaAutorizadoProvider = Provider<CambiarEquipoLineaTelefonicaAutorizado>((ref) {
@@ -318,8 +315,8 @@ final cambiarEquipoLineaTelefonicaAutorizadoProvider = Provider<CambiarEquipoLin
     required String nuevaUnidadId,
     required DateTime fecha,
     String? observaciones,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'telefonia.modificar',
@@ -328,7 +325,7 @@ final cambiarEquipoLineaTelefonicaAutorizadoProvider = Provider<CambiarEquipoLin
             nuevaUnidadId: nuevaUnidadId,
             fecha: fecha,
             observaciones: observaciones,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       CambiarEquipoLineaTelefonicaErrorInesperado.new,
     );
@@ -338,22 +335,21 @@ final cambiarEquipoLineaTelefonicaAutorizadoProvider = Provider<CambiarEquipoLin
 typedef RetirarEquipoLineaTelefonicaAutorizado = Future<RetirarEquipoLineaTelefonicaResultado> Function({
   required String lineaTelefonicaId,
   required DateTime fechaFin,
-  String? actor,
 });
 
 final retirarEquipoLineaTelefonicaAutorizadoProvider = Provider<RetirarEquipoLineaTelefonicaAutorizado>((ref) {
   return ({
     required String lineaTelefonicaId,
     required DateTime fechaFin,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'telefonia.modificar',
       () => ref.read(retirarEquipoLineaTelefonicaUseCaseProvider).ejecutar(
             lineaTelefonicaId: lineaTelefonicaId,
             fechaFin: fechaFin,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       RetirarEquipoLineaTelefonicaErrorInesperado.new,
     );
@@ -384,6 +380,37 @@ final registrarRecargaLineaTelefonicaAutorizadoProvider = Provider<RegistrarReca
             observaciones: observaciones,
           ),
       RegistrarRecargaLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+// --- Eliminación física extraordinaria (Etapa 11D) ---
+//
+// Facultad exclusiva del Usuario Maestro — `exigirMaestro` nunca
+// consulta `PermisoUsuario`/`AuthorizationService.verificar`, así que
+// ningún permiso dinámico puede otorgarla. El actor se resuelve aquí
+// mismo, dentro del cierre — el diálogo nunca lo provee (mismo
+// criterio que la resolución del permiso).
+final eliminarLineaTelefonicaFisicamenteUseCaseProvider = Provider<EliminarLineaTelefonicaFisicamenteUseCase>((ref) {
+  return EliminarLineaTelefonicaFisicamenteUseCase(ref.watch(lineaTelefonicaRepositoryProvider));
+});
+
+typedef EliminarLineaTelefonicaFisicamenteAutorizado = Future<EliminarLineaTelefonicaFisicamenteResultado> Function({
+  required String lineaTelefonicaId,
+  required String motivo,
+});
+
+final eliminarLineaTelefonicaFisicamenteAutorizadoProvider =
+    Provider<EliminarLineaTelefonicaFisicamenteAutorizado>((ref) {
+  return ({required String lineaTelefonicaId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarLineaTelefonicaFisicamenteUseCaseProvider).ejecutar(
+            lineaTelefonicaId: lineaTelefonicaId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarLineaTelefonicaFisicamenteErrorInesperado.new,
     );
   };
 });

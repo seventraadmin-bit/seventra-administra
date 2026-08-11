@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/attachment_table.dart';
 import '../../../../core/database/tables/audit_columns.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 import 'vehiculo_table.dart';
 
 /// Catálogo unificado de mantenimiento e incidencias (Etapa 8D) —
@@ -75,6 +76,10 @@ class VehiculoMantenimiento extends Table with AuditColumns {
   IntColumn get proximoMantenimientoKilometraje => integer().nullable()();
 
   TextColumn get observaciones => text().nullable()();
+
+  /// Quién registró el mantenimiento/incidencia (Etapa 11D) — mismo
+  /// criterio que `actorUsuarioId` en el resto del proyecto.
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   @override
   List<String> get customConstraints => [

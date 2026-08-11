@@ -6,6 +6,7 @@ import '../../../../core/database/tables/catalogos_tables.dart';
 import '../../../organizacion/data/tables/empresa_table.dart';
 import '../../../organizacion/data/tables/puesto_table.dart';
 import '../../../organizacion/data/tables/sucursal_table.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 
 enum SexoEmpleado { masculino, femenino }
 
@@ -314,7 +315,13 @@ class EmpleadoEvento extends Table {
 
   TextColumn get observacion => text().nullable()();
 
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   TextColumn get actor => text().nullable()();
+
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   TextColumn get datosRelevantes => text().nullable()();
 }

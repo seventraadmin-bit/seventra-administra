@@ -47,7 +47,7 @@ class AsignarLineaTelefonicaUseCase {
     required DateTime fechaInicio,
     String? observaciones,
     bool moverEquipoAsociado = true,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     if ((empleadoId == null) == (servicioId == null)) return AsignarLineaTelefonicaDestinoInvalido();
 
@@ -65,7 +65,7 @@ class AsignarLineaTelefonicaUseCase {
         servicioId: servicioId,
         fechaInicio: fechaInicio,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       if (moverEquipoAsociado) {

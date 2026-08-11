@@ -123,7 +123,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
     required TipoMovimientoInventario tipo,
     required DateTime fecha,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.into(_db.movimientoInventario).insertReturning(
           MovimientoInventarioCompanion.insert(
@@ -134,7 +134,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
             tipoMovimiento: tipo.name,
             fecha: fecha,
             observaciones: Value(observaciones),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
           ),
         );
   }
@@ -149,7 +149,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
     required DateTime fechaEntrega,
     String? condicionEntrega,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final asignacion = await _db.into(_db.asignacion).insertReturning(
           AsignacionCompanion.insert(
@@ -172,7 +172,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
       cantidad: cantidad,
       tipo: TipoMovimientoInventario.salidaAsignacion,
       fecha: fechaEntrega,
-      actor: actor,
+      actorUsuarioId: actorUsuarioId,
     );
 
     if (unidadId != null) {
@@ -198,7 +198,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
     required DateTime fechaEntrega,
     String? condicionEntrega,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() => _crear(
           articuloId: articuloId,
@@ -210,7 +210,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
           fechaEntrega: fechaEntrega,
           condicionEntrega: condicionEntrega,
           observaciones: observaciones,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         ));
   }
 
@@ -223,7 +223,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
     bool generaDescuento = false,
     int? importeDescuento,
     String? empleadoResponsableDescuentoId,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final asignacion = await (_db.select(_db.asignacion)..where((t) => t.id.equals(asignacionId))).getSingle();
 
@@ -259,7 +259,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
       tipo: tipoMovimiento,
       fecha: fechaCierre,
       observaciones: observacionesCierre,
-      actor: actor,
+      actorUsuarioId: actorUsuarioId,
     );
 
     if (asignacion.unidadId != null) {
@@ -297,7 +297,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
     bool generaDescuento = false,
     int? importeDescuento,
     String? empleadoResponsableDescuentoId,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() => _cerrar(
           asignacionId: asignacionId,
@@ -308,7 +308,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
           generaDescuento: generaDescuento,
           importeDescuento: importeDescuento,
           empleadoResponsableDescuentoId: empleadoResponsableDescuentoId,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         ));
   }
 
@@ -328,7 +328,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
     required int cantidadReemplazo,
     String? condicionEntregaReemplazo,
     String? observacionesReemplazo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.asignacion)..where((t) => t.id.equals(asignacionId))).getSingle();
@@ -342,7 +342,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
         generaDescuento: generaDescuento,
         importeDescuento: importeDescuento,
         empleadoResponsableDescuentoId: empleadoResponsableDescuentoId,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       final nueva = await _crear(
@@ -355,7 +355,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
         fechaEntrega: fechaCierre,
         condicionEntrega: condicionEntregaReemplazo,
         observaciones: observacionesReemplazo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       await (_db.update(_db.asignacion)..where((t) => t.id.equals(asignacionId))).write(
@@ -370,7 +370,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
   Future<DescuentoInventarioData> cancelarDescuento({
     required String descuentoId,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     await (_db.update(_db.descuentoInventario)..where((t) => t.id.equals(descuentoId))).write(
       DescuentoInventarioCompanion(
@@ -390,7 +390,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(

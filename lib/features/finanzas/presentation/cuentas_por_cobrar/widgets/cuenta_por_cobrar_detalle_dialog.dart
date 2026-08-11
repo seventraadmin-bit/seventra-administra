@@ -12,6 +12,7 @@ import 'package:riseg_one/features/finanzas/domain/usecases/complemento_pago_der
 import 'package:riseg_one/features/finanzas/domain/usecases/cuenta_por_cobrar_antiguedad.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../finanzas_providers.dart';
@@ -45,6 +46,7 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
   final Map<String, String> _folioPagoPorAplicacion = {};
   bool _algunPagoConComplementoPendiente = false;
   String? _clienteNombre;
+  Map<String, String> _usuariosPorId = const {};
   bool _cargando = true;
   bool _procesando = false;
 
@@ -61,6 +63,8 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
     final eventos = await notifier.listarEventos(widget.cuentaPorCobrarId);
     final aplicacionesPago =
         await ref.read(pagoRepositoryProvider).listarAplicacionesPorCuenta(widget.cuentaPorCobrarId);
+    final usuarios = await ref.read(usuarioRepositoryProvider).listar();
+    final usuariosPorId = {for (final u in usuarios) u.id: u.nombre};
 
     String? clienteNombre;
     if (cuenta != null) {
@@ -94,6 +98,7 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
       _aplicacionesPago = aplicacionesPago;
       _algunPagoConComplementoPendiente = algunPendiente;
       _clienteNombre = clienteNombre;
+      _usuariosPorId = usuariosPorId;
       _cargando = false;
     });
   }
@@ -463,9 +468,10 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
                           Text(_eventoLabel(l10n, evento.tipoEvento), style: AppTypography.label),
                         ],
                       ),
-                      if (evento.actor != null)
+                      if (evento.actorUsuarioId != null)
                         Text(
-                          '${l10n.cuentaPorCobrarDetalleHistorialCampoActor}: ${evento.actor}',
+                          '${l10n.cuentaPorCobrarDetalleHistorialCampoActor}: '
+                          '${_usuariosPorId[evento.actorUsuarioId] ?? evento.actorUsuarioId}',
                           style: AppTypography.caption.copyWith(color: colors.textMuted),
                         ),
                       if (evento.observacion != null && evento.observacion!.trim().isNotEmpty)

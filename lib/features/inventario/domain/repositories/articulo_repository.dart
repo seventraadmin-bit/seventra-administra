@@ -1,5 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../usecases/eliminar_articulo_fisicamente_usecase.dart';
+
 /// El catálogo central de Inventario (Etapa 7A) — `Articulo` y sus
 /// `ArticuloVariante` (talla). La creación/consulta de `ArticuloUnidad`
 /// (unidad serializada) vive en `InventarioRepository`, porque dar de
@@ -43,4 +45,12 @@ abstract interface class ArticuloRepository {
   Future<ArticuloVarianteData> crearVariante({required String articuloId, required String valor});
 
   Future<ArticuloVarianteData> archivarVariante(String varianteId);
+
+  /// Eliminación física extraordinaria (Etapa 11D) — ver el doc comment
+  /// de la implementación para las condiciones exactas.
+  Future<EliminarArticuloFisicamenteResultado> eliminarFisicamente({
+    required String articuloId,
+    required String motivo,
+    String? actorUsuarioId,
+  });
 }

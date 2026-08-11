@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart' show MotivoBajaVehiculo;
 import 'package:riseg_one/features/vehiculos/domain/usecases/actualizar_fotografia_vehiculo_usecase.dart';
@@ -30,6 +31,10 @@ class VehiculosController extends _$VehiculosController {
     Future.microtask(_cargar);
     return const VehiculosState();
   }
+
+  /// Usuario autenticado que ejecuta la operación (Etapa 11D) — mismo
+  /// criterio que `UsuariosController._actorUsuarioId`.
+  String? get _actorUsuarioId => ref.read(sesionControllerProvider)?.usuarioId;
 
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
@@ -227,6 +232,7 @@ class VehiculosController extends _$VehiculosController {
             fechaInicio: fechaInicio,
             observaciones: observaciones,
             kilometrajeEntrega: kilometrajeEntrega,
+            actorUsuarioId: _actorUsuarioId,
           ),
       AsignarVehiculoErrorInesperado.new,
     );
@@ -252,6 +258,7 @@ class VehiculosController extends _$VehiculosController {
             nuevoEmpleadoId: nuevoEmpleadoId,
             nuevoServicioId: nuevoServicioId,
             observacionesNueva: observacionesNueva,
+            actorUsuarioId: _actorUsuarioId,
           ),
       CambiarAsignacionVehiculoErrorInesperado.new,
     );
@@ -273,6 +280,7 @@ class VehiculosController extends _$VehiculosController {
             fechaTermino: fechaTermino,
             observacionesTermino: observacionesTermino,
             kilometrajeDevolucion: kilometrajeDevolucion,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RetirarAsignacionVehiculoErrorInesperado.new,
     );
@@ -299,6 +307,7 @@ class VehiculosController extends _$VehiculosController {
             kilometraje: kilometraje,
             origen: origen,
             observaciones: observaciones,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RegistrarKilometrajeVehiculoErrorInesperado.new,
     );

@@ -165,7 +165,7 @@ class CompraRepositoryImpl implements CompraRepository {
     required PartidaCompraInput partida,
     required String folioCompra,
     required DateTime fecha,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final articulo = await _articuloRepository.obtenerPorId(partida.articuloId!);
     if (articulo == null) return;
@@ -182,7 +182,7 @@ class CompraRepositoryImpl implements CompraRepository {
           costoUnitario: partida.costoUnitario,
           fecha: fecha,
           observaciones: 'Compra $folioCompra',
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         );
         final movimientos = await _inventarioRepository.listarMovimientos(unidadId: unidad.id);
         await _db.into(_db.compraPartidaMovimiento).insert(
@@ -200,7 +200,7 @@ class CompraRepositoryImpl implements CompraRepository {
         costoUnitario: partida.costoUnitario,
         fecha: fecha,
         observaciones: 'Compra $folioCompra',
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       await _db.into(_db.compraPartidaMovimiento).insert(
             CompraPartidaMovimientoCompanion.insert(
@@ -220,7 +220,7 @@ class CompraRepositoryImpl implements CompraRepository {
     String? formaPagoOtroDescripcion,
     String? observaciones,
     required List<PartidaCompraInput> partidas,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final montoTotal = partidas.fold<int>(0, (s, p) => s + p.cantidad * p.costoUnitario);
@@ -234,7 +234,7 @@ class CompraRepositoryImpl implements CompraRepository {
         beneficiario: proveedor,
         concepto: proveedor == null || proveedor.trim().isEmpty ? 'Compra $folioCompra' : 'Compra $folioCompra · $proveedor',
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       final compra = await _db.into(_db.compra).insertReturning(
@@ -268,7 +268,7 @@ class CompraRepositoryImpl implements CompraRepository {
             partida: partida,
             folioCompra: folioCompra,
             fecha: fecha,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           );
         }
       }
@@ -276,7 +276,7 @@ class CompraRepositoryImpl implements CompraRepository {
       await _registrarEventoInterno(
         compraId: compra.id,
         tipoEvento: TipoEventoCompra.registrada,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'folioCompra': folioCompra, 'montoTotal': montoTotal, 'partidas': partidas.length},
       );
 
@@ -292,7 +292,7 @@ class CompraRepositoryImpl implements CompraRepository {
     String? formaPagoOtroDescripcion,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.compra)..where((t) => t.id.equals(compraId))).getSingle();
@@ -311,7 +311,7 @@ class CompraRepositoryImpl implements CompraRepository {
         compraId: compraId,
         tipoEvento: TipoEventoCompra.corregida,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'proveedorAnterior': anterior.proveedor,
           'formaPagoAnterior': anterior.formaPago,
@@ -323,7 +323,7 @@ class CompraRepositoryImpl implements CompraRepository {
   }
 
   @override
-  Future<CompraData> cancelar({required String compraId, required String motivo, String? actor}) {
+  Future<CompraData> cancelar({required String compraId, required String motivo, String? actorUsuarioId}) {
     return _db.transaction(() async {
       final compra = await (_db.select(_db.compra)..where((t) => t.id.equals(compraId))).getSingle();
       final movimientos = await listarMovimientosGenerados(compraId);
@@ -333,7 +333,7 @@ class CompraRepositoryImpl implements CompraRepository {
           await _inventarioRepository.registrarBajaUnidad(
             unidadId: movimiento.unidadId!,
             observaciones: 'Cancelación de Compra ${compra.folioCompra}: $motivo',
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           );
         } else {
           await _inventarioRepository.registrarBaja(
@@ -341,7 +341,7 @@ class CompraRepositoryImpl implements CompraRepository {
             varianteId: movimiento.varianteId,
             cantidad: movimiento.cantidad,
             observaciones: 'Cancelación de Compra ${compra.folioCompra}: $motivo',
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           );
         }
       }
@@ -355,14 +355,14 @@ class CompraRepositoryImpl implements CompraRepository {
       );
 
       if (compra.egresoId != null) {
-        await _egresoRepository.cancelar(egresoId: compra.egresoId!, motivo: motivo, actor: actor);
+        await _egresoRepository.cancelar(egresoId: compra.egresoId!, motivo: motivo, actorUsuarioId: actorUsuarioId);
       }
 
       await _registrarEventoInterno(
         compraId: compraId,
         tipoEvento: TipoEventoCompra.cancelada,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       return (_db.select(_db.compra)..where((t) => t.id.equals(compraId))).getSingle();
@@ -377,7 +377,7 @@ class CompraRepositoryImpl implements CompraRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(
@@ -397,7 +397,7 @@ class CompraRepositoryImpl implements CompraRepository {
       await _registrarEventoInterno(
         compraId: compraId,
         tipoEvento: TipoEventoCompra.comprobanteAdjuntado,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'archivoNuevo': originalFileName, 'attachmentId': adjunto.id},
       );
 
@@ -411,7 +411,7 @@ class CompraRepositoryImpl implements CompraRepository {
     String? estadoAnterior,
     String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, dynamic>? datosRelevantes,
   }) {
     return _db.into(_db.compraEvento).insert(
@@ -422,7 +422,7 @@ class CompraRepositoryImpl implements CompraRepository {
             estadoAnterior: Value(estadoAnterior),
             estadoNuevo: Value(estadoNuevo),
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: datosRelevantes == null ? const Value.absent() : Value(jsonEncode(datosRelevantes)),
           ),
         );

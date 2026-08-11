@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/sucursal_table.dart';
@@ -8,11 +9,13 @@ import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expedie
 import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expediente_errors.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expediente_input.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/direccion_controllers.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import 'sucursal_expediente_controller.dart';
 import 'sucursal_expediente_form_controllers.dart';
 import 'sucursal_expediente_state.dart';
 import 'widgets/direccion_principal_section.dart';
+import 'widgets/eliminar_sucursal_fisicamente_dialog.dart';
 import 'widgets/horario_section.dart';
 import 'widgets/sucursal_datos_generales_section.dart';
 import 'widgets/ubicaciones_arbol_widget.dart';
@@ -118,6 +121,11 @@ class _SucursalExpedienteScreenState extends ConsumerState<SucursalExpedienteScr
     }
   }
 
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarSucursalFisicamente(context, ref, widget.sucursalId);
+    if (eliminado && mounted) context.pop();
+  }
+
   void _onTipoCambiado(String? valor) {
     setState(() => _datosGenerales.tipoSucursalId = valor);
     _notifier.marcarCambiosSinGuardar();
@@ -164,6 +172,7 @@ class _SucursalExpedienteScreenState extends ConsumerState<SucursalExpedienteScr
     final erroresHorario = state.erroresGuardado.whereType<ErrorHorarioSucursal>().toList();
     final errorTipoRequerido = state.erroresGuardado.any((e) => e is ErrorTipoSucursalRequerido);
     final operando = datos.sucursal.estadoOperativo == EstadoOperativoSucursal.operando.name;
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -197,13 +206,15 @@ class _SucursalExpedienteScreenState extends ConsumerState<SucursalExpedienteScr
                     : null,
               ),
               const SizedBox(height: AppSpacing.sm),
-              Row(
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   RisegStatusBadge(
                     label: operando ? l10n.sucursalEstadoOperativoOperando : l10n.sucursalEstadoOperativoCerradaTemporalmente,
                     tone: operando ? RisegStatusTone.success : RisegStatusTone.warning,
                   ),
-                  const SizedBox(width: AppSpacing.sm),
                   RisegButton(
                     key: const Key('sucursal_boton_estado_operativo'),
                     label: operando ? l10n.sucursalBotonCerrarTemporalmente : l10n.sucursalBotonReabrir,
@@ -214,6 +225,14 @@ class _SucursalExpedienteScreenState extends ConsumerState<SucursalExpedienteScr
                       operando ? EstadoOperativoSucursal.cerradaTemporalmente : EstadoOperativoSucursal.operando,
                     ),
                   ),
+                  if (esMaestro && !esEdicion)
+                    RisegButton(
+                      key: const Key('sucursal_boton_eliminar_fisicamente'),
+                      label: l10n.eliminacionFisicaAccionMenu,
+                      variant: RisegButtonVariant.danger,
+                      size: RisegButtonSize.compact,
+                      onPressed: _eliminarFisicamente,
+                    ),
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),

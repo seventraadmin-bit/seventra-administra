@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 39;
+const _currentSchemaVersion = 40;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -8546,6 +8546,136 @@ void main() {
       throwsA(anything),
       reason: 'el mismo par (usuario, código) no puede repetirse',
     );
+
+    await db.close();
+  });
+
+  test(
+    '40.json coincide con el esquema final de la Etapa 11D (actor_usuario_id en 15 tablas + '
+    'EliminacionFisicaEvento) — la columna actor legacy permanece físicamente sin cambios',
+    () async {
+      final schema = await verifier.schemaAt(40);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, contains('eliminacion_fisica_evento'));
+
+      final sqlEliminacion =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'eliminacion_fisica_evento'")
+                  .single['sql']
+              as String;
+      expect(sqlEliminacion, contains('"tipo_entidad" TEXT NOT NULL'));
+      expect(sqlEliminacion, contains('"entidad_id_original" TEXT NOT NULL'));
+      expect(sqlEliminacion, contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'));
+      expect(sqlEliminacion, contains('"motivo" TEXT NOT NULL'));
+      expect(sqlEliminacion, contains('"snapshot_json" TEXT NOT NULL'));
+
+      // Muestra representativa de las 15 tablas — no las 15, mismo
+      // criterio que el resto de la suite de migraciones.
+      for (final tabla in ['compra_evento', 'movimiento_inventario', 'recarga_linea_telefonica', 'vehiculo_documento']) {
+        final sql =
+            schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [tabla]).single['sql']
+                as String;
+        expect(
+          sql,
+          contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'),
+          reason: '$tabla debe tener actor_usuario_id tras la migración a 40',
+        );
+      }
+
+      // La columna legacy `actor` permanece físicamente en las 12 tablas
+      // donde ya existía — decisión explícita de Marlon (migración
+      // aditiva, sin dropColumn).
+      final sqlCompraEvento =
+          schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra_evento'").single['sql']
+              as String;
+      expect(sqlCompraEvento, contains('"actor" TEXT NULL'), reason: 'la columna legacy actor debe seguir existiendo físicamente');
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 39 → 40 conserva una Compra/CompraEvento real, agrega actor_usuario_id nullable '
+    '(null en el histórico) y crea EliminacionFisicaEvento vacía, sin backfill',
+    () async {
+      final schemaV39 = await verifier.schemaAt(39);
+      final raw = schemaV39.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO compra (
+        id, folio_compra, fecha, forma_pago, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'compra-real', 'COM-000001', 1700000000, 'efectivo', 'registrada', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO compra_evento (
+        compra_id, fecha_hora, tipo_evento, actor
+      ) VALUES (
+        'compra-real', 1700000000, 'registrada', NULL
+      );
+    ''');
+
+      final db = AppDatabase(schemaV39.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final compras = await db.select(db.compra).get();
+      expect(compras, hasLength(1), reason: 'ninguna Compra real debe perderse en una migración puramente aditiva');
+
+      final eventos = await db.select(db.compraEvento).get();
+      expect(eventos, hasLength(1));
+      expect(eventos.single.actorUsuarioId, isNull, reason: 'histórico anterior a 11D queda con actorUsuarioId = null');
+
+      final eliminaciones = await db.select(db.eliminacionFisicaEvento).get();
+      expect(eliminaciones, isEmpty, reason: 'EliminacionFisicaEvento es tabla nueva en la Etapa 11D, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test('EliminacionFisicaEvento: actor_usuario_id sobrevive con SET NULL si el Usuario se elimina', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final usuario = await db.into(db.usuario).insertReturning(
+          UsuarioCompanion.insert(nombre: 'Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$AA==\$BB==', esMaestro: const Value(true)),
+        );
+
+    await db.into(db.eliminacionFisicaEvento).insert(
+          EliminacionFisicaEventoCompanion.insert(
+            tipoEntidad: 'vehiculo',
+            entidadIdOriginal: 'vehiculo-inexistente-ya-borrado',
+            fechaHora: DateTime(2026, 1, 1),
+            motivo: 'Error de captura — vehículo duplicado, nunca utilizado.',
+            snapshotJson: '{"marca":"Nissan"}',
+            actorUsuarioId: Value(usuario.id),
+          ),
+        );
+
+    await db.delete(db.usuario).delete(usuario);
+
+    final eventos = await db.select(db.eliminacionFisicaEvento).get();
+    expect(eventos, hasLength(1), reason: 'el evento sobrevive aunque el Usuario que lo generó se elimine');
+    expect(eventos.single.actorUsuarioId, isNull);
 
     await db.close();
   });

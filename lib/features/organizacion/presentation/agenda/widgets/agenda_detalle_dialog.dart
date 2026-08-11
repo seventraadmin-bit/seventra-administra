@@ -14,6 +14,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_em
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/resumen_iva_documento_por_emitir.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion_providers.dart';
 import '../agenda_controller.dart';
@@ -46,6 +47,7 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
   bool _cargando = true;
   bool _procesando = false;
   final Map<String, String> _nombresServicio = {};
+  Map<String, String> _usuariosPorId = const {};
 
   @override
   void initState() {
@@ -65,10 +67,13 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
         if (servicio != null) _nombresServicio[servicioId] = '${servicio.codigo} — ${servicio.nombre}';
       }
     }
+    final usuarios = await ref.read(usuarioRepositoryProvider).listar();
+    final usuariosPorId = {for (final u in usuarios) u.id: u.nombre};
 
     if (!mounted) return;
     setState(() {
       _detalle = detalle;
+      _usuariosPorId = usuariosPorId;
       _cargando = false;
     });
   }
@@ -522,12 +527,13 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                           Text(_eventoLabel(l10n, evento.tipoEvento), style: AppTypography.label),
                         ],
                       ),
-                      // `actor` se omite por completo mientras sea `null`
-                      // (Resolución de Marlon: ausencia limpia, nunca un
-                      // placeholder) — solo aparece cuando exista.
-                      if (evento.actor != null)
+                      // `actorUsuarioId` se omite por completo mientras sea
+                      // `null` (Resolución de Marlon: ausencia limpia,
+                      // nunca un placeholder) — solo aparece cuando exista.
+                      if (evento.actorUsuarioId != null)
                         Text(
-                          '${l10n.agendaDetalleHistorialCampoActor}: ${evento.actor}',
+                          '${l10n.agendaDetalleHistorialCampoActor}: '
+                          '${_usuariosPorId[evento.actorUsuarioId] ?? evento.actorUsuarioId}',
                           style: AppTypography.caption.copyWith(color: colors.textMuted),
                         ),
                       if (evento.observacion != null && evento.observacion!.trim().isNotEmpty)

@@ -7,7 +7,7 @@ part of 'ingresos_controller.dart';
 // **************************************************************************
 
 String _$ingresosControllerHash() =>
-    r'4bd7851380f2d9f4fc6394406f4db98edd61312d';
+    r'f5d14e06b4255ce8175188c0a51cbb47361fa15a';
 
 /// Controlador del listado de Ingresos (Etapa 4K.1) — mismo diseño que
 /// `PagosController`.

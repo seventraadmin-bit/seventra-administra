@@ -32,14 +32,14 @@ class CancelarPagoNominaUseCase {
   Future<CancelarPagoNominaResultado> ejecutar({
     required String pagoNominaId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final pagoNomina = await _repository.obtenerPorId(pagoNominaId);
     if (pagoNomina == null) return CancelarPagoNominaNoExiste();
     if (pagoNomina.estatus == 'cancelado') return CancelarPagoNominaYaCancelado();
 
     try {
-      final actualizado = await _repository.cancelar(pagoNominaId: pagoNominaId, motivo: motivo, actor: actor);
+      final actualizado = await _repository.cancelar(pagoNominaId: pagoNominaId, motivo: motivo, actorUsuarioId: actorUsuarioId);
       return CancelarPagoNominaExitoso(actualizado);
     } catch (e) {
       return CancelarPagoNominaErrorInesperado(e.toString());

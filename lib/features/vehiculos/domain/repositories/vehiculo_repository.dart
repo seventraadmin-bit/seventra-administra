@@ -1,5 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../usecases/eliminar_vehiculo_fisicamente_usecase.dart';
+
 /// El expediente de la flotilla (Etapa 8A) — "qué vehículo es" y su
 /// condición operativa. Asignaciones/kilometraje/documentos/
 /// mantenimiento viven en repositorios propios de etapas futuras
@@ -87,4 +89,12 @@ abstract interface class VehiculoRepository {
   /// `fotografiaAttachmentId`; la anterior se archiva desde el caso de
   /// uso (mismo criterio que `ActualizarFotografiaEmpleadoUseCase`).
   Future<VehiculoData> actualizarFotografia({required String vehiculoId, required String attachmentId});
+
+  /// Eliminación física extraordinaria (Etapa 11D) — ver el doc comment
+  /// de la implementación para las condiciones exactas.
+  Future<EliminarVehiculoFisicamenteResultado> eliminarFisicamente({
+    required String vehiculoId,
+    required String motivo,
+    String? actorUsuarioId,
+  });
 }

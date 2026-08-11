@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
@@ -8,6 +10,7 @@ import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart
 import '../../domain/repositories/sucursal_repository.dart';
 import '../../domain/shared/direccion_input.dart';
 import '../../domain/shared/horario_input.dart';
+import '../../domain/usecases/eliminar_sucursal_fisicamente_usecase.dart';
 
 class SucursalRepositoryImpl implements SucursalRepository {
   SucursalRepositoryImpl(this._db);
@@ -265,5 +268,106 @@ class SucursalRepositoryImpl implements SucursalRepository {
     }
     renglones.sort((a, b) => a.diaSemana.compareTo(b.diaSemana));
     return renglones;
+  }
+
+  /// Eliminación física extraordinaria (Etapa 11D) — condiciones
+  /// aprobadas: elegible solo si ninguna fila de `Servicio`
+  /// (`sucursalAdministrativaId`), `Ubicacion` (`sucursalId`) ni
+  /// `Empleado` (`sucursalId`) referencia esta Sucursal. **Chequeos
+  /// adicionales descubiertos durante la verificación del grafo de FK
+  /// real** (no en la lista aprobada original, agregados por
+  /// integridad): `Ingreso.sucursalId`/`Egreso.sucursalId` (movimientos
+  /// financieros) y `Direccion.sucursalId`/`Horario.sucursalId`/
+  /// `MedioContacto.sucursalId` (las tres declaran su FK como SQL
+  /// crudo con `ON DELETE RESTRICT` en vez de `.references()` tipado —
+  /// ver el doc comment de `Direccion` — así que no aparecen en una
+  /// búsqueda superficial de `references(Sucursal,` pero son
+  /// restricciones reales a nivel de base de datos). Nota: toda
+  /// Sucursal creada por el flujo normal (`crear`) ya tiene
+  /// exactamente una fila raíz en `Ubicacion` con `sucursalId` propio
+  /// (ver ese método) — en la práctica esto bloquea la eliminación
+  /// física de cualquier Sucursal que haya pasado por el alta normal,
+  /// consistente con la condición tal como fue aprobada. Todo —
+  /// validación, snapshot, registro de auditoría y `DELETE` — ocurre en
+  /// una sola transacción; nunca `CASCADE` sobre ninguna de esas
+  /// tablas.
+  @override
+  Future<EliminarSucursalFisicamenteResultado> eliminarFisicamente({
+    required String sucursalId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final sucursal = await (_db.select(_db.sucursal)..where((t) => t.id.equals(sucursalId))).getSingleOrNull();
+      if (sucursal == null) return EliminarSucursalFisicamenteNoExiste();
+
+      final servicios =
+          await (_db.select(_db.servicio)..where((t) => t.sucursalAdministrativaId.equals(sucursalId))).get();
+      if (servicios.isNotEmpty) {
+        return EliminarSucursalFisicamenteTieneDependencias(
+          'Tiene ${servicios.length} servicio(s) registrado(s).',
+        );
+      }
+
+      final ubicaciones = await (_db.select(_db.ubicacion)..where((t) => t.sucursalId.equals(sucursalId))).get();
+      if (ubicaciones.isNotEmpty) {
+        return EliminarSucursalFisicamenteTieneDependencias(
+          'Tiene ${ubicaciones.length} ubicación(es) registrada(s).',
+        );
+      }
+
+      final empleados = await (_db.select(_db.empleado)..where((t) => t.sucursalId.equals(sucursalId))).get();
+      if (empleados.isNotEmpty) {
+        return EliminarSucursalFisicamenteTieneDependencias(
+          'Tiene ${empleados.length} empleado(s) registrado(s).',
+        );
+      }
+
+      final ingresos = await (_db.select(_db.ingreso)..where((t) => t.sucursalId.equals(sucursalId))).get();
+      if (ingresos.isNotEmpty) {
+        return EliminarSucursalFisicamenteTieneDependencias('Tiene ${ingresos.length} ingreso(s) registrado(s).');
+      }
+
+      final egresos = await (_db.select(_db.egreso)..where((t) => t.sucursalId.equals(sucursalId))).get();
+      if (egresos.isNotEmpty) {
+        return EliminarSucursalFisicamenteTieneDependencias('Tiene ${egresos.length} egreso(s) registrado(s).');
+      }
+
+      final direcciones = await (_db.select(_db.direccion)..where((t) => t.sucursalId.equals(sucursalId))).get();
+      if (direcciones.isNotEmpty) {
+        return EliminarSucursalFisicamenteTieneDependencias(
+          'Tiene ${direcciones.length} dirección(es) registrada(s).',
+        );
+      }
+
+      final horarios = await (_db.select(_db.horario)..where((t) => t.sucursalId.equals(sucursalId))).get();
+      if (horarios.isNotEmpty) {
+        return EliminarSucursalFisicamenteTieneDependencias(
+          'Tiene ${horarios.length} horario(s) registrado(s).',
+        );
+      }
+
+      final mediosContacto =
+          await (_db.select(_db.medioContacto)..where((t) => t.sucursalId.equals(sucursalId))).get();
+      if (mediosContacto.isNotEmpty) {
+        return EliminarSucursalFisicamenteTieneDependencias(
+          'Tiene ${mediosContacto.length} medio(s) de contacto registrado(s).',
+        );
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'sucursal',
+              entidadIdOriginal: sucursalId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode(sucursal.toJson()),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+      await (_db.delete(_db.sucursal)..where((t) => t.id.equals(sucursalId))).go();
+
+      return EliminarSucursalFisicamenteExitoso();
+    });
   }
 }

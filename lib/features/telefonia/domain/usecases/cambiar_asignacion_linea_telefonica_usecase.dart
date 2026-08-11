@@ -42,7 +42,7 @@ class CambiarAsignacionLineaTelefonicaUseCase {
     String? nuevoServicioId,
     String? observacionesNueva,
     bool moverEquipoAsociado = true,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     if ((nuevoEmpleadoId == null) == (nuevoServicioId == null)) {
       return CambiarAsignacionLineaTelefonicaDestinoInvalido();
@@ -60,7 +60,7 @@ class CambiarAsignacionLineaTelefonicaUseCase {
         nuevoEmpleadoId: nuevoEmpleadoId,
         nuevoServicioId: nuevoServicioId,
         observacionesNueva: observacionesNueva,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       if (moverEquipoAsociado) {

@@ -70,7 +70,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
     required DateTime fechaTimbrado,
     required int montoTotal,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final complemento = await _db.into(_db.complementoPago).insertReturning(
@@ -90,7 +90,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
         tipoEvento: TipoEventoComplementoPago.registrado,
         estadoAnterior: null,
         estadoNuevo: complemento.estatus,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'pagoId': pagoId, 'uuid': uuid, 'montoTotal': montoTotal},
       );
 
@@ -106,7 +106,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
     DateTime? fechaTimbrado,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior =
@@ -128,7 +128,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: anterior.estatus,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'serieFiscalAnterior': anterior.serieFiscal,
           'folioFiscalAnterior': anterior.folioFiscal,
@@ -144,7 +144,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
   Future<ComplementoPagoData> cancelar({
     required String complementoPagoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior =
@@ -164,7 +164,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: EstatusComplementoPago.cancelado.name,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       return (_db.select(_db.complementoPago)..where((t) => t.id.equals(complementoPagoId))).getSingle();
@@ -180,7 +180,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(
@@ -203,7 +203,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
         tipoEvento: TipoEventoComplementoPago.archivoAdjuntado,
         estadoAnterior: null,
         estadoNuevo: null,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'categoria': categoria, 'archivoNuevo': originalFileName, 'attachmentId': adjunto.id},
       );
 
@@ -217,7 +217,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
     required String? estadoAnterior,
     required String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, Object?>? datosRelevantes,
   }) {
     return _db.into(_db.complementoPagoEvento).insert(
@@ -228,7 +228,7 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
             estadoAnterior: Value(estadoAnterior),
             estadoNuevo: Value(estadoNuevo),
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
           ),
         );

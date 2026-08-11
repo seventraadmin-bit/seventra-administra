@@ -9,6 +9,7 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart' show OrigenCompra;
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/existencia_articulo.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../asignaciones/widgets/historial_unidad_dialog.dart';
 import '../movimiento_tipo_label.dart';
@@ -16,6 +17,7 @@ import '../../inventario_providers.dart' show obtenerOrigenCompraUseCaseProvider
 import 'articulos_controller.dart';
 import 'articulos_list_screen.dart';
 import 'widgets/crear_variante_dialog.dart';
+import 'widgets/eliminar_articulo_fisicamente_dialog.dart';
 import 'widgets/gestionar_articulo_dialog.dart';
 import 'widgets/registrar_ajuste_dialog.dart';
 import 'widgets/registrar_baja_dialog.dart';
@@ -166,6 +168,11 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
     if (exito) await _cargar();
   }
 
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarArticuloFisicamente(context, ref, widget.articuloId);
+    if (eliminado && mounted) context.pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -197,6 +204,7 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
     final articulo = _articulo!;
     final existencia = _existencia!;
     final activo = articulo.cicloVidaRegistro == 'activo';
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -214,12 +222,25 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                   label: l10n.articuloExpedienteBotonEditar,
                   onPressed: _editar,
                 ),
-                secondaryAction: activo
-                    ? RisegButton(
-                        key: const Key('articulo_expediente_boton_archivar'),
-                        label: l10n.articuloBotonArchivar,
-                        variant: RisegButtonVariant.ghost,
-                        onPressed: _archivar,
+                secondaryAction: activo || esMaestro
+                    ? Wrap(
+                        spacing: AppSpacing.xs,
+                        children: [
+                          if (activo)
+                            RisegButton(
+                              key: const Key('articulo_expediente_boton_archivar'),
+                              label: l10n.articuloBotonArchivar,
+                              variant: RisegButtonVariant.ghost,
+                              onPressed: _archivar,
+                            ),
+                          if (esMaestro)
+                            RisegButton(
+                              key: const Key('articulo_expediente_boton_eliminar_fisicamente'),
+                              label: l10n.eliminacionFisicaAccionMenu,
+                              variant: RisegButtonVariant.danger,
+                              onPressed: _eliminarFisicamente,
+                            ),
+                        ],
                       )
                     : null,
               ),

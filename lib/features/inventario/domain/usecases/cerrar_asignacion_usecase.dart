@@ -48,7 +48,7 @@ class CerrarAsignacionUseCase {
     bool generaDescuento = false,
     int? importeDescuento,
     String? empleadoResponsableDescuentoId,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final asignacion = await _repository.obtenerPorId(asignacionId);
     if (asignacion == null) return CerrarAsignacionNoExiste();
@@ -83,7 +83,7 @@ class CerrarAsignacionUseCase {
         generaDescuento: generaDescuento,
         importeDescuento: generaDescuento ? importeDescuento : null,
         empleadoResponsableDescuentoId: generaDescuento ? empleadoResponsableDescuentoId : null,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CerrarAsignacionExitoso(actualizada);
     } catch (e) {

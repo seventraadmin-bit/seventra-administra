@@ -49,7 +49,7 @@ class CambiarEquipoLineaTelefonicaUseCase {
     required String nuevaUnidadId,
     required DateTime fecha,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final linea = await _lineaRepository.obtenerPorId(lineaTelefonicaId);
     if (linea == null) return CambiarEquipoLineaTelefonicaLineaNoExiste();
@@ -73,7 +73,7 @@ class CambiarEquipoLineaTelefonicaUseCase {
         nuevaUnidadId: nuevaUnidadId,
         fecha: fecha,
         observaciones: observaciones?.trim().isEmpty ?? true ? null : observaciones!.trim(),
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CambiarEquipoLineaTelefonicaExitoso(equipo);
     } catch (e) {

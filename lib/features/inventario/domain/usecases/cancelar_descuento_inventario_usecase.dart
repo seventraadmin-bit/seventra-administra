@@ -31,7 +31,7 @@ class CancelarDescuentoInventarioUseCase {
   Future<CancelarDescuentoInventarioResultado> ejecutar({
     required String descuentoId,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final descuento = await _repository.obtenerDescuentoPorId(descuentoId);
     if (descuento == null) return CancelarDescuentoInventarioNoExiste();
@@ -43,7 +43,7 @@ class CancelarDescuentoInventarioUseCase {
       final actualizado = await _repository.cancelarDescuento(
         descuentoId: descuentoId,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CancelarDescuentoInventarioExitoso(actualizado);
     } catch (e) {

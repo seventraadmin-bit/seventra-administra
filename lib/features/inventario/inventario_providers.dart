@@ -5,6 +5,7 @@ import '../../core/permissions/authorization_service.dart';
 import '../compras/compras_providers.dart' show compraRepositoryProvider;
 import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
+import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/pdf/resguardo_pdf_renderer.dart';
 import 'data/repositories/articulo_repository_impl.dart';
@@ -29,6 +30,8 @@ import 'domain/usecases/crear_articulo_usecase.dart';
 import 'domain/usecases/crear_asignacion_usecase.dart';
 import 'domain/usecases/crear_categoria_articulo_usecase.dart';
 import 'domain/usecases/crear_variante_articulo_usecase.dart';
+import 'domain/usecases/eliminar_articulo_fisicamente_usecase.dart';
+import 'domain/usecases/eliminar_categoria_articulo_fisicamente_usecase.dart';
 import 'domain/usecases/generar_documento_resguardo_usecase.dart';
 import 'domain/usecases/obtener_empleados_responsables_servicio_usecase.dart';
 import 'domain/usecases/obtener_origen_compra_usecase.dart';
@@ -211,7 +214,6 @@ typedef CrearAsignacionAutorizado = Future<CrearAsignacionResultado> Function({
   required DateTime fechaEntrega,
   String? condicionEntrega,
   String? observaciones,
-  String? actor,
 });
 
 final crearAsignacionAutorizadoProvider = Provider<CrearAsignacionAutorizado>((ref) {
@@ -225,8 +227,8 @@ final crearAsignacionAutorizadoProvider = Provider<CrearAsignacionAutorizado>((r
     required DateTime fechaEntrega,
     String? condicionEntrega,
     String? observaciones,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'inventario.crear',
@@ -240,7 +242,7 @@ final crearAsignacionAutorizadoProvider = Provider<CrearAsignacionAutorizado>((r
             fechaEntrega: fechaEntrega,
             condicionEntrega: condicionEntrega,
             observaciones: observaciones,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       CrearAsignacionErrorInesperado.new,
     );
@@ -256,7 +258,6 @@ typedef CerrarAsignacionAutorizado = Future<CerrarAsignacionResultado> Function(
   bool generaDescuento,
   int? importeDescuento,
   String? empleadoResponsableDescuentoId,
-  String? actor,
 });
 
 final cerrarAsignacionAutorizadoProvider = Provider<CerrarAsignacionAutorizado>((ref) {
@@ -269,8 +270,8 @@ final cerrarAsignacionAutorizadoProvider = Provider<CerrarAsignacionAutorizado>(
     bool generaDescuento = false,
     int? importeDescuento,
     String? empleadoResponsableDescuentoId,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'inventario.modificar',
@@ -283,7 +284,7 @@ final cerrarAsignacionAutorizadoProvider = Provider<CerrarAsignacionAutorizado>(
             generaDescuento: generaDescuento,
             importeDescuento: importeDescuento,
             empleadoResponsableDescuentoId: empleadoResponsableDescuentoId,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       CerrarAsignacionErrorInesperado.new,
     );
@@ -305,7 +306,6 @@ typedef ReemplazarAsignacionAutorizado = Future<ReemplazarAsignacionResultado> F
   required int cantidadReemplazo,
   String? condicionEntregaReemplazo,
   String? observacionesReemplazo,
-  String? actor,
 });
 
 final reemplazarAsignacionAutorizadoProvider = Provider<ReemplazarAsignacionAutorizado>((ref) {
@@ -324,8 +324,8 @@ final reemplazarAsignacionAutorizadoProvider = Provider<ReemplazarAsignacionAuto
     required int cantidadReemplazo,
     String? condicionEntregaReemplazo,
     String? observacionesReemplazo,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'inventario.modificar',
@@ -344,7 +344,7 @@ final reemplazarAsignacionAutorizadoProvider = Provider<ReemplazarAsignacionAuto
             cantidadReemplazo: cantidadReemplazo,
             condicionEntregaReemplazo: condicionEntregaReemplazo,
             observacionesReemplazo: observacionesReemplazo,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       ReemplazarAsignacionErrorInesperado.new,
     );
@@ -375,6 +375,59 @@ final adjuntarResguardoFirmadoAutorizadoProvider = Provider<AdjuntarResguardoFir
             mimeType: mimeType,
           ),
       AdjuntarResguardoFirmadoErrorInesperado.new,
+    );
+  };
+});
+
+// --- Eliminación física extraordinaria (Etapa 11D) ---
+//
+// Facultad exclusiva del Usuario Maestro — `exigirMaestro` nunca
+// consulta `PermisoUsuario`/`AuthorizationService.verificar`, así que
+// ningún permiso dinámico puede otorgarla. El actor se resuelve aquí
+// mismo, dentro del cierre — el diálogo nunca lo provee (mismo
+// criterio que la resolución del permiso).
+final eliminarArticuloFisicamenteUseCaseProvider = Provider<EliminarArticuloFisicamenteUseCase>((ref) {
+  return EliminarArticuloFisicamenteUseCase(ref.watch(articuloRepositoryProvider));
+});
+
+typedef EliminarArticuloFisicamenteAutorizado = Future<EliminarArticuloFisicamenteResultado> Function({
+  required String articuloId,
+  required String motivo,
+});
+
+final eliminarArticuloFisicamenteAutorizadoProvider = Provider<EliminarArticuloFisicamenteAutorizado>((ref) {
+  return ({required String articuloId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarArticuloFisicamenteUseCaseProvider).ejecutar(
+            articuloId: articuloId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarArticuloFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+final eliminarCategoriaArticuloFisicamenteUseCaseProvider =
+    Provider<EliminarCategoriaArticuloFisicamenteUseCase>((ref) {
+  return EliminarCategoriaArticuloFisicamenteUseCase(ref.watch(categoriaArticuloRepositoryProvider));
+});
+
+typedef EliminarCategoriaArticuloFisicamenteAutorizado = Future<EliminarCategoriaArticuloFisicamenteResultado>
+    Function({required String categoriaArticuloId, required String motivo});
+
+final eliminarCategoriaArticuloFisicamenteAutorizadoProvider =
+    Provider<EliminarCategoriaArticuloFisicamenteAutorizado>((ref) {
+  return ({required String categoriaArticuloId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarCategoriaArticuloFisicamenteUseCaseProvider).ejecutar(
+            categoriaArticuloId: categoriaArticuloId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarCategoriaArticuloFisicamenteErrorInesperado.new,
     );
   };
 });

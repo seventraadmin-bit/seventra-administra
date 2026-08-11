@@ -66,7 +66,7 @@ class RegistrarPagoNominaUseCase {
     String? cuentaBancariaOrigen,
     String? observaciones,
     required List<({String nominaEmpleadoId, int monto})> aplicaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final nomina = await _nominaRepository.obtenerPorId(nominaId);
     if (nomina == null) return RegistrarPagoNominaNominaNoExiste();
@@ -107,7 +107,7 @@ class RegistrarPagoNominaUseCase {
         cuentaBancariaOrigen: cuentaBancariaOrigen,
         observaciones: observaciones,
         aplicaciones: aplicaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarPagoNominaExitoso(pagoNomina);
     } catch (e) {

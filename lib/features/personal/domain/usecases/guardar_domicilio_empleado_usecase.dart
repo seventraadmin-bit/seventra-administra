@@ -41,7 +41,7 @@ class GuardarDomicilioEmpleadoUseCase {
   Future<GuardarDomicilioEmpleadoResultado> ejecutar({
     required String empleadoId,
     required DireccionBorrador? domicilio,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final empleado = await _repository.obtenerPorId(empleadoId);
     if (empleado == null) return GuardarDomicilioEmpleadoNoExiste();
@@ -70,7 +70,7 @@ class GuardarDomicilioEmpleadoUseCase {
     }
 
     try {
-      final resultado = await _repository.guardarDomicilio(empleadoId, validado, actor: actor);
+      final resultado = await _repository.guardarDomicilio(empleadoId, validado, actorUsuarioId: actorUsuarioId);
       return GuardarDomicilioEmpleadoExitoso(resultado);
     } catch (e) {
       return GuardarDomicilioEmpleadoErrorInesperado(e.toString());

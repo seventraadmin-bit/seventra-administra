@@ -71,7 +71,7 @@ class GenerarNominaUseCase {
     required int anio,
     required int mes,
     required TipoPeriodoNomina tipo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final existente = await _nominaRepository.obtenerPorPeriodo(anio: anio, mes: mes, tipo: tipo);
     if (existente != null) return GenerarNominaYaExiste();
@@ -162,7 +162,7 @@ class GenerarNominaUseCase {
           return GenerarNominaErrorInesperado(f.message);
       }
 
-      final nomina = await _nominaRepository.generar(folio: folio, periodo: periodo, filas: filas, actor: actor);
+      final nomina = await _nominaRepository.generar(folio: folio, periodo: periodo, filas: filas, actorUsuarioId: actorUsuarioId);
       return GenerarNominaExitoso(nomina: nomina, empleadosIncluidos: filas.length, empleadosExcluidos: excluidos);
     } catch (e) {
       return GenerarNominaErrorInesperado(e.toString());

@@ -4,6 +4,7 @@ import '../../core/di/providers.dart';
 import '../../core/permissions/authorization_service.dart';
 import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
+import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'data/repositories/vehiculo_documento_repository_impl.dart';
@@ -25,6 +26,7 @@ import 'domain/usecases/corregir_vehiculo_usecase.dart';
 import 'domain/usecases/crear_vehiculo_usecase.dart';
 import 'domain/usecases/dar_de_baja_vehiculo_usecase.dart';
 import 'domain/usecases/finalizar_mantenimiento_vehiculo_usecase.dart';
+import 'domain/usecases/eliminar_vehiculo_fisicamente_usecase.dart';
 import 'domain/usecases/obtener_opciones_asignacion_vehiculo_usecase.dart';
 import 'domain/usecases/registrar_documento_vehiculo_usecase.dart';
 import 'domain/usecases/registrar_kilometraje_vehiculo_usecase.dart';
@@ -247,6 +249,36 @@ final registrarMantenimientoVehiculoAutorizadoProvider = Provider<RegistrarMante
             observaciones: observaciones,
           ),
       RegistrarMantenimientoVehiculoErrorInesperado.new,
+    );
+  };
+});
+
+// --- Eliminación física extraordinaria (Etapa 11D) ---
+//
+// Facultad exclusiva del Usuario Maestro — `exigirMaestro` nunca
+// consulta `PermisoUsuario`/`AuthorizationService.verificar`, así que
+// ningún permiso dinámico puede otorgarla. El actor se resuelve aquí
+// mismo, dentro del cierre — el diálogo nunca lo provee (mismo
+// criterio que la resolución del permiso).
+final eliminarVehiculoFisicamenteUseCaseProvider = Provider<EliminarVehiculoFisicamenteUseCase>((ref) {
+  return EliminarVehiculoFisicamenteUseCase(ref.watch(vehiculoRepositoryProvider));
+});
+
+typedef EliminarVehiculoFisicamenteAutorizado = Future<EliminarVehiculoFisicamenteResultado> Function({
+  required String vehiculoId,
+  required String motivo,
+});
+
+final eliminarVehiculoFisicamenteAutorizadoProvider = Provider<EliminarVehiculoFisicamenteAutorizado>((ref) {
+  return ({required String vehiculoId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarVehiculoFisicamenteUseCaseProvider).ejecutar(
+            vehiculoId: vehiculoId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarVehiculoFisicamenteErrorInesperado.new,
     );
   };
 });

@@ -30,7 +30,7 @@ class CancelarEgresoUseCase {
   Future<CancelarEgresoResultado> ejecutar({
     required String egresoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final egreso = await _repository.obtenerPorId(egresoId);
     if (egreso == null) {
@@ -41,7 +41,7 @@ class CancelarEgresoUseCase {
     }
 
     try {
-      final actualizado = await _repository.cancelar(egresoId: egresoId, motivo: motivo, actor: actor);
+      final actualizado = await _repository.cancelar(egresoId: egresoId, motivo: motivo, actorUsuarioId: actorUsuarioId);
       return CancelarEgresoExitoso(actualizado);
     } catch (e) {
       return CancelarEgresoErrorInesperado(e.toString());

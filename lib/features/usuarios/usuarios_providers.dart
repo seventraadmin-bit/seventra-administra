@@ -6,12 +6,15 @@ import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/core/permissions/permission_service.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart' show puestoRepositoryProvider;
 
+import 'data/repositories/auditoria_repository_impl.dart';
 import 'data/repositories/permiso_usuario_repository_impl.dart';
 import 'data/repositories/usuario_repository_impl.dart';
+import 'domain/repositories/auditoria_repository.dart';
 import 'domain/repositories/permiso_usuario_repository.dart';
 import 'domain/repositories/usuario_repository.dart';
 import 'domain/sesion_usuario.dart';
 import 'domain/usecases/activar_usuario_usecase.dart';
+import 'domain/usecases/buscar_auditoria_usecase.dart';
 import 'domain/usecases/cambiar_contrasena_usuario_usecase.dart';
 import 'domain/usecases/corregir_usuario_usecase.dart';
 import 'domain/usecases/crear_primer_maestro_usecase.dart';
@@ -60,6 +63,9 @@ class SessionPermissionService implements PermissionService {
 
   @override
   bool hasPermission(String modulo, String accion) => hasCode('$modulo.$accion');
+
+  @override
+  bool get esMaestroActivo => _sesion?.esMaestro ?? false;
 }
 
 final permissionServiceProvider = Provider<PermissionService>((ref) {
@@ -113,4 +119,15 @@ final desactivarUsuarioUseCaseProvider = Provider<DesactivarUsuarioUseCase>((ref
 
 final guardarPermisosUsuarioUseCaseProvider = Provider<GuardarPermisosUsuarioUseCase>((ref) {
   return GuardarPermisosUsuarioUseCase(ref.watch(usuarioRepositoryProvider), ref.watch(permisoUsuarioRepositoryProvider));
+});
+
+/// Auditoría central (Etapa 11D) — solo lectura, agrega los ~17
+/// orígenes de eventos del proyecto. Ver el doc comment de
+/// `AuditoriaRepositoryImpl`.
+final auditoriaRepositoryProvider = Provider<AuditoriaRepository>((ref) {
+  return AuditoriaRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final buscarAuditoriaUseCaseProvider = Provider<BuscarAuditoriaUseCase>((ref) {
+  return BuscarAuditoriaUseCase(ref.watch(auditoriaRepositoryProvider));
 });

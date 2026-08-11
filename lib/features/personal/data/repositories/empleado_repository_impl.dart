@@ -51,7 +51,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     String? estadoAnterior,
     String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, dynamic>? datosRelevantes,
   }) {
     return registrarEventoEmpleado(
@@ -61,7 +61,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       estadoAnterior: estadoAnterior,
       estadoNuevo: estadoNuevo,
       observacion: observacion,
-      actor: actor,
+      actorUsuarioId: actorUsuarioId,
       datosRelevantes: datosRelevantes,
     );
   }
@@ -109,7 +109,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     required String empleadoId,
     required EmpleadoCompanion cambios,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
@@ -121,7 +121,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.corregido,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return actualizado;
     });
@@ -133,7 +133,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     required DateTime fechaBaja,
     required String motivo,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
@@ -155,7 +155,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: EstatusEmpleado.baja.name,
         observacion: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'motivo': motivo},
       );
 
@@ -176,7 +176,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     bool limpiarPuesto = false,
     String? sucursalId,
     bool limpiarSucursal = false,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
@@ -217,7 +217,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
         tipoEvento: TipoEventoEmpleado.reingreso,
         estadoAnterior: anterior.estatus,
         estadoNuevo: EstatusEmpleado.activo.name,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'fechaIngreso': fechaIngreso.toIso8601String()},
       );
       return actualizado;
@@ -236,7 +236,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
   Future<EmpleadoData> actualizarFotografia({
     required String empleadoId,
     required String attachmentId,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
@@ -247,7 +247,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       await _registrarEvento(
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.fotografiaActualizada,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'attachmentId': attachmentId},
       );
       return actualizado;
@@ -271,7 +271,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
   }
 
   @override
-  Future<DireccionData?> guardarDomicilio(String empleadoId, DireccionInput? input, {String? actor}) async {
+  Future<DireccionData?> guardarDomicilio(String empleadoId, DireccionInput? input, {String? actorUsuarioId}) async {
     final existente = await _buscarDomicilioDeEmpleado(empleadoId);
 
     if (input == null) {
@@ -282,7 +282,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
             updatedAt: Value(DateTime.now()),
           ),
         );
-        await _registrarEvento(empleadoId: empleadoId, tipoEvento: TipoEventoEmpleado.domicilioActualizado, actor: actor);
+        await _registrarEvento(empleadoId: empleadoId, tipoEvento: TipoEventoEmpleado.domicilioActualizado, actorUsuarioId: actorUsuarioId);
       }
       return null;
     }
@@ -328,7 +328,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
           );
     }
 
-    await _registrarEvento(empleadoId: empleadoId, tipoEvento: TipoEventoEmpleado.domicilioActualizado, actor: actor);
+    await _registrarEvento(empleadoId: empleadoId, tipoEvento: TipoEventoEmpleado.domicilioActualizado, actorUsuarioId: actorUsuarioId);
     return resultado;
   }
 
@@ -341,7 +341,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(
@@ -362,7 +362,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       await _registrarEvento(
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.documentoAdjuntado,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'categoria': categoria, 'archivoNuevo': originalFileName, 'attachmentId': adjunto.id},
       );
 
@@ -376,7 +376,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     required DateTime fecha,
     String? resumen,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
@@ -392,7 +392,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       await _registrarEvento(
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.perfilPsicologicoActualizado,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return actualizado;
     });
@@ -404,7 +404,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     required DateTime fecha,
     String? resumen,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
@@ -420,7 +420,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       await _registrarEvento(
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.estudioSocioeconomicoActualizado,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return actualizado;
     });
@@ -436,7 +436,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     required ResultadoSustanciaAntidoping met,
     required ResultadoSustanciaAntidoping opi,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
@@ -456,7 +456,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       await _registrarEvento(
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.antidopingActualizado,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return actualizado;
     });

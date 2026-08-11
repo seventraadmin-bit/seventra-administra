@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../finanzas/data/tables/egreso_table.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 
 enum EstatusCompra { registrada, cancelada }
 
@@ -80,7 +81,13 @@ class CompraEvento extends Table {
 
   TextColumn get observacion => text().nullable()();
 
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   TextColumn get actor => text().nullable()();
+
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   TextColumn get datosRelevantes => text().nullable()();
 }

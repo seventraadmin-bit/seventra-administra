@@ -34,7 +34,7 @@ class CorregirComplementoPagoUseCase {
     DateTime? fechaTimbrado,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final complemento = await _repository.obtenerPorId(complementoPagoId);
     if (complemento == null) {
@@ -52,7 +52,7 @@ class CorregirComplementoPagoUseCase {
         fechaTimbrado: fechaTimbrado,
         observaciones: observaciones,
         motivo: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CorregirComplementoPagoExitoso(actualizado);
     } catch (e) {

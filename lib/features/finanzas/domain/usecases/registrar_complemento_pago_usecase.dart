@@ -53,7 +53,7 @@ class RegistrarComplementoPagoUseCase {
     required DateTime fechaTimbrado,
     required int montoTotal,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final pago = await _pagoRepository.obtenerPorId(pagoId);
     if (pago == null) {
@@ -93,7 +93,7 @@ class RegistrarComplementoPagoUseCase {
         fechaTimbrado: fechaTimbrado,
         montoTotal: montoTotal,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarComplementoPagoExitoso(complemento);
     } catch (e) {

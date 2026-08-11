@@ -55,7 +55,7 @@ class AsignarVehiculoUseCase {
     required DateTime fechaInicio,
     String? observaciones,
     int? kilometrajeEntrega,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     if ((empleadoId == null) == (servicioId == null)) return AsignarVehiculoDestinoInvalido();
 
@@ -78,7 +78,7 @@ class AsignarVehiculoUseCase {
         fechaInicio: fechaInicio,
         observaciones: observaciones,
         kilometrajeEntrega: kilometrajeEntrega,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return AsignarVehiculoExitoso(asignacion);
     } catch (e) {

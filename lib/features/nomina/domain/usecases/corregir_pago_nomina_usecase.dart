@@ -34,7 +34,7 @@ class CorregirPagoNominaUseCase {
     String? cuentaBancariaOrigen,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final pagoNomina = await _repository.obtenerPorId(pagoNominaId);
     if (pagoNomina == null) return CorregirPagoNominaNoExiste();
@@ -49,7 +49,7 @@ class CorregirPagoNominaUseCase {
         cuentaBancariaOrigen: cuentaBancariaOrigen,
         observaciones: observaciones,
         motivo: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CorregirPagoNominaExitoso(actualizado);
     } catch (e) {

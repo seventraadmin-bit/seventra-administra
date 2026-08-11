@@ -63,7 +63,7 @@ class AplicarPagoACuentaUseCase {
     required String pagoId,
     required String cuentaPorCobrarId,
     required int monto,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final pago = await _pagoRepository.obtenerPorId(pagoId);
     if (pago == null) {
@@ -100,7 +100,7 @@ class AplicarPagoACuentaUseCase {
         pagoId: pagoId,
         cuentaPorCobrarId: cuentaPorCobrarId,
         monto: monto,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return AplicarPagoACuentaExitoso(aplicacion);
     } catch (e) {

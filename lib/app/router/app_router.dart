@@ -22,8 +22,8 @@ import '../../features/telefonia/presentation/linea_telefonica_expediente_screen
 import '../../features/telefonia/presentation/lineas_telefonicas_list_screen.dart';
 import '../../features/usuarios/presentation/auth/bootstrap_maestro_screen.dart';
 import '../../features/usuarios/presentation/auth/login_screen.dart';
+import '../../features/usuarios/presentation/configuracion_shell_screen.dart';
 import '../../features/usuarios/presentation/sesion_controller.dart';
-import '../../features/usuarios/presentation/usuarios_list_screen.dart';
 import '../../features/usuarios/usuarios_providers.dart';
 import '../../features/vehiculos/presentation/vehiculo_expediente_screen.dart';
 import '../../features/vehiculos/presentation/vehiculos_shell_screen.dart';
@@ -375,15 +375,27 @@ GoRouter createAppRouter() {
                     ],
                   )
                 else if (def.path == '/configuracion')
-                  // Configuración (Etapa 11A) — deja de ser un
-                  // placeholder puro: gana su primera funcionalidad
-                  // real, "Usuarios y permisos" (sin matriz de
-                  // permisos todavía, llega en la Etapa 11B). Una sola
-                  // pantalla, sin pestañas, mismo criterio que
-                  // Inventario 7A/Vehículos 8A al fundar un dominio.
+                  // Configuración (Etapa 11A: Usuarios; Etapa 11D:
+                  // Auditoría) gana subnavegación de pestañas, mismo
+                  // patrón y mismo momento relativo que Inventario (7A
+                  // → 7D) / Vehículos (8A → 8C) — `/configuracion` en
+                  // sí redirige a `/configuracion/usuarios`.
                   GoRoute(
                     path: def.path,
-                    builder: (context, state) => const UsuariosListScreen(),
+                    redirect: (context, state) =>
+                        state.uri.path == '/configuracion' ? '/configuracion/usuarios' : null,
+                    routes: [
+                      GoRoute(
+                        path: 'usuarios',
+                        builder: (context, state) =>
+                            const ConfiguracionShellScreen(tab: ConfiguracionTab.usuarios),
+                      ),
+                      GoRoute(
+                        path: 'auditoria',
+                        builder: (context, state) =>
+                            const ConfiguracionShellScreen(tab: ConfiguracionTab.auditoria),
+                      ),
+                    ],
                   )
                 else
                   GoRoute(

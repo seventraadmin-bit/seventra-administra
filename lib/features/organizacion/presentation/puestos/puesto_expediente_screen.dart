@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import 'puesto_expediente_controller.dart';
 import 'puesto_expediente_form_controllers.dart';
 import 'puesto_expediente_state.dart';
+import 'widgets/eliminar_puesto_fisicamente_dialog.dart';
 import 'widgets/puesto_datos_generales_section.dart';
 
 /// Pantalla de expediente de Puesto — mismo patrón consulta/edición que
@@ -99,6 +102,11 @@ class _PuestoExpedienteScreenState extends ConsumerState<PuestoExpedienteScreen>
     }
   }
 
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarPuestoFisicamente(context, ref, widget.puestoId);
+    if (eliminado && mounted) context.pop();
+  }
+
   void _onAreaCambiada(String? valor) {
     setState(() => _datosGenerales.areaId = valor);
     _notifier.marcarCambiosSinGuardar();
@@ -142,6 +150,7 @@ class _PuestoExpedienteScreenState extends ConsumerState<PuestoExpedienteScreen>
     final esEdicion = state.modo == PuestoExpedienteModo.edicion;
     final habilitado = !state.guardando;
     final archivado = puesto.cicloVidaRegistro == CicloVidaRegistro.archivado.name;
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -175,13 +184,15 @@ class _PuestoExpedienteScreenState extends ConsumerState<PuestoExpedienteScreen>
                     : null,
               ),
               const SizedBox(height: AppSpacing.sm),
-              Row(
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   RisegStatusBadge(
                     label: archivado ? l10n.puestoEstadoArchivado : l10n.puestoEstadoActivo,
                     tone: archivado ? RisegStatusTone.neutral : RisegStatusTone.success,
                   ),
-                  const SizedBox(width: AppSpacing.sm),
                   RisegButton(
                     key: const Key('puesto_boton_ciclo_vida'),
                     label: archivado ? l10n.puestoBotonReactivar : l10n.puestoBotonArchivar,
@@ -192,6 +203,14 @@ class _PuestoExpedienteScreenState extends ConsumerState<PuestoExpedienteScreen>
                       archivado ? CicloVidaRegistro.activo : CicloVidaRegistro.archivado,
                     ),
                   ),
+                  if (esMaestro && !esEdicion)
+                    RisegButton(
+                      key: const Key('puesto_boton_eliminar_fisicamente'),
+                      label: l10n.eliminacionFisicaAccionMenu,
+                      variant: RisegButtonVariant.danger,
+                      size: RisegButtonSize.compact,
+                      onPressed: _eliminarFisicamente,
+                    ),
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),

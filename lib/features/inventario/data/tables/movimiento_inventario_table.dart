@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 import 'articulo_table.dart';
 import 'articulo_unidad_table.dart';
 import 'articulo_variante_table.dart';
@@ -72,7 +73,13 @@ class MovimientoInventario extends Table with AuditColumns {
 
   TextColumn get observaciones => text().nullable()();
 
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   TextColumn get actor => text().nullable()();
+
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   @override
   List<String> get customConstraints => [

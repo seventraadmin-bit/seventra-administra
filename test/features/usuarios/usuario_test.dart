@@ -164,7 +164,7 @@ void main() {
         actorUsuarioId: (maestro as CrearPrimerMaestroExitoso).usuario.id,
       );
       final usuario = (creado as CrearUsuarioExitoso).usuario;
-      await desactivarUsuario.ejecutar(usuarioId: usuario.id, actorUsuarioId: maestro.usuario.id);
+      await desactivarUsuario.ejecutar(usuarioId: usuario.id, actorUsuarioId: maestro.usuario.id, motivo: 'Prueba');
 
       final resultado = await login.ejecutar(nombreUsuario: 'bruno', password: 'OtraSecreta1');
       expect(resultado, isA<LoginUsuarioInactivo>());
@@ -235,6 +235,26 @@ void main() {
     });
   });
 
+  group('DesactivarUsuarioUseCase — motivo obligatorio', () {
+    test('rechaza motivo vacío sin tocar el Usuario', () async {
+      final maestro = await crearPrimerMaestro.ejecutar(
+        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
+      );
+      final puesto = await crearPuestoFixture();
+      final creado = await crearUsuario.ejecutar(
+        nombre: 'Bruno', nombreUsuario: 'bruno', password: 'ClaveSegura1', puestoId: puesto.id,
+        actorUsuarioId: (maestro as CrearPrimerMaestroExitoso).usuario.id,
+      );
+      final usuario = (creado as CrearUsuarioExitoso).usuario;
+
+      final resultado = await desactivarUsuario.ejecutar(usuarioId: usuario.id, motivo: '   ');
+      expect(resultado, isA<DesactivarUsuarioMotivoRequerido>());
+
+      final actual = await usuarioRepo.obtenerPorId(usuario.id);
+      expect(actual!.cicloVidaRegistro, 'activo');
+    });
+  });
+
   group('Invariante: al menos un Maestro activo', () {
     test('no se puede desactivar al último Maestro activo', () async {
       final maestro = await crearPrimerMaestro.ejecutar(
@@ -242,7 +262,7 @@ void main() {
       );
       final usuario = (maestro as CrearPrimerMaestroExitoso).usuario;
 
-      final resultado = await desactivarUsuario.ejecutar(usuarioId: usuario.id);
+      final resultado = await desactivarUsuario.ejecutar(usuarioId: usuario.id, motivo: 'Prueba');
       expect(resultado, isA<DesactivarUsuarioBloqueadaPorUltimoMaestro>());
 
       final actual = await usuarioRepo.obtenerPorId(usuario.id);
@@ -260,7 +280,8 @@ void main() {
       );
       final usuario2 = (segundoResultado as CrearUsuarioExitoso).usuario;
 
-      final resultado = await desactivarUsuario.ejecutar(usuarioId: usuario1.id, actorUsuarioId: usuario2.id);
+      final resultado =
+          await desactivarUsuario.ejecutar(usuarioId: usuario1.id, actorUsuarioId: usuario2.id, motivo: 'Prueba');
       expect(resultado, isA<DesactivarUsuarioExitoso>());
     });
 
@@ -287,7 +308,7 @@ void main() {
         nombre: 'Beto', nombreUsuario: 'beto', password: 'ClaveSegura1', puestoId: puesto.id, esMaestro: true,
       );
       final usuario2 = (segundoResultado as CrearUsuarioExitoso).usuario;
-      await desactivarUsuario.ejecutar(usuarioId: usuario2.id, actorUsuarioId: usuario1.id);
+      await desactivarUsuario.ejecutar(usuarioId: usuario2.id, actorUsuarioId: usuario1.id, motivo: 'Prueba');
 
       final resultado = await activarUsuario.ejecutar(usuarioId: usuario2.id, actorUsuarioId: usuario1.id);
       expect(resultado, isA<ActivarUsuarioExitoso>());

@@ -54,7 +54,7 @@ class CerrarNominaUseCase {
   final NominaRepository _nominaRepository;
   final EvaluarRenglonesRequierenRevisionUseCase _evaluarRenglonesRequierenRevision;
 
-  Future<CerrarNominaResultado> ejecutar({required String nominaId, String? actor}) async {
+  Future<CerrarNominaResultado> ejecutar({required String nominaId, String? actorUsuarioId}) async {
     final nomina = await _nominaRepository.obtenerPorId(nominaId);
     if (nomina == null) return CerrarNominaNoExiste();
     if (nomina.estatus != 'borrador') return CerrarNominaYaCerrada();
@@ -68,7 +68,7 @@ class CerrarNominaUseCase {
     final pendientes = renglones.where((r) => r.distribucionPendienteRevision).toList();
     if (pendientes.isNotEmpty) return CerrarNominaDistribucionPendiente(pendientes);
 
-    final cerrada = await _nominaRepository.cerrar(nominaId: nominaId, actor: actor);
+    final cerrada = await _nominaRepository.cerrar(nominaId: nominaId, actorUsuarioId: actorUsuarioId);
     return CerrarNominaExitoso(cerrada);
   }
 }

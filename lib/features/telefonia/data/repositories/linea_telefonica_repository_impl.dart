@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
@@ -5,6 +7,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import '../../domain/repositories/asignacion_linea_telefonica_repository.dart';
 import '../../domain/repositories/linea_telefonica_equipo_repository.dart';
 import '../../domain/repositories/linea_telefonica_repository.dart';
+import '../../domain/usecases/eliminar_linea_telefonica_fisicamente_usecase.dart';
 
 class LineaTelefonicaRepositoryImpl implements LineaTelefonicaRepository {
   LineaTelefonicaRepositoryImpl(this._db, this._asignacionRepository, this._equipoRepository);
@@ -133,6 +136,68 @@ class LineaTelefonicaRepositoryImpl implements LineaTelefonicaRepository {
         ),
       );
       return (_db.select(_db.lineaTelefonica)..where((t) => t.id.equals(lineaTelefonicaId))).getSingle();
+    });
+  }
+
+  /// Eliminación física extraordinaria (Etapa 11D) — condiciones exactas
+  /// acordadas con Marlon: elegible solo si la línea nunca tuvo
+  /// `AsignacionLineaTelefonica`, `LineaTelefonicaEquipo` ni
+  /// `RecargaLineaTelefonica`. Sin adjunto propio que revisar — el
+  /// comprobante de una recarga cuelga de `RecargaLineaTelefonica`, ya
+  /// cubierto por ese mismo chequeo. Todo — validación, snapshot,
+  /// registro de auditoría y `DELETE` — ocurre en una sola transacción;
+  /// nunca `CASCADE` sobre ninguna de esas tablas.
+  @override
+  Future<EliminarLineaTelefonicaFisicamenteResultado> eliminarFisicamente({
+    required String lineaTelefonicaId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final linea =
+          await (_db.select(_db.lineaTelefonica)..where((t) => t.id.equals(lineaTelefonicaId))).getSingleOrNull();
+      if (linea == null) return EliminarLineaTelefonicaFisicamenteNoExiste();
+
+      final asignaciones = await (_db.select(_db.asignacionLineaTelefonica)
+            ..where((t) => t.lineaTelefonicaId.equals(lineaTelefonicaId)))
+          .get();
+      if (asignaciones.isNotEmpty) {
+        return EliminarLineaTelefonicaFisicamenteTieneDependencias(
+          'Tiene ${asignaciones.length} asignación(es) registrada(s).',
+        );
+      }
+
+      final equipos = await (_db.select(_db.lineaTelefonicaEquipo)
+            ..where((t) => t.lineaTelefonicaId.equals(lineaTelefonicaId)))
+          .get();
+      if (equipos.isNotEmpty) {
+        return EliminarLineaTelefonicaFisicamenteTieneDependencias(
+          'Tiene ${equipos.length} equipo(s) asociado(s) registrado(s).',
+        );
+      }
+
+      final recargas = await (_db.select(_db.recargaLineaTelefonica)
+            ..where((t) => t.lineaTelefonicaId.equals(lineaTelefonicaId)))
+          .get();
+      if (recargas.isNotEmpty) {
+        return EliminarLineaTelefonicaFisicamenteTieneDependencias(
+          'Tiene ${recargas.length} recarga(s) registrada(s).',
+        );
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'lineaTelefonica',
+              entidadIdOriginal: lineaTelefonicaId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode(linea.toJson()),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+      await (_db.delete(_db.lineaTelefonica)..where((t) => t.id.equals(lineaTelefonicaId))).go();
+
+      return EliminarLineaTelefonicaFisicamenteExitoso();
     });
   }
 }

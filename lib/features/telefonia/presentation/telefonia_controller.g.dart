@@ -7,7 +7,7 @@ part of 'telefonia_controller.dart';
 // **************************************************************************
 
 String _$telefoniaControllerHash() =>
-    r'9e1525269cff482009a8a3f79afe3f8333267c24';
+    r'6d1cad8b4789bad19f4c3cfcb8e9bd119086e87f';
 
 /// Controlador de Telefonía (Etapa 9A) — listado de líneas + todas las
 /// operaciones de expediente, mismo criterio que `VehiculosController`

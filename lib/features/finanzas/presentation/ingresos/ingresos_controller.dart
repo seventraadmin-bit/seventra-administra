@@ -6,6 +6,7 @@ import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_ingreso_use
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_ingreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_ingreso_manual_usecase.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
@@ -23,6 +24,10 @@ class IngresosController extends _$IngresosController {
     Future.microtask(_cargar);
     return const IngresosState();
   }
+
+  /// Usuario autenticado que ejecuta la operación (Etapa 11D) — mismo
+  /// criterio que `UsuariosController._actorUsuarioId`.
+  String? get _actorUsuarioId => ref.read(sesionControllerProvider)?.usuarioId;
 
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
@@ -98,6 +103,7 @@ class IngresosController extends _$IngresosController {
             formaPago: formaPago,
             concepto: concepto,
             observaciones: observaciones,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RegistrarIngresoManualErrorInesperado.new,
     );
@@ -135,6 +141,7 @@ class IngresosController extends _$IngresosController {
             concepto: concepto,
             observaciones: observaciones,
             motivo: motivo,
+            actorUsuarioId: _actorUsuarioId,
           ),
       CorregirIngresoErrorInesperado.new,
     );
@@ -148,7 +155,9 @@ class IngresosController extends _$IngresosController {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'finanzas.archivar',
-      () => ref.read(cancelarIngresoUseCaseProvider).ejecutar(ingresoId: ingresoId, motivo: motivo),
+      () => ref
+          .read(cancelarIngresoUseCaseProvider)
+          .ejecutar(ingresoId: ingresoId, motivo: motivo, actorUsuarioId: _actorUsuarioId),
       CancelarIngresoErrorInesperado.new,
     );
     if (resultado is CancelarIngresoExitoso) {

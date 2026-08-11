@@ -238,7 +238,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required String nuevoEstatus,
     String? motivo,
     required TipoEventoDocumentoPorEmitir tipoEvento,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
@@ -258,7 +258,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: nuevoEstatus,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       final actualizado =
@@ -285,7 +285,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
           fechaEmisionReal: actualizado.fechaEmisionReal!,
           importeEmitido: actualizado.importeEmitido!,
           fechaVencimiento: actualizado.fechaPagoEsperadoProgramada,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         );
       }
 
@@ -303,7 +303,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required DateTime fechaEmisionReal,
     required int importeEmitido,
     String? observacionesEmision,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
@@ -328,7 +328,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         tipoEvento: TipoEventoDocumentoPorEmitir.emisionRegistrada,
         estadoAnterior: anterior.estatus,
         estadoNuevo: _estatusEmitido,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'folioDocumento': folioDocumento,
           'serieFiscal': serieFiscal,
@@ -353,7 +353,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     DateTime? fechaEmisionReal,
     int? importeEmitido,
     String? observacionesEmision,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
@@ -378,7 +378,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: anterior.estatus,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'folioDocumentoAnterior': anterior.folioDocumento,
           'serieFiscalAnterior': anterior.serieFiscal,
@@ -398,7 +398,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required DateTime fechaEnvio,
     required List<String> correos,
     String? observacionesEnvio,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
@@ -427,7 +427,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         tipoEvento: TipoEventoDocumentoPorEmitir.envioRegistrado,
         estadoAnterior: anterior.estatus,
         estadoNuevo: _estatusEnviado,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'correosUtilizados': correos,
           if (correosAnteriores.isNotEmpty) 'correosAnteriores': correosAnteriores,
@@ -443,7 +443,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required String documentoPorEmitirId,
     int? ajusteManual,
     String? motivoAjuste,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final actual = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
@@ -465,7 +465,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         estadoAnterior: actual.estatus,
         estadoNuevo: actual.estatus,
         observacion: motivoAjuste,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'ajusteAnterior': actual.ajusteManual,
           'ajusteNuevo': ajusteManual,
@@ -505,7 +505,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _attachmentRepository.crear(
@@ -531,7 +531,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         tipoEvento: TipoEventoDocumentoPorEmitir.archivoAdjuntado,
         estadoAnterior: null,
         estadoNuevo: null,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'categoria': categoria,
           'archivoNuevo': originalFileName,
@@ -554,7 +554,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required String mimeType,
     required int sizeBytes,
     String? motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await _attachmentRepository.obtenerPorId(attachmentAnteriorId);
@@ -584,7 +584,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         estadoAnterior: null,
         estadoNuevo: null,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'categoria': categoria,
           'archivoAnteriorId': attachmentAnteriorId,
@@ -604,7 +604,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required String? estadoAnterior,
     required String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, Object?>? datosRelevantes,
   }) {
     return _db.into(_db.documentoPorEmitirEvento).insert(
@@ -615,7 +615,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
             estadoAnterior: Value(estadoAnterior),
             estadoNuevo: Value(estadoNuevo),
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
           ),
         );

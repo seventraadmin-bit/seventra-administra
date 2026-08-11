@@ -38,7 +38,7 @@ class CorregirIngresoUseCase {
     String? concepto,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final ingreso = await _repository.obtenerPorId(ingresoId);
     if (ingreso == null) {
@@ -61,7 +61,7 @@ class CorregirIngresoUseCase {
         concepto: concepto,
         observaciones: observaciones,
         motivo: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CorregirIngresoExitoso(actualizado);
     } catch (e) {

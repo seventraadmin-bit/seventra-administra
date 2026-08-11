@@ -145,7 +145,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
     String? cuentaBancariaOrigen,
     String? observaciones,
     required List<({String nominaEmpleadoId, int monto})> aplicaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final nomina = await (_db.select(_db.nomina)..where((t) => t.id.equals(nominaId))).getSingle();
@@ -160,7 +160,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
         formaPago: formaPago,
         concepto: 'Pago de Nómina $folioPagoNomina (${nomina.folio})',
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       final pagoNomina = await _db.into(_db.pagoNomina).insertReturning(
@@ -180,7 +180,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
       await _registrarEventoInterno(
         pagoNominaId: pagoNomina.id,
         tipoEvento: TipoEventoPagoNomina.registrado,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'folioPagoNomina': folioPagoNomina,
           'montoTotal': montoTotal,
@@ -205,7 +205,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
     String? cuentaBancariaOrigen,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.pagoNomina)..where((t) => t.id.equals(pagoNominaId))).getSingle();
@@ -225,7 +225,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
         pagoNominaId: pagoNominaId,
         tipoEvento: TipoEventoPagoNomina.corregido,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'fechaPagoAnterior': anterior.fechaPago.toIso8601String(),
           'formaPagoAnterior': anterior.formaPago,
@@ -260,7 +260,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
   }
 
   @override
-  Future<PagoNominaData> cancelar({required String pagoNominaId, required String motivo, String? actor}) {
+  Future<PagoNominaData> cancelar({required String pagoNominaId, required String motivo, String? actorUsuarioId}) {
     return _db.transaction(() async {
       final pagoNomina = await (_db.select(_db.pagoNomina)..where((t) => t.id.equals(pagoNominaId))).getSingle();
 
@@ -280,14 +280,14 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
       );
 
       if (pagoNomina.egresoId != null) {
-        await _egresoRepository.cancelar(egresoId: pagoNomina.egresoId!, motivo: motivo, actor: actor);
+        await _egresoRepository.cancelar(egresoId: pagoNomina.egresoId!, motivo: motivo, actorUsuarioId: actorUsuarioId);
       }
 
       await _registrarEventoInterno(
         pagoNominaId: pagoNominaId,
         tipoEvento: TipoEventoPagoNomina.cancelado,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       return (_db.select(_db.pagoNomina)..where((t) => t.id.equals(pagoNominaId))).getSingle();
@@ -302,7 +302,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(
@@ -323,7 +323,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
       await _registrarEventoInterno(
         pagoNominaId: pagoNominaId,
         tipoEvento: TipoEventoPagoNomina.comprobanteAdjuntado,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'archivoNuevo': originalFileName, 'attachmentId': adjunto.id},
       );
 
@@ -337,7 +337,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
     String? estadoAnterior,
     String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, dynamic>? datosRelevantes,
   }) {
     return _db.into(_db.pagoNominaEvento).insert(
@@ -348,7 +348,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
             estadoAnterior: Value(estadoAnterior),
             estadoNuevo: Value(estadoNuevo),
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: datosRelevantes == null ? const Value.absent() : Value(jsonEncode(datosRelevantes)),
           ),
         );

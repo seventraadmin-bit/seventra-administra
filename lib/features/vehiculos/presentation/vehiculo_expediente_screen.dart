@@ -2,12 +2,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_documento_table.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_mantenimiento_table.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart' show MotivoBajaVehiculo;
@@ -25,6 +27,7 @@ import '../vehiculos_providers.dart';
 import 'widgets/asignar_vehiculo_dialog.dart';
 import 'widgets/cambiar_asignacion_vehiculo_dialog.dart';
 import 'widgets/dar_de_baja_vehiculo_dialog.dart';
+import 'widgets/eliminar_vehiculo_fisicamente_dialog.dart';
 import 'widgets/gestionar_vehiculo_dialog.dart';
 import 'widgets/historial_documento_vehiculo_dialog.dart';
 import 'widgets/registrar_documento_vehiculo_dialog.dart';
@@ -218,6 +221,11 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
     if (dado) await _cargar();
   }
 
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarVehiculoFisicamente(context, ref, widget.vehiculoId);
+    if (eliminado && mounted) context.pop();
+  }
+
   Future<void> _cambiarFotografia() async {
     final l10n = AppLocalizations.of(context)!;
     final seleccion = await FilePicker.platform.pickFiles(type: FileType.image);
@@ -259,6 +267,7 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
     }
 
     final esBaja = vehiculo.estatus == 'baja';
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text('${vehiculo.marca} ${vehiculo.modelo}')),
@@ -342,6 +351,12 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                         label: l10n.vehiculoExpedienteBotonDarDeBaja,
                         variant: RisegButtonVariant.danger,
                         onPressed: _darDeBaja,
+                      ),
+                    if (esMaestro)
+                      RisegButton(
+                        label: l10n.eliminacionFisicaAccionMenu,
+                        variant: RisegButtonVariant.danger,
+                        onPressed: _eliminarFisicamente,
                       ),
                   ],
                 ),

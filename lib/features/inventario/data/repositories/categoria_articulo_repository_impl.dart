@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 
 import '../../domain/repositories/categoria_articulo_repository.dart';
+import '../../domain/usecases/eliminar_categoria_articulo_fisicamente_usecase.dart';
 
 class CategoriaArticuloRepositoryImpl implements CategoriaArticuloRepository {
   CategoriaArticuloRepositoryImpl(this._db);
@@ -38,6 +41,46 @@ class CategoriaArticuloRepositoryImpl implements CategoriaArticuloRepository {
         ),
       );
       return (_db.select(_db.categoriaArticulo)..where((t) => t.id.equals(id))).getSingle();
+    });
+  }
+
+  /// Eliminación física extraordinaria (Etapa 11D) — condición exacta
+  /// acordada con Marlon: elegible solo si ninguna fila de `Articulo`
+  /// referencia esta Categoría vía `categoriaId`. Todo — validación,
+  /// snapshot, registro de auditoría y `DELETE` — ocurre en una sola
+  /// transacción; nunca `CASCADE`.
+  @override
+  Future<EliminarCategoriaArticuloFisicamenteResultado> eliminarFisicamente({
+    required String categoriaArticuloId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final categoria =
+          await (_db.select(_db.categoriaArticulo)..where((t) => t.id.equals(categoriaArticuloId))).getSingleOrNull();
+      if (categoria == null) return EliminarCategoriaArticuloFisicamenteNoExiste();
+
+      final articulos =
+          await (_db.select(_db.articulo)..where((t) => t.categoriaId.equals(categoriaArticuloId))).get();
+      if (articulos.isNotEmpty) {
+        return EliminarCategoriaArticuloFisicamenteTieneDependencias(
+          'Tiene ${articulos.length} artículo(s) registrado(s).',
+        );
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'categoriaArticulo',
+              entidadIdOriginal: categoriaArticuloId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode(categoria.toJson()),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+      await (_db.delete(_db.categoriaArticulo)..where((t) => t.id.equals(categoriaArticuloId))).go();
+
+      return EliminarCategoriaArticuloFisicamenteExitoso();
     });
   }
 }

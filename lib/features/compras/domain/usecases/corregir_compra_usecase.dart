@@ -35,7 +35,7 @@ class CorregirCompraUseCase {
     String? formaPagoOtroDescripcion,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final compra = await _compraRepository.obtenerPorId(compraId);
     if (compra == null) return CorregirCompraNoExiste();
@@ -49,7 +49,7 @@ class CorregirCompraUseCase {
         formaPagoOtroDescripcion: formaPagoOtroDescripcion,
         observaciones: observaciones,
         motivo: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CorregirCompraExitosa(actualizada);
     } catch (e) {

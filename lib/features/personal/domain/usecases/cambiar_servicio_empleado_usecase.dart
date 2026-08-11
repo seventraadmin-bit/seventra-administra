@@ -69,7 +69,7 @@ class CambiarServicioEmpleadoUseCase {
     String? observaciones,
     int? sueldoMensual,
     int? bonoMensual,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final empleado = await _empleadoRepository.obtenerPorId(empleadoId);
     if (empleado == null) return CambiarServicioEmpleadoEmpleadoNoExiste();
@@ -104,7 +104,7 @@ class CambiarServicioEmpleadoUseCase {
         bonoMensual: bonoResuelto,
         turnoId: turnoId,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CambiarServicioEmpleadoExitoso(asignacion);
     } catch (e) {

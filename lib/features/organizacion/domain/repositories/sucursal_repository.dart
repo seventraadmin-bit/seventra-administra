@@ -3,6 +3,7 @@ import 'package:riseg_one/features/organizacion/data/tables/sucursal_table.dart'
 
 import '../shared/direccion_input.dart';
 import '../shared/horario_input.dart';
+import '../usecases/eliminar_sucursal_fisicamente_usecase.dart';
 
 /// Transacción que compone 3 escrituras (Sucursal + nodo raíz de
 /// Ubicación + Almacén General) como una sola unidad atómica — es la
@@ -49,6 +50,14 @@ abstract interface class SucursalRepository {
     required SucursalCompanion datosGenerales,
     required DireccionInput? direccionPrincipal,
     required HorarioSemanalInput? horario,
+  });
+
+  /// Eliminación física extraordinaria (Etapa 11D) — ver el doc comment
+  /// de la implementación para las condiciones exactas.
+  Future<EliminarSucursalFisicamenteResultado> eliminarFisicamente({
+    required String sucursalId,
+    required String motivo,
+    String? actorUsuarioId,
   });
 }
 

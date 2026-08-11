@@ -69,3 +69,43 @@ class UsuarioEvento extends Table {
 
   TextColumn get datosRelevantes => text().nullable()();
 }
+
+/// Evidencia de una eliminación física (Etapa 11D) — la única forma de
+/// borrado real de una entidad de negocio en todo el proyecto,
+/// facultad extraordinaria exclusiva del Usuario Maestro (`esMaestro
+/// == true`, validado en cada `EliminarXxxFisicamenteUseCase`, nunca a
+/// través de `PermisoUsuario` — ningún permiso dinámico puede otorgar
+/// esta capacidad).
+///
+/// Deliberadamente **sin FK** hacia el registro eliminado: para cuando
+/// esta fila se lee, ese registro ya no existe. `entidadIdOriginal` es
+/// texto plano (el id que tenía la fila borrada, sin restricción de
+/// referencia), y `snapshotJson` es la única fuente de qué era ese
+/// registro — se serializa completo *antes* del `DELETE`, dentro de la
+/// misma transacción que lo ejecuta.
+class EliminacionFisicaEvento extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// Ej. `'vehiculo'`, `'lineaTelefonica'`, `'articulo'`,
+  /// `'categoriaArticulo'`, `'area'`, `'puesto'`, `'sucursal'` — texto
+  /// libre, mismo criterio que `tipoEvento` en el resto del proyecto
+  /// (nunca una referencia a un enum de base de datos).
+  TextColumn get tipoEntidad => text()();
+
+  TextColumn get entidadIdOriginal => text()();
+
+  /// Obligatorio siempre que exista sesión — la única excepción teórica
+  /// (`null`) sería una eliminación disparada sin sesión activa, que
+  /// `exigirMaestro` ya rechaza antes de llegar aquí; se deja nullable
+  /// únicamente por el mismo criterio estructural que `UsuarioEvento.actorUsuarioId`
+  /// (`ON DELETE SET NULL` — el evento sobrevive aunque el Usuario que
+  /// lo generó se elimine más adelante).
+  TextColumn get actorUsuarioId =>
+      text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
+
+  DateTimeColumn get fechaHora => dateTime()();
+
+  TextColumn get motivo => text()();
+
+  TextColumn get snapshotJson => text()();
+}

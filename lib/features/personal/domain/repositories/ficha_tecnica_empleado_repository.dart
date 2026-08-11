@@ -20,7 +20,7 @@ abstract interface class FichaTecnicaEmpleadoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Historial completo de este Empleado, orden descendente por

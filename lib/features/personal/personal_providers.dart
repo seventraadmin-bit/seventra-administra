@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/permissions/authorization_service.dart';
 import '../organizacion/organizacion_providers.dart';
+import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/pdf/ficha_tecnica_pdf_renderer.dart';
 import 'data/tables/empleado_table.dart';
@@ -219,7 +220,6 @@ typedef CrearEmpleadoAutorizado = Future<CrearEmpleadoResultado> Function({
   String? ultimoPuestoDesempenado,
   String? resumenExperiencia,
   String? observacionesExperiencia,
-  String? actor,
 });
 
 final crearEmpleadoAutorizadoProvider = Provider<CrearEmpleadoAutorizado>((ref) {
@@ -261,8 +261,8 @@ final crearEmpleadoAutorizadoProvider = Provider<CrearEmpleadoAutorizado>((ref) 
     String? ultimoPuestoDesempenado,
     String? resumenExperiencia,
     String? observacionesExperiencia,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'personal.crear',
@@ -304,7 +304,7 @@ final crearEmpleadoAutorizadoProvider = Provider<CrearEmpleadoAutorizado>((ref) 
             ultimoPuestoDesempenado: ultimoPuestoDesempenado,
             resumenExperiencia: resumenExperiencia,
             observacionesExperiencia: observacionesExperiencia,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       CrearEmpleadoErrorInesperado.new,
     );
@@ -356,7 +356,6 @@ typedef CorregirEmpleadoAutorizado = Future<CorregirEmpleadoResultado> Function(
   String? resumenExperiencia,
   String? observacionesExperiencia,
   required String motivo,
-  String? actor,
 });
 
 final corregirEmpleadoAutorizadoProvider = Provider<CorregirEmpleadoAutorizado>((ref) {
@@ -405,8 +404,8 @@ final corregirEmpleadoAutorizadoProvider = Provider<CorregirEmpleadoAutorizado>(
     String? resumenExperiencia,
     String? observacionesExperiencia,
     required String motivo,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'personal.modificar',
@@ -455,7 +454,7 @@ final corregirEmpleadoAutorizadoProvider = Provider<CorregirEmpleadoAutorizado>(
             resumenExperiencia: resumenExperiencia,
             observacionesExperiencia: observacionesExperiencia,
             motivo: motivo,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       CorregirEmpleadoErrorInesperado.new,
     );
@@ -467,7 +466,6 @@ typedef RegistrarBajaLaboralAutorizado = Future<RegistrarBajaLaboralResultado> F
   required DateTime fechaBaja,
   required MotivoBajaEmpleado motivo,
   String? observaciones,
-  String? actor,
 });
 
 final registrarBajaLaboralAutorizadoProvider = Provider<RegistrarBajaLaboralAutorizado>((ref) {
@@ -476,8 +474,8 @@ final registrarBajaLaboralAutorizadoProvider = Provider<RegistrarBajaLaboralAuto
     required DateTime fechaBaja,
     required MotivoBajaEmpleado motivo,
     String? observaciones,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'personal.modificar',
@@ -486,7 +484,7 @@ final registrarBajaLaboralAutorizadoProvider = Provider<RegistrarBajaLaboralAuto
             fechaBaja: fechaBaja,
             motivo: motivo,
             observaciones: observaciones,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       RegistrarBajaLaboralErrorInesperado.new,
     );
@@ -500,7 +498,6 @@ typedef RegistrarReingresoAutorizado = Future<RegistrarReingresoResultado> Funct
   bool limpiarPuesto,
   String? sucursalId,
   bool limpiarSucursal,
-  String? actor,
 });
 
 final registrarReingresoAutorizadoProvider = Provider<RegistrarReingresoAutorizado>((ref) {
@@ -511,8 +508,8 @@ final registrarReingresoAutorizadoProvider = Provider<RegistrarReingresoAutoriza
     bool limpiarPuesto = false,
     String? sucursalId,
     bool limpiarSucursal = false,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'personal.modificar',
@@ -523,7 +520,7 @@ final registrarReingresoAutorizadoProvider = Provider<RegistrarReingresoAutoriza
             limpiarPuesto: limpiarPuesto,
             sucursalId: sucursalId,
             limpiarSucursal: limpiarSucursal,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       RegistrarReingresoErrorInesperado.new,
     );

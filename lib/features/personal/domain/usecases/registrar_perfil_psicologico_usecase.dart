@@ -47,7 +47,7 @@ class RegistrarPerfilPsicologicoUseCase {
     String? sourceFilePath,
     String? originalFileName,
     String? mimeType,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final empleado = await _repository.obtenerPorId(empleadoId);
     if (empleado == null) return RegistrarPerfilPsicologicoNoExiste();
@@ -59,7 +59,7 @@ class RegistrarPerfilPsicologicoUseCase {
         fecha: fecha,
         resumen: _vacioANull(resumen),
         observaciones: _vacioANull(observaciones),
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       if (sourceFilePath != null && originalFileName != null && mimeType != null) {
@@ -77,7 +77,7 @@ class RegistrarPerfilPsicologicoUseCase {
           path: guardado.path,
           mimeType: mimeType,
           sizeBytes: guardado.sizeBytes,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         );
       }
 

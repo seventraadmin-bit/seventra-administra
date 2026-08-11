@@ -48,7 +48,7 @@ abstract interface class PagoNominaRepository {
     String? cuentaBancariaOrigen,
     String? observaciones,
     required List<({String nominaEmpleadoId, int monto})> aplicaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Corrige metadatos administrativos del `PagoNomina` — nunca montos
@@ -62,7 +62,7 @@ abstract interface class PagoNominaRepository {
     String? cuentaBancariaOrigen,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cancela el `PagoNomina` completo: cancela en cascada todas sus
@@ -73,7 +73,7 @@ abstract interface class PagoNominaRepository {
   Future<PagoNominaData> cancelar({
     required String pagoNominaId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   Future<AttachmentData> adjuntarComprobante({
@@ -83,6 +83,6 @@ abstract interface class PagoNominaRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

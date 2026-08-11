@@ -27,21 +27,42 @@ class UsuariosListScreen extends ConsumerWidget {
   Future<void> _desactivar(BuildContext context, WidgetRef ref, UsuarioData usuario) async {
     final l10n = AppLocalizations.of(context)!;
     final motivoCtrl = TextEditingController();
+    String? errorGeneral;
 
     final confirmado = await RisegDialog.showForm<bool>(
       context: context,
       title: l10n.usuarioDesactivarDialogoTitulo(usuario.nombre),
       confirmLabel: l10n.usuarioDesactivarBotonConfirmar,
       cancelLabel: l10n.compraBotonCancelarFormulario,
-      contentBuilder: (_) => RisegTextField(label: l10n.usuarioDesactivarCampoMotivo, controller: motivoCtrl),
+      contentBuilder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RisegTextField(label: l10n.usuarioDesactivarCampoMotivo, controller: motivoCtrl, autofocus: true),
+              if (errorGeneral != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(errorGeneral!, style: AppTypography.caption.copyWith(color: Theme.of(dialogContext).colorScheme.error)),
+              ],
+            ],
+          );
+        },
+      ),
       onConfirm: () async {
-        final resultado = await ref
-            .read(usuariosControllerProvider.notifier)
-            .desactivar(usuarioId: usuario.id, motivo: motivoCtrl.text.trim().isEmpty ? null : motivoCtrl.text.trim());
+        final motivo = motivoCtrl.text.trim();
+        if (motivo.isEmpty) {
+          errorGeneral = l10n.usuarioDesactivarErrorMotivoRequerido;
+          return null;
+        }
+        final resultado = await ref.read(usuariosControllerProvider.notifier).desactivar(usuarioId: usuario.id, motivo: motivo);
         if (!context.mounted) return false;
         switch (resultado) {
           case DesactivarUsuarioExitoso():
             return true;
+          case DesactivarUsuarioMotivoRequerido():
+            errorGeneral = l10n.usuarioDesactivarErrorMotivoRequerido;
+            return null;
           case DesactivarUsuarioBloqueadaPorUltimoMaestro():
             RisegFeedback.showError(context, l10n.usuarioErrorUltimoMaestro);
             return false;

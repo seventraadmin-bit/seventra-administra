@@ -61,7 +61,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
     String? beneficiario,
     required String concepto,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final egreso = await _db.into(_db.egreso).insertReturning(
@@ -86,7 +86,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
         tipoEvento: TipoEventoEgreso.registrado,
         estadoAnterior: null,
         estadoNuevo: egreso.estatus,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'folioEgreso': folioEgreso, 'monto': monto},
       );
 
@@ -108,7 +108,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
     String? concepto,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.egreso)..where((t) => t.id.equals(egresoId))).getSingle();
@@ -135,7 +135,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: anterior.estatus,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'fechaAnterior': anterior.fecha.toIso8601String(),
           'conceptoAnterior': anterior.concepto,
@@ -150,7 +150,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
   Future<EgresoData> cancelar({
     required String egresoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.egreso)..where((t) => t.id.equals(egresoId))).getSingle();
@@ -169,7 +169,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: EstatusEgreso.cancelado.name,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       return (_db.select(_db.egreso)..where((t) => t.id.equals(egresoId))).getSingle();
@@ -184,7 +184,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(
@@ -207,7 +207,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
         tipoEvento: TipoEventoEgreso.comprobanteAdjuntado,
         estadoAnterior: null,
         estadoNuevo: null,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'archivoNuevo': originalFileName, 'attachmentId': adjunto.id},
       );
 
@@ -232,7 +232,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
     required String? estadoAnterior,
     required String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, Object?>? datosRelevantes,
   }) {
     return _db.into(_db.egresoEvento).insert(
@@ -243,7 +243,7 @@ class EgresoRepositoryImpl implements EgresoRepository {
             estadoAnterior: Value(estadoAnterior),
             estadoNuevo: Value(estadoNuevo),
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
           ),
         );

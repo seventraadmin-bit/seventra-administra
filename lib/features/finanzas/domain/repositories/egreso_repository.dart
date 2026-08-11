@@ -31,7 +31,7 @@ abstract interface class EgresoRepository {
     String? beneficiario,
     required String concepto,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Corrige metadatos administrativos — nunca `monto`.
@@ -48,13 +48,13 @@ abstract interface class EgresoRepository {
     String? concepto,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   Future<EgresoData> cancelar({
     required String egresoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   Future<AttachmentData> adjuntarComprobante({
@@ -64,7 +64,7 @@ abstract interface class EgresoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Suma de `monto` de Egresos `registrado` en el rango dado —

@@ -118,9 +118,22 @@ void main() {
   late AppDatabase db;
   var clienteContador = 0;
 
-  setUp(() {
+  setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     clienteContador = 0;
+    // Fila real de Usuario para el `usuarioId` de `_SesionControllerDePrueba`
+    // (Etapa 11D): `actorUsuarioId` ahora es una FK real hacia `Usuario` en
+    // las tablas de evento que estos diálogos escriben, así que un id
+    // inventado que no exista en la base rompe la restricción — antes
+    // pasaba inadvertido porque `actorUsuarioId` siempre llegaba `null`.
+    await db.into(db.usuario).insert(
+          UsuarioCompanion.insert(
+            id: const Value('usuario-prueba'),
+            nombre: 'Usuario de prueba',
+            nombreUsuario: 'usuario-prueba',
+            passwordHash: 'x',
+          ),
+        );
   });
 
   tearDown(() => db.close());

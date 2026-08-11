@@ -48,7 +48,7 @@ class RegistrarBajaUseCase {
     String? varianteId,
     required int cantidad,
     required String observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final articulo = await _articuloRepository.obtenerPorId(articuloId);
     if (articulo == null) return RegistrarBajaArticuloNoExiste();
@@ -66,7 +66,7 @@ class RegistrarBajaUseCase {
         varianteId: varianteId,
         cantidad: cantidad,
         observaciones: observaciones.trim(),
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarBajaExitoso(movimiento);
     } catch (e) {

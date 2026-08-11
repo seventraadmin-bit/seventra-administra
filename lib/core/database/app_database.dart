@@ -74,6 +74,7 @@ import 'migrations/migrar_asignacion_vehiculo_v31.dart';
 import 'migrations/migrar_compra_v37.dart';
 import 'migrations/migrar_usuario_v38.dart';
 import 'migrations/migrar_permiso_usuario_v39.dart';
+import 'migrations/migrar_auditoria_v40.dart';
 import 'migrations/migrar_linea_telefonica_v34.dart';
 import 'migrations/migrar_recarga_linea_telefonica_v36.dart';
 import 'migrations/migrar_vehiculo_v30.dart';
@@ -226,12 +227,13 @@ class AppMetadata extends Table {
   Usuario,
   UsuarioEvento,
   PermisoUsuario,
+  EliminacionFisicaEvento,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 39;
+  int get schemaVersion => 40;
 
   @override
   MigrationStrategy get migration {
@@ -785,6 +787,14 @@ class AppDatabase extends _$AppDatabase {
         // seguro sin acotar un origen exacto.
         if (to >= 39 && from <= 38) {
           await migrarPermisoUsuarioV39(this, m);
+        }
+        // Aditiva (Etapa 11D): `actorUsuarioId` en las 15 tablas de
+        // evento/ledger del proyecto + `EliminacionFisicaEvento`. Todas
+        // las tablas afectadas ya existen desde antes de schemaVersion
+        // 39, así que `from <= 39` es seguro sin acotar un origen
+        // exacto.
+        if (to >= 40 && from <= 39) {
+          await migrarAuditoriaV40(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

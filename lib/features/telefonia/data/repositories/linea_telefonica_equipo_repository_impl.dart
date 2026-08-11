@@ -111,7 +111,7 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
     required DateTime fechaInicio,
     String? observaciones,
     bool sincronizarInventario = true,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final equipo = await _db.into(_db.lineaTelefonicaEquipo).insertReturning(
@@ -145,7 +145,7 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
     required String lineaTelefonicaId,
     required DateTime fechaFin,
     bool sincronizarInventario = true,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final actual = await _buscarActualPorLinea(lineaTelefonicaId);
@@ -175,7 +175,7 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
     required DateTime fecha,
     String? observaciones,
     bool sincronizarInventario = true,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final actual = await _buscarActualPorLinea(lineaTelefonicaId);

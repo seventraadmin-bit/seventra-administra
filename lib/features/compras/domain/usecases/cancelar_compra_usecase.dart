@@ -48,7 +48,7 @@ class CancelarCompraUseCase {
   Future<CancelarCompraResultado> ejecutar({
     required String compraId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final compra = await _compraRepository.obtenerPorId(compraId);
     if (compra == null) return CancelarCompraNoExiste();
@@ -61,7 +61,7 @@ class CancelarCompraUseCase {
     }
 
     try {
-      final cancelada = await _compraRepository.cancelar(compraId: compraId, motivo: motivo, actor: actor);
+      final cancelada = await _compraRepository.cancelar(compraId: compraId, motivo: motivo, actorUsuarioId: actorUsuarioId);
       return CancelarCompraExitosa(cancelada);
     } catch (e) {
       return CancelarCompraErrorInesperado(e.toString());

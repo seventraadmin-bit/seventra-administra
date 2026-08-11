@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
@@ -11,6 +12,7 @@ import 'package:riseg_one/features/telefonia/domain/repositories/linea_telefonic
     show CustodiaInventarioLineaTelefonica;
 import 'package:riseg_one/features/telefonia/domain/usecases/cambiar_estatus_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/obtener_equipos_disponibles_linea_telefonica_usecase.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import 'linea_telefonica_labels.dart';
 import 'telefonia_controller.dart';
@@ -20,6 +22,7 @@ import 'widgets/asociar_equipo_linea_telefonica_dialog.dart';
 import 'widgets/cambiar_asignacion_linea_telefonica_dialog.dart';
 import 'widgets/cambiar_equipo_linea_telefonica_dialog.dart';
 import 'widgets/dar_de_baja_linea_telefonica_dialog.dart';
+import 'widgets/eliminar_linea_telefonica_fisicamente_dialog.dart';
 import 'widgets/gestionar_linea_telefonica_dialog.dart';
 import 'widgets/registrar_recarga_linea_telefonica_dialog.dart';
 import 'widgets/retirar_asignacion_linea_telefonica_dialog.dart';
@@ -142,6 +145,11 @@ class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonic
     if (dada) await _cargar();
   }
 
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarLineaTelefonicaFisicamente(context, ref, widget.lineaTelefonicaId);
+    if (eliminado && mounted) context.pop();
+  }
+
   Future<void> _registrarRecarga() async {
     final registrada = await mostrarDialogoRegistrarRecargaLineaTelefonica(context, ref, widget.lineaTelefonicaId);
     if (registrada) await _cargar();
@@ -206,6 +214,7 @@ class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonic
     }
 
     final esBaja = linea.estatus == 'baja';
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text(linea.numero ?? linea.codigo)),
@@ -261,6 +270,12 @@ class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonic
                         label: l10n.lineaTelefonicaExpedienteBotonDarDeBaja,
                         variant: RisegButtonVariant.danger,
                         onPressed: _procesando ? null : _darDeBaja,
+                      ),
+                    if (esMaestro)
+                      RisegButton(
+                        label: l10n.eliminacionFisicaAccionMenu,
+                        variant: RisegButtonVariant.danger,
+                        onPressed: _eliminarFisicamente,
                       ),
                   ],
                 ),

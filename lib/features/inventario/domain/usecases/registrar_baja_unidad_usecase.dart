@@ -33,7 +33,7 @@ class RegistrarBajaUnidadUseCase {
   Future<RegistrarBajaUnidadResultado> ejecutar({
     required String unidadId,
     required String observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final unidad = await _repository.obtenerUnidadPorId(unidadId);
     if (unidad == null) return RegistrarBajaUnidadNoExiste();
@@ -46,7 +46,7 @@ class RegistrarBajaUnidadUseCase {
       final actualizada = await _repository.registrarBajaUnidad(
         unidadId: unidadId,
         observaciones: observaciones.trim(),
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarBajaUnidadExitoso(actualizada);
     } catch (e) {

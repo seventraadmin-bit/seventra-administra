@@ -36,7 +36,7 @@ abstract interface class IngresoRepository {
     required String formaPago,
     required String concepto,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Corrige metadatos administrativos — nunca `monto` (mismo criterio
@@ -53,13 +53,13 @@ abstract interface class IngresoRepository {
     String? concepto,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   Future<IngresoData> cancelar({
     required String ingresoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   Future<AttachmentData> adjuntarComprobante({
@@ -69,7 +69,7 @@ abstract interface class IngresoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Suma de `monto` de Ingresos `registrado` (nunca `cancelado`) en el

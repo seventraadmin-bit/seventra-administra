@@ -40,7 +40,7 @@ abstract interface class ComplementoPagoRepository {
     required DateTime fechaTimbrado,
     required int montoTotal,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Corrige metadatos administrativos — nunca `uuid` ni `montoTotal`
@@ -54,7 +54,7 @@ abstract interface class ComplementoPagoRepository {
     DateTime? fechaTimbrado,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cancela el Complemento — sin cascada (a diferencia de cancelar un
@@ -64,7 +64,7 @@ abstract interface class ComplementoPagoRepository {
   Future<ComplementoPagoData> cancelar({
     required String complementoPagoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Adjunta un archivo (PDF/XML) — mismo mecanismo que cualquier otro
@@ -77,6 +77,6 @@ abstract interface class ComplementoPagoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

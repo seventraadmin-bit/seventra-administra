@@ -31,7 +31,7 @@ abstract interface class CuentaPorCobrarRepository {
     required DateTime fechaEmisionReal,
     required int importeEmitido,
     DateTime? fechaVencimiento,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// `servicioId`/`entidadFiscalId` filtran vía join contra
@@ -56,7 +56,7 @@ abstract interface class CuentaPorCobrarRepository {
     required String cuentaPorCobrarId,
     required DateTime fechaVencimiento,
     String? motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Historial administrativo completo, en orden cronológico.

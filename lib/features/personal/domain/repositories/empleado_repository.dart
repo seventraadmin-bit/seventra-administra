@@ -36,7 +36,7 @@ abstract interface class EmpleadoRepository {
     required String empleadoId,
     required EmpleadoCompanion cambios,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra el periodo laboral vigente (Etapa 5C) — deja `estatus` en
@@ -48,7 +48,7 @@ abstract interface class EmpleadoRepository {
     required DateTime fechaBaja,
     required String motivo,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Archiva el periodo cerrado actual en `EmpleadoPeriodoLaboral` y
@@ -63,7 +63,7 @@ abstract interface class EmpleadoRepository {
     bool limpiarPuesto = false,
     String? sucursalId,
     bool limpiarSucursal = false,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Historial de periodos **cerrados** de este Empleado — nunca
@@ -78,7 +78,7 @@ abstract interface class EmpleadoRepository {
   Future<EmpleadoData> actualizarFotografia({
     required String empleadoId,
     required String attachmentId,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   Future<DireccionData?> obtenerDomicilio(String empleadoId);
@@ -90,7 +90,7 @@ abstract interface class EmpleadoRepository {
   /// actualiza si existe, inserta solo si nunca existió. `input ==
   /// null` archiva la existente (si había alguna) sin borrarla
   /// físicamente.
-  Future<DireccionData?> guardarDomicilio(String empleadoId, DireccionInput? input, {String? actor});
+  Future<DireccionData?> guardarDomicilio(String empleadoId, DireccionInput? input, {String? actorUsuarioId});
 
   Future<AttachmentData> adjuntarDocumento({
     required String empleadoId,
@@ -100,7 +100,7 @@ abstract interface class EmpleadoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Registra/actualiza el Perfil psicológico vigente (Etapa 5B) — solo
@@ -113,7 +113,7 @@ abstract interface class EmpleadoRepository {
     required DateTime fecha,
     String? resumen,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   Future<EmpleadoData> actualizarEstudioSocioeconomico({
@@ -121,7 +121,7 @@ abstract interface class EmpleadoRepository {
     required DateTime fecha,
     String? resumen,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Un resultado por sustancia — `null` deja esa sustancia sin tocar
@@ -137,6 +137,6 @@ abstract interface class EmpleadoRepository {
     required ResultadoSustanciaAntidoping met,
     required ResultadoSustanciaAntidoping opi,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

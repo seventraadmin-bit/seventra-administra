@@ -42,7 +42,7 @@ abstract interface class PagoRepository {
     String? bancoOrigen,
     String? cuentaBancariaDestino,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Aplica `monto` de un Pago ya existente a una Cuenta por cobrar:
@@ -57,7 +57,7 @@ abstract interface class PagoRepository {
     required String pagoId,
     required String cuentaPorCobrarId,
     required int monto,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Crea el Pago y su única aplicación a [cuentaPorCobrarId] (con
@@ -77,7 +77,7 @@ abstract interface class PagoRepository {
     String? bancoOrigen,
     String? cuentaBancariaDestino,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Corrige metadatos administrativos del Pago — nunca `montoTotal`
@@ -93,7 +93,7 @@ abstract interface class PagoRepository {
     String? cuentaBancariaDestino,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cancela una aplicación individual: revierte su efecto sobre la
@@ -104,7 +104,7 @@ abstract interface class PagoRepository {
   Future<AplicacionPagoData> cancelarAplicacion({
     required String aplicacionPagoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cancela el Pago completo: cancela en cascada automáticamente
@@ -117,7 +117,7 @@ abstract interface class PagoRepository {
   Future<PagoData> cancelar({
     required String pagoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Adjunta un comprobante de pago (Etapa 4J.2) — mismo mecanismo que
@@ -130,6 +130,6 @@ abstract interface class PagoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

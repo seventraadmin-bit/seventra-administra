@@ -21668,6 +21668,647 @@ class DocumentoPorEmitirCorreoEnvioCompanion
   }
 }
 
+class $UsuarioTable extends Usuario with TableInfo<$UsuarioTable, UsuarioData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UsuarioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nombreUsuarioMeta = const VerificationMeta(
+    'nombreUsuario',
+  );
+  @override
+  late final GeneratedColumn<String> nombreUsuario = GeneratedColumn<String>(
+    'nombre_usuario',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _passwordHashMeta = const VerificationMeta(
+    'passwordHash',
+  );
+  @override
+  late final GeneratedColumn<String> passwordHash = GeneratedColumn<String>(
+    'password_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _puestoIdMeta = const VerificationMeta(
+    'puestoId',
+  );
+  @override
+  late final GeneratedColumn<String> puestoId = GeneratedColumn<String>(
+    'puesto_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES puesto (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _esMaestroMeta = const VerificationMeta(
+    'esMaestro',
+  );
+  @override
+  late final GeneratedColumn<bool> esMaestro = GeneratedColumn<bool>(
+    'es_maestro',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("es_maestro" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _ultimoAccesoAtMeta = const VerificationMeta(
+    'ultimoAccesoAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> ultimoAccesoAt =
+      GeneratedColumn<DateTime>(
+        'ultimo_acceso_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    nombre,
+    nombreUsuario,
+    passwordHash,
+    puestoId,
+    esMaestro,
+    ultimoAccesoAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'usuario';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UsuarioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('nombre_usuario')) {
+      context.handle(
+        _nombreUsuarioMeta,
+        nombreUsuario.isAcceptableOrUnknown(
+          data['nombre_usuario']!,
+          _nombreUsuarioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreUsuarioMeta);
+    }
+    if (data.containsKey('password_hash')) {
+      context.handle(
+        _passwordHashMeta,
+        passwordHash.isAcceptableOrUnknown(
+          data['password_hash']!,
+          _passwordHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_passwordHashMeta);
+    }
+    if (data.containsKey('puesto_id')) {
+      context.handle(
+        _puestoIdMeta,
+        puestoId.isAcceptableOrUnknown(data['puesto_id']!, _puestoIdMeta),
+      );
+    }
+    if (data.containsKey('es_maestro')) {
+      context.handle(
+        _esMaestroMeta,
+        esMaestro.isAcceptableOrUnknown(data['es_maestro']!, _esMaestroMeta),
+      );
+    }
+    if (data.containsKey('ultimo_acceso_at')) {
+      context.handle(
+        _ultimoAccesoAtMeta,
+        ultimoAccesoAt.isAcceptableOrUnknown(
+          data['ultimo_acceso_at']!,
+          _ultimoAccesoAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UsuarioData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UsuarioData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      nombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre'],
+          )!,
+      nombreUsuario:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre_usuario'],
+          )!,
+      passwordHash:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}password_hash'],
+          )!,
+      puestoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}puesto_id'],
+      ),
+      esMaestro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}es_maestro'],
+          )!,
+      ultimoAccesoAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ultimo_acceso_at'],
+      ),
+    );
+  }
+
+  @override
+  $UsuarioTable createAlias(String alias) {
+    return $UsuarioTable(attachedDatabase, alias);
+  }
+}
+
+class UsuarioData extends DataClass implements Insertable<UsuarioData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String nombre;
+  final String nombreUsuario;
+  final String passwordHash;
+  final String? puestoId;
+  final bool esMaestro;
+  final DateTime? ultimoAccesoAt;
+  const UsuarioData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.nombre,
+    required this.nombreUsuario,
+    required this.passwordHash,
+    this.puestoId,
+    required this.esMaestro,
+    this.ultimoAccesoAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['nombre'] = Variable<String>(nombre);
+    map['nombre_usuario'] = Variable<String>(nombreUsuario);
+    map['password_hash'] = Variable<String>(passwordHash);
+    if (!nullToAbsent || puestoId != null) {
+      map['puesto_id'] = Variable<String>(puestoId);
+    }
+    map['es_maestro'] = Variable<bool>(esMaestro);
+    if (!nullToAbsent || ultimoAccesoAt != null) {
+      map['ultimo_acceso_at'] = Variable<DateTime>(ultimoAccesoAt);
+    }
+    return map;
+  }
+
+  UsuarioCompanion toCompanion(bool nullToAbsent) {
+    return UsuarioCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      nombre: Value(nombre),
+      nombreUsuario: Value(nombreUsuario),
+      passwordHash: Value(passwordHash),
+      puestoId:
+          puestoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(puestoId),
+      esMaestro: Value(esMaestro),
+      ultimoAccesoAt:
+          ultimoAccesoAt == null && nullToAbsent
+              ? const Value.absent()
+              : Value(ultimoAccesoAt),
+    );
+  }
+
+  factory UsuarioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UsuarioData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      nombreUsuario: serializer.fromJson<String>(json['nombreUsuario']),
+      passwordHash: serializer.fromJson<String>(json['passwordHash']),
+      puestoId: serializer.fromJson<String?>(json['puestoId']),
+      esMaestro: serializer.fromJson<bool>(json['esMaestro']),
+      ultimoAccesoAt: serializer.fromJson<DateTime?>(json['ultimoAccesoAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'nombre': serializer.toJson<String>(nombre),
+      'nombreUsuario': serializer.toJson<String>(nombreUsuario),
+      'passwordHash': serializer.toJson<String>(passwordHash),
+      'puestoId': serializer.toJson<String?>(puestoId),
+      'esMaestro': serializer.toJson<bool>(esMaestro),
+      'ultimoAccesoAt': serializer.toJson<DateTime?>(ultimoAccesoAt),
+    };
+  }
+
+  UsuarioData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? nombre,
+    String? nombreUsuario,
+    String? passwordHash,
+    Value<String?> puestoId = const Value.absent(),
+    bool? esMaestro,
+    Value<DateTime?> ultimoAccesoAt = const Value.absent(),
+  }) => UsuarioData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    nombre: nombre ?? this.nombre,
+    nombreUsuario: nombreUsuario ?? this.nombreUsuario,
+    passwordHash: passwordHash ?? this.passwordHash,
+    puestoId: puestoId.present ? puestoId.value : this.puestoId,
+    esMaestro: esMaestro ?? this.esMaestro,
+    ultimoAccesoAt:
+        ultimoAccesoAt.present ? ultimoAccesoAt.value : this.ultimoAccesoAt,
+  );
+  UsuarioData copyWithCompanion(UsuarioCompanion data) {
+    return UsuarioData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      nombreUsuario:
+          data.nombreUsuario.present
+              ? data.nombreUsuario.value
+              : this.nombreUsuario,
+      passwordHash:
+          data.passwordHash.present
+              ? data.passwordHash.value
+              : this.passwordHash,
+      puestoId: data.puestoId.present ? data.puestoId.value : this.puestoId,
+      esMaestro: data.esMaestro.present ? data.esMaestro.value : this.esMaestro,
+      ultimoAccesoAt:
+          data.ultimoAccesoAt.present
+              ? data.ultimoAccesoAt.value
+              : this.ultimoAccesoAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsuarioData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nombre: $nombre, ')
+          ..write('nombreUsuario: $nombreUsuario, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('puestoId: $puestoId, ')
+          ..write('esMaestro: $esMaestro, ')
+          ..write('ultimoAccesoAt: $ultimoAccesoAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    nombre,
+    nombreUsuario,
+    passwordHash,
+    puestoId,
+    esMaestro,
+    ultimoAccesoAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UsuarioData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.nombre == this.nombre &&
+          other.nombreUsuario == this.nombreUsuario &&
+          other.passwordHash == this.passwordHash &&
+          other.puestoId == this.puestoId &&
+          other.esMaestro == this.esMaestro &&
+          other.ultimoAccesoAt == this.ultimoAccesoAt);
+}
+
+class UsuarioCompanion extends UpdateCompanion<UsuarioData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> nombre;
+  final Value<String> nombreUsuario;
+  final Value<String> passwordHash;
+  final Value<String?> puestoId;
+  final Value<bool> esMaestro;
+  final Value<DateTime?> ultimoAccesoAt;
+  final Value<int> rowid;
+  const UsuarioCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.nombreUsuario = const Value.absent(),
+    this.passwordHash = const Value.absent(),
+    this.puestoId = const Value.absent(),
+    this.esMaestro = const Value.absent(),
+    this.ultimoAccesoAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UsuarioCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String nombre,
+    required String nombreUsuario,
+    required String passwordHash,
+    this.puestoId = const Value.absent(),
+    this.esMaestro = const Value.absent(),
+    this.ultimoAccesoAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : nombre = Value(nombre),
+       nombreUsuario = Value(nombreUsuario),
+       passwordHash = Value(passwordHash);
+  static Insertable<UsuarioData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? nombre,
+    Expression<String>? nombreUsuario,
+    Expression<String>? passwordHash,
+    Expression<String>? puestoId,
+    Expression<bool>? esMaestro,
+    Expression<DateTime>? ultimoAccesoAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (nombre != null) 'nombre': nombre,
+      if (nombreUsuario != null) 'nombre_usuario': nombreUsuario,
+      if (passwordHash != null) 'password_hash': passwordHash,
+      if (puestoId != null) 'puesto_id': puestoId,
+      if (esMaestro != null) 'es_maestro': esMaestro,
+      if (ultimoAccesoAt != null) 'ultimo_acceso_at': ultimoAccesoAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UsuarioCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? nombre,
+    Value<String>? nombreUsuario,
+    Value<String>? passwordHash,
+    Value<String?>? puestoId,
+    Value<bool>? esMaestro,
+    Value<DateTime?>? ultimoAccesoAt,
+    Value<int>? rowid,
+  }) {
+    return UsuarioCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      nombre: nombre ?? this.nombre,
+      nombreUsuario: nombreUsuario ?? this.nombreUsuario,
+      passwordHash: passwordHash ?? this.passwordHash,
+      puestoId: puestoId ?? this.puestoId,
+      esMaestro: esMaestro ?? this.esMaestro,
+      ultimoAccesoAt: ultimoAccesoAt ?? this.ultimoAccesoAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (nombreUsuario.present) {
+      map['nombre_usuario'] = Variable<String>(nombreUsuario.value);
+    }
+    if (passwordHash.present) {
+      map['password_hash'] = Variable<String>(passwordHash.value);
+    }
+    if (puestoId.present) {
+      map['puesto_id'] = Variable<String>(puestoId.value);
+    }
+    if (esMaestro.present) {
+      map['es_maestro'] = Variable<bool>(esMaestro.value);
+    }
+    if (ultimoAccesoAt.present) {
+      map['ultimo_acceso_at'] = Variable<DateTime>(ultimoAccesoAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsuarioCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nombre: $nombre, ')
+          ..write('nombreUsuario: $nombreUsuario, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('puestoId: $puestoId, ')
+          ..write('esMaestro: $esMaestro, ')
+          ..write('ultimoAccesoAt: $ultimoAccesoAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DocumentoPorEmitirEventoTable extends DocumentoPorEmitirEvento
     with
         TableInfo<
@@ -21769,6 +22410,20 @@ class $DocumentoPorEmitirEventoTable extends DocumentoPorEmitirEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -21790,6 +22445,7 @@ class $DocumentoPorEmitirEventoTable extends DocumentoPorEmitirEvento
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -21867,6 +22523,15 @@ class $DocumentoPorEmitirEventoTable extends DocumentoPorEmitirEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -21924,6 +22589,10 @@ class $DocumentoPorEmitirEventoTable extends DocumentoPorEmitirEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -21947,11 +22616,12 @@ class DocumentoPorEmitirEventoData extends DataClass
   final String? estadoNuevo;
   final String? observacion;
 
-  /// `null` mientras no exista autenticación real (Etapa 4I.2.1) — no
-  /// se pide al usuario un nombre manualmente. Cuando exista Usuario,
-  /// se agregará una referencia real sin romper el texto histórico ya
-  /// capturado en filas existentes (decisión explícita de Marlon).
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
 
   /// JSON libre con el snapshot de lo que cambió (ej. ajuste anterior/
   /// nuevo, folio anterior/nuevo, correos utilizados) — se justifica
@@ -21967,6 +22637,7 @@ class DocumentoPorEmitirEventoData extends DataClass
     this.estadoNuevo,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -21987,6 +22658,9 @@ class DocumentoPorEmitirEventoData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -22014,6 +22688,10 @@ class DocumentoPorEmitirEventoData extends DataClass
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -22037,6 +22715,7 @@ class DocumentoPorEmitirEventoData extends DataClass
       estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -22052,6 +22731,7 @@ class DocumentoPorEmitirEventoData extends DataClass
       'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -22065,6 +22745,7 @@ class DocumentoPorEmitirEventoData extends DataClass
     Value<String?> estadoNuevo = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => DocumentoPorEmitirEventoData(
     id: id ?? this.id,
@@ -22076,6 +22757,8 @@ class DocumentoPorEmitirEventoData extends DataClass
     estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -22100,6 +22783,10 @@ class DocumentoPorEmitirEventoData extends DataClass
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -22118,6 +22805,7 @@ class DocumentoPorEmitirEventoData extends DataClass
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -22133,6 +22821,7 @@ class DocumentoPorEmitirEventoData extends DataClass
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -22147,6 +22836,7 @@ class DocumentoPorEmitirEventoData extends DataClass
           other.estadoNuevo == this.estadoNuevo &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -22160,6 +22850,7 @@ class DocumentoPorEmitirEventoCompanion
   final Value<String?> estadoNuevo;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const DocumentoPorEmitirEventoCompanion({
     this.id = const Value.absent(),
@@ -22170,6 +22861,7 @@ class DocumentoPorEmitirEventoCompanion
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   DocumentoPorEmitirEventoCompanion.insert({
@@ -22181,6 +22873,7 @@ class DocumentoPorEmitirEventoCompanion
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : documentoPorEmitirId = Value(documentoPorEmitirId),
        fechaHora = Value(fechaHora),
@@ -22194,6 +22887,7 @@ class DocumentoPorEmitirEventoCompanion
     Expression<String>? estadoNuevo,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -22206,6 +22900,7 @@ class DocumentoPorEmitirEventoCompanion
       if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -22219,6 +22914,7 @@ class DocumentoPorEmitirEventoCompanion
     Value<String?>? estadoNuevo,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return DocumentoPorEmitirEventoCompanion(
@@ -22230,6 +22926,7 @@ class DocumentoPorEmitirEventoCompanion
       estadoNuevo: estadoNuevo ?? this.estadoNuevo,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -22263,6 +22960,9 @@ class DocumentoPorEmitirEventoCompanion
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -22280,6 +22980,7 @@ class DocumentoPorEmitirEventoCompanion
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -23627,6 +24328,20 @@ class $CuentaPorCobrarEventoTable extends CuentaPorCobrarEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -23648,6 +24363,7 @@ class $CuentaPorCobrarEventoTable extends CuentaPorCobrarEvento
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -23725,6 +24441,15 @@ class $CuentaPorCobrarEventoTable extends CuentaPorCobrarEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -23782,6 +24507,10 @@ class $CuentaPorCobrarEventoTable extends CuentaPorCobrarEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -23805,9 +24534,12 @@ class CuentaPorCobrarEventoData extends DataClass
   final String? estadoNuevo;
   final String? observacion;
 
-  /// `null` mientras no exista autenticación real — mismo criterio
-  /// que `DocumentoPorEmitirEvento.actor`.
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
 
   /// JSON libre con el snapshot de lo que cambió — mismo criterio que
   /// `DocumentoPorEmitirEvento.datosRelevantes`.
@@ -23821,6 +24553,7 @@ class CuentaPorCobrarEventoData extends DataClass
     this.estadoNuevo,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -23841,6 +24574,9 @@ class CuentaPorCobrarEventoData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -23868,6 +24604,10 @@ class CuentaPorCobrarEventoData extends DataClass
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -23889,6 +24629,7 @@ class CuentaPorCobrarEventoData extends DataClass
       estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -23904,6 +24645,7 @@ class CuentaPorCobrarEventoData extends DataClass
       'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -23917,6 +24659,7 @@ class CuentaPorCobrarEventoData extends DataClass
     Value<String?> estadoNuevo = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => CuentaPorCobrarEventoData(
     id: id ?? this.id,
@@ -23928,6 +24671,8 @@ class CuentaPorCobrarEventoData extends DataClass
     estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -23952,6 +24697,10 @@ class CuentaPorCobrarEventoData extends DataClass
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -23970,6 +24719,7 @@ class CuentaPorCobrarEventoData extends DataClass
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -23985,6 +24735,7 @@ class CuentaPorCobrarEventoData extends DataClass
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -23999,6 +24750,7 @@ class CuentaPorCobrarEventoData extends DataClass
           other.estadoNuevo == this.estadoNuevo &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -24012,6 +24764,7 @@ class CuentaPorCobrarEventoCompanion
   final Value<String?> estadoNuevo;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const CuentaPorCobrarEventoCompanion({
     this.id = const Value.absent(),
@@ -24022,6 +24775,7 @@ class CuentaPorCobrarEventoCompanion
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   CuentaPorCobrarEventoCompanion.insert({
@@ -24033,6 +24787,7 @@ class CuentaPorCobrarEventoCompanion
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : cuentaPorCobrarId = Value(cuentaPorCobrarId),
        fechaHora = Value(fechaHora),
@@ -24046,6 +24801,7 @@ class CuentaPorCobrarEventoCompanion
     Expression<String>? estadoNuevo,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -24057,6 +24813,7 @@ class CuentaPorCobrarEventoCompanion
       if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -24070,6 +24827,7 @@ class CuentaPorCobrarEventoCompanion
     Value<String?>? estadoNuevo,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return CuentaPorCobrarEventoCompanion(
@@ -24081,6 +24839,7 @@ class CuentaPorCobrarEventoCompanion
       estadoNuevo: estadoNuevo ?? this.estadoNuevo,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -24112,6 +24871,9 @@ class CuentaPorCobrarEventoCompanion
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -24129,6 +24891,7 @@ class CuentaPorCobrarEventoCompanion
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -25844,6 +26607,20 @@ class $PagoEventoTable extends PagoEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -25865,6 +26642,7 @@ class $PagoEventoTable extends PagoEvento
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -25939,6 +26717,15 @@ class $PagoEventoTable extends PagoEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -25993,6 +26780,10 @@ class $PagoEventoTable extends PagoEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -26014,7 +26805,13 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
   final String? estadoAnterior;
   final String? estadoNuevo;
   final String? observacion;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   final String? datosRelevantes;
   const PagoEventoData({
     required this.id,
@@ -26025,6 +26822,7 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
     this.estadoNuevo,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -26045,6 +26843,9 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -26072,6 +26873,10 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -26093,6 +26898,7 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
       estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -26108,6 +26914,7 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
       'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -26121,6 +26928,7 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
     Value<String?> estadoNuevo = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => PagoEventoData(
     id: id ?? this.id,
@@ -26132,6 +26940,8 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
     estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -26151,6 +26961,10 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -26169,6 +26983,7 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -26184,6 +26999,7 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -26198,6 +27014,7 @@ class PagoEventoData extends DataClass implements Insertable<PagoEventoData> {
           other.estadoNuevo == this.estadoNuevo &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -26210,6 +27027,7 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
   final Value<String?> estadoNuevo;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const PagoEventoCompanion({
     this.id = const Value.absent(),
@@ -26220,6 +27038,7 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   PagoEventoCompanion.insert({
@@ -26231,6 +27050,7 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : pagoId = Value(pagoId),
        fechaHora = Value(fechaHora),
@@ -26244,6 +27064,7 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
     Expression<String>? estadoNuevo,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -26255,6 +27076,7 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
       if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -26268,6 +27090,7 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
     Value<String?>? estadoNuevo,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return PagoEventoCompanion(
@@ -26279,6 +27102,7 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
       estadoNuevo: estadoNuevo ?? this.estadoNuevo,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -26310,6 +27134,9 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -26327,6 +27154,7 @@ class PagoEventoCompanion extends UpdateCompanion<PagoEventoData> {
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -27243,6 +28071,20 @@ class $ComplementoPagoEventoTable extends ComplementoPagoEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -27264,6 +28106,7 @@ class $ComplementoPagoEventoTable extends ComplementoPagoEvento
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -27341,6 +28184,15 @@ class $ComplementoPagoEventoTable extends ComplementoPagoEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -27398,6 +28250,10 @@ class $ComplementoPagoEventoTable extends ComplementoPagoEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -27420,7 +28276,13 @@ class ComplementoPagoEventoData extends DataClass
   final String? estadoAnterior;
   final String? estadoNuevo;
   final String? observacion;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   final String? datosRelevantes;
   const ComplementoPagoEventoData({
     required this.id,
@@ -27431,6 +28293,7 @@ class ComplementoPagoEventoData extends DataClass
     this.estadoNuevo,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -27451,6 +28314,9 @@ class ComplementoPagoEventoData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -27478,6 +28344,10 @@ class ComplementoPagoEventoData extends DataClass
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -27499,6 +28369,7 @@ class ComplementoPagoEventoData extends DataClass
       estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -27514,6 +28385,7 @@ class ComplementoPagoEventoData extends DataClass
       'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -27527,6 +28399,7 @@ class ComplementoPagoEventoData extends DataClass
     Value<String?> estadoNuevo = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => ComplementoPagoEventoData(
     id: id ?? this.id,
@@ -27538,6 +28411,8 @@ class ComplementoPagoEventoData extends DataClass
     estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -27562,6 +28437,10 @@ class ComplementoPagoEventoData extends DataClass
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -27580,6 +28459,7 @@ class ComplementoPagoEventoData extends DataClass
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -27595,6 +28475,7 @@ class ComplementoPagoEventoData extends DataClass
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -27609,6 +28490,7 @@ class ComplementoPagoEventoData extends DataClass
           other.estadoNuevo == this.estadoNuevo &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -27622,6 +28504,7 @@ class ComplementoPagoEventoCompanion
   final Value<String?> estadoNuevo;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const ComplementoPagoEventoCompanion({
     this.id = const Value.absent(),
@@ -27632,6 +28515,7 @@ class ComplementoPagoEventoCompanion
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   ComplementoPagoEventoCompanion.insert({
@@ -27643,6 +28527,7 @@ class ComplementoPagoEventoCompanion
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : complementoPagoId = Value(complementoPagoId),
        fechaHora = Value(fechaHora),
@@ -27656,6 +28541,7 @@ class ComplementoPagoEventoCompanion
     Expression<String>? estadoNuevo,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -27667,6 +28553,7 @@ class ComplementoPagoEventoCompanion
       if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -27680,6 +28567,7 @@ class ComplementoPagoEventoCompanion
     Value<String?>? estadoNuevo,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return ComplementoPagoEventoCompanion(
@@ -27691,6 +28579,7 @@ class ComplementoPagoEventoCompanion
       estadoNuevo: estadoNuevo ?? this.estadoNuevo,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -27722,6 +28611,9 @@ class ComplementoPagoEventoCompanion
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -27739,6 +28631,7 @@ class ComplementoPagoEventoCompanion
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -29436,6 +30329,20 @@ class $IngresoEventoTable extends IngresoEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -29457,6 +30364,7 @@ class $IngresoEventoTable extends IngresoEvento
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -29531,6 +30439,15 @@ class $IngresoEventoTable extends IngresoEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -29585,6 +30502,10 @@ class $IngresoEventoTable extends IngresoEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -29607,7 +30528,13 @@ class IngresoEventoData extends DataClass
   final String? estadoAnterior;
   final String? estadoNuevo;
   final String? observacion;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   final String? datosRelevantes;
   const IngresoEventoData({
     required this.id,
@@ -29618,6 +30545,7 @@ class IngresoEventoData extends DataClass
     this.estadoNuevo,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -29638,6 +30566,9 @@ class IngresoEventoData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -29665,6 +30596,10 @@ class IngresoEventoData extends DataClass
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -29686,6 +30621,7 @@ class IngresoEventoData extends DataClass
       estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -29701,6 +30637,7 @@ class IngresoEventoData extends DataClass
       'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -29714,6 +30651,7 @@ class IngresoEventoData extends DataClass
     Value<String?> estadoNuevo = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => IngresoEventoData(
     id: id ?? this.id,
@@ -29725,6 +30663,8 @@ class IngresoEventoData extends DataClass
     estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -29744,6 +30684,10 @@ class IngresoEventoData extends DataClass
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -29762,6 +30706,7 @@ class IngresoEventoData extends DataClass
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -29777,6 +30722,7 @@ class IngresoEventoData extends DataClass
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -29791,6 +30737,7 @@ class IngresoEventoData extends DataClass
           other.estadoNuevo == this.estadoNuevo &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -29803,6 +30750,7 @@ class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
   final Value<String?> estadoNuevo;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const IngresoEventoCompanion({
     this.id = const Value.absent(),
@@ -29813,6 +30761,7 @@ class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   IngresoEventoCompanion.insert({
@@ -29824,6 +30773,7 @@ class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : ingresoId = Value(ingresoId),
        fechaHora = Value(fechaHora),
@@ -29837,6 +30787,7 @@ class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
     Expression<String>? estadoNuevo,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -29848,6 +30799,7 @@ class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
       if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -29861,6 +30813,7 @@ class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
     Value<String?>? estadoNuevo,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return IngresoEventoCompanion(
@@ -29872,6 +30825,7 @@ class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
       estadoNuevo: estadoNuevo ?? this.estadoNuevo,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -29903,6 +30857,9 @@ class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -29920,6 +30877,7 @@ class IngresoEventoCompanion extends UpdateCompanion<IngresoEventoData> {
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -31094,6 +32052,20 @@ class $EgresoEventoTable extends EgresoEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -31115,6 +32087,7 @@ class $EgresoEventoTable extends EgresoEvento
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -31189,6 +32162,15 @@ class $EgresoEventoTable extends EgresoEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -31243,6 +32225,10 @@ class $EgresoEventoTable extends EgresoEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -31265,7 +32251,13 @@ class EgresoEventoData extends DataClass
   final String? estadoAnterior;
   final String? estadoNuevo;
   final String? observacion;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   final String? datosRelevantes;
   const EgresoEventoData({
     required this.id,
@@ -31276,6 +32268,7 @@ class EgresoEventoData extends DataClass
     this.estadoNuevo,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -31296,6 +32289,9 @@ class EgresoEventoData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -31323,6 +32319,10 @@ class EgresoEventoData extends DataClass
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -31344,6 +32344,7 @@ class EgresoEventoData extends DataClass
       estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -31359,6 +32360,7 @@ class EgresoEventoData extends DataClass
       'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -31372,6 +32374,7 @@ class EgresoEventoData extends DataClass
     Value<String?> estadoNuevo = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => EgresoEventoData(
     id: id ?? this.id,
@@ -31383,6 +32386,8 @@ class EgresoEventoData extends DataClass
     estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -31402,6 +32407,10 @@ class EgresoEventoData extends DataClass
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -31420,6 +32429,7 @@ class EgresoEventoData extends DataClass
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -31435,6 +32445,7 @@ class EgresoEventoData extends DataClass
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -31449,6 +32460,7 @@ class EgresoEventoData extends DataClass
           other.estadoNuevo == this.estadoNuevo &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -31461,6 +32473,7 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
   final Value<String?> estadoNuevo;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const EgresoEventoCompanion({
     this.id = const Value.absent(),
@@ -31471,6 +32484,7 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   EgresoEventoCompanion.insert({
@@ -31482,6 +32496,7 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : egresoId = Value(egresoId),
        fechaHora = Value(fechaHora),
@@ -31495,6 +32510,7 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
     Expression<String>? estadoNuevo,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -31506,6 +32522,7 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
       if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -31519,6 +32536,7 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
     Value<String?>? estadoNuevo,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return EgresoEventoCompanion(
@@ -31530,6 +32548,7 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
       estadoNuevo: estadoNuevo ?? this.estadoNuevo,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -31561,6 +32580,9 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -31578,6 +32600,7 @@ class EgresoEventoCompanion extends UpdateCompanion<EgresoEventoData> {
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -35114,6 +36137,20 @@ class $EmpleadoEventoTable extends EmpleadoEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -35135,6 +36172,7 @@ class $EmpleadoEventoTable extends EmpleadoEvento
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -35209,6 +36247,15 @@ class $EmpleadoEventoTable extends EmpleadoEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -35263,6 +36310,10 @@ class $EmpleadoEventoTable extends EmpleadoEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -35285,7 +36336,13 @@ class EmpleadoEventoData extends DataClass
   final String? estadoAnterior;
   final String? estadoNuevo;
   final String? observacion;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   final String? datosRelevantes;
   const EmpleadoEventoData({
     required this.id,
@@ -35296,6 +36353,7 @@ class EmpleadoEventoData extends DataClass
     this.estadoNuevo,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -35316,6 +36374,9 @@ class EmpleadoEventoData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -35343,6 +36404,10 @@ class EmpleadoEventoData extends DataClass
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -35364,6 +36429,7 @@ class EmpleadoEventoData extends DataClass
       estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -35379,6 +36445,7 @@ class EmpleadoEventoData extends DataClass
       'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -35392,6 +36459,7 @@ class EmpleadoEventoData extends DataClass
     Value<String?> estadoNuevo = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => EmpleadoEventoData(
     id: id ?? this.id,
@@ -35403,6 +36471,8 @@ class EmpleadoEventoData extends DataClass
     estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -35423,6 +36493,10 @@ class EmpleadoEventoData extends DataClass
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -35441,6 +36515,7 @@ class EmpleadoEventoData extends DataClass
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -35456,6 +36531,7 @@ class EmpleadoEventoData extends DataClass
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -35470,6 +36546,7 @@ class EmpleadoEventoData extends DataClass
           other.estadoNuevo == this.estadoNuevo &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -35482,6 +36559,7 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
   final Value<String?> estadoNuevo;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const EmpleadoEventoCompanion({
     this.id = const Value.absent(),
@@ -35492,6 +36570,7 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   EmpleadoEventoCompanion.insert({
@@ -35503,6 +36582,7 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : empleadoId = Value(empleadoId),
        fechaHora = Value(fechaHora),
@@ -35516,6 +36596,7 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
     Expression<String>? estadoNuevo,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -35527,6 +36608,7 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
       if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -35540,6 +36622,7 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
     Value<String?>? estadoNuevo,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return EmpleadoEventoCompanion(
@@ -35551,6 +36634,7 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
       estadoNuevo: estadoNuevo ?? this.estadoNuevo,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -35582,6 +36666,9 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -35599,6 +36686,7 @@ class EmpleadoEventoCompanion extends UpdateCompanion<EmpleadoEventoData> {
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -43835,6 +44923,20 @@ class $NominaEventoTable extends NominaEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -43855,6 +44957,7 @@ class $NominaEventoTable extends NominaEvento
     tipoEvento,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -43920,6 +45023,15 @@ class $NominaEventoTable extends NominaEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -43970,6 +45082,10 @@ class $NominaEventoTable extends NominaEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -43991,7 +45107,13 @@ class NominaEventoData extends DataClass
   final DateTime fechaHora;
   final String tipoEvento;
   final String? observacion;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   final String? datosRelevantes;
   const NominaEventoData({
     required this.id,
@@ -44001,6 +45123,7 @@ class NominaEventoData extends DataClass
     required this.tipoEvento,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -44018,6 +45141,9 @@ class NominaEventoData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -44041,6 +45167,10 @@ class NominaEventoData extends DataClass
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -44061,6 +45191,7 @@ class NominaEventoData extends DataClass
       tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -44075,6 +45206,7 @@ class NominaEventoData extends DataClass
       'tipoEvento': serializer.toJson<String>(tipoEvento),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -44087,6 +45219,7 @@ class NominaEventoData extends DataClass
     String? tipoEvento,
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => NominaEventoData(
     id: id ?? this.id,
@@ -44099,6 +45232,8 @@ class NominaEventoData extends DataClass
     tipoEvento: tipoEvento ?? this.tipoEvento,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -44116,6 +45251,10 @@ class NominaEventoData extends DataClass
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -44133,6 +45272,7 @@ class NominaEventoData extends DataClass
           ..write('tipoEvento: $tipoEvento, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -44147,6 +45287,7 @@ class NominaEventoData extends DataClass
     tipoEvento,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -44160,6 +45301,7 @@ class NominaEventoData extends DataClass
           other.tipoEvento == this.tipoEvento &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -44171,6 +45313,7 @@ class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
   final Value<String> tipoEvento;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const NominaEventoCompanion({
     this.id = const Value.absent(),
@@ -44180,6 +45323,7 @@ class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
     this.tipoEvento = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   NominaEventoCompanion.insert({
@@ -44190,6 +45334,7 @@ class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
     required String tipoEvento,
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : nominaId = Value(nominaId),
        fechaHora = Value(fechaHora),
@@ -44202,6 +45347,7 @@ class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
     Expression<String>? tipoEvento,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -44212,6 +45358,7 @@ class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
       if (tipoEvento != null) 'tipo_evento': tipoEvento,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -44224,6 +45371,7 @@ class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
     Value<String>? tipoEvento,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return NominaEventoCompanion(
@@ -44234,6 +45382,7 @@ class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
       tipoEvento: tipoEvento ?? this.tipoEvento,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -44262,6 +45411,9 @@ class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -44278,6 +45430,7 @@ class NominaEventoCompanion extends UpdateCompanion<NominaEventoData> {
           ..write('tipoEvento: $tipoEvento, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -46004,6 +47157,20 @@ class $PagoNominaEventoTable extends PagoNominaEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -46025,6 +47192,7 @@ class $PagoNominaEventoTable extends PagoNominaEvento
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -46102,6 +47270,15 @@ class $PagoNominaEventoTable extends PagoNominaEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -46156,6 +47333,10 @@ class $PagoNominaEventoTable extends PagoNominaEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -46178,7 +47359,13 @@ class PagoNominaEventoData extends DataClass
   final String? estadoAnterior;
   final String? estadoNuevo;
   final String? observacion;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   final String? datosRelevantes;
   const PagoNominaEventoData({
     required this.id,
@@ -46189,6 +47376,7 @@ class PagoNominaEventoData extends DataClass
     this.estadoNuevo,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -46209,6 +47397,9 @@ class PagoNominaEventoData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -46236,6 +47427,10 @@ class PagoNominaEventoData extends DataClass
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -46257,6 +47452,7 @@ class PagoNominaEventoData extends DataClass
       estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -46272,6 +47468,7 @@ class PagoNominaEventoData extends DataClass
       'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -46285,6 +47482,7 @@ class PagoNominaEventoData extends DataClass
     Value<String?> estadoNuevo = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => PagoNominaEventoData(
     id: id ?? this.id,
@@ -46296,6 +47494,8 @@ class PagoNominaEventoData extends DataClass
     estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -46318,6 +47518,10 @@ class PagoNominaEventoData extends DataClass
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -46336,6 +47540,7 @@ class PagoNominaEventoData extends DataClass
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -46351,6 +47556,7 @@ class PagoNominaEventoData extends DataClass
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -46365,6 +47571,7 @@ class PagoNominaEventoData extends DataClass
           other.estadoNuevo == this.estadoNuevo &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -46377,6 +47584,7 @@ class PagoNominaEventoCompanion extends UpdateCompanion<PagoNominaEventoData> {
   final Value<String?> estadoNuevo;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const PagoNominaEventoCompanion({
     this.id = const Value.absent(),
@@ -46387,6 +47595,7 @@ class PagoNominaEventoCompanion extends UpdateCompanion<PagoNominaEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   PagoNominaEventoCompanion.insert({
@@ -46398,6 +47607,7 @@ class PagoNominaEventoCompanion extends UpdateCompanion<PagoNominaEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : pagoNominaId = Value(pagoNominaId),
        fechaHora = Value(fechaHora),
@@ -46411,6 +47621,7 @@ class PagoNominaEventoCompanion extends UpdateCompanion<PagoNominaEventoData> {
     Expression<String>? estadoNuevo,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -46422,6 +47633,7 @@ class PagoNominaEventoCompanion extends UpdateCompanion<PagoNominaEventoData> {
       if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -46435,6 +47647,7 @@ class PagoNominaEventoCompanion extends UpdateCompanion<PagoNominaEventoData> {
     Value<String?>? estadoNuevo,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return PagoNominaEventoCompanion(
@@ -46446,6 +47659,7 @@ class PagoNominaEventoCompanion extends UpdateCompanion<PagoNominaEventoData> {
       estadoNuevo: estadoNuevo ?? this.estadoNuevo,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -46477,6 +47691,9 @@ class PagoNominaEventoCompanion extends UpdateCompanion<PagoNominaEventoData> {
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -46494,6 +47711,7 @@ class PagoNominaEventoCompanion extends UpdateCompanion<PagoNominaEventoData> {
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -49364,6 +50582,20 @@ class $MovimientoInventarioTable extends MovimientoInventario
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -49379,6 +50611,7 @@ class $MovimientoInventarioTable extends MovimientoInventario
     costoUnitario,
     observaciones,
     actor,
+    actorUsuarioId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -49487,6 +50720,15 @@ class $MovimientoInventarioTable extends MovimientoInventario
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -49559,6 +50801,10 @@ class $MovimientoInventarioTable extends MovimientoInventario
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
     );
   }
 
@@ -49586,7 +50832,13 @@ class MovimientoInventarioData extends DataClass
   /// necesite mostrarlo.
   final int? costoUnitario;
   final String? observaciones;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   const MovimientoInventarioData({
     required this.id,
     required this.createdAt,
@@ -49601,6 +50853,7 @@ class MovimientoInventarioData extends DataClass
     this.costoUnitario,
     this.observaciones,
     this.actor,
+    this.actorUsuarioId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -49627,6 +50880,9 @@ class MovimientoInventarioData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     return map;
   }
@@ -49659,6 +50915,10 @@ class MovimientoInventarioData extends DataClass
               : Value(observaciones),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
     );
   }
 
@@ -49681,6 +50941,7 @@ class MovimientoInventarioData extends DataClass
       costoUnitario: serializer.fromJson<int?>(json['costoUnitario']),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
     );
   }
   @override
@@ -49700,6 +50961,7 @@ class MovimientoInventarioData extends DataClass
       'costoUnitario': serializer.toJson<int?>(costoUnitario),
       'observaciones': serializer.toJson<String?>(observaciones),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
     };
   }
 
@@ -49717,6 +50979,7 @@ class MovimientoInventarioData extends DataClass
     Value<int?> costoUnitario = const Value.absent(),
     Value<String?> observaciones = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
   }) => MovimientoInventarioData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -49733,6 +50996,8 @@ class MovimientoInventarioData extends DataClass
     observaciones:
         observaciones.present ? observaciones.value : this.observaciones,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
   );
   MovimientoInventarioData copyWithCompanion(
     MovimientoInventarioCompanion data,
@@ -49765,6 +51030,10 @@ class MovimientoInventarioData extends DataClass
               ? data.observaciones.value
               : this.observaciones,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
     );
   }
 
@@ -49783,7 +51052,8 @@ class MovimientoInventarioData extends DataClass
           ..write('fecha: $fecha, ')
           ..write('costoUnitario: $costoUnitario, ')
           ..write('observaciones: $observaciones, ')
-          ..write('actor: $actor')
+          ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId')
           ..write(')'))
         .toString();
   }
@@ -49803,6 +51073,7 @@ class MovimientoInventarioData extends DataClass
     costoUnitario,
     observaciones,
     actor,
+    actorUsuarioId,
   );
   @override
   bool operator ==(Object other) =>
@@ -49820,7 +51091,8 @@ class MovimientoInventarioData extends DataClass
           other.fecha == this.fecha &&
           other.costoUnitario == this.costoUnitario &&
           other.observaciones == this.observaciones &&
-          other.actor == this.actor);
+          other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId);
 }
 
 class MovimientoInventarioCompanion
@@ -49838,6 +51110,7 @@ class MovimientoInventarioCompanion
   final Value<int?> costoUnitario;
   final Value<String?> observaciones;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<int> rowid;
   const MovimientoInventarioCompanion({
     this.id = const Value.absent(),
@@ -49853,6 +51126,7 @@ class MovimientoInventarioCompanion
     this.costoUnitario = const Value.absent(),
     this.observaciones = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MovimientoInventarioCompanion.insert({
@@ -49869,6 +51143,7 @@ class MovimientoInventarioCompanion
     this.costoUnitario = const Value.absent(),
     this.observaciones = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : articuloId = Value(articuloId),
        cantidad = Value(cantidad),
@@ -49888,6 +51163,7 @@ class MovimientoInventarioCompanion
     Expression<int>? costoUnitario,
     Expression<String>? observaciones,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -49904,6 +51180,7 @@ class MovimientoInventarioCompanion
       if (costoUnitario != null) 'costo_unitario': costoUnitario,
       if (observaciones != null) 'observaciones': observaciones,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -49922,6 +51199,7 @@ class MovimientoInventarioCompanion
     Value<int?>? costoUnitario,
     Value<String?>? observaciones,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<int>? rowid,
   }) {
     return MovimientoInventarioCompanion(
@@ -49938,6 +51216,7 @@ class MovimientoInventarioCompanion
       costoUnitario: costoUnitario ?? this.costoUnitario,
       observaciones: observaciones ?? this.observaciones,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -49984,6 +51263,9 @@ class MovimientoInventarioCompanion
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -50006,6 +51288,7 @@ class MovimientoInventarioCompanion
           ..write('costoUnitario: $costoUnitario, ')
           ..write('observaciones: $observaciones, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -54741,6 +56024,20 @@ class $VehiculoKilometrajeTable extends VehiculoKilometraje
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -54753,6 +56050,7 @@ class $VehiculoKilometrajeTable extends VehiculoKilometraje
     origen,
     observaciones,
     actor,
+    actorUsuarioId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -54840,6 +56138,15 @@ class $VehiculoKilometrajeTable extends VehiculoKilometraje
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -54900,6 +56207,10 @@ class $VehiculoKilometrajeTable extends VehiculoKilometraje
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
     );
   }
 
@@ -54920,7 +56231,13 @@ class VehiculoKilometrajeData extends DataClass
   final int kilometraje;
   final String origen;
   final String? observaciones;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   const VehiculoKilometrajeData({
     required this.id,
     required this.createdAt,
@@ -54932,6 +56249,7 @@ class VehiculoKilometrajeData extends DataClass
     required this.origen,
     this.observaciones,
     this.actor,
+    this.actorUsuarioId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -54949,6 +56267,9 @@ class VehiculoKilometrajeData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     return map;
   }
@@ -54969,6 +56290,10 @@ class VehiculoKilometrajeData extends DataClass
               : Value(observaciones),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
     );
   }
 
@@ -54988,6 +56313,7 @@ class VehiculoKilometrajeData extends DataClass
       origen: serializer.fromJson<String>(json['origen']),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
     );
   }
   @override
@@ -55004,6 +56330,7 @@ class VehiculoKilometrajeData extends DataClass
       'origen': serializer.toJson<String>(origen),
       'observaciones': serializer.toJson<String?>(observaciones),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
     };
   }
 
@@ -55018,6 +56345,7 @@ class VehiculoKilometrajeData extends DataClass
     String? origen,
     Value<String?> observaciones = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
   }) => VehiculoKilometrajeData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -55030,6 +56358,8 @@ class VehiculoKilometrajeData extends DataClass
     observaciones:
         observaciones.present ? observaciones.value : this.observaciones,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
   );
   VehiculoKilometrajeData copyWithCompanion(VehiculoKilometrajeCompanion data) {
     return VehiculoKilometrajeData(
@@ -55051,6 +56381,10 @@ class VehiculoKilometrajeData extends DataClass
               ? data.observaciones.value
               : this.observaciones,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
     );
   }
 
@@ -55066,7 +56400,8 @@ class VehiculoKilometrajeData extends DataClass
           ..write('kilometraje: $kilometraje, ')
           ..write('origen: $origen, ')
           ..write('observaciones: $observaciones, ')
-          ..write('actor: $actor')
+          ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId')
           ..write(')'))
         .toString();
   }
@@ -55083,6 +56418,7 @@ class VehiculoKilometrajeData extends DataClass
     origen,
     observaciones,
     actor,
+    actorUsuarioId,
   );
   @override
   bool operator ==(Object other) =>
@@ -55097,7 +56433,8 @@ class VehiculoKilometrajeData extends DataClass
           other.kilometraje == this.kilometraje &&
           other.origen == this.origen &&
           other.observaciones == this.observaciones &&
-          other.actor == this.actor);
+          other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId);
 }
 
 class VehiculoKilometrajeCompanion
@@ -55112,6 +56449,7 @@ class VehiculoKilometrajeCompanion
   final Value<String> origen;
   final Value<String?> observaciones;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<int> rowid;
   const VehiculoKilometrajeCompanion({
     this.id = const Value.absent(),
@@ -55124,6 +56462,7 @@ class VehiculoKilometrajeCompanion
     this.origen = const Value.absent(),
     this.observaciones = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VehiculoKilometrajeCompanion.insert({
@@ -55137,6 +56476,7 @@ class VehiculoKilometrajeCompanion
     required String origen,
     this.observaciones = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : vehiculoId = Value(vehiculoId),
        fecha = Value(fecha),
@@ -55153,6 +56493,7 @@ class VehiculoKilometrajeCompanion
     Expression<String>? origen,
     Expression<String>? observaciones,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -55166,6 +56507,7 @@ class VehiculoKilometrajeCompanion
       if (origen != null) 'origen': origen,
       if (observaciones != null) 'observaciones': observaciones,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -55181,6 +56523,7 @@ class VehiculoKilometrajeCompanion
     Value<String>? origen,
     Value<String?>? observaciones,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<int>? rowid,
   }) {
     return VehiculoKilometrajeCompanion(
@@ -55194,6 +56537,7 @@ class VehiculoKilometrajeCompanion
       origen: origen ?? this.origen,
       observaciones: observaciones ?? this.observaciones,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -55231,6 +56575,9 @@ class VehiculoKilometrajeCompanion
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -55250,6 +56597,7 @@ class VehiculoKilometrajeCompanion
           ..write('origen: $origen, ')
           ..write('observaciones: $observaciones, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -55388,6 +56736,20 @@ class $VehiculoDocumentoTable extends VehiculoDocumento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -55401,6 +56763,7 @@ class $VehiculoDocumentoTable extends VehiculoDocumento
     fechaEmision,
     fechaVencimiento,
     observaciones,
+    actorUsuarioId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -55499,6 +56862,15 @@ class $VehiculoDocumentoTable extends VehiculoDocumento
         ),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -55558,6 +56930,10 @@ class $VehiculoDocumentoTable extends VehiculoDocumento
         DriftSqlType.string,
         data['${effectivePrefix}observaciones'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
     );
   }
 
@@ -55586,6 +56962,10 @@ class VehiculoDocumentoData extends DataClass
   final DateTime? fechaEmision;
   final DateTime? fechaVencimiento;
   final String? observaciones;
+
+  /// Quién registró el documento (Etapa 11D) — mismo criterio que
+  /// `actorUsuarioId` en el resto del proyecto.
+  final String? actorUsuarioId;
   const VehiculoDocumentoData({
     required this.id,
     required this.createdAt,
@@ -55598,6 +56978,7 @@ class VehiculoDocumentoData extends DataClass
     this.fechaEmision,
     this.fechaVencimiento,
     this.observaciones,
+    this.actorUsuarioId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -55622,6 +57003,9 @@ class VehiculoDocumentoData extends DataClass
     }
     if (!nullToAbsent || observaciones != null) {
       map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     return map;
   }
@@ -55654,6 +57038,10 @@ class VehiculoDocumentoData extends DataClass
           observaciones == null && nullToAbsent
               ? const Value.absent()
               : Value(observaciones),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
     );
   }
 
@@ -55678,6 +57066,7 @@ class VehiculoDocumentoData extends DataClass
         json['fechaVencimiento'],
       ),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
     );
   }
   @override
@@ -55695,6 +57084,7 @@ class VehiculoDocumentoData extends DataClass
       'fechaEmision': serializer.toJson<DateTime?>(fechaEmision),
       'fechaVencimiento': serializer.toJson<DateTime?>(fechaVencimiento),
       'observaciones': serializer.toJson<String?>(observaciones),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
     };
   }
 
@@ -55710,6 +57100,7 @@ class VehiculoDocumentoData extends DataClass
     Value<DateTime?> fechaEmision = const Value.absent(),
     Value<DateTime?> fechaVencimiento = const Value.absent(),
     Value<String?> observaciones = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
   }) => VehiculoDocumentoData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -55729,6 +57120,8 @@ class VehiculoDocumentoData extends DataClass
             : this.fechaVencimiento,
     observaciones:
         observaciones.present ? observaciones.value : this.observaciones,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
   );
   VehiculoDocumentoData copyWithCompanion(VehiculoDocumentoCompanion data) {
     return VehiculoDocumentoData(
@@ -55760,6 +57153,10 @@ class VehiculoDocumentoData extends DataClass
           data.observaciones.present
               ? data.observaciones.value
               : this.observaciones,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
     );
   }
 
@@ -55776,7 +57173,8 @@ class VehiculoDocumentoData extends DataClass
           ..write('numeroFolio: $numeroFolio, ')
           ..write('fechaEmision: $fechaEmision, ')
           ..write('fechaVencimiento: $fechaVencimiento, ')
-          ..write('observaciones: $observaciones')
+          ..write('observaciones: $observaciones, ')
+          ..write('actorUsuarioId: $actorUsuarioId')
           ..write(')'))
         .toString();
   }
@@ -55794,6 +57192,7 @@ class VehiculoDocumentoData extends DataClass
     fechaEmision,
     fechaVencimiento,
     observaciones,
+    actorUsuarioId,
   );
   @override
   bool operator ==(Object other) =>
@@ -55809,7 +57208,8 @@ class VehiculoDocumentoData extends DataClass
           other.numeroFolio == this.numeroFolio &&
           other.fechaEmision == this.fechaEmision &&
           other.fechaVencimiento == this.fechaVencimiento &&
-          other.observaciones == this.observaciones);
+          other.observaciones == this.observaciones &&
+          other.actorUsuarioId == this.actorUsuarioId);
 }
 
 class VehiculoDocumentoCompanion
@@ -55825,6 +57225,7 @@ class VehiculoDocumentoCompanion
   final Value<DateTime?> fechaEmision;
   final Value<DateTime?> fechaVencimiento;
   final Value<String?> observaciones;
+  final Value<String?> actorUsuarioId;
   final Value<int> rowid;
   const VehiculoDocumentoCompanion({
     this.id = const Value.absent(),
@@ -55838,6 +57239,7 @@ class VehiculoDocumentoCompanion
     this.fechaEmision = const Value.absent(),
     this.fechaVencimiento = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VehiculoDocumentoCompanion.insert({
@@ -55852,6 +57254,7 @@ class VehiculoDocumentoCompanion
     this.fechaEmision = const Value.absent(),
     this.fechaVencimiento = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : vehiculoId = Value(vehiculoId),
        tipo = Value(tipo);
@@ -55867,6 +57270,7 @@ class VehiculoDocumentoCompanion
     Expression<DateTime>? fechaEmision,
     Expression<DateTime>? fechaVencimiento,
     Expression<String>? observaciones,
+    Expression<String>? actorUsuarioId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -55882,6 +57286,7 @@ class VehiculoDocumentoCompanion
       if (fechaEmision != null) 'fecha_emision': fechaEmision,
       if (fechaVencimiento != null) 'fecha_vencimiento': fechaVencimiento,
       if (observaciones != null) 'observaciones': observaciones,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -55898,6 +57303,7 @@ class VehiculoDocumentoCompanion
     Value<DateTime?>? fechaEmision,
     Value<DateTime?>? fechaVencimiento,
     Value<String?>? observaciones,
+    Value<String?>? actorUsuarioId,
     Value<int>? rowid,
   }) {
     return VehiculoDocumentoCompanion(
@@ -55912,6 +57318,7 @@ class VehiculoDocumentoCompanion
       fechaEmision: fechaEmision ?? this.fechaEmision,
       fechaVencimiento: fechaVencimiento ?? this.fechaVencimiento,
       observaciones: observaciones ?? this.observaciones,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -55954,6 +57361,9 @@ class VehiculoDocumentoCompanion
     if (observaciones.present) {
       map['observaciones'] = Variable<String>(observaciones.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -55974,6 +57384,7 @@ class VehiculoDocumentoCompanion
           ..write('fechaEmision: $fechaEmision, ')
           ..write('fechaVencimiento: $fechaVencimiento, ')
           ..write('observaciones: $observaciones, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -56399,6 +57810,20 @@ class $VehiculoMantenimientoTable extends VehiculoMantenimiento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -56415,6 +57840,7 @@ class $VehiculoMantenimientoTable extends VehiculoMantenimiento
     proximoMantenimientoFecha,
     proximoMantenimientoKilometraje,
     observaciones,
+    actorUsuarioId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -56538,6 +57964,15 @@ class $VehiculoMantenimientoTable extends VehiculoMantenimiento
         ),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -56614,6 +58049,10 @@ class $VehiculoMantenimientoTable extends VehiculoMantenimiento
         DriftSqlType.string,
         data['${effectivePrefix}observaciones'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
     );
   }
 
@@ -56639,6 +58078,10 @@ class VehiculoMantenimientoData extends DataClass
   final DateTime? proximoMantenimientoFecha;
   final int? proximoMantenimientoKilometraje;
   final String? observaciones;
+
+  /// Quién registró el mantenimiento/incidencia (Etapa 11D) — mismo
+  /// criterio que `actorUsuarioId` en el resto del proyecto.
+  final String? actorUsuarioId;
   const VehiculoMantenimientoData({
     required this.id,
     required this.createdAt,
@@ -56654,6 +58097,7 @@ class VehiculoMantenimientoData extends DataClass
     this.proximoMantenimientoFecha,
     this.proximoMantenimientoKilometraje,
     this.observaciones,
+    this.actorUsuarioId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -56687,6 +58131,9 @@ class VehiculoMantenimientoData extends DataClass
     }
     if (!nullToAbsent || observaciones != null) {
       map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     return map;
   }
@@ -56723,6 +58170,10 @@ class VehiculoMantenimientoData extends DataClass
           observaciones == null && nullToAbsent
               ? const Value.absent()
               : Value(observaciones),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
     );
   }
 
@@ -56750,6 +58201,7 @@ class VehiculoMantenimientoData extends DataClass
         json['proximoMantenimientoKilometraje'],
       ),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
     );
   }
   @override
@@ -56774,6 +58226,7 @@ class VehiculoMantenimientoData extends DataClass
         proximoMantenimientoKilometraje,
       ),
       'observaciones': serializer.toJson<String?>(observaciones),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
     };
   }
 
@@ -56792,6 +58245,7 @@ class VehiculoMantenimientoData extends DataClass
     Value<DateTime?> proximoMantenimientoFecha = const Value.absent(),
     Value<int?> proximoMantenimientoKilometraje = const Value.absent(),
     Value<String?> observaciones = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
   }) => VehiculoMantenimientoData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -56815,6 +58269,8 @@ class VehiculoMantenimientoData extends DataClass
             : this.proximoMantenimientoKilometraje,
     observaciones:
         observaciones.present ? observaciones.value : this.observaciones,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
   );
   VehiculoMantenimientoData copyWithCompanion(
     VehiculoMantenimientoCompanion data,
@@ -56852,6 +58308,10 @@ class VehiculoMantenimientoData extends DataClass
           data.observaciones.present
               ? data.observaciones.value
               : this.observaciones,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
     );
   }
 
@@ -56873,7 +58333,8 @@ class VehiculoMantenimientoData extends DataClass
           ..write(
             'proximoMantenimientoKilometraje: $proximoMantenimientoKilometraje, ',
           )
-          ..write('observaciones: $observaciones')
+          ..write('observaciones: $observaciones, ')
+          ..write('actorUsuarioId: $actorUsuarioId')
           ..write(')'))
         .toString();
   }
@@ -56894,6 +58355,7 @@ class VehiculoMantenimientoData extends DataClass
     proximoMantenimientoFecha,
     proximoMantenimientoKilometraje,
     observaciones,
+    actorUsuarioId,
   );
   @override
   bool operator ==(Object other) =>
@@ -56913,7 +58375,8 @@ class VehiculoMantenimientoData extends DataClass
           other.proximoMantenimientoFecha == this.proximoMantenimientoFecha &&
           other.proximoMantenimientoKilometraje ==
               this.proximoMantenimientoKilometraje &&
-          other.observaciones == this.observaciones);
+          other.observaciones == this.observaciones &&
+          other.actorUsuarioId == this.actorUsuarioId);
 }
 
 class VehiculoMantenimientoCompanion
@@ -56932,6 +58395,7 @@ class VehiculoMantenimientoCompanion
   final Value<DateTime?> proximoMantenimientoFecha;
   final Value<int?> proximoMantenimientoKilometraje;
   final Value<String?> observaciones;
+  final Value<String?> actorUsuarioId;
   final Value<int> rowid;
   const VehiculoMantenimientoCompanion({
     this.id = const Value.absent(),
@@ -56948,6 +58412,7 @@ class VehiculoMantenimientoCompanion
     this.proximoMantenimientoFecha = const Value.absent(),
     this.proximoMantenimientoKilometraje = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VehiculoMantenimientoCompanion.insert({
@@ -56965,6 +58430,7 @@ class VehiculoMantenimientoCompanion
     this.proximoMantenimientoFecha = const Value.absent(),
     this.proximoMantenimientoKilometraje = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : vehiculoId = Value(vehiculoId),
        fecha = Value(fecha),
@@ -56985,6 +58451,7 @@ class VehiculoMantenimientoCompanion
     Expression<DateTime>? proximoMantenimientoFecha,
     Expression<int>? proximoMantenimientoKilometraje,
     Expression<String>? observaciones,
+    Expression<String>? actorUsuarioId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -57004,6 +58471,7 @@ class VehiculoMantenimientoCompanion
       if (proximoMantenimientoKilometraje != null)
         'proximo_mantenimiento_kilometraje': proximoMantenimientoKilometraje,
       if (observaciones != null) 'observaciones': observaciones,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -57023,6 +58491,7 @@ class VehiculoMantenimientoCompanion
     Value<DateTime?>? proximoMantenimientoFecha,
     Value<int?>? proximoMantenimientoKilometraje,
     Value<String?>? observaciones,
+    Value<String?>? actorUsuarioId,
     Value<int>? rowid,
   }) {
     return VehiculoMantenimientoCompanion(
@@ -57043,6 +58512,7 @@ class VehiculoMantenimientoCompanion
           proximoMantenimientoKilometraje ??
           this.proximoMantenimientoKilometraje,
       observaciones: observaciones ?? this.observaciones,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -57096,6 +58566,9 @@ class VehiculoMantenimientoCompanion
     if (observaciones.present) {
       map['observaciones'] = Variable<String>(observaciones.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -57121,6 +58594,7 @@ class VehiculoMantenimientoCompanion
             'proximoMantenimientoKilometraje: $proximoMantenimientoKilometraje, ',
           )
           ..write('observaciones: $observaciones, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -59841,6 +61315,20 @@ class $RecargaLineaTelefonicaTable extends RecargaLineaTelefonica
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -59851,6 +61339,7 @@ class $RecargaLineaTelefonicaTable extends RecargaLineaTelefonica
     fecha,
     importe,
     observaciones,
+    actorUsuarioId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -59924,6 +61413,15 @@ class $RecargaLineaTelefonicaTable extends RecargaLineaTelefonica
         ),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -59975,6 +61473,10 @@ class $RecargaLineaTelefonicaTable extends RecargaLineaTelefonica
         DriftSqlType.string,
         data['${effectivePrefix}observaciones'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
     );
   }
 
@@ -59994,6 +61496,10 @@ class RecargaLineaTelefonicaData extends DataClass
   final DateTime fecha;
   final int importe;
   final String? observaciones;
+
+  /// Quién registró la recarga (Etapa 11D) — mismo criterio que
+  /// `actorUsuarioId` en el resto del proyecto.
+  final String? actorUsuarioId;
   const RecargaLineaTelefonicaData({
     required this.id,
     required this.createdAt,
@@ -60003,6 +61509,7 @@ class RecargaLineaTelefonicaData extends DataClass
     required this.fecha,
     required this.importe,
     this.observaciones,
+    this.actorUsuarioId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -60016,6 +61523,9 @@ class RecargaLineaTelefonicaData extends DataClass
     map['importe'] = Variable<int>(importe);
     if (!nullToAbsent || observaciones != null) {
       map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     return map;
   }
@@ -60033,6 +61543,10 @@ class RecargaLineaTelefonicaData extends DataClass
           observaciones == null && nullToAbsent
               ? const Value.absent()
               : Value(observaciones),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
     );
   }
 
@@ -60050,6 +61564,7 @@ class RecargaLineaTelefonicaData extends DataClass
       fecha: serializer.fromJson<DateTime>(json['fecha']),
       importe: serializer.fromJson<int>(json['importe']),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
     );
   }
   @override
@@ -60064,6 +61579,7 @@ class RecargaLineaTelefonicaData extends DataClass
       'fecha': serializer.toJson<DateTime>(fecha),
       'importe': serializer.toJson<int>(importe),
       'observaciones': serializer.toJson<String?>(observaciones),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
     };
   }
 
@@ -60076,6 +61592,7 @@ class RecargaLineaTelefonicaData extends DataClass
     DateTime? fecha,
     int? importe,
     Value<String?> observaciones = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
   }) => RecargaLineaTelefonicaData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -60086,6 +61603,8 @@ class RecargaLineaTelefonicaData extends DataClass
     importe: importe ?? this.importe,
     observaciones:
         observaciones.present ? observaciones.value : this.observaciones,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
   );
   RecargaLineaTelefonicaData copyWithCompanion(
     RecargaLineaTelefonicaCompanion data,
@@ -60108,6 +61627,10 @@ class RecargaLineaTelefonicaData extends DataClass
           data.observaciones.present
               ? data.observaciones.value
               : this.observaciones,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
     );
   }
 
@@ -60121,7 +61644,8 @@ class RecargaLineaTelefonicaData extends DataClass
           ..write('lineaTelefonicaId: $lineaTelefonicaId, ')
           ..write('fecha: $fecha, ')
           ..write('importe: $importe, ')
-          ..write('observaciones: $observaciones')
+          ..write('observaciones: $observaciones, ')
+          ..write('actorUsuarioId: $actorUsuarioId')
           ..write(')'))
         .toString();
   }
@@ -60136,6 +61660,7 @@ class RecargaLineaTelefonicaData extends DataClass
     fecha,
     importe,
     observaciones,
+    actorUsuarioId,
   );
   @override
   bool operator ==(Object other) =>
@@ -60148,7 +61673,8 @@ class RecargaLineaTelefonicaData extends DataClass
           other.lineaTelefonicaId == this.lineaTelefonicaId &&
           other.fecha == this.fecha &&
           other.importe == this.importe &&
-          other.observaciones == this.observaciones);
+          other.observaciones == this.observaciones &&
+          other.actorUsuarioId == this.actorUsuarioId);
 }
 
 class RecargaLineaTelefonicaCompanion
@@ -60161,6 +61687,7 @@ class RecargaLineaTelefonicaCompanion
   final Value<DateTime> fecha;
   final Value<int> importe;
   final Value<String?> observaciones;
+  final Value<String?> actorUsuarioId;
   final Value<int> rowid;
   const RecargaLineaTelefonicaCompanion({
     this.id = const Value.absent(),
@@ -60171,6 +61698,7 @@ class RecargaLineaTelefonicaCompanion
     this.fecha = const Value.absent(),
     this.importe = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   RecargaLineaTelefonicaCompanion.insert({
@@ -60182,6 +61710,7 @@ class RecargaLineaTelefonicaCompanion
     required DateTime fecha,
     required int importe,
     this.observaciones = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : lineaTelefonicaId = Value(lineaTelefonicaId),
        fecha = Value(fecha),
@@ -60195,6 +61724,7 @@ class RecargaLineaTelefonicaCompanion
     Expression<DateTime>? fecha,
     Expression<int>? importe,
     Expression<String>? observaciones,
+    Expression<String>? actorUsuarioId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -60206,6 +61736,7 @@ class RecargaLineaTelefonicaCompanion
       if (fecha != null) 'fecha': fecha,
       if (importe != null) 'importe': importe,
       if (observaciones != null) 'observaciones': observaciones,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -60219,6 +61750,7 @@ class RecargaLineaTelefonicaCompanion
     Value<DateTime>? fecha,
     Value<int>? importe,
     Value<String?>? observaciones,
+    Value<String?>? actorUsuarioId,
     Value<int>? rowid,
   }) {
     return RecargaLineaTelefonicaCompanion(
@@ -60230,6 +61762,7 @@ class RecargaLineaTelefonicaCompanion
       fecha: fecha ?? this.fecha,
       importe: importe ?? this.importe,
       observaciones: observaciones ?? this.observaciones,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -60261,6 +61794,9 @@ class RecargaLineaTelefonicaCompanion
     if (observaciones.present) {
       map['observaciones'] = Variable<String>(observaciones.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -60278,6 +61814,7 @@ class RecargaLineaTelefonicaCompanion
           ..write('fecha: $fecha, ')
           ..write('importe: $importe, ')
           ..write('observaciones: $observaciones, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -62659,6 +64196,20 @@ class $CompraEventoTable extends CompraEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
     'datosRelevantes',
   );
@@ -62680,6 +64231,7 @@ class $CompraEventoTable extends CompraEvento
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   ];
   @override
@@ -62754,6 +64306,15 @@ class $CompraEventoTable extends CompraEvento
         actor.isAcceptableOrUnknown(data['actor']!, _actorMeta),
       );
     }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('datos_relevantes')) {
       context.handle(
         _datosRelevantesMeta,
@@ -62808,6 +64369,10 @@ class $CompraEventoTable extends CompraEvento
         DriftSqlType.string,
         data['${effectivePrefix}actor'],
       ),
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
       datosRelevantes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}datos_relevantes'],
@@ -62830,7 +64395,13 @@ class CompraEventoData extends DataClass
   final String? estadoAnterior;
   final String? estadoNuevo;
   final String? observacion;
+
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   final String? actor;
+  final String? actorUsuarioId;
   final String? datosRelevantes;
   const CompraEventoData({
     required this.id,
@@ -62841,6 +64412,7 @@ class CompraEventoData extends DataClass
     this.estadoNuevo,
     this.observacion,
     this.actor,
+    this.actorUsuarioId,
     this.datosRelevantes,
   });
   @override
@@ -62861,6 +64433,9 @@ class CompraEventoData extends DataClass
     }
     if (!nullToAbsent || actor != null) {
       map['actor'] = Variable<String>(actor);
+    }
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
     }
     if (!nullToAbsent || datosRelevantes != null) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes);
@@ -62888,6 +64463,10 @@ class CompraEventoData extends DataClass
               : Value(observacion),
       actor:
           actor == null && nullToAbsent ? const Value.absent() : Value(actor),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
       datosRelevantes:
           datosRelevantes == null && nullToAbsent
               ? const Value.absent()
@@ -62909,6 +64488,7 @@ class CompraEventoData extends DataClass
       estadoNuevo: serializer.fromJson<String?>(json['estadoNuevo']),
       observacion: serializer.fromJson<String?>(json['observacion']),
       actor: serializer.fromJson<String?>(json['actor']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
       datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
     );
   }
@@ -62924,6 +64504,7 @@ class CompraEventoData extends DataClass
       'estadoNuevo': serializer.toJson<String?>(estadoNuevo),
       'observacion': serializer.toJson<String?>(observacion),
       'actor': serializer.toJson<String?>(actor),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
       'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
     };
   }
@@ -62937,6 +64518,7 @@ class CompraEventoData extends DataClass
     Value<String?> estadoNuevo = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
     Value<String?> actor = const Value.absent(),
+    Value<String?> actorUsuarioId = const Value.absent(),
     Value<String?> datosRelevantes = const Value.absent(),
   }) => CompraEventoData(
     id: id ?? this.id,
@@ -62948,6 +64530,8 @@ class CompraEventoData extends DataClass
     estadoNuevo: estadoNuevo.present ? estadoNuevo.value : this.estadoNuevo,
     observacion: observacion.present ? observacion.value : this.observacion,
     actor: actor.present ? actor.value : this.actor,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
     datosRelevantes:
         datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
   );
@@ -62967,6 +64551,10 @@ class CompraEventoData extends DataClass
       observacion:
           data.observacion.present ? data.observacion.value : this.observacion,
       actor: data.actor.present ? data.actor.value : this.actor,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
       datosRelevantes:
           data.datosRelevantes.present
               ? data.datosRelevantes.value
@@ -62985,6 +64573,7 @@ class CompraEventoData extends DataClass
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
           ..write(')'))
         .toString();
@@ -63000,6 +64589,7 @@ class CompraEventoData extends DataClass
     estadoNuevo,
     observacion,
     actor,
+    actorUsuarioId,
     datosRelevantes,
   );
   @override
@@ -63014,6 +64604,7 @@ class CompraEventoData extends DataClass
           other.estadoNuevo == this.estadoNuevo &&
           other.observacion == this.observacion &&
           other.actor == this.actor &&
+          other.actorUsuarioId == this.actorUsuarioId &&
           other.datosRelevantes == this.datosRelevantes);
 }
 
@@ -63026,6 +64617,7 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
   final Value<String?> estadoNuevo;
   final Value<String?> observacion;
   final Value<String?> actor;
+  final Value<String?> actorUsuarioId;
   final Value<String?> datosRelevantes;
   const CompraEventoCompanion({
     this.id = const Value.absent(),
@@ -63036,6 +64628,7 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   });
   CompraEventoCompanion.insert({
@@ -63047,6 +64640,7 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
     this.estadoNuevo = const Value.absent(),
     this.observacion = const Value.absent(),
     this.actor = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
     this.datosRelevantes = const Value.absent(),
   }) : compraId = Value(compraId),
        fechaHora = Value(fechaHora),
@@ -63060,6 +64654,7 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
     Expression<String>? estadoNuevo,
     Expression<String>? observacion,
     Expression<String>? actor,
+    Expression<String>? actorUsuarioId,
     Expression<String>? datosRelevantes,
   }) {
     return RawValuesInsertable({
@@ -63071,6 +64666,7 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
       if (estadoNuevo != null) 'estado_nuevo': estadoNuevo,
       if (observacion != null) 'observacion': observacion,
       if (actor != null) 'actor': actor,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
       if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
     });
   }
@@ -63084,6 +64680,7 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
     Value<String?>? estadoNuevo,
     Value<String?>? observacion,
     Value<String?>? actor,
+    Value<String?>? actorUsuarioId,
     Value<String?>? datosRelevantes,
   }) {
     return CompraEventoCompanion(
@@ -63095,6 +64692,7 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
       estadoNuevo: estadoNuevo ?? this.estadoNuevo,
       observacion: observacion ?? this.observacion,
       actor: actor ?? this.actor,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
       datosRelevantes: datosRelevantes ?? this.datosRelevantes,
     );
   }
@@ -63126,6 +64724,9 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
     if (actor.present) {
       map['actor'] = Variable<String>(actor.value);
     }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
     if (datosRelevantes.present) {
       map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
     }
@@ -63143,648 +64744,8 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
           ..write('estadoNuevo: $estadoNuevo, ')
           ..write('observacion: $observacion, ')
           ..write('actor: $actor, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
           ..write('datosRelevantes: $datosRelevantes')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $UsuarioTable extends Usuario with TableInfo<$UsuarioTable, UsuarioData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $UsuarioTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    clientDefault: () => const Uuid().v4(),
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-    'updated_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
-    'cicloVidaRegistro',
-  );
-  @override
-  late final GeneratedColumn<String> cicloVidaRegistro =
-      GeneratedColumn<String>(
-        'ciclo_vida_registro',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        defaultValue: const Constant('activo'),
-      );
-  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
-  @override
-  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
-    'nombre',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nombreUsuarioMeta = const VerificationMeta(
-    'nombreUsuario',
-  );
-  @override
-  late final GeneratedColumn<String> nombreUsuario = GeneratedColumn<String>(
-    'nombre_usuario',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
-  );
-  static const VerificationMeta _passwordHashMeta = const VerificationMeta(
-    'passwordHash',
-  );
-  @override
-  late final GeneratedColumn<String> passwordHash = GeneratedColumn<String>(
-    'password_hash',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _puestoIdMeta = const VerificationMeta(
-    'puestoId',
-  );
-  @override
-  late final GeneratedColumn<String> puestoId = GeneratedColumn<String>(
-    'puesto_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES puesto (id) ON DELETE RESTRICT',
-    ),
-  );
-  static const VerificationMeta _esMaestroMeta = const VerificationMeta(
-    'esMaestro',
-  );
-  @override
-  late final GeneratedColumn<bool> esMaestro = GeneratedColumn<bool>(
-    'es_maestro',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("es_maestro" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _ultimoAccesoAtMeta = const VerificationMeta(
-    'ultimoAccesoAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> ultimoAccesoAt =
-      GeneratedColumn<DateTime>(
-        'ultimo_acceso_at',
-        aliasedName,
-        true,
-        type: DriftSqlType.dateTime,
-        requiredDuringInsert: false,
-      );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    createdAt,
-    updatedAt,
-    cicloVidaRegistro,
-    nombre,
-    nombreUsuario,
-    passwordHash,
-    puestoId,
-    esMaestro,
-    ultimoAccesoAt,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'usuario';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<UsuarioData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    }
-    if (data.containsKey('updated_at')) {
-      context.handle(
-        _updatedAtMeta,
-        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
-      );
-    }
-    if (data.containsKey('ciclo_vida_registro')) {
-      context.handle(
-        _cicloVidaRegistroMeta,
-        cicloVidaRegistro.isAcceptableOrUnknown(
-          data['ciclo_vida_registro']!,
-          _cicloVidaRegistroMeta,
-        ),
-      );
-    }
-    if (data.containsKey('nombre')) {
-      context.handle(
-        _nombreMeta,
-        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nombreMeta);
-    }
-    if (data.containsKey('nombre_usuario')) {
-      context.handle(
-        _nombreUsuarioMeta,
-        nombreUsuario.isAcceptableOrUnknown(
-          data['nombre_usuario']!,
-          _nombreUsuarioMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_nombreUsuarioMeta);
-    }
-    if (data.containsKey('password_hash')) {
-      context.handle(
-        _passwordHashMeta,
-        passwordHash.isAcceptableOrUnknown(
-          data['password_hash']!,
-          _passwordHashMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_passwordHashMeta);
-    }
-    if (data.containsKey('puesto_id')) {
-      context.handle(
-        _puestoIdMeta,
-        puestoId.isAcceptableOrUnknown(data['puesto_id']!, _puestoIdMeta),
-      );
-    }
-    if (data.containsKey('es_maestro')) {
-      context.handle(
-        _esMaestroMeta,
-        esMaestro.isAcceptableOrUnknown(data['es_maestro']!, _esMaestroMeta),
-      );
-    }
-    if (data.containsKey('ultimo_acceso_at')) {
-      context.handle(
-        _ultimoAccesoAtMeta,
-        ultimoAccesoAt.isAcceptableOrUnknown(
-          data['ultimo_acceso_at']!,
-          _ultimoAccesoAtMeta,
-        ),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  UsuarioData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return UsuarioData(
-      id:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}id'],
-          )!,
-      createdAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}created_at'],
-          )!,
-      updatedAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}updated_at'],
-          )!,
-      cicloVidaRegistro:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}ciclo_vida_registro'],
-          )!,
-      nombre:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}nombre'],
-          )!,
-      nombreUsuario:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}nombre_usuario'],
-          )!,
-      passwordHash:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}password_hash'],
-          )!,
-      puestoId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}puesto_id'],
-      ),
-      esMaestro:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.bool,
-            data['${effectivePrefix}es_maestro'],
-          )!,
-      ultimoAccesoAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}ultimo_acceso_at'],
-      ),
-    );
-  }
-
-  @override
-  $UsuarioTable createAlias(String alias) {
-    return $UsuarioTable(attachedDatabase, alias);
-  }
-}
-
-class UsuarioData extends DataClass implements Insertable<UsuarioData> {
-  final String id;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final String cicloVidaRegistro;
-  final String nombre;
-  final String nombreUsuario;
-  final String passwordHash;
-  final String? puestoId;
-  final bool esMaestro;
-  final DateTime? ultimoAccesoAt;
-  const UsuarioData({
-    required this.id,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.cicloVidaRegistro,
-    required this.nombre,
-    required this.nombreUsuario,
-    required this.passwordHash,
-    this.puestoId,
-    required this.esMaestro,
-    this.ultimoAccesoAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['created_at'] = Variable<DateTime>(createdAt);
-    map['updated_at'] = Variable<DateTime>(updatedAt);
-    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
-    map['nombre'] = Variable<String>(nombre);
-    map['nombre_usuario'] = Variable<String>(nombreUsuario);
-    map['password_hash'] = Variable<String>(passwordHash);
-    if (!nullToAbsent || puestoId != null) {
-      map['puesto_id'] = Variable<String>(puestoId);
-    }
-    map['es_maestro'] = Variable<bool>(esMaestro);
-    if (!nullToAbsent || ultimoAccesoAt != null) {
-      map['ultimo_acceso_at'] = Variable<DateTime>(ultimoAccesoAt);
-    }
-    return map;
-  }
-
-  UsuarioCompanion toCompanion(bool nullToAbsent) {
-    return UsuarioCompanion(
-      id: Value(id),
-      createdAt: Value(createdAt),
-      updatedAt: Value(updatedAt),
-      cicloVidaRegistro: Value(cicloVidaRegistro),
-      nombre: Value(nombre),
-      nombreUsuario: Value(nombreUsuario),
-      passwordHash: Value(passwordHash),
-      puestoId:
-          puestoId == null && nullToAbsent
-              ? const Value.absent()
-              : Value(puestoId),
-      esMaestro: Value(esMaestro),
-      ultimoAccesoAt:
-          ultimoAccesoAt == null && nullToAbsent
-              ? const Value.absent()
-              : Value(ultimoAccesoAt),
-    );
-  }
-
-  factory UsuarioData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return UsuarioData(
-      id: serializer.fromJson<String>(json['id']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
-      nombre: serializer.fromJson<String>(json['nombre']),
-      nombreUsuario: serializer.fromJson<String>(json['nombreUsuario']),
-      passwordHash: serializer.fromJson<String>(json['passwordHash']),
-      puestoId: serializer.fromJson<String?>(json['puestoId']),
-      esMaestro: serializer.fromJson<bool>(json['esMaestro']),
-      ultimoAccesoAt: serializer.fromJson<DateTime?>(json['ultimoAccesoAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
-      'nombre': serializer.toJson<String>(nombre),
-      'nombreUsuario': serializer.toJson<String>(nombreUsuario),
-      'passwordHash': serializer.toJson<String>(passwordHash),
-      'puestoId': serializer.toJson<String?>(puestoId),
-      'esMaestro': serializer.toJson<bool>(esMaestro),
-      'ultimoAccesoAt': serializer.toJson<DateTime?>(ultimoAccesoAt),
-    };
-  }
-
-  UsuarioData copyWith({
-    String? id,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    String? cicloVidaRegistro,
-    String? nombre,
-    String? nombreUsuario,
-    String? passwordHash,
-    Value<String?> puestoId = const Value.absent(),
-    bool? esMaestro,
-    Value<DateTime?> ultimoAccesoAt = const Value.absent(),
-  }) => UsuarioData(
-    id: id ?? this.id,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
-    nombre: nombre ?? this.nombre,
-    nombreUsuario: nombreUsuario ?? this.nombreUsuario,
-    passwordHash: passwordHash ?? this.passwordHash,
-    puestoId: puestoId.present ? puestoId.value : this.puestoId,
-    esMaestro: esMaestro ?? this.esMaestro,
-    ultimoAccesoAt:
-        ultimoAccesoAt.present ? ultimoAccesoAt.value : this.ultimoAccesoAt,
-  );
-  UsuarioData copyWithCompanion(UsuarioCompanion data) {
-    return UsuarioData(
-      id: data.id.present ? data.id.value : this.id,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      cicloVidaRegistro:
-          data.cicloVidaRegistro.present
-              ? data.cicloVidaRegistro.value
-              : this.cicloVidaRegistro,
-      nombre: data.nombre.present ? data.nombre.value : this.nombre,
-      nombreUsuario:
-          data.nombreUsuario.present
-              ? data.nombreUsuario.value
-              : this.nombreUsuario,
-      passwordHash:
-          data.passwordHash.present
-              ? data.passwordHash.value
-              : this.passwordHash,
-      puestoId: data.puestoId.present ? data.puestoId.value : this.puestoId,
-      esMaestro: data.esMaestro.present ? data.esMaestro.value : this.esMaestro,
-      ultimoAccesoAt:
-          data.ultimoAccesoAt.present
-              ? data.ultimoAccesoAt.value
-              : this.ultimoAccesoAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('UsuarioData(')
-          ..write('id: $id, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
-          ..write('nombre: $nombre, ')
-          ..write('nombreUsuario: $nombreUsuario, ')
-          ..write('passwordHash: $passwordHash, ')
-          ..write('puestoId: $puestoId, ')
-          ..write('esMaestro: $esMaestro, ')
-          ..write('ultimoAccesoAt: $ultimoAccesoAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    createdAt,
-    updatedAt,
-    cicloVidaRegistro,
-    nombre,
-    nombreUsuario,
-    passwordHash,
-    puestoId,
-    esMaestro,
-    ultimoAccesoAt,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is UsuarioData &&
-          other.id == this.id &&
-          other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt &&
-          other.cicloVidaRegistro == this.cicloVidaRegistro &&
-          other.nombre == this.nombre &&
-          other.nombreUsuario == this.nombreUsuario &&
-          other.passwordHash == this.passwordHash &&
-          other.puestoId == this.puestoId &&
-          other.esMaestro == this.esMaestro &&
-          other.ultimoAccesoAt == this.ultimoAccesoAt);
-}
-
-class UsuarioCompanion extends UpdateCompanion<UsuarioData> {
-  final Value<String> id;
-  final Value<DateTime> createdAt;
-  final Value<DateTime> updatedAt;
-  final Value<String> cicloVidaRegistro;
-  final Value<String> nombre;
-  final Value<String> nombreUsuario;
-  final Value<String> passwordHash;
-  final Value<String?> puestoId;
-  final Value<bool> esMaestro;
-  final Value<DateTime?> ultimoAccesoAt;
-  final Value<int> rowid;
-  const UsuarioCompanion({
-    this.id = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.cicloVidaRegistro = const Value.absent(),
-    this.nombre = const Value.absent(),
-    this.nombreUsuario = const Value.absent(),
-    this.passwordHash = const Value.absent(),
-    this.puestoId = const Value.absent(),
-    this.esMaestro = const Value.absent(),
-    this.ultimoAccesoAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  UsuarioCompanion.insert({
-    this.id = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.cicloVidaRegistro = const Value.absent(),
-    required String nombre,
-    required String nombreUsuario,
-    required String passwordHash,
-    this.puestoId = const Value.absent(),
-    this.esMaestro = const Value.absent(),
-    this.ultimoAccesoAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : nombre = Value(nombre),
-       nombreUsuario = Value(nombreUsuario),
-       passwordHash = Value(passwordHash);
-  static Insertable<UsuarioData> custom({
-    Expression<String>? id,
-    Expression<DateTime>? createdAt,
-    Expression<DateTime>? updatedAt,
-    Expression<String>? cicloVidaRegistro,
-    Expression<String>? nombre,
-    Expression<String>? nombreUsuario,
-    Expression<String>? passwordHash,
-    Expression<String>? puestoId,
-    Expression<bool>? esMaestro,
-    Expression<DateTime>? ultimoAccesoAt,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (createdAt != null) 'created_at': createdAt,
-      if (updatedAt != null) 'updated_at': updatedAt,
-      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
-      if (nombre != null) 'nombre': nombre,
-      if (nombreUsuario != null) 'nombre_usuario': nombreUsuario,
-      if (passwordHash != null) 'password_hash': passwordHash,
-      if (puestoId != null) 'puesto_id': puestoId,
-      if (esMaestro != null) 'es_maestro': esMaestro,
-      if (ultimoAccesoAt != null) 'ultimo_acceso_at': ultimoAccesoAt,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  UsuarioCompanion copyWith({
-    Value<String>? id,
-    Value<DateTime>? createdAt,
-    Value<DateTime>? updatedAt,
-    Value<String>? cicloVidaRegistro,
-    Value<String>? nombre,
-    Value<String>? nombreUsuario,
-    Value<String>? passwordHash,
-    Value<String?>? puestoId,
-    Value<bool>? esMaestro,
-    Value<DateTime?>? ultimoAccesoAt,
-    Value<int>? rowid,
-  }) {
-    return UsuarioCompanion(
-      id: id ?? this.id,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
-      nombre: nombre ?? this.nombre,
-      nombreUsuario: nombreUsuario ?? this.nombreUsuario,
-      passwordHash: passwordHash ?? this.passwordHash,
-      puestoId: puestoId ?? this.puestoId,
-      esMaestro: esMaestro ?? this.esMaestro,
-      ultimoAccesoAt: ultimoAccesoAt ?? this.ultimoAccesoAt,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    if (updatedAt.present) {
-      map['updated_at'] = Variable<DateTime>(updatedAt.value);
-    }
-    if (cicloVidaRegistro.present) {
-      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
-    }
-    if (nombre.present) {
-      map['nombre'] = Variable<String>(nombre.value);
-    }
-    if (nombreUsuario.present) {
-      map['nombre_usuario'] = Variable<String>(nombreUsuario.value);
-    }
-    if (passwordHash.present) {
-      map['password_hash'] = Variable<String>(passwordHash.value);
-    }
-    if (puestoId.present) {
-      map['puesto_id'] = Variable<String>(puestoId.value);
-    }
-    if (esMaestro.present) {
-      map['es_maestro'] = Variable<bool>(esMaestro.value);
-    }
-    if (ultimoAccesoAt.present) {
-      map['ultimo_acceso_at'] = Variable<DateTime>(ultimoAccesoAt.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('UsuarioCompanion(')
-          ..write('id: $id, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
-          ..write('nombre: $nombre, ')
-          ..write('nombreUsuario: $nombreUsuario, ')
-          ..write('passwordHash: $passwordHash, ')
-          ..write('puestoId: $puestoId, ')
-          ..write('esMaestro: $esMaestro, ')
-          ..write('ultimoAccesoAt: $ultimoAccesoAt, ')
-          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -64502,6 +65463,512 @@ class PermisoUsuarioCompanion extends UpdateCompanion<PermisoUsuarioData> {
   }
 }
 
+class $EliminacionFisicaEventoTable extends EliminacionFisicaEvento
+    with TableInfo<$EliminacionFisicaEventoTable, EliminacionFisicaEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EliminacionFisicaEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _tipoEntidadMeta = const VerificationMeta(
+    'tipoEntidad',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEntidad = GeneratedColumn<String>(
+    'tipo_entidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entidadIdOriginalMeta = const VerificationMeta(
+    'entidadIdOriginal',
+  );
+  @override
+  late final GeneratedColumn<String> entidadIdOriginal =
+      GeneratedColumn<String>(
+        'entidad_id_original',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _motivoMeta = const VerificationMeta('motivo');
+  @override
+  late final GeneratedColumn<String> motivo = GeneratedColumn<String>(
+    'motivo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _snapshotJsonMeta = const VerificationMeta(
+    'snapshotJson',
+  );
+  @override
+  late final GeneratedColumn<String> snapshotJson = GeneratedColumn<String>(
+    'snapshot_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tipoEntidad,
+    entidadIdOriginal,
+    actorUsuarioId,
+    fechaHora,
+    motivo,
+    snapshotJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'eliminacion_fisica_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EliminacionFisicaEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('tipo_entidad')) {
+      context.handle(
+        _tipoEntidadMeta,
+        tipoEntidad.isAcceptableOrUnknown(
+          data['tipo_entidad']!,
+          _tipoEntidadMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEntidadMeta);
+    }
+    if (data.containsKey('entidad_id_original')) {
+      context.handle(
+        _entidadIdOriginalMeta,
+        entidadIdOriginal.isAcceptableOrUnknown(
+          data['entidad_id_original']!,
+          _entidadIdOriginalMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_entidadIdOriginalMeta);
+    }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('motivo')) {
+      context.handle(
+        _motivoMeta,
+        motivo.isAcceptableOrUnknown(data['motivo']!, _motivoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_motivoMeta);
+    }
+    if (data.containsKey('snapshot_json')) {
+      context.handle(
+        _snapshotJsonMeta,
+        snapshotJson.isAcceptableOrUnknown(
+          data['snapshot_json']!,
+          _snapshotJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_snapshotJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EliminacionFisicaEventoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EliminacionFisicaEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      tipoEntidad:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_entidad'],
+          )!,
+      entidadIdOriginal:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}entidad_id_original'],
+          )!,
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      motivo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}motivo'],
+          )!,
+      snapshotJson:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}snapshot_json'],
+          )!,
+    );
+  }
+
+  @override
+  $EliminacionFisicaEventoTable createAlias(String alias) {
+    return $EliminacionFisicaEventoTable(attachedDatabase, alias);
+  }
+}
+
+class EliminacionFisicaEventoData extends DataClass
+    implements Insertable<EliminacionFisicaEventoData> {
+  final int id;
+
+  /// Ej. `'vehiculo'`, `'lineaTelefonica'`, `'articulo'`,
+  /// `'categoriaArticulo'`, `'area'`, `'puesto'`, `'sucursal'` — texto
+  /// libre, mismo criterio que `tipoEvento` en el resto del proyecto
+  /// (nunca una referencia a un enum de base de datos).
+  final String tipoEntidad;
+  final String entidadIdOriginal;
+
+  /// Obligatorio siempre que exista sesión — la única excepción teórica
+  /// (`null`) sería una eliminación disparada sin sesión activa, que
+  /// `exigirMaestro` ya rechaza antes de llegar aquí; se deja nullable
+  /// únicamente por el mismo criterio estructural que `UsuarioEvento.actorUsuarioId`
+  /// (`ON DELETE SET NULL` — el evento sobrevive aunque el Usuario que
+  /// lo generó se elimine más adelante).
+  final String? actorUsuarioId;
+  final DateTime fechaHora;
+  final String motivo;
+  final String snapshotJson;
+  const EliminacionFisicaEventoData({
+    required this.id,
+    required this.tipoEntidad,
+    required this.entidadIdOriginal,
+    this.actorUsuarioId,
+    required this.fechaHora,
+    required this.motivo,
+    required this.snapshotJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['tipo_entidad'] = Variable<String>(tipoEntidad);
+    map['entidad_id_original'] = Variable<String>(entidadIdOriginal);
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
+    }
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['motivo'] = Variable<String>(motivo);
+    map['snapshot_json'] = Variable<String>(snapshotJson);
+    return map;
+  }
+
+  EliminacionFisicaEventoCompanion toCompanion(bool nullToAbsent) {
+    return EliminacionFisicaEventoCompanion(
+      id: Value(id),
+      tipoEntidad: Value(tipoEntidad),
+      entidadIdOriginal: Value(entidadIdOriginal),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
+      fechaHora: Value(fechaHora),
+      motivo: Value(motivo),
+      snapshotJson: Value(snapshotJson),
+    );
+  }
+
+  factory EliminacionFisicaEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EliminacionFisicaEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      tipoEntidad: serializer.fromJson<String>(json['tipoEntidad']),
+      entidadIdOriginal: serializer.fromJson<String>(json['entidadIdOriginal']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      motivo: serializer.fromJson<String>(json['motivo']),
+      snapshotJson: serializer.fromJson<String>(json['snapshotJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'tipoEntidad': serializer.toJson<String>(tipoEntidad),
+      'entidadIdOriginal': serializer.toJson<String>(entidadIdOriginal),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'motivo': serializer.toJson<String>(motivo),
+      'snapshotJson': serializer.toJson<String>(snapshotJson),
+    };
+  }
+
+  EliminacionFisicaEventoData copyWith({
+    int? id,
+    String? tipoEntidad,
+    String? entidadIdOriginal,
+    Value<String?> actorUsuarioId = const Value.absent(),
+    DateTime? fechaHora,
+    String? motivo,
+    String? snapshotJson,
+  }) => EliminacionFisicaEventoData(
+    id: id ?? this.id,
+    tipoEntidad: tipoEntidad ?? this.tipoEntidad,
+    entidadIdOriginal: entidadIdOriginal ?? this.entidadIdOriginal,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    motivo: motivo ?? this.motivo,
+    snapshotJson: snapshotJson ?? this.snapshotJson,
+  );
+  EliminacionFisicaEventoData copyWithCompanion(
+    EliminacionFisicaEventoCompanion data,
+  ) {
+    return EliminacionFisicaEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      tipoEntidad:
+          data.tipoEntidad.present ? data.tipoEntidad.value : this.tipoEntidad,
+      entidadIdOriginal:
+          data.entidadIdOriginal.present
+              ? data.entidadIdOriginal.value
+              : this.entidadIdOriginal,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      motivo: data.motivo.present ? data.motivo.value : this.motivo,
+      snapshotJson:
+          data.snapshotJson.present
+              ? data.snapshotJson.value
+              : this.snapshotJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EliminacionFisicaEventoData(')
+          ..write('id: $id, ')
+          ..write('tipoEntidad: $tipoEntidad, ')
+          ..write('entidadIdOriginal: $entidadIdOriginal, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('motivo: $motivo, ')
+          ..write('snapshotJson: $snapshotJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    tipoEntidad,
+    entidadIdOriginal,
+    actorUsuarioId,
+    fechaHora,
+    motivo,
+    snapshotJson,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EliminacionFisicaEventoData &&
+          other.id == this.id &&
+          other.tipoEntidad == this.tipoEntidad &&
+          other.entidadIdOriginal == this.entidadIdOriginal &&
+          other.actorUsuarioId == this.actorUsuarioId &&
+          other.fechaHora == this.fechaHora &&
+          other.motivo == this.motivo &&
+          other.snapshotJson == this.snapshotJson);
+}
+
+class EliminacionFisicaEventoCompanion
+    extends UpdateCompanion<EliminacionFisicaEventoData> {
+  final Value<int> id;
+  final Value<String> tipoEntidad;
+  final Value<String> entidadIdOriginal;
+  final Value<String?> actorUsuarioId;
+  final Value<DateTime> fechaHora;
+  final Value<String> motivo;
+  final Value<String> snapshotJson;
+  const EliminacionFisicaEventoCompanion({
+    this.id = const Value.absent(),
+    this.tipoEntidad = const Value.absent(),
+    this.entidadIdOriginal = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.motivo = const Value.absent(),
+    this.snapshotJson = const Value.absent(),
+  });
+  EliminacionFisicaEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String tipoEntidad,
+    required String entidadIdOriginal,
+    this.actorUsuarioId = const Value.absent(),
+    required DateTime fechaHora,
+    required String motivo,
+    required String snapshotJson,
+  }) : tipoEntidad = Value(tipoEntidad),
+       entidadIdOriginal = Value(entidadIdOriginal),
+       fechaHora = Value(fechaHora),
+       motivo = Value(motivo),
+       snapshotJson = Value(snapshotJson);
+  static Insertable<EliminacionFisicaEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? tipoEntidad,
+    Expression<String>? entidadIdOriginal,
+    Expression<String>? actorUsuarioId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? motivo,
+    Expression<String>? snapshotJson,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tipoEntidad != null) 'tipo_entidad': tipoEntidad,
+      if (entidadIdOriginal != null) 'entidad_id_original': entidadIdOriginal,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (motivo != null) 'motivo': motivo,
+      if (snapshotJson != null) 'snapshot_json': snapshotJson,
+    });
+  }
+
+  EliminacionFisicaEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? tipoEntidad,
+    Value<String>? entidadIdOriginal,
+    Value<String?>? actorUsuarioId,
+    Value<DateTime>? fechaHora,
+    Value<String>? motivo,
+    Value<String>? snapshotJson,
+  }) {
+    return EliminacionFisicaEventoCompanion(
+      id: id ?? this.id,
+      tipoEntidad: tipoEntidad ?? this.tipoEntidad,
+      entidadIdOriginal: entidadIdOriginal ?? this.entidadIdOriginal,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      motivo: motivo ?? this.motivo,
+      snapshotJson: snapshotJson ?? this.snapshotJson,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (tipoEntidad.present) {
+      map['tipo_entidad'] = Variable<String>(tipoEntidad.value);
+    }
+    if (entidadIdOriginal.present) {
+      map['entidad_id_original'] = Variable<String>(entidadIdOriginal.value);
+    }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (motivo.present) {
+      map['motivo'] = Variable<String>(motivo.value);
+    }
+    if (snapshotJson.present) {
+      map['snapshot_json'] = Variable<String>(snapshotJson.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EliminacionFisicaEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('tipoEntidad: $tipoEntidad, ')
+          ..write('entidadIdOriginal: $entidadIdOriginal, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('motivo: $motivo, ')
+          ..write('snapshotJson: $snapshotJson')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -64555,6 +66022,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $DocumentoPorEmitirCorreoTable(this);
   late final $DocumentoPorEmitirCorreoEnvioTable documentoPorEmitirCorreoEnvio =
       $DocumentoPorEmitirCorreoEnvioTable(this);
+  late final $UsuarioTable usuario = $UsuarioTable(this);
   late final $DocumentoPorEmitirEventoTable documentoPorEmitirEvento =
       $DocumentoPorEmitirEventoTable(this);
   late final $CuentaPorCobrarTable cuentaPorCobrar = $CuentaPorCobrarTable(
@@ -64671,9 +66139,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $CompraEventoTable compraEvento = $CompraEventoTable(this);
-  late final $UsuarioTable usuario = $UsuarioTable(this);
   late final $UsuarioEventoTable usuarioEvento = $UsuarioEventoTable(this);
   late final $PermisoUsuarioTable permisoUsuario = $PermisoUsuarioTable(this);
+  late final $EliminacionFisicaEventoTable eliminacionFisicaEvento =
+      $EliminacionFisicaEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -64757,6 +66226,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     documentoPorEmitirLinea,
     documentoPorEmitirCorreo,
     documentoPorEmitirCorreoEnvio,
+    usuario,
     documentoPorEmitirEvento,
     cuentaPorCobrar,
     cuentaPorCobrarEvento,
@@ -64820,9 +66290,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     compraPartidaMovimiento,
     compraAttachment,
     compraEvento,
-    usuario,
     usuarioEvento,
     permisoUsuario,
+    eliminacionFisicaEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -64927,11 +66397,29 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('documento_por_emitir_evento', kind: UpdateKind.update),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'cuenta_por_cobrar',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [
         TableUpdate('cuenta_por_cobrar_evento', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('cuenta_por_cobrar_evento', kind: UpdateKind.update),
       ],
     ),
     WritePropagation(
@@ -64943,10 +66431,24 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('pago_evento', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'complemento_pago',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('complemento_pago_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('complemento_pago_evento', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -64957,6 +66459,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('ingreso_evento', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'egreso',
         limitUpdateKind: UpdateKind.delete,
       ),
@@ -64964,10 +66473,24 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('egreso_evento', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'empleado',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('empleado_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('empleado_evento', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -65114,10 +66637,24 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('nomina_evento', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'pago_nomina',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('pago_nomina_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('pago_nomina_evento', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -65141,6 +66678,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       result: [
         TableUpdate('articulo_unidad_telefono', kind: UpdateKind.delete),
       ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('movimiento_inventario', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -65196,6 +66740,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('vehiculo_kilometraje', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('vehiculo_documento', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'attachment',
         limitUpdateKind: UpdateKind.delete,
       ),
@@ -65211,6 +66769,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       result: [
         TableUpdate('vehiculo_documento_attachment', kind: UpdateKind.delete),
       ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('vehiculo_mantenimiento', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -65234,6 +66799,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
           'vehiculo_mantenimiento_attachment',
           kind: UpdateKind.delete,
         ),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('recarga_linea_telefonica', kind: UpdateKind.update),
       ],
     ),
     WritePropagation(
@@ -65286,6 +66860,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         'usuario',
         limitUpdateKind: UpdateKind.delete,
       ),
+      result: [TableUpdate('compra_evento', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
       result: [TableUpdate('usuario_evento', kind: UpdateKind.delete)],
     ),
     WritePropagation(
@@ -65301,6 +66882,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('permiso_usuario', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('eliminacion_fisica_evento', kind: UpdateKind.update),
+      ],
     ),
   ]);
 }
@@ -79717,24 +81307,6 @@ final class $$PuestoTableReferences
     );
   }
 
-  static MultiTypedResultKey<$EmpleadoTable, List<EmpleadoData>>
-  _empleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.empleado,
-    aliasName: $_aliasNameGenerator(db.puesto.id, db.empleado.puestoId),
-  );
-
-  $$EmpleadoTableProcessedTableManager get empleadoRefs {
-    final manager = $$EmpleadoTableTableManager(
-      $_db,
-      $_db.empleado,
-    ).filter((f) => f.puestoId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_empleadoRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
   static MultiTypedResultKey<$UsuarioTable, List<UsuarioData>>
   _usuarioRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.usuario,
@@ -79748,6 +81320,24 @@ final class $$PuestoTableReferences
     ).filter((f) => f.puestoId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_usuarioRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$EmpleadoTable, List<EmpleadoData>>
+  _empleadoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.empleado,
+    aliasName: $_aliasNameGenerator(db.puesto.id, db.empleado.puestoId),
+  );
+
+  $$EmpleadoTableProcessedTableManager get empleadoRefs {
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.puestoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_empleadoRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -79860,31 +81450,6 @@ class $$PuestoTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> empleadoRefs(
-    Expression<bool> Function($$EmpleadoTableFilterComposer f) f,
-  ) {
-    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.empleado,
-      getReferencedColumn: (t) => t.puestoId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$EmpleadoTableFilterComposer(
-            $db: $db,
-            $table: $db.empleado,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<bool> usuarioRefs(
     Expression<bool> Function($$UsuarioTableFilterComposer f) f,
   ) {
@@ -79901,6 +81466,31 @@ class $$PuestoTableFilterComposer
           }) => $$UsuarioTableFilterComposer(
             $db: $db,
             $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> empleadoRefs(
+    Expression<bool> Function($$EmpleadoTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.puestoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -80083,31 +81673,6 @@ class $$PuestoTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> empleadoRefs<T extends Object>(
-    Expression<T> Function($$EmpleadoTableAnnotationComposer a) f,
-  ) {
-    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.empleado,
-      getReferencedColumn: (t) => t.puestoId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$EmpleadoTableAnnotationComposer(
-            $db: $db,
-            $table: $db.empleado,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> usuarioRefs<T extends Object>(
     Expression<T> Function($$UsuarioTableAnnotationComposer a) f,
   ) {
@@ -80124,6 +81689,31 @@ class $$PuestoTableAnnotationComposer
           }) => $$UsuarioTableAnnotationComposer(
             $db: $db,
             $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> empleadoRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.puestoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -80150,8 +81740,8 @@ class $$PuestoTableTableManager
           PrefetchHooks Function({
             bool areaId,
             bool servicioLineaComercialVigenciaRefs,
-            bool empleadoRefs,
             bool usuarioRefs,
+            bool empleadoRefs,
           })
         > {
   $$PuestoTableTableManager(_$AppDatabase db, $PuestoTable table)
@@ -80230,16 +81820,16 @@ class $$PuestoTableTableManager
           prefetchHooksCallback: ({
             areaId = false,
             servicioLineaComercialVigenciaRefs = false,
-            empleadoRefs = false,
             usuarioRefs = false,
+            empleadoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (servicioLineaComercialVigenciaRefs)
                   db.servicioLineaComercialVigencia,
-                if (empleadoRefs) db.empleado,
                 if (usuarioRefs) db.usuario,
+                if (empleadoRefs) db.empleado,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -80295,28 +81885,6 @@ class $$PuestoTableTableManager
                           ),
                       typedResults: items,
                     ),
-                  if (empleadoRefs)
-                    await $_getPrefetchedData<
-                      PuestoData,
-                      $PuestoTable,
-                      EmpleadoData
-                    >(
-                      currentTable: table,
-                      referencedTable: $$PuestoTableReferences
-                          ._empleadoRefsTable(db),
-                      managerFromTypedResult:
-                          (p0) =>
-                              $$PuestoTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).empleadoRefs,
-                      referencedItemsForCurrentItem:
-                          (item, referencedItems) => referencedItems.where(
-                            (e) => e.puestoId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
                   if (usuarioRefs)
                     await $_getPrefetchedData<
                       PuestoData,
@@ -80333,6 +81901,28 @@ class $$PuestoTableTableManager
                                 table,
                                 p0,
                               ).usuarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.puestoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (empleadoRefs)
+                    await $_getPrefetchedData<
+                      PuestoData,
+                      $PuestoTable,
+                      EmpleadoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PuestoTableReferences
+                          ._empleadoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$PuestoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoRefs,
                       referencedItemsForCurrentItem:
                           (item, referencedItems) => referencedItems.where(
                             (e) => e.puestoId == item.id,
@@ -80362,8 +81952,8 @@ typedef $$PuestoTableProcessedTableManager =
       PrefetchHooks Function({
         bool areaId,
         bool servicioLineaComercialVigenciaRefs,
-        bool empleadoRefs,
         bool usuarioRefs,
+        bool empleadoRefs,
       })
     >;
 typedef $$ServicioLineaComercialTableCreateCompanionBuilder =
@@ -88441,6 +90031,2162 @@ typedef $$DocumentoPorEmitirCorreoEnvioTableProcessedTableManager =
       DocumentoPorEmitirCorreoEnvioData,
       PrefetchHooks Function({bool documentoPorEmitirId})
     >;
+typedef $$UsuarioTableCreateCompanionBuilder =
+    UsuarioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String nombre,
+      required String nombreUsuario,
+      required String passwordHash,
+      Value<String?> puestoId,
+      Value<bool> esMaestro,
+      Value<DateTime?> ultimoAccesoAt,
+      Value<int> rowid,
+    });
+typedef $$UsuarioTableUpdateCompanionBuilder =
+    UsuarioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> nombre,
+      Value<String> nombreUsuario,
+      Value<String> passwordHash,
+      Value<String?> puestoId,
+      Value<bool> esMaestro,
+      Value<DateTime?> ultimoAccesoAt,
+      Value<int> rowid,
+    });
+
+final class $$UsuarioTableReferences
+    extends BaseReferences<_$AppDatabase, $UsuarioTable, UsuarioData> {
+  $$UsuarioTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PuestoTable _puestoIdTable(_$AppDatabase db) => db.puesto.createAlias(
+    $_aliasNameGenerator(db.usuario.puestoId, db.puesto.id),
+  );
+
+  $$PuestoTableProcessedTableManager? get puestoId {
+    final $_column = $_itemColumn<String>('puesto_id');
+    if ($_column == null) return null;
+    final manager = $$PuestoTableTableManager(
+      $_db,
+      $_db.puesto,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_puestoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirEventoTable,
+    List<DocumentoPorEmitirEventoData>
+  >
+  _documentoPorEmitirEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirEvento,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.documentoPorEmitirEvento.actorUsuarioId,
+        ),
+      );
+
+  $$DocumentoPorEmitirEventoTableProcessedTableManager
+  get documentoPorEmitirEventoRefs {
+    final manager = $$DocumentoPorEmitirEventoTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CuentaPorCobrarEventoTable,
+    List<CuentaPorCobrarEventoData>
+  >
+  _cuentaPorCobrarEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.cuentaPorCobrarEvento,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.cuentaPorCobrarEvento.actorUsuarioId,
+        ),
+      );
+
+  $$CuentaPorCobrarEventoTableProcessedTableManager
+  get cuentaPorCobrarEventoRefs {
+    final manager = $$CuentaPorCobrarEventoTableTableManager(
+      $_db,
+      $_db.cuentaPorCobrarEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _cuentaPorCobrarEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PagoEventoTable, List<PagoEventoData>>
+  _pagoEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pagoEvento,
+    aliasName: $_aliasNameGenerator(
+      db.usuario.id,
+      db.pagoEvento.actorUsuarioId,
+    ),
+  );
+
+  $$PagoEventoTableProcessedTableManager get pagoEventoRefs {
+    final manager = $$PagoEventoTableTableManager(
+      $_db,
+      $_db.pagoEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pagoEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ComplementoPagoEventoTable,
+    List<ComplementoPagoEventoData>
+  >
+  _complementoPagoEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.complementoPagoEvento,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.complementoPagoEvento.actorUsuarioId,
+        ),
+      );
+
+  $$ComplementoPagoEventoTableProcessedTableManager
+  get complementoPagoEventoRefs {
+    final manager = $$ComplementoPagoEventoTableTableManager(
+      $_db,
+      $_db.complementoPagoEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _complementoPagoEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$IngresoEventoTable, List<IngresoEventoData>>
+  _ingresoEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.ingresoEvento,
+    aliasName: $_aliasNameGenerator(
+      db.usuario.id,
+      db.ingresoEvento.actorUsuarioId,
+    ),
+  );
+
+  $$IngresoEventoTableProcessedTableManager get ingresoEventoRefs {
+    final manager = $$IngresoEventoTableTableManager(
+      $_db,
+      $_db.ingresoEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_ingresoEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$EgresoEventoTable, List<EgresoEventoData>>
+  _egresoEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.egresoEvento,
+    aliasName: $_aliasNameGenerator(
+      db.usuario.id,
+      db.egresoEvento.actorUsuarioId,
+    ),
+  );
+
+  $$EgresoEventoTableProcessedTableManager get egresoEventoRefs {
+    final manager = $$EgresoEventoTableTableManager(
+      $_db,
+      $_db.egresoEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_egresoEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$EmpleadoEventoTable, List<EmpleadoEventoData>>
+  _empleadoEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.empleadoEvento,
+    aliasName: $_aliasNameGenerator(
+      db.usuario.id,
+      db.empleadoEvento.actorUsuarioId,
+    ),
+  );
+
+  $$EmpleadoEventoTableProcessedTableManager get empleadoEventoRefs {
+    final manager = $$EmpleadoEventoTableTableManager(
+      $_db,
+      $_db.empleadoEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_empleadoEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$NominaEventoTable, List<NominaEventoData>>
+  _nominaEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.nominaEvento,
+    aliasName: $_aliasNameGenerator(
+      db.usuario.id,
+      db.nominaEvento.actorUsuarioId,
+    ),
+  );
+
+  $$NominaEventoTableProcessedTableManager get nominaEventoRefs {
+    final manager = $$NominaEventoTableTableManager(
+      $_db,
+      $_db.nominaEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_nominaEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PagoNominaEventoTable, List<PagoNominaEventoData>>
+  _pagoNominaEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pagoNominaEvento,
+    aliasName: $_aliasNameGenerator(
+      db.usuario.id,
+      db.pagoNominaEvento.actorUsuarioId,
+    ),
+  );
+
+  $$PagoNominaEventoTableProcessedTableManager get pagoNominaEventoRefs {
+    final manager = $$PagoNominaEventoTableTableManager(
+      $_db,
+      $_db.pagoNominaEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _pagoNominaEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $MovimientoInventarioTable,
+    List<MovimientoInventarioData>
+  >
+  _movimientoInventarioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.movimientoInventario,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.movimientoInventario.actorUsuarioId,
+        ),
+      );
+
+  $$MovimientoInventarioTableProcessedTableManager
+  get movimientoInventarioRefs {
+    final manager = $$MovimientoInventarioTableTableManager(
+      $_db,
+      $_db.movimientoInventario,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _movimientoInventarioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $VehiculoKilometrajeTable,
+    List<VehiculoKilometrajeData>
+  >
+  _vehiculoKilometrajeRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.vehiculoKilometraje,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.vehiculoKilometraje.actorUsuarioId,
+        ),
+      );
+
+  $$VehiculoKilometrajeTableProcessedTableManager get vehiculoKilometrajeRefs {
+    final manager = $$VehiculoKilometrajeTableTableManager(
+      $_db,
+      $_db.vehiculoKilometraje,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _vehiculoKilometrajeRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $VehiculoDocumentoTable,
+    List<VehiculoDocumentoData>
+  >
+  _vehiculoDocumentoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.vehiculoDocumento,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.vehiculoDocumento.actorUsuarioId,
+        ),
+      );
+
+  $$VehiculoDocumentoTableProcessedTableManager get vehiculoDocumentoRefs {
+    final manager = $$VehiculoDocumentoTableTableManager(
+      $_db,
+      $_db.vehiculoDocumento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _vehiculoDocumentoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $VehiculoMantenimientoTable,
+    List<VehiculoMantenimientoData>
+  >
+  _vehiculoMantenimientoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.vehiculoMantenimiento,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.vehiculoMantenimiento.actorUsuarioId,
+        ),
+      );
+
+  $$VehiculoMantenimientoTableProcessedTableManager
+  get vehiculoMantenimientoRefs {
+    final manager = $$VehiculoMantenimientoTableTableManager(
+      $_db,
+      $_db.vehiculoMantenimiento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _vehiculoMantenimientoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $RecargaLineaTelefonicaTable,
+    List<RecargaLineaTelefonicaData>
+  >
+  _recargaLineaTelefonicaRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.recargaLineaTelefonica,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.recargaLineaTelefonica.actorUsuarioId,
+        ),
+      );
+
+  $$RecargaLineaTelefonicaTableProcessedTableManager
+  get recargaLineaTelefonicaRefs {
+    final manager = $$RecargaLineaTelefonicaTableTableManager(
+      $_db,
+      $_db.recargaLineaTelefonica,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _recargaLineaTelefonicaRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CompraEventoTable, List<CompraEventoData>>
+  _compraEventoRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.compraEvento,
+    aliasName: $_aliasNameGenerator(
+      db.usuario.id,
+      db.compraEvento.actorUsuarioId,
+    ),
+  );
+
+  $$CompraEventoTableProcessedTableManager get compraEventoRefs {
+    final manager = $$CompraEventoTableTableManager(
+      $_db,
+      $_db.compraEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_compraEventoRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PermisoUsuarioTable, List<PermisoUsuarioData>>
+  _permisoUsuarioRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.permisoUsuario,
+    aliasName: $_aliasNameGenerator(db.usuario.id, db.permisoUsuario.usuarioId),
+  );
+
+  $$PermisoUsuarioTableProcessedTableManager get permisoUsuarioRefs {
+    final manager = $$PermisoUsuarioTableTableManager(
+      $_db,
+      $_db.permisoUsuario,
+    ).filter((f) => f.usuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_permisoUsuarioRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $EliminacionFisicaEventoTable,
+    List<EliminacionFisicaEventoData>
+  >
+  _eliminacionFisicaEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.eliminacionFisicaEvento,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.eliminacionFisicaEvento.actorUsuarioId,
+        ),
+      );
+
+  $$EliminacionFisicaEventoTableProcessedTableManager
+  get eliminacionFisicaEventoRefs {
+    final manager = $$EliminacionFisicaEventoTableTableManager(
+      $_db,
+      $_db.eliminacionFisicaEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _eliminacionFisicaEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$UsuarioTableFilterComposer
+    extends Composer<_$AppDatabase, $UsuarioTable> {
+  $$UsuarioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombreUsuario => $composableBuilder(
+    column: $table.nombreUsuario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get esMaestro => $composableBuilder(
+    column: $table.esMaestro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get ultimoAccesoAt => $composableBuilder(
+    column: $table.ultimoAccesoAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PuestoTableFilterComposer get puestoId {
+    final $$PuestoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.puestoId,
+      referencedTable: $db.puesto,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PuestoTableFilterComposer(
+            $db: $db,
+            $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> documentoPorEmitirEventoRefs(
+    Expression<bool> Function($$DocumentoPorEmitirEventoTableFilterComposer f)
+    f,
+  ) {
+    final $$DocumentoPorEmitirEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> cuentaPorCobrarEventoRefs(
+    Expression<bool> Function($$CuentaPorCobrarEventoTableFilterComposer f) f,
+  ) {
+    final $$CuentaPorCobrarEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.cuentaPorCobrarEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CuentaPorCobrarEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.cuentaPorCobrarEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> pagoEventoRefs(
+    Expression<bool> Function($$PagoEventoTableFilterComposer f) f,
+  ) {
+    final $$PagoEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.pagoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> complementoPagoEventoRefs(
+    Expression<bool> Function($$ComplementoPagoEventoTableFilterComposer f) f,
+  ) {
+    final $$ComplementoPagoEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.complementoPagoEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ComplementoPagoEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.complementoPagoEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> ingresoEventoRefs(
+    Expression<bool> Function($$IngresoEventoTableFilterComposer f) f,
+  ) {
+    final $$IngresoEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingresoEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.ingresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> egresoEventoRefs(
+    Expression<bool> Function($$EgresoEventoTableFilterComposer f) f,
+  ) {
+    final $$EgresoEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egresoEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.egresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> empleadoEventoRefs(
+    Expression<bool> Function($$EmpleadoEventoTableFilterComposer f) f,
+  ) {
+    final $$EmpleadoEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleadoEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleadoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> nominaEventoRefs(
+    Expression<bool> Function($$NominaEventoTableFilterComposer f) f,
+  ) {
+    final $$NominaEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.nominaEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> pagoNominaEventoRefs(
+    Expression<bool> Function($$PagoNominaEventoTableFilterComposer f) f,
+  ) {
+    final $$PagoNominaEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoNominaEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoNominaEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.pagoNominaEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> movimientoInventarioRefs(
+    Expression<bool> Function($$MovimientoInventarioTableFilterComposer f) f,
+  ) {
+    final $$MovimientoInventarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.movimientoInventario,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovimientoInventarioTableFilterComposer(
+            $db: $db,
+            $table: $db.movimientoInventario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> vehiculoKilometrajeRefs(
+    Expression<bool> Function($$VehiculoKilometrajeTableFilterComposer f) f,
+  ) {
+    final $$VehiculoKilometrajeTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.vehiculoKilometraje,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoKilometrajeTableFilterComposer(
+            $db: $db,
+            $table: $db.vehiculoKilometraje,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> vehiculoDocumentoRefs(
+    Expression<bool> Function($$VehiculoDocumentoTableFilterComposer f) f,
+  ) {
+    final $$VehiculoDocumentoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.vehiculoDocumento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiculoDocumentoTableFilterComposer(
+            $db: $db,
+            $table: $db.vehiculoDocumento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> vehiculoMantenimientoRefs(
+    Expression<bool> Function($$VehiculoMantenimientoTableFilterComposer f) f,
+  ) {
+    final $$VehiculoMantenimientoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoMantenimiento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoMantenimientoTableFilterComposer(
+                $db: $db,
+                $table: $db.vehiculoMantenimiento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> recargaLineaTelefonicaRefs(
+    Expression<bool> Function($$RecargaLineaTelefonicaTableFilterComposer f) f,
+  ) {
+    final $$RecargaLineaTelefonicaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.recargaLineaTelefonica,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$RecargaLineaTelefonicaTableFilterComposer(
+                $db: $db,
+                $table: $db.recargaLineaTelefonica,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> compraEventoRefs(
+    Expression<bool> Function($$CompraEventoTableFilterComposer f) f,
+  ) {
+    final $$CompraEventoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraEventoTableFilterComposer(
+            $db: $db,
+            $table: $db.compraEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> permisoUsuarioRefs(
+    Expression<bool> Function($$PermisoUsuarioTableFilterComposer f) f,
+  ) {
+    final $$PermisoUsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.permisoUsuario,
+      getReferencedColumn: (t) => t.usuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PermisoUsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.permisoUsuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> eliminacionFisicaEventoRefs(
+    Expression<bool> Function($$EliminacionFisicaEventoTableFilterComposer f) f,
+  ) {
+    final $$EliminacionFisicaEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.eliminacionFisicaEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EliminacionFisicaEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.eliminacionFisicaEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$UsuarioTableOrderingComposer
+    extends Composer<_$AppDatabase, $UsuarioTable> {
+  $$UsuarioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombreUsuario => $composableBuilder(
+    column: $table.nombreUsuario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get esMaestro => $composableBuilder(
+    column: $table.esMaestro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get ultimoAccesoAt => $composableBuilder(
+    column: $table.ultimoAccesoAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PuestoTableOrderingComposer get puestoId {
+    final $$PuestoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.puestoId,
+      referencedTable: $db.puesto,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PuestoTableOrderingComposer(
+            $db: $db,
+            $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UsuarioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UsuarioTable> {
+  $$UsuarioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get nombreUsuario => $composableBuilder(
+    column: $table.nombreUsuario,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get esMaestro =>
+      $composableBuilder(column: $table.esMaestro, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get ultimoAccesoAt => $composableBuilder(
+    column: $table.ultimoAccesoAt,
+    builder: (column) => column,
+  );
+
+  $$PuestoTableAnnotationComposer get puestoId {
+    final $$PuestoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.puestoId,
+      referencedTable: $db.puesto,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PuestoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> documentoPorEmitirEventoRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirEventoTableAnnotationComposer a)
+    f,
+  ) {
+    final $$DocumentoPorEmitirEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> cuentaPorCobrarEventoRefs<T extends Object>(
+    Expression<T> Function($$CuentaPorCobrarEventoTableAnnotationComposer a) f,
+  ) {
+    final $$CuentaPorCobrarEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.cuentaPorCobrarEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CuentaPorCobrarEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.cuentaPorCobrarEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> pagoEventoRefs<T extends Object>(
+    Expression<T> Function($$PagoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$PagoEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pagoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> complementoPagoEventoRefs<T extends Object>(
+    Expression<T> Function($$ComplementoPagoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$ComplementoPagoEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.complementoPagoEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ComplementoPagoEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.complementoPagoEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> ingresoEventoRefs<T extends Object>(
+    Expression<T> Function($$IngresoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$IngresoEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ingresoEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngresoEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> egresoEventoRefs<T extends Object>(
+    Expression<T> Function($$EgresoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$EgresoEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.egresoEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EgresoEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.egresoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> empleadoEventoRefs<T extends Object>(
+    Expression<T> Function($$EmpleadoEventoTableAnnotationComposer a) f,
+  ) {
+    final $$EmpleadoEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.empleadoEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleadoEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> nominaEventoRefs<T extends Object>(
+    Expression<T> Function($$NominaEventoTableAnnotationComposer a) f,
+  ) {
+    final $$NominaEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.nominaEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$NominaEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.nominaEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> pagoNominaEventoRefs<T extends Object>(
+    Expression<T> Function($$PagoNominaEventoTableAnnotationComposer a) f,
+  ) {
+    final $$PagoNominaEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pagoNominaEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PagoNominaEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pagoNominaEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> movimientoInventarioRefs<T extends Object>(
+    Expression<T> Function($$MovimientoInventarioTableAnnotationComposer a) f,
+  ) {
+    final $$MovimientoInventarioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.movimientoInventario,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MovimientoInventarioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.movimientoInventario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> vehiculoKilometrajeRefs<T extends Object>(
+    Expression<T> Function($$VehiculoKilometrajeTableAnnotationComposer a) f,
+  ) {
+    final $$VehiculoKilometrajeTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoKilometraje,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoKilometrajeTableAnnotationComposer(
+                $db: $db,
+                $table: $db.vehiculoKilometraje,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> vehiculoDocumentoRefs<T extends Object>(
+    Expression<T> Function($$VehiculoDocumentoTableAnnotationComposer a) f,
+  ) {
+    final $$VehiculoDocumentoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoDocumento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoDocumentoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.vehiculoDocumento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> vehiculoMantenimientoRefs<T extends Object>(
+    Expression<T> Function($$VehiculoMantenimientoTableAnnotationComposer a) f,
+  ) {
+    final $$VehiculoMantenimientoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.vehiculoMantenimiento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$VehiculoMantenimientoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.vehiculoMantenimiento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> recargaLineaTelefonicaRefs<T extends Object>(
+    Expression<T> Function($$RecargaLineaTelefonicaTableAnnotationComposer a) f,
+  ) {
+    final $$RecargaLineaTelefonicaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.recargaLineaTelefonica,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$RecargaLineaTelefonicaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.recargaLineaTelefonica,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> compraEventoRefs<T extends Object>(
+    Expression<T> Function($$CompraEventoTableAnnotationComposer a) f,
+  ) {
+    final $$CompraEventoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.compraEvento,
+      getReferencedColumn: (t) => t.actorUsuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CompraEventoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.compraEvento,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> permisoUsuarioRefs<T extends Object>(
+    Expression<T> Function($$PermisoUsuarioTableAnnotationComposer a) f,
+  ) {
+    final $$PermisoUsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.permisoUsuario,
+      getReferencedColumn: (t) => t.usuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PermisoUsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.permisoUsuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> eliminacionFisicaEventoRefs<T extends Object>(
+    Expression<T> Function($$EliminacionFisicaEventoTableAnnotationComposer a)
+    f,
+  ) {
+    final $$EliminacionFisicaEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.eliminacionFisicaEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EliminacionFisicaEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.eliminacionFisicaEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$UsuarioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UsuarioTable,
+          UsuarioData,
+          $$UsuarioTableFilterComposer,
+          $$UsuarioTableOrderingComposer,
+          $$UsuarioTableAnnotationComposer,
+          $$UsuarioTableCreateCompanionBuilder,
+          $$UsuarioTableUpdateCompanionBuilder,
+          (UsuarioData, $$UsuarioTableReferences),
+          UsuarioData,
+          PrefetchHooks Function({
+            bool puestoId,
+            bool documentoPorEmitirEventoRefs,
+            bool cuentaPorCobrarEventoRefs,
+            bool pagoEventoRefs,
+            bool complementoPagoEventoRefs,
+            bool ingresoEventoRefs,
+            bool egresoEventoRefs,
+            bool empleadoEventoRefs,
+            bool nominaEventoRefs,
+            bool pagoNominaEventoRefs,
+            bool movimientoInventarioRefs,
+            bool vehiculoKilometrajeRefs,
+            bool vehiculoDocumentoRefs,
+            bool vehiculoMantenimientoRefs,
+            bool recargaLineaTelefonicaRefs,
+            bool compraEventoRefs,
+            bool permisoUsuarioRefs,
+            bool eliminacionFisicaEventoRefs,
+          })
+        > {
+  $$UsuarioTableTableManager(_$AppDatabase db, $UsuarioTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$UsuarioTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$UsuarioTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$UsuarioTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<String> nombreUsuario = const Value.absent(),
+                Value<String> passwordHash = const Value.absent(),
+                Value<String?> puestoId = const Value.absent(),
+                Value<bool> esMaestro = const Value.absent(),
+                Value<DateTime?> ultimoAccesoAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UsuarioCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nombre: nombre,
+                nombreUsuario: nombreUsuario,
+                passwordHash: passwordHash,
+                puestoId: puestoId,
+                esMaestro: esMaestro,
+                ultimoAccesoAt: ultimoAccesoAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String nombre,
+                required String nombreUsuario,
+                required String passwordHash,
+                Value<String?> puestoId = const Value.absent(),
+                Value<bool> esMaestro = const Value.absent(),
+                Value<DateTime?> ultimoAccesoAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UsuarioCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nombre: nombre,
+                nombreUsuario: nombreUsuario,
+                passwordHash: passwordHash,
+                puestoId: puestoId,
+                esMaestro: esMaestro,
+                ultimoAccesoAt: ultimoAccesoAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$UsuarioTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            puestoId = false,
+            documentoPorEmitirEventoRefs = false,
+            cuentaPorCobrarEventoRefs = false,
+            pagoEventoRefs = false,
+            complementoPagoEventoRefs = false,
+            ingresoEventoRefs = false,
+            egresoEventoRefs = false,
+            empleadoEventoRefs = false,
+            nominaEventoRefs = false,
+            pagoNominaEventoRefs = false,
+            movimientoInventarioRefs = false,
+            vehiculoKilometrajeRefs = false,
+            vehiculoDocumentoRefs = false,
+            vehiculoMantenimientoRefs = false,
+            recargaLineaTelefonicaRefs = false,
+            compraEventoRefs = false,
+            permisoUsuarioRefs = false,
+            eliminacionFisicaEventoRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (documentoPorEmitirEventoRefs) db.documentoPorEmitirEvento,
+                if (cuentaPorCobrarEventoRefs) db.cuentaPorCobrarEvento,
+                if (pagoEventoRefs) db.pagoEvento,
+                if (complementoPagoEventoRefs) db.complementoPagoEvento,
+                if (ingresoEventoRefs) db.ingresoEvento,
+                if (egresoEventoRefs) db.egresoEvento,
+                if (empleadoEventoRefs) db.empleadoEvento,
+                if (nominaEventoRefs) db.nominaEvento,
+                if (pagoNominaEventoRefs) db.pagoNominaEvento,
+                if (movimientoInventarioRefs) db.movimientoInventario,
+                if (vehiculoKilometrajeRefs) db.vehiculoKilometraje,
+                if (vehiculoDocumentoRefs) db.vehiculoDocumento,
+                if (vehiculoMantenimientoRefs) db.vehiculoMantenimiento,
+                if (recargaLineaTelefonicaRefs) db.recargaLineaTelefonica,
+                if (compraEventoRefs) db.compraEvento,
+                if (permisoUsuarioRefs) db.permisoUsuario,
+                if (eliminacionFisicaEventoRefs) db.eliminacionFisicaEvento,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (puestoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.puestoId,
+                            referencedTable: $$UsuarioTableReferences
+                                ._puestoIdTable(db),
+                            referencedColumn:
+                                $$UsuarioTableReferences._puestoIdTable(db).id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (documentoPorEmitirEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      DocumentoPorEmitirEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._documentoPorEmitirEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (cuentaPorCobrarEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      CuentaPorCobrarEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._cuentaPorCobrarEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).cuentaPorCobrarEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (pagoEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      PagoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._pagoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pagoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (complementoPagoEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      ComplementoPagoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._complementoPagoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).complementoPagoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (ingresoEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      IngresoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._ingresoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).ingresoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (egresoEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      EgresoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._egresoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).egresoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (empleadoEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      EmpleadoEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._empleadoEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).empleadoEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (nominaEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      NominaEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._nominaEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).nominaEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (pagoNominaEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      PagoNominaEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._pagoNominaEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pagoNominaEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (movimientoInventarioRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      MovimientoInventarioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._movimientoInventarioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).movimientoInventarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (vehiculoKilometrajeRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      VehiculoKilometrajeData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._vehiculoKilometrajeRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).vehiculoKilometrajeRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (vehiculoDocumentoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      VehiculoDocumentoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._vehiculoDocumentoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).vehiculoDocumentoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (vehiculoMantenimientoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      VehiculoMantenimientoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._vehiculoMantenimientoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).vehiculoMantenimientoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (recargaLineaTelefonicaRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      RecargaLineaTelefonicaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._recargaLineaTelefonicaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).recargaLineaTelefonicaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (compraEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      CompraEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._compraEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).compraEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (permisoUsuarioRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      PermisoUsuarioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._permisoUsuarioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).permisoUsuarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.usuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (eliminacionFisicaEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      EliminacionFisicaEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._eliminacionFisicaEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).eliminacionFisicaEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$UsuarioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UsuarioTable,
+      UsuarioData,
+      $$UsuarioTableFilterComposer,
+      $$UsuarioTableOrderingComposer,
+      $$UsuarioTableAnnotationComposer,
+      $$UsuarioTableCreateCompanionBuilder,
+      $$UsuarioTableUpdateCompanionBuilder,
+      (UsuarioData, $$UsuarioTableReferences),
+      UsuarioData,
+      PrefetchHooks Function({
+        bool puestoId,
+        bool documentoPorEmitirEventoRefs,
+        bool cuentaPorCobrarEventoRefs,
+        bool pagoEventoRefs,
+        bool complementoPagoEventoRefs,
+        bool ingresoEventoRefs,
+        bool egresoEventoRefs,
+        bool empleadoEventoRefs,
+        bool nominaEventoRefs,
+        bool pagoNominaEventoRefs,
+        bool movimientoInventarioRefs,
+        bool vehiculoKilometrajeRefs,
+        bool vehiculoDocumentoRefs,
+        bool vehiculoMantenimientoRefs,
+        bool recargaLineaTelefonicaRefs,
+        bool compraEventoRefs,
+        bool permisoUsuarioRefs,
+        bool eliminacionFisicaEventoRefs,
+      })
+    >;
 typedef $$DocumentoPorEmitirEventoTableCreateCompanionBuilder =
     DocumentoPorEmitirEventoCompanion Function({
       Value<int> id,
@@ -88451,6 +92197,7 @@ typedef $$DocumentoPorEmitirEventoTableCreateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$DocumentoPorEmitirEventoTableUpdateCompanionBuilder =
@@ -88463,6 +92210,7 @@ typedef $$DocumentoPorEmitirEventoTableUpdateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -88498,6 +92246,28 @@ final class $$DocumentoPorEmitirEventoTableReferences
     final item = $_typedResult.readTableOrNull(
       _documentoPorEmitirIdTable($_db),
     );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.documentoPorEmitirEvento.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -88568,6 +92338,29 @@ class $$DocumentoPorEmitirEventoTableFilterComposer
           }) => $$DocumentoPorEmitirTableFilterComposer(
             $db: $db,
             $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -88649,6 +92442,29 @@ class $$DocumentoPorEmitirEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$DocumentoPorEmitirEventoTableAnnotationComposer
@@ -88717,6 +92533,29 @@ class $$DocumentoPorEmitirEventoTableAnnotationComposer
         );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$DocumentoPorEmitirEventoTableTableManager
@@ -88735,7 +92574,10 @@ class $$DocumentoPorEmitirEventoTableTableManager
             $$DocumentoPorEmitirEventoTableReferences,
           ),
           DocumentoPorEmitirEventoData,
-          PrefetchHooks Function({bool documentoPorEmitirId})
+          PrefetchHooks Function({
+            bool documentoPorEmitirId,
+            bool actorUsuarioId,
+          })
         > {
   $$DocumentoPorEmitirEventoTableTableManager(
     _$AppDatabase db,
@@ -88769,6 +92611,7 @@ class $$DocumentoPorEmitirEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => DocumentoPorEmitirEventoCompanion(
                 id: id,
@@ -88779,6 +92622,7 @@ class $$DocumentoPorEmitirEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -88791,6 +92635,7 @@ class $$DocumentoPorEmitirEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => DocumentoPorEmitirEventoCompanion.insert(
                 id: id,
@@ -88801,6 +92646,7 @@ class $$DocumentoPorEmitirEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -88817,7 +92663,10 @@ class $$DocumentoPorEmitirEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({documentoPorEmitirId = false}) {
+          prefetchHooksCallback: ({
+            documentoPorEmitirId = false,
+            actorUsuarioId = false,
+          }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -88851,6 +92700,21 @@ class $$DocumentoPorEmitirEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable:
+                                $$DocumentoPorEmitirEventoTableReferences
+                                    ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -88875,7 +92739,7 @@ typedef $$DocumentoPorEmitirEventoTableProcessedTableManager =
       $$DocumentoPorEmitirEventoTableUpdateCompanionBuilder,
       (DocumentoPorEmitirEventoData, $$DocumentoPorEmitirEventoTableReferences),
       DocumentoPorEmitirEventoData,
-      PrefetchHooks Function({bool documentoPorEmitirId})
+      PrefetchHooks Function({bool documentoPorEmitirId, bool actorUsuarioId})
     >;
 typedef $$CuentaPorCobrarTableCreateCompanionBuilder =
     CuentaPorCobrarCompanion Function({
@@ -89776,6 +93640,7 @@ typedef $$CuentaPorCobrarEventoTableCreateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$CuentaPorCobrarEventoTableUpdateCompanionBuilder =
@@ -89788,6 +93653,7 @@ typedef $$CuentaPorCobrarEventoTableUpdateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -89820,6 +93686,28 @@ final class $$CuentaPorCobrarEventoTableReferences
       $_db.cuentaPorCobrar,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_cuentaPorCobrarIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.cuentaPorCobrarEvento.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -89890,6 +93778,29 @@ class $$CuentaPorCobrarEventoTableFilterComposer
           }) => $$CuentaPorCobrarTableFilterComposer(
             $db: $db,
             $table: $db.cuentaPorCobrar,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -89971,6 +93882,29 @@ class $$CuentaPorCobrarEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$CuentaPorCobrarEventoTableAnnotationComposer
@@ -90038,6 +93972,29 @@ class $$CuentaPorCobrarEventoTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$CuentaPorCobrarEventoTableTableManager
@@ -90053,7 +94010,7 @@ class $$CuentaPorCobrarEventoTableTableManager
           $$CuentaPorCobrarEventoTableUpdateCompanionBuilder,
           (CuentaPorCobrarEventoData, $$CuentaPorCobrarEventoTableReferences),
           CuentaPorCobrarEventoData,
-          PrefetchHooks Function({bool cuentaPorCobrarId})
+          PrefetchHooks Function({bool cuentaPorCobrarId, bool actorUsuarioId})
         > {
   $$CuentaPorCobrarEventoTableTableManager(
     _$AppDatabase db,
@@ -90087,6 +94044,7 @@ class $$CuentaPorCobrarEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => CuentaPorCobrarEventoCompanion(
                 id: id,
@@ -90097,6 +94055,7 @@ class $$CuentaPorCobrarEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -90109,6 +94068,7 @@ class $$CuentaPorCobrarEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => CuentaPorCobrarEventoCompanion.insert(
                 id: id,
@@ -90119,6 +94079,7 @@ class $$CuentaPorCobrarEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -90131,7 +94092,10 @@ class $$CuentaPorCobrarEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({cuentaPorCobrarId = false}) {
+          prefetchHooksCallback: ({
+            cuentaPorCobrarId = false,
+            actorUsuarioId = false,
+          }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -90165,6 +94129,21 @@ class $$CuentaPorCobrarEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable:
+                                $$CuentaPorCobrarEventoTableReferences
+                                    ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$CuentaPorCobrarEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -90189,7 +94168,7 @@ typedef $$CuentaPorCobrarEventoTableProcessedTableManager =
       $$CuentaPorCobrarEventoTableUpdateCompanionBuilder,
       (CuentaPorCobrarEventoData, $$CuentaPorCobrarEventoTableReferences),
       CuentaPorCobrarEventoData,
-      PrefetchHooks Function({bool cuentaPorCobrarId})
+      PrefetchHooks Function({bool cuentaPorCobrarId, bool actorUsuarioId})
     >;
 typedef $$PagoTableCreateCompanionBuilder =
     PagoCompanion Function({
@@ -91741,6 +95720,7 @@ typedef $$PagoEventoTableCreateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$PagoEventoTableUpdateCompanionBuilder =
@@ -91753,6 +95733,7 @@ typedef $$PagoEventoTableUpdateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -91772,6 +95753,25 @@ final class $$PagoEventoTableReferences
       $_db.pago,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_pagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.pagoEvento.actorUsuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -91842,6 +95842,29 @@ class $$PagoEventoTableFilterComposer
           }) => $$PagoTableFilterComposer(
             $db: $db,
             $table: $db.pago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -91923,6 +95946,29 @@ class $$PagoEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PagoEventoTableAnnotationComposer
@@ -91990,6 +96036,29 @@ class $$PagoEventoTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PagoEventoTableTableManager
@@ -92005,7 +96074,7 @@ class $$PagoEventoTableTableManager
           $$PagoEventoTableUpdateCompanionBuilder,
           (PagoEventoData, $$PagoEventoTableReferences),
           PagoEventoData,
-          PrefetchHooks Function({bool pagoId})
+          PrefetchHooks Function({bool pagoId, bool actorUsuarioId})
         > {
   $$PagoEventoTableTableManager(_$AppDatabase db, $PagoEventoTable table)
     : super(
@@ -92028,6 +96097,7 @@ class $$PagoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => PagoEventoCompanion(
                 id: id,
@@ -92038,6 +96108,7 @@ class $$PagoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -92050,6 +96121,7 @@ class $$PagoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => PagoEventoCompanion.insert(
                 id: id,
@@ -92060,6 +96132,7 @@ class $$PagoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -92072,7 +96145,7 @@ class $$PagoEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({pagoId = false}) {
+          prefetchHooksCallback: ({pagoId = false, actorUsuarioId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -92103,6 +96176,20 @@ class $$PagoEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable: $$PagoEventoTableReferences
+                                ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$PagoEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -92127,7 +96214,7 @@ typedef $$PagoEventoTableProcessedTableManager =
       $$PagoEventoTableUpdateCompanionBuilder,
       (PagoEventoData, $$PagoEventoTableReferences),
       PagoEventoData,
-      PrefetchHooks Function({bool pagoId})
+      PrefetchHooks Function({bool pagoId, bool actorUsuarioId})
     >;
 typedef $$ComplementoPagoTableCreateCompanionBuilder =
     ComplementoPagoCompanion Function({
@@ -92869,6 +96956,7 @@ typedef $$ComplementoPagoEventoTableCreateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$ComplementoPagoEventoTableUpdateCompanionBuilder =
@@ -92881,6 +96969,7 @@ typedef $$ComplementoPagoEventoTableUpdateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -92913,6 +97002,28 @@ final class $$ComplementoPagoEventoTableReferences
       $_db.complementoPago,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_complementoPagoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.complementoPagoEvento.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -92983,6 +97094,29 @@ class $$ComplementoPagoEventoTableFilterComposer
           }) => $$ComplementoPagoTableFilterComposer(
             $db: $db,
             $table: $db.complementoPago,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -93064,6 +97198,29 @@ class $$ComplementoPagoEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ComplementoPagoEventoTableAnnotationComposer
@@ -93131,6 +97288,29 @@ class $$ComplementoPagoEventoTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ComplementoPagoEventoTableTableManager
@@ -93146,7 +97326,7 @@ class $$ComplementoPagoEventoTableTableManager
           $$ComplementoPagoEventoTableUpdateCompanionBuilder,
           (ComplementoPagoEventoData, $$ComplementoPagoEventoTableReferences),
           ComplementoPagoEventoData,
-          PrefetchHooks Function({bool complementoPagoId})
+          PrefetchHooks Function({bool complementoPagoId, bool actorUsuarioId})
         > {
   $$ComplementoPagoEventoTableTableManager(
     _$AppDatabase db,
@@ -93180,6 +97360,7 @@ class $$ComplementoPagoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => ComplementoPagoEventoCompanion(
                 id: id,
@@ -93190,6 +97371,7 @@ class $$ComplementoPagoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -93202,6 +97384,7 @@ class $$ComplementoPagoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => ComplementoPagoEventoCompanion.insert(
                 id: id,
@@ -93212,6 +97395,7 @@ class $$ComplementoPagoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -93224,7 +97408,10 @@ class $$ComplementoPagoEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({complementoPagoId = false}) {
+          prefetchHooksCallback: ({
+            complementoPagoId = false,
+            actorUsuarioId = false,
+          }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -93258,6 +97445,21 @@ class $$ComplementoPagoEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable:
+                                $$ComplementoPagoEventoTableReferences
+                                    ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$ComplementoPagoEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -93282,7 +97484,7 @@ typedef $$ComplementoPagoEventoTableProcessedTableManager =
       $$ComplementoPagoEventoTableUpdateCompanionBuilder,
       (ComplementoPagoEventoData, $$ComplementoPagoEventoTableReferences),
       ComplementoPagoEventoData,
-      PrefetchHooks Function({bool complementoPagoId})
+      PrefetchHooks Function({bool complementoPagoId, bool actorUsuarioId})
     >;
 typedef $$CategoriaFinancieraTableCreateCompanionBuilder =
     CategoriaFinancieraCompanion Function({
@@ -94927,6 +99129,7 @@ typedef $$IngresoEventoTableCreateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$IngresoEventoTableUpdateCompanionBuilder =
@@ -94939,6 +99142,7 @@ typedef $$IngresoEventoTableUpdateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -94964,6 +99168,25 @@ final class $$IngresoEventoTableReferences
       $_db.ingreso,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_ingresoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.ingresoEvento.actorUsuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -95034,6 +99257,29 @@ class $$IngresoEventoTableFilterComposer
           }) => $$IngresoTableFilterComposer(
             $db: $db,
             $table: $db.ingreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -95115,6 +99361,29 @@ class $$IngresoEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$IngresoEventoTableAnnotationComposer
@@ -95182,6 +99451,29 @@ class $$IngresoEventoTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$IngresoEventoTableTableManager
@@ -95197,7 +99489,7 @@ class $$IngresoEventoTableTableManager
           $$IngresoEventoTableUpdateCompanionBuilder,
           (IngresoEventoData, $$IngresoEventoTableReferences),
           IngresoEventoData,
-          PrefetchHooks Function({bool ingresoId})
+          PrefetchHooks Function({bool ingresoId, bool actorUsuarioId})
         > {
   $$IngresoEventoTableTableManager(_$AppDatabase db, $IngresoEventoTable table)
     : super(
@@ -95224,6 +99516,7 @@ class $$IngresoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => IngresoEventoCompanion(
                 id: id,
@@ -95234,6 +99527,7 @@ class $$IngresoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -95246,6 +99540,7 @@ class $$IngresoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => IngresoEventoCompanion.insert(
                 id: id,
@@ -95256,6 +99551,7 @@ class $$IngresoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -95268,7 +99564,7 @@ class $$IngresoEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({ingresoId = false}) {
+          prefetchHooksCallback: ({ingresoId = false, actorUsuarioId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -95301,6 +99597,20 @@ class $$IngresoEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable: $$IngresoEventoTableReferences
+                                ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$IngresoEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -95325,7 +99635,7 @@ typedef $$IngresoEventoTableProcessedTableManager =
       $$IngresoEventoTableUpdateCompanionBuilder,
       (IngresoEventoData, $$IngresoEventoTableReferences),
       IngresoEventoData,
-      PrefetchHooks Function({bool ingresoId})
+      PrefetchHooks Function({bool ingresoId, bool actorUsuarioId})
     >;
 typedef $$EgresoTableCreateCompanionBuilder =
     EgresoCompanion Function({
@@ -96573,6 +100883,7 @@ typedef $$EgresoEventoTableCreateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$EgresoEventoTableUpdateCompanionBuilder =
@@ -96585,6 +100896,7 @@ typedef $$EgresoEventoTableUpdateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -96605,6 +100917,25 @@ final class $$EgresoEventoTableReferences
       $_db.egreso,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_egresoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.egresoEvento.actorUsuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -96675,6 +101006,29 @@ class $$EgresoEventoTableFilterComposer
           }) => $$EgresoTableFilterComposer(
             $db: $db,
             $table: $db.egreso,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -96756,6 +101110,29 @@ class $$EgresoEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$EgresoEventoTableAnnotationComposer
@@ -96823,6 +101200,29 @@ class $$EgresoEventoTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$EgresoEventoTableTableManager
@@ -96838,7 +101238,7 @@ class $$EgresoEventoTableTableManager
           $$EgresoEventoTableUpdateCompanionBuilder,
           (EgresoEventoData, $$EgresoEventoTableReferences),
           EgresoEventoData,
-          PrefetchHooks Function({bool egresoId})
+          PrefetchHooks Function({bool egresoId, bool actorUsuarioId})
         > {
   $$EgresoEventoTableTableManager(_$AppDatabase db, $EgresoEventoTable table)
     : super(
@@ -96862,6 +101262,7 @@ class $$EgresoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => EgresoEventoCompanion(
                 id: id,
@@ -96872,6 +101273,7 @@ class $$EgresoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -96884,6 +101286,7 @@ class $$EgresoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => EgresoEventoCompanion.insert(
                 id: id,
@@ -96894,6 +101297,7 @@ class $$EgresoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -96906,7 +101310,7 @@ class $$EgresoEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({egresoId = false}) {
+          prefetchHooksCallback: ({egresoId = false, actorUsuarioId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -96939,6 +101343,20 @@ class $$EgresoEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable: $$EgresoEventoTableReferences
+                                ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$EgresoEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -96963,7 +101381,7 @@ typedef $$EgresoEventoTableProcessedTableManager =
       $$EgresoEventoTableUpdateCompanionBuilder,
       (EgresoEventoData, $$EgresoEventoTableReferences),
       EgresoEventoData,
-      PrefetchHooks Function({bool egresoId})
+      PrefetchHooks Function({bool egresoId, bool actorUsuarioId})
     >;
 typedef $$EmpleadoTableCreateCompanionBuilder =
     EmpleadoCompanion Function({
@@ -99758,6 +104176,7 @@ typedef $$EmpleadoEventoTableCreateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$EmpleadoEventoTableUpdateCompanionBuilder =
@@ -99770,6 +104189,7 @@ typedef $$EmpleadoEventoTableUpdateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -99799,6 +104219,25 @@ final class $$EmpleadoEventoTableReferences
       $_db.empleado,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.empleadoEvento.actorUsuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -99869,6 +104308,29 @@ class $$EmpleadoEventoTableFilterComposer
           }) => $$EmpleadoTableFilterComposer(
             $db: $db,
             $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -99950,6 +104412,29 @@ class $$EmpleadoEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$EmpleadoEventoTableAnnotationComposer
@@ -100017,6 +104502,29 @@ class $$EmpleadoEventoTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$EmpleadoEventoTableTableManager
@@ -100032,7 +104540,7 @@ class $$EmpleadoEventoTableTableManager
           $$EmpleadoEventoTableUpdateCompanionBuilder,
           (EmpleadoEventoData, $$EmpleadoEventoTableReferences),
           EmpleadoEventoData,
-          PrefetchHooks Function({bool empleadoId})
+          PrefetchHooks Function({bool empleadoId, bool actorUsuarioId})
         > {
   $$EmpleadoEventoTableTableManager(
     _$AppDatabase db,
@@ -100061,6 +104569,7 @@ class $$EmpleadoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => EmpleadoEventoCompanion(
                 id: id,
@@ -100071,6 +104580,7 @@ class $$EmpleadoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -100083,6 +104593,7 @@ class $$EmpleadoEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => EmpleadoEventoCompanion.insert(
                 id: id,
@@ -100093,6 +104604,7 @@ class $$EmpleadoEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -100105,7 +104617,10 @@ class $$EmpleadoEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({empleadoId = false}) {
+          prefetchHooksCallback: ({
+            empleadoId = false,
+            actorUsuarioId = false,
+          }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -100138,6 +104653,20 @@ class $$EmpleadoEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable: $$EmpleadoEventoTableReferences
+                                ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$EmpleadoEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -100162,7 +104691,7 @@ typedef $$EmpleadoEventoTableProcessedTableManager =
       $$EmpleadoEventoTableUpdateCompanionBuilder,
       (EmpleadoEventoData, $$EmpleadoEventoTableReferences),
       EmpleadoEventoData,
-      PrefetchHooks Function({bool empleadoId})
+      PrefetchHooks Function({bool empleadoId, bool actorUsuarioId})
     >;
 typedef $$EmpleadoPeriodoLaboralTableCreateCompanionBuilder =
     EmpleadoPeriodoLaboralCompanion Function({
@@ -108195,6 +112724,7 @@ typedef $$NominaEventoTableCreateCompanionBuilder =
       required String tipoEvento,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$NominaEventoTableUpdateCompanionBuilder =
@@ -108206,6 +112736,7 @@ typedef $$NominaEventoTableUpdateCompanionBuilder =
       Value<String> tipoEvento,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -108248,6 +112779,25 @@ final class $$NominaEventoTableReferences
       $_db.nominaEmpleado,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_nominaEmpleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.nominaEvento.actorUsuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -108331,6 +112881,29 @@ class $$NominaEventoTableFilterComposer
           }) => $$NominaEmpleadoTableFilterComposer(
             $db: $db,
             $table: $db.nominaEmpleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -108425,6 +112998,29 @@ class $$NominaEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$NominaEventoTableAnnotationComposer
@@ -108505,6 +113101,29 @@ class $$NominaEventoTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$NominaEventoTableTableManager
@@ -108520,7 +113139,11 @@ class $$NominaEventoTableTableManager
           $$NominaEventoTableUpdateCompanionBuilder,
           (NominaEventoData, $$NominaEventoTableReferences),
           NominaEventoData,
-          PrefetchHooks Function({bool nominaId, bool nominaEmpleadoId})
+          PrefetchHooks Function({
+            bool nominaId,
+            bool nominaEmpleadoId,
+            bool actorUsuarioId,
+          })
         > {
   $$NominaEventoTableTableManager(_$AppDatabase db, $NominaEventoTable table)
     : super(
@@ -108543,6 +113166,7 @@ class $$NominaEventoTableTableManager
                 Value<String> tipoEvento = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => NominaEventoCompanion(
                 id: id,
@@ -108552,6 +113176,7 @@ class $$NominaEventoTableTableManager
                 tipoEvento: tipoEvento,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -108563,6 +113188,7 @@ class $$NominaEventoTableTableManager
                 required String tipoEvento,
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => NominaEventoCompanion.insert(
                 id: id,
@@ -108572,6 +113198,7 @@ class $$NominaEventoTableTableManager
                 tipoEvento: tipoEvento,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -108587,6 +113214,7 @@ class $$NominaEventoTableTableManager
           prefetchHooksCallback: ({
             nominaId = false,
             nominaEmpleadoId = false,
+            actorUsuarioId = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -108634,6 +113262,20 @@ class $$NominaEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable: $$NominaEventoTableReferences
+                                ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$NominaEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -108658,7 +113300,11 @@ typedef $$NominaEventoTableProcessedTableManager =
       $$NominaEventoTableUpdateCompanionBuilder,
       (NominaEventoData, $$NominaEventoTableReferences),
       NominaEventoData,
-      PrefetchHooks Function({bool nominaId, bool nominaEmpleadoId})
+      PrefetchHooks Function({
+        bool nominaId,
+        bool nominaEmpleadoId,
+        bool actorUsuarioId,
+      })
     >;
 typedef $$PagoNominaTableCreateCompanionBuilder =
     PagoNominaCompanion Function({
@@ -110165,6 +114811,7 @@ typedef $$PagoNominaEventoTableCreateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$PagoNominaEventoTableUpdateCompanionBuilder =
@@ -110177,6 +114824,7 @@ typedef $$PagoNominaEventoTableUpdateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -110209,6 +114857,25 @@ final class $$PagoNominaEventoTableReferences
       $_db.pagoNomina,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_pagoNominaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.pagoNominaEvento.actorUsuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -110279,6 +114946,29 @@ class $$PagoNominaEventoTableFilterComposer
           }) => $$PagoNominaTableFilterComposer(
             $db: $db,
             $table: $db.pagoNomina,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -110360,6 +115050,29 @@ class $$PagoNominaEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PagoNominaEventoTableAnnotationComposer
@@ -110427,6 +115140,29 @@ class $$PagoNominaEventoTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PagoNominaEventoTableTableManager
@@ -110442,7 +115178,7 @@ class $$PagoNominaEventoTableTableManager
           $$PagoNominaEventoTableUpdateCompanionBuilder,
           (PagoNominaEventoData, $$PagoNominaEventoTableReferences),
           PagoNominaEventoData,
-          PrefetchHooks Function({bool pagoNominaId})
+          PrefetchHooks Function({bool pagoNominaId, bool actorUsuarioId})
         > {
   $$PagoNominaEventoTableTableManager(
     _$AppDatabase db,
@@ -110474,6 +115210,7 @@ class $$PagoNominaEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => PagoNominaEventoCompanion(
                 id: id,
@@ -110484,6 +115221,7 @@ class $$PagoNominaEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -110496,6 +115234,7 @@ class $$PagoNominaEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => PagoNominaEventoCompanion.insert(
                 id: id,
@@ -110506,6 +115245,7 @@ class $$PagoNominaEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -110518,7 +115258,10 @@ class $$PagoNominaEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({pagoNominaId = false}) {
+          prefetchHooksCallback: ({
+            pagoNominaId = false,
+            actorUsuarioId = false,
+          }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -110551,6 +115294,20 @@ class $$PagoNominaEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable: $$PagoNominaEventoTableReferences
+                                ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$PagoNominaEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -110575,7 +115332,7 @@ typedef $$PagoNominaEventoTableProcessedTableManager =
       $$PagoNominaEventoTableUpdateCompanionBuilder,
       (PagoNominaEventoData, $$PagoNominaEventoTableReferences),
       PagoNominaEventoData,
-      PrefetchHooks Function({bool pagoNominaId})
+      PrefetchHooks Function({bool pagoNominaId, bool actorUsuarioId})
     >;
 typedef $$PagoNominaAttachmentTableCreateCompanionBuilder =
     PagoNominaAttachmentCompanion Function({
@@ -114107,6 +118864,7 @@ typedef $$MovimientoInventarioTableCreateCompanionBuilder =
       Value<int?> costoUnitario,
       Value<String?> observaciones,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 typedef $$MovimientoInventarioTableUpdateCompanionBuilder =
@@ -114124,6 +118882,7 @@ typedef $$MovimientoInventarioTableUpdateCompanionBuilder =
       Value<int?> costoUnitario,
       Value<String?> observaciones,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 
@@ -114200,6 +118959,28 @@ final class $$MovimientoInventarioTableReferences
       $_db.articuloUnidad,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_unidadIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.movimientoInventario.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -114395,6 +119176,29 @@ class $$MovimientoInventarioTableFilterComposer
     return composer;
   }
 
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<bool> movimientoInventarioAttachmentRefs(
     Expression<bool> Function(
       $$MovimientoInventarioAttachmentTableFilterComposer f,
@@ -114578,6 +119382,29 @@ class $$MovimientoInventarioTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$MovimientoInventarioTableAnnotationComposer
@@ -114696,6 +119523,29 @@ class $$MovimientoInventarioTableAnnotationComposer
     return composer;
   }
 
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> movimientoInventarioAttachmentRefs<T extends Object>(
     Expression<T> Function(
       $$MovimientoInventarioAttachmentTableAnnotationComposer a,
@@ -114770,6 +119620,7 @@ class $$MovimientoInventarioTableTableManager
             bool articuloId,
             bool varianteId,
             bool unidadId,
+            bool actorUsuarioId,
             bool movimientoInventarioAttachmentRefs,
             bool compraPartidaMovimientoRefs,
           })
@@ -114811,6 +119662,7 @@ class $$MovimientoInventarioTableTableManager
                 Value<int?> costoUnitario = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovimientoInventarioCompanion(
                 id: id,
@@ -114826,6 +119678,7 @@ class $$MovimientoInventarioTableTableManager
                 costoUnitario: costoUnitario,
                 observaciones: observaciones,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -114843,6 +119696,7 @@ class $$MovimientoInventarioTableTableManager
                 Value<int?> costoUnitario = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovimientoInventarioCompanion.insert(
                 id: id,
@@ -114858,6 +119712,7 @@ class $$MovimientoInventarioTableTableManager
                 costoUnitario: costoUnitario,
                 observaciones: observaciones,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           withReferenceMapper:
@@ -114874,6 +119729,7 @@ class $$MovimientoInventarioTableTableManager
             articuloId = false,
             varianteId = false,
             unidadId = false,
+            actorUsuarioId = false,
             movimientoInventarioAttachmentRefs = false,
             compraPartidaMovimientoRefs = false,
           }) {
@@ -114940,6 +119796,21 @@ class $$MovimientoInventarioTableTableManager
                             referencedColumn:
                                 $$MovimientoInventarioTableReferences
                                     ._unidadIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable:
+                                $$MovimientoInventarioTableReferences
+                                    ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$MovimientoInventarioTableReferences
+                                    ._actorUsuarioIdTable(db)
                                     .id,
                           )
                           as T;
@@ -115017,6 +119888,7 @@ typedef $$MovimientoInventarioTableProcessedTableManager =
         bool articuloId,
         bool varianteId,
         bool unidadId,
+        bool actorUsuarioId,
         bool movimientoInventarioAttachmentRefs,
         bool compraPartidaMovimientoRefs,
       })
@@ -119887,6 +124759,7 @@ typedef $$VehiculoKilometrajeTableCreateCompanionBuilder =
       required String origen,
       Value<String?> observaciones,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 typedef $$VehiculoKilometrajeTableUpdateCompanionBuilder =
@@ -119901,6 +124774,7 @@ typedef $$VehiculoKilometrajeTableUpdateCompanionBuilder =
       Value<String> origen,
       Value<String?> observaciones,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 
@@ -119930,6 +124804,28 @@ final class $$VehiculoKilometrajeTableReferences
       $_db.vehiculo,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_vehiculoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.vehiculoKilometraje.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -120005,6 +124901,29 @@ class $$VehiculoKilometrajeTableFilterComposer
           }) => $$VehiculoTableFilterComposer(
             $db: $db,
             $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -120091,6 +125010,29 @@ class $$VehiculoKilometrajeTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$VehiculoKilometrajeTableAnnotationComposer
@@ -120157,6 +125099,29 @@ class $$VehiculoKilometrajeTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$VehiculoKilometrajeTableTableManager
@@ -120172,7 +125137,7 @@ class $$VehiculoKilometrajeTableTableManager
           $$VehiculoKilometrajeTableUpdateCompanionBuilder,
           (VehiculoKilometrajeData, $$VehiculoKilometrajeTableReferences),
           VehiculoKilometrajeData,
-          PrefetchHooks Function({bool vehiculoId})
+          PrefetchHooks Function({bool vehiculoId, bool actorUsuarioId})
         > {
   $$VehiculoKilometrajeTableTableManager(
     _$AppDatabase db,
@@ -120208,6 +125173,7 @@ class $$VehiculoKilometrajeTableTableManager
                 Value<String> origen = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehiculoKilometrajeCompanion(
                 id: id,
@@ -120220,6 +125186,7 @@ class $$VehiculoKilometrajeTableTableManager
                 origen: origen,
                 observaciones: observaciones,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -120234,6 +125201,7 @@ class $$VehiculoKilometrajeTableTableManager
                 required String origen,
                 Value<String?> observaciones = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehiculoKilometrajeCompanion.insert(
                 id: id,
@@ -120246,6 +125214,7 @@ class $$VehiculoKilometrajeTableTableManager
                 origen: origen,
                 observaciones: observaciones,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           withReferenceMapper:
@@ -120258,7 +125227,10 @@ class $$VehiculoKilometrajeTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({vehiculoId = false}) {
+          prefetchHooksCallback: ({
+            vehiculoId = false,
+            actorUsuarioId = false,
+          }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -120292,6 +125264,21 @@ class $$VehiculoKilometrajeTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable:
+                                $$VehiculoKilometrajeTableReferences
+                                    ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$VehiculoKilometrajeTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -120316,7 +125303,7 @@ typedef $$VehiculoKilometrajeTableProcessedTableManager =
       $$VehiculoKilometrajeTableUpdateCompanionBuilder,
       (VehiculoKilometrajeData, $$VehiculoKilometrajeTableReferences),
       VehiculoKilometrajeData,
-      PrefetchHooks Function({bool vehiculoId})
+      PrefetchHooks Function({bool vehiculoId, bool actorUsuarioId})
     >;
 typedef $$VehiculoDocumentoTableCreateCompanionBuilder =
     VehiculoDocumentoCompanion Function({
@@ -120331,6 +125318,7 @@ typedef $$VehiculoDocumentoTableCreateCompanionBuilder =
       Value<DateTime?> fechaEmision,
       Value<DateTime?> fechaVencimiento,
       Value<String?> observaciones,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 typedef $$VehiculoDocumentoTableUpdateCompanionBuilder =
@@ -120346,6 +125334,7 @@ typedef $$VehiculoDocumentoTableUpdateCompanionBuilder =
       Value<DateTime?> fechaEmision,
       Value<DateTime?> fechaVencimiento,
       Value<String?> observaciones,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 
@@ -120375,6 +125364,28 @@ final class $$VehiculoDocumentoTableReferences
       $_db.vehiculo,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_vehiculoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.vehiculoDocumento.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -120485,6 +125496,29 @@ class $$VehiculoDocumentoTableFilterComposer
           }) => $$VehiculoTableFilterComposer(
             $db: $db,
             $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -120605,6 +125639,29 @@ class $$VehiculoDocumentoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$VehiculoDocumentoTableAnnotationComposer
@@ -120681,6 +125738,29 @@ class $$VehiculoDocumentoTableAnnotationComposer
     return composer;
   }
 
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> vehiculoDocumentoAttachmentRefs<T extends Object>(
     Expression<T> Function(
       $$VehiculoDocumentoAttachmentTableAnnotationComposer a,
@@ -120726,6 +125806,7 @@ class $$VehiculoDocumentoTableTableManager
           VehiculoDocumentoData,
           PrefetchHooks Function({
             bool vehiculoId,
+            bool actorUsuarioId,
             bool vehiculoDocumentoAttachmentRefs,
           })
         > {
@@ -120764,6 +125845,7 @@ class $$VehiculoDocumentoTableTableManager
                 Value<DateTime?> fechaEmision = const Value.absent(),
                 Value<DateTime?> fechaVencimiento = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehiculoDocumentoCompanion(
                 id: id,
@@ -120777,6 +125859,7 @@ class $$VehiculoDocumentoTableTableManager
                 fechaEmision: fechaEmision,
                 fechaVencimiento: fechaVencimiento,
                 observaciones: observaciones,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -120792,6 +125875,7 @@ class $$VehiculoDocumentoTableTableManager
                 Value<DateTime?> fechaEmision = const Value.absent(),
                 Value<DateTime?> fechaVencimiento = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehiculoDocumentoCompanion.insert(
                 id: id,
@@ -120805,6 +125889,7 @@ class $$VehiculoDocumentoTableTableManager
                 fechaEmision: fechaEmision,
                 fechaVencimiento: fechaVencimiento,
                 observaciones: observaciones,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           withReferenceMapper:
@@ -120819,6 +125904,7 @@ class $$VehiculoDocumentoTableTableManager
                       .toList(),
           prefetchHooksCallback: ({
             vehiculoId = false,
+            actorUsuarioId = false,
             vehiculoDocumentoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
@@ -120852,6 +125938,20 @@ class $$VehiculoDocumentoTableTableManager
                             referencedColumn:
                                 $$VehiculoDocumentoTableReferences
                                     ._vehiculoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable: $$VehiculoDocumentoTableReferences
+                                ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$VehiculoDocumentoTableReferences
+                                    ._actorUsuarioIdTable(db)
                                     .id,
                           )
                           as T;
@@ -120905,6 +126005,7 @@ typedef $$VehiculoDocumentoTableProcessedTableManager =
       VehiculoDocumentoData,
       PrefetchHooks Function({
         bool vehiculoId,
+        bool actorUsuarioId,
         bool vehiculoDocumentoAttachmentRefs,
       })
     >;
@@ -121319,6 +126420,7 @@ typedef $$VehiculoMantenimientoTableCreateCompanionBuilder =
       Value<DateTime?> proximoMantenimientoFecha,
       Value<int?> proximoMantenimientoKilometraje,
       Value<String?> observaciones,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 typedef $$VehiculoMantenimientoTableUpdateCompanionBuilder =
@@ -121337,6 +126439,7 @@ typedef $$VehiculoMantenimientoTableUpdateCompanionBuilder =
       Value<DateTime?> proximoMantenimientoFecha,
       Value<int?> proximoMantenimientoKilometraje,
       Value<String?> observaciones,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 
@@ -121369,6 +126472,28 @@ final class $$VehiculoMantenimientoTableReferences
       $_db.vehiculo,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_vehiculoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.vehiculoMantenimiento.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -121495,6 +126620,29 @@ class $$VehiculoMantenimientoTableFilterComposer
           }) => $$VehiculoTableFilterComposer(
             $db: $db,
             $table: $db.vehiculo,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -121631,6 +126779,29 @@ class $$VehiculoMantenimientoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$VehiculoMantenimientoTableAnnotationComposer
@@ -121719,6 +126890,29 @@ class $$VehiculoMantenimientoTableAnnotationComposer
     return composer;
   }
 
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> vehiculoMantenimientoAttachmentRefs<T extends Object>(
     Expression<T> Function(
       $$VehiculoMantenimientoAttachmentTableAnnotationComposer a,
@@ -121764,6 +126958,7 @@ class $$VehiculoMantenimientoTableTableManager
           VehiculoMantenimientoData,
           PrefetchHooks Function({
             bool vehiculoId,
+            bool actorUsuarioId,
             bool vehiculoMantenimientoAttachmentRefs,
           })
         > {
@@ -121807,6 +127002,7 @@ class $$VehiculoMantenimientoTableTableManager
                 Value<int?> proximoMantenimientoKilometraje =
                     const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehiculoMantenimientoCompanion(
                 id: id,
@@ -121824,6 +127020,7 @@ class $$VehiculoMantenimientoTableTableManager
                 proximoMantenimientoKilometraje:
                     proximoMantenimientoKilometraje,
                 observaciones: observaciones,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -121844,6 +127041,7 @@ class $$VehiculoMantenimientoTableTableManager
                 Value<int?> proximoMantenimientoKilometraje =
                     const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehiculoMantenimientoCompanion.insert(
                 id: id,
@@ -121861,6 +127059,7 @@ class $$VehiculoMantenimientoTableTableManager
                 proximoMantenimientoKilometraje:
                     proximoMantenimientoKilometraje,
                 observaciones: observaciones,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           withReferenceMapper:
@@ -121875,6 +127074,7 @@ class $$VehiculoMantenimientoTableTableManager
                       .toList(),
           prefetchHooksCallback: ({
             vehiculoId = false,
+            actorUsuarioId = false,
             vehiculoMantenimientoAttachmentRefs = false,
           }) {
             return PrefetchHooks(
@@ -121909,6 +127109,21 @@ class $$VehiculoMantenimientoTableTableManager
                             referencedColumn:
                                 $$VehiculoMantenimientoTableReferences
                                     ._vehiculoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable:
+                                $$VehiculoMantenimientoTableReferences
+                                    ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$VehiculoMantenimientoTableReferences
+                                    ._actorUsuarioIdTable(db)
                                     .id,
                           )
                           as T;
@@ -121962,6 +127177,7 @@ typedef $$VehiculoMantenimientoTableProcessedTableManager =
       VehiculoMantenimientoData,
       PrefetchHooks Function({
         bool vehiculoId,
+        bool actorUsuarioId,
         bool vehiculoMantenimientoAttachmentRefs,
       })
     >;
@@ -124387,6 +129603,7 @@ typedef $$RecargaLineaTelefonicaTableCreateCompanionBuilder =
       required DateTime fecha,
       required int importe,
       Value<String?> observaciones,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 typedef $$RecargaLineaTelefonicaTableUpdateCompanionBuilder =
@@ -124399,6 +129616,7 @@ typedef $$RecargaLineaTelefonicaTableUpdateCompanionBuilder =
       Value<DateTime> fecha,
       Value<int> importe,
       Value<String?> observaciones,
+      Value<String?> actorUsuarioId,
       Value<int> rowid,
     });
 
@@ -124431,6 +129649,28 @@ final class $$RecargaLineaTelefonicaTableReferences
       $_db.lineaTelefonica,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_lineaTelefonicaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.recargaLineaTelefonica.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -124536,6 +129776,29 @@ class $$RecargaLineaTelefonicaTableFilterComposer
     return composer;
   }
 
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<bool> recargaLineaTelefonicaAttachmentRefs(
     Expression<bool> Function(
       $$RecargaLineaTelefonicaAttachmentTableFilterComposer f,
@@ -124632,6 +129895,29 @@ class $$RecargaLineaTelefonicaTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$RecargaLineaTelefonicaTableAnnotationComposer
@@ -124691,6 +129977,29 @@ class $$RecargaLineaTelefonicaTableAnnotationComposer
     return composer;
   }
 
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> recargaLineaTelefonicaAttachmentRefs<T extends Object>(
     Expression<T> Function(
       $$RecargaLineaTelefonicaAttachmentTableAnnotationComposer a,
@@ -124736,6 +130045,7 @@ class $$RecargaLineaTelefonicaTableTableManager
           RecargaLineaTelefonicaData,
           PrefetchHooks Function({
             bool lineaTelefonicaId,
+            bool actorUsuarioId,
             bool recargaLineaTelefonicaAttachmentRefs,
           })
         > {
@@ -124771,6 +130081,7 @@ class $$RecargaLineaTelefonicaTableTableManager
                 Value<DateTime> fecha = const Value.absent(),
                 Value<int> importe = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RecargaLineaTelefonicaCompanion(
                 id: id,
@@ -124781,6 +130092,7 @@ class $$RecargaLineaTelefonicaTableTableManager
                 fecha: fecha,
                 importe: importe,
                 observaciones: observaciones,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -124793,6 +130105,7 @@ class $$RecargaLineaTelefonicaTableTableManager
                 required DateTime fecha,
                 required int importe,
                 Value<String?> observaciones = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RecargaLineaTelefonicaCompanion.insert(
                 id: id,
@@ -124803,6 +130116,7 @@ class $$RecargaLineaTelefonicaTableTableManager
                 fecha: fecha,
                 importe: importe,
                 observaciones: observaciones,
+                actorUsuarioId: actorUsuarioId,
                 rowid: rowid,
               ),
           withReferenceMapper:
@@ -124817,6 +130131,7 @@ class $$RecargaLineaTelefonicaTableTableManager
                       .toList(),
           prefetchHooksCallback: ({
             lineaTelefonicaId = false,
+            actorUsuarioId = false,
             recargaLineaTelefonicaAttachmentRefs = false,
           }) {
             return PrefetchHooks(
@@ -124851,6 +130166,21 @@ class $$RecargaLineaTelefonicaTableTableManager
                             referencedColumn:
                                 $$RecargaLineaTelefonicaTableReferences
                                     ._lineaTelefonicaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable:
+                                $$RecargaLineaTelefonicaTableReferences
+                                    ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$RecargaLineaTelefonicaTableReferences
+                                    ._actorUsuarioIdTable(db)
                                     .id,
                           )
                           as T;
@@ -124904,6 +130234,7 @@ typedef $$RecargaLineaTelefonicaTableProcessedTableManager =
       RecargaLineaTelefonicaData,
       PrefetchHooks Function({
         bool lineaTelefonicaId,
+        bool actorUsuarioId,
         bool recargaLineaTelefonicaAttachmentRefs,
       })
     >;
@@ -127619,6 +132950,7 @@ typedef $$CompraEventoTableCreateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 typedef $$CompraEventoTableUpdateCompanionBuilder =
@@ -127631,6 +132963,7 @@ typedef $$CompraEventoTableUpdateCompanionBuilder =
       Value<String?> estadoNuevo,
       Value<String?> observacion,
       Value<String?> actor,
+      Value<String?> actorUsuarioId,
       Value<String?> datosRelevantes,
     });
 
@@ -127651,6 +132984,25 @@ final class $$CompraEventoTableReferences
       $_db.compra,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_compraIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.compraEvento.actorUsuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -127721,6 +133073,29 @@ class $$CompraEventoTableFilterComposer
           }) => $$CompraTableFilterComposer(
             $db: $db,
             $table: $db.compra,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -127802,6 +133177,29 @@ class $$CompraEventoTableOrderingComposer
     );
     return composer;
   }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$CompraEventoTableAnnotationComposer
@@ -127869,6 +133267,29 @@ class $$CompraEventoTableAnnotationComposer
     );
     return composer;
   }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$CompraEventoTableTableManager
@@ -127884,7 +133305,7 @@ class $$CompraEventoTableTableManager
           $$CompraEventoTableUpdateCompanionBuilder,
           (CompraEventoData, $$CompraEventoTableReferences),
           CompraEventoData,
-          PrefetchHooks Function({bool compraId})
+          PrefetchHooks Function({bool compraId, bool actorUsuarioId})
         > {
   $$CompraEventoTableTableManager(_$AppDatabase db, $CompraEventoTable table)
     : super(
@@ -127908,6 +133329,7 @@ class $$CompraEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => CompraEventoCompanion(
                 id: id,
@@ -127918,6 +133340,7 @@ class $$CompraEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           createCompanionCallback:
@@ -127930,6 +133353,7 @@ class $$CompraEventoTableTableManager
                 Value<String?> estadoNuevo = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
                 Value<String?> actor = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
                 Value<String?> datosRelevantes = const Value.absent(),
               }) => CompraEventoCompanion.insert(
                 id: id,
@@ -127940,6 +133364,7 @@ class $$CompraEventoTableTableManager
                 estadoNuevo: estadoNuevo,
                 observacion: observacion,
                 actor: actor,
+                actorUsuarioId: actorUsuarioId,
                 datosRelevantes: datosRelevantes,
               ),
           withReferenceMapper:
@@ -127952,7 +133377,7 @@ class $$CompraEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({compraId = false}) {
+          prefetchHooksCallback: ({compraId = false, actorUsuarioId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -127985,6 +133410,20 @@ class $$CompraEventoTableTableManager
                           )
                           as T;
                 }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable: $$CompraEventoTableReferences
+                                ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$CompraEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -128009,524 +133448,7 @@ typedef $$CompraEventoTableProcessedTableManager =
       $$CompraEventoTableUpdateCompanionBuilder,
       (CompraEventoData, $$CompraEventoTableReferences),
       CompraEventoData,
-      PrefetchHooks Function({bool compraId})
-    >;
-typedef $$UsuarioTableCreateCompanionBuilder =
-    UsuarioCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<String> cicloVidaRegistro,
-      required String nombre,
-      required String nombreUsuario,
-      required String passwordHash,
-      Value<String?> puestoId,
-      Value<bool> esMaestro,
-      Value<DateTime?> ultimoAccesoAt,
-      Value<int> rowid,
-    });
-typedef $$UsuarioTableUpdateCompanionBuilder =
-    UsuarioCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<String> cicloVidaRegistro,
-      Value<String> nombre,
-      Value<String> nombreUsuario,
-      Value<String> passwordHash,
-      Value<String?> puestoId,
-      Value<bool> esMaestro,
-      Value<DateTime?> ultimoAccesoAt,
-      Value<int> rowid,
-    });
-
-final class $$UsuarioTableReferences
-    extends BaseReferences<_$AppDatabase, $UsuarioTable, UsuarioData> {
-  $$UsuarioTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $PuestoTable _puestoIdTable(_$AppDatabase db) => db.puesto.createAlias(
-    $_aliasNameGenerator(db.usuario.puestoId, db.puesto.id),
-  );
-
-  $$PuestoTableProcessedTableManager? get puestoId {
-    final $_column = $_itemColumn<String>('puesto_id');
-    if ($_column == null) return null;
-    final manager = $$PuestoTableTableManager(
-      $_db,
-      $_db.puesto,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_puestoIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static MultiTypedResultKey<$PermisoUsuarioTable, List<PermisoUsuarioData>>
-  _permisoUsuarioRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.permisoUsuario,
-    aliasName: $_aliasNameGenerator(db.usuario.id, db.permisoUsuario.usuarioId),
-  );
-
-  $$PermisoUsuarioTableProcessedTableManager get permisoUsuarioRefs {
-    final manager = $$PermisoUsuarioTableTableManager(
-      $_db,
-      $_db.permisoUsuario,
-    ).filter((f) => f.usuarioId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_permisoUsuarioRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$UsuarioTableFilterComposer
-    extends Composer<_$AppDatabase, $UsuarioTable> {
-  $$UsuarioTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
-    column: $table.cicloVidaRegistro,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get nombre => $composableBuilder(
-    column: $table.nombre,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get nombreUsuario => $composableBuilder(
-    column: $table.nombreUsuario,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get passwordHash => $composableBuilder(
-    column: $table.passwordHash,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get esMaestro => $composableBuilder(
-    column: $table.esMaestro,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get ultimoAccesoAt => $composableBuilder(
-    column: $table.ultimoAccesoAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$PuestoTableFilterComposer get puestoId {
-    final $$PuestoTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.puestoId,
-      referencedTable: $db.puesto,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PuestoTableFilterComposer(
-            $db: $db,
-            $table: $db.puesto,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<bool> permisoUsuarioRefs(
-    Expression<bool> Function($$PermisoUsuarioTableFilterComposer f) f,
-  ) {
-    final $$PermisoUsuarioTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.permisoUsuario,
-      getReferencedColumn: (t) => t.usuarioId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PermisoUsuarioTableFilterComposer(
-            $db: $db,
-            $table: $db.permisoUsuario,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$UsuarioTableOrderingComposer
-    extends Composer<_$AppDatabase, $UsuarioTable> {
-  $$UsuarioTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
-    column: $table.cicloVidaRegistro,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get nombre => $composableBuilder(
-    column: $table.nombre,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get nombreUsuario => $composableBuilder(
-    column: $table.nombreUsuario,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get passwordHash => $composableBuilder(
-    column: $table.passwordHash,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get esMaestro => $composableBuilder(
-    column: $table.esMaestro,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get ultimoAccesoAt => $composableBuilder(
-    column: $table.ultimoAccesoAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$PuestoTableOrderingComposer get puestoId {
-    final $$PuestoTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.puestoId,
-      referencedTable: $db.puesto,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PuestoTableOrderingComposer(
-            $db: $db,
-            $table: $db.puesto,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$UsuarioTableAnnotationComposer
-    extends Composer<_$AppDatabase, $UsuarioTable> {
-  $$UsuarioTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
-    column: $table.cicloVidaRegistro,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get nombre =>
-      $composableBuilder(column: $table.nombre, builder: (column) => column);
-
-  GeneratedColumn<String> get nombreUsuario => $composableBuilder(
-    column: $table.nombreUsuario,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get passwordHash => $composableBuilder(
-    column: $table.passwordHash,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get esMaestro =>
-      $composableBuilder(column: $table.esMaestro, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get ultimoAccesoAt => $composableBuilder(
-    column: $table.ultimoAccesoAt,
-    builder: (column) => column,
-  );
-
-  $$PuestoTableAnnotationComposer get puestoId {
-    final $$PuestoTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.puestoId,
-      referencedTable: $db.puesto,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PuestoTableAnnotationComposer(
-            $db: $db,
-            $table: $db.puesto,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<T> permisoUsuarioRefs<T extends Object>(
-    Expression<T> Function($$PermisoUsuarioTableAnnotationComposer a) f,
-  ) {
-    final $$PermisoUsuarioTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.permisoUsuario,
-      getReferencedColumn: (t) => t.usuarioId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PermisoUsuarioTableAnnotationComposer(
-            $db: $db,
-            $table: $db.permisoUsuario,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$UsuarioTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $UsuarioTable,
-          UsuarioData,
-          $$UsuarioTableFilterComposer,
-          $$UsuarioTableOrderingComposer,
-          $$UsuarioTableAnnotationComposer,
-          $$UsuarioTableCreateCompanionBuilder,
-          $$UsuarioTableUpdateCompanionBuilder,
-          (UsuarioData, $$UsuarioTableReferences),
-          UsuarioData,
-          PrefetchHooks Function({bool puestoId, bool permisoUsuarioRefs})
-        > {
-  $$UsuarioTableTableManager(_$AppDatabase db, $UsuarioTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer:
-              () => $$UsuarioTableFilterComposer($db: db, $table: table),
-          createOrderingComposer:
-              () => $$UsuarioTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer:
-              () => $$UsuarioTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<String> cicloVidaRegistro = const Value.absent(),
-                Value<String> nombre = const Value.absent(),
-                Value<String> nombreUsuario = const Value.absent(),
-                Value<String> passwordHash = const Value.absent(),
-                Value<String?> puestoId = const Value.absent(),
-                Value<bool> esMaestro = const Value.absent(),
-                Value<DateTime?> ultimoAccesoAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => UsuarioCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                cicloVidaRegistro: cicloVidaRegistro,
-                nombre: nombre,
-                nombreUsuario: nombreUsuario,
-                passwordHash: passwordHash,
-                puestoId: puestoId,
-                esMaestro: esMaestro,
-                ultimoAccesoAt: ultimoAccesoAt,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<String> cicloVidaRegistro = const Value.absent(),
-                required String nombre,
-                required String nombreUsuario,
-                required String passwordHash,
-                Value<String?> puestoId = const Value.absent(),
-                Value<bool> esMaestro = const Value.absent(),
-                Value<DateTime?> ultimoAccesoAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => UsuarioCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                cicloVidaRegistro: cicloVidaRegistro,
-                nombre: nombre,
-                nombreUsuario: nombreUsuario,
-                passwordHash: passwordHash,
-                puestoId: puestoId,
-                esMaestro: esMaestro,
-                ultimoAccesoAt: ultimoAccesoAt,
-                rowid: rowid,
-              ),
-          withReferenceMapper:
-              (p0) =>
-                  p0
-                      .map(
-                        (e) => (
-                          e.readTable(table),
-                          $$UsuarioTableReferences(db, table, e),
-                        ),
-                      )
-                      .toList(),
-          prefetchHooksCallback: ({
-            puestoId = false,
-            permisoUsuarioRefs = false,
-          }) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (permisoUsuarioRefs) db.permisoUsuario,
-              ],
-              addJoins: <
-                T extends TableManagerState<
-                  dynamic,
-                  dynamic,
-                  dynamic,
-                  dynamic,
-                  dynamic,
-                  dynamic,
-                  dynamic,
-                  dynamic,
-                  dynamic,
-                  dynamic,
-                  dynamic
-                >
-              >(state) {
-                if (puestoId) {
-                  state =
-                      state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.puestoId,
-                            referencedTable: $$UsuarioTableReferences
-                                ._puestoIdTable(db),
-                            referencedColumn:
-                                $$UsuarioTableReferences._puestoIdTable(db).id,
-                          )
-                          as T;
-                }
-
-                return state;
-              },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (permisoUsuarioRefs)
-                    await $_getPrefetchedData<
-                      UsuarioData,
-                      $UsuarioTable,
-                      PermisoUsuarioData
-                    >(
-                      currentTable: table,
-                      referencedTable: $$UsuarioTableReferences
-                          ._permisoUsuarioRefsTable(db),
-                      managerFromTypedResult:
-                          (p0) =>
-                              $$UsuarioTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).permisoUsuarioRefs,
-                      referencedItemsForCurrentItem:
-                          (item, referencedItems) => referencedItems.where(
-                            (e) => e.usuarioId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
-                ];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$UsuarioTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $UsuarioTable,
-      UsuarioData,
-      $$UsuarioTableFilterComposer,
-      $$UsuarioTableOrderingComposer,
-      $$UsuarioTableAnnotationComposer,
-      $$UsuarioTableCreateCompanionBuilder,
-      $$UsuarioTableUpdateCompanionBuilder,
-      (UsuarioData, $$UsuarioTableReferences),
-      UsuarioData,
-      PrefetchHooks Function({bool puestoId, bool permisoUsuarioRefs})
+      PrefetchHooks Function({bool compraId, bool actorUsuarioId})
     >;
 typedef $$UsuarioEventoTableCreateCompanionBuilder =
     UsuarioEventoCompanion Function({
@@ -129264,6 +134186,396 @@ typedef $$PermisoUsuarioTableProcessedTableManager =
       PermisoUsuarioData,
       PrefetchHooks Function({bool usuarioId})
     >;
+typedef $$EliminacionFisicaEventoTableCreateCompanionBuilder =
+    EliminacionFisicaEventoCompanion Function({
+      Value<int> id,
+      required String tipoEntidad,
+      required String entidadIdOriginal,
+      Value<String?> actorUsuarioId,
+      required DateTime fechaHora,
+      required String motivo,
+      required String snapshotJson,
+    });
+typedef $$EliminacionFisicaEventoTableUpdateCompanionBuilder =
+    EliminacionFisicaEventoCompanion Function({
+      Value<int> id,
+      Value<String> tipoEntidad,
+      Value<String> entidadIdOriginal,
+      Value<String?> actorUsuarioId,
+      Value<DateTime> fechaHora,
+      Value<String> motivo,
+      Value<String> snapshotJson,
+    });
+
+final class $$EliminacionFisicaEventoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $EliminacionFisicaEventoTable,
+          EliminacionFisicaEventoData
+        > {
+  $$EliminacionFisicaEventoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.eliminacionFisicaEvento.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$EliminacionFisicaEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $EliminacionFisicaEventoTable> {
+  $$EliminacionFisicaEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEntidad => $composableBuilder(
+    column: $table.tipoEntidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entidadIdOriginal => $composableBuilder(
+    column: $table.entidadIdOriginal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivo => $composableBuilder(
+    column: $table.motivo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get snapshotJson => $composableBuilder(
+    column: $table.snapshotJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EliminacionFisicaEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $EliminacionFisicaEventoTable> {
+  $$EliminacionFisicaEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEntidad => $composableBuilder(
+    column: $table.tipoEntidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entidadIdOriginal => $composableBuilder(
+    column: $table.entidadIdOriginal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivo => $composableBuilder(
+    column: $table.motivo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get snapshotJson => $composableBuilder(
+    column: $table.snapshotJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EliminacionFisicaEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EliminacionFisicaEventoTable> {
+  $$EliminacionFisicaEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEntidad => $composableBuilder(
+    column: $table.tipoEntidad,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entidadIdOriginal => $composableBuilder(
+    column: $table.entidadIdOriginal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get motivo =>
+      $composableBuilder(column: $table.motivo, builder: (column) => column);
+
+  GeneratedColumn<String> get snapshotJson => $composableBuilder(
+    column: $table.snapshotJson,
+    builder: (column) => column,
+  );
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EliminacionFisicaEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EliminacionFisicaEventoTable,
+          EliminacionFisicaEventoData,
+          $$EliminacionFisicaEventoTableFilterComposer,
+          $$EliminacionFisicaEventoTableOrderingComposer,
+          $$EliminacionFisicaEventoTableAnnotationComposer,
+          $$EliminacionFisicaEventoTableCreateCompanionBuilder,
+          $$EliminacionFisicaEventoTableUpdateCompanionBuilder,
+          (
+            EliminacionFisicaEventoData,
+            $$EliminacionFisicaEventoTableReferences,
+          ),
+          EliminacionFisicaEventoData,
+          PrefetchHooks Function({bool actorUsuarioId})
+        > {
+  $$EliminacionFisicaEventoTableTableManager(
+    _$AppDatabase db,
+    $EliminacionFisicaEventoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$EliminacionFisicaEventoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$EliminacionFisicaEventoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$EliminacionFisicaEventoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> tipoEntidad = const Value.absent(),
+                Value<String> entidadIdOriginal = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> motivo = const Value.absent(),
+                Value<String> snapshotJson = const Value.absent(),
+              }) => EliminacionFisicaEventoCompanion(
+                id: id,
+                tipoEntidad: tipoEntidad,
+                entidadIdOriginal: entidadIdOriginal,
+                actorUsuarioId: actorUsuarioId,
+                fechaHora: fechaHora,
+                motivo: motivo,
+                snapshotJson: snapshotJson,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String tipoEntidad,
+                required String entidadIdOriginal,
+                Value<String?> actorUsuarioId = const Value.absent(),
+                required DateTime fechaHora,
+                required String motivo,
+                required String snapshotJson,
+              }) => EliminacionFisicaEventoCompanion.insert(
+                id: id,
+                tipoEntidad: tipoEntidad,
+                entidadIdOriginal: entidadIdOriginal,
+                actorUsuarioId: actorUsuarioId,
+                fechaHora: fechaHora,
+                motivo: motivo,
+                snapshotJson: snapshotJson,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$EliminacionFisicaEventoTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({actorUsuarioId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable:
+                                $$EliminacionFisicaEventoTableReferences
+                                    ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$EliminacionFisicaEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EliminacionFisicaEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EliminacionFisicaEventoTable,
+      EliminacionFisicaEventoData,
+      $$EliminacionFisicaEventoTableFilterComposer,
+      $$EliminacionFisicaEventoTableOrderingComposer,
+      $$EliminacionFisicaEventoTableAnnotationComposer,
+      $$EliminacionFisicaEventoTableCreateCompanionBuilder,
+      $$EliminacionFisicaEventoTableUpdateCompanionBuilder,
+      (EliminacionFisicaEventoData, $$EliminacionFisicaEventoTableReferences),
+      EliminacionFisicaEventoData,
+      PrefetchHooks Function({bool actorUsuarioId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -129371,6 +134683,8 @@ class $AppDatabaseManager {
         _db,
         _db.documentoPorEmitirCorreoEnvio,
       );
+  $$UsuarioTableTableManager get usuario =>
+      $$UsuarioTableTableManager(_db, _db.usuario);
   $$DocumentoPorEmitirEventoTableTableManager get documentoPorEmitirEvento =>
       $$DocumentoPorEmitirEventoTableTableManager(
         _db,
@@ -129541,10 +134855,13 @@ class $AppDatabaseManager {
       $$CompraAttachmentTableTableManager(_db, _db.compraAttachment);
   $$CompraEventoTableTableManager get compraEvento =>
       $$CompraEventoTableTableManager(_db, _db.compraEvento);
-  $$UsuarioTableTableManager get usuario =>
-      $$UsuarioTableTableManager(_db, _db.usuario);
   $$UsuarioEventoTableTableManager get usuarioEvento =>
       $$UsuarioEventoTableTableManager(_db, _db.usuarioEvento);
   $$PermisoUsuarioTableTableManager get permisoUsuario =>
       $$PermisoUsuarioTableTableManager(_db, _db.permisoUsuario);
+  $$EliminacionFisicaEventoTableTableManager get eliminacionFisicaEvento =>
+      $$EliminacionFisicaEventoTableTableManager(
+        _db,
+        _db.eliminacionFisicaEvento,
+      );
 }

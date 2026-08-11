@@ -7,7 +7,7 @@ part of 'ubicaciones_arbol_controller.dart';
 // **************************************************************************
 
 String _$ubicacionesArbolControllerHash() =>
-    r'3278dc5263e5b14bac8ed2385eedf5dea2dbf570';
+    r'74fbd16963fd2a835283d7614babd82188cc412e';
 
 /// Copied from Dart SDK
 class _SystemHash {

@@ -1,5 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../usecases/eliminar_linea_telefonica_fisicamente_usecase.dart';
+
 /// El expediente de una línea telefónica (Etapa 9A) — "qué línea es" y
 /// su condición operativa. Plan/costo, asignación y equipo asociado
 /// viven en repositorios propios (9A/9B), mismo criterio de separación
@@ -57,5 +59,13 @@ abstract interface class LineaTelefonicaRepository {
     required DateTime fechaBaja,
     required String motivoBaja,
     String? observacionesBaja,
+  });
+
+  /// Eliminación física extraordinaria (Etapa 11D) — ver el doc comment
+  /// de la implementación para las condiciones exactas.
+  Future<EliminarLineaTelefonicaFisicamenteResultado> eliminarFisicamente({
+    required String lineaTelefonicaId,
+    required String motivo,
+    String? actorUsuarioId,
   });
 }

@@ -8,6 +8,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/cambiar_servicio_empleado_usecase.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../personal_providers.dart';
@@ -132,6 +133,7 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
             observaciones: observacionesController.text,
             sueldoMensual: centavosDesdeTexto(sueldoController.text),
             bonoMensual: centavosDesdeTexto(bonoController.text),
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           );
 
       if (!context.mounted) return null;

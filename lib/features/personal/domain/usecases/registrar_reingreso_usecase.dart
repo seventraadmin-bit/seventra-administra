@@ -41,7 +41,7 @@ class RegistrarReingresoUseCase {
     bool limpiarPuesto = false,
     String? sucursalId,
     bool limpiarSucursal = false,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final empleado = await _repository.obtenerPorId(empleadoId);
     if (empleado == null) return RegistrarReingresoNoExiste();
@@ -60,7 +60,7 @@ class RegistrarReingresoUseCase {
         limpiarPuesto: limpiarPuesto,
         sucursalId: sucursalId,
         limpiarSucursal: limpiarSucursal,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarReingresoExitoso(actualizado);
     } catch (e) {

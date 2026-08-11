@@ -55,7 +55,7 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
     String? servicioId,
     required DateTime fechaInicio,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.into(_db.asignacionLineaTelefonica).insertReturning(
           AsignacionLineaTelefonicaCompanion.insert(
@@ -74,7 +74,7 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
     required DateTime fechaTermino,
     required String motivoTermino,
     String? observacionesTermino,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       await (_db.update(_db.asignacionLineaTelefonica)..where((t) => t.id.equals(asignacionLineaTelefonicaId))).write(
@@ -98,7 +98,7 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
     String? nuevoEmpleadoId,
     String? nuevoServicioId,
     String? observacionesNueva,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final actual = await (_db.select(_db.asignacionLineaTelefonica)

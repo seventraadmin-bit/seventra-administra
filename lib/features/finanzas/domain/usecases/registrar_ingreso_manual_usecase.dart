@@ -40,7 +40,7 @@ class RegistrarIngresoManualUseCase {
     required String formaPago,
     required String concepto,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     if (monto <= 0) {
       return RegistrarIngresoManualMontoInvalido();
@@ -65,7 +65,7 @@ class RegistrarIngresoManualUseCase {
         formaPago: formaPago,
         concepto: concepto.trim(),
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarIngresoManualExitoso(ingreso);
     } catch (e) {

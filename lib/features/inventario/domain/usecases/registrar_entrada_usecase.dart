@@ -47,7 +47,7 @@ class RegistrarEntradaUseCase {
     int? costoUnitario,
     required DateTime fecha,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final articulo = await _articuloRepository.obtenerPorId(articuloId);
     if (articulo == null) return RegistrarEntradaArticuloNoExiste();
@@ -64,7 +64,7 @@ class RegistrarEntradaUseCase {
         costoUnitario: costoUnitario,
         fecha: fecha,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarEntradaExitoso(movimiento);
     } catch (e) {

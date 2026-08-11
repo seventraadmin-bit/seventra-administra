@@ -39,7 +39,7 @@ class RegistrarEgresoUseCase {
     String? beneficiario,
     required String concepto,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     if (monto <= 0) {
       return RegistrarEgresoMontoInvalido();
@@ -65,7 +65,7 @@ class RegistrarEgresoUseCase {
         beneficiario: beneficiario,
         concepto: concepto.trim(),
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarEgresoExitoso(egreso);
     } catch (e) {

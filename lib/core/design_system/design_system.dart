@@ -30,4 +30,5 @@ export 'components/riseg_table_base.dart';
 export 'components/riseg_tabs.dart';
 export 'components/riseg_text_field.dart';
 export 'components/riseg_date_field.dart';
+export 'components/riseg_eliminar_fisicamente_dialog.dart';
 export 'components/riseg_time_field.dart';

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/attachment_table.dart';
 import '../../../../core/database/tables/audit_columns.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 import 'vehiculo_table.dart';
 
 /// Catálogo de tipos de documento vehicular (Etapa 8C) — mínimo pedido
@@ -57,6 +58,10 @@ class VehiculoDocumento extends Table with AuditColumns {
   DateTimeColumn get fechaVencimiento => dateTime().nullable()();
 
   TextColumn get observaciones => text().nullable()();
+
+  /// Quién registró el documento (Etapa 11D) — mismo criterio que
+  /// `actorUsuarioId` en el resto del proyecto.
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   @override
   List<String> get customConstraints => [

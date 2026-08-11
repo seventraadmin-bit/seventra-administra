@@ -36,7 +36,7 @@ abstract interface class AsignacionVehiculoRepository {
     required DateTime fechaInicio,
     String? observaciones,
     int? kilometrajeEntrega,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra la asignación vigente del Vehículo con un motivo
@@ -54,7 +54,7 @@ abstract interface class AsignacionVehiculoRepository {
     required String motivoTermino,
     String? observacionesTermino,
     int? kilometrajeDevolucion,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra la asignación vigente del Vehículo (motivo
@@ -69,7 +69,7 @@ abstract interface class AsignacionVehiculoRepository {
     String? nuevoEmpleadoId,
     String? nuevoServicioId,
     String? observacionesNueva,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra la asignación vigente del Vehículo (si existe) con motivo

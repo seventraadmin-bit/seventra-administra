@@ -11,10 +11,13 @@
 /// `ver` propia en el catálogo (`modulosPermiso` no incluye
 /// `'configuracion'`) — está gateado explícitamente por
 /// `usuarios.administrar` (punto 10 del plan), el mismo permiso que
-/// controla el acceso a "Configuración → Usuarios".
+/// controla el acceso a "Configuración → Usuarios". Cubre también sus
+/// subrutas (`/configuracion/usuarios`, `/configuracion/auditoria`,
+/// Etapa 11D) — mismo motivo por el que `/configuracion` en sí
+/// redirige a una de ellas y nunca se queda en la raíz.
 String? permisoRequeridoParaRuta(String path) {
   if (path == '/dashboard') return null;
-  if (path == '/configuracion') return 'usuarios.administrar';
+  if (path == '/configuracion' || path.startsWith('/configuracion/')) return 'usuarios.administrar';
 
   final segmento = path.startsWith('/') ? path.substring(1) : path;
   final modulo = segmento.split('/').first;

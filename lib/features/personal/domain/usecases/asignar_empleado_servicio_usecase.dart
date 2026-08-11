@@ -75,7 +75,7 @@ class AsignarEmpleadoServicioUseCase {
     String? observaciones,
     int? sueldoMensual,
     int? bonoMensual,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final empleado = await _empleadoRepository.obtenerPorId(empleadoId);
     if (empleado == null) return AsignarEmpleadoServicioEmpleadoNoExiste();
@@ -112,7 +112,7 @@ class AsignarEmpleadoServicioUseCase {
         bonoMensual: bonoResuelto,
         turnoId: turnoId,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return AsignarEmpleadoServicioExitoso(asignacion);
     } catch (e) {

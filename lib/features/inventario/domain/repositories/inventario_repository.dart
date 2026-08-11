@@ -43,7 +43,7 @@ abstract interface class InventarioRepository {
     int? costoUnitario,
     required DateTime fecha,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Entrada de una unidad serializada — crea la `ArticuloUnidad` y su
@@ -61,7 +61,7 @@ abstract interface class InventarioRepository {
     int? costoUnitario,
     required DateTime fecha,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Baja definitiva de cantidad — saca del Total real (nunca de un
@@ -71,7 +71,7 @@ abstract interface class InventarioRepository {
     String? varianteId,
     required int cantidad,
     required String observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Baja definitiva de una unidad serializada — marca su `estatus`
@@ -79,7 +79,7 @@ abstract interface class InventarioRepository {
   Future<ArticuloUnidadData> registrarBajaUnidad({
     required String unidadId,
     required String observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Corrección de conteo/merma — `esEntrada` decide
@@ -90,7 +90,7 @@ abstract interface class InventarioRepository {
     required int cantidad,
     required bool esEntrada,
     required String observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Existencia derivada de un Artículo por cantidad (con o sin
@@ -118,6 +118,6 @@ abstract interface class InventarioRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

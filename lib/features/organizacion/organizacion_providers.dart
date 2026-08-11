@@ -12,6 +12,7 @@ import '../../core/error/result.dart';
 import '../../core/permissions/authorization_service.dart';
 import '../finanzas/finanzas_providers.dart';
 import '../personal/personal_providers.dart';
+import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/area_repository_impl.dart';
 import 'data/repositories/catalogo_repository_impl.dart';
@@ -78,6 +79,9 @@ import 'domain/usecases/crear_puesto_usecase.dart';
 import 'domain/usecases/crear_servicio_usecase.dart';
 import 'domain/usecases/crear_sucursal_usecase.dart';
 import 'domain/usecases/crear_ubicacion_usecase.dart';
+import 'domain/usecases/eliminar_area_fisicamente_usecase.dart';
+import 'domain/usecases/eliminar_puesto_fisicamente_usecase.dart';
+import 'domain/usecases/eliminar_sucursal_fisicamente_usecase.dart';
 import 'domain/usecases/ensamblar_documento_por_emitir_usecase.dart';
 import 'domain/usecases/generar_agenda_usecase.dart';
 import 'domain/usecases/desactivar_area_usecase.dart';
@@ -745,6 +749,82 @@ final crearServicioAutorizadoProvider = Provider<CrearServicioAutorizado>((ref) 
       'comercial.crear',
       () => ref.read(crearServicioUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador),
       GuardarServicioErrorInesperado.new,
+    );
+  };
+});
+
+// --- Eliminación física extraordinaria (Etapa 11D) ---
+//
+// Facultad exclusiva del Usuario Maestro — `exigirMaestro` nunca
+// consulta `PermisoUsuario`/`AuthorizationService.verificar`, así que
+// ningún permiso dinámico puede otorgarla. El actor se resuelve aquí
+// mismo, dentro del cierre — el diálogo nunca lo provee (mismo
+// criterio que la resolución del permiso).
+final eliminarAreaFisicamenteUseCaseProvider = Provider<EliminarAreaFisicamenteUseCase>((ref) {
+  return EliminarAreaFisicamenteUseCase(ref.watch(areaRepositoryProvider));
+});
+
+typedef EliminarAreaFisicamenteAutorizado = Future<EliminarAreaFisicamenteResultado> Function({
+  required String areaId,
+  required String motivo,
+});
+
+final eliminarAreaFisicamenteAutorizadoProvider = Provider<EliminarAreaFisicamenteAutorizado>((ref) {
+  return ({required String areaId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarAreaFisicamenteUseCaseProvider).ejecutar(
+            areaId: areaId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarAreaFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+final eliminarPuestoFisicamenteUseCaseProvider = Provider<EliminarPuestoFisicamenteUseCase>((ref) {
+  return EliminarPuestoFisicamenteUseCase(ref.watch(puestoRepositoryProvider));
+});
+
+typedef EliminarPuestoFisicamenteAutorizado = Future<EliminarPuestoFisicamenteResultado> Function({
+  required String puestoId,
+  required String motivo,
+});
+
+final eliminarPuestoFisicamenteAutorizadoProvider = Provider<EliminarPuestoFisicamenteAutorizado>((ref) {
+  return ({required String puestoId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarPuestoFisicamenteUseCaseProvider).ejecutar(
+            puestoId: puestoId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarPuestoFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+final eliminarSucursalFisicamenteUseCaseProvider = Provider<EliminarSucursalFisicamenteUseCase>((ref) {
+  return EliminarSucursalFisicamenteUseCase(ref.watch(sucursalRepositoryProvider));
+});
+
+typedef EliminarSucursalFisicamenteAutorizado = Future<EliminarSucursalFisicamenteResultado> Function({
+  required String sucursalId,
+  required String motivo,
+});
+
+final eliminarSucursalFisicamenteAutorizadoProvider = Provider<EliminarSucursalFisicamenteAutorizado>((ref) {
+  return ({required String sucursalId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarSucursalFisicamenteUseCaseProvider).ejecutar(
+            sucursalId: sucursalId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarSucursalFisicamenteErrorInesperado.new,
     );
   };
 });

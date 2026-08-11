@@ -36,7 +36,7 @@ class RetirarAsignacionLineaTelefonicaUseCase {
     required DateTime fechaTermino,
     String? observacionesTermino,
     bool moverEquipoAsociado = true,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final actual = await _asignacionRepository.obtenerPorId(asignacionLineaTelefonicaId);
     if (actual == null) return RetirarAsignacionLineaTelefonicaNoExiste();
@@ -48,7 +48,7 @@ class RetirarAsignacionLineaTelefonicaUseCase {
         fechaTermino: fechaTermino,
         motivoTermino: MotivoTerminoAsignacionLineaTelefonica.liberacion.name,
         observacionesTermino: observacionesTermino,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       if (moverEquipoAsociado) {

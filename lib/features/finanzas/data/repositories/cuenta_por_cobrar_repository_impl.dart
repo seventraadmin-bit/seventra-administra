@@ -35,7 +35,7 @@ class CuentaPorCobrarRepositoryImpl implements CuentaPorCobrarRepository {
     required DateTime fechaEmisionReal,
     required int importeEmitido,
     DateTime? fechaVencimiento,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final cuenta = await _db.into(_db.cuentaPorCobrar).insertReturning(
@@ -62,7 +62,7 @@ class CuentaPorCobrarRepositoryImpl implements CuentaPorCobrarRepository {
         tipoEvento: 'creada',
         estadoAnterior: null,
         estadoNuevo: cuenta.estatus,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'documentoPorEmitirId': documentoPorEmitirId, 'saldoOriginal': importeEmitido},
       );
 
@@ -146,7 +146,7 @@ class CuentaPorCobrarRepositoryImpl implements CuentaPorCobrarRepository {
     required String cuentaPorCobrarId,
     required DateTime fechaVencimiento,
     String? motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior =
@@ -165,7 +165,7 @@ class CuentaPorCobrarRepositoryImpl implements CuentaPorCobrarRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: anterior.estatus,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'fechaVencimientoAnterior': anterior.fechaVencimiento?.toIso8601String(),
           'fechaVencimientoNueva': fechaVencimiento.toIso8601String(),
@@ -190,7 +190,7 @@ class CuentaPorCobrarRepositoryImpl implements CuentaPorCobrarRepository {
     required String? estadoAnterior,
     required String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, Object?>? datosRelevantes,
   }) {
     return _db.into(_db.cuentaPorCobrarEvento).insert(
@@ -201,7 +201,7 @@ class CuentaPorCobrarRepositoryImpl implements CuentaPorCobrarRepository {
             estadoAnterior: Value(estadoAnterior),
             estadoNuevo: Value(estadoNuevo),
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
           ),
         );

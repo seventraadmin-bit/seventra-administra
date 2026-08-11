@@ -7,6 +7,7 @@
 // compuesta (Compra → Inventario + Egreso) no exige ningún permiso
 // secundario sobre los dominios que solo compone internamente.
 
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -79,6 +80,31 @@ const _sesionMaestro = SesionUsuario(
   permisos: {},
 );
 
+/// Filas reales de Usuario para los `usuarioId` de `_sesionCon`/
+/// `_sesionMaestro` (Etapa 11D): `actorUsuarioId` ahora es una FK real
+/// hacia `Usuario` en las tablas de evento que estos casos de uso
+/// escriben, así que un id inventado que no exista en la base rompe la
+/// restricción — antes pasaba inadvertido porque `actorUsuarioId`
+/// siempre llegaba `null`.
+Future<void> _sembrarUsuariosDePrueba(AppDatabase db) async {
+  await db.into(db.usuario).insert(
+        UsuarioCompanion.insert(
+          id: const Value('usuario-prueba'),
+          nombre: 'Usuario de prueba',
+          nombreUsuario: 'usuario-prueba',
+          passwordHash: 'x',
+        ),
+      );
+  await db.into(db.usuario).insert(
+        UsuarioCompanion.insert(
+          id: const Value('maestro-prueba'),
+          nombre: 'Maestro de prueba',
+          nombreUsuario: 'maestro-prueba',
+          passwordHash: 'x',
+        ),
+      );
+}
+
 void main() {
   group('AuthorizationService — mecanismo central', () {
     test('verificar() devuelve null cuando el código está en la sesión', () {
@@ -108,7 +134,10 @@ void main() {
   group('Compras — registrarCompra llamado directo al Controller (sin UI)', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('compras.ver sin compras.crear: rechazada, ninguna Compra se crea', () async {
@@ -171,7 +200,10 @@ void main() {
   group('Nómina — generar llamado directo al Controller (sin UI)', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('nomina.ver sin nomina.crear: rechazada antes de tocar el dominio', () async {
@@ -198,7 +230,10 @@ void main() {
   group('Nómina — cerrar/actualizarMovimientos/actualizarDistribucion, sin pasar por diálogo', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('cerrar: nomina.ver sin nomina.cerrar se rechaza', () async {
@@ -262,7 +297,10 @@ void main() {
   group('Personal — crearEmpleadoAutorizadoProvider llamado directo, sin montar widgets', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('personal.ver sin personal.crear: creación rechazada desde la fachada de aplicación', () async {
@@ -324,7 +362,10 @@ void main() {
   group('Finanzas — registrarManual (Ingreso) llamado directo al Controller (sin UI)', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('finanzas.ver sin finanzas.crear: rechazado', () async {
@@ -356,7 +397,10 @@ void main() {
   group('Inventario — registrarAjuste llamado directo al Controller (sin UI)', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('inventario.ver sin inventario.modificar: ajuste rechazado', () async {
@@ -401,7 +445,10 @@ void main() {
   group('Vehículos — corregirVehiculo llamado directo al Controller (sin UI)', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('vehiculos.ver sin vehiculos.modificar: modificación rechazada', () async {
@@ -443,7 +490,10 @@ void main() {
   group('Telefonía — recarga vía fachada autorizada, sin montar widgets', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('telefonia.ver sin telefonia.crear: recarga rechazada', () async {
@@ -485,7 +535,10 @@ void main() {
   group('Organización — crearAreaAutorizadoProvider llamado directo, sin montar widgets', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('organizacion.ver sin organizacion.crear: escritura rechazada sin UI', () async {
@@ -515,7 +568,10 @@ void main() {
   group('Comercial — crearClienteAutorizadoProvider llamado directo, sin montar widgets', () {
     late AppDatabase db;
 
-    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await _sembrarUsuariosDePrueba(db);
+    });
     tearDown(() => db.close());
 
     test('comercial.ver sin comercial.crear: escritura rechazada sin UI', () async {

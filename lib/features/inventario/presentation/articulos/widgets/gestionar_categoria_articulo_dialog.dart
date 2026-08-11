@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_categoria_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/crear_categoria_articulo_usecase.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../articulos_controller.dart';
+import 'eliminar_categoria_articulo_fisicamente_dialog.dart';
 
 /// Catálogo administrable de categorías de artículo (Etapa 7A) — solo
 /// alta y archivado, mismo criterio simple que `CategoriasListScreen`
@@ -64,11 +66,17 @@ class _GestionarCategoriaArticuloDialogState extends ConsumerState<GestionarCate
     }
   }
 
+  Future<void> _eliminarFisicamente(String categoriaId) async {
+    final eliminado = await mostrarDialogoEliminarCategoriaArticuloFisicamente(context, ref, categoriaId);
+    if (eliminado) ref.read(articulosControllerProvider.notifier).recargar();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.colors;
     final categorias = ref.watch(articulosControllerProvider).categorias;
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     return Dialog(
       child: Padding(
@@ -116,6 +124,13 @@ class _GestionarCategoriaArticuloDialogState extends ConsumerState<GestionarCate
                                 visualDensity: VisualDensity.compact,
                                 onPressed: () => _archivar(c.id),
                               ),
+                              if (esMaestro)
+                                IconButton(
+                                  tooltip: l10n.eliminacionFisicaAccionMenu,
+                                  icon: const Icon(Icons.delete_forever_outlined, size: 18),
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () => _eliminarFisicamente(c.id),
+                                ),
                             ],
                           ),
                         ),

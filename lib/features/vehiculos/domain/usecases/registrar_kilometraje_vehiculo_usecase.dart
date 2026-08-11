@@ -56,7 +56,7 @@ class RegistrarKilometrajeVehiculoUseCase {
     required int kilometraje,
     required String origen,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     if (kilometraje < 0) return RegistrarKilometrajeVehiculoInvalido();
     if (await _vehiculoRepository.obtenerPorId(vehiculoId) == null) return RegistrarKilometrajeVehiculoNoExiste();
@@ -80,7 +80,7 @@ class RegistrarKilometrajeVehiculoUseCase {
         kilometraje: kilometraje,
         origen: origen,
         observaciones: observaciones?.trim().isEmpty ?? true ? null : observaciones!.trim(),
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarKilometrajeVehiculoExitoso(lectura);
     } catch (e) {

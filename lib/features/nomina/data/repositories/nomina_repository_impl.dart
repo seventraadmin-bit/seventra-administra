@@ -147,7 +147,7 @@ class NominaRepositoryImpl implements NominaRepository {
     required String folio,
     required PeriodoNomina periodo,
     required List<FilaNominaGenerada> filas,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final nomina = await _db.into(_db.nomina).insertReturning(
@@ -183,7 +183,7 @@ class NominaRepositoryImpl implements NominaRepository {
       await _registrarEventoInterno(
         nominaId: nomina.id,
         tipoEvento: 'generada',
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         observacion: '${filas.length} empleado(s) incluidos.',
       );
 
@@ -293,7 +293,7 @@ class NominaRepositoryImpl implements NominaRepository {
   }
 
   @override
-  Future<NominaData> cerrar({required String nominaId, String? actor}) {
+  Future<NominaData> cerrar({required String nominaId, String? actorUsuarioId}) {
     return _db.transaction(() async {
       await (_db.update(_db.nomina)..where((t) => t.id.equals(nominaId))).write(
         NominaCompanion(
@@ -302,7 +302,7 @@ class NominaRepositoryImpl implements NominaRepository {
           updatedAt: Value(DateTime.now()),
         ),
       );
-      await _registrarEventoInterno(nominaId: nominaId, tipoEvento: 'cerrada', actor: actor);
+      await _registrarEventoInterno(nominaId: nominaId, tipoEvento: 'cerrada', actorUsuarioId: actorUsuarioId);
       return (await obtenerPorId(nominaId))!;
     });
   }
@@ -312,7 +312,7 @@ class NominaRepositoryImpl implements NominaRepository {
     String? nominaEmpleadoId,
     required String tipoEvento,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.into(_db.nominaEvento).insert(
           NominaEventoCompanion.insert(
@@ -321,7 +321,7 @@ class NominaRepositoryImpl implements NominaRepository {
             fechaHora: DateTime.now(),
             tipoEvento: tipoEvento,
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
           ),
         );
   }
@@ -332,14 +332,14 @@ class NominaRepositoryImpl implements NominaRepository {
     String? nominaEmpleadoId,
     required String tipoEvento,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _registrarEventoInterno(
       nominaId: nominaId,
       nominaEmpleadoId: nominaEmpleadoId,
       tipoEvento: tipoEvento,
       observacion: observacion,
-      actor: actor,
+      actorUsuarioId: actorUsuarioId,
     );
   }
 }

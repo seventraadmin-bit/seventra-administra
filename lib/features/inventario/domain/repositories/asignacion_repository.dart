@@ -81,7 +81,7 @@ abstract interface class AsignacionRepository {
     required DateTime fechaEntrega,
     String? condicionEntrega,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra una `Asignacion` activa — `estatus` final se deriva de
@@ -98,7 +98,7 @@ abstract interface class AsignacionRepository {
     bool generaDescuento = false,
     int? importeDescuento,
     String? empleadoResponsableDescuentoId,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra [asignacionId] y crea de inmediato una Asignación nueva
@@ -119,13 +119,13 @@ abstract interface class AsignacionRepository {
     required int cantidadReemplazo,
     String? condicionEntregaReemplazo,
     String? observacionesReemplazo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   Future<DescuentoInventarioData> cancelarDescuento({
     required String descuentoId,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Adjunta el resguardo firmado (Etapa 7C) — inserta un único
@@ -139,6 +139,6 @@ abstract interface class AsignacionRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

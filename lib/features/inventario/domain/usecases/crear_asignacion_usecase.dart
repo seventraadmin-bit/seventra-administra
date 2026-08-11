@@ -58,7 +58,7 @@ class CrearAsignacionUseCase {
     required DateTime fechaEntrega,
     String? condicionEntrega,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final articulo = await _articuloRepository.obtenerPorId(articuloId);
     if (articulo == null) return CrearAsignacionArticuloNoExiste();
@@ -94,7 +94,7 @@ class CrearAsignacionUseCase {
         fechaEntrega: fechaEntrega,
         condicionEntrega: condicionEntrega,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CrearAsignacionExitoso(asignacion);
     } catch (e) {

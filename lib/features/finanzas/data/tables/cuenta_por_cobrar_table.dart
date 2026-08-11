@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../organizacion/data/tables/documento_por_emitir_table.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 
 /// Estatus de progreso de cobro de una Cuenta por cobrar (Etapa 4J.1)
 /// — deliberadamente sin `vencida`: esa condición nunca se almacena,
@@ -116,9 +117,13 @@ class CuentaPorCobrarEvento extends Table {
 
   TextColumn get observacion => text().nullable()();
 
-  /// `null` mientras no exista autenticación real — mismo criterio
-  /// que `DocumentoPorEmitirEvento.actor`.
+  /// **Legacy (Etapa 11D)** — nunca se pobló con un valor real; se
+  /// conserva la columna físicamente por seguridad de migración pero
+  /// ningún código desde 11D en adelante la lee ni la escribe. La única
+  /// fuente funcional de "quién" es `actorUsuarioId`.
   TextColumn get actor => text().nullable()();
+
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   /// JSON libre con el snapshot de lo que cambió — mismo criterio que
   /// `DocumentoPorEmitirEvento.datosRelevantes`.

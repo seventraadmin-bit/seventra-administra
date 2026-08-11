@@ -31,6 +31,6 @@ abstract interface class VehiculoKilometrajeRepository {
     required int kilometraje,
     required String origen,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

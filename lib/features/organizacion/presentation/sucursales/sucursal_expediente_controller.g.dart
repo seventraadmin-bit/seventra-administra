@@ -7,7 +7,7 @@ part of 'sucursal_expediente_controller.dart';
 // **************************************************************************
 
 String _$sucursalExpedienteControllerHash() =>
-    r'674e2e6af68f294be872c7f84d3c317bfb94da7d';
+    r'7e7a3cec3b64b1960bb4a025a820013c1b39211d';
 
 /// Copied from Dart SDK
 class _SystemHash {

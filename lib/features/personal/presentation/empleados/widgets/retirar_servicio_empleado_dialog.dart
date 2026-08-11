@@ -6,6 +6,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/personal/data/tables/asignacion_servicio_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/retirar_empleado_servicio_usecase.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../../personal_providers.dart';
 
@@ -91,6 +92,7 @@ Future<bool> mostrarDialogoRetirarServicioEmpleado(BuildContext context, WidgetR
             fechaTermino: fecha!,
             motivo: motivo,
             observaciones: observacionesController.text,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           );
 
       if (!context.mounted) return false;

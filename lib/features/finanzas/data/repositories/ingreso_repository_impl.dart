@@ -66,7 +66,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
     required String formaPago,
     required String concepto,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final ingreso = await _db.into(_db.ingreso).insertReturning(
@@ -91,7 +91,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
         tipoEvento: TipoEventoIngreso.registrado,
         estadoAnterior: null,
         estadoNuevo: ingreso.estatus,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'folioIngreso': folioIngreso, 'monto': monto, 'pagoId': pagoId},
       );
 
@@ -112,7 +112,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
     String? concepto,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.ingreso)..where((t) => t.id.equals(ingresoId))).getSingle();
@@ -138,7 +138,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: anterior.estatus,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'fechaAnterior': anterior.fecha.toIso8601String(),
           'conceptoAnterior': anterior.concepto,
@@ -153,7 +153,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
   Future<IngresoData> cancelar({
     required String ingresoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.ingreso)..where((t) => t.id.equals(ingresoId))).getSingle();
@@ -172,7 +172,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: EstatusIngreso.cancelado.name,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       return (_db.select(_db.ingreso)..where((t) => t.id.equals(ingresoId))).getSingle();
@@ -187,7 +187,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(
@@ -210,7 +210,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
         tipoEvento: TipoEventoIngreso.comprobanteAdjuntado,
         estadoAnterior: null,
         estadoNuevo: null,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'archivoNuevo': originalFileName, 'attachmentId': adjunto.id},
       );
 
@@ -235,7 +235,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
     required String? estadoAnterior,
     required String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, Object?>? datosRelevantes,
   }) {
     return _db.into(_db.ingresoEvento).insert(
@@ -246,7 +246,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
             estadoAnterior: Value(estadoAnterior),
             estadoNuevo: Value(estadoNuevo),
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
           ),
         );

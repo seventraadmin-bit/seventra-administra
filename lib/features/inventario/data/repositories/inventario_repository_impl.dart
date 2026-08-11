@@ -64,7 +64,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
     required DateTime fecha,
     int? costoUnitario,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.into(_db.movimientoInventario).insertReturning(
           MovimientoInventarioCompanion.insert(
@@ -76,7 +76,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
             fecha: fecha,
             costoUnitario: Value(costoUnitario),
             observaciones: Value(observaciones),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
           ),
         );
   }
@@ -89,7 +89,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
     int? costoUnitario,
     required DateTime fecha,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() => _insertarMovimiento(
           articuloId: articuloId,
@@ -99,7 +99,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
           fecha: fecha,
           costoUnitario: costoUnitario,
           observaciones: observaciones,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         ));
   }
 
@@ -115,7 +115,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
     int? costoUnitario,
     required DateTime fecha,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final unidad = await _db.into(_db.articuloUnidad).insertReturning(
@@ -146,7 +146,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
         fecha: fecha,
         costoUnitario: costoUnitario,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       return unidad;
@@ -159,7 +159,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
     String? varianteId,
     required int cantidad,
     required String observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() => _insertarMovimiento(
           articuloId: articuloId,
@@ -168,7 +168,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
           tipo: TipoMovimientoInventario.baja,
           fecha: DateTime.now(),
           observaciones: observaciones,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         ));
   }
 
@@ -176,7 +176,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
   Future<ArticuloUnidadData> registrarBajaUnidad({
     required String unidadId,
     required String observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final unidad = await (_db.select(_db.articuloUnidad)..where((t) => t.id.equals(unidadId))).getSingle();
@@ -195,7 +195,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
         tipo: TipoMovimientoInventario.baja,
         fecha: DateTime.now(),
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
 
       return (_db.select(_db.articuloUnidad)..where((t) => t.id.equals(unidadId))).getSingle();
@@ -209,7 +209,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
     required int cantidad,
     required bool esEntrada,
     required String observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() => _insertarMovimiento(
           articuloId: articuloId,
@@ -218,7 +218,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
           tipo: esEntrada ? TipoMovimientoInventario.ajusteEntrada : TipoMovimientoInventario.ajusteSalida,
           fecha: DateTime.now(),
           observaciones: observaciones,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         ));
   }
 
@@ -321,7 +321,7 @@ class InventarioRepositoryImpl implements InventarioRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(

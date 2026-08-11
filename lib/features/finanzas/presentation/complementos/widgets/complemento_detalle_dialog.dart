@@ -10,6 +10,7 @@ import 'package:riseg_one/features/finanzas/data/tables/complemento_pago_table.d
 import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_archivo_complemento_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_complemento_pago_usecase.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../finanzas_providers.dart';
@@ -39,6 +40,7 @@ class _ComplementoDetalleDialogState extends ConsumerState<ComplementoDetalleDia
   List<AttachmentData> _archivos = const [];
   String? _folioPago;
   String? _clienteNombre;
+  Map<String, String> _usuariosPorId = const {};
   bool _cargando = true;
   bool _procesando = false;
 
@@ -54,6 +56,8 @@ class _ComplementoDetalleDialogState extends ConsumerState<ComplementoDetalleDia
     final complemento = await notifier.obtenerPorId(widget.complementoPagoId);
     final eventos = await notifier.listarEventos(widget.complementoPagoId);
     final archivos = await notifier.listarArchivos(widget.complementoPagoId);
+    final usuarios = await ref.read(usuarioRepositoryProvider).listar();
+    final usuariosPorId = {for (final u in usuarios) u.id: u.nombre};
 
     String? folioPago;
     String? clienteNombre;
@@ -73,6 +77,7 @@ class _ComplementoDetalleDialogState extends ConsumerState<ComplementoDetalleDia
       _archivos = archivos;
       _folioPago = folioPago;
       _clienteNombre = clienteNombre;
+      _usuariosPorId = usuariosPorId;
       _cargando = false;
     });
   }
@@ -304,9 +309,10 @@ class _ComplementoDetalleDialogState extends ConsumerState<ComplementoDetalleDia
                           Text(_eventoLabel(l10n, evento.tipoEvento), style: AppTypography.label),
                         ],
                       ),
-                      if (evento.actor != null)
+                      if (evento.actorUsuarioId != null)
                         Text(
-                          '${l10n.complementoDetalleHistorialCampoActor}: ${evento.actor}',
+                          '${l10n.complementoDetalleHistorialCampoActor}: '
+                          '${_usuariosPorId[evento.actorUsuarioId] ?? evento.actorUsuarioId}',
                           style: AppTypography.caption.copyWith(color: colors.textMuted),
                         ),
                       if (evento.observacion != null && evento.observacion!.trim().isNotEmpty)

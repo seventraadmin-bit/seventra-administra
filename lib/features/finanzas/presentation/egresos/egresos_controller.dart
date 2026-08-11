@@ -6,6 +6,7 @@ import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_egreso_usec
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_egreso_usecase.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
@@ -23,6 +24,10 @@ class EgresosController extends _$EgresosController {
     Future.microtask(_cargar);
     return const EgresosState();
   }
+
+  /// Usuario autenticado que ejecuta la operación (Etapa 11D) — mismo
+  /// criterio que `UsuariosController._actorUsuarioId`.
+  String? get _actorUsuarioId => ref.read(sesionControllerProvider)?.usuarioId;
 
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
@@ -100,6 +105,7 @@ class EgresosController extends _$EgresosController {
             beneficiario: beneficiario,
             concepto: concepto,
             observaciones: observaciones,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RegistrarEgresoErrorInesperado.new,
     );
@@ -139,6 +145,7 @@ class EgresosController extends _$EgresosController {
             concepto: concepto,
             observaciones: observaciones,
             motivo: motivo,
+            actorUsuarioId: _actorUsuarioId,
           ),
       CorregirEgresoErrorInesperado.new,
     );
@@ -152,7 +159,9 @@ class EgresosController extends _$EgresosController {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'finanzas.archivar',
-      () => ref.read(cancelarEgresoUseCaseProvider).ejecutar(egresoId: egresoId, motivo: motivo),
+      () => ref
+          .read(cancelarEgresoUseCaseProvider)
+          .ejecutar(egresoId: egresoId, motivo: motivo, actorUsuarioId: _actorUsuarioId),
       CancelarEgresoErrorInesperado.new,
     );
     if (resultado is CancelarEgresoExitoso) {

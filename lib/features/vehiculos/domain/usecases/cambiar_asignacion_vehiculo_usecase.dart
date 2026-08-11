@@ -41,7 +41,7 @@ class CambiarAsignacionVehiculoUseCase {
     String? nuevoEmpleadoId,
     String? nuevoServicioId,
     String? observacionesNueva,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     if ((nuevoEmpleadoId == null) == (nuevoServicioId == null)) {
       return CambiarAsignacionVehiculoDestinoInvalido();
@@ -59,7 +59,7 @@ class CambiarAsignacionVehiculoUseCase {
         nuevoEmpleadoId: nuevoEmpleadoId,
         nuevoServicioId: nuevoServicioId,
         observacionesNueva: observacionesNueva,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CambiarAsignacionVehiculoExitoso(nueva);
     } catch (e) {

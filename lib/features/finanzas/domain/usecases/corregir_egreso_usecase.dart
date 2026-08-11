@@ -39,7 +39,7 @@ class CorregirEgresoUseCase {
     String? concepto,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final egreso = await _repository.obtenerPorId(egresoId);
     if (egreso == null) {
@@ -63,7 +63,7 @@ class CorregirEgresoUseCase {
         concepto: concepto,
         observaciones: observaciones,
         motivo: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return CorregirEgresoExitoso(actualizado);
     } catch (e) {

@@ -40,7 +40,7 @@ abstract interface class AsignacionServicioRepository {
     required int bonoMensual,
     String? turnoId,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra la asignación vigente del Empleado (motivo `cambioServicio`)
@@ -56,7 +56,7 @@ abstract interface class AsignacionServicioRepository {
     required int bonoMensual,
     String? turnoId,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra la asignación vigente del Empleado con un motivo
@@ -66,7 +66,7 @@ abstract interface class AsignacionServicioRepository {
     required DateTime fechaTermino,
     required String motivo,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra la asignación vigente del Empleado (si existe) con motivo

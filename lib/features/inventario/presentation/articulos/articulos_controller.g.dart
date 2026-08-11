@@ -7,7 +7,7 @@ part of 'articulos_controller.dart';
 // **************************************************************************
 
 String _$articulosControllerHash() =>
-    r'8cde9cda0b7586013a842ee1543a25f5c2b770eb';
+    r'ca88776e1ae7902759766076ed6e3cea5eae9bcf';
 
 /// Controlador de Artículos (Etapa 7A) — listado del catálogo con
 /// existencia derivada, y todas las operaciones de expediente

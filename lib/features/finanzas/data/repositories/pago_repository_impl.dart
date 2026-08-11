@@ -97,7 +97,7 @@ class PagoRepositoryImpl implements PagoRepository {
     String? bancoOrigen,
     String? cuentaBancariaDestino,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() => _crear(
           folioPago: folioPago,
@@ -109,7 +109,7 @@ class PagoRepositoryImpl implements PagoRepository {
           bancoOrigen: bancoOrigen,
           cuentaBancariaDestino: cuentaBancariaDestino,
           observaciones: observaciones,
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         ));
   }
 
@@ -123,7 +123,7 @@ class PagoRepositoryImpl implements PagoRepository {
     String? bancoOrigen,
     String? cuentaBancariaDestino,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final pago = await _db.into(_db.pago).insertReturning(
           PagoCompanion.insert(
@@ -144,11 +144,11 @@ class PagoRepositoryImpl implements PagoRepository {
       tipoEvento: TipoEventoPago.registrado,
       estadoAnterior: null,
       estadoNuevo: pago.estatus,
-      actor: actor,
+      actorUsuarioId: actorUsuarioId,
       datosRelevantes: {'folioPago': folioPago, 'montoTotal': montoTotal},
     );
 
-    await _crearIngresoAutomatico(pago, actor: actor);
+    await _crearIngresoAutomatico(pago, actorUsuarioId: actorUsuarioId);
 
     return pago;
   }
@@ -159,7 +159,7 @@ class PagoRepositoryImpl implements PagoRepository {
   /// caja), no cuando se aplica a una Cuenta por cobrar, así que corre
   /// aquí, no en `_aplicar`. Relación 1:1 con el Pago, mismo criterio
   /// que `ComplementoPago`.
-  Future<void> _crearIngresoAutomatico(PagoData pago, {String? actor}) async {
+  Future<void> _crearIngresoAutomatico(PagoData pago, {String? actorUsuarioId}) async {
     final folioIngreso = await _codigoSecuencia.siguienteCodigo('ingreso');
     final ingreso = await _db.into(_db.ingreso).insertReturning(
           IngresoCompanion.insert(
@@ -179,7 +179,7 @@ class PagoRepositoryImpl implements PagoRepository {
             fechaHora: DateTime.now(),
             tipoEvento: TipoEventoIngreso.registrado.name,
             estadoNuevo: Value(ingreso.estatus),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: Value(jsonEncode({'folioIngreso': folioIngreso, 'pagoId': pago.id})),
           ),
         );
@@ -188,7 +188,7 @@ class PagoRepositoryImpl implements PagoRepository {
   /// Reversión del `_crearIngresoAutomatico` correspondiente — llamada
   /// desde `cancelar()`, nunca deja un Ingreso vigente para un Pago ya
   /// cancelado.
-  Future<void> _cancelarIngresoAutomatico(String pagoId, {required String motivo, String? actor}) async {
+  Future<void> _cancelarIngresoAutomatico(String pagoId, {required String motivo, String? actorUsuarioId}) async {
     final ingreso = await (_db.select(_db.ingreso)..where((t) => t.pagoId.equals(pagoId))).getSingleOrNull();
     if (ingreso == null || EstatusIngreso.values.byName(ingreso.estatus) == EstatusIngreso.cancelado) return;
 
@@ -208,7 +208,7 @@ class PagoRepositoryImpl implements PagoRepository {
             estadoAnterior: Value(ingreso.estatus),
             estadoNuevo: Value(EstatusIngreso.cancelado.name),
             observacion: Value(motivo),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
           ),
         );
   }
@@ -218,10 +218,10 @@ class PagoRepositoryImpl implements PagoRepository {
     required String pagoId,
     required String cuentaPorCobrarId,
     required int monto,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(
-      () => _aplicar(pagoId: pagoId, cuentaPorCobrarId: cuentaPorCobrarId, monto: monto, actor: actor),
+      () => _aplicar(pagoId: pagoId, cuentaPorCobrarId: cuentaPorCobrarId, monto: monto, actorUsuarioId: actorUsuarioId),
     );
   }
 
@@ -229,7 +229,7 @@ class PagoRepositoryImpl implements PagoRepository {
     required String pagoId,
     required String cuentaPorCobrarId,
     required int monto,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final pago = await (_db.select(_db.pago)..where((t) => t.id.equals(pagoId))).getSingle();
     final cuenta =
@@ -269,7 +269,7 @@ class PagoRepositoryImpl implements PagoRepository {
       tipoEvento: TipoEventoCuentaPorCobrar.pagoAplicado,
       estadoAnterior: cuenta.estatus,
       estadoNuevo: nuevoEstatusCuenta.name,
-      actor: actor,
+      actorUsuarioId: actorUsuarioId,
       datosRelevantes: {
         'pagoId': pagoId,
         'aplicacionPagoId': aplicacion.id,
@@ -294,7 +294,7 @@ class PagoRepositoryImpl implements PagoRepository {
     String? bancoOrigen,
     String? cuentaBancariaDestino,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final pago = await _crear(
@@ -307,13 +307,13 @@ class PagoRepositoryImpl implements PagoRepository {
         bancoOrigen: bancoOrigen,
         cuentaBancariaDestino: cuentaBancariaDestino,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       final aplicacion = await _aplicar(
         pagoId: pago.id,
         cuentaPorCobrarId: cuentaPorCobrarId,
         monto: montoTotal,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       // `pago` es el snapshot de justo después de `_crear` (con
       // `montoAplicado == 0`) — `_aplicar` ya actualizó la fila real,
@@ -334,7 +334,7 @@ class PagoRepositoryImpl implements PagoRepository {
     String? cuentaBancariaDestino,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.pago)..where((t) => t.id.equals(pagoId))).getSingle();
@@ -357,7 +357,7 @@ class PagoRepositoryImpl implements PagoRepository {
         estadoAnterior: anterior.estatus,
         estadoNuevo: anterior.estatus,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'fechaPagoAnterior': anterior.fechaPago.toIso8601String(),
           'formaPagoAnterior': anterior.formaPago,
@@ -375,12 +375,12 @@ class PagoRepositoryImpl implements PagoRepository {
   Future<AplicacionPagoData> cancelarAplicacion({
     required String aplicacionPagoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final aplicacion =
           await (_db.select(_db.aplicacionPago)..where((t) => t.id.equals(aplicacionPagoId))).getSingle();
-      return _cancelarAplicacionInterna(aplicacion, motivo: motivo, actor: actor);
+      return _cancelarAplicacionInterna(aplicacion, motivo: motivo, actorUsuarioId: actorUsuarioId);
     });
   }
 
@@ -390,7 +390,7 @@ class PagoRepositoryImpl implements PagoRepository {
   Future<AplicacionPagoData> _cancelarAplicacionInterna(
     AplicacionPagoData aplicacion, {
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final cuenta =
         await (_db.select(_db.cuentaPorCobrar)..where((t) => t.id.equals(aplicacion.cuentaPorCobrarId))).getSingle();
@@ -429,7 +429,7 @@ class PagoRepositoryImpl implements PagoRepository {
       estadoAnterior: cuenta.estatus,
       estadoNuevo: nuevoEstatusCuenta.name,
       observacion: motivo,
-      actor: actor,
+      actorUsuarioId: actorUsuarioId,
       datosRelevantes: {
         'pagoId': pago.id,
         'aplicacionPagoId': aplicacion.id,
@@ -445,7 +445,7 @@ class PagoRepositoryImpl implements PagoRepository {
   Future<PagoData> cancelar({
     required String pagoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final pago = await (_db.select(_db.pago)..where((t) => t.id.equals(pagoId))).getSingle();
@@ -458,7 +458,7 @@ class PagoRepositoryImpl implements PagoRepository {
         await _cancelarAplicacionInterna(
           aplicacion,
           motivo: 'Cancelación en cascada del Pago $pagoId.',
-          actor: actor,
+          actorUsuarioId: actorUsuarioId,
         );
       }
 
@@ -475,11 +475,11 @@ class PagoRepositoryImpl implements PagoRepository {
         estadoAnterior: pago.estatus,
         estadoNuevo: EstatusPago.cancelado.name,
         observacion: motivo,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'aplicacionesCanceladas': aplicacionesActivas.length},
       );
 
-      await _cancelarIngresoAutomatico(pagoId, motivo: motivo, actor: actor);
+      await _cancelarIngresoAutomatico(pagoId, motivo: motivo, actorUsuarioId: actorUsuarioId);
 
       return (_db.select(_db.pago)..where((t) => t.id.equals(pagoId))).getSingle();
     });
@@ -493,7 +493,7 @@ class PagoRepositoryImpl implements PagoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final adjunto = await _db.into(_db.attachment).insertReturning(
@@ -516,7 +516,7 @@ class PagoRepositoryImpl implements PagoRepository {
         tipoEvento: TipoEventoPago.comprobanteAdjuntado,
         estadoAnterior: null,
         estadoNuevo: null,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'archivoNuevo': originalFileName, 'attachmentId': adjunto.id},
       );
 
@@ -536,7 +536,7 @@ class PagoRepositoryImpl implements PagoRepository {
     required String? estadoAnterior,
     required String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, Object?>? datosRelevantes,
   }) {
     return _db.into(_db.pagoEvento).insert(
@@ -547,7 +547,7 @@ class PagoRepositoryImpl implements PagoRepository {
             estadoAnterior: Value(estadoAnterior),
             estadoNuevo: Value(estadoNuevo),
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
           ),
         );
@@ -559,7 +559,7 @@ class PagoRepositoryImpl implements PagoRepository {
     required String? estadoAnterior,
     required String? estadoNuevo,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
     Map<String, Object?>? datosRelevantes,
   }) {
     return _db.into(_db.cuentaPorCobrarEvento).insert(
@@ -570,7 +570,7 @@ class PagoRepositoryImpl implements PagoRepository {
             estadoAnterior: Value(estadoAnterior),
             estadoNuevo: Value(estadoNuevo),
             observacion: Value(observacion),
-            actor: Value(actor),
+            actorUsuarioId: Value(actorUsuarioId),
             datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
           ),
         );

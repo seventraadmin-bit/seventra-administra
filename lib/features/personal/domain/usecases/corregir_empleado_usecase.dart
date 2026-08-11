@@ -104,7 +104,7 @@ class CorregirEmpleadoUseCase {
     String? resumenExperiencia,
     String? observacionesExperiencia,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final actual = await _repository.obtenerPorId(empleadoId);
     if (actual == null) return CorregirEmpleadoNoExiste();
@@ -213,7 +213,7 @@ class CorregirEmpleadoUseCase {
       );
 
       final actualizado =
-          await _repository.corregir(empleadoId: empleadoId, cambios: cambios, motivo: motivo, actor: actor);
+          await _repository.corregir(empleadoId: empleadoId, cambios: cambios, motivo: motivo, actorUsuarioId: actorUsuarioId);
       return CorregirEmpleadoExitoso(actualizado);
     } catch (e) {
       return CorregirEmpleadoErrorInesperado(e.toString());

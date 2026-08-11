@@ -79,7 +79,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
     required int bonoMensual,
     String? turnoId,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final asignacion = await _db.into(_db.asignacionServicio).insertReturning(
@@ -101,7 +101,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
         _db,
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.asignacionServicio,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'servicioId': servicioId, if (turnoId != null) 'turnoId': turnoId},
       );
       return asignacion;
@@ -117,7 +117,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
     required int bonoMensual,
     String? turnoId,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await _buscarActivaPorEmpleado(empleadoId);
@@ -153,7 +153,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
         _db,
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.cambioServicio,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'servicioAnteriorId': anterior.servicioId, 'servicioNuevoId': nuevoServicioId},
       );
       return nueva;
@@ -166,7 +166,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
     required DateTime fechaTermino,
     required String motivo,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final activa = await _buscarActivaPorEmpleado(empleadoId);
@@ -188,7 +188,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
         _db,
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.retiroServicio,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
         observacion: observaciones,
         datosRelevantes: {'servicioId': activa.servicioId, 'motivo': motivo},
       );

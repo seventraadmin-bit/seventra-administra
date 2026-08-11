@@ -52,7 +52,7 @@ abstract interface class LineaTelefonicaEquipoRepository {
     required DateTime fechaInicio,
     String? observaciones,
     bool sincronizarInventario = true,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra el equipo vigente de la línea, sin reemplazo. Si
@@ -65,7 +65,7 @@ abstract interface class LineaTelefonicaEquipoRepository {
     required String lineaTelefonicaId,
     required DateTime fechaFin,
     bool sincronizarInventario = true,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra el equipo vigente (con la misma guardia de divergencia que
@@ -77,7 +77,7 @@ abstract interface class LineaTelefonicaEquipoRepository {
     required DateTime fecha,
     String? observaciones,
     bool sincronizarInventario = true,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra el equipo vigente de la línea (si existe) liberando siempre

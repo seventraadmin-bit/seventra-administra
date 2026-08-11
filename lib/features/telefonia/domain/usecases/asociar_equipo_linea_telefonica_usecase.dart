@@ -50,7 +50,7 @@ class AsociarEquipoLineaTelefonicaUseCase {
     required String unidadId,
     required DateTime fechaInicio,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final linea = await _lineaRepository.obtenerPorId(lineaTelefonicaId);
     if (linea == null) return AsociarEquipoLineaTelefonicaLineaNoExiste();
@@ -74,7 +74,7 @@ class AsociarEquipoLineaTelefonicaUseCase {
         unidadId: unidadId,
         fechaInicio: fechaInicio,
         observaciones: observaciones?.trim().isEmpty ?? true ? null : observaciones!.trim(),
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return AsociarEquipoLineaTelefonicaExitoso(equipo);
     } catch (e) {

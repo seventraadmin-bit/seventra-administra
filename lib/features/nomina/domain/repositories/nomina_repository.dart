@@ -33,7 +33,7 @@ abstract interface class NominaRepository {
     required String folio,
     required PeriodoNomina periodo,
     required List<FilaNominaGenerada> filas,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Reemplaza el renglón (y sus tramos) de un Empleado dentro de una
@@ -80,13 +80,13 @@ abstract interface class NominaRepository {
     required int montoNoFiscal,
   });
 
-  Future<NominaData> cerrar({required String nominaId, String? actor});
+  Future<NominaData> cerrar({required String nominaId, String? actorUsuarioId});
 
   Future<void> registrarEvento({
     required String nominaId,
     String? nominaEmpleadoId,
     required String tipoEvento,
     String? observacion,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

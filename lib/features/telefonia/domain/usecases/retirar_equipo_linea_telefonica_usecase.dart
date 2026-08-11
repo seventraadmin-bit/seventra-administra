@@ -25,13 +25,13 @@ class RetirarEquipoLineaTelefonicaUseCase {
   Future<RetirarEquipoLineaTelefonicaResultado> ejecutar({
     required String lineaTelefonicaId,
     required DateTime fechaFin,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final equipoVigente = await _equipoRepository.obtenerActualPorLinea(lineaTelefonicaId);
     if (equipoVigente == null) return RetirarEquipoLineaTelefonicaSinEquipoVigente();
 
     try {
-      await _equipoRepository.retirar(lineaTelefonicaId: lineaTelefonicaId, fechaFin: fechaFin, actor: actor);
+      await _equipoRepository.retirar(lineaTelefonicaId: lineaTelefonicaId, fechaFin: fechaFin, actorUsuarioId: actorUsuarioId);
       return RetirarEquipoLineaTelefonicaExitoso();
     } catch (e) {
       return RetirarEquipoLineaTelefonicaErrorInesperado(e.toString());

@@ -17,4 +17,14 @@ abstract class PermissionService {
   /// Azúcar sobre [hasCode] para los llamadores que ya tienen `modulo`/
   /// `accion` por separado (ej. el gate del router/sidebar).
   bool hasPermission(String modulo, String accion) => hasCode('$modulo.$accion');
+
+  /// Sesión activa con `esMaestro == true` (Etapa 11D) — deliberadamente
+  /// **independiente** de [hasCode]/[hasPermission]: la eliminación
+  /// física extraordinaria del Maestro (ver `exigirMaestro` en
+  /// `authorization_service.dart`) nunca puede otorgarse a través de un
+  /// código de `PermisoUsuario`, así que se consulta esta propiedad
+  /// directamente — ninguna fila de la matriz de permisos dinámicos
+  /// puede volver a un usuario normal equivalente al Maestro para esa
+  /// facultad.
+  bool get esMaestroActivo;
 }

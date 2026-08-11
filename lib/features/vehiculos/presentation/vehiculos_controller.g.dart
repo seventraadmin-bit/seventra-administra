@@ -7,7 +7,7 @@ part of 'vehiculos_controller.dart';
 // **************************************************************************
 
 String _$vehiculosControllerHash() =>
-    r'b6514756e8ef6e8b39ea29ca7fe52a4d13e3a089';
+    r'355fc319ec226faf91f757b6eabb9437f98bb1aa';
 
 /// Controlador de Vehículos (Etapa 8A) — listado de la flotilla + todas
 /// las operaciones de expediente, mismo criterio que

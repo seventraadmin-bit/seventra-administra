@@ -49,7 +49,7 @@ class RetirarEmpleadoServicioUseCase {
     required DateTime fechaTermino,
     required MotivoTerminoAsignacion motivo,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final empleado = await _empleadoRepository.obtenerPorId(empleadoId);
     if (empleado == null) return RetirarEmpleadoServicioEmpleadoNoExiste();
@@ -74,7 +74,7 @@ class RetirarEmpleadoServicioUseCase {
         fechaTermino: fechaTermino,
         motivo: motivo.name,
         observaciones: observacionesLimpias,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RetirarEmpleadoServicioExitoso(asignacion);
     } catch (e) {

@@ -138,7 +138,7 @@ class CrearEmpleadoUseCase {
     String? ultimoPuestoDesempenado,
     String? resumenExperiencia,
     String? observacionesExperiencia,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     if (nombres.trim().isEmpty) return CrearEmpleadoNombresRequerido();
     if (apellidoPaterno.trim().isEmpty) return CrearEmpleadoApellidoPaternoRequerido();

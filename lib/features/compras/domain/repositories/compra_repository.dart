@@ -107,7 +107,7 @@ abstract interface class CompraRepository {
     String? formaPagoOtroDescripcion,
     String? observaciones,
     required List<PartidaCompraInput> partidas,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Corrige únicamente campos administrativos — nunca partidas,
@@ -120,7 +120,7 @@ abstract interface class CompraRepository {
     String? formaPagoOtroDescripcion,
     String? observaciones,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Reversión completa: por cada `MovimientoInventario` generado,
@@ -130,7 +130,7 @@ abstract interface class CompraRepository {
   /// **No valida** si es seguro cancelar — ese chequeo vive en
   /// `CancelarCompraUseCase`, antes de llamar aquí (mismo criterio que
   /// `DesactivarAreaUseCase`).
-  Future<CompraData> cancelar({required String compraId, required String motivo, String? actor});
+  Future<CompraData> cancelar({required String compraId, required String motivo, String? actorUsuarioId});
 
   Future<AttachmentData> adjuntarComprobante({
     required String compraId,
@@ -139,6 +139,6 @@ abstract interface class CompraRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

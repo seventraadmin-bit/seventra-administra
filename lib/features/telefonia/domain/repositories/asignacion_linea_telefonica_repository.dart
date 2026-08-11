@@ -29,7 +29,7 @@ abstract interface class AsignacionLineaTelefonicaRepository {
     String? servicioId,
     required DateTime fechaInicio,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra la asignación vigente de la línea con un motivo
@@ -39,7 +39,7 @@ abstract interface class AsignacionLineaTelefonicaRepository {
     required DateTime fechaTermino,
     required String motivoTermino,
     String? observacionesTermino,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra la asignación vigente de la línea (motivo
@@ -52,7 +52,7 @@ abstract interface class AsignacionLineaTelefonicaRepository {
     String? nuevoEmpleadoId,
     String? nuevoServicioId,
     String? observacionesNueva,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Cierra la asignación vigente de la línea (si existe) con motivo

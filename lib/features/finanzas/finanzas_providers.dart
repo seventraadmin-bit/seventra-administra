@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/permissions/authorization_service.dart';
 import '../organizacion/organizacion_providers.dart';
+import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/categoria_financiera_repository_impl.dart';
 import 'data/repositories/complemento_pago_repository_impl.dart';
@@ -90,7 +91,6 @@ typedef RegistrarPagoAplicadoAutorizado = Future<RegistrarPagoAplicadoResultado>
   String? bancoOrigen,
   String? cuentaBancariaDestino,
   String? observaciones,
-  String? actor,
 });
 
 final registrarPagoAplicadoAutorizadoProvider = Provider<RegistrarPagoAplicadoAutorizado>((ref) {
@@ -103,8 +103,8 @@ final registrarPagoAplicadoAutorizadoProvider = Provider<RegistrarPagoAplicadoAu
     String? bancoOrigen,
     String? cuentaBancariaDestino,
     String? observaciones,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'finanzas.crear',
@@ -117,7 +117,7 @@ final registrarPagoAplicadoAutorizadoProvider = Provider<RegistrarPagoAplicadoAu
             bancoOrigen: bancoOrigen,
             cuentaBancariaDestino: cuentaBancariaDestino,
             observaciones: observaciones,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       RegistrarPagoAplicadoErrorInesperado.new,
     );
@@ -160,7 +160,6 @@ typedef RegistrarComplementoPagoAutorizado = Future<RegistrarComplementoPagoResu
   required DateTime fechaTimbrado,
   required int montoTotal,
   String? observaciones,
-  String? actor,
 });
 
 final registrarComplementoPagoAutorizadoProvider = Provider<RegistrarComplementoPagoAutorizado>((ref) {
@@ -172,8 +171,8 @@ final registrarComplementoPagoAutorizadoProvider = Provider<RegistrarComplemento
     required DateTime fechaTimbrado,
     required int montoTotal,
     String? observaciones,
-    String? actor,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'finanzas.crear',
@@ -185,7 +184,7 @@ final registrarComplementoPagoAutorizadoProvider = Provider<RegistrarComplemento
             fechaTimbrado: fechaTimbrado,
             montoTotal: montoTotal,
             observaciones: observaciones,
-            actor: actor,
+            actorUsuarioId: actorUsuarioId,
           ),
       RegistrarComplementoPagoErrorInesperado.new,
     );

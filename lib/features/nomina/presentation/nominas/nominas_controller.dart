@@ -12,6 +12,7 @@ import 'package:riseg_one/features/nomina/domain/usecases/corregir_pago_nomina_u
 import 'package:riseg_one/features/nomina/domain/usecases/generar_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/registrar_pago_nomina_usecase.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
@@ -29,6 +30,10 @@ class NominasController extends _$NominasController {
     Future.microtask(_cargar);
     return const NominasState();
   }
+
+  /// Usuario autenticado que ejecuta la operación (Etapa 11D) — mismo
+  /// criterio que `UsuariosController._actorUsuarioId`.
+  String? get _actorUsuarioId => ref.read(sesionControllerProvider)?.usuarioId;
 
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
@@ -55,7 +60,7 @@ class NominasController extends _$NominasController {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'nomina.crear',
-      () => ref.read(generarNominaUseCaseProvider).ejecutar(anio: anio, mes: mes, tipo: tipo),
+      () => ref.read(generarNominaUseCaseProvider).ejecutar(anio: anio, mes: mes, tipo: tipo, actorUsuarioId: _actorUsuarioId),
       GenerarNominaErrorInesperado.new,
     );
     if (resultado is GenerarNominaExitoso) await _cargar();
@@ -78,7 +83,7 @@ class NominasController extends _$NominasController {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'nomina.modificar',
-      () => ref.read(actualizarNominaDesdePersonalUseCaseProvider).ejecutar(nominaId: nominaId),
+      () => ref.read(actualizarNominaDesdePersonalUseCaseProvider).ejecutar(nominaId: nominaId, actorUsuarioId: _actorUsuarioId),
       ActualizarNominaDesdePersonalErrorInesperado.new,
     );
   }
@@ -87,7 +92,7 @@ class NominasController extends _$NominasController {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'nomina.cerrar',
-      () => ref.read(cerrarNominaUseCaseProvider).ejecutar(nominaId: nominaId),
+      () => ref.read(cerrarNominaUseCaseProvider).ejecutar(nominaId: nominaId, actorUsuarioId: _actorUsuarioId),
       CerrarNominaErrorInesperado.new,
     );
     if (resultado is CerrarNominaExitoso) await _cargar();
@@ -196,6 +201,7 @@ class NominasController extends _$NominasController {
             cuentaBancariaOrigen: cuentaBancariaOrigen,
             observaciones: observaciones,
             aplicaciones: aplicaciones,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RegistrarPagoNominaErrorInesperado.new,
     );
@@ -207,7 +213,9 @@ class NominasController extends _$NominasController {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'nomina.pagar',
-      () => ref.read(cancelarPagoNominaUseCaseProvider).ejecutar(pagoNominaId: pagoNominaId, motivo: motivo),
+      () => ref
+          .read(cancelarPagoNominaUseCaseProvider)
+          .ejecutar(pagoNominaId: pagoNominaId, motivo: motivo, actorUsuarioId: _actorUsuarioId),
       CancelarPagoNominaErrorInesperado.new,
     );
     if (resultado is CancelarPagoNominaExitoso) await _cargar();
@@ -231,6 +239,7 @@ class NominasController extends _$NominasController {
           cuentaBancariaOrigen: cuentaBancariaOrigen,
           observaciones: observaciones,
           motivo: motivo,
+          actorUsuarioId: _actorUsuarioId,
         );
   }
 

@@ -41,7 +41,7 @@ class RetirarAsignacionVehiculoUseCase {
     required DateTime fechaTermino,
     String? observacionesTermino,
     int? kilometrajeDevolucion,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final actual = await _asignacionRepository.obtenerPorId(asignacionVehiculoId);
     if (actual == null) return RetirarAsignacionVehiculoNoExiste();
@@ -61,7 +61,7 @@ class RetirarAsignacionVehiculoUseCase {
         motivoTermino: MotivoTerminoAsignacionVehiculo.liberacion.name,
         observacionesTermino: observacionesTermino,
         kilometrajeDevolucion: kilometrajeDevolucion,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RetirarAsignacionVehiculoExitoso(cerrada);
     } catch (e) {

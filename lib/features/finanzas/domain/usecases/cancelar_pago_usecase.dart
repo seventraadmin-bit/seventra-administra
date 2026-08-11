@@ -31,7 +31,7 @@ class CancelarPagoUseCase {
   Future<CancelarPagoResultado> ejecutar({
     required String pagoId,
     required String motivo,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final pago = await _repository.obtenerPorId(pagoId);
     if (pago == null) {
@@ -42,7 +42,7 @@ class CancelarPagoUseCase {
     }
 
     try {
-      final actualizado = await _repository.cancelar(pagoId: pagoId, motivo: motivo, actor: actor);
+      final actualizado = await _repository.cancelar(pagoId: pagoId, motivo: motivo, actorUsuarioId: actorUsuarioId);
       return CancelarPagoExitoso(actualizado);
     } catch (e) {
       return CancelarPagoErrorInesperado(e.toString());

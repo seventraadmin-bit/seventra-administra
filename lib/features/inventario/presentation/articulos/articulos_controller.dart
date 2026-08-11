@@ -16,6 +16,7 @@ import 'package:riseg_one/features/inventario/domain/usecases/registrar_baja_uni
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_baja_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_unidad_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_usecase.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../inventario_providers.dart';
@@ -34,6 +35,10 @@ class ArticulosController extends _$ArticulosController {
     Future.microtask(_cargar);
     return const ArticulosState();
   }
+
+  /// Usuario autenticado que ejecuta la operación (Etapa 11D) — mismo
+  /// criterio que `UsuariosController._actorUsuarioId`.
+  String? get _actorUsuarioId => ref.read(sesionControllerProvider)?.usuarioId;
 
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
@@ -232,6 +237,7 @@ class ArticulosController extends _$ArticulosController {
             costoUnitario: costoUnitario,
             fecha: fecha,
             observaciones: observaciones,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RegistrarEntradaErrorInesperado.new,
     );
@@ -261,6 +267,7 @@ class ArticulosController extends _$ArticulosController {
             costoUnitario: costoUnitario,
             fecha: fecha,
             observaciones: observaciones,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RegistrarEntradaUnidadErrorInesperado.new,
     );
@@ -280,6 +287,7 @@ class ArticulosController extends _$ArticulosController {
             varianteId: varianteId,
             cantidad: cantidad,
             observaciones: observaciones,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RegistrarBajaErrorInesperado.new,
     );
@@ -289,7 +297,11 @@ class ArticulosController extends _$ArticulosController {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'inventario.archivar',
-      () => ref.read(registrarBajaUnidadUseCaseProvider).ejecutar(unidadId: unidadId, observaciones: observaciones),
+      () => ref.read(registrarBajaUnidadUseCaseProvider).ejecutar(
+            unidadId: unidadId,
+            observaciones: observaciones,
+            actorUsuarioId: _actorUsuarioId,
+          ),
       RegistrarBajaUnidadErrorInesperado.new,
     );
   }
@@ -310,6 +322,7 @@ class ArticulosController extends _$ArticulosController {
             cantidad: cantidad,
             esEntrada: esEntrada,
             observaciones: observaciones,
+            actorUsuarioId: _actorUsuarioId,
           ),
       RegistrarAjusteErrorInesperado.new,
     );

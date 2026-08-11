@@ -45,7 +45,7 @@ abstract interface class DocumentoPorEmitirRepository {
     required String nuevoEstatus,
     String? motivo,
     required TipoEventoDocumentoPorEmitir tipoEvento,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Registra los datos definitivos y transiciona a `emitido` — el
@@ -60,7 +60,7 @@ abstract interface class DocumentoPorEmitirRepository {
     required DateTime fechaEmisionReal,
     required int importeEmitido,
     String? observacionesEmision,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Corrige uno o más datos definitivos ya registrados, sin cambiar el
@@ -80,7 +80,7 @@ abstract interface class DocumentoPorEmitirRepository {
     DateTime? fechaEmisionReal,
     int? importeEmitido,
     String? observacionesEmision,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Registra el envío y transiciona a `enviado` — reconstruye
@@ -92,7 +92,7 @@ abstract interface class DocumentoPorEmitirRepository {
     required DateTime fechaEnvio,
     required List<String> correos,
     String? observacionesEnvio,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// El modelo existe desde la Etapa 4I.1; la interfaz de captura llega
@@ -102,7 +102,7 @@ abstract interface class DocumentoPorEmitirRepository {
     required String documentoPorEmitirId,
     int? ajusteManual,
     String? motivoAjuste,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Correos realmente utilizados en el envío vigente — vacío si nunca
@@ -125,7 +125,7 @@ abstract interface class DocumentoPorEmitirRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
-    String? actor,
+    String? actorUsuarioId,
   });
 
   /// Inserta el `Attachment` nuevo, archiva el anterior
@@ -142,6 +142,6 @@ abstract interface class DocumentoPorEmitirRepository {
     required String mimeType,
     required int sizeBytes,
     String? motivo,
-    String? actor,
+    String? actorUsuarioId,
   });
 }

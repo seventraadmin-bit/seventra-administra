@@ -43,7 +43,7 @@ class RegistrarPagoUseCase {
     String? bancoOrigen,
     String? cuentaBancariaDestino,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final cliente = await _clienteRepository.obtenerPorId(clienteId);
     if (cliente == null) {
@@ -67,7 +67,7 @@ class RegistrarPagoUseCase {
         bancoOrigen: bancoOrigen,
         cuentaBancariaDestino: cuentaBancariaDestino,
         observaciones: observaciones,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarPagoExitoso(pago);
     } catch (e) {

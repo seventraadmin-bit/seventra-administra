@@ -46,7 +46,7 @@ class RegistrarBajaLaboralUseCase {
     required DateTime fechaBaja,
     required MotivoBajaEmpleado motivo,
     String? observaciones,
-    String? actor,
+    String? actorUsuarioId,
   }) async {
     final empleado = await _repository.obtenerPorId(empleadoId);
     if (empleado == null) return RegistrarBajaLaboralNoExiste();
@@ -65,7 +65,7 @@ class RegistrarBajaLaboralUseCase {
         fechaBaja: fechaBaja,
         motivo: motivo.name,
         observaciones: observacionesLimpias,
-        actor: actor,
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarBajaLaboralExitoso(actualizado);
     } catch (e) {
