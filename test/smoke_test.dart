@@ -162,6 +162,14 @@ void main() {
   });
 
   testWidgets(
+    'El módulo Activos fue retirado del sidebar (redundante con Inventario/Vehículos/Telefonía)',
+    (tester) async {
+      await _pumpApp(tester);
+      expect(find.byKey(const Key('nav_item_activos')), findsNothing);
+    },
+  );
+
+  testWidgets(
     'La pestaña Sucursales permite crear una Sucursal y navega a su expediente',
     (tester) async {
       await _pumpApp(tester);

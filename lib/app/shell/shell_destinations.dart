@@ -22,7 +22,7 @@ class ShellDestination {
   String get id => path.replaceFirst('/', '');
 }
 
-/// Definición estructural (ruta + ícono) de los 12 módulos, sin depender de
+/// Definición estructural (ruta + ícono) de los 11 módulos, sin depender de
 /// localización — la usa el router para construir las ramas del
 /// `StatefulShellRoute`, que se arma una sola vez sin `BuildContext`.
 ///
@@ -40,6 +40,16 @@ class ShellDestination {
 /// aparecido en el menú original no obliga a construirlo como módulo:
 /// mismo criterio aplicaría a cualquier otro placeholder heredado que
 /// resulte ser igual de redundante al revisarlo.
+///
+/// Sin `/activos`: mismo criterio, retirado tras la Etapa 10. Era otro
+/// placeholder heredado del boceto inicial, nunca desarrollado (nunca
+/// tuvo tabla, repositorio, proveedor ni pantalla propia — solo caía en
+/// el `ModulePlaceholderScreen` genérico). Revisión explícita de Marlon:
+/// con Inventario (artículos, equipo, teléfonos físicos y unidades
+/// serializadas), Vehículos (flotilla) y Telefonía (líneas) ya cubriendo
+/// toda su función real, un módulo "Activos" independiente sería
+/// redundante — la decisión funcional es que no habrá módulo de Activos
+/// mientras esos tres dominios cubran su función.
 const List<({String path, IconData icon})> shellModuleDefs = [
   (path: '/dashboard', icon: Icons.dashboard_outlined),
   (path: '/organizacion', icon: Icons.apartment_outlined),
@@ -48,7 +58,6 @@ const List<({String path, IconData icon})> shellModuleDefs = [
   (path: '/personal', icon: Icons.people_outline),
   (path: '/inventario', icon: Icons.inventory_2_outlined),
   (path: '/compras', icon: Icons.shopping_cart_outlined),
-  (path: '/activos', icon: Icons.qr_code_2_outlined),
   (path: '/vehiculos', icon: Icons.directions_car_outlined),
   (path: '/telefonia', icon: Icons.phone_iphone_outlined),
   (path: '/reportes', icon: Icons.bar_chart_outlined),
@@ -64,7 +73,6 @@ String _labelFor(String path, AppLocalizations l10n) {
     '/personal' => l10n.modulePersonal,
     '/inventario' => l10n.moduleInventario,
     '/compras' => l10n.moduleCompras,
-    '/activos' => l10n.moduleActivos,
     '/vehiculos' => l10n.moduleVehiculos,
     '/telefonia' => l10n.moduleTelefonia,
     '/reportes' => l10n.moduleReportes,
@@ -73,7 +81,7 @@ String _labelFor(String path, AppLocalizations l10n) {
   };
 }
 
-/// Construye los 12 destinos con sus etiquetas localizadas.
+/// Construye los 11 destinos con sus etiquetas localizadas.
 ///
 /// Se llama con el `BuildContext` disponible (en el Shell o en cada
 /// builder de rama) — no se puede memorizar como lista `const` porque
