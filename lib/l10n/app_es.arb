@@ -3112,5 +3112,105 @@
   "inventarioMovimientoOrigenCompra": "Origen: Compra {folio}",
   "@inventarioMovimientoOrigenCompra": {
     "placeholders": { "folio": { "type": "String" } }
-  }
+  },
+
+  "loginCampoUsuario": "Usuario",
+  "loginCampoContrasena": "Contraseña",
+  "loginBotonEntrar": "Iniciar sesión",
+  "loginErrorCredencialesInvalidas": "Usuario o contraseña incorrectos.",
+  "loginErrorUsuarioInactivo": "Usuario inactivo, contacte al administrador.",
+  "loginErrorInesperado": "Ocurrió un error inesperado al iniciar sesión.",
+
+  "bootstrapMaestroTitulo": "Configuración inicial",
+  "bootstrapMaestroSubtitulo": "Crea el primer Usuario Maestro para comenzar a usar RISEG ONE.",
+  "bootstrapMaestroCampoNombre": "Nombre",
+  "bootstrapMaestroCampoConfirmarContrasena": "Confirmar contraseña",
+  "bootstrapMaestroBotonCrear": "Crear Usuario Maestro",
+  "bootstrapMaestroExito": "Usuario Maestro creado. Inicia sesión para continuar.",
+  "bootstrapMaestroYaExisteUsuario": "Ya existe al menos un Usuario en el sistema.",
+  "bootstrapMaestroNombreRequerido": "Captura el nombre.",
+  "bootstrapMaestroNombreUsuarioRequerido": "Captura el nombre de usuario.",
+  "bootstrapMaestroContrasenaInvalida": "La contraseña debe tener al menos 8 caracteres.",
+  "bootstrapMaestroContrasenasNoCoinciden": "Las contraseñas no coinciden.",
+  "bootstrapMaestroErrorInesperado": "Ocurrió un error inesperado.",
+
+  "shellCerrarSesion": "Cerrar sesión",
+
+  "usuariosListadoTitulo": "Usuarios",
+  "usuariosListadoBotonCrear": "Crear usuario",
+  "usuariosListadoVacioTitulo": "Todavía no hay usuarios registrados.",
+  "usuariosColumnaNombre": "Nombre",
+  "usuariosColumnaUsuario": "Usuario",
+  "usuariosColumnaPuesto": "Puesto",
+  "usuariosColumnaEstado": "Estado",
+  "usuariosColumnaUltimoAcceso": "Último acceso",
+  "usuariosColumnaTipo": "Tipo",
+  "usuariosColumnaAcciones": "Acciones",
+  "usuariosAccionEditar": "Editar",
+  "usuariosAccionCambiarContrasena": "Cambiar contraseña",
+  "usuariosAccionActivar": "Activar",
+  "usuariosAccionDesactivar": "Desactivar",
+  "usuariosAccionHistorial": "Historial",
+  "usuarioEstadoActivo": "Activo",
+  "usuarioEstadoInactivo": "Inactivo",
+  "usuarioTipoMaestro": "Maestro",
+  "usuarioTipoNormal": "Normal",
+  "usuariosSesionActualLabel": "Sesión actual: {nombre}",
+  "@usuariosSesionActualLabel": {
+    "placeholders": { "nombre": { "type": "String" } }
+  },
+
+  "usuarioAltaTitulo": "Crear usuario",
+  "usuarioAltaBotonCrear": "Crear usuario",
+  "usuarioEditarTitulo": "Editar usuario",
+  "usuarioEditarBotonGuardar": "Guardar cambios",
+  "usuarioCampoNombre": "Nombre",
+  "usuarioCampoNombreUsuario": "Nombre de usuario",
+  "usuarioCampoContrasena": "Contraseña",
+  "usuarioCampoConfirmarContrasena": "Confirmar contraseña",
+  "usuarioCampoPuesto": "Puesto",
+  "usuarioCampoEsMaestro": "Usuario Maestro (todos los permisos, administra usuarios)",
+  "usuarioCrearExito": "Usuario creado.",
+  "usuarioEditarExito": "Usuario actualizado.",
+  "usuarioErrorNombreRequerido": "Captura el nombre.",
+  "usuarioErrorNombreUsuarioRequerido": "Captura el nombre de usuario.",
+  "usuarioErrorNombreUsuarioDuplicado": "Ya existe un usuario con ese nombre de usuario.",
+  "usuarioErrorContrasenaInvalida": "La contraseña debe tener al menos 8 caracteres.",
+  "usuarioErrorContrasenasNoCoinciden": "Las contraseñas no coinciden.",
+  "usuarioErrorPuestoInvalido": "Selecciona un Puesto válido.",
+  "usuarioErrorUltimoMaestro": "No es posible: debe quedar al menos un Usuario Maestro activo.",
+  "usuarioErrorInesperado": "Ocurrió un error inesperado.",
+
+  "usuarioCambiarContrasenaTitulo": "Cambiar contraseña — {nombre}",
+  "@usuarioCambiarContrasenaTitulo": {
+    "placeholders": { "nombre": { "type": "String" } }
+  },
+  "usuarioCambiarContrasenaBotonGuardar": "Guardar contraseña",
+  "usuarioCambiarContrasenaExito": "Contraseña actualizada.",
+
+  "usuarioDesactivarDialogoTitulo": "Desactivar usuario — {nombre}",
+  "@usuarioDesactivarDialogoTitulo": {
+    "placeholders": { "nombre": { "type": "String" } }
+  },
+  "usuarioDesactivarCampoMotivo": "Motivo (opcional)",
+  "usuarioDesactivarBotonConfirmar": "Desactivar",
+  "usuarioDesactivarExito": "Usuario desactivado.",
+  "usuarioActivarExito": "Usuario activado.",
+
+  "usuarioHistorialDialogoTitulo": "Historial — {nombre}",
+  "@usuarioHistorialDialogoTitulo": {
+    "placeholders": { "nombre": { "type": "String" } }
+  },
+  "usuarioHistorialVacio": "Sin eventos registrados.",
+  "usuarioHistorialConfiguracionInicial": "Configuración inicial",
+  "usuarioHistorialPor": "Por: {actor}",
+  "@usuarioHistorialPor": {
+    "placeholders": { "actor": { "type": "String" } }
+  },
+  "usuarioEventoCreado": "Usuario creado",
+  "usuarioEventoDatosCorregidos": "Datos corregidos",
+  "usuarioEventoContrasenaCambiada": "Contraseña cambiada",
+  "usuarioEventoActivado": "Usuario activado",
+  "usuarioEventoDesactivado": "Usuario desactivado",
+  "usuarioEventoPermisosModificados": "Permisos modificados"
 }

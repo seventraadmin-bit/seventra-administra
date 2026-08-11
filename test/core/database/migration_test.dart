@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 37;
+const _currentSchemaVersion = 38;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -8359,4 +8359,103 @@ void main() {
       await db.close();
     },
   );
+
+  test(
+    '38.json coincide con el esquema final de la Etapa 11A (tablas nuevas Usuario, UsuarioEvento) — '
+    'funda el dominio Usuarios',
+    () async {
+      final schema = await verifier.schemaAt(38);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['usuario', 'usuario_evento']));
+
+      final sqlUsuario =
+          schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuario'").single['sql']
+              as String;
+      expect(sqlUsuario, contains('"nombre_usuario" TEXT NOT NULL UNIQUE'));
+      expect(sqlUsuario, contains('"password_hash" TEXT NOT NULL'));
+      expect(sqlUsuario, contains('"puesto_id" TEXT NULL REFERENCES puesto (id) ON DELETE RESTRICT'));
+      expect(sqlUsuario, contains('"es_maestro" INTEGER NOT NULL DEFAULT 0 CHECK ("es_maestro" IN (0, 1))'));
+
+      final sqlEvento =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuario_evento'")
+                  .single['sql']
+              as String;
+      expect(sqlEvento, contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 37 → 38 conserva una Compra real y crea las tablas de Usuarios vacías, sin backfill ni '
+    'siembra de CodigoSecuencia (Usuario no tiene folio)',
+    () async {
+      final schemaV37 = await verifier.schemaAt(37);
+      final raw = schemaV37.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO compra (
+        id, folio_compra, fecha, forma_pago, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'compra-real', 'COM-000001', 1700000000, 'efectivo', 'registrada', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV37.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final compras = await db.select(db.compra).get();
+      expect(compras, hasLength(1), reason: 'ninguna Compra real debe perderse en una migración puramente aditiva');
+
+      final usuarios = await db.select(db.usuario).get();
+      expect(usuarios, isEmpty, reason: 'Usuario es tabla nueva en la Etapa 11A, sin backfill');
+      final eventos = await db.select(db.usuarioEvento).get();
+      expect(eventos, isEmpty);
+
+      final codigoUsuario =
+          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('usuario'))).getSingleOrNull();
+      expect(codigoUsuario, isNull, reason: 'Usuario no tiene folio — nunca se siembra un CodigoSecuencia para él');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test('UNIQUE de Usuario.nombreUsuario tras la migración', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    await db.into(db.usuario).insert(
+          UsuarioCompanion.insert(nombre: 'Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$AA==\$BB=='),
+        );
+
+    await expectLater(
+      db.into(db.usuario).insert(
+            UsuarioCompanion.insert(nombre: 'Otra Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$CC==\$DD=='),
+          ),
+      throwsA(anything),
+      reason: 'nombre_usuario debe ser único',
+    );
+
+    await db.close();
+  });
 }

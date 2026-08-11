@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/design_system/components/riseg_search_field.dart';
 import '../../../core/design_system/tokens/app_color_scheme.dart';
 import '../../../core/design_system/tokens/app_spacing.dart';
 import '../../../core/design_system/tokens/app_typography.dart';
+import '../../../features/usuarios/presentation/sesion_controller.dart';
 import '../../theme/theme_mode_controller.dart';
 import '../shell_breakpoints.dart';
 import 'app_breadcrumb.dart';
@@ -114,20 +116,40 @@ class _NotificationsButton extends StatelessWidget {
   }
 }
 
-class _ProfileChip extends StatelessWidget {
+/// Muestra el usuario autenticado (Etapa 11A) — antes mostraba un
+/// nombre de relleno fijo (`shellProfilePlaceholderName`), ahora lee la
+/// sesión real. `sesion` solo es `null` en el instante entre perder la
+/// sesión y que el `redirect` del router complete la navegación a
+/// `/login`, así que el relleno queda como último recurso, no como el
+/// caso normal.
+class _ProfileChip extends ConsumerWidget {
   const _ProfileChip({required this.compact});
 
   final bool compact;
 
+  Future<void> _cerrarSesion(BuildContext context, WidgetRef ref) async {
+    ref.read(sesionControllerProvider.notifier).logout();
+    if (context.mounted) context.go('/login');
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = Theme.of(context).extension<AppColorScheme>()!;
+    final sesion = ref.watch(sesionControllerProvider);
+    final nombre = sesion?.nombre ?? l10n.shellProfilePlaceholderName;
 
-    return Tooltip(
-      message: l10n.shellProfileTooltip,
+    return PopupMenuButton<void>(
+      key: const Key('top_bar_profile'),
+      tooltip: l10n.shellProfileTooltip,
+      itemBuilder: (context) => [
+        PopupMenuItem<void>(
+          key: const Key('top_bar_cerrar_sesion'),
+          onTap: () => _cerrarSesion(context, ref),
+          child: Text(l10n.shellCerrarSesion),
+        ),
+      ],
       child: Container(
-        key: const Key('top_bar_profile'),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -136,7 +158,7 @@ class _ProfileChip extends StatelessWidget {
             if (!compact) ...[
               const SizedBox(width: AppSpacing.xs),
               Text(
-                l10n.shellProfilePlaceholderName,
+                nombre,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary),
               ),

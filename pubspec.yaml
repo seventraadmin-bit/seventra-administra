@@ -26,6 +26,11 @@ dependencies:
   path: ^1.9.0
   uuid: ^4.5.1
 
+  # Autenticación (Etapa 11A) — hashing de contraseña (PBKDF2-HMAC-SHA256).
+  # Ya estaba resuelto de forma transitiva (drift/sqlite3 lo arrastran);
+  # se declara directo porque ahora `lib/core/auth` lo importa.
+  crypto: ^3.0.7
+
   # Adjuntos (Etapa 4I.2.2) — selección de archivo del sistema; abrir un
   # adjunto usa el programa predeterminado del SO vía dart:io, sin
   # dependencia adicional.

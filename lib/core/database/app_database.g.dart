@@ -63149,6 +63149,1137 @@ class CompraEventoCompanion extends UpdateCompanion<CompraEventoData> {
   }
 }
 
+class $UsuarioTable extends Usuario with TableInfo<$UsuarioTable, UsuarioData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UsuarioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nombreUsuarioMeta = const VerificationMeta(
+    'nombreUsuario',
+  );
+  @override
+  late final GeneratedColumn<String> nombreUsuario = GeneratedColumn<String>(
+    'nombre_usuario',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _passwordHashMeta = const VerificationMeta(
+    'passwordHash',
+  );
+  @override
+  late final GeneratedColumn<String> passwordHash = GeneratedColumn<String>(
+    'password_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _puestoIdMeta = const VerificationMeta(
+    'puestoId',
+  );
+  @override
+  late final GeneratedColumn<String> puestoId = GeneratedColumn<String>(
+    'puesto_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES puesto (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _esMaestroMeta = const VerificationMeta(
+    'esMaestro',
+  );
+  @override
+  late final GeneratedColumn<bool> esMaestro = GeneratedColumn<bool>(
+    'es_maestro',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("es_maestro" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _ultimoAccesoAtMeta = const VerificationMeta(
+    'ultimoAccesoAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> ultimoAccesoAt =
+      GeneratedColumn<DateTime>(
+        'ultimo_acceso_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    nombre,
+    nombreUsuario,
+    passwordHash,
+    puestoId,
+    esMaestro,
+    ultimoAccesoAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'usuario';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UsuarioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('nombre_usuario')) {
+      context.handle(
+        _nombreUsuarioMeta,
+        nombreUsuario.isAcceptableOrUnknown(
+          data['nombre_usuario']!,
+          _nombreUsuarioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreUsuarioMeta);
+    }
+    if (data.containsKey('password_hash')) {
+      context.handle(
+        _passwordHashMeta,
+        passwordHash.isAcceptableOrUnknown(
+          data['password_hash']!,
+          _passwordHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_passwordHashMeta);
+    }
+    if (data.containsKey('puesto_id')) {
+      context.handle(
+        _puestoIdMeta,
+        puestoId.isAcceptableOrUnknown(data['puesto_id']!, _puestoIdMeta),
+      );
+    }
+    if (data.containsKey('es_maestro')) {
+      context.handle(
+        _esMaestroMeta,
+        esMaestro.isAcceptableOrUnknown(data['es_maestro']!, _esMaestroMeta),
+      );
+    }
+    if (data.containsKey('ultimo_acceso_at')) {
+      context.handle(
+        _ultimoAccesoAtMeta,
+        ultimoAccesoAt.isAcceptableOrUnknown(
+          data['ultimo_acceso_at']!,
+          _ultimoAccesoAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UsuarioData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UsuarioData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      nombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre'],
+          )!,
+      nombreUsuario:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre_usuario'],
+          )!,
+      passwordHash:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}password_hash'],
+          )!,
+      puestoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}puesto_id'],
+      ),
+      esMaestro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}es_maestro'],
+          )!,
+      ultimoAccesoAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ultimo_acceso_at'],
+      ),
+    );
+  }
+
+  @override
+  $UsuarioTable createAlias(String alias) {
+    return $UsuarioTable(attachedDatabase, alias);
+  }
+}
+
+class UsuarioData extends DataClass implements Insertable<UsuarioData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String nombre;
+  final String nombreUsuario;
+  final String passwordHash;
+  final String? puestoId;
+  final bool esMaestro;
+  final DateTime? ultimoAccesoAt;
+  const UsuarioData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.nombre,
+    required this.nombreUsuario,
+    required this.passwordHash,
+    this.puestoId,
+    required this.esMaestro,
+    this.ultimoAccesoAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['nombre'] = Variable<String>(nombre);
+    map['nombre_usuario'] = Variable<String>(nombreUsuario);
+    map['password_hash'] = Variable<String>(passwordHash);
+    if (!nullToAbsent || puestoId != null) {
+      map['puesto_id'] = Variable<String>(puestoId);
+    }
+    map['es_maestro'] = Variable<bool>(esMaestro);
+    if (!nullToAbsent || ultimoAccesoAt != null) {
+      map['ultimo_acceso_at'] = Variable<DateTime>(ultimoAccesoAt);
+    }
+    return map;
+  }
+
+  UsuarioCompanion toCompanion(bool nullToAbsent) {
+    return UsuarioCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      nombre: Value(nombre),
+      nombreUsuario: Value(nombreUsuario),
+      passwordHash: Value(passwordHash),
+      puestoId:
+          puestoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(puestoId),
+      esMaestro: Value(esMaestro),
+      ultimoAccesoAt:
+          ultimoAccesoAt == null && nullToAbsent
+              ? const Value.absent()
+              : Value(ultimoAccesoAt),
+    );
+  }
+
+  factory UsuarioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UsuarioData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      nombreUsuario: serializer.fromJson<String>(json['nombreUsuario']),
+      passwordHash: serializer.fromJson<String>(json['passwordHash']),
+      puestoId: serializer.fromJson<String?>(json['puestoId']),
+      esMaestro: serializer.fromJson<bool>(json['esMaestro']),
+      ultimoAccesoAt: serializer.fromJson<DateTime?>(json['ultimoAccesoAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'nombre': serializer.toJson<String>(nombre),
+      'nombreUsuario': serializer.toJson<String>(nombreUsuario),
+      'passwordHash': serializer.toJson<String>(passwordHash),
+      'puestoId': serializer.toJson<String?>(puestoId),
+      'esMaestro': serializer.toJson<bool>(esMaestro),
+      'ultimoAccesoAt': serializer.toJson<DateTime?>(ultimoAccesoAt),
+    };
+  }
+
+  UsuarioData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? nombre,
+    String? nombreUsuario,
+    String? passwordHash,
+    Value<String?> puestoId = const Value.absent(),
+    bool? esMaestro,
+    Value<DateTime?> ultimoAccesoAt = const Value.absent(),
+  }) => UsuarioData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    nombre: nombre ?? this.nombre,
+    nombreUsuario: nombreUsuario ?? this.nombreUsuario,
+    passwordHash: passwordHash ?? this.passwordHash,
+    puestoId: puestoId.present ? puestoId.value : this.puestoId,
+    esMaestro: esMaestro ?? this.esMaestro,
+    ultimoAccesoAt:
+        ultimoAccesoAt.present ? ultimoAccesoAt.value : this.ultimoAccesoAt,
+  );
+  UsuarioData copyWithCompanion(UsuarioCompanion data) {
+    return UsuarioData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      nombreUsuario:
+          data.nombreUsuario.present
+              ? data.nombreUsuario.value
+              : this.nombreUsuario,
+      passwordHash:
+          data.passwordHash.present
+              ? data.passwordHash.value
+              : this.passwordHash,
+      puestoId: data.puestoId.present ? data.puestoId.value : this.puestoId,
+      esMaestro: data.esMaestro.present ? data.esMaestro.value : this.esMaestro,
+      ultimoAccesoAt:
+          data.ultimoAccesoAt.present
+              ? data.ultimoAccesoAt.value
+              : this.ultimoAccesoAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsuarioData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nombre: $nombre, ')
+          ..write('nombreUsuario: $nombreUsuario, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('puestoId: $puestoId, ')
+          ..write('esMaestro: $esMaestro, ')
+          ..write('ultimoAccesoAt: $ultimoAccesoAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    nombre,
+    nombreUsuario,
+    passwordHash,
+    puestoId,
+    esMaestro,
+    ultimoAccesoAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UsuarioData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.nombre == this.nombre &&
+          other.nombreUsuario == this.nombreUsuario &&
+          other.passwordHash == this.passwordHash &&
+          other.puestoId == this.puestoId &&
+          other.esMaestro == this.esMaestro &&
+          other.ultimoAccesoAt == this.ultimoAccesoAt);
+}
+
+class UsuarioCompanion extends UpdateCompanion<UsuarioData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> nombre;
+  final Value<String> nombreUsuario;
+  final Value<String> passwordHash;
+  final Value<String?> puestoId;
+  final Value<bool> esMaestro;
+  final Value<DateTime?> ultimoAccesoAt;
+  final Value<int> rowid;
+  const UsuarioCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.nombreUsuario = const Value.absent(),
+    this.passwordHash = const Value.absent(),
+    this.puestoId = const Value.absent(),
+    this.esMaestro = const Value.absent(),
+    this.ultimoAccesoAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UsuarioCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String nombre,
+    required String nombreUsuario,
+    required String passwordHash,
+    this.puestoId = const Value.absent(),
+    this.esMaestro = const Value.absent(),
+    this.ultimoAccesoAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : nombre = Value(nombre),
+       nombreUsuario = Value(nombreUsuario),
+       passwordHash = Value(passwordHash);
+  static Insertable<UsuarioData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? nombre,
+    Expression<String>? nombreUsuario,
+    Expression<String>? passwordHash,
+    Expression<String>? puestoId,
+    Expression<bool>? esMaestro,
+    Expression<DateTime>? ultimoAccesoAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (nombre != null) 'nombre': nombre,
+      if (nombreUsuario != null) 'nombre_usuario': nombreUsuario,
+      if (passwordHash != null) 'password_hash': passwordHash,
+      if (puestoId != null) 'puesto_id': puestoId,
+      if (esMaestro != null) 'es_maestro': esMaestro,
+      if (ultimoAccesoAt != null) 'ultimo_acceso_at': ultimoAccesoAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UsuarioCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? nombre,
+    Value<String>? nombreUsuario,
+    Value<String>? passwordHash,
+    Value<String?>? puestoId,
+    Value<bool>? esMaestro,
+    Value<DateTime?>? ultimoAccesoAt,
+    Value<int>? rowid,
+  }) {
+    return UsuarioCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      nombre: nombre ?? this.nombre,
+      nombreUsuario: nombreUsuario ?? this.nombreUsuario,
+      passwordHash: passwordHash ?? this.passwordHash,
+      puestoId: puestoId ?? this.puestoId,
+      esMaestro: esMaestro ?? this.esMaestro,
+      ultimoAccesoAt: ultimoAccesoAt ?? this.ultimoAccesoAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (nombreUsuario.present) {
+      map['nombre_usuario'] = Variable<String>(nombreUsuario.value);
+    }
+    if (passwordHash.present) {
+      map['password_hash'] = Variable<String>(passwordHash.value);
+    }
+    if (puestoId.present) {
+      map['puesto_id'] = Variable<String>(puestoId.value);
+    }
+    if (esMaestro.present) {
+      map['es_maestro'] = Variable<bool>(esMaestro.value);
+    }
+    if (ultimoAccesoAt.present) {
+      map['ultimo_acceso_at'] = Variable<DateTime>(ultimoAccesoAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsuarioCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nombre: $nombre, ')
+          ..write('nombreUsuario: $nombreUsuario, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('puestoId: $puestoId, ')
+          ..write('esMaestro: $esMaestro, ')
+          ..write('ultimoAccesoAt: $ultimoAccesoAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $UsuarioEventoTable extends UsuarioEvento
+    with TableInfo<$UsuarioEventoTable, UsuarioEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UsuarioEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _usuarioIdMeta = const VerificationMeta(
+    'usuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> usuarioId = GeneratedColumn<String>(
+    'usuario_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datosRelevantesMeta = const VerificationMeta(
+    'datosRelevantes',
+  );
+  @override
+  late final GeneratedColumn<String> datosRelevantes = GeneratedColumn<String>(
+    'datos_relevantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    usuarioId,
+    actorUsuarioId,
+    fechaHora,
+    tipoEvento,
+    observacion,
+    datosRelevantes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'usuario_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UsuarioEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('usuario_id')) {
+      context.handle(
+        _usuarioIdMeta,
+        usuarioId.isAcceptableOrUnknown(data['usuario_id']!, _usuarioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_usuarioIdMeta);
+    }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('datos_relevantes')) {
+      context.handle(
+        _datosRelevantesMeta,
+        datosRelevantes.isAcceptableOrUnknown(
+          data['datos_relevantes']!,
+          _datosRelevantesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UsuarioEventoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UsuarioEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      usuarioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}usuario_id'],
+          )!,
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      datosRelevantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datos_relevantes'],
+      ),
+    );
+  }
+
+  @override
+  $UsuarioEventoTable createAlias(String alias) {
+    return $UsuarioEventoTable(attachedDatabase, alias);
+  }
+}
+
+class UsuarioEventoData extends DataClass
+    implements Insertable<UsuarioEventoData> {
+  final int id;
+  final String usuarioId;
+  final String? actorUsuarioId;
+  final DateTime fechaHora;
+  final String tipoEvento;
+  final String? observacion;
+  final String? datosRelevantes;
+  const UsuarioEventoData({
+    required this.id,
+    required this.usuarioId,
+    this.actorUsuarioId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.observacion,
+    this.datosRelevantes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['usuario_id'] = Variable<String>(usuarioId);
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
+    }
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || datosRelevantes != null) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes);
+    }
+    return map;
+  }
+
+  UsuarioEventoCompanion toCompanion(bool nullToAbsent) {
+    return UsuarioEventoCompanion(
+      id: Value(id),
+      usuarioId: Value(usuarioId),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+      datosRelevantes:
+          datosRelevantes == null && nullToAbsent
+              ? const Value.absent()
+              : Value(datosRelevantes),
+    );
+  }
+
+  factory UsuarioEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UsuarioEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      usuarioId: serializer.fromJson<String>(json['usuarioId']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      datosRelevantes: serializer.fromJson<String?>(json['datosRelevantes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'usuarioId': serializer.toJson<String>(usuarioId),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'observacion': serializer.toJson<String?>(observacion),
+      'datosRelevantes': serializer.toJson<String?>(datosRelevantes),
+    };
+  }
+
+  UsuarioEventoData copyWith({
+    int? id,
+    String? usuarioId,
+    Value<String?> actorUsuarioId = const Value.absent(),
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> observacion = const Value.absent(),
+    Value<String?> datosRelevantes = const Value.absent(),
+  }) => UsuarioEventoData(
+    id: id ?? this.id,
+    usuarioId: usuarioId ?? this.usuarioId,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    datosRelevantes:
+        datosRelevantes.present ? datosRelevantes.value : this.datosRelevantes,
+  );
+  UsuarioEventoData copyWithCompanion(UsuarioEventoCompanion data) {
+    return UsuarioEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      usuarioId: data.usuarioId.present ? data.usuarioId.value : this.usuarioId,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+      datosRelevantes:
+          data.datosRelevantes.present
+              ? data.datosRelevantes.value
+              : this.datosRelevantes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsuarioEventoData(')
+          ..write('id: $id, ')
+          ..write('usuarioId: $usuarioId, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('observacion: $observacion, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    usuarioId,
+    actorUsuarioId,
+    fechaHora,
+    tipoEvento,
+    observacion,
+    datosRelevantes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UsuarioEventoData &&
+          other.id == this.id &&
+          other.usuarioId == this.usuarioId &&
+          other.actorUsuarioId == this.actorUsuarioId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.observacion == this.observacion &&
+          other.datosRelevantes == this.datosRelevantes);
+}
+
+class UsuarioEventoCompanion extends UpdateCompanion<UsuarioEventoData> {
+  final Value<int> id;
+  final Value<String> usuarioId;
+  final Value<String?> actorUsuarioId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> observacion;
+  final Value<String?> datosRelevantes;
+  const UsuarioEventoCompanion({
+    this.id = const Value.absent(),
+    this.usuarioId = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  });
+  UsuarioEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String usuarioId,
+    this.actorUsuarioId = const Value.absent(),
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.observacion = const Value.absent(),
+    this.datosRelevantes = const Value.absent(),
+  }) : usuarioId = Value(usuarioId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<UsuarioEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? usuarioId,
+    Expression<String>? actorUsuarioId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? observacion,
+    Expression<String>? datosRelevantes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (usuarioId != null) 'usuario_id': usuarioId,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (observacion != null) 'observacion': observacion,
+      if (datosRelevantes != null) 'datos_relevantes': datosRelevantes,
+    });
+  }
+
+  UsuarioEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? usuarioId,
+    Value<String?>? actorUsuarioId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? observacion,
+    Value<String?>? datosRelevantes,
+  }) {
+    return UsuarioEventoCompanion(
+      id: id ?? this.id,
+      usuarioId: usuarioId ?? this.usuarioId,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      observacion: observacion ?? this.observacion,
+      datosRelevantes: datosRelevantes ?? this.datosRelevantes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (usuarioId.present) {
+      map['usuario_id'] = Variable<String>(usuarioId.value);
+    }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (datosRelevantes.present) {
+      map['datos_relevantes'] = Variable<String>(datosRelevantes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsuarioEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('usuarioId: $usuarioId, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('observacion: $observacion, ')
+          ..write('datosRelevantes: $datosRelevantes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -63318,6 +64449,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $CompraEventoTable compraEvento = $CompraEventoTable(this);
+  late final $UsuarioTable usuario = $UsuarioTable(this);
+  late final $UsuarioEventoTable usuarioEvento = $UsuarioEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -63464,6 +64597,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     compraPartidaMovimiento,
     compraAttachment,
     compraEvento,
+    usuario,
+    usuarioEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -63921,6 +65056,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('compra_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('usuario_evento', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('usuario_evento', kind: UpdateKind.update)],
     ),
   ]);
 }
@@ -78354,6 +79503,24 @@ final class $$PuestoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$UsuarioTable, List<UsuarioData>>
+  _usuarioRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.usuario,
+    aliasName: $_aliasNameGenerator(db.puesto.id, db.usuario.puestoId),
+  );
+
+  $$UsuarioTableProcessedTableManager get usuarioRefs {
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.puestoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_usuarioRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PuestoTableFilterComposer
@@ -78478,6 +79645,31 @@ class $$PuestoTableFilterComposer
           }) => $$EmpleadoTableFilterComposer(
             $db: $db,
             $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> usuarioRefs(
+    Expression<bool> Function($$UsuarioTableFilterComposer f) f,
+  ) {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.puestoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -78684,6 +79876,31 @@ class $$PuestoTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> usuarioRefs<T extends Object>(
+    Expression<T> Function($$UsuarioTableAnnotationComposer a) f,
+  ) {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.puestoId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PuestoTableTableManager
@@ -78703,6 +79920,7 @@ class $$PuestoTableTableManager
             bool areaId,
             bool servicioLineaComercialVigenciaRefs,
             bool empleadoRefs,
+            bool usuarioRefs,
           })
         > {
   $$PuestoTableTableManager(_$AppDatabase db, $PuestoTable table)
@@ -78782,6 +80000,7 @@ class $$PuestoTableTableManager
             areaId = false,
             servicioLineaComercialVigenciaRefs = false,
             empleadoRefs = false,
+            usuarioRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -78789,6 +80008,7 @@ class $$PuestoTableTableManager
                 if (servicioLineaComercialVigenciaRefs)
                   db.servicioLineaComercialVigencia,
                 if (empleadoRefs) db.empleado,
+                if (usuarioRefs) db.usuario,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -78866,6 +80086,28 @@ class $$PuestoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (usuarioRefs)
+                    await $_getPrefetchedData<
+                      PuestoData,
+                      $PuestoTable,
+                      UsuarioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PuestoTableReferences
+                          ._usuarioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$PuestoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).usuarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.puestoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -78890,6 +80132,7 @@ typedef $$PuestoTableProcessedTableManager =
         bool areaId,
         bool servicioLineaComercialVigenciaRefs,
         bool empleadoRefs,
+        bool usuarioRefs,
       })
     >;
 typedef $$ServicioLineaComercialTableCreateCompanionBuilder =
@@ -126537,6 +127780,884 @@ typedef $$CompraEventoTableProcessedTableManager =
       CompraEventoData,
       PrefetchHooks Function({bool compraId})
     >;
+typedef $$UsuarioTableCreateCompanionBuilder =
+    UsuarioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String nombre,
+      required String nombreUsuario,
+      required String passwordHash,
+      Value<String?> puestoId,
+      Value<bool> esMaestro,
+      Value<DateTime?> ultimoAccesoAt,
+      Value<int> rowid,
+    });
+typedef $$UsuarioTableUpdateCompanionBuilder =
+    UsuarioCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> nombre,
+      Value<String> nombreUsuario,
+      Value<String> passwordHash,
+      Value<String?> puestoId,
+      Value<bool> esMaestro,
+      Value<DateTime?> ultimoAccesoAt,
+      Value<int> rowid,
+    });
+
+final class $$UsuarioTableReferences
+    extends BaseReferences<_$AppDatabase, $UsuarioTable, UsuarioData> {
+  $$UsuarioTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PuestoTable _puestoIdTable(_$AppDatabase db) => db.puesto.createAlias(
+    $_aliasNameGenerator(db.usuario.puestoId, db.puesto.id),
+  );
+
+  $$PuestoTableProcessedTableManager? get puestoId {
+    final $_column = $_itemColumn<String>('puesto_id');
+    if ($_column == null) return null;
+    final manager = $$PuestoTableTableManager(
+      $_db,
+      $_db.puesto,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_puestoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$UsuarioTableFilterComposer
+    extends Composer<_$AppDatabase, $UsuarioTable> {
+  $$UsuarioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombreUsuario => $composableBuilder(
+    column: $table.nombreUsuario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get esMaestro => $composableBuilder(
+    column: $table.esMaestro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get ultimoAccesoAt => $composableBuilder(
+    column: $table.ultimoAccesoAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PuestoTableFilterComposer get puestoId {
+    final $$PuestoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.puestoId,
+      referencedTable: $db.puesto,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PuestoTableFilterComposer(
+            $db: $db,
+            $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UsuarioTableOrderingComposer
+    extends Composer<_$AppDatabase, $UsuarioTable> {
+  $$UsuarioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombreUsuario => $composableBuilder(
+    column: $table.nombreUsuario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get esMaestro => $composableBuilder(
+    column: $table.esMaestro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get ultimoAccesoAt => $composableBuilder(
+    column: $table.ultimoAccesoAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PuestoTableOrderingComposer get puestoId {
+    final $$PuestoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.puestoId,
+      referencedTable: $db.puesto,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PuestoTableOrderingComposer(
+            $db: $db,
+            $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UsuarioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UsuarioTable> {
+  $$UsuarioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get nombreUsuario => $composableBuilder(
+    column: $table.nombreUsuario,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get esMaestro =>
+      $composableBuilder(column: $table.esMaestro, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get ultimoAccesoAt => $composableBuilder(
+    column: $table.ultimoAccesoAt,
+    builder: (column) => column,
+  );
+
+  $$PuestoTableAnnotationComposer get puestoId {
+    final $$PuestoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.puestoId,
+      referencedTable: $db.puesto,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PuestoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.puesto,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UsuarioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UsuarioTable,
+          UsuarioData,
+          $$UsuarioTableFilterComposer,
+          $$UsuarioTableOrderingComposer,
+          $$UsuarioTableAnnotationComposer,
+          $$UsuarioTableCreateCompanionBuilder,
+          $$UsuarioTableUpdateCompanionBuilder,
+          (UsuarioData, $$UsuarioTableReferences),
+          UsuarioData,
+          PrefetchHooks Function({bool puestoId})
+        > {
+  $$UsuarioTableTableManager(_$AppDatabase db, $UsuarioTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$UsuarioTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$UsuarioTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$UsuarioTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<String> nombreUsuario = const Value.absent(),
+                Value<String> passwordHash = const Value.absent(),
+                Value<String?> puestoId = const Value.absent(),
+                Value<bool> esMaestro = const Value.absent(),
+                Value<DateTime?> ultimoAccesoAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UsuarioCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nombre: nombre,
+                nombreUsuario: nombreUsuario,
+                passwordHash: passwordHash,
+                puestoId: puestoId,
+                esMaestro: esMaestro,
+                ultimoAccesoAt: ultimoAccesoAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String nombre,
+                required String nombreUsuario,
+                required String passwordHash,
+                Value<String?> puestoId = const Value.absent(),
+                Value<bool> esMaestro = const Value.absent(),
+                Value<DateTime?> ultimoAccesoAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UsuarioCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nombre: nombre,
+                nombreUsuario: nombreUsuario,
+                passwordHash: passwordHash,
+                puestoId: puestoId,
+                esMaestro: esMaestro,
+                ultimoAccesoAt: ultimoAccesoAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$UsuarioTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({puestoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (puestoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.puestoId,
+                            referencedTable: $$UsuarioTableReferences
+                                ._puestoIdTable(db),
+                            referencedColumn:
+                                $$UsuarioTableReferences._puestoIdTable(db).id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$UsuarioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UsuarioTable,
+      UsuarioData,
+      $$UsuarioTableFilterComposer,
+      $$UsuarioTableOrderingComposer,
+      $$UsuarioTableAnnotationComposer,
+      $$UsuarioTableCreateCompanionBuilder,
+      $$UsuarioTableUpdateCompanionBuilder,
+      (UsuarioData, $$UsuarioTableReferences),
+      UsuarioData,
+      PrefetchHooks Function({bool puestoId})
+    >;
+typedef $$UsuarioEventoTableCreateCompanionBuilder =
+    UsuarioEventoCompanion Function({
+      Value<int> id,
+      required String usuarioId,
+      Value<String?> actorUsuarioId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> observacion,
+      Value<String?> datosRelevantes,
+    });
+typedef $$UsuarioEventoTableUpdateCompanionBuilder =
+    UsuarioEventoCompanion Function({
+      Value<int> id,
+      Value<String> usuarioId,
+      Value<String?> actorUsuarioId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> observacion,
+      Value<String?> datosRelevantes,
+    });
+
+final class $$UsuarioEventoTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $UsuarioEventoTable, UsuarioEventoData> {
+  $$UsuarioEventoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsuarioTable _usuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.usuarioEvento.usuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager get usuarioId {
+    final $_column = $_itemColumn<String>('usuario_id')!;
+
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_usuarioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.usuarioEvento.actorUsuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$UsuarioEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $UsuarioEventoTable> {
+  $$UsuarioEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsuarioTableFilterComposer get usuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.usuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UsuarioEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $UsuarioEventoTable> {
+  $$UsuarioEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsuarioTableOrderingComposer get usuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.usuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UsuarioEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UsuarioEventoTable> {
+  $$UsuarioEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get datosRelevantes => $composableBuilder(
+    column: $table.datosRelevantes,
+    builder: (column) => column,
+  );
+
+  $$UsuarioTableAnnotationComposer get usuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.usuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$UsuarioEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UsuarioEventoTable,
+          UsuarioEventoData,
+          $$UsuarioEventoTableFilterComposer,
+          $$UsuarioEventoTableOrderingComposer,
+          $$UsuarioEventoTableAnnotationComposer,
+          $$UsuarioEventoTableCreateCompanionBuilder,
+          $$UsuarioEventoTableUpdateCompanionBuilder,
+          (UsuarioEventoData, $$UsuarioEventoTableReferences),
+          UsuarioEventoData,
+          PrefetchHooks Function({bool usuarioId, bool actorUsuarioId})
+        > {
+  $$UsuarioEventoTableTableManager(_$AppDatabase db, $UsuarioEventoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$UsuarioEventoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$UsuarioEventoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$UsuarioEventoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> usuarioId = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => UsuarioEventoCompanion(
+                id: id,
+                usuarioId: usuarioId,
+                actorUsuarioId: actorUsuarioId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                observacion: observacion,
+                datosRelevantes: datosRelevantes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String usuarioId,
+                Value<String?> actorUsuarioId = const Value.absent(),
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> observacion = const Value.absent(),
+                Value<String?> datosRelevantes = const Value.absent(),
+              }) => UsuarioEventoCompanion.insert(
+                id: id,
+                usuarioId: usuarioId,
+                actorUsuarioId: actorUsuarioId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                observacion: observacion,
+                datosRelevantes: datosRelevantes,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$UsuarioEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({usuarioId = false, actorUsuarioId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (usuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.usuarioId,
+                            referencedTable: $$UsuarioEventoTableReferences
+                                ._usuarioIdTable(db),
+                            referencedColumn:
+                                $$UsuarioEventoTableReferences
+                                    ._usuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable: $$UsuarioEventoTableReferences
+                                ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$UsuarioEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$UsuarioEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UsuarioEventoTable,
+      UsuarioEventoData,
+      $$UsuarioEventoTableFilterComposer,
+      $$UsuarioEventoTableOrderingComposer,
+      $$UsuarioEventoTableAnnotationComposer,
+      $$UsuarioEventoTableCreateCompanionBuilder,
+      $$UsuarioEventoTableUpdateCompanionBuilder,
+      (UsuarioEventoData, $$UsuarioEventoTableReferences),
+      UsuarioEventoData,
+      PrefetchHooks Function({bool usuarioId, bool actorUsuarioId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -126814,4 +128935,8 @@ class $AppDatabaseManager {
       $$CompraAttachmentTableTableManager(_db, _db.compraAttachment);
   $$CompraEventoTableTableManager get compraEvento =>
       $$CompraEventoTableTableManager(_db, _db.compraEvento);
+  $$UsuarioTableTableManager get usuario =>
+      $$UsuarioTableTableManager(_db, _db.usuario);
+  $$UsuarioEventoTableTableManager get usuarioEvento =>
+      $$UsuarioEventoTableTableManager(_db, _db.usuarioEvento);
 }

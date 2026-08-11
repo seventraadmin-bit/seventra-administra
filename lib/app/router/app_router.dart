@@ -1,4 +1,5 @@
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
@@ -19,6 +20,11 @@ import '../../features/personal/presentation/empleados/empleado_expediente_scree
 import '../../features/personal/presentation/personal_shell_screen.dart';
 import '../../features/telefonia/presentation/linea_telefonica_expediente_screen.dart';
 import '../../features/telefonia/presentation/lineas_telefonicas_list_screen.dart';
+import '../../features/usuarios/presentation/auth/bootstrap_maestro_screen.dart';
+import '../../features/usuarios/presentation/auth/login_screen.dart';
+import '../../features/usuarios/presentation/sesion_controller.dart';
+import '../../features/usuarios/presentation/usuarios_list_screen.dart';
+import '../../features/usuarios/usuarios_providers.dart';
 import '../../features/vehiculos/presentation/vehiculo_expediente_screen.dart';
 import '../../features/vehiculos/presentation/vehiculos_shell_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
@@ -41,8 +47,34 @@ import '../shell/shell_destinations.dart';
 GoRouter createAppRouter() {
   return GoRouter(
     initialLocation: '/dashboard',
-    redirect: (context, state) => state.uri.path == '/' ? '/dashboard' : null,
+    // Etapa 11A: además del `/` → `/dashboard` de siempre, exige el
+    // bootstrap del primer Maestro y la sesión antes de cualquier otra
+    // ruta. `ProviderScope.containerOf(context)` es el patrón estándar
+    // para leer providers de Riverpod desde un callback de GoRouter que
+    // solo recibe `BuildContext` — sin esto no hay forma de consultar
+    // `contarUsuariosProvider`/`sesionControllerProvider` aquí. No hay
+    // gate por permiso todavía (llega en la Etapa 11B): cualquier
+    // sesión válida puede navegar a cualquier módulo.
+    redirect: (context, state) async {
+      final container = ProviderScope.containerOf(context);
+      final path = state.uri.path;
+
+      final totalUsuarios = await container.read(contarUsuariosProvider.future);
+      if (totalUsuarios == 0) {
+        return path == '/bootstrap-maestro' ? null : '/bootstrap-maestro';
+      }
+      if (path == '/bootstrap-maestro') return '/login';
+
+      final sesion = container.read(sesionControllerProvider);
+      if (sesion == null) {
+        return path == '/login' ? null : '/login';
+      }
+      if (path == '/login' || path == '/') return '/dashboard';
+      return null;
+    },
     routes: [
+      GoRoute(path: '/bootstrap-maestro', builder: (context, state) => const BootstrapMaestroScreen()),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => AppShellScreen(navigationShell: navigationShell),
         branches: [
@@ -324,6 +356,17 @@ GoRouter createAppRouter() {
                         builder: (context, state) => CompraExpedienteScreen(compraId: state.pathParameters['id']!),
                       ),
                     ],
+                  )
+                else if (def.path == '/configuracion')
+                  // Configuración (Etapa 11A) — deja de ser un
+                  // placeholder puro: gana su primera funcionalidad
+                  // real, "Usuarios y permisos" (sin matriz de
+                  // permisos todavía, llega en la Etapa 11B). Una sola
+                  // pantalla, sin pestañas, mismo criterio que
+                  // Inventario 7A/Vehículos 8A al fundar un dominio.
+                  GoRoute(
+                    path: def.path,
+                    builder: (context, state) => const UsuariosListScreen(),
                   )
                 else
                   GoRoute(

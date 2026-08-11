@@ -17,6 +17,27 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
+import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+
+/// Sesión Maestro fija para pruebas de navegación — Etapa 11A introdujo
+/// login/bootstrap obligatorios; sin este override, cada una de las
+/// ~30 pruebas de este archivo tendría que iniciar sesión a mano antes
+/// de poder navegar. Ningún permiso gatea el sidebar/router todavía
+/// (llega en la Etapa 11B), así que un Maestro fijo es equivalente a
+/// "cualquier sesión válida" para efectos de estas pruebas.
+class _SesionControllerDePrueba extends SesionController {
+  @override
+  SesionUsuario? build() {
+    return const SesionUsuario(
+      usuarioId: 'usuario-prueba',
+      nombre: 'Usuario de prueba',
+      nombreUsuario: 'prueba',
+      esMaestro: true,
+    );
+  }
+}
 
 /// Fuerza un tamaño de ventana de escritorio "cómodo" (por encima del
 /// breakpoint de colapso automático del sidebar) para que las pruebas no
@@ -25,6 +46,10 @@ import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
 /// Sobrescribe [appDatabaseProvider] con una base en memoria — desde que
 /// `/organizacion` abre `EmpresaExpedienteScreen` (Etapa 4B), el Shell ya
 /// depende de la base de datos incluso en estas pruebas de navegación.
+/// También sobrescribe `contarUsuariosProvider` (la base en memoria no
+/// tiene ningún Usuario sembrado, lo que dispararía el `redirect` hacia
+/// `/bootstrap-maestro`) y `sesionControllerProvider` (sin esto, el
+/// mismo `redirect` mandaría a `/login`) — ver `_SesionControllerDePrueba`.
 Future<AppDatabase> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 900)}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -39,7 +64,11 @@ Future<AppDatabase> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 
   // navegó la prueba anterior.
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        contarUsuariosProvider.overrideWith((ref) async => 1),
+        sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
+      ],
       child: RisegOneApp(router: createAppRouter()),
     ),
   );
@@ -609,6 +638,54 @@ void main() {
       // compartido.
       expect(find.text(l10n.compraPartidasSeccionTitulo), findsOneWidget);
       expect(find.text(l10n.compraBotonAgregarPartida), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Bootstrap del primer Maestro y login bloquean la navegación hasta autenticarse (Etapa 11A)',
+    (tester) async {
+      // A propósito NO usa `_pumpApp`: esta prueba exige el `redirect`
+      // real de login/bootstrap, así que monta con la base en memoria
+      // real (sin Usuarios) y sin sobrescribir `sesionControllerProvider`.
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [appDatabaseProvider.overrideWithValue(db)],
+          child: RisegOneApp(router: createAppRouter()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Sin ningún Usuario, cualquier ruta cae en el bootstrap.
+      expect(find.byKey(const Key('bootstrap_maestro_screen')), findsOneWidget);
+      expect(find.byKey(const Key('app_shell')), findsNothing);
+
+      await tester.enterText(find.byKey(const Key('bootstrap_campo_nombre')), 'Ana Torres');
+      await tester.enterText(find.byKey(const Key('bootstrap_campo_usuario')), 'ana.torres');
+      await tester.enterText(find.byKey(const Key('bootstrap_campo_password')), 'Sup3rSecreta!');
+      await tester.enterText(find.byKey(const Key('bootstrap_campo_confirmar_password')), 'Sup3rSecreta!');
+      await tester.tap(find.byKey(const Key('bootstrap_boton_crear')));
+      await tester.pumpAndSettle();
+
+      // Ya existe un Usuario: el bootstrap queda bloqueado, cae en login.
+      expect(find.byKey(const Key('login_screen')), findsOneWidget);
+      expect(find.byKey(const Key('bootstrap_maestro_screen')), findsNothing);
+
+      await tester.enterText(find.byKey(const Key('login_campo_usuario')), 'ana.torres');
+      await tester.enterText(find.byKey(const Key('login_campo_password')), 'Sup3rSecreta!');
+      await tester.tap(find.byKey(const Key('login_boton_entrar')));
+      await tester.pumpAndSettle();
+
+      // Sesión iniciada: ya se puede navegar al Shell.
+      expect(find.byKey(const Key('app_shell')), findsOneWidget);
+      expect(find.byKey(const Key('login_screen')), findsNothing);
     },
   );
 }
