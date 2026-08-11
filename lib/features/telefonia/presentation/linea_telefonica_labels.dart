@@ -56,3 +56,17 @@ String motivoBajaLineaTelefonicaLabel(AppLocalizations l10n, MotivoBajaLineaTele
     MotivoBajaLineaTelefonica.otro => l10n.motivoBajaLineaTelefonicaOtro,
   };
 }
+
+/// El "destino" de una `AsignacionLineaTelefonica` ya resuelto para
+/// mostrar — el llamador es responsable de pasar el nombre ya buscado
+/// (`empleadosPorId`/`serviciosPorId`), mismo criterio que
+/// `destinoAsignacionVehiculoLabel`.
+String destinoAsignacionLineaTelefonicaLabel(
+  AsignacionLineaTelefonicaData asignacion, {
+  required Map<String, String> empleadosPorId,
+  required Map<String, String> serviciosPorId,
+}) {
+  if (asignacion.empleadoId != null) return empleadosPorId[asignacion.empleadoId] ?? asignacion.empleadoId!;
+  if (asignacion.servicioId != null) return serviciosPorId[asignacion.servicioId] ?? asignacion.servicioId!;
+  return '—';
+}

@@ -59085,6 +59085,1395 @@ class LineaTelefonicaPlanCompanion
   }
 }
 
+class $AsignacionLineaTelefonicaTable extends AsignacionLineaTelefonica
+    with
+        TableInfo<
+          $AsignacionLineaTelefonicaTable,
+          AsignacionLineaTelefonicaData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AsignacionLineaTelefonicaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _lineaTelefonicaIdMeta = const VerificationMeta(
+    'lineaTelefonicaId',
+  );
+  @override
+  late final GeneratedColumn<String> lineaTelefonicaId =
+      GeneratedColumn<String>(
+        'linea_telefonica_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES linea_telefonica (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _empleadoIdMeta = const VerificationMeta(
+    'empleadoId',
+  );
+  @override
+  late final GeneratedColumn<String> empleadoId = GeneratedColumn<String>(
+    'empleado_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES empleado (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _fechaInicioMeta = const VerificationMeta(
+    'fechaInicio',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaInicio = GeneratedColumn<DateTime>(
+    'fecha_inicio',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaTerminoMeta = const VerificationMeta(
+    'fechaTermino',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaTermino = GeneratedColumn<DateTime>(
+    'fecha_termino',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _motivoTerminoMeta = const VerificationMeta(
+    'motivoTermino',
+  );
+  @override
+  late final GeneratedColumn<String> motivoTermino = GeneratedColumn<String>(
+    'motivo_termino',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesTerminoMeta =
+      const VerificationMeta('observacionesTermino');
+  @override
+  late final GeneratedColumn<String> observacionesTermino =
+      GeneratedColumn<String>(
+        'observaciones_termino',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    lineaTelefonicaId,
+    empleadoId,
+    servicioId,
+    fechaInicio,
+    fechaTermino,
+    motivoTermino,
+    observaciones,
+    observacionesTermino,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'asignacion_linea_telefonica';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AsignacionLineaTelefonicaData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('linea_telefonica_id')) {
+      context.handle(
+        _lineaTelefonicaIdMeta,
+        lineaTelefonicaId.isAcceptableOrUnknown(
+          data['linea_telefonica_id']!,
+          _lineaTelefonicaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lineaTelefonicaIdMeta);
+    }
+    if (data.containsKey('empleado_id')) {
+      context.handle(
+        _empleadoIdMeta,
+        empleadoId.isAcceptableOrUnknown(data['empleado_id']!, _empleadoIdMeta),
+      );
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    }
+    if (data.containsKey('fecha_inicio')) {
+      context.handle(
+        _fechaInicioMeta,
+        fechaInicio.isAcceptableOrUnknown(
+          data['fecha_inicio']!,
+          _fechaInicioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaInicioMeta);
+    }
+    if (data.containsKey('fecha_termino')) {
+      context.handle(
+        _fechaTerminoMeta,
+        fechaTermino.isAcceptableOrUnknown(
+          data['fecha_termino']!,
+          _fechaTerminoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('motivo_termino')) {
+      context.handle(
+        _motivoTerminoMeta,
+        motivoTermino.isAcceptableOrUnknown(
+          data['motivo_termino']!,
+          _motivoTerminoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones_termino')) {
+      context.handle(
+        _observacionesTerminoMeta,
+        observacionesTermino.isAcceptableOrUnknown(
+          data['observaciones_termino']!,
+          _observacionesTerminoMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AsignacionLineaTelefonicaData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AsignacionLineaTelefonicaData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      lineaTelefonicaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}linea_telefonica_id'],
+          )!,
+      empleadoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empleado_id'],
+      ),
+      servicioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servicio_id'],
+      ),
+      fechaInicio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_inicio'],
+          )!,
+      fechaTermino: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_termino'],
+      ),
+      motivoTermino: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_termino'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      observacionesTermino: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_termino'],
+      ),
+    );
+  }
+
+  @override
+  $AsignacionLineaTelefonicaTable createAlias(String alias) {
+    return $AsignacionLineaTelefonicaTable(attachedDatabase, alias);
+  }
+}
+
+class AsignacionLineaTelefonicaData extends DataClass
+    implements Insertable<AsignacionLineaTelefonicaData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String lineaTelefonicaId;
+  final String? empleadoId;
+  final String? servicioId;
+  final DateTime fechaInicio;
+  final DateTime? fechaTermino;
+  final String? motivoTermino;
+  final String? observaciones;
+  final String? observacionesTermino;
+  const AsignacionLineaTelefonicaData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.lineaTelefonicaId,
+    this.empleadoId,
+    this.servicioId,
+    required this.fechaInicio,
+    this.fechaTermino,
+    this.motivoTermino,
+    this.observaciones,
+    this.observacionesTermino,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['linea_telefonica_id'] = Variable<String>(lineaTelefonicaId);
+    if (!nullToAbsent || empleadoId != null) {
+      map['empleado_id'] = Variable<String>(empleadoId);
+    }
+    if (!nullToAbsent || servicioId != null) {
+      map['servicio_id'] = Variable<String>(servicioId);
+    }
+    map['fecha_inicio'] = Variable<DateTime>(fechaInicio);
+    if (!nullToAbsent || fechaTermino != null) {
+      map['fecha_termino'] = Variable<DateTime>(fechaTermino);
+    }
+    if (!nullToAbsent || motivoTermino != null) {
+      map['motivo_termino'] = Variable<String>(motivoTermino);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || observacionesTermino != null) {
+      map['observaciones_termino'] = Variable<String>(observacionesTermino);
+    }
+    return map;
+  }
+
+  AsignacionLineaTelefonicaCompanion toCompanion(bool nullToAbsent) {
+    return AsignacionLineaTelefonicaCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      lineaTelefonicaId: Value(lineaTelefonicaId),
+      empleadoId:
+          empleadoId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(empleadoId),
+      servicioId:
+          servicioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(servicioId),
+      fechaInicio: Value(fechaInicio),
+      fechaTermino:
+          fechaTermino == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaTermino),
+      motivoTermino:
+          motivoTermino == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoTermino),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      observacionesTermino:
+          observacionesTermino == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesTermino),
+    );
+  }
+
+  factory AsignacionLineaTelefonicaData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AsignacionLineaTelefonicaData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      lineaTelefonicaId: serializer.fromJson<String>(json['lineaTelefonicaId']),
+      empleadoId: serializer.fromJson<String?>(json['empleadoId']),
+      servicioId: serializer.fromJson<String?>(json['servicioId']),
+      fechaInicio: serializer.fromJson<DateTime>(json['fechaInicio']),
+      fechaTermino: serializer.fromJson<DateTime?>(json['fechaTermino']),
+      motivoTermino: serializer.fromJson<String?>(json['motivoTermino']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      observacionesTermino: serializer.fromJson<String?>(
+        json['observacionesTermino'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'lineaTelefonicaId': serializer.toJson<String>(lineaTelefonicaId),
+      'empleadoId': serializer.toJson<String?>(empleadoId),
+      'servicioId': serializer.toJson<String?>(servicioId),
+      'fechaInicio': serializer.toJson<DateTime>(fechaInicio),
+      'fechaTermino': serializer.toJson<DateTime?>(fechaTermino),
+      'motivoTermino': serializer.toJson<String?>(motivoTermino),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'observacionesTermino': serializer.toJson<String?>(observacionesTermino),
+    };
+  }
+
+  AsignacionLineaTelefonicaData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? lineaTelefonicaId,
+    Value<String?> empleadoId = const Value.absent(),
+    Value<String?> servicioId = const Value.absent(),
+    DateTime? fechaInicio,
+    Value<DateTime?> fechaTermino = const Value.absent(),
+    Value<String?> motivoTermino = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+    Value<String?> observacionesTermino = const Value.absent(),
+  }) => AsignacionLineaTelefonicaData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    lineaTelefonicaId: lineaTelefonicaId ?? this.lineaTelefonicaId,
+    empleadoId: empleadoId.present ? empleadoId.value : this.empleadoId,
+    servicioId: servicioId.present ? servicioId.value : this.servicioId,
+    fechaInicio: fechaInicio ?? this.fechaInicio,
+    fechaTermino: fechaTermino.present ? fechaTermino.value : this.fechaTermino,
+    motivoTermino:
+        motivoTermino.present ? motivoTermino.value : this.motivoTermino,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    observacionesTermino:
+        observacionesTermino.present
+            ? observacionesTermino.value
+            : this.observacionesTermino,
+  );
+  AsignacionLineaTelefonicaData copyWithCompanion(
+    AsignacionLineaTelefonicaCompanion data,
+  ) {
+    return AsignacionLineaTelefonicaData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      lineaTelefonicaId:
+          data.lineaTelefonicaId.present
+              ? data.lineaTelefonicaId.value
+              : this.lineaTelefonicaId,
+      empleadoId:
+          data.empleadoId.present ? data.empleadoId.value : this.empleadoId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      fechaInicio:
+          data.fechaInicio.present ? data.fechaInicio.value : this.fechaInicio,
+      fechaTermino:
+          data.fechaTermino.present
+              ? data.fechaTermino.value
+              : this.fechaTermino,
+      motivoTermino:
+          data.motivoTermino.present
+              ? data.motivoTermino.value
+              : this.motivoTermino,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      observacionesTermino:
+          data.observacionesTermino.present
+              ? data.observacionesTermino.value
+              : this.observacionesTermino,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionLineaTelefonicaData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('lineaTelefonicaId: $lineaTelefonicaId, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaTermino: $fechaTermino, ')
+          ..write('motivoTermino: $motivoTermino, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('observacionesTermino: $observacionesTermino')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    lineaTelefonicaId,
+    empleadoId,
+    servicioId,
+    fechaInicio,
+    fechaTermino,
+    motivoTermino,
+    observaciones,
+    observacionesTermino,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AsignacionLineaTelefonicaData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.lineaTelefonicaId == this.lineaTelefonicaId &&
+          other.empleadoId == this.empleadoId &&
+          other.servicioId == this.servicioId &&
+          other.fechaInicio == this.fechaInicio &&
+          other.fechaTermino == this.fechaTermino &&
+          other.motivoTermino == this.motivoTermino &&
+          other.observaciones == this.observaciones &&
+          other.observacionesTermino == this.observacionesTermino);
+}
+
+class AsignacionLineaTelefonicaCompanion
+    extends UpdateCompanion<AsignacionLineaTelefonicaData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> lineaTelefonicaId;
+  final Value<String?> empleadoId;
+  final Value<String?> servicioId;
+  final Value<DateTime> fechaInicio;
+  final Value<DateTime?> fechaTermino;
+  final Value<String?> motivoTermino;
+  final Value<String?> observaciones;
+  final Value<String?> observacionesTermino;
+  final Value<int> rowid;
+  const AsignacionLineaTelefonicaCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.lineaTelefonicaId = const Value.absent(),
+    this.empleadoId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.fechaInicio = const Value.absent(),
+    this.fechaTermino = const Value.absent(),
+    this.motivoTermino = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.observacionesTermino = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AsignacionLineaTelefonicaCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String lineaTelefonicaId,
+    this.empleadoId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    required DateTime fechaInicio,
+    this.fechaTermino = const Value.absent(),
+    this.motivoTermino = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.observacionesTermino = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : lineaTelefonicaId = Value(lineaTelefonicaId),
+       fechaInicio = Value(fechaInicio);
+  static Insertable<AsignacionLineaTelefonicaData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? lineaTelefonicaId,
+    Expression<String>? empleadoId,
+    Expression<String>? servicioId,
+    Expression<DateTime>? fechaInicio,
+    Expression<DateTime>? fechaTermino,
+    Expression<String>? motivoTermino,
+    Expression<String>? observaciones,
+    Expression<String>? observacionesTermino,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (lineaTelefonicaId != null) 'linea_telefonica_id': lineaTelefonicaId,
+      if (empleadoId != null) 'empleado_id': empleadoId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (fechaInicio != null) 'fecha_inicio': fechaInicio,
+      if (fechaTermino != null) 'fecha_termino': fechaTermino,
+      if (motivoTermino != null) 'motivo_termino': motivoTermino,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (observacionesTermino != null)
+        'observaciones_termino': observacionesTermino,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AsignacionLineaTelefonicaCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? lineaTelefonicaId,
+    Value<String?>? empleadoId,
+    Value<String?>? servicioId,
+    Value<DateTime>? fechaInicio,
+    Value<DateTime?>? fechaTermino,
+    Value<String?>? motivoTermino,
+    Value<String?>? observaciones,
+    Value<String?>? observacionesTermino,
+    Value<int>? rowid,
+  }) {
+    return AsignacionLineaTelefonicaCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      lineaTelefonicaId: lineaTelefonicaId ?? this.lineaTelefonicaId,
+      empleadoId: empleadoId ?? this.empleadoId,
+      servicioId: servicioId ?? this.servicioId,
+      fechaInicio: fechaInicio ?? this.fechaInicio,
+      fechaTermino: fechaTermino ?? this.fechaTermino,
+      motivoTermino: motivoTermino ?? this.motivoTermino,
+      observaciones: observaciones ?? this.observaciones,
+      observacionesTermino: observacionesTermino ?? this.observacionesTermino,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (lineaTelefonicaId.present) {
+      map['linea_telefonica_id'] = Variable<String>(lineaTelefonicaId.value);
+    }
+    if (empleadoId.present) {
+      map['empleado_id'] = Variable<String>(empleadoId.value);
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (fechaInicio.present) {
+      map['fecha_inicio'] = Variable<DateTime>(fechaInicio.value);
+    }
+    if (fechaTermino.present) {
+      map['fecha_termino'] = Variable<DateTime>(fechaTermino.value);
+    }
+    if (motivoTermino.present) {
+      map['motivo_termino'] = Variable<String>(motivoTermino.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (observacionesTermino.present) {
+      map['observaciones_termino'] = Variable<String>(
+        observacionesTermino.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionLineaTelefonicaCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('lineaTelefonicaId: $lineaTelefonicaId, ')
+          ..write('empleadoId: $empleadoId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaTermino: $fechaTermino, ')
+          ..write('motivoTermino: $motivoTermino, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('observacionesTermino: $observacionesTermino, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LineaTelefonicaEquipoTable extends LineaTelefonicaEquipo
+    with TableInfo<$LineaTelefonicaEquipoTable, LineaTelefonicaEquipoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LineaTelefonicaEquipoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _lineaTelefonicaIdMeta = const VerificationMeta(
+    'lineaTelefonicaId',
+  );
+  @override
+  late final GeneratedColumn<String> lineaTelefonicaId =
+      GeneratedColumn<String>(
+        'linea_telefonica_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES linea_telefonica (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _unidadIdMeta = const VerificationMeta(
+    'unidadId',
+  );
+  @override
+  late final GeneratedColumn<String> unidadId = GeneratedColumn<String>(
+    'unidad_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES articulo_unidad (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _fechaInicioMeta = const VerificationMeta(
+    'fechaInicio',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaInicio = GeneratedColumn<DateTime>(
+    'fecha_inicio',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaFinMeta = const VerificationMeta(
+    'fechaFin',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaFin = GeneratedColumn<DateTime>(
+    'fecha_fin',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    lineaTelefonicaId,
+    unidadId,
+    fechaInicio,
+    fechaFin,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'linea_telefonica_equipo';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LineaTelefonicaEquipoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('linea_telefonica_id')) {
+      context.handle(
+        _lineaTelefonicaIdMeta,
+        lineaTelefonicaId.isAcceptableOrUnknown(
+          data['linea_telefonica_id']!,
+          _lineaTelefonicaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lineaTelefonicaIdMeta);
+    }
+    if (data.containsKey('unidad_id')) {
+      context.handle(
+        _unidadIdMeta,
+        unidadId.isAcceptableOrUnknown(data['unidad_id']!, _unidadIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_unidadIdMeta);
+    }
+    if (data.containsKey('fecha_inicio')) {
+      context.handle(
+        _fechaInicioMeta,
+        fechaInicio.isAcceptableOrUnknown(
+          data['fecha_inicio']!,
+          _fechaInicioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaInicioMeta);
+    }
+    if (data.containsKey('fecha_fin')) {
+      context.handle(
+        _fechaFinMeta,
+        fechaFin.isAcceptableOrUnknown(data['fecha_fin']!, _fechaFinMeta),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LineaTelefonicaEquipoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LineaTelefonicaEquipoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      lineaTelefonicaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}linea_telefonica_id'],
+          )!,
+      unidadId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}unidad_id'],
+          )!,
+      fechaInicio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_inicio'],
+          )!,
+      fechaFin: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_fin'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $LineaTelefonicaEquipoTable createAlias(String alias) {
+    return $LineaTelefonicaEquipoTable(attachedDatabase, alias);
+  }
+}
+
+class LineaTelefonicaEquipoData extends DataClass
+    implements Insertable<LineaTelefonicaEquipoData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String lineaTelefonicaId;
+  final String unidadId;
+  final DateTime fechaInicio;
+  final DateTime? fechaFin;
+  final String? observaciones;
+  const LineaTelefonicaEquipoData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.lineaTelefonicaId,
+    required this.unidadId,
+    required this.fechaInicio,
+    this.fechaFin,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['linea_telefonica_id'] = Variable<String>(lineaTelefonicaId);
+    map['unidad_id'] = Variable<String>(unidadId);
+    map['fecha_inicio'] = Variable<DateTime>(fechaInicio);
+    if (!nullToAbsent || fechaFin != null) {
+      map['fecha_fin'] = Variable<DateTime>(fechaFin);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  LineaTelefonicaEquipoCompanion toCompanion(bool nullToAbsent) {
+    return LineaTelefonicaEquipoCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      lineaTelefonicaId: Value(lineaTelefonicaId),
+      unidadId: Value(unidadId),
+      fechaInicio: Value(fechaInicio),
+      fechaFin:
+          fechaFin == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaFin),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory LineaTelefonicaEquipoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LineaTelefonicaEquipoData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      lineaTelefonicaId: serializer.fromJson<String>(json['lineaTelefonicaId']),
+      unidadId: serializer.fromJson<String>(json['unidadId']),
+      fechaInicio: serializer.fromJson<DateTime>(json['fechaInicio']),
+      fechaFin: serializer.fromJson<DateTime?>(json['fechaFin']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'lineaTelefonicaId': serializer.toJson<String>(lineaTelefonicaId),
+      'unidadId': serializer.toJson<String>(unidadId),
+      'fechaInicio': serializer.toJson<DateTime>(fechaInicio),
+      'fechaFin': serializer.toJson<DateTime?>(fechaFin),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  LineaTelefonicaEquipoData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? lineaTelefonicaId,
+    String? unidadId,
+    DateTime? fechaInicio,
+    Value<DateTime?> fechaFin = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => LineaTelefonicaEquipoData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    lineaTelefonicaId: lineaTelefonicaId ?? this.lineaTelefonicaId,
+    unidadId: unidadId ?? this.unidadId,
+    fechaInicio: fechaInicio ?? this.fechaInicio,
+    fechaFin: fechaFin.present ? fechaFin.value : this.fechaFin,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  LineaTelefonicaEquipoData copyWithCompanion(
+    LineaTelefonicaEquipoCompanion data,
+  ) {
+    return LineaTelefonicaEquipoData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      lineaTelefonicaId:
+          data.lineaTelefonicaId.present
+              ? data.lineaTelefonicaId.value
+              : this.lineaTelefonicaId,
+      unidadId: data.unidadId.present ? data.unidadId.value : this.unidadId,
+      fechaInicio:
+          data.fechaInicio.present ? data.fechaInicio.value : this.fechaInicio,
+      fechaFin: data.fechaFin.present ? data.fechaFin.value : this.fechaFin,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LineaTelefonicaEquipoData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('lineaTelefonicaId: $lineaTelefonicaId, ')
+          ..write('unidadId: $unidadId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    lineaTelefonicaId,
+    unidadId,
+    fechaInicio,
+    fechaFin,
+    observaciones,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LineaTelefonicaEquipoData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.lineaTelefonicaId == this.lineaTelefonicaId &&
+          other.unidadId == this.unidadId &&
+          other.fechaInicio == this.fechaInicio &&
+          other.fechaFin == this.fechaFin &&
+          other.observaciones == this.observaciones);
+}
+
+class LineaTelefonicaEquipoCompanion
+    extends UpdateCompanion<LineaTelefonicaEquipoData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> lineaTelefonicaId;
+  final Value<String> unidadId;
+  final Value<DateTime> fechaInicio;
+  final Value<DateTime?> fechaFin;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const LineaTelefonicaEquipoCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.lineaTelefonicaId = const Value.absent(),
+    this.unidadId = const Value.absent(),
+    this.fechaInicio = const Value.absent(),
+    this.fechaFin = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LineaTelefonicaEquipoCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String lineaTelefonicaId,
+    required String unidadId,
+    required DateTime fechaInicio,
+    this.fechaFin = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : lineaTelefonicaId = Value(lineaTelefonicaId),
+       unidadId = Value(unidadId),
+       fechaInicio = Value(fechaInicio);
+  static Insertable<LineaTelefonicaEquipoData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? lineaTelefonicaId,
+    Expression<String>? unidadId,
+    Expression<DateTime>? fechaInicio,
+    Expression<DateTime>? fechaFin,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (lineaTelefonicaId != null) 'linea_telefonica_id': lineaTelefonicaId,
+      if (unidadId != null) 'unidad_id': unidadId,
+      if (fechaInicio != null) 'fecha_inicio': fechaInicio,
+      if (fechaFin != null) 'fecha_fin': fechaFin,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LineaTelefonicaEquipoCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? lineaTelefonicaId,
+    Value<String>? unidadId,
+    Value<DateTime>? fechaInicio,
+    Value<DateTime?>? fechaFin,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return LineaTelefonicaEquipoCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      lineaTelefonicaId: lineaTelefonicaId ?? this.lineaTelefonicaId,
+      unidadId: unidadId ?? this.unidadId,
+      fechaInicio: fechaInicio ?? this.fechaInicio,
+      fechaFin: fechaFin ?? this.fechaFin,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (lineaTelefonicaId.present) {
+      map['linea_telefonica_id'] = Variable<String>(lineaTelefonicaId.value);
+    }
+    if (unidadId.present) {
+      map['unidad_id'] = Variable<String>(unidadId.value);
+    }
+    if (fechaInicio.present) {
+      map['fecha_inicio'] = Variable<DateTime>(fechaInicio.value);
+    }
+    if (fechaFin.present) {
+      map['fecha_fin'] = Variable<DateTime>(fechaFin.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LineaTelefonicaEquipoCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('lineaTelefonicaId: $lineaTelefonicaId, ')
+          ..write('unidadId: $unidadId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -59238,6 +60627,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $LineaTelefonicaPlanTable lineaTelefonicaPlan =
       $LineaTelefonicaPlanTable(this);
+  late final $AsignacionLineaTelefonicaTable asignacionLineaTelefonica =
+      $AsignacionLineaTelefonicaTable(this);
+  late final $LineaTelefonicaEquipoTable lineaTelefonicaEquipo =
+      $LineaTelefonicaEquipoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -59277,6 +60670,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxLineaTelefonicaNumeroUnico = Index(
     'idx_linea_telefonica_numero_unico',
     'CREATE UNIQUE INDEX idx_linea_telefonica_numero_unico ON linea_telefonica (numero) WHERE numero IS NOT NULL',
+  );
+  late final Index idxAsignacionLineaTelefonicaVigente = Index(
+    'idx_asignacion_linea_telefonica_vigente',
+    'CREATE UNIQUE INDEX idx_asignacion_linea_telefonica_vigente ON asignacion_linea_telefonica (linea_telefonica_id) WHERE fecha_termino IS NULL',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -59372,6 +60769,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     vehiculoMantenimientoAttachment,
     lineaTelefonica,
     lineaTelefonicaPlan,
+    asignacionLineaTelefonica,
+    lineaTelefonicaEquipo,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -59382,6 +60781,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxVehiculoVinUnico,
     idxAsignacionVehiculoVigente,
     idxLineaTelefonicaNumeroUnico,
+    idxAsignacionLineaTelefonicaVigente,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -71223,6 +72623,34 @@ final class $$ServicioTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $AsignacionLineaTelefonicaTable,
+    List<AsignacionLineaTelefonicaData>
+  >
+  _asignacionLineaTelefonicaRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.asignacionLineaTelefonica,
+        aliasName: $_aliasNameGenerator(
+          db.servicio.id,
+          db.asignacionLineaTelefonica.servicioId,
+        ),
+      );
+
+  $$AsignacionLineaTelefonicaTableProcessedTableManager
+  get asignacionLineaTelefonicaRefs {
+    final manager = $$AsignacionLineaTelefonicaTableTableManager(
+      $_db,
+      $_db.asignacionLineaTelefonica,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _asignacionLineaTelefonicaRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ServicioTableFilterComposer
@@ -71784,6 +73212,33 @@ class $$ServicioTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionLineaTelefonicaRefs(
+    Expression<bool> Function($$AsignacionLineaTelefonicaTableFilterComposer f)
+    f,
+  ) {
+    final $$AsignacionLineaTelefonicaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionLineaTelefonica,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionLineaTelefonicaTableFilterComposer(
+                $db: $db,
+                $table: $db.asignacionLineaTelefonica,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -72552,6 +74007,33 @@ class $$ServicioTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionLineaTelefonicaRefs<T extends Object>(
+    Expression<T> Function($$AsignacionLineaTelefonicaTableAnnotationComposer a)
+    f,
+  ) {
+    final $$AsignacionLineaTelefonicaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionLineaTelefonica,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionLineaTelefonicaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.asignacionLineaTelefonica,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ServicioTableTableManager
@@ -72587,6 +74069,7 @@ class $$ServicioTableTableManager
             bool nominaEmpleadoTramoRefs,
             bool asignacionRefs,
             bool asignacionVehiculoRefs,
+            bool asignacionLineaTelefonicaRefs,
           })
         > {
   $$ServicioTableTableManager(_$AppDatabase db, $ServicioTable table)
@@ -72734,6 +74217,7 @@ class $$ServicioTableTableManager
             nominaEmpleadoTramoRefs = false,
             asignacionRefs = false,
             asignacionVehiculoRefs = false,
+            asignacionLineaTelefonicaRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -72754,6 +74238,7 @@ class $$ServicioTableTableManager
                 if (nominaEmpleadoTramoRefs) db.nominaEmpleadoTramo,
                 if (asignacionRefs) db.asignacion,
                 if (asignacionVehiculoRefs) db.asignacionVehiculo,
+                if (asignacionLineaTelefonicaRefs) db.asignacionLineaTelefonica,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -73153,6 +74638,28 @@ class $$ServicioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionLineaTelefonicaRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      AsignacionLineaTelefonicaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._asignacionLineaTelefonicaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionLineaTelefonicaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -73193,6 +74700,7 @@ typedef $$ServicioTableProcessedTableManager =
         bool nominaEmpleadoTramoRefs,
         bool asignacionRefs,
         bool asignacionVehiculoRefs,
+        bool asignacionLineaTelefonicaRefs,
       })
     >;
 typedef $$UbicacionTableCreateCompanionBuilder =
@@ -91385,6 +92893,34 @@ final class $$EmpleadoTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $AsignacionLineaTelefonicaTable,
+    List<AsignacionLineaTelefonicaData>
+  >
+  _asignacionLineaTelefonicaRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.asignacionLineaTelefonica,
+        aliasName: $_aliasNameGenerator(
+          db.empleado.id,
+          db.asignacionLineaTelefonica.empleadoId,
+        ),
+      );
+
+  $$AsignacionLineaTelefonicaTableProcessedTableManager
+  get asignacionLineaTelefonicaRefs {
+    final manager = $$AsignacionLineaTelefonicaTableTableManager(
+      $_db,
+      $_db.asignacionLineaTelefonica,
+    ).filter((f) => f.empleadoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _asignacionLineaTelefonicaRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$EmpleadoTableFilterComposer
@@ -91990,6 +93526,33 @@ class $$EmpleadoTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionLineaTelefonicaRefs(
+    Expression<bool> Function($$AsignacionLineaTelefonicaTableFilterComposer f)
+    f,
+  ) {
+    final $$AsignacionLineaTelefonicaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionLineaTelefonica,
+          getReferencedColumn: (t) => t.empleadoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionLineaTelefonicaTableFilterComposer(
+                $db: $db,
+                $table: $db.asignacionLineaTelefonica,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -92967,6 +94530,33 @@ class $$EmpleadoTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionLineaTelefonicaRefs<T extends Object>(
+    Expression<T> Function($$AsignacionLineaTelefonicaTableAnnotationComposer a)
+    f,
+  ) {
+    final $$AsignacionLineaTelefonicaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionLineaTelefonica,
+          getReferencedColumn: (t) => t.empleadoId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionLineaTelefonicaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.asignacionLineaTelefonica,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$EmpleadoTableTableManager
@@ -92997,6 +94587,7 @@ class $$EmpleadoTableTableManager
             bool asignacionRefs,
             bool descuentoInventarioRefs,
             bool asignacionVehiculoRefs,
+            bool asignacionLineaTelefonicaRefs,
           })
         > {
   $$EmpleadoTableTableManager(_$AppDatabase db, $EmpleadoTable table)
@@ -93281,6 +94872,7 @@ class $$EmpleadoTableTableManager
             asignacionRefs = false,
             descuentoInventarioRefs = false,
             asignacionVehiculoRefs = false,
+            asignacionLineaTelefonicaRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -93294,6 +94886,7 @@ class $$EmpleadoTableTableManager
                 if (asignacionRefs) db.asignacion,
                 if (descuentoInventarioRefs) db.descuentoInventario,
                 if (asignacionVehiculoRefs) db.asignacionVehiculo,
+                if (asignacionLineaTelefonicaRefs) db.asignacionLineaTelefonica,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -93579,6 +95172,28 @@ class $$EmpleadoTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionLineaTelefonicaRefs)
+                    await $_getPrefetchedData<
+                      EmpleadoData,
+                      $EmpleadoTable,
+                      AsignacionLineaTelefonicaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EmpleadoTableReferences
+                          ._asignacionLineaTelefonicaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$EmpleadoTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionLineaTelefonicaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.empleadoId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -93614,6 +95229,7 @@ typedef $$EmpleadoTableProcessedTableManager =
         bool asignacionRefs,
         bool descuentoInventarioRefs,
         bool asignacionVehiculoRefs,
+        bool asignacionLineaTelefonicaRefs,
       })
     >;
 typedef $$EmpleadoEventoTableCreateCompanionBuilder =
@@ -106737,6 +108353,34 @@ final class $$ArticuloUnidadTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $LineaTelefonicaEquipoTable,
+    List<LineaTelefonicaEquipoData>
+  >
+  _lineaTelefonicaEquipoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.lineaTelefonicaEquipo,
+        aliasName: $_aliasNameGenerator(
+          db.articuloUnidad.id,
+          db.lineaTelefonicaEquipo.unidadId,
+        ),
+      );
+
+  $$LineaTelefonicaEquipoTableProcessedTableManager
+  get lineaTelefonicaEquipoRefs {
+    final manager = $$LineaTelefonicaEquipoTableTableManager(
+      $_db,
+      $_db.lineaTelefonicaEquipo,
+    ).filter((f) => f.unidadId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _lineaTelefonicaEquipoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ArticuloUnidadTableFilterComposer
@@ -106889,6 +108533,32 @@ class $$ArticuloUnidadTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> lineaTelefonicaEquipoRefs(
+    Expression<bool> Function($$LineaTelefonicaEquipoTableFilterComposer f) f,
+  ) {
+    final $$LineaTelefonicaEquipoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.lineaTelefonicaEquipo,
+          getReferencedColumn: (t) => t.unidadId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$LineaTelefonicaEquipoTableFilterComposer(
+                $db: $db,
+                $table: $db.lineaTelefonicaEquipo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -107110,6 +108780,32 @@ class $$ArticuloUnidadTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> lineaTelefonicaEquipoRefs<T extends Object>(
+    Expression<T> Function($$LineaTelefonicaEquipoTableAnnotationComposer a) f,
+  ) {
+    final $$LineaTelefonicaEquipoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.lineaTelefonicaEquipo,
+          getReferencedColumn: (t) => t.unidadId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$LineaTelefonicaEquipoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.lineaTelefonicaEquipo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ArticuloUnidadTableTableManager
@@ -107130,6 +108826,7 @@ class $$ArticuloUnidadTableTableManager
             bool articuloUnidadTelefonoRefs,
             bool movimientoInventarioRefs,
             bool asignacionRefs,
+            bool lineaTelefonicaEquipoRefs,
           })
         > {
   $$ArticuloUnidadTableTableManager(
@@ -107216,6 +108913,7 @@ class $$ArticuloUnidadTableTableManager
             articuloUnidadTelefonoRefs = false,
             movimientoInventarioRefs = false,
             asignacionRefs = false,
+            lineaTelefonicaEquipoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -107223,6 +108921,7 @@ class $$ArticuloUnidadTableTableManager
                 if (articuloUnidadTelefonoRefs) db.articuloUnidadTelefono,
                 if (movimientoInventarioRefs) db.movimientoInventario,
                 if (asignacionRefs) db.asignacion,
+                if (lineaTelefonicaEquipoRefs) db.lineaTelefonicaEquipo,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -107324,6 +109023,28 @@ class $$ArticuloUnidadTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (lineaTelefonicaEquipoRefs)
+                    await $_getPrefetchedData<
+                      ArticuloUnidadData,
+                      $ArticuloUnidadTable,
+                      LineaTelefonicaEquipoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ArticuloUnidadTableReferences
+                          ._lineaTelefonicaEquipoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ArticuloUnidadTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).lineaTelefonicaEquipoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.unidadId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -107349,6 +109070,7 @@ typedef $$ArticuloUnidadTableProcessedTableManager =
         bool articuloUnidadTelefonoRefs,
         bool movimientoInventarioRefs,
         bool asignacionRefs,
+        bool lineaTelefonicaEquipoRefs,
       })
     >;
 typedef $$ArticuloUnidadTelefonoTableCreateCompanionBuilder =
@@ -115910,6 +117632,66 @@ final class $$LineaTelefonicaTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $AsignacionLineaTelefonicaTable,
+    List<AsignacionLineaTelefonicaData>
+  >
+  _asignacionLineaTelefonicaRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.asignacionLineaTelefonica,
+        aliasName: $_aliasNameGenerator(
+          db.lineaTelefonica.id,
+          db.asignacionLineaTelefonica.lineaTelefonicaId,
+        ),
+      );
+
+  $$AsignacionLineaTelefonicaTableProcessedTableManager
+  get asignacionLineaTelefonicaRefs {
+    final manager = $$AsignacionLineaTelefonicaTableTableManager(
+      $_db,
+      $_db.asignacionLineaTelefonica,
+    ).filter(
+      (f) => f.lineaTelefonicaId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _asignacionLineaTelefonicaRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $LineaTelefonicaEquipoTable,
+    List<LineaTelefonicaEquipoData>
+  >
+  _lineaTelefonicaEquipoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.lineaTelefonicaEquipo,
+        aliasName: $_aliasNameGenerator(
+          db.lineaTelefonica.id,
+          db.lineaTelefonicaEquipo.lineaTelefonicaId,
+        ),
+      );
+
+  $$LineaTelefonicaEquipoTableProcessedTableManager
+  get lineaTelefonicaEquipoRefs {
+    final manager = $$LineaTelefonicaEquipoTableTableManager(
+      $_db,
+      $_db.lineaTelefonicaEquipo,
+    ).filter(
+      (f) => f.lineaTelefonicaId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _lineaTelefonicaEquipoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$LineaTelefonicaTableFilterComposer
@@ -116023,6 +117805,59 @@ class $$LineaTelefonicaTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionLineaTelefonicaRefs(
+    Expression<bool> Function($$AsignacionLineaTelefonicaTableFilterComposer f)
+    f,
+  ) {
+    final $$AsignacionLineaTelefonicaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionLineaTelefonica,
+          getReferencedColumn: (t) => t.lineaTelefonicaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionLineaTelefonicaTableFilterComposer(
+                $db: $db,
+                $table: $db.asignacionLineaTelefonica,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> lineaTelefonicaEquipoRefs(
+    Expression<bool> Function($$LineaTelefonicaEquipoTableFilterComposer f) f,
+  ) {
+    final $$LineaTelefonicaEquipoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.lineaTelefonicaEquipo,
+          getReferencedColumn: (t) => t.lineaTelefonicaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$LineaTelefonicaEquipoTableFilterComposer(
+                $db: $db,
+                $table: $db.lineaTelefonicaEquipo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -116213,6 +118048,59 @@ class $$LineaTelefonicaTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionLineaTelefonicaRefs<T extends Object>(
+    Expression<T> Function($$AsignacionLineaTelefonicaTableAnnotationComposer a)
+    f,
+  ) {
+    final $$AsignacionLineaTelefonicaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionLineaTelefonica,
+          getReferencedColumn: (t) => t.lineaTelefonicaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionLineaTelefonicaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.asignacionLineaTelefonica,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> lineaTelefonicaEquipoRefs<T extends Object>(
+    Expression<T> Function($$LineaTelefonicaEquipoTableAnnotationComposer a) f,
+  ) {
+    final $$LineaTelefonicaEquipoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.lineaTelefonicaEquipo,
+          getReferencedColumn: (t) => t.lineaTelefonicaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$LineaTelefonicaEquipoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.lineaTelefonicaEquipo,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$LineaTelefonicaTableTableManager
@@ -116228,7 +118116,11 @@ class $$LineaTelefonicaTableTableManager
           $$LineaTelefonicaTableUpdateCompanionBuilder,
           (LineaTelefonicaData, $$LineaTelefonicaTableReferences),
           LineaTelefonicaData,
-          PrefetchHooks Function({bool lineaTelefonicaPlanRefs})
+          PrefetchHooks Function({
+            bool lineaTelefonicaPlanRefs,
+            bool asignacionLineaTelefonicaRefs,
+            bool lineaTelefonicaEquipoRefs,
+          })
         > {
   $$LineaTelefonicaTableTableManager(
     _$AppDatabase db,
@@ -116336,11 +118228,17 @@ class $$LineaTelefonicaTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({lineaTelefonicaPlanRefs = false}) {
+          prefetchHooksCallback: ({
+            lineaTelefonicaPlanRefs = false,
+            asignacionLineaTelefonicaRefs = false,
+            lineaTelefonicaEquipoRefs = false,
+          }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (lineaTelefonicaPlanRefs) db.lineaTelefonicaPlan,
+                if (asignacionLineaTelefonicaRefs) db.asignacionLineaTelefonica,
+                if (lineaTelefonicaEquipoRefs) db.lineaTelefonicaEquipo,
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -116367,6 +118265,50 @@ class $$LineaTelefonicaTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionLineaTelefonicaRefs)
+                    await $_getPrefetchedData<
+                      LineaTelefonicaData,
+                      $LineaTelefonicaTable,
+                      AsignacionLineaTelefonicaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$LineaTelefonicaTableReferences
+                          ._asignacionLineaTelefonicaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$LineaTelefonicaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionLineaTelefonicaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.lineaTelefonicaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (lineaTelefonicaEquipoRefs)
+                    await $_getPrefetchedData<
+                      LineaTelefonicaData,
+                      $LineaTelefonicaTable,
+                      LineaTelefonicaEquipoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$LineaTelefonicaTableReferences
+                          ._lineaTelefonicaEquipoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$LineaTelefonicaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).lineaTelefonicaEquipoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.lineaTelefonicaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -116387,7 +118329,11 @@ typedef $$LineaTelefonicaTableProcessedTableManager =
       $$LineaTelefonicaTableUpdateCompanionBuilder,
       (LineaTelefonicaData, $$LineaTelefonicaTableReferences),
       LineaTelefonicaData,
-      PrefetchHooks Function({bool lineaTelefonicaPlanRefs})
+      PrefetchHooks Function({
+        bool lineaTelefonicaPlanRefs,
+        bool asignacionLineaTelefonicaRefs,
+        bool lineaTelefonicaEquipoRefs,
+      })
     >;
 typedef $$LineaTelefonicaPlanTableCreateCompanionBuilder =
     LineaTelefonicaPlanCompanion Function({
@@ -116860,6 +118806,1227 @@ typedef $$LineaTelefonicaPlanTableProcessedTableManager =
       LineaTelefonicaPlanData,
       PrefetchHooks Function({bool lineaTelefonicaId})
     >;
+typedef $$AsignacionLineaTelefonicaTableCreateCompanionBuilder =
+    AsignacionLineaTelefonicaCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String lineaTelefonicaId,
+      Value<String?> empleadoId,
+      Value<String?> servicioId,
+      required DateTime fechaInicio,
+      Value<DateTime?> fechaTermino,
+      Value<String?> motivoTermino,
+      Value<String?> observaciones,
+      Value<String?> observacionesTermino,
+      Value<int> rowid,
+    });
+typedef $$AsignacionLineaTelefonicaTableUpdateCompanionBuilder =
+    AsignacionLineaTelefonicaCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> lineaTelefonicaId,
+      Value<String?> empleadoId,
+      Value<String?> servicioId,
+      Value<DateTime> fechaInicio,
+      Value<DateTime?> fechaTermino,
+      Value<String?> motivoTermino,
+      Value<String?> observaciones,
+      Value<String?> observacionesTermino,
+      Value<int> rowid,
+    });
+
+final class $$AsignacionLineaTelefonicaTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $AsignacionLineaTelefonicaTable,
+          AsignacionLineaTelefonicaData
+        > {
+  $$AsignacionLineaTelefonicaTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $LineaTelefonicaTable _lineaTelefonicaIdTable(_$AppDatabase db) =>
+      db.lineaTelefonica.createAlias(
+        $_aliasNameGenerator(
+          db.asignacionLineaTelefonica.lineaTelefonicaId,
+          db.lineaTelefonica.id,
+        ),
+      );
+
+  $$LineaTelefonicaTableProcessedTableManager get lineaTelefonicaId {
+    final $_column = $_itemColumn<String>('linea_telefonica_id')!;
+
+    final manager = $$LineaTelefonicaTableTableManager(
+      $_db,
+      $_db.lineaTelefonica,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_lineaTelefonicaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EmpleadoTable _empleadoIdTable(_$AppDatabase db) =>
+      db.empleado.createAlias(
+        $_aliasNameGenerator(
+          db.asignacionLineaTelefonica.empleadoId,
+          db.empleado.id,
+        ),
+      );
+
+  $$EmpleadoTableProcessedTableManager? get empleadoId {
+    final $_column = $_itemColumn<String>('empleado_id');
+    if ($_column == null) return null;
+    final manager = $$EmpleadoTableTableManager(
+      $_db,
+      $_db.empleado,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_empleadoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(
+          db.asignacionLineaTelefonica.servicioId,
+          db.servicio.id,
+        ),
+      );
+
+  $$ServicioTableProcessedTableManager? get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id');
+    if ($_column == null) return null;
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AsignacionLineaTelefonicaTableFilterComposer
+    extends Composer<_$AppDatabase, $AsignacionLineaTelefonicaTable> {
+  $$AsignacionLineaTelefonicaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaTermino => $composableBuilder(
+    column: $table.fechaTermino,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoTermino => $composableBuilder(
+    column: $table.motivoTermino,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesTermino => $composableBuilder(
+    column: $table.observacionesTermino,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LineaTelefonicaTableFilterComposer get lineaTelefonicaId {
+    final $$LineaTelefonicaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lineaTelefonicaId,
+      referencedTable: $db.lineaTelefonica,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaTableFilterComposer(
+            $db: $db,
+            $table: $db.lineaTelefonica,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableFilterComposer get empleadoId {
+    final $$EmpleadoTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableFilterComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AsignacionLineaTelefonicaTableOrderingComposer
+    extends Composer<_$AppDatabase, $AsignacionLineaTelefonicaTable> {
+  $$AsignacionLineaTelefonicaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaTermino => $composableBuilder(
+    column: $table.fechaTermino,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoTermino => $composableBuilder(
+    column: $table.motivoTermino,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesTermino => $composableBuilder(
+    column: $table.observacionesTermino,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LineaTelefonicaTableOrderingComposer get lineaTelefonicaId {
+    final $$LineaTelefonicaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lineaTelefonicaId,
+      referencedTable: $db.lineaTelefonica,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaTableOrderingComposer(
+            $db: $db,
+            $table: $db.lineaTelefonica,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableOrderingComposer get empleadoId {
+    final $$EmpleadoTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableOrderingComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AsignacionLineaTelefonicaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AsignacionLineaTelefonicaTable> {
+  $$AsignacionLineaTelefonicaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaTermino => $composableBuilder(
+    column: $table.fechaTermino,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get motivoTermino => $composableBuilder(
+    column: $table.motivoTermino,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesTermino => $composableBuilder(
+    column: $table.observacionesTermino,
+    builder: (column) => column,
+  );
+
+  $$LineaTelefonicaTableAnnotationComposer get lineaTelefonicaId {
+    final $$LineaTelefonicaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lineaTelefonicaId,
+      referencedTable: $db.lineaTelefonica,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.lineaTelefonica,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EmpleadoTableAnnotationComposer get empleadoId {
+    final $$EmpleadoTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.empleadoId,
+      referencedTable: $db.empleado,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EmpleadoTableAnnotationComposer(
+            $db: $db,
+            $table: $db.empleado,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AsignacionLineaTelefonicaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AsignacionLineaTelefonicaTable,
+          AsignacionLineaTelefonicaData,
+          $$AsignacionLineaTelefonicaTableFilterComposer,
+          $$AsignacionLineaTelefonicaTableOrderingComposer,
+          $$AsignacionLineaTelefonicaTableAnnotationComposer,
+          $$AsignacionLineaTelefonicaTableCreateCompanionBuilder,
+          $$AsignacionLineaTelefonicaTableUpdateCompanionBuilder,
+          (
+            AsignacionLineaTelefonicaData,
+            $$AsignacionLineaTelefonicaTableReferences,
+          ),
+          AsignacionLineaTelefonicaData,
+          PrefetchHooks Function({
+            bool lineaTelefonicaId,
+            bool empleadoId,
+            bool servicioId,
+          })
+        > {
+  $$AsignacionLineaTelefonicaTableTableManager(
+    _$AppDatabase db,
+    $AsignacionLineaTelefonicaTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$AsignacionLineaTelefonicaTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$AsignacionLineaTelefonicaTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$AsignacionLineaTelefonicaTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> lineaTelefonicaId = const Value.absent(),
+                Value<String?> empleadoId = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                Value<DateTime> fechaInicio = const Value.absent(),
+                Value<DateTime?> fechaTermino = const Value.absent(),
+                Value<String?> motivoTermino = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> observacionesTermino = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionLineaTelefonicaCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                lineaTelefonicaId: lineaTelefonicaId,
+                empleadoId: empleadoId,
+                servicioId: servicioId,
+                fechaInicio: fechaInicio,
+                fechaTermino: fechaTermino,
+                motivoTermino: motivoTermino,
+                observaciones: observaciones,
+                observacionesTermino: observacionesTermino,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String lineaTelefonicaId,
+                Value<String?> empleadoId = const Value.absent(),
+                Value<String?> servicioId = const Value.absent(),
+                required DateTime fechaInicio,
+                Value<DateTime?> fechaTermino = const Value.absent(),
+                Value<String?> motivoTermino = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<String?> observacionesTermino = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionLineaTelefonicaCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                lineaTelefonicaId: lineaTelefonicaId,
+                empleadoId: empleadoId,
+                servicioId: servicioId,
+                fechaInicio: fechaInicio,
+                fechaTermino: fechaTermino,
+                motivoTermino: motivoTermino,
+                observaciones: observaciones,
+                observacionesTermino: observacionesTermino,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$AsignacionLineaTelefonicaTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            lineaTelefonicaId = false,
+            empleadoId = false,
+            servicioId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (lineaTelefonicaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.lineaTelefonicaId,
+                            referencedTable:
+                                $$AsignacionLineaTelefonicaTableReferences
+                                    ._lineaTelefonicaIdTable(db),
+                            referencedColumn:
+                                $$AsignacionLineaTelefonicaTableReferences
+                                    ._lineaTelefonicaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (empleadoId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.empleadoId,
+                            referencedTable:
+                                $$AsignacionLineaTelefonicaTableReferences
+                                    ._empleadoIdTable(db),
+                            referencedColumn:
+                                $$AsignacionLineaTelefonicaTableReferences
+                                    ._empleadoIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable:
+                                $$AsignacionLineaTelefonicaTableReferences
+                                    ._servicioIdTable(db),
+                            referencedColumn:
+                                $$AsignacionLineaTelefonicaTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AsignacionLineaTelefonicaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AsignacionLineaTelefonicaTable,
+      AsignacionLineaTelefonicaData,
+      $$AsignacionLineaTelefonicaTableFilterComposer,
+      $$AsignacionLineaTelefonicaTableOrderingComposer,
+      $$AsignacionLineaTelefonicaTableAnnotationComposer,
+      $$AsignacionLineaTelefonicaTableCreateCompanionBuilder,
+      $$AsignacionLineaTelefonicaTableUpdateCompanionBuilder,
+      (
+        AsignacionLineaTelefonicaData,
+        $$AsignacionLineaTelefonicaTableReferences,
+      ),
+      AsignacionLineaTelefonicaData,
+      PrefetchHooks Function({
+        bool lineaTelefonicaId,
+        bool empleadoId,
+        bool servicioId,
+      })
+    >;
+typedef $$LineaTelefonicaEquipoTableCreateCompanionBuilder =
+    LineaTelefonicaEquipoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String lineaTelefonicaId,
+      required String unidadId,
+      required DateTime fechaInicio,
+      Value<DateTime?> fechaFin,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$LineaTelefonicaEquipoTableUpdateCompanionBuilder =
+    LineaTelefonicaEquipoCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> lineaTelefonicaId,
+      Value<String> unidadId,
+      Value<DateTime> fechaInicio,
+      Value<DateTime?> fechaFin,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$LineaTelefonicaEquipoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $LineaTelefonicaEquipoTable,
+          LineaTelefonicaEquipoData
+        > {
+  $$LineaTelefonicaEquipoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $LineaTelefonicaTable _lineaTelefonicaIdTable(_$AppDatabase db) =>
+      db.lineaTelefonica.createAlias(
+        $_aliasNameGenerator(
+          db.lineaTelefonicaEquipo.lineaTelefonicaId,
+          db.lineaTelefonica.id,
+        ),
+      );
+
+  $$LineaTelefonicaTableProcessedTableManager get lineaTelefonicaId {
+    final $_column = $_itemColumn<String>('linea_telefonica_id')!;
+
+    final manager = $$LineaTelefonicaTableTableManager(
+      $_db,
+      $_db.lineaTelefonica,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_lineaTelefonicaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ArticuloUnidadTable _unidadIdTable(_$AppDatabase db) =>
+      db.articuloUnidad.createAlias(
+        $_aliasNameGenerator(
+          db.lineaTelefonicaEquipo.unidadId,
+          db.articuloUnidad.id,
+        ),
+      );
+
+  $$ArticuloUnidadTableProcessedTableManager get unidadId {
+    final $_column = $_itemColumn<String>('unidad_id')!;
+
+    final manager = $$ArticuloUnidadTableTableManager(
+      $_db,
+      $_db.articuloUnidad,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_unidadIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$LineaTelefonicaEquipoTableFilterComposer
+    extends Composer<_$AppDatabase, $LineaTelefonicaEquipoTable> {
+  $$LineaTelefonicaEquipoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaFin => $composableBuilder(
+    column: $table.fechaFin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LineaTelefonicaTableFilterComposer get lineaTelefonicaId {
+    final $$LineaTelefonicaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lineaTelefonicaId,
+      referencedTable: $db.lineaTelefonica,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaTableFilterComposer(
+            $db: $db,
+            $table: $db.lineaTelefonica,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloUnidadTableFilterComposer get unidadId {
+    final $$ArticuloUnidadTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableFilterComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LineaTelefonicaEquipoTableOrderingComposer
+    extends Composer<_$AppDatabase, $LineaTelefonicaEquipoTable> {
+  $$LineaTelefonicaEquipoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaFin => $composableBuilder(
+    column: $table.fechaFin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LineaTelefonicaTableOrderingComposer get lineaTelefonicaId {
+    final $$LineaTelefonicaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lineaTelefonicaId,
+      referencedTable: $db.lineaTelefonica,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaTableOrderingComposer(
+            $db: $db,
+            $table: $db.lineaTelefonica,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloUnidadTableOrderingComposer get unidadId {
+    final $$ArticuloUnidadTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableOrderingComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LineaTelefonicaEquipoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LineaTelefonicaEquipoTable> {
+  $$LineaTelefonicaEquipoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaFin =>
+      $composableBuilder(column: $table.fechaFin, builder: (column) => column);
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  $$LineaTelefonicaTableAnnotationComposer get lineaTelefonicaId {
+    final $$LineaTelefonicaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lineaTelefonicaId,
+      referencedTable: $db.lineaTelefonica,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.lineaTelefonica,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ArticuloUnidadTableAnnotationComposer get unidadId {
+    final $$ArticuloUnidadTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unidadId,
+      referencedTable: $db.articuloUnidad,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ArticuloUnidadTableAnnotationComposer(
+            $db: $db,
+            $table: $db.articuloUnidad,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LineaTelefonicaEquipoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LineaTelefonicaEquipoTable,
+          LineaTelefonicaEquipoData,
+          $$LineaTelefonicaEquipoTableFilterComposer,
+          $$LineaTelefonicaEquipoTableOrderingComposer,
+          $$LineaTelefonicaEquipoTableAnnotationComposer,
+          $$LineaTelefonicaEquipoTableCreateCompanionBuilder,
+          $$LineaTelefonicaEquipoTableUpdateCompanionBuilder,
+          (LineaTelefonicaEquipoData, $$LineaTelefonicaEquipoTableReferences),
+          LineaTelefonicaEquipoData,
+          PrefetchHooks Function({bool lineaTelefonicaId, bool unidadId})
+        > {
+  $$LineaTelefonicaEquipoTableTableManager(
+    _$AppDatabase db,
+    $LineaTelefonicaEquipoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$LineaTelefonicaEquipoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$LineaTelefonicaEquipoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$LineaTelefonicaEquipoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> lineaTelefonicaId = const Value.absent(),
+                Value<String> unidadId = const Value.absent(),
+                Value<DateTime> fechaInicio = const Value.absent(),
+                Value<DateTime?> fechaFin = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LineaTelefonicaEquipoCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                lineaTelefonicaId: lineaTelefonicaId,
+                unidadId: unidadId,
+                fechaInicio: fechaInicio,
+                fechaFin: fechaFin,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String lineaTelefonicaId,
+                required String unidadId,
+                required DateTime fechaInicio,
+                Value<DateTime?> fechaFin = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LineaTelefonicaEquipoCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                lineaTelefonicaId: lineaTelefonicaId,
+                unidadId: unidadId,
+                fechaInicio: fechaInicio,
+                fechaFin: fechaFin,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$LineaTelefonicaEquipoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            lineaTelefonicaId = false,
+            unidadId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (lineaTelefonicaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.lineaTelefonicaId,
+                            referencedTable:
+                                $$LineaTelefonicaEquipoTableReferences
+                                    ._lineaTelefonicaIdTable(db),
+                            referencedColumn:
+                                $$LineaTelefonicaEquipoTableReferences
+                                    ._lineaTelefonicaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (unidadId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.unidadId,
+                            referencedTable:
+                                $$LineaTelefonicaEquipoTableReferences
+                                    ._unidadIdTable(db),
+                            referencedColumn:
+                                $$LineaTelefonicaEquipoTableReferences
+                                    ._unidadIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LineaTelefonicaEquipoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LineaTelefonicaEquipoTable,
+      LineaTelefonicaEquipoData,
+      $$LineaTelefonicaEquipoTableFilterComposer,
+      $$LineaTelefonicaEquipoTableOrderingComposer,
+      $$LineaTelefonicaEquipoTableAnnotationComposer,
+      $$LineaTelefonicaEquipoTableCreateCompanionBuilder,
+      $$LineaTelefonicaEquipoTableUpdateCompanionBuilder,
+      (LineaTelefonicaEquipoData, $$LineaTelefonicaEquipoTableReferences),
+      LineaTelefonicaEquipoData,
+      PrefetchHooks Function({bool lineaTelefonicaId, bool unidadId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -117108,4 +120275,11 @@ class $AppDatabaseManager {
       $$LineaTelefonicaTableTableManager(_db, _db.lineaTelefonica);
   $$LineaTelefonicaPlanTableTableManager get lineaTelefonicaPlan =>
       $$LineaTelefonicaPlanTableTableManager(_db, _db.lineaTelefonicaPlan);
+  $$AsignacionLineaTelefonicaTableTableManager get asignacionLineaTelefonica =>
+      $$AsignacionLineaTelefonicaTableTableManager(
+        _db,
+        _db.asignacionLineaTelefonica,
+      );
+  $$LineaTelefonicaEquipoTableTableManager get lineaTelefonicaEquipo =>
+      $$LineaTelefonicaEquipoTableTableManager(_db, _db.lineaTelefonicaEquipo);
 }

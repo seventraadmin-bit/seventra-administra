@@ -59,6 +59,12 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
   }
 
   @override
+  Future<AsignacionData?> obtenerActivaPorUnidad(String unidadId) {
+    return (_db.select(_db.asignacion)..where((t) => t.unidadId.equals(unidadId) & t.estatus.equals('activa')))
+        .getSingleOrNull();
+  }
+
+  @override
   Future<DescuentoInventarioData?> obtenerDescuentoPorId(String id) {
     return (_db.select(_db.descuentoInventario)..where((t) => t.id.equals(id))).getSingleOrNull();
   }

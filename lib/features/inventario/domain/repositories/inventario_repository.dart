@@ -24,6 +24,14 @@ abstract interface class InventarioRepository {
   /// que saber primero a qué Artículo pertenece.
   Future<List<ArticuloUnidadData>> listarTodasUnidades();
 
+  /// Todas las unidades que tienen una fila `ArticuloUnidadTelefono`
+  /// (Etapa 9B) — la única señal real de "es un teléfono" que existe
+  /// hoy en Inventario (no hay bandera de categoría). Usado por
+  /// Telefonía (dominio ajeno) para el selector de equipo — nunca
+  /// vuelve a capturar marca/modelo/IMEI, solo filtra sobre lo que ya
+  /// existe aquí.
+  Future<List<ArticuloUnidadData>> listarUnidadesTelefono({String? estatus});
+
   Future<List<MovimientoInventarioData>> listarMovimientos({String? articuloId, String? varianteId, String? unidadId});
 
   /// Entrada de un Artículo por cantidad (con o sin variante) — crea

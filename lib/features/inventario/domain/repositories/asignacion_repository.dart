@@ -26,6 +26,14 @@ abstract interface class AsignacionRepository {
   /// expediente del Artículo.
   Future<List<AsignacionData>> listarPorUnidad(String unidadId);
 
+  /// La Asignación activa de una unidad serializada, si existe (Etapa
+  /// 9B) — mismo criterio que `AsignacionVehiculoRepository
+  /// .obtenerActivaPorVehiculo`. Usada por Telefonía (dominio ajeno) al
+  /// componer la sincronización de custodia de un equipo asociado a una
+  /// línea — nunca escribe aquí, solo lee para decidir si compone o no
+  /// (ver el doc comment de `LineaTelefonicaEquipoRepositoryImpl`).
+  Future<AsignacionData?> obtenerActivaPorUnidad(String unidadId);
+
   Future<DescuentoInventarioData?> obtenerDescuentoPorId(String id);
 
   Future<DescuentoInventarioData?> obtenerDescuentoPorAsignacion(String asignacionId);

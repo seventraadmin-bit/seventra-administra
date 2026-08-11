@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 34;
+const _currentSchemaVersion = 35;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -7892,6 +7892,213 @@ void main() {
             basePlan.copyWith(fechaFinPermanencia: Value(DateTime(2027, 1, 1))),
           );
       expect(plan.costoMensual, 39900);
+
+      await db.close();
+    },
+  );
+
+  test(
+    '35.json coincide con el esquema final de la Etapa 9B (tablas nuevas AsignacionLineaTelefonica, '
+    'LineaTelefonicaEquipo + índice único parcial idx_asignacion_linea_telefonica_vigente) — '
+    'asignaciones y equipo asociado de Telefonía',
+    () async {
+      final schema = await verifier.schemaAt(35);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['asignacion_linea_telefonica', 'linea_telefonica_equipo']));
+
+      final sqlAsignacion =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_linea_telefonica'")
+                  .single['sql']
+              as String;
+      expect(
+        sqlAsignacion,
+        contains(
+          'CHECK ((empleado_id IS NOT NULL AND servicio_id IS NULL) OR '
+          '(empleado_id IS NULL AND servicio_id IS NOT NULL))',
+        ),
+      );
+      expect(sqlAsignacion, contains('CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)'));
+
+      final sqlIndiceVigente =
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_asignacion_linea_telefonica_vigente'",
+                  )
+                  .single['sql']
+              as String;
+      expect(
+        sqlIndiceVigente,
+        'CREATE UNIQUE INDEX idx_asignacion_linea_telefonica_vigente '
+        'ON asignacion_linea_telefonica (linea_telefonica_id) WHERE fecha_termino IS NULL',
+      );
+
+      final sqlEquipo =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica_equipo'")
+                  .single['sql']
+              as String;
+      expect(sqlEquipo, contains('CHECK (fecha_fin IS NULL OR fecha_fin >= fecha_inicio)'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 34 → 35 conserva una LineaTelefonica real y crea las tablas de asignación/equipo vacías',
+    () async {
+      final schemaV34 = await verifier.schemaAt(34);
+      final raw = schemaV34.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO linea_telefonica (
+        id, codigo, numero, operador, modalidad_sim, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'linea-real', 'TEL-000001', '7221234567', 'telcel', 'fisica', 'activa', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV34.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final lineas = await db.select(db.lineaTelefonica).get();
+      expect(lineas, hasLength(1), reason: 'ninguna LineaTelefonica real debe perderse en una migración puramente aditiva');
+      expect(lineas.single.numero, '7221234567');
+
+      final asignaciones = await db.select(db.asignacionLineaTelefonica).get();
+      expect(asignaciones, isEmpty, reason: 'AsignacionLineaTelefonica es tabla nueva en 9B, sin backfill');
+      final equipos = await db.select(db.lineaTelefonicaEquipo).get();
+      expect(equipos, isEmpty, reason: 'LineaTelefonicaEquipo es tabla nueva en 9B, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK/índice único de AsignacionLineaTelefonica/LineaTelefonicaEquipo tras la migración: exactamente uno de '
+    'empleado/servicio, fecha_termino/fecha_fin coherentes, una sola asignación vigente por línea',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final linea = await db.into(db.lineaTelefonica).insertReturning(
+            LineaTelefonicaCompanion.insert(codigo: 'TEL-000001', operador: 'telcel', modalidadSim: 'fisica'),
+          );
+      final empleado = await db.into(db.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+
+      final baseAsignacion = AsignacionLineaTelefonicaCompanion.insert(
+        lineaTelefonicaId: linea.id,
+        fechaInicio: DateTime(2026, 1, 5),
+      );
+
+      await expectLater(
+        db.into(db.asignacionLineaTelefonica).insert(baseAsignacion),
+        throwsA(anything),
+        reason: 'ni empleado ni servicio poblados debe rechazarse',
+      );
+      await expectLater(
+        db.into(db.asignacionLineaTelefonica).insert(
+              baseAsignacion.copyWith(empleadoId: Value(empleado.id), servicioId: Value('servicio-inexistente')),
+            ),
+        throwsA(anything),
+        reason: 'empleado y servicio poblados a la vez debe rechazarse',
+      );
+      await expectLater(
+        db.into(db.asignacionLineaTelefonica).insert(
+              baseAsignacion.copyWith(empleadoId: Value(empleado.id), fechaTermino: Value(DateTime(2026, 1, 1))),
+            ),
+        throwsA(anything),
+        reason: 'fecha_termino anterior a fecha_inicio debe rechazarse',
+      );
+
+      final asignacion = await db.into(db.asignacionLineaTelefonica).insertReturning(
+            baseAsignacion.copyWith(empleadoId: Value(empleado.id)),
+          );
+      expect(asignacion.empleadoId, empleado.id);
+
+      final empleado2 = await db.into(db.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 2,
+              nombres: 'Ana',
+              apellidoPaterno: 'López',
+              sexo: 'femenino',
+              fechaNacimiento: DateTime(1992, 1, 1),
+              curp: 'LOAA920101MDFXXX02',
+              rfc: 'LOAA920101AB2',
+              nss: '12345678902',
+              estadoCivil: 'soltera',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 2,
+            ),
+          );
+      await expectLater(
+        db.into(db.asignacionLineaTelefonica).insert(
+              AsignacionLineaTelefonicaCompanion.insert(
+                lineaTelefonicaId: linea.id,
+                fechaInicio: DateTime(2026, 2, 1),
+                empleadoId: const Value('otro-empleado-no-usado'),
+              ).copyWith(empleadoId: Value(empleado2.id)),
+            ),
+        throwsA(anything),
+        reason: 'idx_asignacion_linea_telefonica_vigente rechaza una segunda asignación vigente para la misma línea',
+      );
+
+      final categoria = await db.into(db.categoriaArticulo).insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'),
+          );
+      final articulo = await db.into(db.articulo).insertReturning(
+            ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Smartphone', manejaSerie: const Value(true)),
+          );
+      final unidad = await db.into(db.articuloUnidad).insertReturning(
+            ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-0001'),
+          );
+
+      final baseEquipo = LineaTelefonicaEquipoCompanion.insert(
+        lineaTelefonicaId: linea.id,
+        unidadId: unidad.id,
+        fechaInicio: DateTime(2026, 1, 5),
+      );
+      await expectLater(
+        db.into(db.lineaTelefonicaEquipo).insert(baseEquipo.copyWith(fechaFin: Value(DateTime(2026, 1, 1)))),
+        throwsA(anything),
+        reason: 'fecha_fin anterior a fecha_inicio debe rechazarse',
+      );
+
+      final equipo = await db.into(db.lineaTelefonicaEquipo).insertReturning(baseEquipo);
+      expect(equipo.unidadId, unidad.id);
 
       await db.close();
     },

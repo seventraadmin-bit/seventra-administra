@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/asignacion_linea_telefonica_repository_impl.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_equipo_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_plan_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/tables/linea_telefonica_table.dart';
@@ -30,7 +34,14 @@ void main() {
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
-    lineaRepo = LineaTelefonicaRepositoryImpl(db);
+    final asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
+    final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(
+      db,
+      asignacionLineaRepo,
+      AsignacionRepositoryImpl(db),
+      InventarioRepositoryImpl(db),
+    );
+    lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoRepo);
     planRepo = LineaTelefonicaPlanRepositoryImpl(db);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 

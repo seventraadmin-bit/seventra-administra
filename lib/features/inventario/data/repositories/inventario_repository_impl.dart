@@ -36,6 +36,16 @@ class InventarioRepositoryImpl implements InventarioRepository {
   }
 
   @override
+  Future<List<ArticuloUnidadData>> listarUnidadesTelefono({String? estatus}) {
+    final query = _db.select(_db.articuloUnidad).join([
+      innerJoin(_db.articuloUnidadTelefono, _db.articuloUnidadTelefono.unidadId.equalsExp(_db.articuloUnidad.id)),
+    ])
+      ..orderBy([OrderingTerm.asc(_db.articuloUnidad.codigo)]);
+    if (estatus != null) query.where(_db.articuloUnidad.estatus.equals(estatus));
+    return query.map((row) => row.readTable(_db.articuloUnidad)).get();
+  }
+
+  @override
   Future<List<MovimientoInventarioData>> listarMovimientos({String? articuloId, String? varianteId, String? unidadId}) {
     final query = _db.select(_db.movimientoInventario);
     if (articuloId != null) query.where((t) => t.articuloId.equals(articuloId));

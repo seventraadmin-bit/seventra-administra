@@ -2,12 +2,24 @@ import 'package:drift/drift.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../../domain/repositories/asignacion_linea_telefonica_repository.dart';
+import '../../domain/repositories/linea_telefonica_equipo_repository.dart';
 import '../../domain/repositories/linea_telefonica_repository.dart';
 
 class LineaTelefonicaRepositoryImpl implements LineaTelefonicaRepository {
-  LineaTelefonicaRepositoryImpl(this._db);
+  LineaTelefonicaRepositoryImpl(this._db, this._asignacionRepository, this._equipoRepository);
 
   final AppDatabase _db;
+
+  /// Repositorio compone repositorio (Etapa 9B) — mismo criterio que
+  /// `VehiculoRepositoryImpl` con `AsignacionVehiculoRepository`:
+  /// `darDeBaja` necesita cerrar la asignación y el equipo vigentes de
+  /// la línea (si existen) en la misma transacción que la baja misma.
+  /// `_equipoRepository.cerrarPorBajaLinea` a su vez libera la custodia
+  /// en Inventario cuando coincide (ver su doc comment) — nunca da de
+  /// baja ni toca el teléfono físico en sí.
+  final AsignacionLineaTelefonicaRepository _asignacionRepository;
+  final LineaTelefonicaEquipoRepository _equipoRepository;
 
   @override
   Future<LineaTelefonicaData?> obtenerPorId(String id) {
@@ -109,6 +121,8 @@ class LineaTelefonicaRepositoryImpl implements LineaTelefonicaRepository {
     String? observacionesBaja,
   }) {
     return _db.transaction(() async {
+      await _equipoRepository.cerrarPorBajaLinea(lineaTelefonicaId: lineaTelefonicaId, fecha: fechaBaja);
+      await _asignacionRepository.cerrarPorBajaLinea(lineaTelefonicaId: lineaTelefonicaId, fecha: fechaBaja);
       await (_db.update(_db.lineaTelefonica)..where((t) => t.id.equals(lineaTelefonicaId))).write(
         LineaTelefonicaCompanion(
           estatus: const Value('baja'),

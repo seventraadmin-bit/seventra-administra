@@ -540,6 +540,23 @@ void main() {
 
       expect(find.byKey(const Key('telefonia_boton_nueva_linea')), findsNothing);
       expect(find.text(l10n.lineaTelefonicaExpedienteSeccionDatos), findsOneWidget);
+
+      // Etapa 9B: el expediente ya expone Asignar/Asociar equipo — solo
+      // se prueba que la UI está montada y el diálogo abre, la lógica de
+      // negocio (asignación, equipo, consistencia con Inventario) ya
+      // está cubierta por pruebas unitarias dedicadas.
+      expect(find.text(l10n.lineaTelefonicaBotonAsignar), findsOneWidget);
+      expect(find.text(l10n.lineaTelefonicaBotonAsociarEquipo), findsOneWidget);
+
+      await tester.ensureVisible(find.text(l10n.lineaTelefonicaBotonAsignar));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.lineaTelefonicaBotonAsignar));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.lineaTelefonicaAsignarDialogoTitulo), findsOneWidget);
+
+      await tester.tap(find.text(l10n.lineaTelefonicaBotonCancelar));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.lineaTelefonicaAsignarDialogoTitulo), findsNothing);
     },
   );
 }

@@ -7,6 +7,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
+import 'package:riseg_one/features/telefonia/presentation/widgets/linea_telefonica_en_unidad_section.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 
@@ -53,9 +54,18 @@ Future<void> mostrarDialogoHistorialUnidad(BuildContext context, WidgetRef ref, 
       title: Text('${l10n.asignacionSeccionHistorial} — ${unidad.codigo}'),
       content: SizedBox(
         width: 420,
-        child: asignaciones.isEmpty
-            ? Text(l10n.asignacionHistorialVacio)
-            : Column(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            LineaTelefonicaEnUnidadSection(unidadId: unidad.id),
+            const SizedBox(height: AppSpacing.md),
+            const Divider(),
+            const SizedBox(height: AppSpacing.md),
+            if (asignaciones.isEmpty)
+              Text(l10n.asignacionHistorialVacio)
+            else
+              Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   for (final a in asignaciones)
@@ -83,6 +93,8 @@ Future<void> mostrarDialogoHistorialUnidad(BuildContext context, WidgetRef ref, 
                     ),
                 ],
               ),
+          ],
+        ),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: Text(l10n.cerrarAsignacionBotonCancelar)),

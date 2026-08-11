@@ -54,6 +54,8 @@ import '../../features/inventario/data/tables/categoria_articulo_table.dart';
 import '../../features/inventario/data/tables/descuento_inventario_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_attachment_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
+import '../../features/telefonia/data/tables/asignacion_linea_telefonica_table.dart';
+import '../../features/telefonia/data/tables/linea_telefonica_equipo_table.dart';
 import '../../features/telefonia/data/tables/linea_telefonica_plan_table.dart';
 import '../../features/telefonia/data/tables/linea_telefonica_table.dart';
 import '../../features/vehiculos/data/tables/asignacion_vehiculo_table.dart';
@@ -62,6 +64,7 @@ import '../../features/vehiculos/data/tables/vehiculo_kilometraje_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_mantenimiento_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_table.dart';
 import 'migrations/migrar_asignacion_attachment_v29.dart';
+import 'migrations/migrar_asignacion_linea_telefonica_v35.dart';
 import 'migrations/migrar_asignacion_vehiculo_v31.dart';
 import 'migrations/migrar_linea_telefonica_v34.dart';
 import 'migrations/migrar_vehiculo_v30.dart';
@@ -203,12 +206,14 @@ class AppMetadata extends Table {
   VehiculoMantenimientoAttachment,
   LineaTelefonica,
   LineaTelefonicaPlan,
+  AsignacionLineaTelefonica,
+  LineaTelefonicaEquipo,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 34;
+  int get schemaVersion => 35;
 
   @override
   MigrationStrategy get migration {
@@ -724,6 +729,13 @@ class AppDatabase extends _$AppDatabase {
         // exacto.
         if (to >= 34 && from <= 33) {
           await migrarLineaTelefonicaV34(this, m);
+        }
+        // Aditiva (Etapa 9B): `AsignacionLineaTelefonica`/
+        // `LineaTelefonicaEquipo` + índice único parcial de
+        // AsignacionLineaTelefonica. Tablas enteramente nuevas, así que
+        // `from <= 34` es seguro sin acotar un origen exacto.
+        if (to >= 35 && from <= 34) {
+          await migrarAsignacionLineaTelefonicaV35(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,
