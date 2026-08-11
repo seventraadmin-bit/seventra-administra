@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,8 +7,10 @@ import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/core/permissions/modulos_permiso.dart';
 
 import '../usuarios_controller.dart';
+import 'permiso_labels.dart';
 
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
 
@@ -20,6 +24,51 @@ String _tipoEventoLabel(AppLocalizations l10n, String tipoEvento) {
     'permisosModificados' => l10n.usuarioEventoPermisosModificados,
     _ => tipoEvento,
   };
+}
+
+/// Etiqueta legible de un código de permiso para la auditoría — nunca
+/// el código técnico crudo (mismo criterio que la matriz de permisos).
+String _etiquetaPermiso(AppLocalizations l10n, String codigo) {
+  final partes = codigo.split('.');
+  if (partes.length == 2) {
+    for (final accion in AccionBase.values) {
+      if (accion.name == partes[1]) {
+        return '${moduloPermisoLabel(l10n, partes[0])} · ${accionBaseLabel(l10n, accion)}';
+      }
+    }
+  }
+  return permisoEspecialLabel(l10n, codigo);
+}
+
+/// Resumen del diff de un evento `permisosModificados` (Etapa 11B) —
+/// `datosRelevantes` guarda `{"agregados": [...], "removidos": [...]}`
+/// (ver `PermisoUsuarioRepositoryImpl.guardar`). `null` si el evento no
+/// es de este tipo o no trae datos (nunca debería faltar, pero la UI de
+/// auditoría no debe romperse por un dato histórico incompleto).
+Widget? _diffPermisos(AppLocalizations l10n, UsuarioEventoData evento) {
+  if (evento.tipoEvento != 'permisosModificados' || evento.datosRelevantes == null) return null;
+  final Map<String, dynamic> datos;
+  try {
+    datos = jsonDecode(evento.datosRelevantes!) as Map<String, dynamic>;
+  } catch (_) {
+    return null;
+  }
+  final agregados = (datos['agregados'] as List<dynamic>? ?? []).cast<String>();
+  final removidos = (datos['removidos'] as List<dynamic>? ?? []).cast<String>();
+  if (agregados.isEmpty && removidos.isEmpty) return null;
+
+  return Padding(
+    padding: const EdgeInsets.only(top: AppSpacing.xxs),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final codigo in agregados)
+          Text('+ ${_etiquetaPermiso(l10n, codigo)}', style: AppTypography.caption),
+        for (final codigo in removidos)
+          Text('− ${_etiquetaPermiso(l10n, codigo)}', style: AppTypography.caption),
+      ],
+    ),
+  );
 }
 
 /// Historial administrativo de un Usuario (Etapa 11A) — solo lectura,
@@ -73,6 +122,7 @@ Future<void> mostrarDialogoHistorialUsuario(BuildContext context, WidgetRef ref,
                             ),
                             if (evento.observacion != null)
                               Text(evento.observacion!, style: AppTypography.body),
+                            if (_diffPermisos(l10n, evento) case final diff?) diff,
                           ],
                         ),
                       ),

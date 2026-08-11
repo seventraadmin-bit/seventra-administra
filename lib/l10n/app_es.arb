@@ -3212,5 +3212,32 @@
   "usuarioEventoContrasenaCambiada": "Contraseña cambiada",
   "usuarioEventoActivado": "Usuario activado",
   "usuarioEventoDesactivado": "Usuario desactivado",
-  "usuarioEventoPermisosModificados": "Permisos modificados"
+  "usuarioEventoPermisosModificados": "Permisos modificados",
+
+  "usuariosAccionPermisos": "Administrar permisos",
+
+  "permisosDialogoTitulo": "Permisos — {nombre}",
+  "@permisosDialogoTitulo": {
+    "placeholders": { "nombre": { "type": "String" } }
+  },
+  "permisosMaestroMensaje": "Este usuario es Maestro: tiene todos los permisos actuales y futuros automáticamente. No se administran permisos individuales para un Maestro.",
+  "permisosBotonGuardar": "Guardar permisos",
+  "permisosGuardarExito": "Permisos actualizados.",
+  "permisosBotonMarcarTodo": "Marcar todo",
+  "permisosBotonQuitarTodo": "Quitar todo",
+
+  "permisoModuloNomina": "Nómina",
+  "permisoAccionVer": "Ver",
+  "permisoAccionCrear": "Crear",
+  "permisoAccionModificar": "Modificar",
+  "permisoAccionCancelarArchivar": "Cancelar/Archivar",
+  "permisoAccionEliminar": "Eliminar",
+  "permisoPersonalCambiarSueldo": "Cambiar sueldo",
+  "permisoNominaCerrar": "Cerrar nómina",
+  "permisoNominaPagar": "Pagar nómina",
+  "permisoUsuariosAdministrar": "Administrar usuarios y permisos",
+
+  "accesoDenegadoTitulo": "Acceso denegado",
+  "accesoDenegadoMensaje": "No tienes permiso para ver este módulo. Si crees que deberías tener acceso, contacta a un administrador.",
+  "accesoDenegadoBotonDashboard": "Ir al Dashboard"
 }

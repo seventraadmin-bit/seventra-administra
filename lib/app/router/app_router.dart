@@ -28,10 +28,12 @@ import '../../features/usuarios/usuarios_providers.dart';
 import '../../features/vehiculos/presentation/vehiculo_expediente_screen.dart';
 import '../../features/vehiculos/presentation/vehiculos_shell_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
+import '../shell/acceso_denegado_screen.dart';
 import '../shell/app_shell_screen.dart';
 import '../shell/dashboard_welcome_screen.dart';
 import '../shell/module_placeholder_screen.dart';
 import '../shell/shell_destinations.dart';
+import '../shell/shell_permissions.dart';
 
 /// Construye la configuración de rutas de RISEG ONE.
 ///
@@ -47,14 +49,16 @@ import '../shell/shell_destinations.dart';
 GoRouter createAppRouter() {
   return GoRouter(
     initialLocation: '/dashboard',
-    // Etapa 11A: además del `/` → `/dashboard` de siempre, exige el
-    // bootstrap del primer Maestro y la sesión antes de cualquier otra
-    // ruta. `ProviderScope.containerOf(context)` es el patrón estándar
-    // para leer providers de Riverpod desde un callback de GoRouter que
-    // solo recibe `BuildContext` — sin esto no hay forma de consultar
-    // `contarUsuariosProvider`/`sesionControllerProvider` aquí. No hay
-    // gate por permiso todavía (llega en la Etapa 11B): cualquier
-    // sesión válida puede navegar a cualquier módulo.
+    // Además del `/` → `/dashboard` de siempre, exige el bootstrap del
+    // primer Maestro y la sesión antes de cualquier otra ruta (Etapa
+    // 11A), y desde la Etapa 11B también el permiso `<modulo>.ver` de
+    // cada ruta de módulo (`permisoRequeridoParaRuta`, fuente única
+    // compartida con el filtrado del sidebar en `app_shell_screen.dart`).
+    // `ProviderScope.containerOf(context)` es el patrón estándar para
+    // leer providers de Riverpod desde un callback de GoRouter que solo
+    // recibe `BuildContext` — sin esto no hay forma de consultar
+    // `contarUsuariosProvider`/`sesionControllerProvider`/
+    // `permissionServiceProvider` aquí.
     redirect: (context, state) async {
       final container = ProviderScope.containerOf(context);
       final path = state.uri.path;
@@ -70,11 +74,24 @@ GoRouter createAppRouter() {
         return path == '/login' ? null : '/login';
       }
       if (path == '/login' || path == '/') return '/dashboard';
+
+      // Herramienta solo de desarrollo (ni siquiera se registra fuera de
+      // `Env.dev` — ver más abajo) — no tiene módulo ni permiso propio.
+      if (path.startsWith('/dev/')) return null;
+
+      final permisoRequerido = permisoRequeridoParaRuta(path);
+      if (permisoRequerido != null && !container.read(permissionServiceProvider).hasCode(permisoRequerido)) {
+        // Nunca construye ni muestra contenido del módulo protegido, ni
+        // brevemente — el `redirect` corre antes de que esa ruta llegue
+        // a construirse.
+        return path == '/acceso-denegado' ? null : '/acceso-denegado';
+      }
       return null;
     },
     routes: [
       GoRoute(path: '/bootstrap-maestro', builder: (context, state) => const BootstrapMaestroScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(path: '/acceso-denegado', builder: (context, state) => const AccesoDenegadoScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => AppShellScreen(navigationShell: navigationShell),
         branches: [

@@ -66,12 +66,14 @@ import '../../features/vehiculos/data/tables/vehiculo_table.dart';
 import '../../features/compras/data/tables/compra_attachment_table.dart';
 import '../../features/compras/data/tables/compra_partida_table.dart';
 import '../../features/compras/data/tables/compra_table.dart';
+import '../../features/usuarios/data/tables/permiso_usuario_table.dart';
 import '../../features/usuarios/data/tables/usuario_table.dart';
 import 'migrations/migrar_asignacion_attachment_v29.dart';
 import 'migrations/migrar_asignacion_linea_telefonica_v35.dart';
 import 'migrations/migrar_asignacion_vehiculo_v31.dart';
 import 'migrations/migrar_compra_v37.dart';
 import 'migrations/migrar_usuario_v38.dart';
+import 'migrations/migrar_permiso_usuario_v39.dart';
 import 'migrations/migrar_linea_telefonica_v34.dart';
 import 'migrations/migrar_recarga_linea_telefonica_v36.dart';
 import 'migrations/migrar_vehiculo_v30.dart';
@@ -223,12 +225,13 @@ class AppMetadata extends Table {
   CompraEvento,
   Usuario,
   UsuarioEvento,
+  PermisoUsuario,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 38;
+  int get schemaVersion => 39;
 
   @override
   MigrationStrategy get migration {
@@ -776,6 +779,12 @@ class AppDatabase extends _$AppDatabase {
         // exacto. `PermisoUsuario` llega en la Etapa 11B.
         if (to >= 38 && from <= 37) {
           await migrarUsuarioV38(this, m);
+        }
+        // Aditiva (Etapa 11B): `PermisoUsuario` — permisos dinámicos por
+        // Usuario. Tabla enteramente nueva, así que `from <= 38` es
+        // seguro sin acotar un origen exacto.
+        if (to >= 39 && from <= 38) {
+          await migrarPermisoUsuarioV39(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

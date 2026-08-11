@@ -1,47 +1,20 @@
-import '../config/env.dart';
-
-/// Contrato para consultar permisos del usuario actual.
+/// Contrato para consultar permisos del usuario actual (Etapa 11B).
 ///
-/// La implementación real (respaldada por Rol/Permiso) todavía no existe —
-/// se construye cuando el módulo de permisos del Core se implemente. Hasta
-/// entonces, cualquier consumidor de este contrato debe seguir funcionando
-/// sin cambios cuando esa implementación real llegue.
+/// La implementación real (`SessionPermissionService`, en
+/// `features/usuarios/usuarios_providers.dart`) queda ligada a la
+/// sesión activa: sin sesión niega todo, el Maestro concede todo sin
+/// tener filas individuales de permiso, y cualquier otro usuario se
+/// resuelve contra sus `PermisoUsuario` reales. Vive en `core/` como
+/// interfaz pura (sin depender de `features/usuarios`) para que
+/// cualquier capa pueda consultarlo sin importar el dominio de sesión
+/// completo — mismo criterio de inversión de dependencias que el resto
+/// del proyecto.
 abstract class PermissionService {
-  bool hasPermission(String modulo, String accion);
-}
+  /// `codigo` con la forma `'modulo.accion'` (ej. `'personal.ver'`,
+  /// `'nomina.cerrar'`).
+  bool hasCode(String codigo);
 
-/// Implementación de SOLO DESARROLLO.
-///
-/// Permite explícitamente todo, para poder navegar y probar la aplicación
-/// mientras el sistema real de Roles/Permisos no existe. Su nombre es
-/// deliberadamente explícito para que nunca pase inadvertida si terminara
-/// mal cableada.
-class DevelopmentPermissionService implements PermissionService {
-  const DevelopmentPermissionService();
-
-  @override
-  bool hasPermission(String modulo, String accion) => true;
-}
-
-/// Implementación provisional para cualquier entorno que no sea desarrollo.
-///
-/// Niega cualquier permiso no definido explícitamente ("deny by default").
-/// Es intencionalmente conservadora: es preferible que una pantalla se
-/// muestre de más restringida a que otorgue un acceso no autorizado.
-class DenyByDefaultPermissionService implements PermissionService {
-  const DenyByDefaultPermissionService();
-
-  @override
-  bool hasPermission(String modulo, String accion) => false;
-}
-
-/// Selecciona la implementación correcta según el entorno.
-///
-/// Solo [Env.dev] obtiene la implementación permisiva; cualquier otro valor
-/// (incluido uno mal configurado o desconocido) recibe la implementación
-/// que niega por defecto.
-PermissionService resolvePermissionService(Env env) {
-  return env.isDev
-      ? const DevelopmentPermissionService()
-      : const DenyByDefaultPermissionService();
+  /// Azúcar sobre [hasCode] para los llamadores que ya tienen `modulo`/
+  /// `accion` por separado (ej. el gate del router/sidebar).
+  bool hasPermission(String modulo, String accion) => hasCode('$modulo.$accion');
 }

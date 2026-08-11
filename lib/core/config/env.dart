@@ -2,8 +2,10 @@
 ///
 /// Se resuelve en tiempo de compilación mediante:
 /// `--dart-define=APP_ENV=dev` o `--dart-define=APP_ENV=prod`.
-/// Sin ese flag, se asume `prod` por seguridad (ver [PermissionService]:
-/// el entorno por defecto nunca debe habilitar accesos de desarrollo).
+/// Sin ese flag, se asume `prod` por seguridad. Desde la Etapa 11B,
+/// `PermissionService` ya no depende de este entorno — se resuelve
+/// siempre contra la sesión real (`SessionPermissionService`), nunca
+/// por un bypass de desarrollo.
 enum Env {
   dev,
   prod;

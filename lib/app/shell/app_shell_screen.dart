@@ -3,7 +3,9 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/usuarios/usuarios_providers.dart';
 import 'shell_destinations.dart';
+import 'shell_permissions.dart';
 import 'sidebar_mode_controller.dart';
 import 'widgets/app_breadcrumb.dart';
 import 'widgets/app_sidebar.dart';
@@ -18,6 +20,15 @@ import 'widgets/app_top_bar.dart';
 /// módulos pesados, esto puede aumentar el uso de memoria — se evaluará
 /// con datos reales de uso antes de optimizar (ej. descargar ramas
 /// inactivas), no de forma preventiva.
+///
+/// Etapa 11B: las ramas del `StatefulShellRoute` siguen siendo las 11
+/// completas — no se pueden quitar dinámicamente (se arman una sola vez,
+/// sin `BuildContext`, ver `app_router.dart`). Lo que sí es dinámico es
+/// qué subconjunto se **muestra** en el sidebar, así que aquí se filtra
+/// la lista completa por permiso y se remapea cada índice mostrado a su
+/// índice real de rama antes de navegar — `AppSidebar` en sí no sabe
+/// nada de permisos, sigue recibiendo una lista de destinos + índice
+/// activo ya resueltos.
 class AppShellScreen extends ConsumerWidget {
   const AppShellScreen({required this.navigationShell, super.key});
 
@@ -26,9 +37,29 @@ class AppShellScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final destinations = buildShellDestinations(l10n);
+    final allDestinations = buildShellDestinations(l10n);
+    final permissionService = ref.watch(permissionServiceProvider);
     final mode = ref.watch(sidebarModeControllerProvider);
-    final activeDestination = destinations[navigationShell.currentIndex];
+
+    final visibleDestinations = <ShellDestination>[];
+    final visibleToRealIndex = <int>[];
+    for (var i = 0; i < allDestinations.length; i++) {
+      final requerido = permisoRequeridoParaRuta(allDestinations[i].path);
+      if (requerido == null || permissionService.hasCode(requerido)) {
+        visibleDestinations.add(allDestinations[i]);
+        visibleToRealIndex.add(i);
+      }
+    }
+
+    final activeRealIndex = navigationShell.currentIndex;
+    // -1 solo podría darse si el `redirect` del router dejara pasar una
+    // rama sin permiso (no debería ocurrir — es la misma función
+    // `permisoRequeridoParaRuta` la que gatea ahí) — Dashboard (sin
+    // permiso propio) siempre está en la lista visible en la posición 0,
+    // así que es el resguardo seguro.
+    final activeVisibleIndexRaw = visibleToRealIndex.indexOf(activeRealIndex);
+    final activeVisibleIndex = activeVisibleIndexRaw == -1 ? 0 : activeVisibleIndexRaw;
+    final activeDestination = allDestinations[activeRealIndex];
 
     return Scaffold(
       key: const Key('app_shell'),
@@ -43,13 +74,13 @@ class AppShellScreen extends ConsumerWidget {
           return Row(
             children: [
               AppSidebar(
-                destinations: destinations,
-                activeIndex: navigationShell.currentIndex,
+                destinations: visibleDestinations,
+                activeIndex: activeVisibleIndex,
                 collapsed: collapsed,
-                onDestinationSelected: (index) => navigationShell.goBranch(
-                  index,
-                  initialLocation: index == navigationShell.currentIndex,
-                ),
+                onDestinationSelected: (index) {
+                  final realIndex = visibleToRealIndex[index];
+                  navigationShell.goBranch(realIndex, initialLocation: realIndex == navigationShell.currentIndex);
+                },
                 onToggleCollapse: () => ref
                     .read(sidebarModeControllerProvider.notifier)
                     .toggleFrom(currentlyCollapsed: collapsed),

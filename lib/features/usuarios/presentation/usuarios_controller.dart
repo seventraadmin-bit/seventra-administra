@@ -8,6 +8,7 @@ import '../domain/usecases/cambiar_contrasena_usuario_usecase.dart';
 import '../domain/usecases/corregir_usuario_usecase.dart';
 import '../domain/usecases/crear_usuario_usecase.dart';
 import '../domain/usecases/desactivar_usuario_usecase.dart';
+import '../domain/usecases/guardar_permisos_usuario_usecase.dart';
 import '../usuarios_providers.dart';
 import 'sesion_controller.dart';
 import 'usuarios_state.dart';
@@ -107,5 +108,17 @@ class UsuariosController extends _$UsuariosController {
         .ejecutar(usuarioId: usuarioId, actorUsuarioId: _actorUsuarioId, motivo: motivo);
     if (resultado is DesactivarUsuarioExitoso) await _cargar();
     return resultado;
+  }
+
+  Future<Set<String>> obtenerPermisos(String usuarioId) {
+    return ref.read(permisoUsuarioRepositoryProvider).obtenerCodigos(usuarioId);
+  }
+
+  Future<GuardarPermisosUsuarioResultado> guardarPermisos({required String usuarioId, required Set<String> codigos}) {
+    return ref.read(guardarPermisosUsuarioUseCaseProvider).ejecutar(
+          usuarioId: usuarioId,
+          codigos: codigos,
+          actorUsuarioId: _actorUsuarioId,
+        );
   }
 }

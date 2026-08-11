@@ -64280,6 +64280,228 @@ class UsuarioEventoCompanion extends UpdateCompanion<UsuarioEventoData> {
   }
 }
 
+class $PermisoUsuarioTable extends PermisoUsuario
+    with TableInfo<$PermisoUsuarioTable, PermisoUsuarioData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PermisoUsuarioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _usuarioIdMeta = const VerificationMeta(
+    'usuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> usuarioId = GeneratedColumn<String>(
+    'usuario_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [usuarioId, codigo];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'permiso_usuario';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PermisoUsuarioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('usuario_id')) {
+      context.handle(
+        _usuarioIdMeta,
+        usuarioId.isAcceptableOrUnknown(data['usuario_id']!, _usuarioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_usuarioIdMeta);
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {usuarioId, codigo};
+  @override
+  PermisoUsuarioData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PermisoUsuarioData(
+      usuarioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}usuario_id'],
+          )!,
+      codigo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}codigo'],
+          )!,
+    );
+  }
+
+  @override
+  $PermisoUsuarioTable createAlias(String alias) {
+    return $PermisoUsuarioTable(attachedDatabase, alias);
+  }
+}
+
+class PermisoUsuarioData extends DataClass
+    implements Insertable<PermisoUsuarioData> {
+  final String usuarioId;
+  final String codigo;
+  const PermisoUsuarioData({required this.usuarioId, required this.codigo});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['usuario_id'] = Variable<String>(usuarioId);
+    map['codigo'] = Variable<String>(codigo);
+    return map;
+  }
+
+  PermisoUsuarioCompanion toCompanion(bool nullToAbsent) {
+    return PermisoUsuarioCompanion(
+      usuarioId: Value(usuarioId),
+      codigo: Value(codigo),
+    );
+  }
+
+  factory PermisoUsuarioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PermisoUsuarioData(
+      usuarioId: serializer.fromJson<String>(json['usuarioId']),
+      codigo: serializer.fromJson<String>(json['codigo']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'usuarioId': serializer.toJson<String>(usuarioId),
+      'codigo': serializer.toJson<String>(codigo),
+    };
+  }
+
+  PermisoUsuarioData copyWith({String? usuarioId, String? codigo}) =>
+      PermisoUsuarioData(
+        usuarioId: usuarioId ?? this.usuarioId,
+        codigo: codigo ?? this.codigo,
+      );
+  PermisoUsuarioData copyWithCompanion(PermisoUsuarioCompanion data) {
+    return PermisoUsuarioData(
+      usuarioId: data.usuarioId.present ? data.usuarioId.value : this.usuarioId,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PermisoUsuarioData(')
+          ..write('usuarioId: $usuarioId, ')
+          ..write('codigo: $codigo')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(usuarioId, codigo);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PermisoUsuarioData &&
+          other.usuarioId == this.usuarioId &&
+          other.codigo == this.codigo);
+}
+
+class PermisoUsuarioCompanion extends UpdateCompanion<PermisoUsuarioData> {
+  final Value<String> usuarioId;
+  final Value<String> codigo;
+  final Value<int> rowid;
+  const PermisoUsuarioCompanion({
+    this.usuarioId = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PermisoUsuarioCompanion.insert({
+    required String usuarioId,
+    required String codigo,
+    this.rowid = const Value.absent(),
+  }) : usuarioId = Value(usuarioId),
+       codigo = Value(codigo);
+  static Insertable<PermisoUsuarioData> custom({
+    Expression<String>? usuarioId,
+    Expression<String>? codigo,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (usuarioId != null) 'usuario_id': usuarioId,
+      if (codigo != null) 'codigo': codigo,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PermisoUsuarioCompanion copyWith({
+    Value<String>? usuarioId,
+    Value<String>? codigo,
+    Value<int>? rowid,
+  }) {
+    return PermisoUsuarioCompanion(
+      usuarioId: usuarioId ?? this.usuarioId,
+      codigo: codigo ?? this.codigo,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (usuarioId.present) {
+      map['usuario_id'] = Variable<String>(usuarioId.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PermisoUsuarioCompanion(')
+          ..write('usuarioId: $usuarioId, ')
+          ..write('codigo: $codigo, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -64451,6 +64673,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CompraEventoTable compraEvento = $CompraEventoTable(this);
   late final $UsuarioTable usuario = $UsuarioTable(this);
   late final $UsuarioEventoTable usuarioEvento = $UsuarioEventoTable(this);
+  late final $PermisoUsuarioTable permisoUsuario = $PermisoUsuarioTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -64599,6 +64822,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     compraEvento,
     usuario,
     usuarioEvento,
+    permisoUsuario,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -65070,6 +65294,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('usuario_evento', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('permiso_usuario', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -127830,6 +128061,24 @@ final class $$UsuarioTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$PermisoUsuarioTable, List<PermisoUsuarioData>>
+  _permisoUsuarioRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.permisoUsuario,
+    aliasName: $_aliasNameGenerator(db.usuario.id, db.permisoUsuario.usuarioId),
+  );
+
+  $$PermisoUsuarioTableProcessedTableManager get permisoUsuarioRefs {
+    final manager = $$PermisoUsuarioTableTableManager(
+      $_db,
+      $_db.permisoUsuario,
+    ).filter((f) => f.usuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_permisoUsuarioRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$UsuarioTableFilterComposer
@@ -127907,6 +128156,31 @@ class $$UsuarioTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> permisoUsuarioRefs(
+    Expression<bool> Function($$PermisoUsuarioTableFilterComposer f) f,
+  ) {
+    final $$PermisoUsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.permisoUsuario,
+      getReferencedColumn: (t) => t.usuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PermisoUsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.permisoUsuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -128054,6 +128328,31 @@ class $$UsuarioTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> permisoUsuarioRefs<T extends Object>(
+    Expression<T> Function($$PermisoUsuarioTableAnnotationComposer a) f,
+  ) {
+    final $$PermisoUsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.permisoUsuario,
+      getReferencedColumn: (t) => t.usuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PermisoUsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.permisoUsuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$UsuarioTableTableManager
@@ -128069,7 +128368,7 @@ class $$UsuarioTableTableManager
           $$UsuarioTableUpdateCompanionBuilder,
           (UsuarioData, $$UsuarioTableReferences),
           UsuarioData,
-          PrefetchHooks Function({bool puestoId})
+          PrefetchHooks Function({bool puestoId, bool permisoUsuarioRefs})
         > {
   $$UsuarioTableTableManager(_$AppDatabase db, $UsuarioTable table)
     : super(
@@ -128144,10 +128443,15 @@ class $$UsuarioTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({puestoId = false}) {
+          prefetchHooksCallback: ({
+            puestoId = false,
+            permisoUsuarioRefs = false,
+          }) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [
+                if (permisoUsuarioRefs) db.permisoUsuario,
+              ],
               addJoins: <
                 T extends TableManagerState<
                   dynamic,
@@ -128179,7 +128483,30 @@ class $$UsuarioTableTableManager
                 return state;
               },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (permisoUsuarioRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      PermisoUsuarioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._permisoUsuarioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).permisoUsuarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.usuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
               },
             );
           },
@@ -128199,7 +128526,7 @@ typedef $$UsuarioTableProcessedTableManager =
       $$UsuarioTableUpdateCompanionBuilder,
       (UsuarioData, $$UsuarioTableReferences),
       UsuarioData,
-      PrefetchHooks Function({bool puestoId})
+      PrefetchHooks Function({bool puestoId, bool permisoUsuarioRefs})
     >;
 typedef $$UsuarioEventoTableCreateCompanionBuilder =
     UsuarioEventoCompanion Function({
@@ -128658,6 +128985,285 @@ typedef $$UsuarioEventoTableProcessedTableManager =
       UsuarioEventoData,
       PrefetchHooks Function({bool usuarioId, bool actorUsuarioId})
     >;
+typedef $$PermisoUsuarioTableCreateCompanionBuilder =
+    PermisoUsuarioCompanion Function({
+      required String usuarioId,
+      required String codigo,
+      Value<int> rowid,
+    });
+typedef $$PermisoUsuarioTableUpdateCompanionBuilder =
+    PermisoUsuarioCompanion Function({
+      Value<String> usuarioId,
+      Value<String> codigo,
+      Value<int> rowid,
+    });
+
+final class $$PermisoUsuarioTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PermisoUsuarioTable,
+          PermisoUsuarioData
+        > {
+  $$PermisoUsuarioTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsuarioTable _usuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.permisoUsuario.usuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager get usuarioId {
+    final $_column = $_itemColumn<String>('usuario_id')!;
+
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_usuarioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PermisoUsuarioTableFilterComposer
+    extends Composer<_$AppDatabase, $PermisoUsuarioTable> {
+  $$PermisoUsuarioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsuarioTableFilterComposer get usuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.usuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PermisoUsuarioTableOrderingComposer
+    extends Composer<_$AppDatabase, $PermisoUsuarioTable> {
+  $$PermisoUsuarioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsuarioTableOrderingComposer get usuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.usuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PermisoUsuarioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PermisoUsuarioTable> {
+  $$PermisoUsuarioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  $$UsuarioTableAnnotationComposer get usuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.usuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PermisoUsuarioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PermisoUsuarioTable,
+          PermisoUsuarioData,
+          $$PermisoUsuarioTableFilterComposer,
+          $$PermisoUsuarioTableOrderingComposer,
+          $$PermisoUsuarioTableAnnotationComposer,
+          $$PermisoUsuarioTableCreateCompanionBuilder,
+          $$PermisoUsuarioTableUpdateCompanionBuilder,
+          (PermisoUsuarioData, $$PermisoUsuarioTableReferences),
+          PermisoUsuarioData,
+          PrefetchHooks Function({bool usuarioId})
+        > {
+  $$PermisoUsuarioTableTableManager(
+    _$AppDatabase db,
+    $PermisoUsuarioTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$PermisoUsuarioTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$PermisoUsuarioTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$PermisoUsuarioTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> usuarioId = const Value.absent(),
+                Value<String> codigo = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PermisoUsuarioCompanion(
+                usuarioId: usuarioId,
+                codigo: codigo,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String usuarioId,
+                required String codigo,
+                Value<int> rowid = const Value.absent(),
+              }) => PermisoUsuarioCompanion.insert(
+                usuarioId: usuarioId,
+                codigo: codigo,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$PermisoUsuarioTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({usuarioId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (usuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.usuarioId,
+                            referencedTable: $$PermisoUsuarioTableReferences
+                                ._usuarioIdTable(db),
+                            referencedColumn:
+                                $$PermisoUsuarioTableReferences
+                                    ._usuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PermisoUsuarioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PermisoUsuarioTable,
+      PermisoUsuarioData,
+      $$PermisoUsuarioTableFilterComposer,
+      $$PermisoUsuarioTableOrderingComposer,
+      $$PermisoUsuarioTableAnnotationComposer,
+      $$PermisoUsuarioTableCreateCompanionBuilder,
+      $$PermisoUsuarioTableUpdateCompanionBuilder,
+      (PermisoUsuarioData, $$PermisoUsuarioTableReferences),
+      PermisoUsuarioData,
+      PrefetchHooks Function({bool usuarioId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -128939,4 +129545,6 @@ class $AppDatabaseManager {
       $$UsuarioTableTableManager(_db, _db.usuario);
   $$UsuarioEventoTableTableManager get usuarioEvento =>
       $$UsuarioEventoTableTableManager(_db, _db.usuarioEvento);
+  $$PermisoUsuarioTableTableManager get permisoUsuario =>
+      $$PermisoUsuarioTableTableManager(_db, _db.permisoUsuario);
 }

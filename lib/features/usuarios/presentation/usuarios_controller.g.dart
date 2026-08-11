@@ -7,7 +7,7 @@ part of 'usuarios_controller.dart';
 // **************************************************************************
 
 String _$usuariosControllerHash() =>
-    r'c14742f08d9ecaa4bdebbd7c5cc724a85c351d6e';
+    r'b31909c561078f82e14332ddb19d3689657ddd45';
 
 /// Controlador del listado + CRUD de Usuarios (Etapa 11A) — mismo
 /// molde que `ComprasController`. Cada acción de escritura pasa el

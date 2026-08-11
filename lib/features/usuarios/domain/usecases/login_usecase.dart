@@ -1,5 +1,7 @@
 import 'package:riseg_one/core/auth/password_hasher.dart';
+import 'package:riseg_one/core/permissions/modulos_permiso.dart';
 
+import '../repositories/permiso_usuario_repository.dart';
 import '../repositories/usuario_repository.dart';
 import '../sesion_usuario.dart';
 
@@ -26,9 +28,10 @@ class LoginErrorInesperado extends LoginResultado {
 }
 
 class LoginUseCase {
-  LoginUseCase(this._usuarioRepository, this._passwordHasher);
+  LoginUseCase(this._usuarioRepository, this._permisoUsuarioRepository, this._passwordHasher);
 
   final UsuarioRepository _usuarioRepository;
+  final PermisoUsuarioRepository _permisoUsuarioRepository;
   final PasswordHasher _passwordHasher;
 
   Future<LoginResultado> ejecutar({required String nombreUsuario, required String password}) async {
@@ -39,12 +42,20 @@ class LoginUseCase {
       if (usuario.cicloVidaRegistro != 'activo') return LoginUsuarioInactivo();
 
       final actualizado = await _usuarioRepository.registrarUltimoAcceso(usuario.id);
+      // Maestro: el catálogo completo, recalculado siempre en el
+      // momento — nunca filas individuales de PermisoUsuario (ver el
+      // doc comment de `SesionUsuario`/`GuardarPermisosUsuarioEsMaestro`).
+      final permisos = actualizado.esMaestro
+          ? todosLosCodigosDePermiso()
+          : await _permisoUsuarioRepository.obtenerCodigos(actualizado.id);
+
       return LoginExitoso(
         SesionUsuario(
           usuarioId: actualizado.id,
           nombre: actualizado.nombre,
           nombreUsuario: actualizado.nombreUsuario,
           esMaestro: actualizado.esMaestro,
+          permisos: permisos,
         ),
       );
     } catch (e) {

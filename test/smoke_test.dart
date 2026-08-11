@@ -16,7 +16,10 @@ import 'package:riseg_one/app/router/app_router.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/di/providers.dart';
+import 'package:riseg_one/core/auth/password_hasher.dart';
 import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
+import 'package:riseg_one/features/usuarios/data/repositories/permiso_usuario_repository_impl.dart';
+import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
@@ -24,9 +27,11 @@ import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 /// Sesión Maestro fija para pruebas de navegación — Etapa 11A introdujo
 /// login/bootstrap obligatorios; sin este override, cada una de las
 /// ~30 pruebas de este archivo tendría que iniciar sesión a mano antes
-/// de poder navegar. Ningún permiso gatea el sidebar/router todavía
-/// (llega en la Etapa 11B), así que un Maestro fijo es equivalente a
-/// "cualquier sesión válida" para efectos de estas pruebas.
+/// de poder navegar. Un Maestro ve todos los módulos sin necesitar
+/// filas de `PermisoUsuario` (`permisos: {}` nunca se consulta — el
+/// bypass de `SessionPermissionService` ocurre antes, por `esMaestro`),
+/// así que sigue siendo equivalente a "acceso total" para estas
+/// pruebas aun con el gate real de la Etapa 11B ya activo.
 class _SesionControllerDePrueba extends SesionController {
   @override
   SesionUsuario? build() {
@@ -35,6 +40,7 @@ class _SesionControllerDePrueba extends SesionController {
       nombre: 'Usuario de prueba',
       nombreUsuario: 'prueba',
       esMaestro: true,
+      permisos: {},
     );
   }
 }
@@ -686,6 +692,111 @@ void main() {
       // Sesión iniciada: ya se puede navegar al Shell.
       expect(find.byKey(const Key('app_shell')), findsOneWidget);
       expect(find.byKey(const Key('login_screen')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Permisos dinámicos: sidebar filtrado, ruta directa bloqueada y gate de Configuración (Etapa 11B)',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      // Pre-siembra fuera de la UI (mismo patrón que los tests de
+      // dominio) — un Maestro (satisface la invariante) + un usuario
+      // limitado a `personal.ver` + un usuario limitado a
+      // `usuarios.administrar`, para ejercitar el gate especial de
+      // `/configuracion` (punto 10 del plan de la Etapa 11B).
+      final usuarioRepo = UsuarioRepositoryImpl(db);
+      final permisoRepo = PermisoUsuarioRepositoryImpl(db);
+      const hasher = PasswordHasher(iteraciones: 1000);
+
+      await usuarioRepo.crear(
+        nombre: 'Ana Maestro',
+        nombreUsuario: 'ana',
+        passwordHash: hasher.hash('Sup3rSecreta!'),
+        esMaestro: true,
+      );
+      final beto = await usuarioRepo.crear(
+        nombre: 'Beto RH',
+        nombreUsuario: 'beto',
+        passwordHash: hasher.hash('ClaveSegura1'),
+      );
+      await permisoRepo.guardar(usuarioId: beto.id, codigos: {'personal.ver'});
+      final carla = await usuarioRepo.crear(
+        nombre: 'Carla Admin',
+        nombreUsuario: 'carla',
+        passwordHash: hasher.hash('ClaveSegura2'),
+      );
+      await permisoRepo.guardar(usuarioId: carla.id, codigos: {'usuarios.administrar'});
+
+      final router = createAppRouter();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [appDatabaseProvider.overrideWithValue(db)],
+          child: RisegOneApp(router: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // --- Beto: solo personal.ver ---
+      await tester.enterText(find.byKey(const Key('login_campo_usuario')), 'beto');
+      await tester.enterText(find.byKey(const Key('login_campo_password')), 'ClaveSegura1');
+      await tester.tap(find.byKey(const Key('login_boton_entrar')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('app_shell')), findsOneWidget);
+      expect(find.byKey(const Key('nav_item_personal')), findsOneWidget);
+      expect(find.byKey(const Key('nav_item_finanzas')), findsNothing);
+      expect(find.byKey(const Key('nav_item_configuracion')), findsNothing);
+      // Dashboard nunca tiene permiso propio — siempre visible.
+      expect(find.byKey(const Key('nav_item_dashboard')), findsOneWidget);
+
+      // Ruta directa a un módulo sin permiso: bloqueada, nunca
+      // construye/muestra su contenido.
+      router.go('/finanzas');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('acceso_denegado_screen')), findsOneWidget);
+
+      // Configuración también bloqueada — Beto no tiene
+      // `usuarios.administrar`.
+      router.go('/configuracion');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('acceso_denegado_screen')), findsOneWidget);
+
+      // El módulo que sí tiene permiso funciona normalmente.
+      router.go('/personal');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('acceso_denegado_screen')), findsNothing);
+      expect(find.byKey(const Key('empleados_boton_registrar')), findsOneWidget);
+
+      // --- Cerrar sesión y entrar como Carla: solo usuarios.administrar ---
+      await tester.tap(find.byKey(const Key('top_bar_profile')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('top_bar_cerrar_sesion')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('login_screen')), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('login_campo_usuario')), 'carla');
+      await tester.enterText(find.byKey(const Key('login_campo_password')), 'ClaveSegura2');
+      await tester.tap(find.byKey(const Key('login_boton_entrar')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('nav_item_configuracion')), findsOneWidget);
+      expect(find.byKey(const Key('nav_item_personal')), findsNothing);
+
+      router.go('/configuracion');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('acceso_denegado_screen')), findsNothing);
+      expect(find.byKey(const Key('usuarios_boton_crear')), findsOneWidget);
+
+      router.go('/personal');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('acceso_denegado_screen')), findsOneWidget);
     },
   );
 }

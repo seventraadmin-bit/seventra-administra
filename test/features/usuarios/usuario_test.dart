@@ -12,6 +12,7 @@ import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_puesto_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_puesto_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/puesto_validator.dart';
+import 'package:riseg_one/features/usuarios/data/repositories/permiso_usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/activar_usuario_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/cambiar_contrasena_usuario_usecase.dart';
@@ -24,6 +25,7 @@ import 'package:riseg_one/features/usuarios/domain/usecases/login_usecase.dart';
 void main() {
   late AppDatabase db;
   late UsuarioRepositoryImpl usuarioRepo;
+  late PermisoUsuarioRepositoryImpl permisoUsuarioRepo;
   late PasswordHasher hasher;
   late CrearPrimerMaestroUseCase crearPrimerMaestro;
   late LoginUseCase login;
@@ -38,11 +40,12 @@ void main() {
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     usuarioRepo = UsuarioRepositoryImpl(db);
+    permisoUsuarioRepo = PermisoUsuarioRepositoryImpl(db);
     // Iteraciones bajas — la seguridad real (100000) ya está cubierta
     // por `password_hasher_test.dart`, aquí solo importa el flujo.
     hasher = const PasswordHasher(iteraciones: 1000);
     crearPrimerMaestro = CrearPrimerMaestroUseCase(usuarioRepo, hasher);
-    login = LoginUseCase(usuarioRepo, hasher);
+    login = LoginUseCase(usuarioRepo, permisoUsuarioRepo, hasher);
 
     puestoRepo = PuestoRepositoryImpl(db);
     crearPuesto = CrearPuestoUseCase(

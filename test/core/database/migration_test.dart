@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 38;
+const _currentSchemaVersion = 39;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -8454,6 +8454,97 @@ void main() {
           ),
       throwsA(anything),
       reason: 'nombre_usuario debe ser único',
+    );
+
+    await db.close();
+  });
+
+  test(
+    '39.json coincide con el esquema final de la Etapa 11B (tabla nueva PermisoUsuario) — '
+    'permisos dinámicos por Usuario',
+    () async {
+      final schema = await verifier.schemaAt(39);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, contains('permiso_usuario'));
+
+      final sqlPermisoUsuario =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'permiso_usuario'")
+                  .single['sql']
+              as String;
+      expect(sqlPermisoUsuario, contains('PRIMARY KEY ("usuario_id", "codigo")'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 38 → 39 conserva un Usuario real y crea PermisoUsuario vacía, sin backfill '
+    '(el Maestro nunca recibe filas — sus permisos se calculan en memoria)',
+    () async {
+      final schemaV38 = await verifier.schemaAt(38);
+      final raw = schemaV38.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO usuario (
+        id, nombre, nombre_usuario, password_hash, es_maestro, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'usuario-real', 'Ana Real', 'ana.real', 'pbkdf2\$1\$AA==\$BB==', 1, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV38.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final usuarios = await db.select(db.usuario).get();
+      expect(usuarios, hasLength(1), reason: 'ningún Usuario real debe perderse en una migración puramente aditiva');
+
+      final permisos = await db.select(db.permisoUsuario).get();
+      expect(permisos, isEmpty, reason: 'PermisoUsuario es tabla nueva en la Etapa 11B, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test('PermisoUsuario: llave primaria compuesta permite el mismo código en usuarios distintos '
+      'pero rechaza repetir el mismo par', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final u1 = await db.into(db.usuario).insertReturning(
+          UsuarioCompanion.insert(nombre: 'Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$AA==\$BB=='),
+        );
+    final u2 = await db.into(db.usuario).insertReturning(
+          UsuarioCompanion.insert(nombre: 'Beto', nombreUsuario: 'beto', passwordHash: 'pbkdf2\$1\$CC==\$DD=='),
+        );
+
+    await db.into(db.permisoUsuario).insert(PermisoUsuarioCompanion.insert(usuarioId: u1.id, codigo: 'personal.ver'));
+    // Mismo código, usuario distinto — permitido.
+    await db.into(db.permisoUsuario).insert(PermisoUsuarioCompanion.insert(usuarioId: u2.id, codigo: 'personal.ver'));
+
+    await expectLater(
+      db.into(db.permisoUsuario).insert(PermisoUsuarioCompanion.insert(usuarioId: u1.id, codigo: 'personal.ver')),
+      throwsA(anything),
+      reason: 'el mismo par (usuario, código) no puede repetirse',
     );
 
     await db.close();

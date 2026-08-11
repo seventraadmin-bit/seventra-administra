@@ -11,15 +11,16 @@ import '../domain/usecases/desactivar_usuario_usecase.dart';
 import 'sesion_controller.dart';
 import 'usuarios_controller.dart';
 import 'widgets/cambiar_contrasena_usuario_dialog.dart';
+import 'widgets/gestionar_permisos_usuario_dialog.dart';
 import 'widgets/gestionar_usuario_dialog.dart';
 import 'widgets/historial_usuario_dialog.dart';
 
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
 
 /// Listado + CRUD de Usuarios (Etapa 11A) — primera funcionalidad real
-/// de `/configuracion` (hasta ahora un placeholder puro). Sin matriz de
-/// permisos todavía: llega en la Etapa 11B junto con su enforcement,
-/// para no dejar una pantalla "sin dientes" (ver el plan).
+/// de `/configuracion` (hasta ahora un placeholder puro). Desde la
+/// Etapa 11B gana "Administrar permisos" (matriz dinámica) — ver
+/// `gestionar_permisos_usuario_dialog.dart`.
 class UsuariosListScreen extends ConsumerWidget {
   const UsuariosListScreen({super.key});
 
@@ -107,7 +108,7 @@ class UsuariosListScreen extends ConsumerWidget {
                 ),
                 RisegColumn<UsuarioData>(
                   label: l10n.usuariosColumnaEstado,
-                  width: 110,
+                  width: 130,
                   cellBuilder: (u) => RisegStatusBadge(
                     label: u.cicloVidaRegistro == 'activo' ? l10n.usuarioEstadoActivo : l10n.usuarioEstadoInactivo,
                     tone: u.cicloVidaRegistro == 'activo' ? RisegStatusTone.success : RisegStatusTone.neutral,
@@ -119,7 +120,7 @@ class UsuariosListScreen extends ConsumerWidget {
                 ),
                 RisegColumn<UsuarioData>(
                   label: l10n.usuariosColumnaTipo,
-                  width: 100,
+                  width: 120,
                   cellBuilder: (u) => RisegStatusBadge(
                     label: u.esMaestro ? l10n.usuarioTipoMaestro : l10n.usuarioTipoNormal,
                     tone: u.esMaestro ? RisegStatusTone.warning : RisegStatusTone.neutral,
@@ -127,30 +128,36 @@ class UsuariosListScreen extends ConsumerWidget {
                 ),
                 RisegColumn<UsuarioData>(
                   label: l10n.usuariosColumnaAcciones,
-                  width: 180,
+                  width: 260,
                   cellBuilder: (u) => Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
+                      _AccionIcono(
                         tooltip: l10n.usuariosAccionEditar,
-                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        icon: Icons.edit_outlined,
                         onPressed: () => mostrarDialogoGestionarUsuario(context, ref, puestos: state.puestos, usuario: u),
                       ),
-                      IconButton(
+                      _AccionIcono(
                         tooltip: l10n.usuariosAccionCambiarContrasena,
-                        icon: const Icon(Icons.key_outlined, size: 18),
+                        icon: Icons.key_outlined,
                         onPressed: () => mostrarDialogoCambiarContrasenaUsuario(context, ref, u),
                       ),
-                      IconButton(
+                      _AccionIcono(
+                        key: Key('usuarios_boton_permisos_${u.id}'),
+                        tooltip: l10n.usuariosAccionPermisos,
+                        icon: Icons.shield_outlined,
+                        onPressed: () => mostrarDialogoGestionarPermisosUsuario(context, ref, u),
+                      ),
+                      _AccionIcono(
                         tooltip: u.cicloVidaRegistro == 'activo' ? l10n.usuariosAccionDesactivar : l10n.usuariosAccionActivar,
-                        icon: Icon(u.cicloVidaRegistro == 'activo' ? Icons.block_outlined : Icons.check_circle_outline, size: 18),
+                        icon: u.cicloVidaRegistro == 'activo' ? Icons.block_outlined : Icons.check_circle_outline,
                         onPressed: () => u.cicloVidaRegistro == 'activo'
                             ? _desactivar(context, ref, u)
                             : _activar(context, ref, u),
                       ),
-                      IconButton(
+                      _AccionIcono(
                         tooltip: l10n.usuariosAccionHistorial,
-                        icon: const Icon(Icons.history, size: 18),
+                        icon: Icons.history,
                         onPressed: () => mostrarDialogoHistorialUsuario(context, ref, u),
                       ),
                     ],
@@ -168,6 +175,29 @@ class UsuariosListScreen extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Botón de acción compacto para la columna de Acciones — 5 acciones
+/// no caben con el tamaño mínimo de toque por defecto de `IconButton`
+/// (48×48, overflow real encontrado al probar con la columna a 220px).
+class _AccionIcono extends StatelessWidget {
+  const _AccionIcono({required this.tooltip, required this.icon, required this.onPressed, super.key});
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      icon: Icon(icon, size: 18),
+      onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      visualDensity: VisualDensity.compact,
     );
   }
 }

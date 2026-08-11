@@ -2,22 +2,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/auth/password_hasher.dart';
 import 'package:riseg_one/core/di/providers.dart';
+import 'package:riseg_one/core/permissions/permission_service.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart' show puestoRepositoryProvider;
 
+import 'data/repositories/permiso_usuario_repository_impl.dart';
 import 'data/repositories/usuario_repository_impl.dart';
+import 'domain/repositories/permiso_usuario_repository.dart';
 import 'domain/repositories/usuario_repository.dart';
+import 'domain/sesion_usuario.dart';
 import 'domain/usecases/activar_usuario_usecase.dart';
 import 'domain/usecases/cambiar_contrasena_usuario_usecase.dart';
 import 'domain/usecases/corregir_usuario_usecase.dart';
 import 'domain/usecases/crear_primer_maestro_usecase.dart';
 import 'domain/usecases/crear_usuario_usecase.dart';
 import 'domain/usecases/desactivar_usuario_usecase.dart';
+import 'domain/usecases/guardar_permisos_usuario_usecase.dart';
 import 'domain/usecases/login_usecase.dart';
+import 'presentation/sesion_controller.dart';
 
 final passwordHasherProvider = Provider<PasswordHasher>((ref) => const PasswordHasher());
 
 final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
   return UsuarioRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final permisoUsuarioRepositoryProvider = Provider<PermisoUsuarioRepository>((ref) {
+  return PermisoUsuarioRepositoryImpl(ref.watch(appDatabaseProvider));
 });
 
 /// `count(usuario)` cacheado por Riverpod — se invalida explícitamente
@@ -27,12 +37,44 @@ final contarUsuariosProvider = FutureProvider<int>((ref) {
   return ref.watch(usuarioRepositoryProvider).contarUsuarios();
 });
 
+/// Implementación real de `PermissionService` (Etapa 11B) — reemplaza
+/// el scaffold inerte que existía desde antes de la Etapa 11. Ligada a
+/// `sesionControllerProvider`: sin sesión niega todo, un Maestro
+/// concede todo sin tener filas de `PermisoUsuario`, cualquier otro
+/// usuario se resuelve contra los permisos ya cargados en su sesión
+/// (ver el doc comment de `SesionUsuario.permisos` — no se refresca en
+/// vivo, solo en el siguiente login).
+class SessionPermissionService implements PermissionService {
+  const SessionPermissionService(this._sesion);
+
+  final SesionUsuario? _sesion;
+
+  @override
+  bool hasCode(String codigo) {
+    final sesion = _sesion;
+    if (sesion == null) return false;
+    if (sesion.esMaestro) return true;
+    return sesion.permisos.contains(codigo);
+  }
+
+  @override
+  bool hasPermission(String modulo, String accion) => hasCode('$modulo.$accion');
+}
+
+final permissionServiceProvider = Provider<PermissionService>((ref) {
+  return SessionPermissionService(ref.watch(sesionControllerProvider));
+});
+
 final crearPrimerMaestroUseCaseProvider = Provider<CrearPrimerMaestroUseCase>((ref) {
   return CrearPrimerMaestroUseCase(ref.watch(usuarioRepositoryProvider), ref.watch(passwordHasherProvider));
 });
 
 final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
-  return LoginUseCase(ref.watch(usuarioRepositoryProvider), ref.watch(passwordHasherProvider));
+  return LoginUseCase(
+    ref.watch(usuarioRepositoryProvider),
+    ref.watch(permisoUsuarioRepositoryProvider),
+    ref.watch(passwordHasherProvider),
+  );
 });
 
 final crearUsuarioUseCaseProvider = Provider<CrearUsuarioUseCase>((ref) {
@@ -57,4 +99,8 @@ final activarUsuarioUseCaseProvider = Provider<ActivarUsuarioUseCase>((ref) {
 
 final desactivarUsuarioUseCaseProvider = Provider<DesactivarUsuarioUseCase>((ref) {
   return DesactivarUsuarioUseCase(ref.watch(usuarioRepositoryProvider));
+});
+
+final guardarPermisosUsuarioUseCaseProvider = Provider<GuardarPermisosUsuarioUseCase>((ref) {
+  return GuardarPermisosUsuarioUseCase(ref.watch(usuarioRepositoryProvider), ref.watch(permisoUsuarioRepositoryProvider));
 });
