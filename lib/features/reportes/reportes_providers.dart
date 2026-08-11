@@ -7,6 +7,8 @@ import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
 import 'domain/usecases/clasificar_egresos_por_origen_usecase.dart';
 import 'domain/usecases/obtener_resumen_general_usecase.dart';
+import 'domain/usecases/obtener_resumen_nomina_usecase.dart';
+import 'domain/usecases/obtener_resumen_personal_usecase.dart';
 
 /// Providers del módulo Reportes (Etapa 12A) — solo compone
 /// repositorios/casos de uso ya existentes en sus dominios propios,
@@ -28,4 +30,13 @@ final clasificarEgresosPorOrigenUseCaseProvider = Provider<ClasificarEgresosPorO
     ref.watch(compraRepositoryProvider),
     ref.watch(pagoNominaRepositoryProvider),
   );
+});
+
+/// Etapa 12B — Personal · Nómina.
+final obtenerResumenPersonalUseCaseProvider = Provider<ObtenerResumenPersonalUseCase>((ref) {
+  return ObtenerResumenPersonalUseCase(ref.watch(empleadoRepositoryProvider), ref.watch(asignacionServicioRepositoryProvider));
+});
+
+final obtenerResumenNominaUseCaseProvider = Provider<ObtenerResumenNominaUseCase>((ref) {
+  return ObtenerResumenNominaUseCase(ref.watch(nominaRepositoryProvider), ref.watch(pagoNominaRepositoryProvider));
 });

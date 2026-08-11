@@ -100,6 +100,21 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
     return renglon.totalAPagar - aplicado;
   }
 
+  @override
+  Future<Map<String, int>> totalAplicadoPorRenglon(List<String> nominaEmpleadoIds) async {
+    if (nominaEmpleadoIds.isEmpty) return {};
+    final query = _db.selectOnly(_db.aplicacionPagoNomina)
+      ..addColumns([_db.aplicacionPagoNomina.nominaEmpleadoId, _db.aplicacionPagoNomina.monto.sum()])
+      ..where(_db.aplicacionPagoNomina.nominaEmpleadoId.isIn(nominaEmpleadoIds) &
+          _db.aplicacionPagoNomina.estatus.equals('aplicada'))
+      ..groupBy([_db.aplicacionPagoNomina.nominaEmpleadoId]);
+    final filas = await query.get();
+    return {
+      for (final fila in filas)
+        fila.read(_db.aplicacionPagoNomina.nominaEmpleadoId)!: fila.read(_db.aplicacionPagoNomina.monto.sum()) ?? 0,
+    };
+  }
+
   EstatusPagoNominaEmpleado _estatusPagoPorSaldo(int saldoPendiente, int totalAPagar) {
     if (saldoPendiente <= 0) return EstatusPagoNominaEmpleado.pagado;
     if (saldoPendiente < totalAPagar) return EstatusPagoNominaEmpleado.parcial;

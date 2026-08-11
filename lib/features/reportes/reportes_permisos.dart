@@ -29,17 +29,24 @@ class PestanasVisibles<T> {
   final int indiceActivo;
 }
 
-/// [todas] en el orden real de la UI; [permisoPara] devuelve `null`
-/// cuando una pestaña no requiere permiso propio (ej. "General").
+/// [todas] en el orden real de la UI; [visiblePara] decide, por
+/// pestaña, si se muestra dado el [PermissionService] de la sesión —
+/// `(_) => true` para una pestaña sin permiso propio (ej. "General"),
+/// un único código (`(ps) => ps.hasCode('finanzas.ver')`) para el caso
+/// simple, o una condición OR (`(ps) => ps.hasCode('personal.ver') ||
+/// ps.hasCode('nomina.ver')`) para una pestaña que combina más de un
+/// dominio (Etapa 12B, "Personal · Nómina") — la pestaña se muestra si
+/// la sesión puede ver AL MENOS una de sus subsecciones, cada una
+/// vuelve a gatearse por separado dentro de su propio controller.
 PestanasVisibles<T> filtrarPestanasPorPermiso<T>({
   required List<T> todas,
-  required String? Function(T tab) permisoPara,
+  required bool Function(T tab, PermissionService permissionService) visiblePara,
   required PermissionService permissionService,
   required T activa,
 }) {
   final visibles = <T>[
     for (final tab in todas)
-      if (permisoPara(tab) == null || permissionService.hasCode(permisoPara(tab)!)) tab,
+      if (visiblePara(tab, permissionService)) tab,
   ];
   final indice = visibles.indexOf(activa);
   return PestanasVisibles(visibles: visibles, indiceActivo: indice == -1 ? 0 : indice);

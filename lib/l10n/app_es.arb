@@ -3513,5 +3513,33 @@
   "reportesFinanzasIngresosPorCategoria": "Ingresos por categoría",
   "reportesFinanzasEgresosPorCategoria": "Egresos por categoría",
   "reportesFinanzasColumnaCategoria": "Categoría",
-  "reportesFinanzasColumnaTotal": "Total"
+  "reportesFinanzasColumnaTotal": "Total",
+
+  "reportesTabPersonalNomina": "Personal · Nómina",
+  "reportesPersonalNominaTitulo": "Personal · Nómina",
+  "reportesPersonalNominaDescripcion": "Distribución de personal y cifras de nómina por periodo.",
+
+  "reportesPersonalSeccionTitulo": "Personal",
+  "reportesPersonalActivos": "Empleados activos",
+  "reportesPersonalAdministrativos": "Administrativos",
+  "reportesPersonalOperativos": "Operativos",
+  "reportesPersonalAltas": "Altas en el periodo",
+  "reportesPersonalReingresos": "Reingresos en el periodo",
+  "reportesPersonalBajas": "Bajas en el periodo",
+  "reportesPersonalProximosAniversarios": "Próximos aniversarios",
+  "reportesPersonalAlertasRecontratacion": "Alertas de recontratación",
+  "reportesPersonalRevisarAntesDeContratar": "Revisar antes de recontratar",
+  "reportesPersonalMotivosBajaTitulo": "Motivos de baja en el periodo",
+
+  "reportesNominaSeccionTitulo": "Nómina",
+  "reportesNominaTotalGenerado": "Total generado",
+  "reportesNominaTotalPagado": "Total pagado",
+  "reportesNominaSaldoPendiente": "Saldo pendiente",
+  "reportesNominaColumnaFolio": "Folio",
+  "reportesNominaColumnaEstatus": "Estatus",
+  "reportesNominaColumnaEmpleados": "Empleados",
+  "reportesNominaColumnaGenerado": "Generado",
+  "reportesNominaColumnaPagado": "Pagado",
+  "reportesNominaColumnaPendiente": "Pendiente",
+  "reportesNominaPagoParcial": "pago parcial"
 }

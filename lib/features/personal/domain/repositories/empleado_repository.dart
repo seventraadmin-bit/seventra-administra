@@ -2,6 +2,45 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/domain/shared/direccion_input.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
+/// Proyección segura de `Empleado` para Reportes (Etapa 12B) — allow-list
+/// explícito, poblado siempre vía `selectOnly` (nunca cargando
+/// `EmpleadoData` completo y filtrando después). Deliberadamente **sin**
+/// datos bancarios (`bancoId`/`numeroCuentaTarjeta`/`clabe`), sueldo
+/// administrativo, CURP/RFC/NSS, ni ninguno de los campos de perfil
+/// psicológico/estudio socioeconómico/antidoping — esos campos existen
+/// en `Empleado` pero nunca deben salir de la capa de datos hacia
+/// código de Reportes, ni siquiera cargados en memoria sin mostrarse
+/// (mismo criterio ya usado por `ficha_tecnica_data.dart`).
+class EmpleadoReporteRow {
+  const EmpleadoReporteRow({
+    required this.id,
+    required this.numeroEmpleado,
+    required this.nombres,
+    required this.apellidoPaterno,
+    this.apellidoMaterno,
+    required this.estatus,
+    required this.fechaIngreso,
+    this.fechaBaja,
+    this.motivoBaja,
+    this.puestoId,
+    this.sucursalId,
+  });
+
+  final String id;
+  final int numeroEmpleado;
+  final String nombres;
+  final String apellidoPaterno;
+  final String? apellidoMaterno;
+  final String estatus;
+  final DateTime fechaIngreso;
+  final DateTime? fechaBaja;
+  final String? motivoBaja;
+  final String? puestoId;
+  final String? sucursalId;
+
+  String get nombreCompleto => [nombres, apellidoPaterno, apellidoMaterno].whereType<String>().join(' ');
+}
+
 /// Expediente del empleado (Etapa 5A) — la base de Personal.
 abstract interface class EmpleadoRepository {
   Future<EmpleadoData?> obtenerPorId(String id);
@@ -12,6 +51,11 @@ abstract interface class EmpleadoRepository {
     String? empresaId,
     String? sucursalId,
   });
+
+  /// Igual que [listar], pero proyectada a [EmpleadoReporteRow] — la
+  /// única forma en que Reportes (Etapa 12B) debe leer Personal, nunca
+  /// `listar`/`obtenerPorId` directo.
+  Future<List<EmpleadoReporteRow>> listarParaReporte({String? estatus});
 
   Future<List<EmpleadoEventoData>> listarEventos(String empleadoId);
 
@@ -71,6 +115,16 @@ abstract interface class EmpleadoRepository {
   /// `EmpleadoPeriodoLaboral`). Orden descendente por `fechaIngreso`
   /// (el periodo cerrado más reciente primero).
   Future<List<EmpleadoPeriodoLaboralData>> listarPeriodosLaboralesArchivados(String empleadoId);
+
+  /// Versión en lote de [listarPeriodosLaboralesArchivados] — una sola
+  /// consulta `WHERE empleado_id IN (...)` para varios empleados a la
+  /// vez (Etapa 12B, Reportes): evita N+1 al calcular alertas de
+  /// recontratación o altas-vs-reingresos sobre una lista completa de
+  /// empleados. Mismo criterio ya usado por
+  /// `CompraRepository.calcularTotalesPorCompra`.
+  Future<Map<String, List<EmpleadoPeriodoLaboralData>>> listarPeriodosLaboralesArchivadosPorEmpleados(
+    List<String> empleadoIds,
+  );
 
   /// Actualiza el puntero `fotografiaAttachmentId` — el Attachment y su
   /// fila de unión en `EmpleadoAttachment` ya deben existir (los crea

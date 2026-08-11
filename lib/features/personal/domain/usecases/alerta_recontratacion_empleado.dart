@@ -23,9 +23,20 @@ AlertaRecontratacionEmpleado calcularAlertaRecontratacion(
   EmpleadoData empleado,
   List<EmpleadoPeriodoLaboralData> periodosArchivados,
 ) {
+  return calcularAlertaRecontratacionDesdeMotivo(empleado.motivoBaja, periodosArchivados);
+}
+
+/// Misma lógica que [calcularAlertaRecontratacion], sin depender de
+/// `EmpleadoData` completo — Etapa 12B (Reportes): permite calcularla
+/// sobre `EmpleadoReporteRow` (proyección segura) sin construir un
+/// `EmpleadoData` falso solo para satisfacer esa firma.
+AlertaRecontratacionEmpleado calcularAlertaRecontratacionDesdeMotivo(
+  String? motivoBajaVigente,
+  List<EmpleadoPeriodoLaboralData> periodosArchivados,
+) {
   final vistos = <MotivoBajaEmpleado>{};
-  if (empleado.motivoBaja != null) {
-    vistos.add(MotivoBajaEmpleado.values.byName(empleado.motivoBaja!));
+  if (motivoBajaVigente != null) {
+    vistos.add(MotivoBajaEmpleado.values.byName(motivoBajaVigente));
   }
   for (final periodo in periodosArchivados) {
     vistos.add(MotivoBajaEmpleado.values.byName(periodo.motivoBaja));

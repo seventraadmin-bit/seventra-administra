@@ -13,6 +13,13 @@ abstract interface class AsignacionServicioRepository {
 
   Future<List<AsignacionServicioData>> listarActivasPorServicio(String servicioId);
 
+  /// Todas las asignaciones vigentes (`fechaTermino IS NULL`) de
+  /// cualquier Empleado/Servicio, en una sola consulta — Etapa 12B
+  /// (Reportes): "administrativo vs. operativo" y "personal por
+  /// Servicio" se derivan de este conjunto completo, nunca de una
+  /// bandera nueva ni de N+1 por Servicio.
+  Future<List<AsignacionServicioData>> listarTodasActivas();
+
   /// Historial completo (vigente + cerradas) de este Servicio, orden
   /// descendente por `fechaInicio`.
   Future<List<AsignacionServicioData>> listarPorServicio(String servicioId);

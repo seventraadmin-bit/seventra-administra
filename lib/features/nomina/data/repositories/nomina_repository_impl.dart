@@ -31,6 +31,77 @@ class NominaRepositoryImpl implements NominaRepository {
   }
 
   @override
+  Future<List<NominaData>> listarEnRango({DateTime? rangoInicio, DateTime? rangoFin, String? estatus}) {
+    final query = _db.select(_db.nomina);
+    if (rangoInicio != null) query.where((t) => t.fechaFinPeriodo.isBiggerOrEqualValue(rangoInicio));
+    if (rangoFin != null) query.where((t) => t.fechaInicioPeriodo.isSmallerOrEqualValue(rangoFin));
+    if (estatus != null) query.where((t) => t.estatus.equals(estatus));
+    query.orderBy([(t) => OrderingTerm.desc(t.fechaInicioPeriodo)]);
+    return query.get();
+  }
+
+  @override
+  Future<List<NominaEmpleadoReporteRow>> listarRenglonesEnRango({
+    DateTime? rangoInicio,
+    DateTime? rangoFin,
+    String? estatus,
+  }) async {
+    final query = _db.selectOnly(_db.nominaEmpleado).join([
+      innerJoin(_db.nomina, _db.nomina.id.equalsExp(_db.nominaEmpleado.nominaId)),
+    ])
+      ..addColumns([
+        _db.nominaEmpleado.id,
+        _db.nominaEmpleado.nominaId,
+        _db.nominaEmpleado.numeroEmpleado,
+        _db.nominaEmpleado.nombreCompleto,
+        _db.nominaEmpleado.puestoNombre,
+        _db.nominaEmpleado.servicioId,
+        _db.nominaEmpleado.servicioNombre,
+        _db.nominaEmpleado.turnoNombre,
+        _db.nominaEmpleado.importeBase,
+        _db.nominaEmpleado.bono,
+        _db.nominaEmpleado.faltas,
+        _db.nominaEmpleado.descuentoPorFaltas,
+        _db.nominaEmpleado.prestamo,
+        _db.nominaEmpleado.tiempoExtra,
+        _db.nominaEmpleado.otrosDescuentos,
+        _db.nominaEmpleado.montoFiscal,
+        _db.nominaEmpleado.montoNoFiscal,
+        _db.nominaEmpleado.totalAPagar,
+        _db.nominaEmpleado.estatusPago,
+      ]);
+    if (rangoInicio != null) query.where(_db.nomina.fechaFinPeriodo.isBiggerOrEqualValue(rangoInicio));
+    if (rangoFin != null) query.where(_db.nomina.fechaInicioPeriodo.isSmallerOrEqualValue(rangoFin));
+    if (estatus != null) query.where(_db.nomina.estatus.equals(estatus));
+
+    final filas = await query.get();
+    return [
+      for (final fila in filas)
+        NominaEmpleadoReporteRow(
+          id: fila.read(_db.nominaEmpleado.id)!,
+          nominaId: fila.read(_db.nominaEmpleado.nominaId)!,
+          numeroEmpleado: fila.read(_db.nominaEmpleado.numeroEmpleado)!,
+          nombreCompleto: fila.read(_db.nominaEmpleado.nombreCompleto)!,
+          puestoNombre: fila.read(_db.nominaEmpleado.puestoNombre),
+          servicioId: fila.read(_db.nominaEmpleado.servicioId),
+          servicioNombre: fila.read(_db.nominaEmpleado.servicioNombre),
+          turnoNombre: fila.read(_db.nominaEmpleado.turnoNombre),
+          importeBase: fila.read(_db.nominaEmpleado.importeBase)!,
+          bono: fila.read(_db.nominaEmpleado.bono)!,
+          faltas: fila.read(_db.nominaEmpleado.faltas)!,
+          descuentoPorFaltas: fila.read(_db.nominaEmpleado.descuentoPorFaltas)!,
+          prestamo: fila.read(_db.nominaEmpleado.prestamo)!,
+          tiempoExtra: fila.read(_db.nominaEmpleado.tiempoExtra)!,
+          otrosDescuentos: fila.read(_db.nominaEmpleado.otrosDescuentos)!,
+          montoFiscal: fila.read(_db.nominaEmpleado.montoFiscal)!,
+          montoNoFiscal: fila.read(_db.nominaEmpleado.montoNoFiscal)!,
+          totalAPagar: fila.read(_db.nominaEmpleado.totalAPagar)!,
+          estatusPago: fila.read(_db.nominaEmpleado.estatusPago)!,
+        ),
+    ];
+  }
+
+  @override
   Future<List<NominaEmpleadoData>> listarEmpleados(String nominaId) {
     return (_db.select(_db.nominaEmpleado)
           ..where((t) => t.nominaId.equals(nominaId))

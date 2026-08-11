@@ -38,6 +38,45 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
   }
 
   @override
+  Future<List<EmpleadoReporteRow>> listarParaReporte({String? estatus}) async {
+    final query = _db.selectOnly(_db.empleado)
+      ..addColumns([
+        _db.empleado.id,
+        _db.empleado.numeroEmpleado,
+        _db.empleado.nombres,
+        _db.empleado.apellidoPaterno,
+        _db.empleado.apellidoMaterno,
+        _db.empleado.estatus,
+        _db.empleado.fechaIngreso,
+        _db.empleado.fechaBaja,
+        _db.empleado.motivoBaja,
+        _db.empleado.puestoId,
+        _db.empleado.sucursalId,
+      ])
+      ..where(_db.empleado.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name));
+    if (estatus != null) query.where(_db.empleado.estatus.equals(estatus));
+    query.orderBy([OrderingTerm.asc(_db.empleado.apellidoPaterno)]);
+
+    final filas = await query.get();
+    return [
+      for (final fila in filas)
+        EmpleadoReporteRow(
+          id: fila.read(_db.empleado.id)!,
+          numeroEmpleado: fila.read(_db.empleado.numeroEmpleado)!,
+          nombres: fila.read(_db.empleado.nombres)!,
+          apellidoPaterno: fila.read(_db.empleado.apellidoPaterno)!,
+          apellidoMaterno: fila.read(_db.empleado.apellidoMaterno),
+          estatus: fila.read(_db.empleado.estatus)!,
+          fechaIngreso: fila.read(_db.empleado.fechaIngreso)!,
+          fechaBaja: fila.read(_db.empleado.fechaBaja),
+          motivoBaja: fila.read(_db.empleado.motivoBaja),
+          puestoId: fila.read(_db.empleado.puestoId),
+          sucursalId: fila.read(_db.empleado.sucursalId),
+        ),
+    ];
+  }
+
+  @override
   Future<List<EmpleadoEventoData>> listarEventos(String empleadoId) {
     return (_db.select(_db.empleadoEvento)
           ..where((t) => t.empleadoId.equals(empleadoId))
@@ -230,6 +269,23 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
           ..where((t) => t.empleadoId.equals(empleadoId))
           ..orderBy([(t) => OrderingTerm.desc(t.fechaIngreso)]))
         .get();
+  }
+
+  @override
+  Future<Map<String, List<EmpleadoPeriodoLaboralData>>> listarPeriodosLaboralesArchivadosPorEmpleados(
+    List<String> empleadoIds,
+  ) async {
+    if (empleadoIds.isEmpty) return {};
+    final filas = await (_db.select(_db.empleadoPeriodoLaboral)
+          ..where((t) => t.empleadoId.isIn(empleadoIds))
+          ..orderBy([(t) => OrderingTerm.desc(t.fechaIngreso)]))
+        .get();
+
+    final porEmpleado = <String, List<EmpleadoPeriodoLaboralData>>{};
+    for (final fila in filas) {
+      (porEmpleado[fila.empleadoId] ??= []).add(fila);
+    }
+    return porEmpleado;
   }
 
   @override

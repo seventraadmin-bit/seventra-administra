@@ -37,6 +37,16 @@ abstract interface class PagoNominaRepository {
   /// sobre por qué `NominaEmpleado` no gana un `saldoPendientePago`).
   Future<int> saldoPendientePago(String nominaEmpleadoId);
 
+  /// Versión en lote de [saldoPendientePago] — Etapa 12B (Reportes):
+  /// una sola consulta `selectOnly`+`groupBy` sobre varios renglones a
+  /// la vez, evitando N+1 al calcular el saldo pendiente de un
+  /// conjunto grande de renglones. El llamador resta cada resultado de
+  /// `totalAPagar` (no se hace aquí porque este repositorio no conoce
+  /// `NominaEmpleado.totalAPagar` de cada renglón — eso ya lo tiene
+  /// quien llama). Los renglones sin ninguna aplicación no aparecen en
+  /// el mapa (equivalen a `0` aplicado).
+  Future<Map<String, int>> totalAplicadoPorRenglon(List<String> nominaEmpleadoIds);
+
   /// Suma de `montoTotal` de `PagoNomina` `registrado` (nunca
   /// `cancelado`) cuya `fechaPago` cae en el rango — Etapa 12A
   /// (Reportes), mismo patrón que `EgresoRepository.totalEgresos`.

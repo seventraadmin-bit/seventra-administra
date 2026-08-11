@@ -29,10 +29,29 @@ class CicloLaboralEmpleado {
 /// desde afuera, nunca `DateTime.now()` interno (mismo criterio que
 /// `CalcularFechasCobroUseCase`/`estaVencida`).
 CicloLaboralEmpleado calcularCicloLaboralEmpleado(EmpleadoData empleado, {DateTime? hoy}) {
+  return calcularCicloLaboralDesdeFechas(
+    fechaIngreso: empleado.fechaIngreso,
+    estatus: empleado.estatus,
+    fechaBaja: empleado.fechaBaja,
+    hoy: hoy,
+  );
+}
+
+/// Misma lógica que [calcularCicloLaboralEmpleado], sin depender de
+/// `EmpleadoData` completo — Etapa 12B (Reportes): permite calcularlo
+/// sobre `EmpleadoReporteRow` (proyección segura, sin campos sensibles)
+/// sin tener que construir un `EmpleadoData` falso solo para satisfacer
+/// esta firma.
+CicloLaboralEmpleado calcularCicloLaboralDesdeFechas({
+  required DateTime fechaIngreso,
+  required String estatus,
+  DateTime? fechaBaja,
+  DateTime? hoy,
+}) {
   final referencia = hoy ?? DateTime.now();
-  final activo = EstatusEmpleado.values.byName(empleado.estatus) == EstatusEmpleado.activo;
-  final hasta = activo ? referencia : (empleado.fechaBaja ?? referencia);
-  final ingreso = empleado.fechaIngreso;
+  final activo = EstatusEmpleado.values.byName(estatus) == EstatusEmpleado.activo;
+  final hasta = activo ? referencia : (fechaBaja ?? referencia);
+  final ingreso = fechaIngreso;
 
   var anios = hasta.year - ingreso.year;
   var meses = hasta.month - ingreso.month;

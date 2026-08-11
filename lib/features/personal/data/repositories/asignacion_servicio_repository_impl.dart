@@ -43,6 +43,11 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
   }
 
   @override
+  Future<List<AsignacionServicioData>> listarTodasActivas() {
+    return (_db.select(_db.asignacionServicio)..where((t) => t.fechaTermino.isNull())).get();
+  }
+
+  @override
   Future<List<AsignacionServicioData>> listarPorServicio(String servicioId) {
     return (_db.select(_db.asignacionServicio)
           ..where((t) => t.servicioId.equals(servicioId))
