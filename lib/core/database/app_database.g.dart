@@ -57393,6 +57393,1698 @@ class VehiculoMantenimientoAttachmentCompanion
   }
 }
 
+class $LineaTelefonicaTable extends LineaTelefonica
+    with TableInfo<$LineaTelefonicaTable, LineaTelefonicaData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LineaTelefonicaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _numeroMeta = const VerificationMeta('numero');
+  @override
+  late final GeneratedColumn<String> numero = GeneratedColumn<String>(
+    'numero',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _operadorMeta = const VerificationMeta(
+    'operador',
+  );
+  @override
+  late final GeneratedColumn<String> operador = GeneratedColumn<String>(
+    'operador',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operadorOtroNombreMeta =
+      const VerificationMeta('operadorOtroNombre');
+  @override
+  late final GeneratedColumn<String> operadorOtroNombre =
+      GeneratedColumn<String>(
+        'operador_otro_nombre',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _modalidadSimMeta = const VerificationMeta(
+    'modalidadSim',
+  );
+  @override
+  late final GeneratedColumn<String> modalidadSim = GeneratedColumn<String>(
+    'modalidad_sim',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _iccidMeta = const VerificationMeta('iccid');
+  @override
+  late final GeneratedColumn<String> iccid = GeneratedColumn<String>(
+    'iccid',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaActivacionMeta = const VerificationMeta(
+    'fechaActivacion',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaActivacion =
+      GeneratedColumn<DateTime>(
+        'fecha_activacion',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _estatusMeta = const VerificationMeta(
+    'estatus',
+  );
+  @override
+  late final GeneratedColumn<String> estatus = GeneratedColumn<String>(
+    'estatus',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('activa'),
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaBajaMeta = const VerificationMeta(
+    'fechaBaja',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaBaja = GeneratedColumn<DateTime>(
+    'fecha_baja',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _motivoBajaMeta = const VerificationMeta(
+    'motivoBaja',
+  );
+  @override
+  late final GeneratedColumn<String> motivoBaja = GeneratedColumn<String>(
+    'motivo_baja',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesBajaMeta = const VerificationMeta(
+    'observacionesBaja',
+  );
+  @override
+  late final GeneratedColumn<String> observacionesBaja =
+      GeneratedColumn<String>(
+        'observaciones_baja',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    numero,
+    operador,
+    operadorOtroNombre,
+    modalidadSim,
+    iccid,
+    fechaActivacion,
+    estatus,
+    observaciones,
+    fechaBaja,
+    motivoBaja,
+    observacionesBaja,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'linea_telefonica';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LineaTelefonicaData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoMeta);
+    }
+    if (data.containsKey('numero')) {
+      context.handle(
+        _numeroMeta,
+        numero.isAcceptableOrUnknown(data['numero']!, _numeroMeta),
+      );
+    }
+    if (data.containsKey('operador')) {
+      context.handle(
+        _operadorMeta,
+        operador.isAcceptableOrUnknown(data['operador']!, _operadorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_operadorMeta);
+    }
+    if (data.containsKey('operador_otro_nombre')) {
+      context.handle(
+        _operadorOtroNombreMeta,
+        operadorOtroNombre.isAcceptableOrUnknown(
+          data['operador_otro_nombre']!,
+          _operadorOtroNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('modalidad_sim')) {
+      context.handle(
+        _modalidadSimMeta,
+        modalidadSim.isAcceptableOrUnknown(
+          data['modalidad_sim']!,
+          _modalidadSimMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_modalidadSimMeta);
+    }
+    if (data.containsKey('iccid')) {
+      context.handle(
+        _iccidMeta,
+        iccid.isAcceptableOrUnknown(data['iccid']!, _iccidMeta),
+      );
+    }
+    if (data.containsKey('fecha_activacion')) {
+      context.handle(
+        _fechaActivacionMeta,
+        fechaActivacion.isAcceptableOrUnknown(
+          data['fecha_activacion']!,
+          _fechaActivacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('estatus')) {
+      context.handle(
+        _estatusMeta,
+        estatus.isAcceptableOrUnknown(data['estatus']!, _estatusMeta),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_baja')) {
+      context.handle(
+        _fechaBajaMeta,
+        fechaBaja.isAcceptableOrUnknown(data['fecha_baja']!, _fechaBajaMeta),
+      );
+    }
+    if (data.containsKey('motivo_baja')) {
+      context.handle(
+        _motivoBajaMeta,
+        motivoBaja.isAcceptableOrUnknown(data['motivo_baja']!, _motivoBajaMeta),
+      );
+    }
+    if (data.containsKey('observaciones_baja')) {
+      context.handle(
+        _observacionesBajaMeta,
+        observacionesBaja.isAcceptableOrUnknown(
+          data['observaciones_baja']!,
+          _observacionesBajaMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LineaTelefonicaData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LineaTelefonicaData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      codigo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}codigo'],
+          )!,
+      numero: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}numero'],
+      ),
+      operador:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}operador'],
+          )!,
+      operadorOtroNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operador_otro_nombre'],
+      ),
+      modalidadSim:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}modalidad_sim'],
+          )!,
+      iccid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}iccid'],
+      ),
+      fechaActivacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_activacion'],
+      ),
+      estatus:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}estatus'],
+          )!,
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+      fechaBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_baja'],
+      ),
+      motivoBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motivo_baja'],
+      ),
+      observacionesBaja: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones_baja'],
+      ),
+    );
+  }
+
+  @override
+  $LineaTelefonicaTable createAlias(String alias) {
+    return $LineaTelefonicaTable(attachedDatabase, alias);
+  }
+}
+
+class LineaTelefonicaData extends DataClass
+    implements Insertable<LineaTelefonicaData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String codigo;
+  final String? numero;
+  final String operador;
+
+  /// Solo aplica cuando `operador == otro`. Obligatorio en ese caso
+  /// (validado en `CrearLineaTelefonicaUseCase`/`CorregirLineaTelefonicaUseCase`,
+  /// no por `CHECK` — mismo criterio que el resto del proyecto para
+  /// reglas que dependen del valor de otra columna tipo-enum).
+  final String? operadorOtroNombre;
+  final String modalidadSim;
+  final String? iccid;
+  final DateTime? fechaActivacion;
+  final String estatus;
+  final String? observaciones;
+  final DateTime? fechaBaja;
+  final String? motivoBaja;
+  final String? observacionesBaja;
+  const LineaTelefonicaData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.codigo,
+    this.numero,
+    required this.operador,
+    this.operadorOtroNombre,
+    required this.modalidadSim,
+    this.iccid,
+    this.fechaActivacion,
+    required this.estatus,
+    this.observaciones,
+    this.fechaBaja,
+    this.motivoBaja,
+    this.observacionesBaja,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['codigo'] = Variable<String>(codigo);
+    if (!nullToAbsent || numero != null) {
+      map['numero'] = Variable<String>(numero);
+    }
+    map['operador'] = Variable<String>(operador);
+    if (!nullToAbsent || operadorOtroNombre != null) {
+      map['operador_otro_nombre'] = Variable<String>(operadorOtroNombre);
+    }
+    map['modalidad_sim'] = Variable<String>(modalidadSim);
+    if (!nullToAbsent || iccid != null) {
+      map['iccid'] = Variable<String>(iccid);
+    }
+    if (!nullToAbsent || fechaActivacion != null) {
+      map['fecha_activacion'] = Variable<DateTime>(fechaActivacion);
+    }
+    map['estatus'] = Variable<String>(estatus);
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || fechaBaja != null) {
+      map['fecha_baja'] = Variable<DateTime>(fechaBaja);
+    }
+    if (!nullToAbsent || motivoBaja != null) {
+      map['motivo_baja'] = Variable<String>(motivoBaja);
+    }
+    if (!nullToAbsent || observacionesBaja != null) {
+      map['observaciones_baja'] = Variable<String>(observacionesBaja);
+    }
+    return map;
+  }
+
+  LineaTelefonicaCompanion toCompanion(bool nullToAbsent) {
+    return LineaTelefonicaCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      codigo: Value(codigo),
+      numero:
+          numero == null && nullToAbsent ? const Value.absent() : Value(numero),
+      operador: Value(operador),
+      operadorOtroNombre:
+          operadorOtroNombre == null && nullToAbsent
+              ? const Value.absent()
+              : Value(operadorOtroNombre),
+      modalidadSim: Value(modalidadSim),
+      iccid:
+          iccid == null && nullToAbsent ? const Value.absent() : Value(iccid),
+      fechaActivacion:
+          fechaActivacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaActivacion),
+      estatus: Value(estatus),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+      fechaBaja:
+          fechaBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaBaja),
+      motivoBaja:
+          motivoBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(motivoBaja),
+      observacionesBaja:
+          observacionesBaja == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacionesBaja),
+    );
+  }
+
+  factory LineaTelefonicaData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LineaTelefonicaData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      codigo: serializer.fromJson<String>(json['codigo']),
+      numero: serializer.fromJson<String?>(json['numero']),
+      operador: serializer.fromJson<String>(json['operador']),
+      operadorOtroNombre: serializer.fromJson<String?>(
+        json['operadorOtroNombre'],
+      ),
+      modalidadSim: serializer.fromJson<String>(json['modalidadSim']),
+      iccid: serializer.fromJson<String?>(json['iccid']),
+      fechaActivacion: serializer.fromJson<DateTime?>(json['fechaActivacion']),
+      estatus: serializer.fromJson<String>(json['estatus']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+      fechaBaja: serializer.fromJson<DateTime?>(json['fechaBaja']),
+      motivoBaja: serializer.fromJson<String?>(json['motivoBaja']),
+      observacionesBaja: serializer.fromJson<String?>(
+        json['observacionesBaja'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'codigo': serializer.toJson<String>(codigo),
+      'numero': serializer.toJson<String?>(numero),
+      'operador': serializer.toJson<String>(operador),
+      'operadorOtroNombre': serializer.toJson<String?>(operadorOtroNombre),
+      'modalidadSim': serializer.toJson<String>(modalidadSim),
+      'iccid': serializer.toJson<String?>(iccid),
+      'fechaActivacion': serializer.toJson<DateTime?>(fechaActivacion),
+      'estatus': serializer.toJson<String>(estatus),
+      'observaciones': serializer.toJson<String?>(observaciones),
+      'fechaBaja': serializer.toJson<DateTime?>(fechaBaja),
+      'motivoBaja': serializer.toJson<String?>(motivoBaja),
+      'observacionesBaja': serializer.toJson<String?>(observacionesBaja),
+    };
+  }
+
+  LineaTelefonicaData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? codigo,
+    Value<String?> numero = const Value.absent(),
+    String? operador,
+    Value<String?> operadorOtroNombre = const Value.absent(),
+    String? modalidadSim,
+    Value<String?> iccid = const Value.absent(),
+    Value<DateTime?> fechaActivacion = const Value.absent(),
+    String? estatus,
+    Value<String?> observaciones = const Value.absent(),
+    Value<DateTime?> fechaBaja = const Value.absent(),
+    Value<String?> motivoBaja = const Value.absent(),
+    Value<String?> observacionesBaja = const Value.absent(),
+  }) => LineaTelefonicaData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    codigo: codigo ?? this.codigo,
+    numero: numero.present ? numero.value : this.numero,
+    operador: operador ?? this.operador,
+    operadorOtroNombre:
+        operadorOtroNombre.present
+            ? operadorOtroNombre.value
+            : this.operadorOtroNombre,
+    modalidadSim: modalidadSim ?? this.modalidadSim,
+    iccid: iccid.present ? iccid.value : this.iccid,
+    fechaActivacion:
+        fechaActivacion.present ? fechaActivacion.value : this.fechaActivacion,
+    estatus: estatus ?? this.estatus,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+    fechaBaja: fechaBaja.present ? fechaBaja.value : this.fechaBaja,
+    motivoBaja: motivoBaja.present ? motivoBaja.value : this.motivoBaja,
+    observacionesBaja:
+        observacionesBaja.present
+            ? observacionesBaja.value
+            : this.observacionesBaja,
+  );
+  LineaTelefonicaData copyWithCompanion(LineaTelefonicaCompanion data) {
+    return LineaTelefonicaData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+      numero: data.numero.present ? data.numero.value : this.numero,
+      operador: data.operador.present ? data.operador.value : this.operador,
+      operadorOtroNombre:
+          data.operadorOtroNombre.present
+              ? data.operadorOtroNombre.value
+              : this.operadorOtroNombre,
+      modalidadSim:
+          data.modalidadSim.present
+              ? data.modalidadSim.value
+              : this.modalidadSim,
+      iccid: data.iccid.present ? data.iccid.value : this.iccid,
+      fechaActivacion:
+          data.fechaActivacion.present
+              ? data.fechaActivacion.value
+              : this.fechaActivacion,
+      estatus: data.estatus.present ? data.estatus.value : this.estatus,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+      fechaBaja: data.fechaBaja.present ? data.fechaBaja.value : this.fechaBaja,
+      motivoBaja:
+          data.motivoBaja.present ? data.motivoBaja.value : this.motivoBaja,
+      observacionesBaja:
+          data.observacionesBaja.present
+              ? data.observacionesBaja.value
+              : this.observacionesBaja,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LineaTelefonicaData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('numero: $numero, ')
+          ..write('operador: $operador, ')
+          ..write('operadorOtroNombre: $operadorOtroNombre, ')
+          ..write('modalidadSim: $modalidadSim, ')
+          ..write('iccid: $iccid, ')
+          ..write('fechaActivacion: $fechaActivacion, ')
+          ..write('estatus: $estatus, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('fechaBaja: $fechaBaja, ')
+          ..write('motivoBaja: $motivoBaja, ')
+          ..write('observacionesBaja: $observacionesBaja')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    codigo,
+    numero,
+    operador,
+    operadorOtroNombre,
+    modalidadSim,
+    iccid,
+    fechaActivacion,
+    estatus,
+    observaciones,
+    fechaBaja,
+    motivoBaja,
+    observacionesBaja,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LineaTelefonicaData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.codigo == this.codigo &&
+          other.numero == this.numero &&
+          other.operador == this.operador &&
+          other.operadorOtroNombre == this.operadorOtroNombre &&
+          other.modalidadSim == this.modalidadSim &&
+          other.iccid == this.iccid &&
+          other.fechaActivacion == this.fechaActivacion &&
+          other.estatus == this.estatus &&
+          other.observaciones == this.observaciones &&
+          other.fechaBaja == this.fechaBaja &&
+          other.motivoBaja == this.motivoBaja &&
+          other.observacionesBaja == this.observacionesBaja);
+}
+
+class LineaTelefonicaCompanion extends UpdateCompanion<LineaTelefonicaData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> codigo;
+  final Value<String?> numero;
+  final Value<String> operador;
+  final Value<String?> operadorOtroNombre;
+  final Value<String> modalidadSim;
+  final Value<String?> iccid;
+  final Value<DateTime?> fechaActivacion;
+  final Value<String> estatus;
+  final Value<String?> observaciones;
+  final Value<DateTime?> fechaBaja;
+  final Value<String?> motivoBaja;
+  final Value<String?> observacionesBaja;
+  final Value<int> rowid;
+  const LineaTelefonicaCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.numero = const Value.absent(),
+    this.operador = const Value.absent(),
+    this.operadorOtroNombre = const Value.absent(),
+    this.modalidadSim = const Value.absent(),
+    this.iccid = const Value.absent(),
+    this.fechaActivacion = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.fechaBaja = const Value.absent(),
+    this.motivoBaja = const Value.absent(),
+    this.observacionesBaja = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LineaTelefonicaCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String codigo,
+    this.numero = const Value.absent(),
+    required String operador,
+    this.operadorOtroNombre = const Value.absent(),
+    required String modalidadSim,
+    this.iccid = const Value.absent(),
+    this.fechaActivacion = const Value.absent(),
+    this.estatus = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.fechaBaja = const Value.absent(),
+    this.motivoBaja = const Value.absent(),
+    this.observacionesBaja = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : codigo = Value(codigo),
+       operador = Value(operador),
+       modalidadSim = Value(modalidadSim);
+  static Insertable<LineaTelefonicaData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? codigo,
+    Expression<String>? numero,
+    Expression<String>? operador,
+    Expression<String>? operadorOtroNombre,
+    Expression<String>? modalidadSim,
+    Expression<String>? iccid,
+    Expression<DateTime>? fechaActivacion,
+    Expression<String>? estatus,
+    Expression<String>? observaciones,
+    Expression<DateTime>? fechaBaja,
+    Expression<String>? motivoBaja,
+    Expression<String>? observacionesBaja,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (codigo != null) 'codigo': codigo,
+      if (numero != null) 'numero': numero,
+      if (operador != null) 'operador': operador,
+      if (operadorOtroNombre != null)
+        'operador_otro_nombre': operadorOtroNombre,
+      if (modalidadSim != null) 'modalidad_sim': modalidadSim,
+      if (iccid != null) 'iccid': iccid,
+      if (fechaActivacion != null) 'fecha_activacion': fechaActivacion,
+      if (estatus != null) 'estatus': estatus,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (fechaBaja != null) 'fecha_baja': fechaBaja,
+      if (motivoBaja != null) 'motivo_baja': motivoBaja,
+      if (observacionesBaja != null) 'observaciones_baja': observacionesBaja,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LineaTelefonicaCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? codigo,
+    Value<String?>? numero,
+    Value<String>? operador,
+    Value<String?>? operadorOtroNombre,
+    Value<String>? modalidadSim,
+    Value<String?>? iccid,
+    Value<DateTime?>? fechaActivacion,
+    Value<String>? estatus,
+    Value<String?>? observaciones,
+    Value<DateTime?>? fechaBaja,
+    Value<String?>? motivoBaja,
+    Value<String?>? observacionesBaja,
+    Value<int>? rowid,
+  }) {
+    return LineaTelefonicaCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      codigo: codigo ?? this.codigo,
+      numero: numero ?? this.numero,
+      operador: operador ?? this.operador,
+      operadorOtroNombre: operadorOtroNombre ?? this.operadorOtroNombre,
+      modalidadSim: modalidadSim ?? this.modalidadSim,
+      iccid: iccid ?? this.iccid,
+      fechaActivacion: fechaActivacion ?? this.fechaActivacion,
+      estatus: estatus ?? this.estatus,
+      observaciones: observaciones ?? this.observaciones,
+      fechaBaja: fechaBaja ?? this.fechaBaja,
+      motivoBaja: motivoBaja ?? this.motivoBaja,
+      observacionesBaja: observacionesBaja ?? this.observacionesBaja,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (numero.present) {
+      map['numero'] = Variable<String>(numero.value);
+    }
+    if (operador.present) {
+      map['operador'] = Variable<String>(operador.value);
+    }
+    if (operadorOtroNombre.present) {
+      map['operador_otro_nombre'] = Variable<String>(operadorOtroNombre.value);
+    }
+    if (modalidadSim.present) {
+      map['modalidad_sim'] = Variable<String>(modalidadSim.value);
+    }
+    if (iccid.present) {
+      map['iccid'] = Variable<String>(iccid.value);
+    }
+    if (fechaActivacion.present) {
+      map['fecha_activacion'] = Variable<DateTime>(fechaActivacion.value);
+    }
+    if (estatus.present) {
+      map['estatus'] = Variable<String>(estatus.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (fechaBaja.present) {
+      map['fecha_baja'] = Variable<DateTime>(fechaBaja.value);
+    }
+    if (motivoBaja.present) {
+      map['motivo_baja'] = Variable<String>(motivoBaja.value);
+    }
+    if (observacionesBaja.present) {
+      map['observaciones_baja'] = Variable<String>(observacionesBaja.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LineaTelefonicaCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('codigo: $codigo, ')
+          ..write('numero: $numero, ')
+          ..write('operador: $operador, ')
+          ..write('operadorOtroNombre: $operadorOtroNombre, ')
+          ..write('modalidadSim: $modalidadSim, ')
+          ..write('iccid: $iccid, ')
+          ..write('fechaActivacion: $fechaActivacion, ')
+          ..write('estatus: $estatus, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('fechaBaja: $fechaBaja, ')
+          ..write('motivoBaja: $motivoBaja, ')
+          ..write('observacionesBaja: $observacionesBaja, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LineaTelefonicaPlanTable extends LineaTelefonicaPlan
+    with TableInfo<$LineaTelefonicaPlanTable, LineaTelefonicaPlanData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LineaTelefonicaPlanTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _lineaTelefonicaIdMeta = const VerificationMeta(
+    'lineaTelefonicaId',
+  );
+  @override
+  late final GeneratedColumn<String> lineaTelefonicaId =
+      GeneratedColumn<String>(
+        'linea_telefonica_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES linea_telefonica (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _costoMensualMeta = const VerificationMeta(
+    'costoMensual',
+  );
+  @override
+  late final GeneratedColumn<int> costoMensual = GeneratedColumn<int>(
+    'costo_mensual',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaInicioVigenciaMeta =
+      const VerificationMeta('fechaInicioVigencia');
+  @override
+  late final GeneratedColumn<DateTime> fechaInicioVigencia =
+      GeneratedColumn<DateTime>(
+        'fecha_inicio_vigencia',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _fechaFinVigenciaMeta = const VerificationMeta(
+    'fechaFinVigencia',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaFinVigencia =
+      GeneratedColumn<DateTime>(
+        'fecha_fin_vigencia',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _fechaFinPermanenciaMeta =
+      const VerificationMeta('fechaFinPermanencia');
+  @override
+  late final GeneratedColumn<DateTime> fechaFinPermanencia =
+      GeneratedColumn<DateTime>(
+        'fecha_fin_permanencia',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    lineaTelefonicaId,
+    nombre,
+    costoMensual,
+    fechaInicioVigencia,
+    fechaFinVigencia,
+    fechaFinPermanencia,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'linea_telefonica_plan';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LineaTelefonicaPlanData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('linea_telefonica_id')) {
+      context.handle(
+        _lineaTelefonicaIdMeta,
+        lineaTelefonicaId.isAcceptableOrUnknown(
+          data['linea_telefonica_id']!,
+          _lineaTelefonicaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lineaTelefonicaIdMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('costo_mensual')) {
+      context.handle(
+        _costoMensualMeta,
+        costoMensual.isAcceptableOrUnknown(
+          data['costo_mensual']!,
+          _costoMensualMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_costoMensualMeta);
+    }
+    if (data.containsKey('fecha_inicio_vigencia')) {
+      context.handle(
+        _fechaInicioVigenciaMeta,
+        fechaInicioVigencia.isAcceptableOrUnknown(
+          data['fecha_inicio_vigencia']!,
+          _fechaInicioVigenciaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaInicioVigenciaMeta);
+    }
+    if (data.containsKey('fecha_fin_vigencia')) {
+      context.handle(
+        _fechaFinVigenciaMeta,
+        fechaFinVigencia.isAcceptableOrUnknown(
+          data['fecha_fin_vigencia']!,
+          _fechaFinVigenciaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_fin_permanencia')) {
+      context.handle(
+        _fechaFinPermanenciaMeta,
+        fechaFinPermanencia.isAcceptableOrUnknown(
+          data['fecha_fin_permanencia']!,
+          _fechaFinPermanenciaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LineaTelefonicaPlanData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LineaTelefonicaPlanData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      lineaTelefonicaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}linea_telefonica_id'],
+          )!,
+      nombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre'],
+          )!,
+      costoMensual:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}costo_mensual'],
+          )!,
+      fechaInicioVigencia:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_inicio_vigencia'],
+          )!,
+      fechaFinVigencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_fin_vigencia'],
+      ),
+      fechaFinPermanencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_fin_permanencia'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $LineaTelefonicaPlanTable createAlias(String alias) {
+    return $LineaTelefonicaPlanTable(attachedDatabase, alias);
+  }
+}
+
+class LineaTelefonicaPlanData extends DataClass
+    implements Insertable<LineaTelefonicaPlanData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String lineaTelefonicaId;
+  final String nombre;
+  final int costoMensual;
+  final DateTime fechaInicioVigencia;
+  final DateTime? fechaFinVigencia;
+  final DateTime? fechaFinPermanencia;
+  final String? observaciones;
+  const LineaTelefonicaPlanData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.lineaTelefonicaId,
+    required this.nombre,
+    required this.costoMensual,
+    required this.fechaInicioVigencia,
+    this.fechaFinVigencia,
+    this.fechaFinPermanencia,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['linea_telefonica_id'] = Variable<String>(lineaTelefonicaId);
+    map['nombre'] = Variable<String>(nombre);
+    map['costo_mensual'] = Variable<int>(costoMensual);
+    map['fecha_inicio_vigencia'] = Variable<DateTime>(fechaInicioVigencia);
+    if (!nullToAbsent || fechaFinVigencia != null) {
+      map['fecha_fin_vigencia'] = Variable<DateTime>(fechaFinVigencia);
+    }
+    if (!nullToAbsent || fechaFinPermanencia != null) {
+      map['fecha_fin_permanencia'] = Variable<DateTime>(fechaFinPermanencia);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  LineaTelefonicaPlanCompanion toCompanion(bool nullToAbsent) {
+    return LineaTelefonicaPlanCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      lineaTelefonicaId: Value(lineaTelefonicaId),
+      nombre: Value(nombre),
+      costoMensual: Value(costoMensual),
+      fechaInicioVigencia: Value(fechaInicioVigencia),
+      fechaFinVigencia:
+          fechaFinVigencia == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaFinVigencia),
+      fechaFinPermanencia:
+          fechaFinPermanencia == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaFinPermanencia),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory LineaTelefonicaPlanData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LineaTelefonicaPlanData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      lineaTelefonicaId: serializer.fromJson<String>(json['lineaTelefonicaId']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      costoMensual: serializer.fromJson<int>(json['costoMensual']),
+      fechaInicioVigencia: serializer.fromJson<DateTime>(
+        json['fechaInicioVigencia'],
+      ),
+      fechaFinVigencia: serializer.fromJson<DateTime?>(
+        json['fechaFinVigencia'],
+      ),
+      fechaFinPermanencia: serializer.fromJson<DateTime?>(
+        json['fechaFinPermanencia'],
+      ),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'lineaTelefonicaId': serializer.toJson<String>(lineaTelefonicaId),
+      'nombre': serializer.toJson<String>(nombre),
+      'costoMensual': serializer.toJson<int>(costoMensual),
+      'fechaInicioVigencia': serializer.toJson<DateTime>(fechaInicioVigencia),
+      'fechaFinVigencia': serializer.toJson<DateTime?>(fechaFinVigencia),
+      'fechaFinPermanencia': serializer.toJson<DateTime?>(fechaFinPermanencia),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  LineaTelefonicaPlanData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? lineaTelefonicaId,
+    String? nombre,
+    int? costoMensual,
+    DateTime? fechaInicioVigencia,
+    Value<DateTime?> fechaFinVigencia = const Value.absent(),
+    Value<DateTime?> fechaFinPermanencia = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => LineaTelefonicaPlanData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    lineaTelefonicaId: lineaTelefonicaId ?? this.lineaTelefonicaId,
+    nombre: nombre ?? this.nombre,
+    costoMensual: costoMensual ?? this.costoMensual,
+    fechaInicioVigencia: fechaInicioVigencia ?? this.fechaInicioVigencia,
+    fechaFinVigencia:
+        fechaFinVigencia.present
+            ? fechaFinVigencia.value
+            : this.fechaFinVigencia,
+    fechaFinPermanencia:
+        fechaFinPermanencia.present
+            ? fechaFinPermanencia.value
+            : this.fechaFinPermanencia,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  LineaTelefonicaPlanData copyWithCompanion(LineaTelefonicaPlanCompanion data) {
+    return LineaTelefonicaPlanData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      lineaTelefonicaId:
+          data.lineaTelefonicaId.present
+              ? data.lineaTelefonicaId.value
+              : this.lineaTelefonicaId,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      costoMensual:
+          data.costoMensual.present
+              ? data.costoMensual.value
+              : this.costoMensual,
+      fechaInicioVigencia:
+          data.fechaInicioVigencia.present
+              ? data.fechaInicioVigencia.value
+              : this.fechaInicioVigencia,
+      fechaFinVigencia:
+          data.fechaFinVigencia.present
+              ? data.fechaFinVigencia.value
+              : this.fechaFinVigencia,
+      fechaFinPermanencia:
+          data.fechaFinPermanencia.present
+              ? data.fechaFinPermanencia.value
+              : this.fechaFinPermanencia,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LineaTelefonicaPlanData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('lineaTelefonicaId: $lineaTelefonicaId, ')
+          ..write('nombre: $nombre, ')
+          ..write('costoMensual: $costoMensual, ')
+          ..write('fechaInicioVigencia: $fechaInicioVigencia, ')
+          ..write('fechaFinVigencia: $fechaFinVigencia, ')
+          ..write('fechaFinPermanencia: $fechaFinPermanencia, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    lineaTelefonicaId,
+    nombre,
+    costoMensual,
+    fechaInicioVigencia,
+    fechaFinVigencia,
+    fechaFinPermanencia,
+    observaciones,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LineaTelefonicaPlanData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.lineaTelefonicaId == this.lineaTelefonicaId &&
+          other.nombre == this.nombre &&
+          other.costoMensual == this.costoMensual &&
+          other.fechaInicioVigencia == this.fechaInicioVigencia &&
+          other.fechaFinVigencia == this.fechaFinVigencia &&
+          other.fechaFinPermanencia == this.fechaFinPermanencia &&
+          other.observaciones == this.observaciones);
+}
+
+class LineaTelefonicaPlanCompanion
+    extends UpdateCompanion<LineaTelefonicaPlanData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> lineaTelefonicaId;
+  final Value<String> nombre;
+  final Value<int> costoMensual;
+  final Value<DateTime> fechaInicioVigencia;
+  final Value<DateTime?> fechaFinVigencia;
+  final Value<DateTime?> fechaFinPermanencia;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const LineaTelefonicaPlanCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.lineaTelefonicaId = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.costoMensual = const Value.absent(),
+    this.fechaInicioVigencia = const Value.absent(),
+    this.fechaFinVigencia = const Value.absent(),
+    this.fechaFinPermanencia = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LineaTelefonicaPlanCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String lineaTelefonicaId,
+    required String nombre,
+    required int costoMensual,
+    required DateTime fechaInicioVigencia,
+    this.fechaFinVigencia = const Value.absent(),
+    this.fechaFinPermanencia = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : lineaTelefonicaId = Value(lineaTelefonicaId),
+       nombre = Value(nombre),
+       costoMensual = Value(costoMensual),
+       fechaInicioVigencia = Value(fechaInicioVigencia);
+  static Insertable<LineaTelefonicaPlanData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? lineaTelefonicaId,
+    Expression<String>? nombre,
+    Expression<int>? costoMensual,
+    Expression<DateTime>? fechaInicioVigencia,
+    Expression<DateTime>? fechaFinVigencia,
+    Expression<DateTime>? fechaFinPermanencia,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (lineaTelefonicaId != null) 'linea_telefonica_id': lineaTelefonicaId,
+      if (nombre != null) 'nombre': nombre,
+      if (costoMensual != null) 'costo_mensual': costoMensual,
+      if (fechaInicioVigencia != null)
+        'fecha_inicio_vigencia': fechaInicioVigencia,
+      if (fechaFinVigencia != null) 'fecha_fin_vigencia': fechaFinVigencia,
+      if (fechaFinPermanencia != null)
+        'fecha_fin_permanencia': fechaFinPermanencia,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LineaTelefonicaPlanCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? lineaTelefonicaId,
+    Value<String>? nombre,
+    Value<int>? costoMensual,
+    Value<DateTime>? fechaInicioVigencia,
+    Value<DateTime?>? fechaFinVigencia,
+    Value<DateTime?>? fechaFinPermanencia,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return LineaTelefonicaPlanCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      lineaTelefonicaId: lineaTelefonicaId ?? this.lineaTelefonicaId,
+      nombre: nombre ?? this.nombre,
+      costoMensual: costoMensual ?? this.costoMensual,
+      fechaInicioVigencia: fechaInicioVigencia ?? this.fechaInicioVigencia,
+      fechaFinVigencia: fechaFinVigencia ?? this.fechaFinVigencia,
+      fechaFinPermanencia: fechaFinPermanencia ?? this.fechaFinPermanencia,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (lineaTelefonicaId.present) {
+      map['linea_telefonica_id'] = Variable<String>(lineaTelefonicaId.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (costoMensual.present) {
+      map['costo_mensual'] = Variable<int>(costoMensual.value);
+    }
+    if (fechaInicioVigencia.present) {
+      map['fecha_inicio_vigencia'] = Variable<DateTime>(
+        fechaInicioVigencia.value,
+      );
+    }
+    if (fechaFinVigencia.present) {
+      map['fecha_fin_vigencia'] = Variable<DateTime>(fechaFinVigencia.value);
+    }
+    if (fechaFinPermanencia.present) {
+      map['fecha_fin_permanencia'] = Variable<DateTime>(
+        fechaFinPermanencia.value,
+      );
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LineaTelefonicaPlanCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('lineaTelefonicaId: $lineaTelefonicaId, ')
+          ..write('nombre: $nombre, ')
+          ..write('costoMensual: $costoMensual, ')
+          ..write('fechaInicioVigencia: $fechaInicioVigencia, ')
+          ..write('fechaFinVigencia: $fechaFinVigencia, ')
+          ..write('fechaFinPermanencia: $fechaFinPermanencia, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -57541,6 +59233,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $VehiculoMantenimientoTable(this);
   late final $VehiculoMantenimientoAttachmentTable
   vehiculoMantenimientoAttachment = $VehiculoMantenimientoAttachmentTable(this);
+  late final $LineaTelefonicaTable lineaTelefonica = $LineaTelefonicaTable(
+    this,
+  );
+  late final $LineaTelefonicaPlanTable lineaTelefonicaPlan =
+      $LineaTelefonicaPlanTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -57576,6 +59273,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxAsignacionVehiculoVigente = Index(
     'idx_asignacion_vehiculo_vigente',
     'CREATE UNIQUE INDEX idx_asignacion_vehiculo_vigente ON asignacion_vehiculo (vehiculo_id) WHERE fecha_termino IS NULL',
+  );
+  late final Index idxLineaTelefonicaNumeroUnico = Index(
+    'idx_linea_telefonica_numero_unico',
+    'CREATE UNIQUE INDEX idx_linea_telefonica_numero_unico ON linea_telefonica (numero) WHERE numero IS NOT NULL',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -57669,6 +59370,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     vehiculoDocumentoAttachment,
     vehiculoMantenimiento,
     vehiculoMantenimientoAttachment,
+    lineaTelefonica,
+    lineaTelefonicaPlan,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -57678,6 +59381,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxVehiculoPlacasUnica,
     idxVehiculoVinUnico,
     idxAsignacionVehiculoVigente,
+    idxLineaTelefonicaNumeroUnico,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -114124,6 +115828,1038 @@ typedef $$VehiculoMantenimientoAttachmentTableProcessedTableManager =
       VehiculoMantenimientoAttachmentData,
       PrefetchHooks Function({bool attachmentId, bool vehiculoMantenimientoId})
     >;
+typedef $$LineaTelefonicaTableCreateCompanionBuilder =
+    LineaTelefonicaCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String codigo,
+      Value<String?> numero,
+      required String operador,
+      Value<String?> operadorOtroNombre,
+      required String modalidadSim,
+      Value<String?> iccid,
+      Value<DateTime?> fechaActivacion,
+      Value<String> estatus,
+      Value<String?> observaciones,
+      Value<DateTime?> fechaBaja,
+      Value<String?> motivoBaja,
+      Value<String?> observacionesBaja,
+      Value<int> rowid,
+    });
+typedef $$LineaTelefonicaTableUpdateCompanionBuilder =
+    LineaTelefonicaCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> codigo,
+      Value<String?> numero,
+      Value<String> operador,
+      Value<String?> operadorOtroNombre,
+      Value<String> modalidadSim,
+      Value<String?> iccid,
+      Value<DateTime?> fechaActivacion,
+      Value<String> estatus,
+      Value<String?> observaciones,
+      Value<DateTime?> fechaBaja,
+      Value<String?> motivoBaja,
+      Value<String?> observacionesBaja,
+      Value<int> rowid,
+    });
+
+final class $$LineaTelefonicaTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $LineaTelefonicaTable,
+          LineaTelefonicaData
+        > {
+  $$LineaTelefonicaTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<
+    $LineaTelefonicaPlanTable,
+    List<LineaTelefonicaPlanData>
+  >
+  _lineaTelefonicaPlanRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.lineaTelefonicaPlan,
+        aliasName: $_aliasNameGenerator(
+          db.lineaTelefonica.id,
+          db.lineaTelefonicaPlan.lineaTelefonicaId,
+        ),
+      );
+
+  $$LineaTelefonicaPlanTableProcessedTableManager get lineaTelefonicaPlanRefs {
+    final manager = $$LineaTelefonicaPlanTableTableManager(
+      $_db,
+      $_db.lineaTelefonicaPlan,
+    ).filter(
+      (f) => f.lineaTelefonicaId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _lineaTelefonicaPlanRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$LineaTelefonicaTableFilterComposer
+    extends Composer<_$AppDatabase, $LineaTelefonicaTable> {
+  $$LineaTelefonicaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get numero => $composableBuilder(
+    column: $table.numero,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operador => $composableBuilder(
+    column: $table.operador,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operadorOtroNombre => $composableBuilder(
+    column: $table.operadorOtroNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modalidadSim => $composableBuilder(
+    column: $table.modalidadSim,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get iccid => $composableBuilder(
+    column: $table.iccid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaActivacion => $composableBuilder(
+    column: $table.fechaActivacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaBaja => $composableBuilder(
+    column: $table.fechaBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> lineaTelefonicaPlanRefs(
+    Expression<bool> Function($$LineaTelefonicaPlanTableFilterComposer f) f,
+  ) {
+    final $$LineaTelefonicaPlanTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.lineaTelefonicaPlan,
+      getReferencedColumn: (t) => t.lineaTelefonicaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaPlanTableFilterComposer(
+            $db: $db,
+            $table: $db.lineaTelefonicaPlan,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$LineaTelefonicaTableOrderingComposer
+    extends Composer<_$AppDatabase, $LineaTelefonicaTable> {
+  $$LineaTelefonicaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get numero => $composableBuilder(
+    column: $table.numero,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operador => $composableBuilder(
+    column: $table.operador,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operadorOtroNombre => $composableBuilder(
+    column: $table.operadorOtroNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modalidadSim => $composableBuilder(
+    column: $table.modalidadSim,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get iccid => $composableBuilder(
+    column: $table.iccid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaActivacion => $composableBuilder(
+    column: $table.fechaActivacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estatus => $composableBuilder(
+    column: $table.estatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaBaja => $composableBuilder(
+    column: $table.fechaBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LineaTelefonicaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LineaTelefonicaTable> {
+  $$LineaTelefonicaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  GeneratedColumn<String> get numero =>
+      $composableBuilder(column: $table.numero, builder: (column) => column);
+
+  GeneratedColumn<String> get operador =>
+      $composableBuilder(column: $table.operador, builder: (column) => column);
+
+  GeneratedColumn<String> get operadorOtroNombre => $composableBuilder(
+    column: $table.operadorOtroNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modalidadSim => $composableBuilder(
+    column: $table.modalidadSim,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get iccid =>
+      $composableBuilder(column: $table.iccid, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaActivacion => $composableBuilder(
+    column: $table.fechaActivacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estatus =>
+      $composableBuilder(column: $table.estatus, builder: (column) => column);
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaBaja =>
+      $composableBuilder(column: $table.fechaBaja, builder: (column) => column);
+
+  GeneratedColumn<String> get motivoBaja => $composableBuilder(
+    column: $table.motivoBaja,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacionesBaja => $composableBuilder(
+    column: $table.observacionesBaja,
+    builder: (column) => column,
+  );
+
+  Expression<T> lineaTelefonicaPlanRefs<T extends Object>(
+    Expression<T> Function($$LineaTelefonicaPlanTableAnnotationComposer a) f,
+  ) {
+    final $$LineaTelefonicaPlanTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.lineaTelefonicaPlan,
+          getReferencedColumn: (t) => t.lineaTelefonicaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$LineaTelefonicaPlanTableAnnotationComposer(
+                $db: $db,
+                $table: $db.lineaTelefonicaPlan,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$LineaTelefonicaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LineaTelefonicaTable,
+          LineaTelefonicaData,
+          $$LineaTelefonicaTableFilterComposer,
+          $$LineaTelefonicaTableOrderingComposer,
+          $$LineaTelefonicaTableAnnotationComposer,
+          $$LineaTelefonicaTableCreateCompanionBuilder,
+          $$LineaTelefonicaTableUpdateCompanionBuilder,
+          (LineaTelefonicaData, $$LineaTelefonicaTableReferences),
+          LineaTelefonicaData,
+          PrefetchHooks Function({bool lineaTelefonicaPlanRefs})
+        > {
+  $$LineaTelefonicaTableTableManager(
+    _$AppDatabase db,
+    $LineaTelefonicaTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () =>
+                  $$LineaTelefonicaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$LineaTelefonicaTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$LineaTelefonicaTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> codigo = const Value.absent(),
+                Value<String?> numero = const Value.absent(),
+                Value<String> operador = const Value.absent(),
+                Value<String?> operadorOtroNombre = const Value.absent(),
+                Value<String> modalidadSim = const Value.absent(),
+                Value<String?> iccid = const Value.absent(),
+                Value<DateTime?> fechaActivacion = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<DateTime?> fechaBaja = const Value.absent(),
+                Value<String?> motivoBaja = const Value.absent(),
+                Value<String?> observacionesBaja = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LineaTelefonicaCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                numero: numero,
+                operador: operador,
+                operadorOtroNombre: operadorOtroNombre,
+                modalidadSim: modalidadSim,
+                iccid: iccid,
+                fechaActivacion: fechaActivacion,
+                estatus: estatus,
+                observaciones: observaciones,
+                fechaBaja: fechaBaja,
+                motivoBaja: motivoBaja,
+                observacionesBaja: observacionesBaja,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String codigo,
+                Value<String?> numero = const Value.absent(),
+                required String operador,
+                Value<String?> operadorOtroNombre = const Value.absent(),
+                required String modalidadSim,
+                Value<String?> iccid = const Value.absent(),
+                Value<DateTime?> fechaActivacion = const Value.absent(),
+                Value<String> estatus = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<DateTime?> fechaBaja = const Value.absent(),
+                Value<String?> motivoBaja = const Value.absent(),
+                Value<String?> observacionesBaja = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LineaTelefonicaCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                codigo: codigo,
+                numero: numero,
+                operador: operador,
+                operadorOtroNombre: operadorOtroNombre,
+                modalidadSim: modalidadSim,
+                iccid: iccid,
+                fechaActivacion: fechaActivacion,
+                estatus: estatus,
+                observaciones: observaciones,
+                fechaBaja: fechaBaja,
+                motivoBaja: motivoBaja,
+                observacionesBaja: observacionesBaja,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$LineaTelefonicaTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({lineaTelefonicaPlanRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (lineaTelefonicaPlanRefs) db.lineaTelefonicaPlan,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (lineaTelefonicaPlanRefs)
+                    await $_getPrefetchedData<
+                      LineaTelefonicaData,
+                      $LineaTelefonicaTable,
+                      LineaTelefonicaPlanData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$LineaTelefonicaTableReferences
+                          ._lineaTelefonicaPlanRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$LineaTelefonicaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).lineaTelefonicaPlanRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.lineaTelefonicaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LineaTelefonicaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LineaTelefonicaTable,
+      LineaTelefonicaData,
+      $$LineaTelefonicaTableFilterComposer,
+      $$LineaTelefonicaTableOrderingComposer,
+      $$LineaTelefonicaTableAnnotationComposer,
+      $$LineaTelefonicaTableCreateCompanionBuilder,
+      $$LineaTelefonicaTableUpdateCompanionBuilder,
+      (LineaTelefonicaData, $$LineaTelefonicaTableReferences),
+      LineaTelefonicaData,
+      PrefetchHooks Function({bool lineaTelefonicaPlanRefs})
+    >;
+typedef $$LineaTelefonicaPlanTableCreateCompanionBuilder =
+    LineaTelefonicaPlanCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String lineaTelefonicaId,
+      required String nombre,
+      required int costoMensual,
+      required DateTime fechaInicioVigencia,
+      Value<DateTime?> fechaFinVigencia,
+      Value<DateTime?> fechaFinPermanencia,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$LineaTelefonicaPlanTableUpdateCompanionBuilder =
+    LineaTelefonicaPlanCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> lineaTelefonicaId,
+      Value<String> nombre,
+      Value<int> costoMensual,
+      Value<DateTime> fechaInicioVigencia,
+      Value<DateTime?> fechaFinVigencia,
+      Value<DateTime?> fechaFinPermanencia,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$LineaTelefonicaPlanTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $LineaTelefonicaPlanTable,
+          LineaTelefonicaPlanData
+        > {
+  $$LineaTelefonicaPlanTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $LineaTelefonicaTable _lineaTelefonicaIdTable(_$AppDatabase db) =>
+      db.lineaTelefonica.createAlias(
+        $_aliasNameGenerator(
+          db.lineaTelefonicaPlan.lineaTelefonicaId,
+          db.lineaTelefonica.id,
+        ),
+      );
+
+  $$LineaTelefonicaTableProcessedTableManager get lineaTelefonicaId {
+    final $_column = $_itemColumn<String>('linea_telefonica_id')!;
+
+    final manager = $$LineaTelefonicaTableTableManager(
+      $_db,
+      $_db.lineaTelefonica,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_lineaTelefonicaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$LineaTelefonicaPlanTableFilterComposer
+    extends Composer<_$AppDatabase, $LineaTelefonicaPlanTable> {
+  $$LineaTelefonicaPlanTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get costoMensual => $composableBuilder(
+    column: $table.costoMensual,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaInicioVigencia => $composableBuilder(
+    column: $table.fechaInicioVigencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaFinVigencia => $composableBuilder(
+    column: $table.fechaFinVigencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaFinPermanencia => $composableBuilder(
+    column: $table.fechaFinPermanencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LineaTelefonicaTableFilterComposer get lineaTelefonicaId {
+    final $$LineaTelefonicaTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lineaTelefonicaId,
+      referencedTable: $db.lineaTelefonica,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaTableFilterComposer(
+            $db: $db,
+            $table: $db.lineaTelefonica,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LineaTelefonicaPlanTableOrderingComposer
+    extends Composer<_$AppDatabase, $LineaTelefonicaPlanTable> {
+  $$LineaTelefonicaPlanTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get costoMensual => $composableBuilder(
+    column: $table.costoMensual,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaInicioVigencia => $composableBuilder(
+    column: $table.fechaInicioVigencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaFinVigencia => $composableBuilder(
+    column: $table.fechaFinVigencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaFinPermanencia => $composableBuilder(
+    column: $table.fechaFinPermanencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LineaTelefonicaTableOrderingComposer get lineaTelefonicaId {
+    final $$LineaTelefonicaTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lineaTelefonicaId,
+      referencedTable: $db.lineaTelefonica,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaTableOrderingComposer(
+            $db: $db,
+            $table: $db.lineaTelefonica,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LineaTelefonicaPlanTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LineaTelefonicaPlanTable> {
+  $$LineaTelefonicaPlanTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<int> get costoMensual => $composableBuilder(
+    column: $table.costoMensual,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaInicioVigencia => $composableBuilder(
+    column: $table.fechaInicioVigencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaFinVigencia => $composableBuilder(
+    column: $table.fechaFinVigencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaFinPermanencia => $composableBuilder(
+    column: $table.fechaFinPermanencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  $$LineaTelefonicaTableAnnotationComposer get lineaTelefonicaId {
+    final $$LineaTelefonicaTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lineaTelefonicaId,
+      referencedTable: $db.lineaTelefonica,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LineaTelefonicaTableAnnotationComposer(
+            $db: $db,
+            $table: $db.lineaTelefonica,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LineaTelefonicaPlanTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LineaTelefonicaPlanTable,
+          LineaTelefonicaPlanData,
+          $$LineaTelefonicaPlanTableFilterComposer,
+          $$LineaTelefonicaPlanTableOrderingComposer,
+          $$LineaTelefonicaPlanTableAnnotationComposer,
+          $$LineaTelefonicaPlanTableCreateCompanionBuilder,
+          $$LineaTelefonicaPlanTableUpdateCompanionBuilder,
+          (LineaTelefonicaPlanData, $$LineaTelefonicaPlanTableReferences),
+          LineaTelefonicaPlanData,
+          PrefetchHooks Function({bool lineaTelefonicaId})
+        > {
+  $$LineaTelefonicaPlanTableTableManager(
+    _$AppDatabase db,
+    $LineaTelefonicaPlanTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$LineaTelefonicaPlanTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$LineaTelefonicaPlanTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$LineaTelefonicaPlanTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> lineaTelefonicaId = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<int> costoMensual = const Value.absent(),
+                Value<DateTime> fechaInicioVigencia = const Value.absent(),
+                Value<DateTime?> fechaFinVigencia = const Value.absent(),
+                Value<DateTime?> fechaFinPermanencia = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LineaTelefonicaPlanCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                lineaTelefonicaId: lineaTelefonicaId,
+                nombre: nombre,
+                costoMensual: costoMensual,
+                fechaInicioVigencia: fechaInicioVigencia,
+                fechaFinVigencia: fechaFinVigencia,
+                fechaFinPermanencia: fechaFinPermanencia,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String lineaTelefonicaId,
+                required String nombre,
+                required int costoMensual,
+                required DateTime fechaInicioVigencia,
+                Value<DateTime?> fechaFinVigencia = const Value.absent(),
+                Value<DateTime?> fechaFinPermanencia = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LineaTelefonicaPlanCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                lineaTelefonicaId: lineaTelefonicaId,
+                nombre: nombre,
+                costoMensual: costoMensual,
+                fechaInicioVigencia: fechaInicioVigencia,
+                fechaFinVigencia: fechaFinVigencia,
+                fechaFinPermanencia: fechaFinPermanencia,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$LineaTelefonicaPlanTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({lineaTelefonicaId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (lineaTelefonicaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.lineaTelefonicaId,
+                            referencedTable:
+                                $$LineaTelefonicaPlanTableReferences
+                                    ._lineaTelefonicaIdTable(db),
+                            referencedColumn:
+                                $$LineaTelefonicaPlanTableReferences
+                                    ._lineaTelefonicaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LineaTelefonicaPlanTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LineaTelefonicaPlanTable,
+      LineaTelefonicaPlanData,
+      $$LineaTelefonicaPlanTableFilterComposer,
+      $$LineaTelefonicaPlanTableOrderingComposer,
+      $$LineaTelefonicaPlanTableAnnotationComposer,
+      $$LineaTelefonicaPlanTableCreateCompanionBuilder,
+      $$LineaTelefonicaPlanTableUpdateCompanionBuilder,
+      (LineaTelefonicaPlanData, $$LineaTelefonicaPlanTableReferences),
+      LineaTelefonicaPlanData,
+      PrefetchHooks Function({bool lineaTelefonicaId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -114368,4 +117104,8 @@ class $AppDatabaseManager {
         _db,
         _db.vehiculoMantenimientoAttachment,
       );
+  $$LineaTelefonicaTableTableManager get lineaTelefonica =>
+      $$LineaTelefonicaTableTableManager(_db, _db.lineaTelefonica);
+  $$LineaTelefonicaPlanTableTableManager get lineaTelefonicaPlan =>
+      $$LineaTelefonicaPlanTableTableManager(_db, _db.lineaTelefonicaPlan);
 }

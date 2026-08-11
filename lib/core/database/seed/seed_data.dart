@@ -44,6 +44,7 @@ Future<void> _seedCodigoSecuencia(AppDatabase db) async {
     ('articulo', 'ART', 6),
     ('articulo_unidad', 'UNI', 6),
     ('vehiculo', 'VEH', 6),
+    ('linea_telefonica', 'TEL', 6),
   ];
 
   for (final (entityType, prefijo, digitos) in config) {

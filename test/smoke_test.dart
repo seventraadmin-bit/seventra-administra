@@ -514,4 +514,32 @@ void main() {
       expect(find.textContaining('VEH-D'), findsNothing, reason: 'el vehículo dado de baja no debe generar nuevas alertas operativas');
     },
   );
+
+  testWidgets(
+    'Telefonía permite dar de alta una línea y navega a su expediente (Etapa 9A)',
+    (tester) async {
+      await _pumpApp(tester);
+
+      await tester.tap(find.byKey(const Key('nav_item_telefonia')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('telefonia_boton_nueva_linea')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('telefonia_boton_nueva_linea')));
+      await tester.pumpAndSettle();
+
+      // Operador y modalidad ya traen un valor por defecto — número es
+      // opcional — así que Guardar sin llenar nada más debe bastar.
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+      await tester.tap(find.text(l10n.lineaTelefonicaBotonGuardar));
+      await tester.pumpAndSettle();
+
+      expect(find.text('TEL-000001'), findsOneWidget);
+
+      await tester.tap(find.text('TEL-000001'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('telefonia_boton_nueva_linea')), findsNothing);
+      expect(find.text(l10n.lineaTelefonicaExpedienteSeccionDatos), findsOneWidget);
+    },
+  );
 }

@@ -22,7 +22,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 33;
+const _currentSchemaVersion = 34;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -157,7 +157,7 @@ void main() {
       expect(areas, hasLength(6));
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(19));
+      expect(codigosSecuencia, hasLength(20));
 
       await db.close();
     },
@@ -6793,9 +6793,9 @@ void main() {
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
       expect(
         codigosSecuencia,
-        hasLength(19),
+        hasLength(20),
         reason: '7B no agrega ninguna entrada nueva de CodigoSecuencia (la migración corre hasta '
-            '_currentSchemaVersion, así que sí incluye la de vehiculo sembrada en 8A)',
+            '_currentSchemaVersion, así que sí incluye las de vehiculo/linea_telefonica sembradas en 8A/9A)',
       );
 
       final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
@@ -7719,6 +7719,179 @@ void main() {
             base.copyWith(proximoMantenimientoFecha: Value(DateTime(2026, 4, 10))),
           );
       expect(registro.proximoMantenimientoFecha, DateTime(2026, 4, 10));
+
+      await db.close();
+    },
+  );
+
+  test(
+    '34.json coincide con el esquema final de la Etapa 9A (tablas nuevas LineaTelefonica, '
+    'LineaTelefonicaPlan + índice único parcial idx_linea_telefonica_numero_unico) — funda el dominio Telefonía',
+    () async {
+      final schema = await verifier.schemaAt(34);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['linea_telefonica', 'linea_telefonica_plan']));
+
+      final sqlLinea =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica'")
+                  .single['sql']
+              as String;
+      expect(sqlLinea, contains('"codigo" TEXT NOT NULL UNIQUE'));
+      expect(
+        sqlLinea,
+        contains(
+          "CHECK ((estatus = 'baja' AND fecha_baja IS NOT NULL) OR "
+          "(estatus != 'baja' AND fecha_baja IS NULL))",
+        ),
+      );
+
+      final sqlIndiceNumero =
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_linea_telefonica_numero_unico'",
+                  )
+                  .single['sql']
+              as String;
+      expect(
+        sqlIndiceNumero,
+        'CREATE UNIQUE INDEX idx_linea_telefonica_numero_unico '
+        'ON linea_telefonica (numero) WHERE numero IS NOT NULL',
+      );
+
+      final sqlPlan =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica_plan'")
+                  .single['sql']
+              as String;
+      expect(sqlPlan, contains('CHECK (costo_mensual >= 0)'));
+      expect(sqlPlan, contains('CHECK (fecha_fin_vigencia IS NULL OR fecha_fin_vigencia >= fecha_inicio_vigencia)'));
+      expect(
+        sqlPlan,
+        contains('CHECK (fecha_fin_permanencia IS NULL OR fecha_fin_permanencia >= fecha_inicio_vigencia)'),
+      );
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 33 → 34 conserva un Vehículo real y crea las tablas de Telefonía vacías, sembrando '
+    'CodigoSecuencia(linea_telefonica)',
+    () async {
+      final schemaV33 = await verifier.schemaAt(33);
+      final raw = schemaV33.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO vehiculo (
+        id, codigo, marca, modelo, tipo_vehiculo, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vehiculo-real', 'VEH-000001', 'BMW', '320i', 'sedan', 'disponible', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV33.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final vehiculos = await db.select(db.vehiculo).get();
+      expect(vehiculos, hasLength(1), reason: 'ningún Vehículo real debe perderse en una migración puramente aditiva');
+
+      final lineas = await db.select(db.lineaTelefonica).get();
+      expect(lineas, isEmpty, reason: 'LineaTelefonica es tabla nueva en 9A, sin backfill');
+      final planes = await db.select(db.lineaTelefonicaPlan).get();
+      expect(planes, isEmpty);
+
+      final codigoLinea = await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('linea_telefonica')))
+          .getSingleOrNull();
+      expect(codigoLinea, isNotNull, reason: 'runSeed debe sembrar el contador de código de linea_telefonica');
+      expect(codigoLinea!.prefijo, 'TEL');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'CHECK de LineaTelefonica/LineaTelefonicaPlan tras la migración: fecha_baja consistente con estatus, '
+    'número único solo cuando se captura, costo_mensual >= 0, fechas de vigencia/permanencia coherentes',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final baseLinea = LineaTelefonicaCompanion.insert(codigo: 'TEL-000001', operador: 'telcel', modalidadSim: 'fisica');
+
+      await expectLater(
+        db.into(db.lineaTelefonica).insert(baseLinea.copyWith(estatus: const Value('baja'))),
+        throwsA(anything),
+        reason: 'estatus = baja exige fecha_baja poblada',
+      );
+      await expectLater(
+        db.into(db.lineaTelefonica).insert(baseLinea.copyWith(fechaBaja: Value(DateTime(2026, 1, 1)))),
+        throwsA(anything),
+        reason: 'fecha_baja poblada exige estatus = baja',
+      );
+
+      final linea1 = await db.into(db.lineaTelefonica).insertReturning(
+            baseLinea.copyWith(numero: const Value('7221234567')),
+          );
+
+      // Dos líneas sin número capturado deben coexistir sin problema.
+      await db.into(db.lineaTelefonica).insertReturning(baseLinea.copyWith(codigo: const Value('TEL-000002')));
+      await db.into(db.lineaTelefonica).insertReturning(baseLinea.copyWith(codigo: const Value('TEL-000003')));
+
+      await expectLater(
+        db.into(db.lineaTelefonica).insert(
+              baseLinea.copyWith(codigo: const Value('TEL-000004'), numero: const Value('7221234567')),
+            ),
+        throwsA(anything),
+        reason: 'idx_linea_telefonica_numero_unico rechaza número duplicado',
+      );
+
+      final basePlan = LineaTelefonicaPlanCompanion.insert(
+        lineaTelefonicaId: linea1.id,
+        nombre: 'Plan 399',
+        costoMensual: 39900,
+        fechaInicioVigencia: DateTime(2026, 1, 1),
+      );
+
+      await expectLater(
+        db.into(db.lineaTelefonicaPlan).insert(basePlan.copyWith(costoMensual: const Value(-1))),
+        throwsA(anything),
+        reason: 'costo_mensual negativo debe rechazarse',
+      );
+      await expectLater(
+        db.into(db.lineaTelefonicaPlan).insert(basePlan.copyWith(fechaFinVigencia: Value(DateTime(2025, 12, 1)))),
+        throwsA(anything),
+        reason: 'fecha_fin_vigencia no puede ser anterior a fecha_inicio_vigencia',
+      );
+      await expectLater(
+        db.into(db.lineaTelefonicaPlan).insert(basePlan.copyWith(fechaFinPermanencia: Value(DateTime(2025, 12, 1)))),
+        throwsA(anything),
+        reason: 'fecha_fin_permanencia no puede ser anterior a fecha_inicio_vigencia',
+      );
+
+      final plan = await db.into(db.lineaTelefonicaPlan).insertReturning(
+            basePlan.copyWith(fechaFinPermanencia: Value(DateTime(2027, 1, 1))),
+          );
+      expect(plan.costoMensual, 39900);
 
       await db.close();
     },

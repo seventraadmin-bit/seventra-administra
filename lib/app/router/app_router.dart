@@ -14,6 +14,8 @@ import '../../features/organizacion/presentation/sucursales/sucursal_expediente_
 import '../../features/nomina/presentation/nominas/nomina_detalle_screen.dart';
 import '../../features/personal/presentation/empleados/empleado_expediente_screen.dart';
 import '../../features/personal/presentation/personal_shell_screen.dart';
+import '../../features/telefonia/presentation/linea_telefonica_expediente_screen.dart';
+import '../../features/telefonia/presentation/lineas_telefonicas_list_screen.dart';
 import '../../features/vehiculos/presentation/vehiculo_expediente_screen.dart';
 import '../../features/vehiculos/presentation/vehiculos_shell_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
@@ -279,6 +281,22 @@ GoRouter createAppRouter() {
                       GoRoute(
                         path: 'alertas',
                         builder: (context, state) => const VehiculosShellScreen(tab: VehiculosTab.alertas),
+                      ),
+                    ],
+                  )
+                else if (def.path == '/telefonia')
+                  // Telefonía (Etapa 9A) — una sola pantalla, sin
+                  // pestañas todavía (mismo criterio que Inventario
+                  // 7A/Vehículos 8A: la subnavegación llega cuando
+                  // exista una segunda sección real, ver la Etapa 9C).
+                  GoRoute(
+                    path: def.path,
+                    builder: (context, state) => const LineasTelefonicasListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) =>
+                            LineaTelefonicaExpedienteScreen(lineaTelefonicaId: state.pathParameters['id']!),
                       ),
                     ],
                   )
