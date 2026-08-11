@@ -18,6 +18,7 @@ import '../../features/organizacion/presentation/sucursales/sucursal_expediente_
 import '../../features/nomina/presentation/nominas/nomina_detalle_screen.dart';
 import '../../features/personal/presentation/empleados/empleado_expediente_screen.dart';
 import '../../features/personal/presentation/personal_shell_screen.dart';
+import '../../features/reportes/presentation/reportes_shell_screen.dart';
 import '../../features/telefonia/presentation/equipo_telefonico_expediente_screen.dart';
 import '../../features/telefonia/presentation/linea_telefonica_expediente_screen.dart';
 import '../../features/telefonia/presentation/telefonia_shell_screen.dart';
@@ -394,6 +395,29 @@ GoRouter createAppRouter() {
                       GoRoute(
                         path: ':id',
                         builder: (context, state) => CompraExpedienteScreen(compraId: state.pathParameters['id']!),
+                      ),
+                    ],
+                  )
+                else if (def.path == '/reportes')
+                  // Reportes generales (Etapa 12A) — mismo patrón que
+                  // Finanzas/Configuración: `/reportes` en sí redirige
+                  // a `/reportes/general`. La visibilidad de cada
+                  // pestaña por permiso vive en `ReportesShellScreen`,
+                  // no aquí (`permisoRequeridoParaRuta` solo exige
+                  // `reportes.ver` para cualquier subruta — la barrera
+                  // real por dominio vive en el controller de cada
+                  // pestaña, ver `reportes_permisos.dart`).
+                  GoRoute(
+                    path: def.path,
+                    redirect: (context, state) => state.uri.path == '/reportes' ? '/reportes/general' : null,
+                    routes: [
+                      GoRoute(
+                        path: 'general',
+                        builder: (context, state) => const ReportesShellScreen(tab: ReportesTab.general),
+                      ),
+                      GoRoute(
+                        path: 'finanzas',
+                        builder: (context, state) => const ReportesShellScreen(tab: ReportesTab.finanzas),
                       ),
                     ],
                   )

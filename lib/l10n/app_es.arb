@@ -3465,5 +3465,53 @@
   "eliminacionFisicaAdvertenciaGenerica": "Esta acción es permanente y no se puede deshacer. Solo debe usarse para corregir un error de captura — un registro sin ninguna historia operativa, financiera o de trazabilidad real.",
   "eliminacionFisicaBloqueadaTitulo": "No se puede eliminar",
   "eliminacionFisicaAccionMenu": "Eliminar físicamente (Maestro)",
-  "eliminacionFisicaExito": "Registro eliminado definitivamente."
+  "eliminacionFisicaExito": "Registro eliminado definitivamente.",
+
+  "reportesTabGeneral": "General",
+  "reportesTabFinanzas": "Finanzas",
+  "reportesFiltroDesde": "Desde",
+  "reportesFiltroHasta": "Hasta",
+  "reportesErrorCargaTitulo": "No se pudo cargar el reporte",
+  "reportesSinSeccionesTitulo": "Sin secciones disponibles",
+  "reportesSinSeccionesMensaje": "No tienes permiso para ver ninguna de las secciones de este reporte.",
+  "reportesSinDatosTitulo": "Sin datos",
+  "reportesSinDatosMensaje": "No hay registros para el periodo seleccionado.",
+
+  "reportesGeneralTitulo": "Reporte General",
+  "reportesGeneralDescripcion": "Vista consolidada por periodo.",
+  "reportesGeneralIngresos": "Ingresos",
+  "reportesGeneralEgresos": "Egresos",
+  "reportesGeneralResultadoOperativo": "Resultado operativo",
+  "reportesGeneralResultadoPositivo": "Positivo",
+  "reportesGeneralResultadoNegativo": "Negativo",
+  "reportesGeneralNominaPagada": "Nómina pagada",
+  "reportesGeneralCompras": "Compras del periodo",
+  "reportesGeneralIndicadorInformativo": "Informativo, ya incluido en Egresos",
+  "reportesGeneralPersonalActivo": "Personal activo",
+  "reportesGeneralServiciosActivos": "Servicios activos",
+  "reportesGeneralIndicadorSnapshot": "A la fecha de hoy",
+
+  "reportesFinanzasTitulo": "Finanzas",
+  "reportesFinanzasDescripcion": "Ingresos, egresos, cuentas por cobrar y pagos recibidos por periodo.",
+  "reportesFinanzasPagosRecibidos": "Pagos recibidos",
+  "reportesFinanzasAntiguedadTitulo": "Antigüedad de cuentas por cobrar",
+  "reportesFinanzasAntiguedadConteo": "{cantidad} cuenta(s)",
+  "@reportesFinanzasAntiguedadConteo": {
+    "placeholders": {
+      "cantidad": {"type": "int"}
+    }
+  },
+  "reportesFinanzasAntiguedadAlCorriente": "Al corriente",
+  "reportesFinanzasAntiguedad0a30": "0-30 días",
+  "reportesFinanzasAntiguedad31a60": "31-60 días",
+  "reportesFinanzasAntiguedad61a90": "61-90 días",
+  "reportesFinanzasAntiguedad90Mas": "Más de 90 días",
+  "reportesFinanzasOrigenTitulo": "Egresos por origen",
+  "reportesFinanzasOrigenCompra": "Compras",
+  "reportesFinanzasOrigenNomina": "Nómina",
+  "reportesFinanzasOrigenManual": "Manual",
+  "reportesFinanzasIngresosPorCategoria": "Ingresos por categoría",
+  "reportesFinanzasEgresosPorCategoria": "Egresos por categoría",
+  "reportesFinanzasColumnaCategoria": "Categoría",
+  "reportesFinanzasColumnaTotal": "Total"
 }

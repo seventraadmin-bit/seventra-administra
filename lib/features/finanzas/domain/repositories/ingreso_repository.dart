@@ -76,4 +76,9 @@ abstract interface class IngresoRepository {
   /// rango dado — consulta base para reportes (Resolución 5 de
   /// Marlon), sin pantalla de reporte todavía.
   Future<int> totalIngresos({DateTime? rangoInicio, DateTime? rangoFin});
+
+  /// Suma de `monto` de Ingresos `registrado` en el rango, agrupada por
+  /// `categoriaFinancieraId` — Etapa 12A (Reportes). La llave `null`
+  /// agrupa los Ingresos sin categoría asignada.
+  Future<Map<String?, int>> totalPorCategoria({DateTime? rangoInicio, DateTime? rangoFin});
 }

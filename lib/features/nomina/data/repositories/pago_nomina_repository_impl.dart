@@ -59,6 +59,26 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
   }
 
   @override
+  Future<List<PagoNominaData>> listarEnRango({DateTime? rangoInicio, DateTime? rangoFin}) {
+    final query = _db.select(_db.pagoNomina)..where((t) => t.estatus.equals('registrado'));
+    if (rangoInicio != null) query.where((t) => t.fechaPago.isBiggerOrEqualValue(rangoInicio));
+    if (rangoFin != null) query.where((t) => t.fechaPago.isSmallerOrEqualValue(rangoFin));
+    query.orderBy([(t) => OrderingTerm.desc(t.fechaPago)]);
+    return query.get();
+  }
+
+  @override
+  Future<int> totalPagadoEnRango({DateTime? rangoInicio, DateTime? rangoFin}) async {
+    final query = _db.selectOnly(_db.pagoNomina)
+      ..addColumns([_db.pagoNomina.montoTotal.sum()])
+      ..where(_db.pagoNomina.estatus.equals('registrado'));
+    if (rangoInicio != null) query.where(_db.pagoNomina.fechaPago.isBiggerOrEqualValue(rangoInicio));
+    if (rangoFin != null) query.where(_db.pagoNomina.fechaPago.isSmallerOrEqualValue(rangoFin));
+    final fila = await query.getSingle();
+    return fila.read(_db.pagoNomina.montoTotal.sum()) ?? 0;
+  }
+
+  @override
   Future<List<PagoNominaEventoData>> listarEventos(String pagoNominaId) {
     return (_db.select(_db.pagoNominaEvento)
           ..where((t) => t.pagoNominaId.equals(pagoNominaId))

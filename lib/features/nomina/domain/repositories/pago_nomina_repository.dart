@@ -19,6 +19,12 @@ abstract interface class PagoNominaRepository {
 
   Future<List<PagoNominaData>> listarPorNomina(String nominaId);
 
+  /// Todos los `PagoNomina` `registrado` (nunca `cancelado`) cuya
+  /// `fechaPago` cae en el rango — Etapa 12A (Reportes), mismo criterio
+  /// de exclusión que `EgresoRepository.listar`/`totalEgresos`. Cruza
+  /// Nóminas distintas, a diferencia de `listarPorNomina`.
+  Future<List<PagoNominaData>> listarEnRango({DateTime? rangoInicio, DateTime? rangoFin});
+
   Future<List<AplicacionPagoNominaData>> listarAplicacionesPorPagoNomina(String pagoNominaId);
 
   Future<List<AplicacionPagoNominaData>> listarAplicacionesPorRenglon(String nominaEmpleadoId);
@@ -30,6 +36,14 @@ abstract interface class PagoNominaRepository {
   /// una columna cacheada (ver el doc comment de `AplicacionPagoNomina`
   /// sobre por qué `NominaEmpleado` no gana un `saldoPendientePago`).
   Future<int> saldoPendientePago(String nominaEmpleadoId);
+
+  /// Suma de `montoTotal` de `PagoNomina` `registrado` (nunca
+  /// `cancelado`) cuya `fechaPago` cae en el rango — Etapa 12A
+  /// (Reportes), mismo patrón que `EgresoRepository.totalEgresos`.
+  /// Indicador informativo: ya está contenido dentro de
+  /// `EgresoRepository.totalEgresos` vía `PagoNomina.egresoId`, nunca se
+  /// suma de nuevo a un Resultado operativo.
+  Future<int> totalPagadoEnRango({DateTime? rangoInicio, DateTime? rangoFin});
 
   /// Crea el `PagoNomina`, una `AplicacionPagoNomina` por cada entrada
   /// de [aplicaciones], el `Egreso` automático ligado (folio generado

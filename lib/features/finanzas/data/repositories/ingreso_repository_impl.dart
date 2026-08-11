@@ -229,6 +229,21 @@ class IngresoRepositoryImpl implements IngresoRepository {
     return fila.read(_db.ingreso.monto.sum()) ?? 0;
   }
 
+  @override
+  Future<Map<String?, int>> totalPorCategoria({DateTime? rangoInicio, DateTime? rangoFin}) async {
+    final query = _db.selectOnly(_db.ingreso)
+      ..addColumns([_db.ingreso.categoriaFinancieraId, _db.ingreso.monto.sum()])
+      ..where(_db.ingreso.estatus.equals(EstatusIngreso.registrado.name))
+      ..groupBy([_db.ingreso.categoriaFinancieraId]);
+    if (rangoInicio != null) query.where(_db.ingreso.fecha.isBiggerOrEqualValue(rangoInicio));
+    if (rangoFin != null) query.where(_db.ingreso.fecha.isSmallerOrEqualValue(rangoFin));
+    final filas = await query.get();
+    return {
+      for (final fila in filas)
+        fila.read(_db.ingreso.categoriaFinancieraId): fila.read(_db.ingreso.monto.sum()) ?? 0,
+    };
+  }
+
   Future<void> _registrarEvento({
     required String ingresoId,
     required TipoEventoIngreso tipoEvento,

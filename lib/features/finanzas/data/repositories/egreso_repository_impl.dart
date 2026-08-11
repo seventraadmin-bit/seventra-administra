@@ -226,6 +226,21 @@ class EgresoRepositoryImpl implements EgresoRepository {
     return fila.read(_db.egreso.monto.sum()) ?? 0;
   }
 
+  @override
+  Future<Map<String?, int>> totalPorCategoria({DateTime? rangoInicio, DateTime? rangoFin}) async {
+    final query = _db.selectOnly(_db.egreso)
+      ..addColumns([_db.egreso.categoriaFinancieraId, _db.egreso.monto.sum()])
+      ..where(_db.egreso.estatus.equals(EstatusEgreso.registrado.name))
+      ..groupBy([_db.egreso.categoriaFinancieraId]);
+    if (rangoInicio != null) query.where(_db.egreso.fecha.isBiggerOrEqualValue(rangoInicio));
+    if (rangoFin != null) query.where(_db.egreso.fecha.isSmallerOrEqualValue(rangoFin));
+    final filas = await query.get();
+    return {
+      for (final fila in filas)
+        fila.read(_db.egreso.categoriaFinancieraId): fila.read(_db.egreso.monto.sum()) ?? 0,
+    };
+  }
+
   Future<void> _registrarEvento({
     required String egresoId,
     required TipoEventoEgreso tipoEvento,

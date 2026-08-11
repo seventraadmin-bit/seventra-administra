@@ -70,4 +70,9 @@ abstract interface class EgresoRepository {
   /// Suma de `monto` de Egresos `registrado` en el rango dado —
   /// consulta base para reportes (Resolución 5 de Marlon).
   Future<int> totalEgresos({DateTime? rangoInicio, DateTime? rangoFin});
+
+  /// Suma de `monto` de Egresos `registrado` en el rango, agrupada por
+  /// `categoriaFinancieraId` — Etapa 12A (Reportes). La llave `null`
+  /// agrupa los Egresos sin categoría asignada.
+  Future<Map<String?, int>> totalPorCategoria({DateTime? rangoInicio, DateTime? rangoFin});
 }
