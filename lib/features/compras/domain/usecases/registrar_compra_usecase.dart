@@ -3,6 +3,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/error/result.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/domain/repositories/articulo_repository.dart';
+import 'package:riseg_one/features/inventario/domain/repositories/inventario_repository.dart';
 
 import '../../data/tables/compra_partida_table.dart' show DestinoCompraPartida;
 import '../repositories/compra_repository.dart';
@@ -60,6 +61,20 @@ class RegistrarCompraPartidaNumerosSerieInvalidos extends RegistrarCompraResulta
   final int indice;
 }
 
+/// Uno de los números de serie capturados ya pertenece a otra unidad
+/// existente — mismo mensaje al usuario sin importar si viene de esta
+/// validación o de la corrección de identidad (Etapa 9D, tercer ajuste
+/// posterior): "El número de serie/IMEI ya está registrado en otra
+/// unidad." Se valida *antes* de tocar la base de datos — sin esto, la
+/// restricción `UNIQUE` de `ArticuloUnidad.numeroSerie` lanzaba una
+/// excepción que caía en `RegistrarCompraErrorInesperado`, un mensaje
+/// genérico que no explicaba la causa real.
+class RegistrarCompraPartidaNumeroSerieDuplicado extends RegistrarCompraResultado {
+  RegistrarCompraPartidaNumeroSerieDuplicado(this.indice, this.numeroSerie);
+  final int indice;
+  final String numeroSerie;
+}
+
 class RegistrarCompraErrorInesperado extends RegistrarCompraResultado {
   RegistrarCompraErrorInesperado(this.mensaje);
   final String mensaje;
@@ -75,10 +90,11 @@ class RegistrarCompraErrorInesperado extends RegistrarCompraResultado {
 /// folio de la Compra y delega la composición completa (Egreso +
 /// entradas de Inventario) a `CompraRepository.crear`.
 class RegistrarCompraUseCase {
-  RegistrarCompraUseCase(this._compraRepository, this._articuloRepository, this._generarCodigo);
+  RegistrarCompraUseCase(this._compraRepository, this._articuloRepository, this._inventarioRepository, this._generarCodigo);
 
   final CompraRepository _compraRepository;
   final ArticuloRepository _articuloRepository;
+  final InventarioRepository _inventarioRepository;
   final GenerarCodigoUseCase _generarCodigo;
 
   Future<RegistrarCompraResultado> ejecutar({
@@ -125,6 +141,11 @@ class RegistrarCompraUseCase {
         final seriesLimpias = series.map((s) => s.trim()).toList();
         if (seriesLimpias.any((s) => s.isEmpty)) return RegistrarCompraPartidaNumerosSerieInvalidos(i);
         if (seriesLimpias.toSet().length != seriesLimpias.length) return RegistrarCompraPartidaNumerosSerieInvalidos(i);
+
+        for (final serie in seriesLimpias) {
+          final existente = await _inventarioRepository.obtenerUnidadPorNumeroSerie(serie);
+          if (existente != null) return RegistrarCompraPartidaNumeroSerieDuplicado(i, serie);
+        }
       }
     }
 

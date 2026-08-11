@@ -45,6 +45,7 @@ import '../../features/nomina/data/tables/nomina_table.dart';
 import '../../features/nomina/data/tables/pago_nomina_attachment_table.dart';
 import '../../features/nomina/data/tables/pago_nomina_table.dart';
 import '../../features/inventario/data/tables/articulo_table.dart';
+import '../../features/inventario/data/tables/articulo_unidad_evento_table.dart';
 import '../../features/inventario/data/tables/articulo_unidad_table.dart';
 import '../../features/inventario/data/tables/articulo_unidad_telefono_table.dart';
 import '../../features/inventario/data/tables/articulo_variante_table.dart';
@@ -79,6 +80,7 @@ import 'migrations/migrar_auditoria_v40.dart';
 import 'migrations/migrar_equipos_telefonicos_v41.dart';
 import 'migrations/migrar_cambiar_responsable_asignacion_v42.dart';
 import 'migrations/migrar_categoria_articulo_aplicacion_v43.dart';
+import 'migrations/migrar_articulo_unidad_evento_v44.dart';
 import 'migrations/migrar_linea_telefonica_v34.dart';
 import 'migrations/migrar_recarga_linea_telefonica_v36.dart';
 import 'migrations/migrar_vehiculo_v30.dart';
@@ -205,6 +207,7 @@ class AppMetadata extends Table {
   ArticuloVariante,
   ArticuloUnidad,
   ArticuloUnidadTelefono,
+  ArticuloUnidadEvento,
   MovimientoInventario,
   MovimientoInventarioAttachment,
   Asignacion,
@@ -239,7 +242,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 43;
+  int get schemaVersion => 44;
 
   @override
   MigrationStrategy get migration {
@@ -820,6 +823,11 @@ class AppDatabase extends _$AppDatabase {
         // 42` es seguro sin acotar un origen exacto.
         if (to >= 43 && from <= 42) {
           await migrarCategoriaArticuloAplicacionV43(this, m);
+        }
+        // Aditiva: `ArticuloUnidadEvento`, tabla enteramente nueva —
+        // bitácora de `CorregirIdentidadUnidadUseCase`.
+        if (to >= 44 && from <= 43) {
+          await migrarArticuloUnidadEventoV44(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

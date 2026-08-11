@@ -28,6 +28,7 @@ import 'domain/usecases/cambiar_responsable_asignacion_usecase.dart';
 import 'domain/usecases/cancelar_descuento_inventario_usecase.dart';
 import 'domain/usecases/cerrar_asignacion_usecase.dart';
 import 'domain/usecases/corregir_articulo_usecase.dart';
+import 'domain/usecases/corregir_identidad_unidad_usecase.dart';
 import 'domain/usecases/crear_articulo_usecase.dart';
 import 'domain/usecases/crear_asignacion_usecase.dart';
 import 'domain/usecases/crear_categoria_articulo_usecase.dart';
@@ -347,6 +348,49 @@ final cambiarResponsableAsignacionAutorizadoProvider = Provider<CambiarResponsab
             actorUsuarioId: actorUsuarioId,
           ),
       CambiarResponsableAsignacionErrorInesperado.new,
+    );
+  };
+});
+
+final corregirIdentidadUnidadUseCaseProvider = Provider<CorregirIdentidadUnidadUseCase>((ref) {
+  return CorregirIdentidadUnidadUseCase(ref.watch(inventarioRepositoryProvider));
+});
+
+typedef CorregirIdentidadUnidadAutorizado = Future<CorregirIdentidadUnidadResultado> Function({
+  required String unidadId,
+  required String motivo,
+  String? numeroSerie,
+  String? marca,
+  String? modelo,
+  String? imei,
+  String? imei2,
+});
+
+final corregirIdentidadUnidadAutorizadoProvider = Provider<CorregirIdentidadUnidadAutorizado>((ref) {
+  return ({
+    required String unidadId,
+    required String motivo,
+    String? numeroSerie,
+    String? marca,
+    String? modelo,
+    String? imei,
+    String? imei2,
+  }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.modificar',
+      () => ref.read(corregirIdentidadUnidadUseCaseProvider).ejecutar(
+            unidadId: unidadId,
+            motivo: motivo,
+            numeroSerie: numeroSerie,
+            marca: marca,
+            modelo: modelo,
+            imei: imei,
+            imei2: imei2,
+            actorUsuarioId: actorUsuarioId,
+          ),
+      CorregirIdentidadUnidadErrorInesperado.new,
     );
   };
 });

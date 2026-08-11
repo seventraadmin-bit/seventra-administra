@@ -22,6 +22,8 @@ import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import 'equipo_telefonico_labels.dart';
 import 'linea_telefonica_labels.dart';
+import 'package:riseg_one/features/inventario/presentation/articulos/widgets/corregir_identidad_unidad_dialog.dart';
+
 import 'widgets/actualizar_correo_equipo_telefonico_dialog.dart';
 import 'widgets/asignar_equipo_telefonico_dialog.dart';
 import 'widgets/cambiar_contrasena_equipo_telefonico_dialog.dart';
@@ -186,6 +188,20 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
     if (resultado != null && resultado.isNotEmpty) await _cargar();
   }
 
+  /// Distinto de "Editar IMEI" (arriba): esa es alta/edición rápida sin
+  /// motivo, para uso operativo diario. "Corregir identificación"
+  /// (Etapa 9D, tercer ajuste posterior) es la corrección sensible —
+  /// exige motivo y también permite corregir número de serie/marca/
+  /// modelo, no solo IMEI. Vive en Inventario
+  /// (`CorregirIdentidadUnidadUseCase`) — este expediente solo ofrece
+  /// el mismo acceso desde Telefonía.
+  Future<void> _corregirIdentidad() async {
+    final unidad = _unidad;
+    if (unidad == null) return;
+    final corregida = await mostrarDialogoCorregirIdentidadUnidad(context, ref, unidad: unidad, telefono: _telefono);
+    if (corregida) await _cargar();
+  }
+
   Future<void> _editarCorreo() async {
     final actualizo = await mostrarDialogoActualizarCorreoEquipoTelefonico(
       context,
@@ -344,6 +360,14 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
                     children: [
                       RisegSectionHeader(
                         title: l10n.equipoTelefonicoSeccionIdentificacion,
+                        secondaryAction: puedeModificar
+                            ? RisegButton(
+                                label: l10n.corregirIdentidadUnidadBotonAccion,
+                                variant: RisegButtonVariant.ghost,
+                                size: RisegButtonSize.compact,
+                                onPressed: _corregirIdentidad,
+                              )
+                            : null,
                         primaryAction: puedeModificar
                             ? RisegButton(
                                 label: l10n.equipoTelefonicoBotonEditarImei,

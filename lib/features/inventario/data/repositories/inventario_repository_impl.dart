@@ -18,6 +18,11 @@ class InventarioRepositoryImpl implements InventarioRepository {
   }
 
   @override
+  Future<ArticuloUnidadData?> obtenerUnidadPorNumeroSerie(String numeroSerie) {
+    return (_db.select(_db.articuloUnidad)..where((t) => t.numeroSerie.equals(numeroSerie))).getSingleOrNull();
+  }
+
+  @override
   Future<ArticuloUnidadTelefonoData?> obtenerTelefono(String unidadId) {
     return (_db.select(_db.articuloUnidadTelefono)..where((t) => t.unidadId.equals(unidadId))).getSingleOrNull();
   }
@@ -453,6 +458,87 @@ class InventarioRepositoryImpl implements InventarioRepository {
   Future<List<ArticuloUnidadTelefonoData>> listarTelefonosPorImei(String imei) {
     return (_db.select(_db.articuloUnidadTelefono)
           ..where((t) => t.imei.equals(imei) | t.imei2.equals(imei)))
+        .get();
+  }
+
+  @override
+  Future<ArticuloUnidadData> corregirIdentidadUnidad({
+    required String unidadId,
+    required String motivo,
+    String? numeroSerie,
+    String? marca,
+    bool limpiarMarca = false,
+    String? modelo,
+    bool limpiarModelo = false,
+    String? imei,
+    bool limpiarImei = false,
+    String? imei2,
+    bool limpiarImei2 = false,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.articuloUnidad)..where((t) => t.id.equals(unidadId))).getSingle();
+      final telefonoAnterior =
+          await (_db.select(_db.articuloUnidadTelefono)..where((t) => t.unidadId.equals(unidadId))).getSingleOrNull();
+
+      Future<void> registrarCambio(String campo, String? antes, String? despues) async {
+        if (antes == despues) return;
+        await _db.into(_db.articuloUnidadEvento).insert(
+              ArticuloUnidadEventoCompanion.insert(
+                unidadId: unidadId,
+                fechaHora: DateTime.now(),
+                tipoEvento: 'correccionIdentidad',
+                campo: campo,
+                valorAnterior: Value(antes),
+                valorNuevo: Value(despues),
+                motivo: motivo,
+                actorUsuarioId: Value(actorUsuarioId),
+              ),
+            );
+      }
+
+      final nuevaMarca = limpiarMarca ? null : (marca ?? anterior.marca);
+      final nuevoModelo = limpiarModelo ? null : (modelo ?? anterior.modelo);
+
+      if (numeroSerie != null) await registrarCambio('numeroSerie', anterior.numeroSerie, numeroSerie);
+      if (limpiarMarca || marca != null) await registrarCambio('marca', anterior.marca, nuevaMarca);
+      if (limpiarModelo || modelo != null) await registrarCambio('modelo', anterior.modelo, nuevoModelo);
+
+      await (_db.update(_db.articuloUnidad)..where((t) => t.id.equals(unidadId))).write(
+        ArticuloUnidadCompanion(
+          numeroSerie: numeroSerie == null ? const Value.absent() : Value(numeroSerie),
+          marca: (limpiarMarca || marca != null) ? Value(nuevaMarca) : const Value.absent(),
+          modelo: (limpiarModelo || modelo != null) ? Value(nuevoModelo) : const Value.absent(),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      if (imei != null || limpiarImei || imei2 != null || limpiarImei2) {
+        final nuevoImei = limpiarImei ? null : (imei ?? telefonoAnterior?.imei);
+        final nuevoImei2 = limpiarImei2 ? null : (imei2 ?? telefonoAnterior?.imei2);
+
+        if (limpiarImei || imei != null) await registrarCambio('imei1', telefonoAnterior?.imei, nuevoImei);
+        if (limpiarImei2 || imei2 != null) await registrarCambio('imei2', telefonoAnterior?.imei2, nuevoImei2);
+
+        if (telefonoAnterior == null) {
+          await _db.into(_db.articuloUnidadTelefono).insert(
+                ArticuloUnidadTelefonoCompanion.insert(unidadId: unidadId, imei: Value(nuevoImei), imei2: Value(nuevoImei2)),
+              );
+        } else {
+          await (_db.update(_db.articuloUnidadTelefono)..where((t) => t.unidadId.equals(unidadId)))
+              .write(ArticuloUnidadTelefonoCompanion(imei: Value(nuevoImei), imei2: Value(nuevoImei2)));
+        }
+      }
+
+      return (_db.select(_db.articuloUnidad)..where((t) => t.id.equals(unidadId))).getSingle();
+    });
+  }
+
+  @override
+  Future<List<ArticuloUnidadEventoData>> listarEventosUnidad(String unidadId) {
+    return (_db.select(_db.articuloUnidadEvento)
+          ..where((t) => t.unidadId.equals(unidadId))
+          ..orderBy([(t) => OrderingTerm.desc(t.fechaHora)]))
         .get();
   }
 }

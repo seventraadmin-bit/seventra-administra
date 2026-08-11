@@ -2205,6 +2205,22 @@
   "articuloEstatusArchivado": "Archivado",
   "articuloExpedienteBotonEditar": "Editar",
 
+  "corregirIdentidadUnidadBotonAccion": "Corregir identificación",
+  "corregirIdentidadUnidadDialogoTitulo": "Corregir identificación de unidad",
+  "corregirIdentidadUnidadDialogoDescripcion": "Solo para corregir un dato capturado mal — no cambia cantidad, costo, existencia ni historial de esta unidad.",
+  "corregirIdentidadUnidadCampoNumeroSerie": "Número de serie",
+  "corregirIdentidadUnidadCampoMarca": "Marca",
+  "corregirIdentidadUnidadCampoModelo": "Modelo",
+  "corregirIdentidadUnidadCampoMotivo": "Motivo de la corrección",
+  "corregirIdentidadUnidadBotonGuardar": "Guardar corrección",
+  "corregirIdentidadUnidadBotonCancelar": "Cancelar",
+  "corregirIdentidadUnidadExito": "Identificación de la unidad corregida correctamente.",
+  "corregirIdentidadUnidadErrorMotivoRequerido": "Captura el motivo de la corrección.",
+  "corregirIdentidadUnidadErrorNumeroSerieRequerido": "El número de serie no puede quedar vacío.",
+  "corregirIdentidadUnidadErrorInesperado": "Ocurrió un error al corregir la unidad.",
+  "corregirIdentidadUnidadHistorialTitulo": "Historial de correcciones",
+  "corregirIdentidadUnidadHistorialVacio": "Sin correcciones registradas.",
+
   "categoriaArticuloDialogoTitulo": "Categorías de artículo",
   "categoriaArticuloCampoNombre": "Nombre de la categoría",
   "categoriaArticuloBotonAgregar": "Agregar",
@@ -2235,6 +2251,7 @@
   "articuloExpedienteColumnaSerie": "Número de serie",
   "articuloExpedienteColumnaMarcaModelo": "Marca/Modelo",
   "articuloExpedienteColumnaEstatus": "Estatus",
+  "articuloExpedienteUnidadAccionesTooltip": "Más acciones",
   "articuloExpedienteSeccionMovimientos": "Movimientos",
   "articuloExpedienteMovimientosVacio": "Sin movimientos todavía.",
   "articuloExpedienteColumnaFecha": "Fecha",
@@ -3243,6 +3260,7 @@
       "indice": { "type": "int" }
     }
   },
+  "compraErrorPartidaNumeroSerieDuplicado": "El número de serie/IMEI ya está registrado en otra unidad.",
   "compraErrorInesperado": "Ocurrió un error inesperado.",
 
   "compraExpedienteSeccionDatos": "Datos de la compra",
@@ -3265,6 +3283,7 @@
   "compraIntegracionesEgresoTitulo": "Egreso relacionado",
   "compraIntegracionesVerEgreso": "Ver en Finanzas",
   "compraIntegracionesVerArticulo": "Ver artículo",
+  "compraIntegracionesVerUnidad": "Ver unidad",
 
   "compraDocumentoBotonAbrir": "Abrir PDF",
   "compraDocumentoSinComprobante": "Sin comprobante adjunto.",

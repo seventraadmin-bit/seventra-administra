@@ -37,6 +37,8 @@ class _CompraExpedienteScreenState extends ConsumerState<CompraExpedienteScreen>
   List<CompraPartidaData> _partidas = const [];
   List<MovimientoInventarioData> _movimientos = const [];
   Map<String, String> _articulosPorId = const {};
+  Map<String, ArticuloUnidadData> _unidadesPorId = const {};
+  Set<String> _unidadesTelefono = const {};
   AttachmentData? _comprobante;
   bool _cargando = true;
 
@@ -58,12 +60,30 @@ class _CompraExpedienteScreenState extends ConsumerState<CompraExpedienteScreen>
 
     final comprobantes = await ref.read(attachmentRepositoryProvider).listarActivosPorCompra(widget.compraId);
 
+    // Unidades generadas por partidas serializadas — para mostrar
+    // "SMARTPHONE / UNI-000001 · Serie ..." con enlace directo a su
+    // expediente, en vez de solo "Ver artículo" (que llevaba al
+    // Artículo completo, sin distinguir la unidad exacta que generó
+    // esta Compra).
+    final inventarioRepo = ref.read(inventarioRepositoryProvider);
+    final unidadesPorId = <String, ArticuloUnidadData>{};
+    final unidadesTelefono = <String>{};
+    for (final m in movimientos) {
+      final unidadId = m.unidadId;
+      if (unidadId == null) continue;
+      final unidad = await inventarioRepo.obtenerUnidadPorId(unidadId);
+      if (unidad != null) unidadesPorId[unidadId] = unidad;
+      if (await inventarioRepo.obtenerTelefono(unidadId) != null) unidadesTelefono.add(unidadId);
+    }
+
     if (!mounted) return;
     setState(() {
       _compra = compra;
       _partidas = partidas;
       _movimientos = movimientos;
       _articulosPorId = articulosPorId;
+      _unidadesPorId = unidadesPorId;
+      _unidadesTelefono = unidadesTelefono;
       _comprobante = comprobantes.firstOrNull;
       _cargando = false;
     });
@@ -240,15 +260,30 @@ class _CompraExpedienteScreenState extends ConsumerState<CompraExpedienteScreen>
                               children: [
                                 Expanded(
                                   child: Text(
-                                    '${_articulosPorId[m.articuloId] ?? m.articuloId} · +${m.cantidad} · ${m.costoUnitario == null ? '—' : formatoCosto(m.costoUnitario!)}',
+                                    m.unidadId == null
+                                        ? '${_articulosPorId[m.articuloId] ?? m.articuloId} · +${m.cantidad} · ${m.costoUnitario == null ? '—' : formatoCosto(m.costoUnitario!)}'
+                                        : '${_articulosPorId[m.articuloId] ?? m.articuloId}\n'
+                                            '${_unidadesPorId[m.unidadId]?.codigo ?? m.unidadId} · Serie ${_unidadesPorId[m.unidadId]?.numeroSerie ?? '—'}',
                                   ),
                                 ),
-                                RisegButton(
-                                  label: l10n.compraIntegracionesVerArticulo,
-                                  variant: RisegButtonVariant.ghost,
-                                  size: RisegButtonSize.compact,
-                                  onPressed: () => context.go('/inventario/${m.articuloId}'),
-                                ),
+                                if (m.unidadId != null)
+                                  RisegButton(
+                                    label: l10n.compraIntegracionesVerUnidad,
+                                    variant: RisegButtonVariant.ghost,
+                                    size: RisegButtonSize.compact,
+                                    onPressed: () => context.go(
+                                      _unidadesTelefono.contains(m.unidadId)
+                                          ? '/telefonia/equipos/${m.unidadId}'
+                                          : '/inventario/articulos/${m.articuloId}',
+                                    ),
+                                  )
+                                else
+                                  RisegButton(
+                                    label: l10n.compraIntegracionesVerArticulo,
+                                    variant: RisegButtonVariant.ghost,
+                                    size: RisegButtonSize.compact,
+                                    onPressed: () => context.go('/inventario/articulos/${m.articuloId}'),
+                                  ),
                               ],
                             ),
                           ),

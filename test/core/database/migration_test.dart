@@ -11,6 +11,7 @@ import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/corregir_identidad_unidad_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/regularizar_articulo_serializado_usecase.dart';
 
 import '../../generated_migrations/schema.dart';
@@ -26,7 +27,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 43;
+const _currentSchemaVersion = 44;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -9163,6 +9164,152 @@ void main() {
 
       final existencia = await inventarioRepo.calcularExistenciaUnidades(articulo.id);
       expect(existencia.total, 2, reason: 'la existencia total no cambia con la regularización');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      await db.close();
+    },
+  );
+
+  test(
+    '44.json coincide con el esquema final de la Etapa 9D (tercer ajuste posterior: tabla nueva '
+    'ArticuloUnidadEvento) — corrección de identidad de unidad',
+    () async {
+      final schema = await verifier.schemaAt(44);
+      final tablas = schema.rawDatabase
+          .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+          .map((row) => row['name'] as String)
+          .toSet();
+      expect(tablas, contains('articulo_unidad_evento'));
+
+      final sqlEvento =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo_unidad_evento'")
+                  .single['sql']
+              as String;
+      expect(sqlEvento, contains('"unidad_id" TEXT NOT NULL REFERENCES articulo_unidad (id)'));
+      expect(sqlEvento, contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'));
+      expect(sqlEvento, contains('"tipo_evento" TEXT NOT NULL'));
+      expect(sqlEvento, contains('"campo" TEXT NOT NULL'));
+      expect(sqlEvento, contains('"valor_anterior" TEXT'));
+      expect(sqlEvento, contains('"valor_nuevo" TEXT'));
+      expect(sqlEvento, contains('"motivo" TEXT NOT NULL'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 43 → 44 conserva una ArticuloUnidad real y crea ArticuloUnidadEvento vacía',
+    () async {
+      final schemaV43 = await verifier.schemaAt(43);
+      final raw = schemaV43.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO categoria_articulo (id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('categoria-real', 'Teléfonos', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO articulo (
+        id, folio, categoria_id, nombre, maneja_variante, maneja_serie,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES ('articulo-real', 'ART-000001', 'categoria-real', 'SMARTPHONE', 0, 1, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO articulo_unidad (
+        id, codigo, articulo_id, numero_serie, marca, modelo, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES ('unidad-real', 'UNI-000001', 'articulo-real', 'SN-REAL-001', 'Samsung', 'A15', 'disponible',
+        1700000000, 1700000000, 'activo');
+    ''');
+
+      final db = AppDatabase(schemaV43.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final unidades = await db.select(db.articuloUnidad).get();
+      expect(unidades, hasLength(1), reason: 'ninguna ArticuloUnidad real debe perderse en una migración puramente aditiva');
+      expect(unidades.single.numeroSerie, 'SN-REAL-001');
+      expect(unidades.single.id, 'unidad-real');
+      expect(unidades.single.codigo, 'UNI-000001');
+
+      final eventos = await db.select(db.articuloUnidadEvento).get();
+      expect(eventos, isEmpty, reason: 'tabla nueva, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'corregir identidad de una ArticuloUnidad real tras la migración: número de serie y marca '
+    'cambian, mismo id/código, evento de auditoría con valor anterior y nuevo',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      await db.into(db.usuario).insert(
+            UsuarioCompanion.insert(
+              id: const Value('usuario-actor'),
+              nombre: 'Usuario de prueba',
+              nombreUsuario: 'usuario-prueba',
+              passwordHash: 'x',
+            ),
+          );
+
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'));
+      final articulo = await db.into(db.articulo).insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              categoriaId: categoria.id,
+              nombre: 'SMARTPHONE',
+              manejaSerie: const Value(true),
+            ),
+          );
+      final inventarioRepo = InventarioRepositoryImpl(db);
+      final unidad = await inventarioRepo.registrarEntradaUnidad(
+        articuloId: articulo.id,
+        codigo: 'UNI-000001',
+        numeroSerie: 'SN-MAL-CAPTURADA',
+        fecha: DateTime(2026, 1, 1),
+      );
+
+      final corregir = CorregirIdentidadUnidadUseCase(inventarioRepo);
+      final resultado = await corregir.ejecutar(
+        unidadId: unidad.id,
+        motivo: 'Error de captura al dar de alta.',
+        numeroSerie: 'SN-CORRECTA-001',
+        marca: 'Samsung',
+        actorUsuarioId: 'usuario-actor',
+      );
+
+      expect(resultado, isA<CorregirIdentidadUnidadExitoso>());
+      final corregida = (resultado as CorregirIdentidadUnidadExitoso).unidad;
+      expect(corregida.id, unidad.id, reason: 'mismo ArticuloUnidad.id');
+      expect(corregida.codigo, 'UNI-000001', reason: 'mismo código');
+      expect(corregida.numeroSerie, 'SN-CORRECTA-001');
+      expect(corregida.marca, 'Samsung');
+
+      final eventos = await inventarioRepo.listarEventosUnidad(unidad.id);
+      expect(eventos, hasLength(2), reason: 'un evento por campo que cambió (numeroSerie y marca)');
+      final eventoSerie = eventos.firstWhere((e) => e.campo == 'numeroSerie');
+      expect(eventoSerie.valorAnterior, 'SN-MAL-CAPTURADA');
+      expect(eventoSerie.valorNuevo, 'SN-CORRECTA-001');
+      expect(eventoSerie.actorUsuarioId, 'usuario-actor');
+      expect(eventoSerie.motivo, 'Error de captura al dar de alta.');
 
       final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);

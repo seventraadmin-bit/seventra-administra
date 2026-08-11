@@ -13,9 +13,10 @@ import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart'
 
 import '../asignaciones/widgets/historial_unidad_dialog.dart';
 import '../movimiento_tipo_label.dart';
-import '../../inventario_providers.dart' show obtenerOrigenCompraUseCaseProvider;
+import '../../inventario_providers.dart' show inventarioRepositoryProvider, obtenerOrigenCompraUseCaseProvider;
 import 'articulos_controller.dart';
 import 'articulos_list_screen.dart';
+import 'widgets/corregir_identidad_unidad_dialog.dart';
 import 'widgets/crear_variante_dialog.dart';
 import 'widgets/eliminar_articulo_fisicamente_dialog.dart';
 import 'widgets/gestionar_articulo_dialog.dart';
@@ -57,6 +58,13 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
   }
 
   ArticulosController get _notifier => ref.read(articulosControllerProvider.notifier);
+
+  Future<void> _corregirIdentidad(ArticuloUnidadData unidad) async {
+    final telefono = await ref.read(inventarioRepositoryProvider).obtenerTelefono(unidad.id);
+    if (!mounted) return;
+    final corregida = await mostrarDialogoCorregirIdentidadUnidad(context, ref, unidad: unidad, telefono: telefono);
+    if (corregida) await _cargar();
+  }
 
   Future<void> _cargar() async {
     setState(() {
@@ -254,39 +262,54 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    // `Wrap` en vez de `Row`+`Expanded`: con hasta 3 botones
+                    // (Registrar entrada/Registrar baja/Registrar ajuste)
+                    // un `Row` fijo no cabe por debajo de ~880px de ancho
+                    // de contenido — `Expanded` solo puede encoger el
+                    // título, nunca los botones (bug real encontrado
+                    // probando "Corregir identificación"). `WrapAlignment.
+                    // spaceBetween` conserva el look "título a la
+                    // izquierda, acciones a la derecha" cuando ambos caben
+                    // en la misma línea, y baja el grupo de acciones a una
+                    // segunda línea completa (nunca lo trunca ni lo
+                    // esconde) cuando no cabe.
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.xs,
                       children: [
-                        Expanded(
-                          child: Text(
-                            l10n.articuloExpedienteSeccionExistencia,
-                            style: AppTypography.heading3,
-                          ),
+                        Text(
+                          l10n.articuloExpedienteSeccionExistencia,
+                          style: AppTypography.heading3,
                         ),
-                        RisegButton(
-                          key: const Key('articulo_expediente_boton_entrada'),
-                          label: l10n.articuloExpedienteBotonRegistrarEntrada,
-                          size: RisegButtonSize.compact,
-                          onPressed: _registrarEntrada,
+                        Wrap(
+                          spacing: AppSpacing.xs,
+                          runSpacing: AppSpacing.xs,
+                          children: [
+                            RisegButton(
+                              key: const Key('articulo_expediente_boton_entrada'),
+                              label: l10n.articuloExpedienteBotonRegistrarEntrada,
+                              size: RisegButtonSize.compact,
+                              onPressed: _registrarEntrada,
+                            ),
+                            RisegButton(
+                              key: const Key('articulo_expediente_boton_baja'),
+                              label: l10n.articuloExpedienteBotonRegistrarBaja,
+                              variant: RisegButtonVariant.secondary,
+                              size: RisegButtonSize.compact,
+                              onPressed: _registrarBaja,
+                            ),
+                            if (!articulo.manejaSerie)
+                              RisegButton(
+                                key: const Key('articulo_expediente_boton_ajuste'),
+                                label: l10n.articuloExpedienteBotonRegistrarAjuste,
+                                variant: RisegButtonVariant.ghost,
+                                size: RisegButtonSize.compact,
+                                onPressed: _registrarAjuste,
+                              ),
+                          ],
                         ),
-                        const SizedBox(width: AppSpacing.xs),
-                        RisegButton(
-                          key: const Key('articulo_expediente_boton_baja'),
-                          label: l10n.articuloExpedienteBotonRegistrarBaja,
-                          variant: RisegButtonVariant.secondary,
-                          size: RisegButtonSize.compact,
-                          onPressed: _registrarBaja,
-                        ),
-                        if (!articulo.manejaSerie) ...[
-                          const SizedBox(width: AppSpacing.xs),
-                          RisegButton(
-                            key: const Key('articulo_expediente_boton_ajuste'),
-                            label: l10n.articuloExpedienteBotonRegistrarAjuste,
-                            variant: RisegButtonVariant.ghost,
-                            size: RisegButtonSize.compact,
-                            onPressed: _registrarAjuste,
-                          ),
-                        ],
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -344,11 +367,29 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                           title: l10n.articuloExpedienteUnidadesVacio,
                           message: '',
                         ),
-                        rowActionsBuilder: (u) => RisegButton(
-                          label: l10n.asignacionSeccionHistorial,
-                          variant: RisegButtonVariant.ghost,
-                          size: RisegButtonSize.compact,
-                          onPressed: () => mostrarDialogoHistorialUnidad(context, ref, u),
+                        // Menú de acciones (⋮) en vez de botones de texto en
+                        // fila: con 2 acciones ("Corregir identificación" +
+                        // "Historial") un `Row` de botones ya desbordaba el
+                        // ancho fijo de la columna de acciones en ventanas
+                        // angostas — un menú compacto no vuelve a romperse
+                        // el día que se agregue una tercera acción.
+                        actionsWidth: 56,
+                        rowActionsBuilder: (u) => PopupMenuButton<void>(
+                          key: Key('unidad_acciones_${u.id}'),
+                          tooltip: l10n.articuloExpedienteUnidadAccionesTooltip,
+                          icon: const Icon(Icons.more_vert),
+                          itemBuilder: (menuContext) => [
+                            PopupMenuItem<void>(
+                              key: Key('unidad_corregir_identidad_${u.id}'),
+                              onTap: () => _corregirIdentidad(u),
+                              child: Text(l10n.corregirIdentidadUnidadBotonAccion),
+                            ),
+                            PopupMenuItem<void>(
+                              key: Key('unidad_historial_${u.id}'),
+                              onTap: () => mostrarDialogoHistorialUnidad(context, ref, u),
+                              child: Text(l10n.asignacionSeccionHistorial),
+                            ),
+                          ],
                         ),
                         columns: [
                           RisegColumn<ArticuloUnidadData>(
@@ -366,7 +407,15 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                           ),
                           RisegColumn<ArticuloUnidadData>(
                             label: l10n.articuloExpedienteColumnaEstatus,
-                            width: 130,
+                            // 150, no 130: "Disponible" (el más largo de
+                            // los 5 posibles) desbordaba por ~10px el
+                            // padding interno de RisegStatusBadge a 130 —
+                            // encontrado por la prueba de regresión del
+                            // menú de acciones. El espacio de sobra viene
+                            // de reducir `actionsWidth` (96 → 56) al pasar
+                            // a menú compacto, así que ninguna columna de
+                            // datos pierde espacio neto.
+                            width: 150,
                             cellBuilder: (u) => RisegStatusBadge(
                               label: _estatusUnidadLabel(l10n, u.estatus),
                               tone: _estatusUnidadTono(u.estatus),

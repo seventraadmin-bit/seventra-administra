@@ -36,6 +36,14 @@ class DatosUnidadRegularizada {
 abstract interface class InventarioRepository {
   Future<ArticuloUnidadData?> obtenerUnidadPorId(String id);
 
+  /// Exactamente la unidad cuyo `numeroSerie` sea igual a [numeroSerie]
+  /// — usado por `CorregirIdentidadUnidadUseCase` (y, en el futuro,
+  /// cualquier flujo de captura) para validar duplicados *antes* de
+  /// escribir, en vez de dejar que la restricción `UNIQUE` de la base
+  /// de datos lance una excepción genérica (mismo criterio ya usado
+  /// por `listarTelefonosPorImei` para IMEI).
+  Future<ArticuloUnidadData?> obtenerUnidadPorNumeroSerie(String numeroSerie);
+
   Future<ArticuloUnidadTelefonoData?> obtenerTelefono(String unidadId);
 
   Future<List<ArticuloUnidadData>> listarUnidades(String articuloId, {String? estatus});
@@ -184,4 +192,38 @@ abstract interface class InventarioRepository {
   /// de datos: "único cuando corresponda" admite excepciones reales de
   /// dispositivos de segunda mano/gris).
   Future<List<ArticuloUnidadTelefonoData>> listarTelefonosPorImei(String imei);
+
+  /// Corrección de identidad de una unidad ya existente — número de
+  /// serie/marca/modelo (`ArticuloUnidad`) e IMEI 1/IMEI 2
+  /// (`ArticuloUnidadTelefono`, solo si viene alguno de los dos, upsert
+  /// igual que `actualizarTelefono`) capturados mal al darla de alta.
+  /// `null` en cada parámetro significa "no tocar ese campo"; para
+  /// limpiar marca/modelo/IMEI usa los flags `limpiarX` (mismo convenio
+  /// `limpiarX` del resto del proyecto). Nunca cambia `codigo`,
+  /// `articuloId`, `estatus`, ni crea `MovimientoInventario` — misma
+  /// fila, mismo `id`, solo unos campos de identidad corregidos.
+  ///
+  /// Un `ArticuloUnidadEvento` por cada campo que realmente cambió
+  /// (comparado contra el valor previo, dentro de la misma
+  /// transacción), con [motivo]/[actorUsuarioId] — la validación de
+  /// duplicados (numeroSerie vía [obtenerUnidadPorNumeroSerie], IMEI
+  /// vía [listarTelefonosPorImei]) vive en el caso de uso, no aquí.
+  Future<ArticuloUnidadData> corregirIdentidadUnidad({
+    required String unidadId,
+    required String motivo,
+    String? numeroSerie,
+    String? marca,
+    bool limpiarMarca = false,
+    String? modelo,
+    bool limpiarModelo = false,
+    String? imei,
+    bool limpiarImei = false,
+    String? imei2,
+    bool limpiarImei2 = false,
+    String? actorUsuarioId,
+  });
+
+  /// Historial de correcciones de identidad de una unidad — más
+  /// reciente primero.
+  Future<List<ArticuloUnidadEventoData>> listarEventosUnidad(String unidadId);
 }

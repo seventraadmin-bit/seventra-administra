@@ -218,6 +218,8 @@ class _RegistrarCompraScreenState extends ConsumerState<RegistrarCompraScreen> {
         _errorGeneral = l10n.compraErrorPartidaCostoInvalido(indice + 1);
       case RegistrarCompraPartidaNumerosSerieInvalidos(:final indice):
         _errorGeneral = l10n.compraErrorPartidaNumerosSerieInvalidos(_partidas[indice].cantidad, indice + 1);
+      case RegistrarCompraPartidaNumeroSerieDuplicado():
+        _errorGeneral = l10n.compraErrorPartidaNumeroSerieDuplicado;
       case RegistrarCompraErrorInesperado():
         _errorGeneral = l10n.compraErrorInesperado;
     }

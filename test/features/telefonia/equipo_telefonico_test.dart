@@ -135,7 +135,7 @@ void main() {
 
     final egresoRepo = EgresoRepositoryImpl(db);
     compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, generarCodigo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
 
     buscarAuditoria = BuscarAuditoriaUseCase(AuditoriaRepositoryImpl(db));
   });

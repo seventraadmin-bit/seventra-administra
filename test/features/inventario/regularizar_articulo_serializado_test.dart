@@ -41,7 +41,7 @@ void main() {
     final egresoRepo = EgresoRepositoryImpl(db);
     compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, generarCodigo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
     regularizar = RegularizarArticuloSerializadoUseCase(articuloRepo, inventarioRepo, generarCodigo);
   });
 

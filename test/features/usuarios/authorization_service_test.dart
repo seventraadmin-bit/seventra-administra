@@ -22,6 +22,7 @@ import 'package:riseg_one/features/compras/compras_providers.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_ingreso_manual_usecase.dart';
 import 'package:riseg_one/features/finanzas/presentation/ingresos/ingresos_controller.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/cambiar_responsable_asignacion_usecase.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/corregir_identidad_unidad_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_ajuste_usecase.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_controller.dart';
@@ -612,6 +613,52 @@ void main() {
         );
 
         expect(resultado, isNot(isA<CambiarResponsableAsignacionErrorInesperado>()));
+      });
+    },
+  );
+
+  group(
+    'Inventario — corregirIdentidadUnidadAutorizadoProvider llamado directo, sin montar widgets '
+    '(Etapa 9D, tercer ajuste posterior)',
+    () {
+      late AppDatabase db;
+
+      setUp(() async {
+        db = AppDatabase(NativeDatabase.memory());
+        await _sembrarUsuariosDePrueba(db);
+      });
+      tearDown(() => db.close());
+
+      test('inventario.ver sin inventario.modificar: corregir identidad rechazado', () async {
+        final container = _container(db, _sesionCon({'inventario.ver'}));
+        final resultado = await container.read(corregirIdentidadUnidadAutorizadoProvider)(
+          unidadId: 'unidad-inexistente',
+          motivo: 'prueba',
+        );
+
+        expect(resultado, isA<CorregirIdentidadUnidadErrorInesperado>());
+        expect((resultado as CorregirIdentidadUnidadErrorInesperado).mensaje, _mensajePermiso);
+      });
+
+      test('inventario.modificar presente: llega al dominio real (unidad inexistente, '
+          'no el error de permiso)', () async {
+        final container = _container(db, _sesionCon({'inventario.ver', 'inventario.modificar'}));
+        final resultado = await container.read(corregirIdentidadUnidadAutorizadoProvider)(
+          unidadId: 'unidad-inexistente',
+          motivo: 'prueba',
+        );
+
+        expect(resultado, isA<CorregirIdentidadUnidadNoExiste>());
+      });
+
+      test('un Maestro corrige identidad sin ninguna fila de PermisoUsuario', () async {
+        final container = _container(db, _sesionMaestro);
+        final resultado = await container.read(corregirIdentidadUnidadAutorizadoProvider)(
+          unidadId: 'unidad-inexistente',
+          motivo: 'prueba',
+        );
+
+        expect(resultado, isNot(isA<CorregirIdentidadUnidadErrorInesperado>()));
       });
     },
   );

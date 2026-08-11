@@ -12,7 +12,7 @@ import '../shell_destinations.dart';
 /// Widget de presentación puro: no lee providers directamente — recibe
 /// [collapsed] ya resuelto y notifica [onToggleCollapse]/[onDestinationSelected]
 /// hacia arriba. Así se puede probar y reutilizar sin depender de Riverpod.
-class AppSidebar extends StatelessWidget {
+class AppSidebar extends StatefulWidget {
   const AppSidebar({
     required this.destinations,
     required this.activeIndex,
@@ -29,6 +29,31 @@ class AppSidebar extends StatelessWidget {
   final VoidCallback onToggleCollapse;
 
   @override
+  State<AppSidebar> createState() => _AppSidebarState();
+}
+
+/// `StatefulWidget` únicamente por el `ScrollController` de la zona de
+/// navegación: `Scrollbar` y su `ListView` deben compartir exactamente
+/// el mismo controller (creado una sola vez aquí, nunca dentro de
+/// `build()`) — ver el doc comment de nivel de archivo/prueba de
+/// regresión en `test/app/shell/widgets/app_sidebar_test.dart` para el
+/// porqué exacto: sin un controller explícito compartido, en
+/// plataformas de escritorio el `Scrollbar` y el `ListView` terminan
+/// resolviendo cada uno un controller distinto (el `Scrollbar` cae en
+/// el `PrimaryScrollController` ambiental de la página; el `ListView`
+/// no lo hereda porque `PrimaryScrollController.shouldInherit` solo lo
+/// hace por defecto en plataformas móviles), y el del `Scrollbar` nunca
+/// tiene una `ScrollPosition` adjunta.
+class _AppSidebarState extends State<AppSidebar> {
+  final _navScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _navScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -36,7 +61,7 @@ class AppSidebar extends StatelessWidget {
       key: const Key('app_sidebar'),
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      width: collapsed ? ShellBreakpoints.sidebarCollapsedWidth : ShellBreakpoints.sidebarExpandedWidth,
+      width: widget.collapsed ? ShellBreakpoints.sidebarCollapsedWidth : ShellBreakpoints.sidebarExpandedWidth,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(right: BorderSide(color: theme.dividerColor)),
@@ -47,7 +72,7 @@ class AppSidebar extends StatelessWidget {
           // Resolución explícita de Marlon (Etapa 3B, revisión de
           // navegación): ningún destino debe volverse inaccesible por
           // altura de ventana reducida.
-          _SidebarHeader(collapsed: collapsed),
+          _SidebarHeader(collapsed: widget.collapsed),
           Divider(height: 1, color: theme.dividerColor),
           // Zona con scroll: solo los destinos. `Scrollbar` con
           // `thumbVisibility: true` para que el scroll sea descubrible a
@@ -59,26 +84,36 @@ class AppSidebar extends StatelessWidget {
           // altura disponible (mismo mecanismo ya usado para el ancho),
           // en vez de mover el control a un lugar donde dejaría de estar
           // siempre visible en el caso común.
+          //
+          // `Scrollbar` y `ListView` comparten explícitamente
+          // `_navScrollController` — un `Scrollbar` con `thumbVisibility:
+          // true` necesita conocer la `ScrollPosition` de inmediato para
+          // poder pintar el thumb, y sin un controller común ambos
+          // widgets pueden terminar resolviendo controllers distintos en
+          // plataformas de escritorio (ver el doc comment de la clase de
+          // estado, arriba).
           Expanded(
             child: Scrollbar(
+              controller: _navScrollController,
               thumbVisibility: true,
               child: ListView(
                 key: const Key('app_sidebar_nav_scroll'),
+                controller: _navScrollController,
                 padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
                 children: [
-                  for (var index = 0; index < destinations.length; index++)
+                  for (var index = 0; index < widget.destinations.length; index++)
                     _SidebarItem(
-                      destination: destinations[index],
-                      isActive: index == activeIndex,
-                      collapsed: collapsed,
-                      onTap: () => onDestinationSelected(index),
+                      destination: widget.destinations[index],
+                      isActive: index == widget.activeIndex,
+                      collapsed: widget.collapsed,
+                      onTap: () => widget.onDestinationSelected(index),
                     ),
                 ],
               ),
             ),
           ),
           Divider(height: 1, color: theme.dividerColor),
-          _CollapseButton(collapsed: collapsed, onPressed: onToggleCollapse),
+          _CollapseButton(collapsed: widget.collapsed, onPressed: widget.onToggleCollapse),
         ],
       ),
     );

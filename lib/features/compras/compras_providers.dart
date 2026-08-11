@@ -29,6 +29,7 @@ final registrarCompraUseCaseProvider = Provider<RegistrarCompraUseCase>((ref) {
   return RegistrarCompraUseCase(
     ref.watch(compraRepositoryProvider),
     ref.watch(articuloRepositoryProvider),
+    ref.watch(inventarioRepositoryProvider),
     ref.watch(generarCodigoUseCaseProvider),
   );
 });

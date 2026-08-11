@@ -47,9 +47,10 @@ void main() {
 
     setUp(() {
       final articuloRepo = ArticuloRepositoryImpl(db);
+      final inventarioRepo = InventarioRepositoryImpl(db);
       final egresoRepo = EgresoRepositoryImpl(db);
-      final compraRepo = CompraRepositoryImpl(db, InventarioRepositoryImpl(db), articuloRepo, egresoRepo);
-      registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
+      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+      registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
     });
 
     Future<RegistrarCompraResultado> registrarCompraDePrueba({String? actorUsuarioId}) {
