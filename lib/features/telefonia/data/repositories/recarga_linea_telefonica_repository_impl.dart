@@ -109,6 +109,25 @@ class RecargaLineaTelefonicaRepositoryImpl implements RecargaLineaTelefonicaRepo
   }
 
   @override
+  Future<List<({RecargaLineaTelefonicaData recarga, DestinoHistoricoRecarga? destino})>> listarConDestinoEnRango({
+    DateTime? desde,
+    DateTime? hasta,
+  }) async {
+    final recargas = await _listarConRango(desde: desde, hasta: hasta);
+    final asignaciones = await _asignacionesTodas();
+    return [
+      for (final r in recargas)
+        (
+          recarga: r,
+          destino: switch (_resolverDestino(r, asignaciones)) {
+            null => null,
+            final d => DestinoHistoricoRecarga(empleadoId: d.empleadoId, servicioId: d.servicioId),
+          },
+        ),
+    ];
+  }
+
+  @override
   Future<RecargaLineaTelefonicaData> registrar({
     required String lineaTelefonicaId,
     required DateTime fecha,

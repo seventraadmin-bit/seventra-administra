@@ -423,6 +423,10 @@ GoRouter createAppRouter() {
                         path: 'personal-nomina',
                         builder: (context, state) => const ReportesShellScreen(tab: ReportesTab.personalNomina),
                       ),
+                      GoRoute(
+                        path: 'operacion',
+                        builder: (context, state) => const ReportesShellScreen(tab: ReportesTab.operacion),
+                      ),
                     ],
                   )
                 else if (def.path == '/configuracion')

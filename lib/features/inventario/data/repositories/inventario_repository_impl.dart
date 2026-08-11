@@ -61,6 +61,15 @@ class InventarioRepositoryImpl implements InventarioRepository {
   }
 
   @override
+  Future<int> totalMovimientosEnRango({DateTime? desde, DateTime? hasta}) async {
+    final query = _db.selectOnly(_db.movimientoInventario)..addColumns([_db.movimientoInventario.id.count()]);
+    if (desde != null) query.where(_db.movimientoInventario.fecha.isBiggerOrEqualValue(desde));
+    if (hasta != null) query.where(_db.movimientoInventario.fecha.isSmallerOrEqualValue(hasta));
+    final fila = await query.getSingle();
+    return fila.read(_db.movimientoInventario.id.count()) ?? 0;
+  }
+
+  @override
   Future<MovimientoInventarioData?> obtenerMovimientoPorId(String movimientoInventarioId) {
     return (_db.select(_db.movimientoInventario)..where((t) => t.id.equals(movimientoInventarioId))).getSingleOrNull();
   }

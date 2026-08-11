@@ -64,6 +64,11 @@ abstract interface class InventarioRepository {
 
   Future<List<MovimientoInventarioData>> listarMovimientos({String? articuloId, String? varianteId, String? unidadId});
 
+  /// Conteo de `MovimientoInventario` en el rango — Etapa 12C
+  /// (Reportes): un `COUNT()`, nunca la lista completa (evita cargar
+  /// miles de movimientos solo para mostrar una tarjeta con un número).
+  Future<int> totalMovimientosEnRango({DateTime? desde, DateTime? hasta});
+
   Future<MovimientoInventarioData?> obtenerMovimientoPorId(String movimientoInventarioId);
 
   /// Entrada de un Artículo por cantidad (con o sin variante) — crea

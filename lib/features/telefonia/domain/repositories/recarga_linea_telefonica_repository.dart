@@ -56,6 +56,19 @@ abstract interface class RecargaLineaTelefonicaRepository {
   /// Gasto total de Telefonía en un rango de fechas (todas las líneas).
   Future<int> totalPorRango({DateTime? desde, DateTime? hasta});
 
+  /// Todas las recargas del rango, cada una ya con su
+  /// [DestinoHistoricoRecarga] resuelto (`null` si la línea no tenía
+  /// asignación vigente ese día) — Etapa 12C (Reportes): el desglose
+  /// "recargas por Servicio/Empleado" que [totalPorEmpleado]/
+  /// [totalPorServicio] no dan (esos solo suman para UN id conocido).
+  /// Reutiliza exactamente el mismo mecanismo de resolución histórica
+  /// (una sola carga de recargas + una sola carga de asignaciones, sin
+  /// N+1), solo que devuelve el desglose en vez de un total ya sumado.
+  Future<List<({RecargaLineaTelefonicaData recarga, DestinoHistoricoRecarga? destino})>> listarConDestinoEnRango({
+    DateTime? desde,
+    DateTime? hasta,
+  });
+
   Future<RecargaLineaTelefonicaData> registrar({
     required String lineaTelefonicaId,
     required DateTime fecha,

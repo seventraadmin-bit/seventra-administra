@@ -11,6 +11,11 @@ abstract interface class AsignacionLineaTelefonicaRepository {
 
   Future<AsignacionLineaTelefonicaData?> obtenerActivaPorLinea(String lineaTelefonicaId);
 
+  /// `lineaTelefonicaId` → su asignación activa, para todas las líneas
+  /// que tienen una — Etapa 12C (Reportes): "líneas sin asignación" se
+  /// deriva de las líneas cuyo id no aparece aquí, sin N+1.
+  Future<Map<String, AsignacionLineaTelefonicaData>> obtenerActivasPorTodasLasLineas();
+
   Future<AsignacionLineaTelefonicaData?> obtenerActivaPorEmpleado(String empleadoId);
 
   Future<AsignacionLineaTelefonicaData?> obtenerActivaPorServicio(String servicioId);

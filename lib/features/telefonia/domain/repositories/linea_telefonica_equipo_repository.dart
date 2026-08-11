@@ -27,6 +27,12 @@ class CustodiaInventarioLineaTelefonica {
 abstract interface class LineaTelefonicaEquipoRepository {
   Future<LineaTelefonicaEquipoData?> obtenerActualPorLinea(String lineaTelefonicaId);
 
+  /// `lineaTelefonicaId` → su equipo actual, para todas las líneas que
+  /// tienen uno — Etapa 12C (Reportes): "líneas sin equipo" se deriva
+  /// de las líneas cuyo id no aparece aquí, sin N+1. Mismo patrón que
+  /// `RecargaLineaTelefonicaRepository.obtenerUltimasPorTodasLasLineas`.
+  Future<Map<String, LineaTelefonicaEquipoData>> obtenerActualesPorTodasLasLineas();
+
   /// Historial completo, orden descendente por `fechaInicio`.
   Future<List<LineaTelefonicaEquipoData>> listarPorLinea(String lineaTelefonicaId);
 

@@ -72,6 +72,18 @@ abstract interface class CompraRepository {
   /// excluye lo cancelado: solo dinero real vigente).
   Future<int> totalCompradoEnRango({DateTime? desde, DateTime? hasta});
 
+  /// Todas las `CompraPartida` de las Compras en rango, ya emparejadas
+  /// con su `Compra` — Etapa 12C (Reportes): una sola consulta de la
+  /// que se derivan en Dart los desgloses por destino/proveedor/
+  /// artículo/concepto, en vez de tres consultas separadas para lo
+  /// mismo. `estatus == null` trae registradas y canceladas juntas —
+  /// el llamador decide cómo separarlas (mismo criterio que `listar`).
+  Future<List<({CompraData compra, CompraPartidaData partida})>> listarPartidasEnRango({
+    DateTime? desde,
+    DateTime? hasta,
+    String? estatus,
+  });
+
   /// Todos los `MovimientoInventario` generados por esta Compra (vía
   /// `CompraPartidaMovimiento`) — usado por el expediente ("Integraciones")
   /// y por el chequeo de bloqueo de cancelación.

@@ -108,6 +108,22 @@ class CompraRepositoryImpl implements CompraRepository {
   }
 
   @override
+  Future<List<({CompraData compra, CompraPartidaData partida})>> listarPartidasEnRango({
+    DateTime? desde,
+    DateTime? hasta,
+    String? estatus,
+  }) async {
+    final compras = await listar(desde: desde, hasta: hasta, estatus: estatus);
+    if (compras.isEmpty) return [];
+    final ids = compras.map((c) => c.id).toSet();
+    final partidas = await (_db.select(_db.compraPartida)..where((t) => t.compraId.isIn(ids))).get();
+    final comprasPorId = {for (final c in compras) c.id: c};
+    return [
+      for (final p in partidas) (compra: comprasPorId[p.compraId]!, partida: p),
+    ];
+  }
+
+  @override
   Future<List<MovimientoInventarioData>> listarMovimientosGenerados(String compraId) async {
     final partidas = await listarPartidas(compraId);
     final partidaIds = partidas.map((p) => p.id).toSet();

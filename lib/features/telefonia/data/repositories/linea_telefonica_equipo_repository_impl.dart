@@ -37,6 +37,12 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
       _buscarActualPorLinea(lineaTelefonicaId);
 
   @override
+  Future<Map<String, LineaTelefonicaEquipoData>> obtenerActualesPorTodasLasLineas() async {
+    final filas = await (_db.select(_db.lineaTelefonicaEquipo)..where((t) => t.fechaFin.isNull())).get();
+    return {for (final fila in filas) fila.lineaTelefonicaId: fila};
+  }
+
+  @override
   Future<List<LineaTelefonicaEquipoData>> listarPorLinea(String lineaTelefonicaId) {
     return (_db.select(_db.lineaTelefonicaEquipo)
           ..where((t) => t.lineaTelefonicaId.equals(lineaTelefonicaId))

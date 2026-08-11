@@ -34,6 +34,12 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
   }
 
   @override
+  Future<Map<String, AsignacionLineaTelefonicaData>> obtenerActivasPorTodasLasLineas() async {
+    final filas = await (_db.select(_db.asignacionLineaTelefonica)..where((t) => t.fechaTermino.isNull())).get();
+    return {for (final fila in filas) fila.lineaTelefonicaId: fila};
+  }
+
+  @override
   Future<AsignacionLineaTelefonicaData?> obtenerActivaPorServicio(String servicioId) {
     return (_db.select(_db.asignacionLineaTelefonica)
           ..where((t) => t.servicioId.equals(servicioId) & t.fechaTermino.isNull()))

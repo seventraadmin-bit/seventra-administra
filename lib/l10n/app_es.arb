@@ -3541,5 +3541,51 @@
   "reportesNominaColumnaGenerado": "Generado",
   "reportesNominaColumnaPagado": "Pagado",
   "reportesNominaColumnaPendiente": "Pendiente",
-  "reportesNominaPagoParcial": "pago parcial"
+  "reportesNominaPagoParcial": "pago parcial",
+
+  "reportesTabOperacion": "Operación",
+  "reportesOperacionTitulo": "Operación",
+  "reportesOperacionDescripcion": "Compras, Inventario, Vehículos y Telefonía por periodo.",
+
+  "reportesComprasSeccionTitulo": "Compras",
+  "reportesVerCompras": "Ver Compras",
+  "reportesComprasTotal": "Total comprado",
+  "reportesComprasInventario": "Compras de Inventario",
+  "reportesComprasGastoDirecto": "Gasto directo",
+  "reportesComprasCanceladas": "Canceladas",
+
+  "reportesInventarioSeccionTitulo": "Inventario",
+  "reportesVerInventarioCompleto": "Ver reporte completo de Inventario",
+  "reportesInventarioExistencia": "Existencia total",
+  "reportesInventarioAsignaciones": "Asignaciones vigentes",
+  "reportesInventarioDanadosPerdidos": "Dañados/perdidos",
+  "reportesInventarioDescuentos": "Descuentos pendientes",
+  "reportesInventarioMovimientos": "Movimientos del periodo",
+  "reportesInventarioValorAproximado": "Valor aproximado",
+  "reportesInventarioValorAproximadoNota": "Aproximado, excluye {cantidad} artículo(s) con variante o sin costo capturado",
+  "@reportesInventarioValorAproximadoNota": {
+    "placeholders": {
+      "cantidad": {"type": "int"}
+    }
+  },
+
+  "reportesVehiculosSeccionTitulo": "Vehículos",
+  "reportesVerVehiculos": "Ver Vehículos",
+  "reportesVehiculosCostoMantenimiento": "Costo de mantenimiento",
+  "reportesVehiculosCostoIncidencias": "Costo de incidencias",
+  "reportesVehiculosMantenimientoProximo": "Mantenimiento próximo",
+  "reportesVehiculosMantenimientoVencido": "Mantenimiento vencido",
+  "reportesVehiculosDocumentoProximo": "Documento por vencer",
+  "reportesVehiculosDocumentoVencido": "Documento vencido",
+
+  "reportesTelefoniaSeccionTitulo": "Telefonía",
+  "reportesVerTelefonia": "Ver Telefonía",
+  "reportesTelefoniaLineasSinEquipo": "Líneas sin equipo",
+  "reportesTelefoniaLineasSinAsignacion": "Líneas sin asignación",
+  "reportesTelefoniaTotalRecargas": "Total de recargas",
+  "reportesTelefoniaRecargasPorServicio": "Recargas por Servicio",
+  "reportesTelefoniaRecargasPorEmpleado": "Recargas por Empleado",
+  "reportesTelefoniaColumnaServicio": "Servicio",
+  "reportesTelefoniaColumnaEmpleado": "Empleado",
+  "reportesTelefoniaColumnaTotal": "Total"
 }

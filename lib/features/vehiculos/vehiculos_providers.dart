@@ -27,6 +27,7 @@ import 'domain/usecases/crear_vehiculo_usecase.dart';
 import 'domain/usecases/dar_de_baja_vehiculo_usecase.dart';
 import 'domain/usecases/finalizar_mantenimiento_vehiculo_usecase.dart';
 import 'domain/usecases/eliminar_vehiculo_fisicamente_usecase.dart';
+import 'domain/usecases/obtener_alertas_vehiculos_usecase.dart';
 import 'domain/usecases/obtener_opciones_asignacion_vehiculo_usecase.dart';
 import 'domain/usecases/registrar_documento_vehiculo_usecase.dart';
 import 'domain/usecases/registrar_kilometraje_vehiculo_usecase.dart';
@@ -161,6 +162,17 @@ final finalizarMantenimientoVehiculoUseCaseProvider = Provider<FinalizarMantenim
   return FinalizarMantenimientoVehiculoUseCase(
     ref.watch(vehiculoRepositoryProvider),
     ref.watch(asignacionVehiculoRepositoryProvider),
+  );
+});
+
+/// Compartido por `AlertasVehiculosScreen` y el bloque de Vehículos en
+/// Reportes generales (Etapa 12C) — misma orquestación, un solo lugar.
+final obtenerAlertasVehiculosUseCaseProvider = Provider<ObtenerAlertasVehiculosUseCase>((ref) {
+  return ObtenerAlertasVehiculosUseCase(
+    ref.watch(vehiculoRepositoryProvider),
+    ref.watch(vehiculoDocumentoRepositoryProvider),
+    ref.watch(vehiculoMantenimientoRepositoryProvider),
+    ref.watch(vehiculoKilometrajeRepositoryProvider),
   );
 });
 
