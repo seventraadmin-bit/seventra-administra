@@ -81,6 +81,16 @@ class ArticuloRepositoryImpl implements ArticuloRepository {
   }
 
   @override
+  Future<ArticuloData> marcarManejaSerie(String articuloId) {
+    return _db.transaction(() async {
+      await (_db.update(_db.articulo)..where((t) => t.id.equals(articuloId))).write(
+        ArticuloCompanion(manejaSerie: const Value(true), updatedAt: Value(DateTime.now())),
+      );
+      return (_db.select(_db.articulo)..where((t) => t.id.equals(articuloId))).getSingle();
+    });
+  }
+
+  @override
   Future<ArticuloData> archivar(String articuloId) {
     return _db.transaction(() async {
       await (_db.update(_db.articulo)..where((t) => t.id.equals(articuloId))).write(

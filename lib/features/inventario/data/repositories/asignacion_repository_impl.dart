@@ -162,6 +162,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
             fechaEntrega: fechaEntrega,
             condicionEntrega: Value(condicionEntrega),
             observaciones: Value(observaciones),
+            actorUsuarioId: Value(actorUsuarioId),
           ),
         );
 
@@ -242,6 +243,7 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
         observacionesCierre: Value(observacionesCierre),
         atribuibleAlEmpleado: Value(atribuibleAlEmpleado),
         updatedAt: Value(DateTime.now()),
+        actorUsuarioId: Value(actorUsuarioId),
       ),
     );
 
@@ -363,6 +365,46 @@ class AsignacionRepositoryImpl implements AsignacionRepository {
       );
 
       return nueva;
+    });
+  }
+
+  @override
+  Future<AsignacionData> cambiarResponsable({
+    required String asignacionId,
+    String? nuevoEmpleadoId,
+    String? nuevoServicioId,
+    required DateTime fecha,
+    String? observaciones,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.asignacion)..where((t) => t.id.equals(asignacionId))).getSingle();
+
+      await (_db.update(_db.asignacion)..where((t) => t.id.equals(asignacionId))).write(
+        AsignacionCompanion(
+          estatus: Value(EstatusAsignacion.reasignada.name),
+          fechaCierre: Value(fecha),
+          motivoCierre: const Value('cambioResponsable'),
+          observacionesCierre: Value(observaciones),
+          updatedAt: Value(DateTime.now()),
+          actorUsuarioId: Value(actorUsuarioId),
+        ),
+      );
+
+      return _db.into(_db.asignacion).insertReturning(
+            AsignacionCompanion.insert(
+              articuloId: anterior.articuloId,
+              varianteId: Value(anterior.varianteId),
+              unidadId: Value(anterior.unidadId),
+              cantidad: anterior.cantidad,
+              empleadoId: Value(nuevoEmpleadoId),
+              servicioId: Value(nuevoServicioId),
+              fechaEntrega: fecha,
+              condicionEntrega: Value(anterior.condicionEntrega),
+              observaciones: Value(observaciones),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
     });
   }
 

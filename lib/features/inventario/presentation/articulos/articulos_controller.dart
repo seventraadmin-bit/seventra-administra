@@ -2,6 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/inventario/data/tables/categoria_articulo_table.dart' show AplicacionEspecializadaCategoriaArticulo;
+import 'package:riseg_one/features/inventario/domain/usecases/actualizar_categoria_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/adjuntar_comprobante_movimiento_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_categoria_articulo_usecase.dart';
@@ -125,6 +127,27 @@ class ArticulosController extends _$ArticulosController {
       ArchivarCategoriaArticuloErrorInesperado.new,
     );
     if (resultado is ArchivarCategoriaArticuloExitoso) await _cargar();
+    return resultado;
+  }
+
+  Future<ActualizarCategoriaArticuloResultado> actualizarCategoria({
+    required String categoriaId,
+    required String nombre,
+    AplicacionEspecializadaCategoriaArticulo? aplicacionEspecializada,
+    bool limpiarAplicacionEspecializada = false,
+  }) async {
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.modificar',
+      () => ref.read(actualizarCategoriaArticuloUseCaseProvider).ejecutar(
+            categoriaId: categoriaId,
+            nombre: nombre,
+            aplicacionEspecializada: aplicacionEspecializada,
+            limpiarAplicacionEspecializada: limpiarAplicacionEspecializada,
+          ),
+      ActualizarCategoriaArticuloErrorInesperado.new,
+    );
+    if (resultado is ActualizarCategoriaArticuloExitoso) await _cargar();
     return resultado;
   }
 

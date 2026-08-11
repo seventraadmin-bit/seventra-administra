@@ -3,11 +3,25 @@ import 'package:drift/drift.dart';
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../organizacion/data/tables/servicio_table.dart';
 import '../../../personal/data/tables/empleado_table.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 import 'articulo_table.dart';
 import 'articulo_unidad_table.dart';
 import 'articulo_variante_table.dart';
 
-enum EstatusAsignacion { activa, devuelta, danada, perdida }
+enum EstatusAsignacion {
+  activa,
+  devuelta,
+
+  /// Cerrada por `AsignacionRepository.cambiarResponsable` (Etapa 9D) —
+  /// el bien nunca regresó a Inventario, solo cambió quién es
+  /// responsable de él. Deliberadamente distinto de `devuelta` (que
+  /// implica `ArticuloUnidad.estatus → disponible`): aquí la unidad
+  /// permanece `asignado` durante toda la operación, con la nueva fila
+  /// activa tomando la custodia de inmediato.
+  reasignada,
+  danada,
+  perdida,
+}
 
 /// Motivo de cierre de una [Asignacion] (Etapa 7B) — enum enriquecido,
 /// mismo criterio que `MotivoTerminoAsignacion` (5D) y
@@ -95,6 +109,15 @@ class Asignacion extends Table with AuditColumns {
 
   TextColumn get asignacionReemplazoId =>
       text().nullable().references(Asignacion, #id, onDelete: KeyAction.restrict)();
+
+  /// **Etapa 9D** — `Asignacion` nunca quedó entre las 15 tablas de la
+  /// Etapa 11D (esas eran tablas de evento/ledger; esta es de estado
+  /// vigente). Se agrega ahora porque `cambiarResponsable` no genera
+  /// ningún `MovimientoInventario` propio — sin esta columna no habría
+  /// forma de saber quién hizo el cambio. Se aprovecha para completar
+  /// también `crear`/`cerrar`/`reemplazar` (antes solo quedaba el actor
+  /// en el `MovimientoInventario` asociado, nunca en la propia fila).
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   @override
   List<String> get customConstraints => [

@@ -52,6 +52,14 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
   }
 
   @override
+  Future<List<LineaTelefonicaEquipoData>> listarPorUnidad(String unidadId) {
+    return (_db.select(_db.lineaTelefonicaEquipo)
+          ..where((t) => t.unidadId.equals(unidadId))
+          ..orderBy([(t) => OrderingTerm.desc(t.fechaInicio)]))
+        .get();
+  }
+
+  @override
   Future<CustodiaInventarioLineaTelefonica?> obtenerCustodiaInventarioActual(String unidadId) async {
     final activa = await _inventarioAsignacionRepo.obtenerActivaPorUnidad(unidadId);
     if (activa == null) return null;
@@ -120,6 +128,7 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
               unidadId: unidadId,
               fechaInicio: fechaInicio,
               observaciones: Value(observaciones),
+              actorUsuarioId: Value(actorUsuarioId),
             ),
           );
 
@@ -152,7 +161,11 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
       if (actual == null) return;
 
       await (_db.update(_db.lineaTelefonicaEquipo)..where((t) => t.id.equals(actual.id))).write(
-        LineaTelefonicaEquipoCompanion(fechaFin: Value(fechaFin), updatedAt: Value(DateTime.now())),
+        LineaTelefonicaEquipoCompanion(
+          fechaFin: Value(fechaFin),
+          updatedAt: Value(DateTime.now()),
+          actorUsuarioId: Value(actorUsuarioId),
+        ),
       );
 
       if (sincronizarInventario) {
@@ -183,7 +196,11 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
 
       if (actual != null) {
         await (_db.update(_db.lineaTelefonicaEquipo)..where((t) => t.id.equals(actual.id))).write(
-          LineaTelefonicaEquipoCompanion(fechaFin: Value(fecha), updatedAt: Value(DateTime.now())),
+          LineaTelefonicaEquipoCompanion(
+            fechaFin: Value(fecha),
+            updatedAt: Value(DateTime.now()),
+            actorUsuarioId: Value(actorUsuarioId),
+          ),
         );
         if (sincronizarInventario) {
           await _liberarAsignacionInventarioSiCoincide(
@@ -202,6 +219,7 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
               unidadId: nuevaUnidadId,
               fechaInicio: fecha,
               observaciones: Value(observaciones),
+              actorUsuarioId: Value(actorUsuarioId),
             ),
           );
 

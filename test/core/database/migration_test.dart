@@ -8,6 +8,10 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/migrations/migrar_cuenta_por_cobrar_v14.dart';
 import 'package:riseg_one/core/database/seed/seed_data.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
+import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
+import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/regularizar_articulo_serializado_usecase.dart';
 
 import '../../generated_migrations/schema.dart';
 
@@ -22,7 +26,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 40;
+const _currentSchemaVersion = 43;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -8679,4 +8683,491 @@ void main() {
 
     await db.close();
   });
+
+  test(
+    '41.json coincide con el esquema final de la Etapa 9D (imei2 + actor_usuario_id en '
+    'ArticuloUnidadTelefono/AsignacionLineaTelefonica/LineaTelefonicaEquipo + '
+    'EquipoTelefonicoCredencial/EquipoTelefonicoEvento) — expediente del teléfono físico',
+    () async {
+      final schema = await verifier.schemaAt(41);
+      final tablas =
+          schema.rawDatabase
+              .select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+              )
+              .map((row) => row['name'] as String)
+              .toSet();
+
+      expect(tablas, containsAll(['equipo_telefonico_credencial', 'equipo_telefonico_evento']));
+
+      final sqlCredencial =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'equipo_telefonico_credencial'")
+                  .single['sql']
+              as String;
+      expect(sqlCredencial, contains('"unidad_id" TEXT NOT NULL REFERENCES articulo_unidad (id) ON DELETE CASCADE'));
+      expect(sqlCredencial, contains('PRIMARY KEY ("unidad_id")'));
+      expect(sqlCredencial, contains('"correo" TEXT'));
+      expect(sqlCredencial, contains('"contrasena_cifrada" TEXT'));
+      expect(sqlCredencial, contains('"fecha_actualizacion_contrasena" INTEGER'));
+
+      final sqlEvento =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'equipo_telefonico_evento'")
+                  .single['sql']
+              as String;
+      expect(sqlEvento, contains('"unidad_id" TEXT NOT NULL REFERENCES articulo_unidad (id) ON DELETE RESTRICT'));
+      expect(sqlEvento, contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'));
+      expect(sqlEvento, contains('"tipo_evento" TEXT NOT NULL'));
+
+      final sqlTelefono =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo_unidad_telefono'")
+                  .single['sql']
+              as String;
+      expect(sqlTelefono, contains('"imei2" TEXT'));
+
+      for (final tabla in ['asignacion_linea_telefonica', 'linea_telefonica_equipo']) {
+        final sql =
+            schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [tabla]).single['sql']
+                as String;
+        expect(
+          sql,
+          contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'),
+          reason: '$tabla debe tener actor_usuario_id tras la migración a 41',
+        );
+      }
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 40 → 41 conserva una LineaTelefonica/AsignacionLineaTelefonica/ArticuloUnidadTelefono '
+    'real, agrega imei2/actor_usuario_id nullable (null en el histórico) y crea '
+    'EquipoTelefonicoCredencial/EquipoTelefonicoEvento vacías, sin backfill',
+    () async {
+      final schemaV40 = await verifier.schemaAt(40);
+      final raw = schemaV40.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO categoria_articulo (id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('categoria-real', 'Teléfonos', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO articulo (
+        id, folio, categoria_id, nombre, maneja_variante, maneja_serie,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES ('articulo-real', 'ART-000001', 'categoria-real', 'Teléfono POCO C71', 0, 1, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO articulo_unidad (
+        id, codigo, articulo_id, numero_serie, marca, modelo, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES ('unidad-real', 'UNI-000001', 'articulo-real', 'SN-REAL-001', 'POCO', 'C71', 'disponible',
+        1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO articulo_unidad_telefono (unidad_id, imei, numero_telefonico)
+      VALUES ('unidad-real', '123456789012345', '7291220187');
+    ''');
+      raw.execute('''
+      INSERT INTO linea_telefonica (
+        id, codigo, numero, operador, modalidad_sim, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES ('linea-real', 'TEL-000001', '7291220187', 'telcel', 'fisica', 'activa',
+        1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1735689600, 3, 'activo',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO asignacion_linea_telefonica (
+        id, linea_telefonica_id, empleado_id, fecha_inicio,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES ('asignacion-real', 'linea-real', 'empleado-real', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+
+      final db = AppDatabase(schemaV40.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final unidades = await db.select(db.articuloUnidad).get();
+      expect(unidades, hasLength(1), reason: 'ninguna ArticuloUnidad real debe perderse en una migración puramente aditiva');
+
+      final telefonos = await db.select(db.articuloUnidadTelefono).get();
+      expect(telefonos, hasLength(1));
+      expect(telefonos.single.imei2, isNull, reason: 'imei2 es nuevo — no hay dato histórico que llenarlo');
+      expect(telefonos.single.imei, '123456789012345', reason: 'el IMEI 1 existente se conserva intacto');
+
+      final asignacionesLinea = await db.select(db.asignacionLineaTelefonica).get();
+      expect(asignacionesLinea, hasLength(1));
+      expect(asignacionesLinea.single.empleadoId, 'empleado-real', reason: 'la asignación real no debe perderse');
+      expect(asignacionesLinea.single.actorUsuarioId, isNull, reason: 'histórico anterior a 9D queda con actorUsuarioId = null');
+
+      final credenciales = await db.select(db.equipoTelefonicoCredencial).get();
+      expect(credenciales, isEmpty, reason: 'EquipoTelefonicoCredencial es tabla nueva en la Etapa 9D, sin backfill');
+
+      final eventos = await db.select(db.equipoTelefonicoEvento).get();
+      expect(eventos, isEmpty, reason: 'EquipoTelefonicoEvento es tabla nueva en la Etapa 9D, sin backfill');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test('EquipoTelefonicoCredencial se elimina en cascada si su ArticuloUnidad se elimina', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final categoria = await db
+        .into(db.categoriaArticulo)
+        .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'));
+    final articulo = await db.into(db.articulo).insertReturning(
+          ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Teléfono', manejaSerie: const Value(true)),
+        );
+    final unidad = await db.into(db.articuloUnidad).insertReturning(
+          ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-001'),
+        );
+    await db.into(db.equipoTelefonicoCredencial).insert(
+          EquipoTelefonicoCredencialCompanion.insert(unidadId: unidad.id, correo: const Value('equipo@riseg.mx')),
+        );
+
+    await db.delete(db.articuloUnidad).delete(unidad);
+
+    final credenciales = await db.select(db.equipoTelefonicoCredencial).get();
+    expect(credenciales, isEmpty, reason: 'ON DELETE CASCADE — la credencial no debe sobrevivir sin su unidad');
+
+    await db.close();
+  });
+
+  test('EquipoTelefonicoEvento: actor_usuario_id sobrevive con SET NULL si el Usuario se elimina', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final categoria = await db
+        .into(db.categoriaArticulo)
+        .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'));
+    final articulo = await db.into(db.articulo).insertReturning(
+          ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Teléfono', manejaSerie: const Value(true)),
+        );
+    final unidad = await db.into(db.articuloUnidad).insertReturning(
+          ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-001'),
+        );
+    final usuario = await db.into(db.usuario).insertReturning(
+          UsuarioCompanion.insert(nombre: 'Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$AA==\$BB=='),
+        );
+
+    await db.into(db.equipoTelefonicoEvento).insert(
+          EquipoTelefonicoEventoCompanion.insert(
+            unidadId: unidad.id,
+            fechaHora: DateTime(2026, 1, 1),
+            tipoEvento: 'equipoConfigurado',
+            actorUsuarioId: Value(usuario.id),
+          ),
+        );
+
+    await db.delete(db.usuario).delete(usuario);
+
+    final eventos = await db.select(db.equipoTelefonicoEvento).get();
+    expect(eventos, hasLength(1), reason: 'el evento sobrevive aunque el Usuario que lo generó se elimine');
+    expect(eventos.single.actorUsuarioId, isNull);
+
+    await db.close();
+  });
+
+  test(
+    '42.json coincide con el esquema final de la Etapa 9D (ajuste posterior: actor_usuario_id en '
+    'Asignacion) — "cambiar responsable" del mismo bien, sin MovimientoInventario ni cambio de estatus',
+    () async {
+      final schema = await verifier.schemaAt(42);
+      final sqlAsignacion =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion'")
+                  .single['sql']
+              as String;
+      expect(
+        sqlAsignacion,
+        contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'),
+        reason: 'Asignacion debe tener actor_usuario_id tras la migración a 42',
+      );
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 41 → 42 conserva una Asignacion real (activa, vigente) y agrega actor_usuario_id '
+    'nullable (null en el histórico), sin tocar ninguna otra columna',
+    () async {
+      final schemaV41 = await verifier.schemaAt(41);
+      final raw = schemaV41.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO categoria_articulo (id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('categoria-real', 'Uniformes', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO articulo (
+        id, folio, categoria_id, nombre, maneja_variante, maneja_serie,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES ('articulo-real', 'ART-000001', 'categoria-real', 'Camisa RISEG', 0, 0, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1735689600, 3, 'activo',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO asignacion (
+        id, articulo_id, cantidad, empleado_id, fecha_entrega, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES ('asignacion-real', 'articulo-real', 3, 'empleado-real', 1700000000, 'activa',
+        1700000000, 1700000000, 'activo');
+    ''');
+
+      final db = AppDatabase(schemaV41.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final asignaciones = await db.select(db.asignacion).get();
+      expect(asignaciones, hasLength(1), reason: 'ninguna Asignacion real debe perderse en una migración puramente aditiva');
+      final asignacion = asignaciones.single;
+      expect(asignacion.empleadoId, 'empleado-real');
+      expect(asignacion.cantidad, 3);
+      expect(asignacion.estatus, 'activa');
+      expect(asignacion.actorUsuarioId, isNull, reason: 'histórico anterior a este ajuste queda con actorUsuarioId = null');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test('cambiar responsable de una Asignacion real tras la migración: misma unidad, sin MovimientoInventario '
+      'nuevo, estatus reasignada en la fila vieja', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final categoria = await db
+        .into(db.categoriaArticulo)
+        .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'));
+    final articulo = await db.into(db.articulo).insertReturning(
+          ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Teléfono', manejaSerie: const Value(true)),
+        );
+    final unidad = await db.into(db.articuloUnidad).insertReturning(
+          ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-001'),
+        );
+    final empleadoA = await db.into(db.empleado).insertReturning(
+          EmpleadoCompanion.insert(
+            numeroEmpleado: 1,
+            nombres: 'Juan',
+            apellidoPaterno: 'Pérez',
+            sexo: 'masculino',
+            fechaNacimiento: DateTime(1990, 1, 1),
+            curp: 'PEXJ900101HDFXXX01',
+            rfc: 'PEXJ900101AB1',
+            nss: '12345678901',
+            estadoCivil: 'soltero',
+            fechaIngreso: DateTime(2026, 1, 1),
+            aniosExperienciaSeguridad: 3,
+          ),
+        );
+    final empleadoB = await db.into(db.empleado).insertReturning(
+          EmpleadoCompanion.insert(
+            numeroEmpleado: 2,
+            nombres: 'Ana',
+            apellidoPaterno: 'García',
+            sexo: 'femenino',
+            fechaNacimiento: DateTime(1990, 1, 1),
+            curp: 'GAAX900101MDFXXX02',
+            rfc: 'GAAX900101AB2',
+            nss: '12345678902',
+            estadoCivil: 'soltera',
+            fechaIngreso: DateTime(2026, 1, 1),
+            aniosExperienciaSeguridad: 3,
+          ),
+        );
+
+    final asignacionRepo = AsignacionRepositoryImpl(db);
+    final inicial = await asignacionRepo.crear(
+      articuloId: articulo.id,
+      unidadId: unidad.id,
+      cantidad: 1,
+      empleadoId: empleadoA.id,
+      fechaEntrega: DateTime(2026, 1, 10),
+    );
+    final movimientosAntes = await db.select(db.movimientoInventario).get();
+
+    final nueva = await asignacionRepo.cambiarResponsable(
+      asignacionId: inicial.id,
+      nuevoEmpleadoId: empleadoB.id,
+      fecha: DateTime(2026, 2, 1),
+    );
+
+    expect(nueva.unidadId, unidad.id);
+    expect(nueva.empleadoId, empleadoB.id);
+
+    final anterior = await asignacionRepo.obtenerPorId(inicial.id);
+    expect(anterior!.estatus, 'reasignada');
+
+    final movimientosDespues = await db.select(db.movimientoInventario).get();
+    expect(movimientosDespues.length, movimientosAntes.length, reason: 'sin MovimientoInventario nuevo');
+
+    final unidadTrasCambio = await db.select(db.articuloUnidad).getSingle();
+    expect(unidadTrasCambio.estatus, 'asignado', reason: 'nunca pasa por disponible');
+
+    await db.close();
+  });
+
+  test(
+    '43.json coincide con el esquema final de la Etapa 9D (segundo ajuste posterior: '
+    'aplicacion_especializada en CategoriaArticulo)',
+    () async {
+      final schema = await verifier.schemaAt(43);
+      final sqlCategoria =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'categoria_articulo'")
+                  .single['sql']
+              as String;
+      expect(
+        sqlCategoria,
+        contains('"aplicacion_especializada" TEXT NULL'),
+        reason: 'CategoriaArticulo debe tener aplicacion_especializada tras la migración a 43',
+      );
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 42 → 43 conserva una CategoriaArticulo real y agrega aplicacion_especializada '
+    'nullable (null en el histórico), sin tocar ninguna otra columna',
+    () async {
+      final schemaV42 = await verifier.schemaAt(42);
+      final raw = schemaV42.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO categoria_articulo (id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('categoria-real', 'Uniformes', 1700000000, 1700000000, 'activo');
+    ''');
+
+      final db = AppDatabase(schemaV42.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final categorias = await db.select(db.categoriaArticulo).get();
+      expect(categorias, hasLength(1), reason: 'ninguna CategoriaArticulo real debe perderse en una migración puramente aditiva');
+      final categoria = categorias.single;
+      expect(categoria.nombre, 'Uniformes');
+      expect(categoria.aplicacionEspecializada, isNull, reason: 'histórico anterior a este ajuste queda genérico (null)');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'regularización de un Articulo mal configurado tras la migración: convierte cantidad en '
+    'unidades, re-liga CompraPartidaMovimiento, no cambia existencia total',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos', aplicacionEspecializada: const Value('telefonia')));
+      final articulo = await db.into(db.articulo).insertReturning(
+            ArticuloCompanion.insert(folio: 'ART-000002', categoriaId: categoria.id, nombre: 'SMARTPHONE'),
+          );
+
+      final inventarioRepo = InventarioRepositoryImpl(db);
+      final movimiento = await inventarioRepo.registrarEntrada(
+        articuloId: articulo.id,
+        cantidad: 2,
+        costoUnitario: 179400,
+        fecha: DateTime(2026, 1, 5),
+        observaciones: 'Compra COM-000001',
+      );
+
+      final articuloRepo = ArticuloRepositoryImpl(db);
+      final regularizarUseCase = RegularizarArticuloSerializadoUseCase(
+        articuloRepo,
+        inventarioRepo,
+        GenerarCodigoUseCase(CodigoSecuenciaService(db)),
+      );
+
+      final resultado = await regularizarUseCase.ejecutar(
+        articuloId: articulo.id,
+        movimientoInventarioId: movimiento.id,
+        unidades: [
+          const DatosUnidadRegularizacionInput(numeroSerie: 'SN-REG-001'),
+          const DatosUnidadRegularizacionInput(numeroSerie: 'SN-REG-002'),
+        ],
+      );
+
+      expect(resultado, isA<RegularizarArticuloSerializadoExitoso>());
+      final unidades = (resultado as RegularizarArticuloSerializadoExitoso).unidades;
+      expect(unidades, hasLength(2));
+
+      final articuloActualizado = await articuloRepo.obtenerPorId(articulo.id);
+      expect(articuloActualizado!.manejaSerie, isTrue);
+
+      final movimientos = await db.select(db.movimientoInventario).get();
+      expect(movimientos, hasLength(2), reason: 'el movimiento original por cantidad se borra, quedan 2 nuevos de unidad');
+      expect(movimientos.every((m) => m.unidadId != null && m.cantidad == 1), isTrue);
+
+      final existencia = await inventarioRepo.calcularExistenciaUnidades(articulo.id);
+      expect(existencia.total, 2, reason: 'la existencia total no cambia con la regularización');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      await db.close();
+    },
+  );
 }

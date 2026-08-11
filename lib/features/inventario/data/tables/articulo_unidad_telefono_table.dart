@@ -14,8 +14,23 @@ import 'articulo_unidad_table.dart';
 class ArticuloUnidadTelefono extends Table {
   TextColumn get unidadId => text().references(ArticuloUnidad, #id, onDelete: KeyAction.cascade)();
 
+  /// Etiquetado "IMEI 1" en la UI — el nombre de columna se conserva tal
+  /// cual por compatibilidad de migración, no se renombra.
   TextColumn get imei => text().nullable()();
 
+  /// "IMEI 2" (Etapa 9D) — dispositivos de doble SIM. Sin `UNIQUE` a
+  /// nivel de base de datos (ver `ConfigurarEquipoTelefonicoUseCase`):
+  /// la unicidad de IMEI se valida en la capa de aplicación porque
+  /// "único cuando corresponda" admite excepciones reales (equipos de
+  /// segunda mano/gris) que un índice duro bloquearía con un error
+  /// críptico.
+  TextColumn get imei2 => text().nullable()();
+
+  /// **Deprecado como fuente de verdad desde la Etapa 9D** — el número
+  /// mostrado en el expediente del equipo se deriva de la
+  /// `LineaTelefonica` actualmente vinculada vía `LineaTelefonicaEquipo`
+  /// (puede divergir de este valor). Se conserva la columna físicamente
+  /// (nunca se borra ni se migra) por compatibilidad histórica.
   TextColumn get numeroTelefonico => text().nullable()();
 
   @override

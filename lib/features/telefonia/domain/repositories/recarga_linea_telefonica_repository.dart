@@ -61,6 +61,7 @@ abstract interface class RecargaLineaTelefonicaRepository {
     required DateTime fecha,
     required int importe,
     String? observaciones,
+    String? actorUsuarioId,
   });
 
   /// Comprobante opcional de una recarga puntual — nunca obligatorio

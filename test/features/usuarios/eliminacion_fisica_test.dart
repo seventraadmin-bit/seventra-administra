@@ -33,6 +33,7 @@ import 'package:riseg_one/features/inventario/domain/usecases/crear_categoria_ar
 import 'package:riseg_one/features/inventario/domain/usecases/eliminar_articulo_fisicamente_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/eliminar_categoria_articulo_fisicamente_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_unidad_usecase.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/regularizar_articulo_serializado_usecase.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 
 import 'package:riseg_one/features/organizacion/data/repositories/area_repository_impl.dart';
@@ -730,6 +731,31 @@ void main() {
 
       expect(resultado, isNot(isA<EliminarArticuloFisicamenteErrorInesperado>()));
       expect(resultado, isA<EliminarArticuloFisicamenteNoExiste>());
+    });
+
+    test('RegularizarArticuloSerializado — un no-Maestro con un código de permiso inventado '
+        '("inventario.modificar") sigue rechazado, porque exigirMaestro nunca consulta PermisoUsuario/hasCode', () async {
+      final container = _container(db, sesionConPermisoInventado({'inventario.modificar'}));
+      final resultado = await container.read(regularizarArticuloSerializadoAutorizadoProvider)(
+        articuloId: 'no-existe',
+        movimientoInventarioId: 'no-existe',
+        unidades: const [],
+      );
+
+      expect(resultado, isA<RegularizarArticuloSerializadoErrorInesperado>());
+      expect((resultado as RegularizarArticuloSerializadoErrorInesperado).mensaje, 'Esta acción requiere el Usuario Maestro.');
+    });
+
+    test('RegularizarArticuloSerializado — un Maestro sin ninguna fila de PermisoUsuario sí pasa (llega al dominio real)', () async {
+      final container = _container(db, sesionMaestroSinPermisos);
+      final resultado = await container.read(regularizarArticuloSerializadoAutorizadoProvider)(
+        articuloId: 'no-existe',
+        movimientoInventarioId: 'no-existe',
+        unidades: const [],
+      );
+
+      expect(resultado, isNot(isA<RegularizarArticuloSerializadoErrorInesperado>()));
+      expect(resultado, isA<RegularizarArticuloSerializadoArticuloNoExiste>());
     });
   });
 }

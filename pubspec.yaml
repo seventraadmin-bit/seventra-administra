@@ -31,6 +31,15 @@ dependencies:
   # se declara directo porque ahora `lib/core/auth` lo importa.
   crypto: ^3.0.7
 
+  # Cifrado reversible de credenciales (Etapa 9D) — AES-256-GCM para la
+  # contraseña de la cuenta de un teléfono (necesita poder recuperarse,
+  # a diferencia de `crypto`, que solo hashea de forma irreversible).
+  encrypt: ^5.0.3
+  # Clave maestra guardada en el Almacén de Credenciales de Windows —
+  # nunca en el archivo .sqlite ni en el código fuente. Ver
+  # `lib/core/security/credential_cipher.dart`.
+  flutter_secure_storage: ^9.2.2
+
   # Adjuntos (Etapa 4I.2.2) — selección de archivo del sistema; abrir un
   # adjunto usa el programa predeterminado del SO vía dart:io, sin
   # dependencia adicional.

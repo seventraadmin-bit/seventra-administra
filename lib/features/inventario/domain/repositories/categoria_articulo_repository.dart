@@ -1,4 +1,5 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/inventario/data/tables/categoria_articulo_table.dart' show AplicacionEspecializadaCategoriaArticulo;
 
 import '../usecases/eliminar_categoria_articulo_fisicamente_usecase.dart';
 
@@ -15,7 +16,23 @@ abstract interface class CategoriaArticuloRepository {
   /// otro listado de catálogo del proyecto.
   Future<List<CategoriaArticuloData>> listar();
 
-  Future<CategoriaArticuloData> crear({required String nombre});
+  Future<CategoriaArticuloData> crear({
+    required String nombre,
+    AplicacionEspecializadaCategoriaArticulo? aplicacionEspecializada,
+  });
+
+  /// Edición (Etapa 9D, ajuste posterior) — nombre y/o clasificación de
+  /// aplicación especializada. [limpiarAplicacionEspecializada] permite
+  /// volver la categoría a genérica (`null`) explícitamente, ya que
+  /// pasar `aplicacionEspecializada: null` por sí solo significaría
+  /// "no tocar este campo" (mismo criterio `limpiarX` ya usado en
+  /// `ArticuloRepository.corregir`).
+  Future<CategoriaArticuloData> actualizar({
+    required String id,
+    String? nombre,
+    AplicacionEspecializadaCategoriaArticulo? aplicacionEspecializada,
+    bool limpiarAplicacionEspecializada = false,
+  });
 
   Future<CategoriaArticuloData> archivar(String id);
 

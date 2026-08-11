@@ -224,6 +224,39 @@ class AuditoriaRepositoryImpl implements AuditoriaRepository {
           motivo: e.observaciones,
         )));
 
+    // --- Etapa 9D: asociación/cambio de línea y expediente del Equipo ---
+
+    final asignacionesLinea =
+        await (_db.select(_db.asignacionLineaTelefonica)..where((t) => enRango(t.updatedAt))).get();
+    eventos.addAll(asignacionesLinea.map((e) => EventoAuditoria(
+          fechaHora: e.updatedAt,
+          actorUsuarioId: e.actorUsuarioId,
+          modulo: 'telefonia',
+          accion: 'asignacionLinea',
+          registroId: e.lineaTelefonicaId,
+          motivo: e.observacionesTermino ?? e.observaciones,
+        )));
+
+    final equiposLinea = await (_db.select(_db.lineaTelefonicaEquipo)..where((t) => enRango(t.updatedAt))).get();
+    eventos.addAll(equiposLinea.map((e) => EventoAuditoria(
+          fechaHora: e.updatedAt,
+          actorUsuarioId: e.actorUsuarioId,
+          modulo: 'telefonia',
+          accion: 'equipoLinea',
+          registroId: e.lineaTelefonicaId,
+          motivo: e.observaciones,
+        )));
+
+    final eventosEquipo = await (_db.select(_db.equipoTelefonicoEvento)..where((t) => enRango(t.fechaHora))).get();
+    eventos.addAll(eventosEquipo.map((e) => EventoAuditoria(
+          fechaHora: e.fechaHora,
+          actorUsuarioId: e.actorUsuarioId,
+          modulo: 'telefonia',
+          accion: e.tipoEvento,
+          registroId: e.unidadId,
+          motivo: e.observacion,
+        )));
+
     // --- Filtros en memoria (usuario/módulo/acción) + orden final ---
 
     final filtrados = eventos.where((e) {

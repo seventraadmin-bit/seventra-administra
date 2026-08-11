@@ -566,6 +566,13 @@ void main() {
 
       await tester.tap(find.byKey(const Key('nav_item_telefonia')));
       await tester.pumpAndSettle();
+
+      // Etapa 9D: /telefonia aterriza en la pestaña Equipos — hace
+      // falta cambiar a Líneas antes de llegar al formulario de alta.
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+      await tester.tap(find.text(l10n.telefoniaTabLineas));
+      await tester.pumpAndSettle();
+
       expect(find.byKey(const Key('telefonia_boton_nueva_linea')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('telefonia_boton_nueva_linea')));
@@ -573,7 +580,6 @@ void main() {
 
       // Operador y modalidad ya traen un valor por defecto — número es
       // opcional — así que Guardar sin llenar nada más debe bastar.
-      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
       await tester.tap(find.text(l10n.lineaTelefonicaBotonGuardar));
       await tester.pumpAndSettle();
 

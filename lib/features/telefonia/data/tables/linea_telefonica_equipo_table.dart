@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../inventario/data/tables/articulo_unidad_table.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 import 'linea_telefonica_table.dart';
 
 /// Qué teléfono físico de Inventario trae la SIM de una línea, en el
@@ -39,6 +40,12 @@ class LineaTelefonicaEquipo extends Table with AuditColumns {
   DateTimeColumn get fechaFin => dateTime().nullable()();
 
   TextColumn get observaciones => text().nullable()();
+
+  /// **Etapa 9D** — mismo caso que `AsignacionLineaTelefonica.actorUsuarioId`:
+  /// el UseCase/repositorio ya recibían `actorUsuarioId` desde la Etapa
+  /// 9B, pero la columna nunca existió y el valor se descartaba
+  /// silenciosamente.
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   @override
   List<String> get customConstraints => [

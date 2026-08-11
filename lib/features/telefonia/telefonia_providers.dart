@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:riseg_one/core/security/credential_cipher.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 
 import '../../core/di/providers.dart';
@@ -9,28 +10,35 @@ import '../personal/personal_providers.dart';
 import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/asignacion_linea_telefonica_repository_impl.dart';
+import 'data/repositories/equipo_telefonico_repository_impl.dart';
 import 'data/repositories/linea_telefonica_equipo_repository_impl.dart';
 import 'data/repositories/linea_telefonica_repository_impl.dart';
 import 'data/repositories/recarga_linea_telefonica_repository_impl.dart';
 import 'domain/repositories/asignacion_linea_telefonica_repository.dart';
+import 'domain/repositories/equipo_telefonico_repository.dart';
 import 'domain/repositories/linea_telefonica_equipo_repository.dart';
 import 'domain/repositories/linea_telefonica_repository.dart';
 import 'domain/repositories/recarga_linea_telefonica_repository.dart';
+import 'domain/usecases/actualizar_correo_equipo_telefonico_usecase.dart';
 import 'domain/usecases/adjuntar_comprobante_recarga_linea_telefonica_usecase.dart';
 import 'domain/usecases/asignar_linea_telefonica_usecase.dart';
 import 'domain/usecases/asociar_equipo_linea_telefonica_usecase.dart';
 import 'domain/usecases/cambiar_asignacion_linea_telefonica_usecase.dart';
+import 'domain/usecases/cambiar_contrasena_equipo_telefonico_usecase.dart';
 import 'domain/usecases/cambiar_equipo_linea_telefonica_usecase.dart';
 import 'domain/usecases/cambiar_estatus_linea_telefonica_usecase.dart';
+import 'domain/usecases/configurar_equipo_telefonico_usecase.dart';
 import 'domain/usecases/corregir_linea_telefonica_usecase.dart';
 import 'domain/usecases/crear_linea_telefonica_usecase.dart';
 import 'domain/usecases/dar_de_baja_linea_telefonica_usecase.dart';
 import 'domain/usecases/eliminar_linea_telefonica_fisicamente_usecase.dart';
 import 'domain/usecases/obtener_equipos_disponibles_linea_telefonica_usecase.dart';
+import 'domain/usecases/obtener_historia_equipo_telefonico_usecase.dart';
 import 'domain/usecases/obtener_opciones_asignacion_linea_telefonica_usecase.dart';
 import 'domain/usecases/registrar_recarga_linea_telefonica_usecase.dart';
 import 'domain/usecases/retirar_asignacion_linea_telefonica_usecase.dart';
 import 'domain/usecases/retirar_equipo_linea_telefonica_usecase.dart';
+import 'domain/usecases/revelar_credencial_equipo_telefonico_usecase.dart';
 
 /// Providers del dominio Telefonía (Etapa 9A) — nace aquí, separado de
 /// Inventario/Vehículos y del resto de dominios, mismo criterio que
@@ -370,6 +378,7 @@ final registrarRecargaLineaTelefonicaAutorizadoProvider = Provider<RegistrarReca
     required int importe,
     String? observaciones,
   }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'telefonia.crear',
@@ -378,6 +387,7 @@ final registrarRecargaLineaTelefonicaAutorizadoProvider = Provider<RegistrarReca
             fecha: fecha,
             importe: importe,
             observaciones: observaciones,
+            actorUsuarioId: actorUsuarioId,
           ),
       RegistrarRecargaLineaTelefonicaErrorInesperado.new,
     );
@@ -413,4 +423,155 @@ final eliminarLineaTelefonicaFisicamenteAutorizadoProvider =
       EliminarLineaTelefonicaFisicamenteErrorInesperado.new,
     );
   };
+});
+
+// --- Equipos telefónicos (Etapa 9D) ---
+//
+// "Equipo" nunca es una tabla nueva de identidad — se ensambla desde
+// ArticuloUnidad/ArticuloUnidadTelefono (Inventario) +
+// LineaTelefonicaEquipo/Asignacion (ya arriba). Lo único nuevo que se
+// persiste aquí es la credencial cifrada y su bitácora.
+
+final credentialCipherProvider = Provider<CredentialCipher>((ref) => CredentialCipher());
+
+final equipoTelefonicoRepositoryProvider = Provider<EquipoTelefonicoRepository>((ref) {
+  return EquipoTelefonicoRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final configurarEquipoTelefonicoUseCaseProvider = Provider<ConfigurarEquipoTelefonicoUseCase>((ref) {
+  return ConfigurarEquipoTelefonicoUseCase(
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(articuloRepositoryProvider),
+    ref.watch(equipoTelefonicoRepositoryProvider),
+  );
+});
+
+typedef ConfigurarEquipoTelefonicoAutorizado = Future<ConfigurarEquipoTelefonicoResultado> Function({
+  required String unidadId,
+  required String imei,
+  String? imei2,
+});
+
+final configurarEquipoTelefonicoAutorizadoProvider = Provider<ConfigurarEquipoTelefonicoAutorizado>((ref) {
+  return ({required String unidadId, required String imei, String? imei2}) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(configurarEquipoTelefonicoUseCaseProvider).ejecutar(
+            unidadId: unidadId,
+            imei: imei,
+            imei2: imei2,
+            actorUsuarioId: actorUsuarioId,
+          ),
+      ConfigurarEquipoTelefonicoErrorInesperado.new,
+    );
+  };
+});
+
+final actualizarCorreoEquipoTelefonicoUseCaseProvider = Provider<ActualizarCorreoEquipoTelefonicoUseCase>((ref) {
+  return ActualizarCorreoEquipoTelefonicoUseCase(
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(equipoTelefonicoRepositoryProvider),
+  );
+});
+
+typedef ActualizarCorreoEquipoTelefonicoAutorizado = Future<ActualizarCorreoEquipoTelefonicoResultado> Function({
+  required String unidadId,
+  String? correo,
+  String? observaciones,
+});
+
+final actualizarCorreoEquipoTelefonicoAutorizadoProvider =
+    Provider<ActualizarCorreoEquipoTelefonicoAutorizado>((ref) {
+  return ({required String unidadId, String? correo, String? observaciones}) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(actualizarCorreoEquipoTelefonicoUseCaseProvider).ejecutar(
+            unidadId: unidadId,
+            correo: correo,
+            observaciones: observaciones,
+            actorUsuarioId: actorUsuarioId,
+          ),
+      ActualizarCorreoEquipoTelefonicoErrorInesperado.new,
+    );
+  };
+});
+
+final cambiarContrasenaEquipoTelefonicoUseCaseProvider = Provider<CambiarContrasenaEquipoTelefonicoUseCase>((ref) {
+  return CambiarContrasenaEquipoTelefonicoUseCase(
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(equipoTelefonicoRepositoryProvider),
+    ref.watch(credentialCipherProvider),
+  );
+});
+
+typedef CambiarContrasenaEquipoTelefonicoAutorizado = Future<CambiarContrasenaEquipoTelefonicoResultado> Function({
+  required String unidadId,
+  required String contrasena,
+});
+
+final cambiarContrasenaEquipoTelefonicoAutorizadoProvider =
+    Provider<CambiarContrasenaEquipoTelefonicoAutorizado>((ref) {
+  return ({required String unidadId, required String contrasena}) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.modificar',
+      () => ref.read(cambiarContrasenaEquipoTelefonicoUseCaseProvider).ejecutar(
+            unidadId: unidadId,
+            contrasena: contrasena,
+            actorUsuarioId: actorUsuarioId,
+          ),
+      CambiarContrasenaEquipoTelefonicoErrorInesperado.new,
+    );
+  };
+});
+
+final revelarCredencialEquipoTelefonicoUseCaseProvider = Provider<RevelarCredencialEquipoTelefonicoUseCase>((ref) {
+  return RevelarCredencialEquipoTelefonicoUseCase(
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(equipoTelefonicoRepositoryProvider),
+    ref.watch(credentialCipherProvider),
+  );
+});
+
+typedef RevelarCredencialEquipoTelefonicoAutorizado = Future<RevelarCredencialEquipoTelefonicoResultado> Function({
+  required String unidadId,
+  required AccionRevelacionCredencial accion,
+});
+
+/// Gateado por `telefonia.verCredenciales` — nunca `telefonia.ver`
+/// solo (punto 4 de la Etapa 9D: ver Telefonía no implica poder
+/// revelar contraseñas). El Maestro pasa automáticamente por
+/// construcción de `autorizarUseCase`/`PermissionService`, sin caso
+/// especial.
+final revelarCredencialEquipoTelefonicoAutorizadoProvider =
+    Provider<RevelarCredencialEquipoTelefonicoAutorizado>((ref) {
+  return ({required String unidadId, required AccionRevelacionCredencial accion}) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.verCredenciales',
+      () => ref.read(revelarCredencialEquipoTelefonicoUseCaseProvider).ejecutar(
+            unidadId: unidadId,
+            accion: accion,
+            actorUsuarioId: actorUsuarioId,
+          ),
+      RevelarCredencialEquipoTelefonicoErrorInesperado.new,
+    );
+  };
+});
+
+final obtenerHistoriaEquipoTelefonicoUseCaseProvider = Provider<ObtenerHistoriaEquipoTelefonicoUseCase>((ref) {
+  return ObtenerHistoriaEquipoTelefonicoUseCase(
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(asignacionRepositoryProvider),
+    ref.watch(lineaTelefonicaEquipoRepositoryProvider),
+    ref.watch(lineaTelefonicaRepositoryProvider),
+    ref.watch(recargaLineaTelefonicaRepositoryProvider),
+    ref.watch(equipoTelefonicoRepositoryProvider),
+  );
 });

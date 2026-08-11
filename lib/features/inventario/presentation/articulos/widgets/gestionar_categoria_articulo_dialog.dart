@@ -3,6 +3,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/inventario/data/tables/categoria_articulo_table.dart' show AplicacionEspecializadaCategoriaArticulo;
+import 'package:riseg_one/features/inventario/domain/usecases/actualizar_categoria_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_categoria_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/crear_categoria_articulo_usecase.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
@@ -25,9 +27,15 @@ class _GestionarCategoriaArticuloDialogState extends ConsumerState<GestionarCate
   final _nombreCtrl = TextEditingController();
   bool _guardando = false;
 
+  String? _editandoId;
+  final _editarNombreCtrl = TextEditingController();
+  AplicacionEspecializadaCategoriaArticulo? _editarAplicacion;
+  bool _editarGuardando = false;
+
   @override
   void dispose() {
     _nombreCtrl.dispose();
+    _editarNombreCtrl.dispose();
     super.dispose();
   }
 
@@ -69,6 +77,47 @@ class _GestionarCategoriaArticuloDialogState extends ConsumerState<GestionarCate
   Future<void> _eliminarFisicamente(String categoriaId) async {
     final eliminado = await mostrarDialogoEliminarCategoriaArticuloFisicamente(context, ref, categoriaId);
     if (eliminado) ref.read(articulosControllerProvider.notifier).recargar();
+  }
+
+  void _iniciarEdicion(String categoriaId, String nombreActual, String? aplicacionActual) {
+    setState(() {
+      _editandoId = categoriaId;
+      _editarNombreCtrl.text = nombreActual;
+      _editarAplicacion = AplicacionEspecializadaCategoriaArticulo.values
+          .where((v) => v.name == aplicacionActual)
+          .firstOrNull;
+    });
+  }
+
+  void _cancelarEdicion() {
+    setState(() => _editandoId = null);
+  }
+
+  Future<void> _guardarEdicion(String categoriaId) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_editarNombreCtrl.text.trim().isEmpty) {
+      RisegFeedback.showError(context, l10n.categoriaArticuloErrorNombreRequerido);
+      return;
+    }
+    setState(() => _editarGuardando = true);
+    final resultado = await ref.read(articulosControllerProvider.notifier).actualizarCategoria(
+          categoriaId: categoriaId,
+          nombre: _editarNombreCtrl.text.trim(),
+          aplicacionEspecializada: _editarAplicacion,
+          limpiarAplicacionEspecializada: _editarAplicacion == null,
+        );
+    if (!mounted) return;
+    setState(() => _editarGuardando = false);
+
+    switch (resultado) {
+      case ActualizarCategoriaArticuloExitoso():
+        setState(() => _editandoId = null);
+      case ActualizarCategoriaArticuloNombreRequerido():
+        RisegFeedback.showError(context, l10n.categoriaArticuloErrorNombreRequerido);
+      case ActualizarCategoriaArticuloNoExiste():
+      case ActualizarCategoriaArticuloErrorInesperado():
+        RisegFeedback.showError(context, l10n.categoriaArticuloErrorInesperado);
+    }
   }
 
   @override
@@ -113,27 +162,85 @@ class _GestionarCategoriaArticuloDialogState extends ConsumerState<GestionarCate
                     shrinkWrap: true,
                     children: [
                       for (final c in categorias)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
-                          child: Row(
-                            children: [
-                              Expanded(child: Text(c.nombre)),
-                              IconButton(
-                                tooltip: l10n.articuloBotonArchivar,
-                                icon: const Icon(Icons.archive_outlined, size: 18),
-                                visualDensity: VisualDensity.compact,
-                                onPressed: () => _archivar(c.id),
-                              ),
-                              if (esMaestro)
-                                IconButton(
-                                  tooltip: l10n.eliminacionFisicaAccionMenu,
-                                  icon: const Icon(Icons.delete_forever_outlined, size: 18),
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: () => _eliminarFisicamente(c.id),
+                        if (_editandoId == c.id)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                RisegTextField(label: l10n.categoriaArticuloCampoNombre, controller: _editarNombreCtrl),
+                                const SizedBox(height: AppSpacing.xs),
+                                RisegSelect<AplicacionEspecializadaCategoriaArticulo?>(
+                                  label: l10n.categoriaArticuloCampoAplicacionEspecializada,
+                                  value: _editarAplicacion,
+                                  items: [
+                                    RisegSelectItem(value: null, label: l10n.categoriaArticuloAplicacionGenerica),
+                                    RisegSelectItem(
+                                      value: AplicacionEspecializadaCategoriaArticulo.telefonia,
+                                      label: l10n.categoriaArticuloAplicacionTelefonia,
+                                    ),
+                                  ],
+                                  onChanged: (v) => setState(() => _editarAplicacion = v),
                                 ),
-                            ],
+                                const SizedBox(height: AppSpacing.xs),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    RisegButton(
+                                      label: l10n.categoriaArticuloBotonCancelar,
+                                      variant: RisegButtonVariant.secondary,
+                                      onPressed: _cancelarEdicion,
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    RisegButton(
+                                      label: l10n.categoriaArticuloBotonGuardar,
+                                      variant: RisegButtonVariant.primary,
+                                      loading: _editarGuardando,
+                                      onPressed: () => _guardarEdicion(c.id),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Flexible(child: Text(c.nombre, overflow: TextOverflow.ellipsis)),
+                                      if (c.aplicacionEspecializada == AplicacionEspecializadaCategoriaArticulo.telefonia.name) ...[
+                                        const SizedBox(width: AppSpacing.xxs),
+                                        Icon(Icons.phone_iphone, size: 14, color: colors.textMuted),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.categoriaArticuloBotonEditar,
+                                  icon: const Icon(Icons.edit_outlined, size: 18),
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () => _iniciarEdicion(c.id, c.nombre, c.aplicacionEspecializada),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.articuloBotonArchivar,
+                                  icon: const Icon(Icons.archive_outlined, size: 18),
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () => _archivar(c.id),
+                                ),
+                                if (esMaestro)
+                                  IconButton(
+                                    tooltip: l10n.eliminacionFisicaAccionMenu,
+                                    icon: const Icon(Icons.delete_forever_outlined, size: 18),
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () => _eliminarFisicamente(c.id),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
                     ],
                   ),
                 ),

@@ -55,6 +55,11 @@ class InventarioRepositoryImpl implements InventarioRepository {
     return query.get();
   }
 
+  @override
+  Future<MovimientoInventarioData?> obtenerMovimientoPorId(String movimientoInventarioId) {
+    return (_db.select(_db.movimientoInventario)..where((t) => t.id.equals(movimientoInventarioId))).getSingleOrNull();
+  }
+
   Future<MovimientoInventarioData> _insertarMovimiento({
     required String articuloId,
     String? varianteId,
@@ -150,6 +155,87 @@ class InventarioRepositoryImpl implements InventarioRepository {
       );
 
       return unidad;
+    });
+  }
+
+  @override
+  Future<List<ArticuloUnidadData>> regularizarUnidadesDesdeMovimiento({
+    required String articuloId,
+    required String movimientoInventarioId,
+    required List<DatosUnidadRegularizada> unidades,
+  }) {
+    return _db.transaction(() async {
+      final original =
+          await (_db.select(_db.movimientoInventario)..where((t) => t.id.equals(movimientoInventarioId))).getSingle();
+
+      await (_db.update(_db.articulo)..where((t) => t.id.equals(articuloId))).write(
+        ArticuloCompanion(manejaSerie: const Value(true), updatedAt: Value(DateTime.now())),
+      );
+
+      final unidadesCreadas = <ArticuloUnidadData>[];
+      final movimientoIdsNuevos = <String>[];
+      for (final datos in unidades) {
+        final unidad = await _db.into(_db.articuloUnidad).insertReturning(
+              ArticuloUnidadCompanion.insert(
+                codigo: datos.codigo,
+                articuloId: articuloId,
+                numeroSerie: datos.numeroSerie,
+                marca: Value(datos.marca),
+                modelo: Value(datos.modelo),
+              ),
+            );
+
+        if ((datos.imei != null && datos.imei!.isNotEmpty) || (datos.imei2 != null && datos.imei2!.isNotEmpty)) {
+          await _db.into(_db.articuloUnidadTelefono).insert(
+                ArticuloUnidadTelefonoCompanion.insert(
+                  unidadId: unidad.id,
+                  imei: Value(datos.imei),
+                  imei2: Value(datos.imei2),
+                ),
+              );
+        }
+
+        final movimientoNuevo = await _insertarMovimiento(
+          articuloId: articuloId,
+          unidadId: unidad.id,
+          cantidad: 1,
+          tipo: TipoMovimientoInventario.entrada,
+          fecha: original.fecha,
+          costoUnitario: original.costoUnitario,
+          observaciones: original.observaciones,
+          actorUsuarioId: original.actorUsuarioId,
+        );
+
+        unidadesCreadas.add(unidad);
+        movimientoIdsNuevos.add(movimientoNuevo.id);
+      }
+
+      // `CompraPartidaMovimiento.movimientoInventarioId` referencia esta
+      // fila con `ON DELETE RESTRICT` — si el movimiento original vino
+      // de una Compra, borrar la fila de abajo sin mover primero este
+      // puente violaría la FK. Se re-liga aquí, dentro de la misma
+      // transacción, no en un paso aparte de Compras: la restricción de
+      // la base de datos hace que esta atomicidad no sea opcional.
+      final puenteOriginal = await (_db.select(_db.compraPartidaMovimiento)
+            ..where((t) => t.movimientoInventarioId.equals(movimientoInventarioId)))
+          .getSingleOrNull();
+      if (puenteOriginal != null) {
+        await (_db.delete(_db.compraPartidaMovimiento)
+              ..where((t) => t.movimientoInventarioId.equals(movimientoInventarioId)))
+            .go();
+        for (final movimientoIdNuevo in movimientoIdsNuevos) {
+          await _db.into(_db.compraPartidaMovimiento).insert(
+                CompraPartidaMovimientoCompanion.insert(
+                  compraPartidaId: puenteOriginal.compraPartidaId,
+                  movimientoInventarioId: movimientoIdNuevo,
+                ),
+              );
+        }
+      }
+
+      await (_db.delete(_db.movimientoInventario)..where((t) => t.id.equals(movimientoInventarioId))).go();
+
+      return unidadesCreadas;
     });
   }
 
@@ -343,5 +429,30 @@ class InventarioRepositoryImpl implements InventarioRepository {
           );
       return adjunto;
     });
+  }
+
+  @override
+  Future<ArticuloUnidadTelefonoData> actualizarTelefono({
+    required String unidadId,
+    String? imei,
+    String? imei2,
+  }) async {
+    final existente = await obtenerTelefono(unidadId);
+    if (existente == null) {
+      return _db.into(_db.articuloUnidadTelefono).insertReturning(
+            ArticuloUnidadTelefonoCompanion.insert(unidadId: unidadId, imei: Value(imei), imei2: Value(imei2)),
+          );
+    }
+
+    await (_db.update(_db.articuloUnidadTelefono)..where((t) => t.unidadId.equals(unidadId)))
+        .write(ArticuloUnidadTelefonoCompanion(imei: Value(imei), imei2: Value(imei2)));
+    return (_db.select(_db.articuloUnidadTelefono)..where((t) => t.unidadId.equals(unidadId))).getSingle();
+  }
+
+  @override
+  Future<List<ArticuloUnidadTelefonoData>> listarTelefonosPorImei(String imei) {
+    return (_db.select(_db.articuloUnidadTelefono)
+          ..where((t) => t.imei.equals(imei) | t.imei2.equals(imei)))
+        .get();
   }
 }

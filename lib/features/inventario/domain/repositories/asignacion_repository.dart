@@ -128,6 +128,25 @@ abstract interface class AsignacionRepository {
     String? actorUsuarioId,
   });
 
+  /// Cambia quién es responsable del MISMO bien (Etapa 9D) — distinto de
+  /// [reemplazar] (que cambia el bien físico) y de [cerrar]+[crear] (que
+  /// generan devolución/salida reales). Cierra la fila vigente con
+  /// `estatus = reasignada` y abre una nueva con el mismo
+  /// `articuloId`/`varianteId`/`unidadId`/`cantidad`, una sola fecha
+  /// efectiva para ambos lados — **sin** `MovimientoInventario` (nunca
+  /// entró ni salió nada de Inventario) y **sin** tocar
+  /// `ArticuloUnidad.estatus` (la unidad serializada permanece
+  /// `asignado` en todo momento, nunca pasa por `disponible`). Nunca
+  /// liga `asignacionReemplazoId` — no es un reemplazo.
+  Future<AsignacionData> cambiarResponsable({
+    required String asignacionId,
+    String? nuevoEmpleadoId,
+    String? nuevoServicioId,
+    required DateTime fecha,
+    String? observaciones,
+    String? actorUsuarioId,
+  });
+
   /// Adjunta el resguardo firmado (Etapa 7C) — inserta un único
   /// `Attachment` + una fila de `AsignacionAttachment` por cada
   /// `asignacionId` en [asignacionIds] (llave compuesta, ver el doc

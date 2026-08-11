@@ -64,6 +64,7 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
             servicioId: Value(servicioId),
             fechaInicio: fechaInicio,
             observaciones: Value(observaciones),
+            actorUsuarioId: Value(actorUsuarioId),
           ),
         );
   }
@@ -83,6 +84,7 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
           motivoTermino: Value(motivoTermino),
           observacionesTermino: Value(observacionesTermino),
           updatedAt: Value(DateTime.now()),
+          actorUsuarioId: Value(actorUsuarioId),
         ),
       );
       return (_db.select(_db.asignacionLineaTelefonica)..where((t) => t.id.equals(asignacionLineaTelefonicaId)))
@@ -112,6 +114,7 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
           motivoTermino: Value(MotivoTerminoAsignacionLineaTelefonica.cambioResponsable.name),
           observacionesTermino: Value(observacionesTermino),
           updatedAt: Value(DateTime.now()),
+          actorUsuarioId: Value(actorUsuarioId),
         ),
       );
 
@@ -122,6 +125,7 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
               servicioId: Value(nuevoServicioId),
               fechaInicio: fecha,
               observaciones: Value(observacionesNueva),
+              actorUsuarioId: Value(actorUsuarioId),
             ),
           );
     });

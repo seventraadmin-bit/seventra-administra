@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/inventario/inventario_providers.dart' show inventarioRepositoryProvider;
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
@@ -82,17 +83,22 @@ class _LineasTable extends ConsumerStatefulWidget {
 class _LineasTableState extends ConsumerState<_LineasTable> {
   Map<String, RecargaLineaTelefonicaData> _ultimaRecargaPorLinea = const {};
   bool _cargandoRecargas = true;
+  Map<String, String> _equipoAsociadoPorLinea = const {};
 
   @override
   void initState() {
     super.initState();
     _cargarUltimasRecargas();
+    _cargarEquiposAsociados();
   }
 
   @override
   void didUpdateWidget(covariant _LineasTable oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.state.lineas != widget.state.lineas) _cargarUltimasRecargas();
+    if (oldWidget.state.lineas != widget.state.lineas) {
+      _cargarUltimasRecargas();
+      _cargarEquiposAsociados();
+    }
   }
 
   Future<void> _cargarUltimasRecargas() async {
@@ -104,6 +110,27 @@ class _LineasTableState extends ConsumerState<_LineasTable> {
     });
   }
 
+  /// "Equipo asociado actualmente" (Etapa 9D) — marca+modelo de la
+  /// unidad de Inventario vinculada vía `LineaTelefonicaEquipo`, "—" si
+  /// no tiene. Ensamblado aquí, no leído de una tabla propia: `Equipo`
+  /// nunca duplica marca/modelo (ver el doc comment de
+  /// `ArticuloUnidadTelefono`).
+  Future<void> _cargarEquiposAsociados() async {
+    final equipoRepo = ref.read(lineaTelefonicaEquipoRepositoryProvider);
+    final inventarioRepo = ref.read(inventarioRepositoryProvider);
+    final equipoAsociadoPorLinea = <String, String>{};
+    for (final linea in widget.state.lineas) {
+      final equipoActual = await equipoRepo.obtenerActualPorLinea(linea.id);
+      if (equipoActual == null) continue;
+      final unidad = await inventarioRepo.obtenerUnidadPorId(equipoActual.unidadId);
+      if (unidad == null) continue;
+      final descripcion = [unidad.marca, unidad.modelo].whereType<String>().where((p) => p.trim().isNotEmpty).join(' ');
+      equipoAsociadoPorLinea[linea.id] = descripcion.isEmpty ? unidad.codigo : descripcion;
+    }
+    if (!mounted) return;
+    setState(() => _equipoAsociadoPorLinea = equipoAsociadoPorLinea);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -111,7 +138,7 @@ class _LineasTableState extends ConsumerState<_LineasTable> {
     return RisegTableBase<LineaTelefonicaData>(
       loading: widget.state.cargando || _cargandoRecargas,
       rows: widget.state.lineas,
-      onRowTap: (l) => context.go('/telefonia/${l.id}'),
+      onRowTap: (l) => context.go('/telefonia/lineas/${l.id}'),
       emptyState: RisegEmptyState(
         title: l10n.telefoniaListadoVacioTitulo,
         message: l10n.telefoniaListadoVacioMensaje,
@@ -140,6 +167,11 @@ class _LineasTableState extends ConsumerState<_LineasTable> {
             if (ultima == null) return const Text('—');
             return Text('${DateFormat('dd/MM/yyyy').format(ultima.fecha)} — ${formatoCosto(ultima.importe)}');
           },
+        ),
+        RisegColumn<LineaTelefonicaData>(
+          label: l10n.telefoniaColumnaEquipoAsociado,
+          width: 160,
+          cellBuilder: (l) => Text(_equipoAsociadoPorLinea[l.id] ?? '—'),
         ),
         RisegColumn<LineaTelefonicaData>(
           label: l10n.telefoniaColumnaEstatus,

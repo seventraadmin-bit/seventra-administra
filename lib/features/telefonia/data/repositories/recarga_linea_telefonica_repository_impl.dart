@@ -114,6 +114,7 @@ class RecargaLineaTelefonicaRepositoryImpl implements RecargaLineaTelefonicaRepo
     required DateTime fecha,
     required int importe,
     String? observaciones,
+    String? actorUsuarioId,
   }) {
     return _db.into(_db.recargaLineaTelefonica).insertReturning(
           RecargaLineaTelefonicaCompanion.insert(
@@ -121,6 +122,7 @@ class RecargaLineaTelefonicaRepositoryImpl implements RecargaLineaTelefonicaRepo
             fecha: fecha,
             importe: importe,
             observaciones: Value(observaciones),
+            actorUsuarioId: Value(actorUsuarioId),
           ),
         );
   }

@@ -107,7 +107,7 @@ class _LineaTelefonicaEnUnidadSectionState extends ConsumerState<LineaTelefonica
                 label: l10n.lineaTelefonicaAsociadaBotonVerExpediente,
                 variant: RisegButtonVariant.ghost,
                 size: RisegButtonSize.compact,
-                onPressed: () => context.go('/telefonia/${_linea!.id}'),
+                onPressed: () => context.go('/telefonia/lineas/${_linea!.id}'),
               ),
             ],
           ),

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/inventario/data/tables/categoria_articulo_table.dart' show AplicacionEspecializadaCategoriaArticulo;
 
 import '../../domain/repositories/categoria_articulo_repository.dart';
 import '../../domain/usecases/eliminar_categoria_articulo_fisicamente_usecase.dart';
@@ -25,10 +26,37 @@ class CategoriaArticuloRepositoryImpl implements CategoriaArticuloRepository {
   }
 
   @override
-  Future<CategoriaArticuloData> crear({required String nombre}) {
+  Future<CategoriaArticuloData> crear({
+    required String nombre,
+    AplicacionEspecializadaCategoriaArticulo? aplicacionEspecializada,
+  }) {
     return _db.into(_db.categoriaArticulo).insertReturning(
-          CategoriaArticuloCompanion.insert(nombre: nombre),
+          CategoriaArticuloCompanion.insert(
+            nombre: nombre,
+            aplicacionEspecializada: Value(aplicacionEspecializada?.name),
+          ),
         );
+  }
+
+  @override
+  Future<CategoriaArticuloData> actualizar({
+    required String id,
+    String? nombre,
+    AplicacionEspecializadaCategoriaArticulo? aplicacionEspecializada,
+    bool limpiarAplicacionEspecializada = false,
+  }) {
+    return _db.transaction(() async {
+      await (_db.update(_db.categoriaArticulo)..where((t) => t.id.equals(id))).write(
+        CategoriaArticuloCompanion(
+          nombre: nombre == null ? const Value.absent() : Value(nombre),
+          aplicacionEspecializada: limpiarAplicacionEspecializada
+              ? const Value(null)
+              : (aplicacionEspecializada == null ? const Value.absent() : Value(aplicacionEspecializada.name)),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      return (_db.select(_db.categoriaArticulo)..where((t) => t.id.equals(id))).getSingle();
+    });
   }
 
   @override

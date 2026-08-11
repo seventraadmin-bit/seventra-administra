@@ -2,6 +2,28 @@ import 'package:riseg_one/core/database/app_database.dart';
 
 import '../usecases/existencia_articulo.dart';
 
+/// Una unidad a crear dentro de una regularización (Etapa 9D, ajuste
+/// posterior) — [codigo] ya viene generado por quien llama (mismo
+/// criterio que `registrarEntradaUnidad`, que también recibe el
+/// código ya resuelto).
+class DatosUnidadRegularizada {
+  const DatosUnidadRegularizada({
+    required this.codigo,
+    required this.numeroSerie,
+    this.marca,
+    this.modelo,
+    this.imei,
+    this.imei2,
+  });
+
+  final String codigo;
+  final String numeroSerie;
+  final String? marca;
+  final String? modelo;
+  final String? imei;
+  final String? imei2;
+}
+
 /// Movimientos, unidades serializadas y existencias derivadas de
 /// Inventario (Etapa 7A). `MovimientoInventario` es la única fuente de
 /// verdad de cuánto hay — ver el doc comment de esa tabla. Dar de alta
@@ -34,6 +56,8 @@ abstract interface class InventarioRepository {
 
   Future<List<MovimientoInventarioData>> listarMovimientos({String? articuloId, String? varianteId, String? unidadId});
 
+  Future<MovimientoInventarioData?> obtenerMovimientoPorId(String movimientoInventarioId);
+
   /// Entrada de un Artículo por cantidad (con o sin variante) — crea
   /// el `MovimientoInventario` tipo `entrada`.
   Future<MovimientoInventarioData> registrarEntrada({
@@ -62,6 +86,27 @@ abstract interface class InventarioRepository {
     required DateTime fecha,
     String? observaciones,
     String? actorUsuarioId,
+  });
+
+  /// Regularización de existencia legacy (Etapa 9D, ajuste posterior) —
+  /// divide un `MovimientoInventario` `entrada` histórico por cantidad
+  /// (`unidadId == null`, `varianteId == null`) en tantas
+  /// `ArticuloUnidad` nuevas como [unidades] traiga (validado 1 a 1
+  /// contra `cantidad` por el caso de uso, no aquí), cada una con su
+  /// propio movimiento `entrada` (cantidad=1, mismos
+  /// fecha/costoUnitario/observaciones/actorUsuarioId que el original),
+  /// y borra el movimiento original. La existencia total/disponible no
+  /// cambia. Si el movimiento original tenía una fila
+  /// `CompraPartidaMovimiento` (Compras), la re-liga a los movimientos
+  /// nuevos aquí mismo — no en un paso aparte de Compras: esa tabla
+  /// referencia `MovimientoInventario` con `ON DELETE RESTRICT`, así
+  /// que borrar el original sin re-ligarla primero violaría la FK; la
+  /// atomicidad entre ambas escrituras no es opcional. Todo ocurre en
+  /// una sola transacción.
+  Future<List<ArticuloUnidadData>> regularizarUnidadesDesdeMovimiento({
+    required String articuloId,
+    required String movimientoInventarioId,
+    required List<DatosUnidadRegularizada> unidades,
   });
 
   /// Baja definitiva de cantidad — saca del Total real (nunca de un
@@ -120,4 +165,23 @@ abstract interface class InventarioRepository {
     required int sizeBytes,
     String? actorUsuarioId,
   });
+
+  /// "Configurar equipo" (Etapa 9D, Telefonía) — upsert de IMEI 1/IMEI 2
+  /// para una `ArticuloUnidad` serializada ya existente (venga de
+  /// Compras o de alta manual). Nunca crea una `ArticuloUnidad` nueva,
+  /// nunca toca `numeroTelefonico` (deprecado como fuente de verdad
+  /// desde 9D — el número se deriva de la `LineaTelefonica` vinculada).
+  Future<ArticuloUnidadTelefonoData> actualizarTelefono({
+    required String unidadId,
+    String? imei,
+    String? imei2,
+  });
+
+  /// Toda fila de `ArticuloUnidadTelefono` cuyo `imei` o `imei2` sea
+  /// exactamente [imei] — usado por
+  /// `ConfigurarEquipoTelefonicoUseCase` (Etapa 9D) para validar
+  /// unicidad de IMEI a nivel de aplicación (nunca un `UNIQUE` de base
+  /// de datos: "único cuando corresponda" admite excepciones reales de
+  /// dispositivos de segunda mano/gris).
+  Future<List<ArticuloUnidadTelefonoData>> listarTelefonosPorImei(String imei);
 }

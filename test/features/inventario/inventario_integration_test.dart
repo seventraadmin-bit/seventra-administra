@@ -7,6 +7,8 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/categoria_articulo_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
+import 'package:riseg_one/features/inventario/data/tables/categoria_articulo_table.dart' show AplicacionEspecializadaCategoriaArticulo;
+import 'package:riseg_one/features/inventario/domain/usecases/actualizar_categoria_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_categoria_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/corregir_articulo_usecase.dart';
@@ -26,6 +28,7 @@ void main() {
   late InventarioRepositoryImpl inventarioRepo;
   late CrearCategoriaArticuloUseCase crearCategoria;
   late ArchivarCategoriaArticuloUseCase archivarCategoria;
+  late ActualizarCategoriaArticuloUseCase actualizarCategoria;
   late CrearArticuloUseCase crearArticulo;
   late CorregirArticuloUseCase corregirArticulo;
   late ArchivarArticuloUseCase archivarArticulo;
@@ -45,6 +48,7 @@ void main() {
 
     crearCategoria = CrearCategoriaArticuloUseCase(categoriaRepo);
     archivarCategoria = ArchivarCategoriaArticuloUseCase(categoriaRepo);
+    actualizarCategoria = ActualizarCategoriaArticuloUseCase(categoriaRepo);
     crearArticulo = CrearArticuloUseCase(articuloRepo, categoriaRepo, generarCodigo);
     corregirArticulo = CorregirArticuloUseCase(articuloRepo, categoriaRepo);
     archivarArticulo = ArchivarArticuloUseCase(articuloRepo);
@@ -93,6 +97,63 @@ void main() {
     test('rechaza nombre vacío', () async {
       final resultado = await crearCategoria.ejecutar(nombre: '   ');
       expect(resultado, isA<CrearCategoriaArticuloNombreRequerido>());
+    });
+
+    test('actualizar: una categoría nace genérica (aplicacionEspecializada null)', () async {
+      final categoria = await crearCategoriaDePrueba(nombre: 'Teléfonos');
+      expect(categoria.aplicacionEspecializada, isNull);
+    });
+
+    test('actualizar: marca una categoría existente como telefonia', () async {
+      final categoria = await crearCategoriaDePrueba(nombre: 'Teléfonos');
+      final resultado = await actualizarCategoria.ejecutar(
+        categoriaId: categoria.id,
+        nombre: categoria.nombre,
+        aplicacionEspecializada: AplicacionEspecializadaCategoriaArticulo.telefonia,
+      );
+      expect(resultado, isA<ActualizarCategoriaArticuloExitoso>());
+      final actualizada = (resultado as ActualizarCategoriaArticuloExitoso).categoria;
+      expect(actualizada.aplicacionEspecializada, AplicacionEspecializadaCategoriaArticulo.telefonia.name);
+    });
+
+    test('actualizar: limpiarAplicacionEspecializada vuelve la categoría a genérica', () async {
+      final categoria = await crearCategoriaDePrueba(nombre: 'Teléfonos');
+      await actualizarCategoria.ejecutar(
+        categoriaId: categoria.id,
+        nombre: categoria.nombre,
+        aplicacionEspecializada: AplicacionEspecializadaCategoriaArticulo.telefonia,
+      );
+      final resultado = await actualizarCategoria.ejecutar(
+        categoriaId: categoria.id,
+        nombre: categoria.nombre,
+        limpiarAplicacionEspecializada: true,
+      );
+      final actualizada = (resultado as ActualizarCategoriaArticuloExitoso).categoria;
+      expect(actualizada.aplicacionEspecializada, isNull);
+    });
+
+    test('actualizar: cambia el nombre sin tocar aplicacionEspecializada si no se pide limpiar', () async {
+      final categoria = await crearCategoriaDePrueba(nombre: 'Teléfonos');
+      await actualizarCategoria.ejecutar(
+        categoriaId: categoria.id,
+        nombre: categoria.nombre,
+        aplicacionEspecializada: AplicacionEspecializadaCategoriaArticulo.telefonia,
+      );
+      final resultado = await actualizarCategoria.ejecutar(categoriaId: categoria.id, nombre: 'Equipos telefónicos');
+      final actualizada = (resultado as ActualizarCategoriaArticuloExitoso).categoria;
+      expect(actualizada.nombre, 'Equipos telefónicos');
+      expect(actualizada.aplicacionEspecializada, AplicacionEspecializadaCategoriaArticulo.telefonia.name);
+    });
+
+    test('actualizar: rechaza nombre vacío', () async {
+      final categoria = await crearCategoriaDePrueba();
+      final resultado = await actualizarCategoria.ejecutar(categoriaId: categoria.id, nombre: '   ');
+      expect(resultado, isA<ActualizarCategoriaArticuloNombreRequerido>());
+    });
+
+    test('actualizar: rechaza categoría inexistente', () async {
+      final resultado = await actualizarCategoria.ejecutar(categoriaId: 'no-existe', nombre: 'X');
+      expect(resultado, isA<ActualizarCategoriaArticuloNoExiste>());
     });
   });
 

@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../organizacion/data/tables/servicio_table.dart';
 import '../../../personal/data/tables/empleado_table.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 import 'linea_telefonica_table.dart';
 
 /// Motivo de término de una [AsignacionLineaTelefonica] (Etapa 9B) —
@@ -54,6 +55,12 @@ class AsignacionLineaTelefonica extends Table with AuditColumns {
   TextColumn get observaciones => text().nullable()();
 
   TextColumn get observacionesTermino => text().nullable()();
+
+  /// **Etapa 9D** — el UseCase/repositorio ya recibían `actorUsuarioId`
+  /// desde la Etapa 9B, pero la columna nunca existió y el valor se
+  /// descartaba silenciosamente. Se agrega ahora porque el punto 11 de
+  /// la Etapa 9D exige que "asociación/cambio de línea" sea trazable.
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   @override
   List<String> get customConstraints => [

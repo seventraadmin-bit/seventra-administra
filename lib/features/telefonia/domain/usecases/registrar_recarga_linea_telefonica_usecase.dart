@@ -46,6 +46,7 @@ class RegistrarRecargaLineaTelefonicaUseCase {
     required DateTime fecha,
     required int importe,
     String? observaciones,
+    String? actorUsuarioId,
   }) async {
     final linea = await _lineaRepository.obtenerPorId(lineaTelefonicaId);
     if (linea == null) return RegistrarRecargaLineaTelefonicaLineaNoExiste();
@@ -58,6 +59,7 @@ class RegistrarRecargaLineaTelefonicaUseCase {
         fecha: fecha,
         importe: importe,
         observaciones: observaciones?.trim().isEmpty ?? true ? null : observaciones!.trim(),
+        actorUsuarioId: actorUsuarioId,
       );
       return RegistrarRecargaLineaTelefonicaExitoso(recarga);
     } catch (e) {

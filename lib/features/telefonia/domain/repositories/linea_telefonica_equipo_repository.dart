@@ -35,6 +35,12 @@ abstract interface class LineaTelefonicaEquipoRepository {
   /// solo lectura).
   Future<LineaTelefonicaEquipoData?> obtenerActualPorUnidad(String unidadId);
 
+  /// Historial completo de líneas que ha tenido una unidad, orden
+  /// descendente por `fechaInicio` (Etapa 9D) — el reverso de
+  /// [listarPorLinea]: "qué líneas trajo este teléfono a lo largo de su
+  /// vida" para el expediente del Equipo.
+  Future<List<LineaTelefonicaEquipoData>> listarPorUnidad(String unidadId);
+
   /// La custodia real de [unidadId] en Inventario en este momento
   /// (`null` si no tiene ninguna asignación activa) — solo lectura,
   /// usada por la UI de Telefonía para la advertencia de divergencia.

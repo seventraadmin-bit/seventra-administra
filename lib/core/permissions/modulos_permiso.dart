@@ -72,6 +72,10 @@ const modulosPermiso = <ModuloPermiso>[
   ModuloPermiso(
     codigo: 'telefonia',
     accionesBase: {AccionBase.ver, AccionBase.crear, AccionBase.modificar, AccionBase.archivar},
+    // Etapa 9D — revelar/copiar la contraseña de la cuenta de un
+    // equipo telefónico. Independiente de `telefonia.ver`: un usuario
+    // puede consultar Telefonía sin poder ver contraseñas.
+    accionesEspeciales: ['telefonia.verCredenciales'],
   ),
   ModuloPermiso(
     codigo: 'organizacion',

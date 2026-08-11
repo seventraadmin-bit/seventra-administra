@@ -17,12 +17,14 @@ import 'domain/repositories/articulo_repository.dart';
 import 'domain/repositories/asignacion_repository.dart';
 import 'domain/repositories/categoria_articulo_repository.dart';
 import 'domain/repositories/inventario_repository.dart';
+import 'domain/usecases/actualizar_categoria_articulo_usecase.dart';
 import 'domain/usecases/adjuntar_comprobante_movimiento_usecase.dart';
 import 'domain/usecases/adjuntar_resguardo_firmado_usecase.dart';
 import 'domain/usecases/archivar_articulo_usecase.dart';
 import 'domain/usecases/archivar_categoria_articulo_usecase.dart';
 import 'domain/usecases/archivar_variante_articulo_usecase.dart';
 import 'domain/usecases/buscar_inventario_usecase.dart';
+import 'domain/usecases/cambiar_responsable_asignacion_usecase.dart';
 import 'domain/usecases/cancelar_descuento_inventario_usecase.dart';
 import 'domain/usecases/cerrar_asignacion_usecase.dart';
 import 'domain/usecases/corregir_articulo_usecase.dart';
@@ -34,12 +36,14 @@ import 'domain/usecases/eliminar_articulo_fisicamente_usecase.dart';
 import 'domain/usecases/eliminar_categoria_articulo_fisicamente_usecase.dart';
 import 'domain/usecases/generar_documento_resguardo_usecase.dart';
 import 'domain/usecases/obtener_empleados_responsables_servicio_usecase.dart';
+import 'domain/usecases/obtener_opciones_responsable_asignacion_usecase.dart';
 import 'domain/usecases/obtener_origen_compra_usecase.dart';
 import 'domain/usecases/registrar_ajuste_usecase.dart';
 import 'domain/usecases/registrar_baja_unidad_usecase.dart';
 import 'domain/usecases/registrar_baja_usecase.dart';
 import 'domain/usecases/registrar_entrada_unidad_usecase.dart';
 import 'domain/usecases/registrar_entrada_usecase.dart';
+import 'domain/usecases/regularizar_articulo_serializado_usecase.dart';
 import 'domain/usecases/reemplazar_asignacion_usecase.dart';
 
 /// Providers del dominio Inventario (Etapa 7A) — nace aquí, separado
@@ -55,6 +59,10 @@ final crearCategoriaArticuloUseCaseProvider = Provider<CrearCategoriaArticuloUse
 
 final archivarCategoriaArticuloUseCaseProvider = Provider<ArchivarCategoriaArticuloUseCase>((ref) {
   return ArchivarCategoriaArticuloUseCase(ref.watch(categoriaArticuloRepositoryProvider));
+});
+
+final actualizarCategoriaArticuloUseCaseProvider = Provider<ActualizarCategoriaArticuloUseCase>((ref) {
+  return ActualizarCategoriaArticuloUseCase(ref.watch(categoriaArticuloRepositoryProvider));
 });
 
 final articuloRepositoryProvider = Provider<ArticuloRepository>((ref) {
@@ -152,6 +160,15 @@ final cancelarDescuentoInventarioUseCaseProvider = Provider<CancelarDescuentoInv
   return CancelarDescuentoInventarioUseCase(ref.watch(asignacionRepositoryProvider));
 });
 
+/// Etapa 9D (ajuste posterior a la aprobación inicial) — "cambiar
+/// responsable" del mismo bien, distinto de `reemplazar` (cambia el
+/// bien). Vive en Inventario porque `Asignacion` sigue siendo la única
+/// fuente de verdad de la custodia física — Telefonía solo la consume
+/// desde el expediente del Equipo, nunca la reimplementa.
+final cambiarResponsableAsignacionUseCaseProvider = Provider<CambiarResponsableAsignacionUseCase>((ref) {
+  return CambiarResponsableAsignacionUseCase(ref.watch(asignacionRepositoryProvider));
+});
+
 /// Dependencia cruzada al dominio `personal` (lectura) — mismo patrón
 /// ya establecido por `organizacion_providers.dart` al componer
 /// `ObtenerExpedienteServicioUseCaseProvider`. La UI de Inventario
@@ -161,6 +178,16 @@ final obtenerEmpleadosResponsablesServicioUseCaseProvider = Provider<ObtenerEmpl
   return ObtenerEmpleadosResponsablesServicioUseCase(
     ref.watch(asignacionServicioRepositoryProvider),
     ref.watch(empleadoRepositoryProvider),
+  );
+});
+
+/// Etapa 9D (ajuste posterior) — candidatos a nuevo responsable al
+/// cambiar quién tiene un bien, sin acotar a un Servicio en particular.
+final obtenerOpcionesResponsableAsignacionUseCaseProvider =
+    Provider<ObtenerOpcionesResponsableAsignacionUseCase>((ref) {
+  return ObtenerOpcionesResponsableAsignacionUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
   );
 });
 
@@ -287,6 +314,39 @@ final cerrarAsignacionAutorizadoProvider = Provider<CerrarAsignacionAutorizado>(
             actorUsuarioId: actorUsuarioId,
           ),
       CerrarAsignacionErrorInesperado.new,
+    );
+  };
+});
+
+typedef CambiarResponsableAsignacionAutorizado = Future<CambiarResponsableAsignacionResultado> Function({
+  required String asignacionId,
+  String? nuevoEmpleadoId,
+  String? nuevoServicioId,
+  required DateTime fecha,
+  String? observaciones,
+});
+
+final cambiarResponsableAsignacionAutorizadoProvider = Provider<CambiarResponsableAsignacionAutorizado>((ref) {
+  return ({
+    required String asignacionId,
+    String? nuevoEmpleadoId,
+    String? nuevoServicioId,
+    required DateTime fecha,
+    String? observaciones,
+  }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.modificar',
+      () => ref.read(cambiarResponsableAsignacionUseCaseProvider).ejecutar(
+            asignacionId: asignacionId,
+            nuevoEmpleadoId: nuevoEmpleadoId,
+            nuevoServicioId: nuevoServicioId,
+            fecha: fecha,
+            observaciones: observaciones,
+            actorUsuarioId: actorUsuarioId,
+          ),
+      CambiarResponsableAsignacionErrorInesperado.new,
     );
   };
 });
@@ -428,6 +488,38 @@ final eliminarCategoriaArticuloFisicamenteAutorizadoProvider =
             actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           ),
       EliminarCategoriaArticuloFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+// --- Regularización de existencia legacy (Etapa 9D, ajuste posterior) ---
+//
+// Misma facultad exclusiva del Usuario Maestro que la eliminación
+// física de arriba — `exigirMaestro`, actor resuelto aquí mismo.
+final regularizarArticuloSerializadoUseCaseProvider = Provider<RegularizarArticuloSerializadoUseCase>((ref) {
+  return RegularizarArticuloSerializadoUseCase(
+    ref.watch(articuloRepositoryProvider),
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(generarCodigoUseCaseProvider),
+  );
+});
+
+typedef RegularizarArticuloSerializadoAutorizado = Future<RegularizarArticuloSerializadoResultado> Function({
+  required String articuloId,
+  required String movimientoInventarioId,
+  required List<DatosUnidadRegularizacionInput> unidades,
+});
+
+final regularizarArticuloSerializadoAutorizadoProvider = Provider<RegularizarArticuloSerializadoAutorizado>((ref) {
+  return ({required String articuloId, required String movimientoInventarioId, required List<DatosUnidadRegularizacionInput> unidades}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(regularizarArticuloSerializadoUseCaseProvider).ejecutar(
+            articuloId: articuloId,
+            movimientoInventarioId: movimientoInventarioId,
+            unidades: unidades,
+          ),
+      RegularizarArticuloSerializadoErrorInesperado.new,
     );
   };
 });

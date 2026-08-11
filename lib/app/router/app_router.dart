@@ -18,8 +18,9 @@ import '../../features/organizacion/presentation/sucursales/sucursal_expediente_
 import '../../features/nomina/presentation/nominas/nomina_detalle_screen.dart';
 import '../../features/personal/presentation/empleados/empleado_expediente_screen.dart';
 import '../../features/personal/presentation/personal_shell_screen.dart';
+import '../../features/telefonia/presentation/equipo_telefonico_expediente_screen.dart';
 import '../../features/telefonia/presentation/linea_telefonica_expediente_screen.dart';
-import '../../features/telefonia/presentation/lineas_telefonicas_list_screen.dart';
+import '../../features/telefonia/presentation/telefonia_shell_screen.dart';
 import '../../features/usuarios/presentation/auth/bootstrap_maestro_screen.dart';
 import '../../features/usuarios/presentation/auth/login_screen.dart';
 import '../../features/usuarios/presentation/configuracion_shell_screen.dart';
@@ -337,18 +338,40 @@ GoRouter createAppRouter() {
                     ],
                   )
                 else if (def.path == '/telefonia')
-                  // Telefonía (Etapa 9A) — una sola pantalla, sin
-                  // pestañas todavía (mismo criterio que Inventario
-                  // 7A/Vehículos 8A: la subnavegación llega cuando
-                  // exista una segunda sección real, ver la Etapa 9C).
+                  // Telefonía (Etapa 9A) gana subnavegación de pestañas
+                  // desde la Etapa 9D (Equipos | Líneas), mismo patrón y
+                  // mismo momento relativo que Inventario (7A → 7D) /
+                  // Vehículos (8A → 8C) — `/telefonia` en sí redirige a
+                  // `/telefonia/equipos`. Líneas ya existía como
+                  // pantalla única desde la Etapa 9A y se mueve de ruta
+                  // (antes `/telefonia/:id`, ahora
+                  // `/telefonia/lineas/:id`) sin cambios de contenido.
                   GoRoute(
                     path: def.path,
-                    builder: (context, state) => const LineasTelefonicasListScreen(),
+                    redirect: (context, state) =>
+                        state.uri.path == '/telefonia' ? '/telefonia/equipos' : null,
                     routes: [
                       GoRoute(
-                        path: ':id',
-                        builder: (context, state) =>
-                            LineaTelefonicaExpedienteScreen(lineaTelefonicaId: state.pathParameters['id']!),
+                        path: 'equipos',
+                        builder: (context, state) => const TelefoniaShellScreen(tab: TelefoniaTab.equipos),
+                        routes: [
+                          GoRoute(
+                            path: ':unidadId',
+                            builder: (context, state) =>
+                                EquipoTelefonicoExpedienteScreen(unidadId: state.pathParameters['unidadId']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'lineas',
+                        builder: (context, state) => const TelefoniaShellScreen(tab: TelefoniaTab.lineas),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                LineaTelefonicaExpedienteScreen(lineaTelefonicaId: state.pathParameters['id']!),
+                          ),
+                        ],
                       ),
                     ],
                   )

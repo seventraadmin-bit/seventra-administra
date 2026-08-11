@@ -55,6 +55,7 @@ import '../../features/inventario/data/tables/descuento_inventario_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_attachment_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
 import '../../features/telefonia/data/tables/asignacion_linea_telefonica_table.dart';
+import '../../features/telefonia/data/tables/equipo_telefonico_table.dart';
 import '../../features/telefonia/data/tables/linea_telefonica_equipo_table.dart';
 import '../../features/telefonia/data/tables/linea_telefonica_table.dart';
 import '../../features/telefonia/data/tables/recarga_linea_telefonica_table.dart';
@@ -75,6 +76,9 @@ import 'migrations/migrar_compra_v37.dart';
 import 'migrations/migrar_usuario_v38.dart';
 import 'migrations/migrar_permiso_usuario_v39.dart';
 import 'migrations/migrar_auditoria_v40.dart';
+import 'migrations/migrar_equipos_telefonicos_v41.dart';
+import 'migrations/migrar_cambiar_responsable_asignacion_v42.dart';
+import 'migrations/migrar_categoria_articulo_aplicacion_v43.dart';
 import 'migrations/migrar_linea_telefonica_v34.dart';
 import 'migrations/migrar_recarga_linea_telefonica_v36.dart';
 import 'migrations/migrar_vehiculo_v30.dart';
@@ -219,6 +223,8 @@ class AppMetadata extends Table {
   LineaTelefonicaEquipo,
   RecargaLineaTelefonica,
   RecargaLineaTelefonicaAttachment,
+  EquipoTelefonicoCredencial,
+  EquipoTelefonicoEvento,
   Compra,
   CompraPartida,
   CompraPartidaMovimiento,
@@ -233,7 +239,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 40;
+  int get schemaVersion => 43;
 
   @override
   MigrationStrategy get migration {
@@ -795,6 +801,25 @@ class AppDatabase extends _$AppDatabase {
         // exacto.
         if (to >= 40 && from <= 39) {
           await migrarAuditoriaV40(this, m);
+        }
+        // Aditiva (Etapa 9D): `imei2`/`actorUsuarioId` en 3 tablas ya
+        // existentes de Inventario/Telefonía + `EquipoTelefonicoCredencial`/
+        // `EquipoTelefonicoEvento`, enteramente nuevas.
+        if (to >= 41 && from <= 40) {
+          await migrarEquiposTelefonicosV41(this, m);
+        }
+        // Aditiva (Etapa 9D, ajuste posterior): `Asignacion.actorUsuarioId`
+        // — `Asignacion` existe desde schemaVersion 28, muy anterior a
+        // 42, así que `from <= 41` es seguro sin acotar un origen exacto.
+        if (to >= 42 && from <= 41) {
+          await migrarCambiarResponsableAsignacionV42(this, m);
+        }
+        // Aditiva (Etapa 9D, segundo ajuste posterior):
+        // `CategoriaArticulo.aplicacionEspecializada` — `CategoriaArticulo`
+        // existe desde la Etapa 7A, muy anterior a 43, así que `from <=
+        // 42` es seguro sin acotar un origen exacto.
+        if (to >= 43 && from <= 42) {
+          await migrarCategoriaArticuloAplicacionV43(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

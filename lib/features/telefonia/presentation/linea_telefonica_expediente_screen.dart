@@ -449,6 +449,12 @@ class _LineaTelefonicaExpedienteScreenState extends ConsumerState<LineaTelefonic
                           runSpacing: AppSpacing.xs,
                           children: [
                             RisegButton(
+                              label: l10n.lineaTelefonicaEquipoBotonVerEquipo,
+                              variant: RisegButtonVariant.ghost,
+                              size: RisegButtonSize.compact,
+                              onPressed: () => context.go('/telefonia/equipos/${_equipoVigente!.unidadId}'),
+                            ),
+                            RisegButton(
                               label: l10n.lineaTelefonicaBotonCambiarEquipo,
                               variant: RisegButtonVariant.ghost,
                               size: RisegButtonSize.compact,

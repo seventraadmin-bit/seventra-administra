@@ -38,6 +38,14 @@ abstract interface class ArticuloRepository {
     bool limpiarCostoReferencia = false,
   });
 
+  /// Única excepción controlada a "`manejaVariante`/`manejaSerie`
+  /// quedan fijas desde la creación" (Etapa 9D, ajuste posterior) —
+  /// exclusiva de `RegularizarArticuloSerializadoUseCase`, Maestro-only,
+  /// para corregir un Artículo que se dio de alta sin marcar
+  /// `manejaSerie` por error y ya tiene existencia real por cantidad.
+  /// Nunca la llama ningún otro caso de uso.
+  Future<ArticuloData> marcarManejaSerie(String articuloId);
+
   Future<ArticuloData> archivar(String articuloId);
 
   Future<List<ArticuloVarianteData>> listarVariantes(String articuloId, {bool soloActivas = true});

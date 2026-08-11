@@ -21,7 +21,9 @@ import 'package:riseg_one/features/compras/presentation/compras_controller.dart'
 import 'package:riseg_one/features/compras/compras_providers.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_ingreso_manual_usecase.dart';
 import 'package:riseg_one/features/finanzas/presentation/ingresos/ingresos_controller.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/cambiar_responsable_asignacion_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_ajuste_usecase.dart';
+import 'package:riseg_one/features/inventario/inventario_providers.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_controller.dart';
 import 'package:riseg_one/features/nomina/data/tables/nomina_table.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/actualizar_distribucion_nomina_usecase.dart';
@@ -564,6 +566,55 @@ void main() {
       expect(resultado, isNot(isA<GuardarAreaErrorInesperado>()));
     });
   });
+
+  group(
+    'Inventario — cambiarResponsableAsignacionAutorizadoProvider llamado directo, sin montar widgets '
+    '(Etapa 9D, ajuste aprobado por Marlon)',
+    () {
+      late AppDatabase db;
+
+      setUp(() async {
+        db = AppDatabase(NativeDatabase.memory());
+        await _sembrarUsuariosDePrueba(db);
+      });
+      tearDown(() => db.close());
+
+      test('inventario.ver sin inventario.modificar: cambiar responsable rechazado', () async {
+        final container = _container(db, _sesionCon({'inventario.ver'}));
+        final resultado = await container.read(cambiarResponsableAsignacionAutorizadoProvider)(
+          asignacionId: 'asignacion-inexistente',
+          nuevoEmpleadoId: 'empleado-cualquiera',
+          fecha: DateTime(2026, 1, 1),
+        );
+
+        expect(resultado, isA<CambiarResponsableAsignacionErrorInesperado>());
+        expect((resultado as CambiarResponsableAsignacionErrorInesperado).mensaje, _mensajePermiso);
+      });
+
+      test('inventario.modificar presente: llega al dominio real (asignación inexistente, '
+          'no el error de permiso)', () async {
+        final container = _container(db, _sesionCon({'inventario.ver', 'inventario.modificar'}));
+        final resultado = await container.read(cambiarResponsableAsignacionAutorizadoProvider)(
+          asignacionId: 'asignacion-inexistente',
+          nuevoEmpleadoId: 'empleado-cualquiera',
+          fecha: DateTime(2026, 1, 1),
+        );
+
+        expect(resultado, isA<CambiarResponsableAsignacionNoExiste>());
+      });
+
+      test('un Maestro cambia responsable sin ninguna fila de PermisoUsuario', () async {
+        final container = _container(db, _sesionMaestro);
+        final resultado = await container.read(cambiarResponsableAsignacionAutorizadoProvider)(
+          asignacionId: 'asignacion-inexistente',
+          nuevoEmpleadoId: 'empleado-cualquiera',
+          fecha: DateTime(2026, 1, 1),
+        );
+
+        expect(resultado, isNot(isA<CambiarResponsableAsignacionErrorInesperado>()));
+      });
+    },
+  );
 
   group('Comercial — crearClienteAutorizadoProvider llamado directo, sin montar widgets', () {
     late AppDatabase db;
