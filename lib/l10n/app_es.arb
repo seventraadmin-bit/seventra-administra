@@ -3629,5 +3629,18 @@
   "reportesNombreNominaPeriodo": "Nóminas del periodo",
   "reportesNombreComprasPeriodo": "Compras del periodo",
   "reportesNombreVehiculosMantenimiento": "Mantenimientos y costos de Vehículos",
-  "reportesNombreTelefoniaRecargas": "Recargas de Telefonía"
+  "reportesNombreTelefoniaRecargas": "Recargas de Telefonía",
+
+  "busquedaSinResultados": "Sin resultados para “{texto}”",
+  "@busquedaSinResultados": {
+    "placeholders": { "texto": { "type": "String" } }
+  },
+  "busquedaGrupoPersonal": "Personal",
+  "busquedaGrupoClientes": "Clientes",
+  "busquedaGrupoServicios": "Servicios",
+  "busquedaGrupoArticulos": "Artículos",
+  "busquedaGrupoCompras": "Compras",
+  "busquedaGrupoVehiculos": "Vehículos",
+  "busquedaGrupoLineasTelefonicas": "Líneas telefónicas",
+  "busquedaGrupoUsuarios": "Usuarios"
 }

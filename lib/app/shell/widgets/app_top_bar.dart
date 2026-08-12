@@ -3,10 +3,10 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/design_system/components/riseg_search_field.dart';
 import '../../../core/design_system/tokens/app_color_scheme.dart';
 import '../../../core/design_system/tokens/app_spacing.dart';
 import '../../../core/design_system/tokens/app_typography.dart';
+import '../../../features/busqueda/presentation/widgets/global_search_field.dart';
 import '../../../features/usuarios/presentation/sesion_controller.dart';
 import '../../theme/theme_mode_controller.dart';
 import '../shell_breakpoints.dart';
@@ -28,7 +28,6 @@ class AppTopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeControllerProvider);
 
@@ -49,11 +48,7 @@ class AppTopBar extends ConsumerWidget {
             children: [
               Expanded(child: AppBreadcrumb(segments: breadcrumbSegments)),
               const SizedBox(width: AppSpacing.md),
-              RisegSearchField(
-                key: const Key('top_bar_search'),
-                hint: l10n.shellSearchTooltip,
-                compact: compactSearch,
-              ),
+              GlobalSearchField(compact: compactSearch),
               const SizedBox(width: AppSpacing.xs),
               _ThemeSelector(
                 mode: themeMode,
