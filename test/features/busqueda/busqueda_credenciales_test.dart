@@ -1,8 +1,10 @@
-// Etapa 14A (Búsqueda global) — misma regla dura que Reportes (12D) y
-// Dashboard (13): ningún archivo bajo lib/features/busqueda/ puede
-// importar EquipoTelefonicoRepository, RevelarCredencialEquipoTelefonicoUseCase
-// ni CredentialCipher — estructural, no basado en permiso, porque
-// `hasCode` de Maestro siempre regresa true.
+// Etapa 14A (Búsqueda global) — misma regla dura que Reportes (12D),
+// Dashboard (13) y Bóveda de Accesos (14D): ningún archivo bajo
+// lib/features/busqueda/ puede importar EquipoTelefonicoRepository,
+// RevelarCredencialEquipoTelefonicoUseCase, BovedaCredencialRepository,
+// RevelarSecretoCredencialBovedaUseCase ni CredentialCipher —
+// estructural, no basado en permiso, porque `hasCode` de Maestro
+// siempre regresa true.
 
 import 'dart:io';
 
@@ -12,6 +14,8 @@ import 'package:path/path.dart' as p;
 const _importsProhibidos = [
   'equipo_telefonico_repository.dart',
   'RevelarCredencialEquipoTelefonicoUseCase',
+  'boveda_credencial_repository.dart',
+  'RevelarSecretoCredencialBovedaUseCase',
   'CredentialCipher',
 ];
 

@@ -1,10 +1,12 @@
 // Etapa 12D — regla dura, sin excepción para Maestro: ningún archivo
 // bajo lib/features/reportes/ (incluidas las carpetas nuevas
 // data/pdf, data/xlsx y domain/export de esta etapa) puede importar
-// EquipoTelefonicoRepository, RevelarCredencialEquipoTelefonicoUseCase
-// ni CredentialCipher — el límite es estructural, no basado en
-// permiso, porque `hasCode` de Maestro siempre regresa true. Falla si
-// alguno de esos imports aparece alguna vez bajo este directorio.
+// EquipoTelefonicoRepository, RevelarCredencialEquipoTelefonicoUseCase,
+// BovedaCredencialRepository (Etapa 14D) ni
+// RevelarSecretoCredencialBovedaUseCase, ni CredentialCipher — el
+// límite es estructural, no basado en permiso, porque `hasCode` de
+// Maestro siempre regresa true. Falla si alguno de esos imports
+// aparece alguna vez bajo este directorio.
 
 import 'dart:io';
 
@@ -14,6 +16,8 @@ import 'package:path/path.dart' as p;
 const _importsProhibidos = [
   'equipo_telefonico_repository.dart',
   'RevelarCredencialEquipoTelefonicoUseCase',
+  'boveda_credencial_repository.dart',
+  'RevelarSecretoCredencialBovedaUseCase',
   'CredentialCipher',
 ];
 

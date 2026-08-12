@@ -89,14 +89,15 @@ GoRouter createAppRouter() {
         return path == '/acceso-denegado' ? null : '/acceso-denegado';
       }
 
-      // Respaldo y restauración (Etapa 14C) es exclusiva del Usuario
-      // Maestro — `usuarios.administrar` (el permiso de todo
-      // `/configuracion`) no basta, igual que ningún permiso dinámico
-      // basta para la eliminación física de la Etapa 11D. Doble candado
-      // con `exigirMaestro` en `respaldo_providers.dart`: aquí se evita
+      // Respaldo y restauración (Etapa 14C) y Bóveda de Accesos (Etapa
+      // 14D) son exclusivas del Usuario Maestro — `usuarios.administrar`
+      // (el permiso de todo `/configuracion`) no basta, igual que ningún
+      // permiso dinámico basta para la eliminación física de la Etapa
+      // 11D. Doble candado con `exigirMaestro` en
+      // `respaldo_providers.dart`/`boveda_providers.dart`: aquí se evita
       // incluso construir la pantalla, allá se protege la acción aunque
       // se invoque sin pasar por esta ruta.
-      if (path == '/configuracion/respaldo' && !sesion.esMaestro) {
+      if ((path == '/configuracion/respaldo' || path == '/configuracion/boveda') && !sesion.esMaestro) {
         return '/acceso-denegado';
       }
       return null;
@@ -465,6 +466,11 @@ GoRouter createAppRouter() {
                         path: 'respaldo',
                         builder: (context, state) =>
                             const ConfiguracionShellScreen(tab: ConfiguracionTab.respaldo),
+                      ),
+                      GoRoute(
+                        path: 'boveda',
+                        builder: (context, state) =>
+                            const ConfiguracionShellScreen(tab: ConfiguracionTab.boveda),
                       ),
                     ],
                   )

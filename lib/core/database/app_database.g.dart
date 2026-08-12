@@ -67773,6 +67773,1204 @@ class EliminacionFisicaEventoCompanion
   }
 }
 
+class $BovedaCredencialTable extends BovedaCredencial
+    with TableInfo<$BovedaCredencialTable, BovedaCredencialData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BovedaCredencialTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _usuarioAccesoMeta = const VerificationMeta(
+    'usuarioAcceso',
+  );
+  @override
+  late final GeneratedColumn<String> usuarioAcceso = GeneratedColumn<String>(
+    'usuario_acceso',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _correoMeta = const VerificationMeta('correo');
+  @override
+  late final GeneratedColumn<String> correo = GeneratedColumn<String>(
+    'correo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _secretoCifradoMeta = const VerificationMeta(
+    'secretoCifrado',
+  );
+  @override
+  late final GeneratedColumn<String> secretoCifrado = GeneratedColumn<String>(
+    'secreto_cifrado',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaActualizacionSecretoMeta =
+      const VerificationMeta('fechaActualizacionSecreto');
+  @override
+  late final GeneratedColumn<DateTime> fechaActualizacionSecreto =
+      GeneratedColumn<DateTime>(
+        'fecha_actualizacion_secreto',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    nombre,
+    tipo,
+    usuarioAcceso,
+    correo,
+    secretoCifrado,
+    fechaActualizacionSecreto,
+    url,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'boveda_credencial';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BovedaCredencialData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('usuario_acceso')) {
+      context.handle(
+        _usuarioAccesoMeta,
+        usuarioAcceso.isAcceptableOrUnknown(
+          data['usuario_acceso']!,
+          _usuarioAccesoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('correo')) {
+      context.handle(
+        _correoMeta,
+        correo.isAcceptableOrUnknown(data['correo']!, _correoMeta),
+      );
+    }
+    if (data.containsKey('secreto_cifrado')) {
+      context.handle(
+        _secretoCifradoMeta,
+        secretoCifrado.isAcceptableOrUnknown(
+          data['secreto_cifrado']!,
+          _secretoCifradoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_actualizacion_secreto')) {
+      context.handle(
+        _fechaActualizacionSecretoMeta,
+        fechaActualizacionSecreto.isAcceptableOrUnknown(
+          data['fecha_actualizacion_secreto']!,
+          _fechaActualizacionSecretoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BovedaCredencialData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BovedaCredencialData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      nombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre'],
+          )!,
+      tipo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo'],
+          )!,
+      usuarioAcceso: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}usuario_acceso'],
+      ),
+      correo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}correo'],
+      ),
+      secretoCifrado: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}secreto_cifrado'],
+      ),
+      fechaActualizacionSecreto: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fecha_actualizacion_secreto'],
+      ),
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $BovedaCredencialTable createAlias(String alias) {
+    return $BovedaCredencialTable(attachedDatabase, alias);
+  }
+}
+
+class BovedaCredencialData extends DataClass
+    implements Insertable<BovedaCredencialData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String nombre;
+
+  /// [TipoAccesoBoveda.name].
+  final String tipo;
+  final String? usuarioAcceso;
+  final String? correo;
+  final String? secretoCifrado;
+  final DateTime? fechaActualizacionSecreto;
+  final String? url;
+  final String? observaciones;
+  const BovedaCredencialData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.nombre,
+    required this.tipo,
+    this.usuarioAcceso,
+    this.correo,
+    this.secretoCifrado,
+    this.fechaActualizacionSecreto,
+    this.url,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['nombre'] = Variable<String>(nombre);
+    map['tipo'] = Variable<String>(tipo);
+    if (!nullToAbsent || usuarioAcceso != null) {
+      map['usuario_acceso'] = Variable<String>(usuarioAcceso);
+    }
+    if (!nullToAbsent || correo != null) {
+      map['correo'] = Variable<String>(correo);
+    }
+    if (!nullToAbsent || secretoCifrado != null) {
+      map['secreto_cifrado'] = Variable<String>(secretoCifrado);
+    }
+    if (!nullToAbsent || fechaActualizacionSecreto != null) {
+      map['fecha_actualizacion_secreto'] = Variable<DateTime>(
+        fechaActualizacionSecreto,
+      );
+    }
+    if (!nullToAbsent || url != null) {
+      map['url'] = Variable<String>(url);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  BovedaCredencialCompanion toCompanion(bool nullToAbsent) {
+    return BovedaCredencialCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      nombre: Value(nombre),
+      tipo: Value(tipo),
+      usuarioAcceso:
+          usuarioAcceso == null && nullToAbsent
+              ? const Value.absent()
+              : Value(usuarioAcceso),
+      correo:
+          correo == null && nullToAbsent ? const Value.absent() : Value(correo),
+      secretoCifrado:
+          secretoCifrado == null && nullToAbsent
+              ? const Value.absent()
+              : Value(secretoCifrado),
+      fechaActualizacionSecreto:
+          fechaActualizacionSecreto == null && nullToAbsent
+              ? const Value.absent()
+              : Value(fechaActualizacionSecreto),
+      url: url == null && nullToAbsent ? const Value.absent() : Value(url),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory BovedaCredencialData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BovedaCredencialData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      usuarioAcceso: serializer.fromJson<String?>(json['usuarioAcceso']),
+      correo: serializer.fromJson<String?>(json['correo']),
+      secretoCifrado: serializer.fromJson<String?>(json['secretoCifrado']),
+      fechaActualizacionSecreto: serializer.fromJson<DateTime?>(
+        json['fechaActualizacionSecreto'],
+      ),
+      url: serializer.fromJson<String?>(json['url']),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'nombre': serializer.toJson<String>(nombre),
+      'tipo': serializer.toJson<String>(tipo),
+      'usuarioAcceso': serializer.toJson<String?>(usuarioAcceso),
+      'correo': serializer.toJson<String?>(correo),
+      'secretoCifrado': serializer.toJson<String?>(secretoCifrado),
+      'fechaActualizacionSecreto': serializer.toJson<DateTime?>(
+        fechaActualizacionSecreto,
+      ),
+      'url': serializer.toJson<String?>(url),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  BovedaCredencialData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? nombre,
+    String? tipo,
+    Value<String?> usuarioAcceso = const Value.absent(),
+    Value<String?> correo = const Value.absent(),
+    Value<String?> secretoCifrado = const Value.absent(),
+    Value<DateTime?> fechaActualizacionSecreto = const Value.absent(),
+    Value<String?> url = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => BovedaCredencialData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    nombre: nombre ?? this.nombre,
+    tipo: tipo ?? this.tipo,
+    usuarioAcceso:
+        usuarioAcceso.present ? usuarioAcceso.value : this.usuarioAcceso,
+    correo: correo.present ? correo.value : this.correo,
+    secretoCifrado:
+        secretoCifrado.present ? secretoCifrado.value : this.secretoCifrado,
+    fechaActualizacionSecreto:
+        fechaActualizacionSecreto.present
+            ? fechaActualizacionSecreto.value
+            : this.fechaActualizacionSecreto,
+    url: url.present ? url.value : this.url,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  BovedaCredencialData copyWithCompanion(BovedaCredencialCompanion data) {
+    return BovedaCredencialData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      usuarioAcceso:
+          data.usuarioAcceso.present
+              ? data.usuarioAcceso.value
+              : this.usuarioAcceso,
+      correo: data.correo.present ? data.correo.value : this.correo,
+      secretoCifrado:
+          data.secretoCifrado.present
+              ? data.secretoCifrado.value
+              : this.secretoCifrado,
+      fechaActualizacionSecreto:
+          data.fechaActualizacionSecreto.present
+              ? data.fechaActualizacionSecreto.value
+              : this.fechaActualizacionSecreto,
+      url: data.url.present ? data.url.value : this.url,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BovedaCredencialData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nombre: $nombre, ')
+          ..write('tipo: $tipo, ')
+          ..write('usuarioAcceso: $usuarioAcceso, ')
+          ..write('correo: $correo, ')
+          ..write('secretoCifrado: $secretoCifrado, ')
+          ..write('fechaActualizacionSecreto: $fechaActualizacionSecreto, ')
+          ..write('url: $url, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    nombre,
+    tipo,
+    usuarioAcceso,
+    correo,
+    secretoCifrado,
+    fechaActualizacionSecreto,
+    url,
+    observaciones,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BovedaCredencialData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.nombre == this.nombre &&
+          other.tipo == this.tipo &&
+          other.usuarioAcceso == this.usuarioAcceso &&
+          other.correo == this.correo &&
+          other.secretoCifrado == this.secretoCifrado &&
+          other.fechaActualizacionSecreto == this.fechaActualizacionSecreto &&
+          other.url == this.url &&
+          other.observaciones == this.observaciones);
+}
+
+class BovedaCredencialCompanion extends UpdateCompanion<BovedaCredencialData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> nombre;
+  final Value<String> tipo;
+  final Value<String?> usuarioAcceso;
+  final Value<String?> correo;
+  final Value<String?> secretoCifrado;
+  final Value<DateTime?> fechaActualizacionSecreto;
+  final Value<String?> url;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const BovedaCredencialCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.usuarioAcceso = const Value.absent(),
+    this.correo = const Value.absent(),
+    this.secretoCifrado = const Value.absent(),
+    this.fechaActualizacionSecreto = const Value.absent(),
+    this.url = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BovedaCredencialCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String nombre,
+    required String tipo,
+    this.usuarioAcceso = const Value.absent(),
+    this.correo = const Value.absent(),
+    this.secretoCifrado = const Value.absent(),
+    this.fechaActualizacionSecreto = const Value.absent(),
+    this.url = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : nombre = Value(nombre),
+       tipo = Value(tipo);
+  static Insertable<BovedaCredencialData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? nombre,
+    Expression<String>? tipo,
+    Expression<String>? usuarioAcceso,
+    Expression<String>? correo,
+    Expression<String>? secretoCifrado,
+    Expression<DateTime>? fechaActualizacionSecreto,
+    Expression<String>? url,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (nombre != null) 'nombre': nombre,
+      if (tipo != null) 'tipo': tipo,
+      if (usuarioAcceso != null) 'usuario_acceso': usuarioAcceso,
+      if (correo != null) 'correo': correo,
+      if (secretoCifrado != null) 'secreto_cifrado': secretoCifrado,
+      if (fechaActualizacionSecreto != null)
+        'fecha_actualizacion_secreto': fechaActualizacionSecreto,
+      if (url != null) 'url': url,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BovedaCredencialCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? nombre,
+    Value<String>? tipo,
+    Value<String?>? usuarioAcceso,
+    Value<String?>? correo,
+    Value<String?>? secretoCifrado,
+    Value<DateTime?>? fechaActualizacionSecreto,
+    Value<String?>? url,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return BovedaCredencialCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      nombre: nombre ?? this.nombre,
+      tipo: tipo ?? this.tipo,
+      usuarioAcceso: usuarioAcceso ?? this.usuarioAcceso,
+      correo: correo ?? this.correo,
+      secretoCifrado: secretoCifrado ?? this.secretoCifrado,
+      fechaActualizacionSecreto:
+          fechaActualizacionSecreto ?? this.fechaActualizacionSecreto,
+      url: url ?? this.url,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (usuarioAcceso.present) {
+      map['usuario_acceso'] = Variable<String>(usuarioAcceso.value);
+    }
+    if (correo.present) {
+      map['correo'] = Variable<String>(correo.value);
+    }
+    if (secretoCifrado.present) {
+      map['secreto_cifrado'] = Variable<String>(secretoCifrado.value);
+    }
+    if (fechaActualizacionSecreto.present) {
+      map['fecha_actualizacion_secreto'] = Variable<DateTime>(
+        fechaActualizacionSecreto.value,
+      );
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BovedaCredencialCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('nombre: $nombre, ')
+          ..write('tipo: $tipo, ')
+          ..write('usuarioAcceso: $usuarioAcceso, ')
+          ..write('correo: $correo, ')
+          ..write('secretoCifrado: $secretoCifrado, ')
+          ..write('fechaActualizacionSecreto: $fechaActualizacionSecreto, ')
+          ..write('url: $url, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BovedaCredencialEventoTable extends BovedaCredencialEvento
+    with TableInfo<$BovedaCredencialEventoTable, BovedaCredencialEventoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BovedaCredencialEventoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _credencialIdMeta = const VerificationMeta(
+    'credencialId',
+  );
+  @override
+  late final GeneratedColumn<String> credencialId = GeneratedColumn<String>(
+    'credencial_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES boveda_credencial (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _actorUsuarioIdMeta = const VerificationMeta(
+    'actorUsuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUsuarioId = GeneratedColumn<String>(
+    'actor_usuario_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _fechaHoraMeta = const VerificationMeta(
+    'fechaHora',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaHora = GeneratedColumn<DateTime>(
+    'fecha_hora',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
+    'tipoEvento',
+  );
+  @override
+  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
+    'tipo_evento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    credencialId,
+    actorUsuarioId,
+    fechaHora,
+    tipoEvento,
+    observacion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'boveda_credencial_evento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BovedaCredencialEventoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('credencial_id')) {
+      context.handle(
+        _credencialIdMeta,
+        credencialId.isAcceptableOrUnknown(
+          data['credencial_id']!,
+          _credencialIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_credencialIdMeta);
+    }
+    if (data.containsKey('actor_usuario_id')) {
+      context.handle(
+        _actorUsuarioIdMeta,
+        actorUsuarioId.isAcceptableOrUnknown(
+          data['actor_usuario_id']!,
+          _actorUsuarioIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_hora')) {
+      context.handle(
+        _fechaHoraMeta,
+        fechaHora.isAcceptableOrUnknown(data['fecha_hora']!, _fechaHoraMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaHoraMeta);
+    }
+    if (data.containsKey('tipo_evento')) {
+      context.handle(
+        _tipoEventoMeta,
+        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoEventoMeta);
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BovedaCredencialEventoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BovedaCredencialEventoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      credencialId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}credencial_id'],
+          )!,
+      actorUsuarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_usuario_id'],
+      ),
+      fechaHora:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_hora'],
+          )!,
+      tipoEvento:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo_evento'],
+          )!,
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+    );
+  }
+
+  @override
+  $BovedaCredencialEventoTable createAlias(String alias) {
+    return $BovedaCredencialEventoTable(attachedDatabase, alias);
+  }
+}
+
+class BovedaCredencialEventoData extends DataClass
+    implements Insertable<BovedaCredencialEventoData> {
+  final int id;
+  final String credencialId;
+  final String? actorUsuarioId;
+  final DateTime fechaHora;
+
+  /// creada|editada|secretoCambiado|secretoRevelado|secretoCopiado|dadaDeBaja|reactivada
+  final String tipoEvento;
+  final String? observacion;
+  const BovedaCredencialEventoData({
+    required this.id,
+    required this.credencialId,
+    this.actorUsuarioId,
+    required this.fechaHora,
+    required this.tipoEvento,
+    this.observacion,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['credencial_id'] = Variable<String>(credencialId);
+    if (!nullToAbsent || actorUsuarioId != null) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId);
+    }
+    map['fecha_hora'] = Variable<DateTime>(fechaHora);
+    map['tipo_evento'] = Variable<String>(tipoEvento);
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    return map;
+  }
+
+  BovedaCredencialEventoCompanion toCompanion(bool nullToAbsent) {
+    return BovedaCredencialEventoCompanion(
+      id: Value(id),
+      credencialId: Value(credencialId),
+      actorUsuarioId:
+          actorUsuarioId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(actorUsuarioId),
+      fechaHora: Value(fechaHora),
+      tipoEvento: Value(tipoEvento),
+      observacion:
+          observacion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observacion),
+    );
+  }
+
+  factory BovedaCredencialEventoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BovedaCredencialEventoData(
+      id: serializer.fromJson<int>(json['id']),
+      credencialId: serializer.fromJson<String>(json['credencialId']),
+      actorUsuarioId: serializer.fromJson<String?>(json['actorUsuarioId']),
+      fechaHora: serializer.fromJson<DateTime>(json['fechaHora']),
+      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'credencialId': serializer.toJson<String>(credencialId),
+      'actorUsuarioId': serializer.toJson<String?>(actorUsuarioId),
+      'fechaHora': serializer.toJson<DateTime>(fechaHora),
+      'tipoEvento': serializer.toJson<String>(tipoEvento),
+      'observacion': serializer.toJson<String?>(observacion),
+    };
+  }
+
+  BovedaCredencialEventoData copyWith({
+    int? id,
+    String? credencialId,
+    Value<String?> actorUsuarioId = const Value.absent(),
+    DateTime? fechaHora,
+    String? tipoEvento,
+    Value<String?> observacion = const Value.absent(),
+  }) => BovedaCredencialEventoData(
+    id: id ?? this.id,
+    credencialId: credencialId ?? this.credencialId,
+    actorUsuarioId:
+        actorUsuarioId.present ? actorUsuarioId.value : this.actorUsuarioId,
+    fechaHora: fechaHora ?? this.fechaHora,
+    tipoEvento: tipoEvento ?? this.tipoEvento,
+    observacion: observacion.present ? observacion.value : this.observacion,
+  );
+  BovedaCredencialEventoData copyWithCompanion(
+    BovedaCredencialEventoCompanion data,
+  ) {
+    return BovedaCredencialEventoData(
+      id: data.id.present ? data.id.value : this.id,
+      credencialId:
+          data.credencialId.present
+              ? data.credencialId.value
+              : this.credencialId,
+      actorUsuarioId:
+          data.actorUsuarioId.present
+              ? data.actorUsuarioId.value
+              : this.actorUsuarioId,
+      fechaHora: data.fechaHora.present ? data.fechaHora.value : this.fechaHora,
+      tipoEvento:
+          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      observacion:
+          data.observacion.present ? data.observacion.value : this.observacion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BovedaCredencialEventoData(')
+          ..write('id: $id, ')
+          ..write('credencialId: $credencialId, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('observacion: $observacion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    credencialId,
+    actorUsuarioId,
+    fechaHora,
+    tipoEvento,
+    observacion,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BovedaCredencialEventoData &&
+          other.id == this.id &&
+          other.credencialId == this.credencialId &&
+          other.actorUsuarioId == this.actorUsuarioId &&
+          other.fechaHora == this.fechaHora &&
+          other.tipoEvento == this.tipoEvento &&
+          other.observacion == this.observacion);
+}
+
+class BovedaCredencialEventoCompanion
+    extends UpdateCompanion<BovedaCredencialEventoData> {
+  final Value<int> id;
+  final Value<String> credencialId;
+  final Value<String?> actorUsuarioId;
+  final Value<DateTime> fechaHora;
+  final Value<String> tipoEvento;
+  final Value<String?> observacion;
+  const BovedaCredencialEventoCompanion({
+    this.id = const Value.absent(),
+    this.credencialId = const Value.absent(),
+    this.actorUsuarioId = const Value.absent(),
+    this.fechaHora = const Value.absent(),
+    this.tipoEvento = const Value.absent(),
+    this.observacion = const Value.absent(),
+  });
+  BovedaCredencialEventoCompanion.insert({
+    this.id = const Value.absent(),
+    required String credencialId,
+    this.actorUsuarioId = const Value.absent(),
+    required DateTime fechaHora,
+    required String tipoEvento,
+    this.observacion = const Value.absent(),
+  }) : credencialId = Value(credencialId),
+       fechaHora = Value(fechaHora),
+       tipoEvento = Value(tipoEvento);
+  static Insertable<BovedaCredencialEventoData> custom({
+    Expression<int>? id,
+    Expression<String>? credencialId,
+    Expression<String>? actorUsuarioId,
+    Expression<DateTime>? fechaHora,
+    Expression<String>? tipoEvento,
+    Expression<String>? observacion,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (credencialId != null) 'credencial_id': credencialId,
+      if (actorUsuarioId != null) 'actor_usuario_id': actorUsuarioId,
+      if (fechaHora != null) 'fecha_hora': fechaHora,
+      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (observacion != null) 'observacion': observacion,
+    });
+  }
+
+  BovedaCredencialEventoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? credencialId,
+    Value<String?>? actorUsuarioId,
+    Value<DateTime>? fechaHora,
+    Value<String>? tipoEvento,
+    Value<String?>? observacion,
+  }) {
+    return BovedaCredencialEventoCompanion(
+      id: id ?? this.id,
+      credencialId: credencialId ?? this.credencialId,
+      actorUsuarioId: actorUsuarioId ?? this.actorUsuarioId,
+      fechaHora: fechaHora ?? this.fechaHora,
+      tipoEvento: tipoEvento ?? this.tipoEvento,
+      observacion: observacion ?? this.observacion,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (credencialId.present) {
+      map['credencial_id'] = Variable<String>(credencialId.value);
+    }
+    if (actorUsuarioId.present) {
+      map['actor_usuario_id'] = Variable<String>(actorUsuarioId.value);
+    }
+    if (fechaHora.present) {
+      map['fecha_hora'] = Variable<DateTime>(fechaHora.value);
+    }
+    if (tipoEvento.present) {
+      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BovedaCredencialEventoCompanion(')
+          ..write('id: $id, ')
+          ..write('credencialId: $credencialId, ')
+          ..write('actorUsuarioId: $actorUsuarioId, ')
+          ..write('fechaHora: $fechaHora, ')
+          ..write('tipoEvento: $tipoEvento, ')
+          ..write('observacion: $observacion')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -67953,6 +69151,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PermisoUsuarioTable permisoUsuario = $PermisoUsuarioTable(this);
   late final $EliminacionFisicaEventoTable eliminacionFisicaEvento =
       $EliminacionFisicaEventoTable(this);
+  late final $BovedaCredencialTable bovedaCredencial = $BovedaCredencialTable(
+    this,
+  );
+  late final $BovedaCredencialEventoTable bovedaCredencialEvento =
+      $BovedaCredencialEventoTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -68106,6 +69309,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     usuarioEvento,
     permisoUsuario,
     eliminacionFisicaEvento,
+    bovedaCredencial,
+    bovedaCredencialEvento,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -68751,6 +69956,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ),
       result: [
         TableUpdate('eliminacion_fisica_evento', kind: UpdateKind.update),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('boveda_credencial_evento', kind: UpdateKind.update),
       ],
     ),
   ]);
@@ -92492,6 +93706,34 @@ final class $$UsuarioTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $BovedaCredencialEventoTable,
+    List<BovedaCredencialEventoData>
+  >
+  _bovedaCredencialEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.bovedaCredencialEvento,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.bovedaCredencialEvento.actorUsuarioId,
+        ),
+      );
+
+  $$BovedaCredencialEventoTableProcessedTableManager
+  get bovedaCredencialEventoRefs {
+    final manager = $$BovedaCredencialEventoTableTableManager(
+      $_db,
+      $_db.bovedaCredencialEvento,
+    ).filter((f) => f.actorUsuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bovedaCredencialEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$UsuarioTableFilterComposer
@@ -93123,6 +94365,32 @@ class $$UsuarioTableFilterComposer
               }) => $$EliminacionFisicaEventoTableFilterComposer(
                 $db: $db,
                 $table: $db.eliminacionFisicaEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> bovedaCredencialEventoRefs(
+    Expression<bool> Function($$BovedaCredencialEventoTableFilterComposer f) f,
+  ) {
+    final $$BovedaCredencialEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.bovedaCredencialEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BovedaCredencialEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.bovedaCredencialEvento,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -93843,6 +95111,32 @@ class $$UsuarioTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> bovedaCredencialEventoRefs<T extends Object>(
+    Expression<T> Function($$BovedaCredencialEventoTableAnnotationComposer a) f,
+  ) {
+    final $$BovedaCredencialEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.bovedaCredencialEvento,
+          getReferencedColumn: (t) => t.actorUsuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BovedaCredencialEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.bovedaCredencialEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$UsuarioTableTableManager
@@ -93882,6 +95176,7 @@ class $$UsuarioTableTableManager
             bool compraEventoRefs,
             bool permisoUsuarioRefs,
             bool eliminacionFisicaEventoRefs,
+            bool bovedaCredencialEventoRefs,
           })
         > {
   $$UsuarioTableTableManager(_$AppDatabase db, $UsuarioTable table)
@@ -93981,6 +95276,7 @@ class $$UsuarioTableTableManager
             compraEventoRefs = false,
             permisoUsuarioRefs = false,
             eliminacionFisicaEventoRefs = false,
+            bovedaCredencialEventoRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -94007,6 +95303,7 @@ class $$UsuarioTableTableManager
                 if (compraEventoRefs) db.compraEvento,
                 if (permisoUsuarioRefs) db.permisoUsuario,
                 if (eliminacionFisicaEventoRefs) db.eliminacionFisicaEvento,
+                if (bovedaCredencialEventoRefs) db.bovedaCredencialEvento,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -94524,6 +95821,28 @@ class $$UsuarioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (bovedaCredencialEventoRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      BovedaCredencialEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._bovedaCredencialEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bovedaCredencialEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.actorUsuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -94568,6 +95887,7 @@ typedef $$UsuarioTableProcessedTableManager =
         bool compraEventoRefs,
         bool permisoUsuarioRefs,
         bool eliminacionFisicaEventoRefs,
+        bool bovedaCredencialEventoRefs,
       })
     >;
 typedef $$DocumentoPorEmitirEventoTableCreateCompanionBuilder =
@@ -139003,6 +140323,947 @@ typedef $$EliminacionFisicaEventoTableProcessedTableManager =
       EliminacionFisicaEventoData,
       PrefetchHooks Function({bool actorUsuarioId})
     >;
+typedef $$BovedaCredencialTableCreateCompanionBuilder =
+    BovedaCredencialCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String nombre,
+      required String tipo,
+      Value<String?> usuarioAcceso,
+      Value<String?> correo,
+      Value<String?> secretoCifrado,
+      Value<DateTime?> fechaActualizacionSecreto,
+      Value<String?> url,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$BovedaCredencialTableUpdateCompanionBuilder =
+    BovedaCredencialCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> nombre,
+      Value<String> tipo,
+      Value<String?> usuarioAcceso,
+      Value<String?> correo,
+      Value<String?> secretoCifrado,
+      Value<DateTime?> fechaActualizacionSecreto,
+      Value<String?> url,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$BovedaCredencialTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $BovedaCredencialTable,
+          BovedaCredencialData
+        > {
+  $$BovedaCredencialTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<
+    $BovedaCredencialEventoTable,
+    List<BovedaCredencialEventoData>
+  >
+  _bovedaCredencialEventoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.bovedaCredencialEvento,
+        aliasName: $_aliasNameGenerator(
+          db.bovedaCredencial.id,
+          db.bovedaCredencialEvento.credencialId,
+        ),
+      );
+
+  $$BovedaCredencialEventoTableProcessedTableManager
+  get bovedaCredencialEventoRefs {
+    final manager = $$BovedaCredencialEventoTableTableManager(
+      $_db,
+      $_db.bovedaCredencialEvento,
+    ).filter((f) => f.credencialId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bovedaCredencialEventoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BovedaCredencialTableFilterComposer
+    extends Composer<_$AppDatabase, $BovedaCredencialTable> {
+  $$BovedaCredencialTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get usuarioAcceso => $composableBuilder(
+    column: $table.usuarioAcceso,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get correo => $composableBuilder(
+    column: $table.correo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get secretoCifrado => $composableBuilder(
+    column: $table.secretoCifrado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaActualizacionSecreto => $composableBuilder(
+    column: $table.fechaActualizacionSecreto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> bovedaCredencialEventoRefs(
+    Expression<bool> Function($$BovedaCredencialEventoTableFilterComposer f) f,
+  ) {
+    final $$BovedaCredencialEventoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.bovedaCredencialEvento,
+          getReferencedColumn: (t) => t.credencialId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BovedaCredencialEventoTableFilterComposer(
+                $db: $db,
+                $table: $db.bovedaCredencialEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$BovedaCredencialTableOrderingComposer
+    extends Composer<_$AppDatabase, $BovedaCredencialTable> {
+  $$BovedaCredencialTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get usuarioAcceso => $composableBuilder(
+    column: $table.usuarioAcceso,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get correo => $composableBuilder(
+    column: $table.correo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get secretoCifrado => $composableBuilder(
+    column: $table.secretoCifrado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaActualizacionSecreto => $composableBuilder(
+    column: $table.fechaActualizacionSecreto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BovedaCredencialTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BovedaCredencialTable> {
+  $$BovedaCredencialTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get usuarioAcceso => $composableBuilder(
+    column: $table.usuarioAcceso,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get correo =>
+      $composableBuilder(column: $table.correo, builder: (column) => column);
+
+  GeneratedColumn<String> get secretoCifrado => $composableBuilder(
+    column: $table.secretoCifrado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fechaActualizacionSecreto => $composableBuilder(
+    column: $table.fechaActualizacionSecreto,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  Expression<T> bovedaCredencialEventoRefs<T extends Object>(
+    Expression<T> Function($$BovedaCredencialEventoTableAnnotationComposer a) f,
+  ) {
+    final $$BovedaCredencialEventoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.bovedaCredencialEvento,
+          getReferencedColumn: (t) => t.credencialId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BovedaCredencialEventoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.bovedaCredencialEvento,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$BovedaCredencialTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BovedaCredencialTable,
+          BovedaCredencialData,
+          $$BovedaCredencialTableFilterComposer,
+          $$BovedaCredencialTableOrderingComposer,
+          $$BovedaCredencialTableAnnotationComposer,
+          $$BovedaCredencialTableCreateCompanionBuilder,
+          $$BovedaCredencialTableUpdateCompanionBuilder,
+          (BovedaCredencialData, $$BovedaCredencialTableReferences),
+          BovedaCredencialData,
+          PrefetchHooks Function({bool bovedaCredencialEventoRefs})
+        > {
+  $$BovedaCredencialTableTableManager(
+    _$AppDatabase db,
+    $BovedaCredencialTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () =>
+                  $$BovedaCredencialTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$BovedaCredencialTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$BovedaCredencialTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String?> usuarioAcceso = const Value.absent(),
+                Value<String?> correo = const Value.absent(),
+                Value<String?> secretoCifrado = const Value.absent(),
+                Value<DateTime?> fechaActualizacionSecreto =
+                    const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BovedaCredencialCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nombre: nombre,
+                tipo: tipo,
+                usuarioAcceso: usuarioAcceso,
+                correo: correo,
+                secretoCifrado: secretoCifrado,
+                fechaActualizacionSecreto: fechaActualizacionSecreto,
+                url: url,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String nombre,
+                required String tipo,
+                Value<String?> usuarioAcceso = const Value.absent(),
+                Value<String?> correo = const Value.absent(),
+                Value<String?> secretoCifrado = const Value.absent(),
+                Value<DateTime?> fechaActualizacionSecreto =
+                    const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BovedaCredencialCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                nombre: nombre,
+                tipo: tipo,
+                usuarioAcceso: usuarioAcceso,
+                correo: correo,
+                secretoCifrado: secretoCifrado,
+                fechaActualizacionSecreto: fechaActualizacionSecreto,
+                url: url,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$BovedaCredencialTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({bovedaCredencialEventoRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (bovedaCredencialEventoRefs) db.bovedaCredencialEvento,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (bovedaCredencialEventoRefs)
+                    await $_getPrefetchedData<
+                      BovedaCredencialData,
+                      $BovedaCredencialTable,
+                      BovedaCredencialEventoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$BovedaCredencialTableReferences
+                          ._bovedaCredencialEventoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$BovedaCredencialTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bovedaCredencialEventoRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.credencialId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BovedaCredencialTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BovedaCredencialTable,
+      BovedaCredencialData,
+      $$BovedaCredencialTableFilterComposer,
+      $$BovedaCredencialTableOrderingComposer,
+      $$BovedaCredencialTableAnnotationComposer,
+      $$BovedaCredencialTableCreateCompanionBuilder,
+      $$BovedaCredencialTableUpdateCompanionBuilder,
+      (BovedaCredencialData, $$BovedaCredencialTableReferences),
+      BovedaCredencialData,
+      PrefetchHooks Function({bool bovedaCredencialEventoRefs})
+    >;
+typedef $$BovedaCredencialEventoTableCreateCompanionBuilder =
+    BovedaCredencialEventoCompanion Function({
+      Value<int> id,
+      required String credencialId,
+      Value<String?> actorUsuarioId,
+      required DateTime fechaHora,
+      required String tipoEvento,
+      Value<String?> observacion,
+    });
+typedef $$BovedaCredencialEventoTableUpdateCompanionBuilder =
+    BovedaCredencialEventoCompanion Function({
+      Value<int> id,
+      Value<String> credencialId,
+      Value<String?> actorUsuarioId,
+      Value<DateTime> fechaHora,
+      Value<String> tipoEvento,
+      Value<String?> observacion,
+    });
+
+final class $$BovedaCredencialEventoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $BovedaCredencialEventoTable,
+          BovedaCredencialEventoData
+        > {
+  $$BovedaCredencialEventoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BovedaCredencialTable _credencialIdTable(_$AppDatabase db) =>
+      db.bovedaCredencial.createAlias(
+        $_aliasNameGenerator(
+          db.bovedaCredencialEvento.credencialId,
+          db.bovedaCredencial.id,
+        ),
+      );
+
+  $$BovedaCredencialTableProcessedTableManager get credencialId {
+    final $_column = $_itemColumn<String>('credencial_id')!;
+
+    final manager = $$BovedaCredencialTableTableManager(
+      $_db,
+      $_db.bovedaCredencial,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_credencialIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsuarioTable _actorUsuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(
+          db.bovedaCredencialEvento.actorUsuarioId,
+          db.usuario.id,
+        ),
+      );
+
+  $$UsuarioTableProcessedTableManager? get actorUsuarioId {
+    final $_column = $_itemColumn<String>('actor_usuario_id');
+    if ($_column == null) return null;
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actorUsuarioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BovedaCredencialEventoTableFilterComposer
+    extends Composer<_$AppDatabase, $BovedaCredencialEventoTable> {
+  $$BovedaCredencialEventoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BovedaCredencialTableFilterComposer get credencialId {
+    final $$BovedaCredencialTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.credencialId,
+      referencedTable: $db.bovedaCredencial,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BovedaCredencialTableFilterComposer(
+            $db: $db,
+            $table: $db.bovedaCredencial,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableFilterComposer get actorUsuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BovedaCredencialEventoTableOrderingComposer
+    extends Composer<_$AppDatabase, $BovedaCredencialEventoTable> {
+  $$BovedaCredencialEventoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaHora => $composableBuilder(
+    column: $table.fechaHora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BovedaCredencialTableOrderingComposer get credencialId {
+    final $$BovedaCredencialTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.credencialId,
+      referencedTable: $db.bovedaCredencial,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BovedaCredencialTableOrderingComposer(
+            $db: $db,
+            $table: $db.bovedaCredencial,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableOrderingComposer get actorUsuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BovedaCredencialEventoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BovedaCredencialEventoTable> {
+  $$BovedaCredencialEventoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaHora =>
+      $composableBuilder(column: $table.fechaHora, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoEvento => $composableBuilder(
+    column: $table.tipoEvento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  $$BovedaCredencialTableAnnotationComposer get credencialId {
+    final $$BovedaCredencialTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.credencialId,
+      referencedTable: $db.bovedaCredencial,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BovedaCredencialTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bovedaCredencial,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsuarioTableAnnotationComposer get actorUsuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actorUsuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BovedaCredencialEventoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BovedaCredencialEventoTable,
+          BovedaCredencialEventoData,
+          $$BovedaCredencialEventoTableFilterComposer,
+          $$BovedaCredencialEventoTableOrderingComposer,
+          $$BovedaCredencialEventoTableAnnotationComposer,
+          $$BovedaCredencialEventoTableCreateCompanionBuilder,
+          $$BovedaCredencialEventoTableUpdateCompanionBuilder,
+          (BovedaCredencialEventoData, $$BovedaCredencialEventoTableReferences),
+          BovedaCredencialEventoData,
+          PrefetchHooks Function({bool credencialId, bool actorUsuarioId})
+        > {
+  $$BovedaCredencialEventoTableTableManager(
+    _$AppDatabase db,
+    $BovedaCredencialEventoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$BovedaCredencialEventoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$BovedaCredencialEventoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$BovedaCredencialEventoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> credencialId = const Value.absent(),
+                Value<String?> actorUsuarioId = const Value.absent(),
+                Value<DateTime> fechaHora = const Value.absent(),
+                Value<String> tipoEvento = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+              }) => BovedaCredencialEventoCompanion(
+                id: id,
+                credencialId: credencialId,
+                actorUsuarioId: actorUsuarioId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                observacion: observacion,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String credencialId,
+                Value<String?> actorUsuarioId = const Value.absent(),
+                required DateTime fechaHora,
+                required String tipoEvento,
+                Value<String?> observacion = const Value.absent(),
+              }) => BovedaCredencialEventoCompanion.insert(
+                id: id,
+                credencialId: credencialId,
+                actorUsuarioId: actorUsuarioId,
+                fechaHora: fechaHora,
+                tipoEvento: tipoEvento,
+                observacion: observacion,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$BovedaCredencialEventoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            credencialId = false,
+            actorUsuarioId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (credencialId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.credencialId,
+                            referencedTable:
+                                $$BovedaCredencialEventoTableReferences
+                                    ._credencialIdTable(db),
+                            referencedColumn:
+                                $$BovedaCredencialEventoTableReferences
+                                    ._credencialIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (actorUsuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.actorUsuarioId,
+                            referencedTable:
+                                $$BovedaCredencialEventoTableReferences
+                                    ._actorUsuarioIdTable(db),
+                            referencedColumn:
+                                $$BovedaCredencialEventoTableReferences
+                                    ._actorUsuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BovedaCredencialEventoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BovedaCredencialEventoTable,
+      BovedaCredencialEventoData,
+      $$BovedaCredencialEventoTableFilterComposer,
+      $$BovedaCredencialEventoTableOrderingComposer,
+      $$BovedaCredencialEventoTableAnnotationComposer,
+      $$BovedaCredencialEventoTableCreateCompanionBuilder,
+      $$BovedaCredencialEventoTableUpdateCompanionBuilder,
+      (BovedaCredencialEventoData, $$BovedaCredencialEventoTableReferences),
+      BovedaCredencialEventoData,
+      PrefetchHooks Function({bool credencialId, bool actorUsuarioId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -139303,5 +141564,12 @@ class $AppDatabaseManager {
       $$EliminacionFisicaEventoTableTableManager(
         _db,
         _db.eliminacionFisicaEvento,
+      );
+  $$BovedaCredencialTableTableManager get bovedaCredencial =>
+      $$BovedaCredencialTableTableManager(_db, _db.bovedaCredencial);
+  $$BovedaCredencialEventoTableTableManager get bovedaCredencialEvento =>
+      $$BovedaCredencialEventoTableTableManager(
+        _db,
+        _db.bovedaCredencialEvento,
       );
 }

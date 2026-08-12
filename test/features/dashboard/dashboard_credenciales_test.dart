@@ -1,8 +1,10 @@
-// Etapa 13 (Dashboard) — misma regla dura que Reportes (Etapa 12D):
-// ningún archivo bajo lib/features/dashboard/ puede importar
-// EquipoTelefonicoRepository, RevelarCredencialEquipoTelefonicoUseCase
-// ni CredentialCipher — estructural, no basado en permiso, porque
-// `hasCode` de Maestro siempre regresa true.
+// Etapa 13 (Dashboard) — misma regla dura que Reportes (Etapa 12D) y
+// Bóveda de Accesos (Etapa 14D): ningún archivo bajo
+// lib/features/dashboard/ puede importar EquipoTelefonicoRepository,
+// RevelarCredencialEquipoTelefonicoUseCase, BovedaCredencialRepository,
+// RevelarSecretoCredencialBovedaUseCase ni CredentialCipher —
+// estructural, no basado en permiso, porque `hasCode` de Maestro
+// siempre regresa true.
 
 import 'dart:io';
 
@@ -12,6 +14,8 @@ import 'package:path/path.dart' as p;
 const _importsProhibidos = [
   'equipo_telefonico_repository.dart',
   'RevelarCredencialEquipoTelefonicoUseCase',
+  'boveda_credencial_repository.dart',
+  'RevelarSecretoCredencialBovedaUseCase',
   'CredentialCipher',
 ];
 

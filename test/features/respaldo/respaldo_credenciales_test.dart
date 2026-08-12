@@ -1,11 +1,14 @@
 // Etapa 14C (Respaldo y restauración) — misma regla dura que
-// Reportes (12D), Dashboard (13), Búsqueda global (14A) y
-// Notificaciones (14B): ningún archivo bajo lib/features/respaldo/
-// puede importar EquipoTelefonicoRepository,
-// RevelarCredencialEquipoTelefonicoUseCase ni CredentialCipher. La
-// clave de cifrado vive en el Almacén de Credenciales de Windows y
-// nunca se exporta — este test confirma que el módulo ni siquiera
-// referencia esa infraestructura.
+// Reportes (12D), Dashboard (13), Búsqueda global (14A),
+// Notificaciones (14B) y Bóveda de Accesos (14D): ningún archivo bajo
+// lib/features/respaldo/ puede importar EquipoTelefonicoRepository,
+// RevelarCredencialEquipoTelefonicoUseCase, BovedaCredencialRepository,
+// RevelarSecretoCredencialBovedaUseCase ni CredentialCipher. La clave
+// de cifrado vive en el Almacén de Credenciales de Windows y nunca se
+// exporta — el respaldo copia el `.sqlite` completo tal cual (incluye
+// las tablas cifradas de ambos módulos), sin necesitar descifrar nada
+// — este test confirma que el módulo ni siquiera referencia esa
+// infraestructura.
 
 import 'dart:io';
 
@@ -15,6 +18,8 @@ import 'package:path/path.dart' as p;
 const _importsProhibidos = [
   'equipo_telefonico_repository.dart',
   'RevelarCredencialEquipoTelefonicoUseCase',
+  'boveda_credencial_repository.dart',
+  'RevelarSecretoCredencialBovedaUseCase',
   'CredentialCipher',
 ];
 
