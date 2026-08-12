@@ -1,4 +1,5 @@
 import 'package:riseg_one/core/auth/password_hasher.dart';
+import 'package:riseg_one/core/auth/sesion_recordada_almacen.dart';
 import 'package:riseg_one/core/permissions/modulos_permiso.dart';
 
 import '../repositories/permiso_usuario_repository.dart';
@@ -28,13 +29,24 @@ class LoginErrorInesperado extends LoginResultado {
 }
 
 class LoginUseCase {
-  LoginUseCase(this._usuarioRepository, this._permisoUsuarioRepository, this._passwordHasher);
+  LoginUseCase(this._usuarioRepository, this._permisoUsuarioRepository, this._passwordHasher, [AlmacenSesionRecordada? almacenSesion])
+      : _almacenSesion = almacenSesion ?? const AlmacenSesionRecordadaWindows();
 
   final UsuarioRepository _usuarioRepository;
   final PermisoUsuarioRepository _permisoUsuarioRepository;
   final PasswordHasher _passwordHasher;
+  final AlmacenSesionRecordada _almacenSesion;
 
-  Future<LoginResultado> ejecutar({required String nombreUsuario, required String password}) async {
+  /// [recordarme] (Etapa 15) — si es `true` y el login es exitoso, se
+  /// genera un token aleatorio nuevo (nunca la contraseña ni un
+  /// derivado de ella), se guarda su hash en `SesionPersistente` y el
+  /// token en texto plano solo en el Almacén de Credenciales de Windows
+  /// — ver `AlmacenSesionRecordada`.
+  Future<LoginResultado> ejecutar({
+    required String nombreUsuario,
+    required String password,
+    bool recordarme = false,
+  }) async {
     try {
       final usuario = await _usuarioRepository.obtenerPorNombreUsuario(nombreUsuario.trim());
       if (usuario == null) return LoginCredencialesInvalidas();
@@ -48,6 +60,12 @@ class LoginUseCase {
       final permisos = actualizado.esMaestro
           ? todosLosCodigosDePermiso()
           : await _permisoUsuarioRepository.obtenerCodigos(actualizado.id);
+
+      if (recordarme) {
+        final token = generarTokenSesion();
+        await _usuarioRepository.crearSesionPersistente(usuarioId: actualizado.id, tokenHash: hashTokenSesion(token));
+        await _almacenSesion.escribir(token);
+      }
 
       return LoginExitoso(
         SesionUsuario(

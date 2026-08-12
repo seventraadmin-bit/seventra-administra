@@ -70,6 +70,7 @@ import '../../features/compras/data/tables/compra_attachment_table.dart';
 import '../../features/compras/data/tables/compra_partida_table.dart';
 import '../../features/compras/data/tables/compra_table.dart';
 import '../../features/usuarios/data/tables/permiso_usuario_table.dart';
+import '../../features/usuarios/data/tables/sesion_persistente_table.dart';
 import '../../features/usuarios/data/tables/usuario_table.dart';
 import 'migrations/migrar_asignacion_attachment_v29.dart';
 import 'migrations/migrar_asignacion_linea_telefonica_v35.dart';
@@ -83,6 +84,7 @@ import 'migrations/migrar_cambiar_responsable_asignacion_v42.dart';
 import 'migrations/migrar_categoria_articulo_aplicacion_v43.dart';
 import 'migrations/migrar_articulo_unidad_evento_v44.dart';
 import 'migrations/migrar_boveda_v45.dart';
+import 'migrations/migrar_sesion_persistente_v46.dart';
 import 'migrations/migrar_linea_telefonica_v34.dart';
 import 'migrations/migrar_recarga_linea_telefonica_v36.dart';
 import 'migrations/migrar_vehiculo_v30.dart';
@@ -241,12 +243,13 @@ class AppMetadata extends Table {
   EliminacionFisicaEvento,
   BovedaCredencial,
   BovedaCredencialEvento,
+  SesionPersistente,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 45;
+  int get schemaVersion => 46;
 
   @override
   MigrationStrategy get migration {
@@ -837,6 +840,11 @@ class AppDatabase extends _$AppDatabase {
         // tablas enteramente nuevas — Bóveda de Accesos del Maestro.
         if (to >= 45 && from <= 44) {
           await migrarBovedaV45(this, m);
+        }
+        // Aditiva (Etapa 15): `SesionPersistente`, tabla enteramente
+        // nueva — "Recuérdame en este equipo".
+        if (to >= 46 && from <= 45) {
+          await migrarSesionPersistenteV46(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

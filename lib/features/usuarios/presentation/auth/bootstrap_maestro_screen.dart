@@ -7,12 +7,18 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 
 import '../../domain/usecases/crear_primer_maestro_usecase.dart';
 import '../../usuarios_providers.dart';
+import 'widgets/auth_identity_panel.dart';
 
-/// Alta del primer Usuario Maestro (Etapa 11A) — solo alcanzable
-/// mientras la base de datos no tiene ningún Usuario (ver el `redirect`
-/// de `createAppRouter`); una vez creado, esta ruta queda bloqueada
-/// permanentemente. Sin contraseña hardcodeada: la persona frente al
-/// teclado la define aquí mismo.
+const _anchoDosZonas = 900.0;
+
+/// Alta del primer Usuario Maestro (Etapa 11A, rediseño Etapa 15) —
+/// solo alcanzable mientras la base de datos no tiene ningún Usuario
+/// (ver el `redirect` de `createAppRouter`); una vez creado, esta ruta
+/// queda bloqueada permanentemente. Sin contraseña hardcodeada: la
+/// persona frente al teclado la define aquí mismo. Comparte la
+/// identidad visual del Login (`AuthIdentityPanel`) pero **nunca**
+/// lleva "Recuérdame en este equipo" — es alta, no inicio de sesión;
+/// las dos pantallas siguen siendo flujos separados.
 class BootstrapMaestroScreen extends ConsumerStatefulWidget {
   const BootstrapMaestroScreen({super.key});
 
@@ -95,71 +101,118 @@ class _BootstrapMaestroScreenState extends ConsumerState<BootstrapMaestroScreen>
     final l10n = AppLocalizations.of(context)!;
     final colors = context.colors;
 
+    final formulario = RisegCard(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+            Text(l10n.bootstrapMaestroTitulo, style: AppTypography.heading2.copyWith(color: colors.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
+            Text(l10n.bootstrapMaestroSubtitulo, style: AppTypography.body.copyWith(color: colors.textMuted)),
+            const SizedBox(height: AppSpacing.xl),
+            RisegTextField(
+              key: const Key('bootstrap_campo_nombre'),
+              label: l10n.bootstrapMaestroCampoNombre,
+              controller: _nombreCtrl,
+              prefixIcon: Icons.badge_outlined,
+              autofocus: true,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RisegTextField(
+              key: const Key('bootstrap_campo_usuario'),
+              label: l10n.loginCampoUsuario,
+              controller: _usuarioCtrl,
+              prefixIcon: Icons.person_outline,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RisegTextField(
+              key: const Key('bootstrap_campo_password'),
+              label: l10n.loginCampoContrasena,
+              controller: _passwordCtrl,
+              prefixIcon: Icons.lock_outline,
+              obscureText: true,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RisegTextField(
+              key: const Key('bootstrap_campo_confirmar_password'),
+              label: l10n.bootstrapMaestroCampoConfirmarContrasena,
+              controller: _confirmarCtrl,
+              prefixIcon: Icons.lock_outline,
+              obscureText: true,
+              onSubmitted: _creando ? null : (_) => _crear(),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text(_error!, style: AppTypography.caption.copyWith(color: colors.error)),
+            ],
+            const SizedBox(height: AppSpacing.xl),
+            RisegButton(
+              key: const Key('bootstrap_boton_crear'),
+              label: l10n.bootstrapMaestroBotonCrear,
+              loading: _creando,
+              onPressed: _creando ? null : _crear,
+            ),
+        ],
+      ),
+    );
+
     return Scaffold(
       key: const Key('bootstrap_maestro_screen'),
       backgroundColor: colors.surface,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: RisegCard(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= _anchoDosZonas) {
+              return Row(
                 children: [
-                  Text(
-                    l10n.bootstrapMaestroTitulo,
-                    textAlign: TextAlign.center,
-                    style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                  Expanded(
+                    flex: 4,
+                    child: AuthIdentityPanel(
+                      bienvenidaTitulo: l10n.bootstrapBienvenidaTitulo,
+                      bienvenidaMensaje: l10n.bootstrapBienvenidaMensaje,
+                    ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    l10n.bootstrapMaestroSubtitulo,
-                    textAlign: TextAlign.center,
-                    style: AppTypography.body.copyWith(color: colors.textMuted),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  RisegTextField(
-                    key: const Key('bootstrap_campo_nombre'),
-                    label: l10n.bootstrapMaestroCampoNombre,
-                    controller: _nombreCtrl,
-                    autofocus: true,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  RisegTextField(
-                    key: const Key('bootstrap_campo_usuario'),
-                    label: l10n.loginCampoUsuario,
-                    controller: _usuarioCtrl,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  RisegTextField(
-                    key: const Key('bootstrap_campo_password'),
-                    label: l10n.loginCampoContrasena,
-                    controller: _passwordCtrl,
-                    obscureText: true,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  RisegTextField(
-                    key: const Key('bootstrap_campo_confirmar_password'),
-                    label: l10n.bootstrapMaestroCampoConfirmarContrasena,
-                    controller: _confirmarCtrl,
-                    obscureText: true,
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Text(_error!, style: AppTypography.caption.copyWith(color: colors.error)),
-                  ],
-                  const SizedBox(height: AppSpacing.xl),
-                  RisegButton(
-                    key: const Key('bootstrap_boton_crear'),
-                    label: l10n.bootstrapMaestroBotonCrear,
-                    onPressed: _creando ? null : _crear,
+                  Expanded(
+                    flex: 5,
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(AppSpacing.xxl),
+                        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: formulario),
+                      ),
+                    ),
                   ),
                 ],
+              );
+            }
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight - AppSpacing.xl * 2),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset('assets/images/logo.png', height: 56, fit: BoxFit.contain),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      l10n.appTitle,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      l10n.appSubtitle,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.body.copyWith(color: colors.textMuted),
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    formulario,
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

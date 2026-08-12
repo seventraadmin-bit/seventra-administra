@@ -17,6 +17,7 @@ export 'theme_context.dart';
 
 export 'components/riseg_button.dart';
 export 'components/riseg_card.dart';
+export 'components/riseg_checkbox.dart';
 export 'components/riseg_dialog.dart';
 export 'components/riseg_empty_state.dart';
 export 'components/riseg_feedback.dart';

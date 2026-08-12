@@ -50,4 +50,21 @@ abstract interface class UsuarioRepository {
   Future<UsuarioData> desactivar({required String usuarioId, String? actorUsuarioId, String? motivo});
 
   Future<UsuarioData> registrarUltimoAcceso(String usuarioId);
+
+  /// "Recuérdame en este equipo" (Etapa 15) — reemplaza cualquier fila
+  /// previa de `SesionPersistente` (de cualquier Usuario): el Almacén de
+  /// Credenciales de Windows solo guarda un token a la vez, así que
+  /// nunca tiene sentido conservar más de una fila viva.
+  Future<void> crearSesionPersistente({required String usuarioId, required String tokenHash});
+
+  /// `null` si ningún hash coincide. No valida por sí mismo que el
+  /// Usuario siga activo — eso es responsabilidad de
+  /// `RestaurarSesionRecordadaUseCase`, que sí conoce la regla de
+  /// negocio completa.
+  Future<UsuarioData?> obtenerPorTokenSesionHash(String tokenHash);
+
+  /// Borra cualquier `SesionPersistente` del Usuario — logout explícito
+  /// con "salir de este equipo", o invalidación automática (ver
+  /// `cambiarContrasena`/`desactivar`).
+  Future<void> borrarSesionPersistente(String usuarioId);
 }

@@ -25,6 +25,7 @@ class RisegTextField extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.onChanged,
+    this.onSubmitted,
     this.focusNode,
     this.autofocus = false,
     super.key,
@@ -50,6 +51,12 @@ class RisegTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final ValueChanged<String>? onChanged;
+
+  /// Dispara al presionar Enter/Intro (`TextInputAction.done` es el
+  /// valor por defecto de `TextFormField` sin `keyboardType` de texto
+  /// multilínea) — pensado para "Enter en Contraseña inicia sesión" y
+  /// formularios similares de una sola línea por campo.
+  final ValueChanged<String>? onSubmitted;
   final FocusNode? focusNode;
   final bool autofocus;
 
@@ -70,6 +77,7 @@ class RisegTextField extends StatelessWidget {
           keyboardType: keyboardType,
           obscureText: obscureText,
           onChanged: onChanged,
+          onFieldSubmitted: onSubmitted,
           focusNode: focusNode,
           autofocus: autofocus,
           style: AppTypography.body.copyWith(color: colors.textPrimary),

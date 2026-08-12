@@ -3748,5 +3748,18 @@
   "tipoAccesoBovedaProveedor": "Proveedor",
   "tipoAccesoBovedaSoftware": "Software",
   "tipoAccesoBovedaPagina": "Página",
-  "tipoAccesoBovedaOtro": "Otro"
+  "tipoAccesoBovedaOtro": "Otro",
+
+  "loginErrorUsuarioRequerido": "Ingresa tu usuario.",
+  "loginErrorContrasenaRequerida": "Ingresa tu contraseña.",
+  "loginBienvenidaTitulo": "Bienvenido a RISEG ONE",
+  "loginBienvenidaMensaje": "Administración, control y operación de RISEG en un solo lugar.",
+  "loginTitulo": "Iniciar sesión",
+  "loginSubtitulo": "Ingresa tus credenciales para continuar",
+  "loginOcultarContrasena": "Ocultar contraseña",
+  "loginMostrarContrasena": "Mostrar contraseña",
+  "loginRecordarme": "Recuérdame en este equipo",
+  "loginAccesoProtegido": "Acceso protegido · RISEG ONE",
+  "bootstrapBienvenidaTitulo": "Configura tu cuenta Maestro",
+  "bootstrapBienvenidaMensaje": "Define el primer acceso administrador de RISEG ONE para comenzar a operar."
 }

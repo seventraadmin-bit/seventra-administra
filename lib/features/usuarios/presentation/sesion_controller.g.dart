@@ -6,13 +6,15 @@ part of 'sesion_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sesionControllerHash() => r'58a30dd1e634fae92234b6cbda8b2d805891ab7c';
+String _$sesionControllerHash() => r'fca9f870d071a90e29b65b3bc4cbcbf27cf13c9b';
 
 /// Sesión activa de RISEG ONE (Etapa 11A) — `null` significa "sin
 /// sesión", el estado que fuerza al `redirect` del router a mandar a
-/// `/login`. No se persiste entre reinicios a propósito (ver el plan de
-/// la Etapa 11, §5): cada arranque de la aplicación exige iniciar
-/// sesión de nuevo, nunca se guarda contraseña ni token.
+/// `/login`. No se persiste sola: si el arranque encuentra "Recuérdame
+/// en este equipo" válido (Etapa 15,
+/// `RestaurarSesionRecordadaUseCase`), `bootstrap()` fija el estado
+/// inicial *antes* de `runApp` sobreescribiendo este provider — nunca
+/// hay un estado intermedio "cargando" dentro del propio `Notifier`.
 ///
 /// `keepAlive: true` es obligatorio aquí — sin él, `@riverpod` genera
 /// un provider `autoDispose` por defecto, y la sesión se perdía (volvía

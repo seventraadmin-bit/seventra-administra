@@ -108,9 +108,9 @@ class _ProfileChip extends ConsumerWidget {
 
   final bool compact;
 
-  Future<void> _cerrarSesion(BuildContext context, WidgetRef ref) async {
+  void _cerrarSesion(BuildContext context, WidgetRef ref) {
     ref.read(sesionControllerProvider.notifier).logout();
-    if (context.mounted) context.go('/login');
+    context.go('/login');
   }
 
   @override
@@ -123,7 +123,20 @@ class _ProfileChip extends ConsumerWidget {
     return PopupMenuButton<void>(
       key: const Key('top_bar_profile'),
       tooltip: l10n.shellProfileTooltip,
-      itemBuilder: (context) => [
+      // `itemBuilder` recibe su propio `BuildContext` (el de la ruta
+      // efímera del menú emergente, que Flutter cierra apenas `onTap`
+      // retorna) — deliberadamente descartado aquí (`_`) para no
+      // sombrear el `context` estable de `_ProfileChip` mismo. Un
+      // intento anterior de esta misma etapa hizo `_cerrarSesion` async
+      // (esperando a que "Recuérdame en este equipo" terminara de
+      // limpiarse) usando ese contexto efímero — para cuando el `await`
+      // se resolvía, ya estaba desmontado y la navegación a `/login`
+      // nunca ocurría (bug real, encontrado por la suite). La limpieza
+      // de la sesión recordada ahora es best-effort en segundo plano
+      // (ver `SesionController.logout`), así que `_cerrarSesion` volvió
+      // a ser síncrono, pero se conserva el contexto estable de todas
+      // formas — es la referencia correcta aquí, sea síncrono o no.
+      itemBuilder: (_) => [
         PopupMenuItem<void>(
           key: const Key('top_bar_cerrar_sesion'),
           onTap: () => _cerrarSesion(context, ref),

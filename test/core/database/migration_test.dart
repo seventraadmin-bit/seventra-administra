@@ -27,7 +27,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 45;
+const _currentSchemaVersion = 46;
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -9307,6 +9307,60 @@ void main() {
     expect(credenciales, isEmpty, reason: 'tabla nueva, sin backfill');
     final eventos = await db.select(db.bovedaCredencialEvento).get();
     expect(eventos, isEmpty, reason: 'tabla nueva, sin backfill');
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty);
+
+    final integridad =
+        await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+    expect(integridad, ['ok']);
+
+    await db.close();
+  });
+
+  test('46.json coincide con el esquema de "Recuérdame en este equipo" (Etapa 15: tabla nueva '
+      'SesionPersistente)', () async {
+    final schema = await verifier.schemaAt(46);
+    final tablas = schema.rawDatabase
+        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map((row) => row['name'] as String)
+        .toSet();
+    expect(tablas, contains('sesion_persistente'));
+
+    final sql =
+        schema.rawDatabase
+                .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'sesion_persistente'")
+                .single['sql']
+            as String;
+    expect(sql, contains('"usuario_id" TEXT NOT NULL REFERENCES usuario (id) ON DELETE CASCADE'));
+    expect(sql, contains('"token_hash" TEXT NOT NULL UNIQUE'));
+    expect(sql, contains('"created_at" INTEGER NOT NULL'));
+
+    schema.rawDatabase.dispose();
+  });
+
+  test('migración 45 → 46 conserva datos existentes y crea SesionPersistente vacía', () async {
+    final schemaV45 = await verifier.schemaAt(45);
+    final raw = schemaV45.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO usuario (
+        id, nombre_usuario, nombre, password_hash, es_maestro, created_at, updated_at, ciclo_vida_registro
+      ) VALUES ('usuario-real', 'maestro', 'Maestro Real', 'hash', 1, 1700000000, 1700000000, 'activo');
+    ''');
+
+    final db = AppDatabase(schemaV45.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final usuarios = await db.select(db.usuario).get();
+    expect(usuarios, hasLength(1), reason: 'ningún Usuario real debe perderse en una migración puramente aditiva');
+
+    final sesiones = await db.select(db.sesionPersistente).get();
+    expect(sesiones, isEmpty, reason: 'tabla nueva, sin backfill');
 
     final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
     expect(violacionesFk, isEmpty);

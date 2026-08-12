@@ -154,7 +154,11 @@ class _RisegButtonContent extends StatelessWidget {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [leading, const SizedBox(width: AppSpacing.xs), Text(label)],
+      children: [
+        leading,
+        const SizedBox(width: AppSpacing.xs),
+        Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+      ],
     );
   }
 }

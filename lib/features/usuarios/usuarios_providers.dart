@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/auth/password_hasher.dart';
+import 'package:riseg_one/core/auth/sesion_recordada_almacen.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/core/permissions/permission_service.dart';
@@ -22,9 +23,16 @@ import 'domain/usecases/crear_usuario_usecase.dart';
 import 'domain/usecases/desactivar_usuario_usecase.dart';
 import 'domain/usecases/guardar_permisos_usuario_usecase.dart';
 import 'domain/usecases/login_usecase.dart';
+import 'domain/usecases/restaurar_sesion_recordada_usecase.dart';
 import 'presentation/sesion_controller.dart';
 
 final passwordHasherProvider = Provider<PasswordHasher>((ref) => const PasswordHasher());
+
+/// "Recuérdame en este equipo" (Etapa 15) — mismo criterio que
+/// `credentialCipherProvider` (Bóveda/Telefonía): una instancia propia
+/// en vez de compartir la de otro módulo, aunque ambas usen
+/// `flutter_secure_storage` como transporte del sistema operativo.
+final almacenSesionRecordadaProvider = Provider<AlmacenSesionRecordada>((ref) => const AlmacenSesionRecordadaWindows());
 
 final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
   return UsuarioRepositoryImpl(ref.watch(appDatabaseProvider));
@@ -90,6 +98,15 @@ final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
     ref.watch(usuarioRepositoryProvider),
     ref.watch(permisoUsuarioRepositoryProvider),
     ref.watch(passwordHasherProvider),
+    ref.watch(almacenSesionRecordadaProvider),
+  );
+});
+
+final restaurarSesionRecordadaUseCaseProvider = Provider<RestaurarSesionRecordadaUseCase>((ref) {
+  return RestaurarSesionRecordadaUseCase(
+    ref.watch(usuarioRepositoryProvider),
+    ref.watch(permisoUsuarioRepositoryProvider),
+    ref.watch(almacenSesionRecordadaProvider),
   );
 });
 

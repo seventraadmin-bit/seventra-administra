@@ -139,6 +139,12 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
         UsuarioCompanion(passwordHash: Value(passwordHash), updatedAt: Value(DateTime.now())),
       );
 
+      // Invalida "Recuérdame en este equipo" (Etapa 15) en la misma
+      // transacción — nunca un paso aparte que pueda desincronizarse:
+      // una contraseña cambiada nunca debe convivir con una sesión
+      // recordada creada con la contraseña anterior.
+      await (_db.delete(_db.sesionPersistente)..where((t) => t.usuarioId.equals(usuarioId))).go();
+
       await _registrarEventoInterno(
         usuarioId: usuarioId,
         tipoEvento: TipoEventoUsuario.contrasenaCambiada,
@@ -175,6 +181,11 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
         ),
       );
 
+      // Invalida "Recuérdame en este equipo" (Etapa 15) — un Usuario
+      // desactivado nunca debe poder recuperar sesión automáticamente,
+      // ni siquiera con un token que ya tenía guardado.
+      await (_db.delete(_db.sesionPersistente)..where((t) => t.usuarioId.equals(usuarioId))).go();
+
       await _registrarEventoInterno(
         usuarioId: usuarioId,
         tipoEvento: TipoEventoUsuario.desactivado,
@@ -194,6 +205,31 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
       );
       return (_db.select(_db.usuario)..where((t) => t.id.equals(usuarioId))).getSingle();
     });
+  }
+
+  @override
+  Future<void> crearSesionPersistente({required String usuarioId, required String tokenHash}) {
+    return _db.transaction(() async {
+      // Un solo token vivo a la vez (el Almacén de Windows solo guarda
+      // uno) — se limpia cualquier fila anterior, de cualquier Usuario,
+      // antes de insertar la nueva.
+      await _db.delete(_db.sesionPersistente).go();
+      await _db.into(_db.sesionPersistente).insert(
+            SesionPersistenteCompanion.insert(usuarioId: usuarioId, tokenHash: tokenHash, createdAt: DateTime.now()),
+          );
+    });
+  }
+
+  @override
+  Future<UsuarioData?> obtenerPorTokenSesionHash(String tokenHash) async {
+    final fila = await (_db.select(_db.sesionPersistente)..where((t) => t.tokenHash.equals(tokenHash))).getSingleOrNull();
+    if (fila == null) return null;
+    return (_db.select(_db.usuario)..where((t) => t.id.equals(fila.usuarioId))).getSingleOrNull();
+  }
+
+  @override
+  Future<void> borrarSesionPersistente(String usuarioId) {
+    return (_db.delete(_db.sesionPersistente)..where((t) => t.usuarioId.equals(usuarioId))).go();
   }
 
   Future<void> _registrarEventoInterno({

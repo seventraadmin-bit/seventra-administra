@@ -68971,6 +68971,375 @@ class BovedaCredencialEventoCompanion
   }
 }
 
+class $SesionPersistenteTable extends SesionPersistente
+    with TableInfo<$SesionPersistenteTable, SesionPersistenteData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SesionPersistenteTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _usuarioIdMeta = const VerificationMeta(
+    'usuarioId',
+  );
+  @override
+  late final GeneratedColumn<String> usuarioId = GeneratedColumn<String>(
+    'usuario_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES usuario (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _tokenHashMeta = const VerificationMeta(
+    'tokenHash',
+  );
+  @override
+  late final GeneratedColumn<String> tokenHash = GeneratedColumn<String>(
+    'token_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ultimoUsoAtMeta = const VerificationMeta(
+    'ultimoUsoAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> ultimoUsoAt = GeneratedColumn<DateTime>(
+    'ultimo_uso_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    usuarioId,
+    tokenHash,
+    createdAt,
+    ultimoUsoAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sesion_persistente';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SesionPersistenteData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('usuario_id')) {
+      context.handle(
+        _usuarioIdMeta,
+        usuarioId.isAcceptableOrUnknown(data['usuario_id']!, _usuarioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_usuarioIdMeta);
+    }
+    if (data.containsKey('token_hash')) {
+      context.handle(
+        _tokenHashMeta,
+        tokenHash.isAcceptableOrUnknown(data['token_hash']!, _tokenHashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tokenHashMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('ultimo_uso_at')) {
+      context.handle(
+        _ultimoUsoAtMeta,
+        ultimoUsoAt.isAcceptableOrUnknown(
+          data['ultimo_uso_at']!,
+          _ultimoUsoAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SesionPersistenteData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SesionPersistenteData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      usuarioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}usuario_id'],
+          )!,
+      tokenHash:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}token_hash'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      ultimoUsoAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ultimo_uso_at'],
+      ),
+    );
+  }
+
+  @override
+  $SesionPersistenteTable createAlias(String alias) {
+    return $SesionPersistenteTable(attachedDatabase, alias);
+  }
+}
+
+class SesionPersistenteData extends DataClass
+    implements Insertable<SesionPersistenteData> {
+  final int id;
+  final String usuarioId;
+  final String tokenHash;
+  final DateTime createdAt;
+  final DateTime? ultimoUsoAt;
+  const SesionPersistenteData({
+    required this.id,
+    required this.usuarioId,
+    required this.tokenHash,
+    required this.createdAt,
+    this.ultimoUsoAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['usuario_id'] = Variable<String>(usuarioId);
+    map['token_hash'] = Variable<String>(tokenHash);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || ultimoUsoAt != null) {
+      map['ultimo_uso_at'] = Variable<DateTime>(ultimoUsoAt);
+    }
+    return map;
+  }
+
+  SesionPersistenteCompanion toCompanion(bool nullToAbsent) {
+    return SesionPersistenteCompanion(
+      id: Value(id),
+      usuarioId: Value(usuarioId),
+      tokenHash: Value(tokenHash),
+      createdAt: Value(createdAt),
+      ultimoUsoAt:
+          ultimoUsoAt == null && nullToAbsent
+              ? const Value.absent()
+              : Value(ultimoUsoAt),
+    );
+  }
+
+  factory SesionPersistenteData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SesionPersistenteData(
+      id: serializer.fromJson<int>(json['id']),
+      usuarioId: serializer.fromJson<String>(json['usuarioId']),
+      tokenHash: serializer.fromJson<String>(json['tokenHash']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      ultimoUsoAt: serializer.fromJson<DateTime?>(json['ultimoUsoAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'usuarioId': serializer.toJson<String>(usuarioId),
+      'tokenHash': serializer.toJson<String>(tokenHash),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'ultimoUsoAt': serializer.toJson<DateTime?>(ultimoUsoAt),
+    };
+  }
+
+  SesionPersistenteData copyWith({
+    int? id,
+    String? usuarioId,
+    String? tokenHash,
+    DateTime? createdAt,
+    Value<DateTime?> ultimoUsoAt = const Value.absent(),
+  }) => SesionPersistenteData(
+    id: id ?? this.id,
+    usuarioId: usuarioId ?? this.usuarioId,
+    tokenHash: tokenHash ?? this.tokenHash,
+    createdAt: createdAt ?? this.createdAt,
+    ultimoUsoAt: ultimoUsoAt.present ? ultimoUsoAt.value : this.ultimoUsoAt,
+  );
+  SesionPersistenteData copyWithCompanion(SesionPersistenteCompanion data) {
+    return SesionPersistenteData(
+      id: data.id.present ? data.id.value : this.id,
+      usuarioId: data.usuarioId.present ? data.usuarioId.value : this.usuarioId,
+      tokenHash: data.tokenHash.present ? data.tokenHash.value : this.tokenHash,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      ultimoUsoAt:
+          data.ultimoUsoAt.present ? data.ultimoUsoAt.value : this.ultimoUsoAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SesionPersistenteData(')
+          ..write('id: $id, ')
+          ..write('usuarioId: $usuarioId, ')
+          ..write('tokenHash: $tokenHash, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('ultimoUsoAt: $ultimoUsoAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, usuarioId, tokenHash, createdAt, ultimoUsoAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SesionPersistenteData &&
+          other.id == this.id &&
+          other.usuarioId == this.usuarioId &&
+          other.tokenHash == this.tokenHash &&
+          other.createdAt == this.createdAt &&
+          other.ultimoUsoAt == this.ultimoUsoAt);
+}
+
+class SesionPersistenteCompanion
+    extends UpdateCompanion<SesionPersistenteData> {
+  final Value<int> id;
+  final Value<String> usuarioId;
+  final Value<String> tokenHash;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> ultimoUsoAt;
+  const SesionPersistenteCompanion({
+    this.id = const Value.absent(),
+    this.usuarioId = const Value.absent(),
+    this.tokenHash = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.ultimoUsoAt = const Value.absent(),
+  });
+  SesionPersistenteCompanion.insert({
+    this.id = const Value.absent(),
+    required String usuarioId,
+    required String tokenHash,
+    required DateTime createdAt,
+    this.ultimoUsoAt = const Value.absent(),
+  }) : usuarioId = Value(usuarioId),
+       tokenHash = Value(tokenHash),
+       createdAt = Value(createdAt);
+  static Insertable<SesionPersistenteData> custom({
+    Expression<int>? id,
+    Expression<String>? usuarioId,
+    Expression<String>? tokenHash,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? ultimoUsoAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (usuarioId != null) 'usuario_id': usuarioId,
+      if (tokenHash != null) 'token_hash': tokenHash,
+      if (createdAt != null) 'created_at': createdAt,
+      if (ultimoUsoAt != null) 'ultimo_uso_at': ultimoUsoAt,
+    });
+  }
+
+  SesionPersistenteCompanion copyWith({
+    Value<int>? id,
+    Value<String>? usuarioId,
+    Value<String>? tokenHash,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? ultimoUsoAt,
+  }) {
+    return SesionPersistenteCompanion(
+      id: id ?? this.id,
+      usuarioId: usuarioId ?? this.usuarioId,
+      tokenHash: tokenHash ?? this.tokenHash,
+      createdAt: createdAt ?? this.createdAt,
+      ultimoUsoAt: ultimoUsoAt ?? this.ultimoUsoAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (usuarioId.present) {
+      map['usuario_id'] = Variable<String>(usuarioId.value);
+    }
+    if (tokenHash.present) {
+      map['token_hash'] = Variable<String>(tokenHash.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (ultimoUsoAt.present) {
+      map['ultimo_uso_at'] = Variable<DateTime>(ultimoUsoAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SesionPersistenteCompanion(')
+          ..write('id: $id, ')
+          ..write('usuarioId: $usuarioId, ')
+          ..write('tokenHash: $tokenHash, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('ultimoUsoAt: $ultimoUsoAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -69156,6 +69525,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $BovedaCredencialEventoTable bovedaCredencialEvento =
       $BovedaCredencialEventoTable(this);
+  late final $SesionPersistenteTable sesionPersistente =
+      $SesionPersistenteTable(this);
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -69311,6 +69682,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     eliminacionFisicaEvento,
     bovedaCredencial,
     bovedaCredencialEvento,
+    sesionPersistente,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -69966,6 +70338,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       result: [
         TableUpdate('boveda_credencial_evento', kind: UpdateKind.update),
       ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'usuario',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('sesion_persistente', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -93734,6 +94113,33 @@ final class $$UsuarioTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $SesionPersistenteTable,
+    List<SesionPersistenteData>
+  >
+  _sesionPersistenteRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.sesionPersistente,
+        aliasName: $_aliasNameGenerator(
+          db.usuario.id,
+          db.sesionPersistente.usuarioId,
+        ),
+      );
+
+  $$SesionPersistenteTableProcessedTableManager get sesionPersistenteRefs {
+    final manager = $$SesionPersistenteTableTableManager(
+      $_db,
+      $_db.sesionPersistente,
+    ).filter((f) => f.usuarioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _sesionPersistenteRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$UsuarioTableFilterComposer
@@ -94397,6 +94803,31 @@ class $$UsuarioTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> sesionPersistenteRefs(
+    Expression<bool> Function($$SesionPersistenteTableFilterComposer f) f,
+  ) {
+    final $$SesionPersistenteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sesionPersistente,
+      getReferencedColumn: (t) => t.usuarioId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SesionPersistenteTableFilterComposer(
+            $db: $db,
+            $table: $db.sesionPersistente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -95137,6 +95568,32 @@ class $$UsuarioTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> sesionPersistenteRefs<T extends Object>(
+    Expression<T> Function($$SesionPersistenteTableAnnotationComposer a) f,
+  ) {
+    final $$SesionPersistenteTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.sesionPersistente,
+          getReferencedColumn: (t) => t.usuarioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SesionPersistenteTableAnnotationComposer(
+                $db: $db,
+                $table: $db.sesionPersistente,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$UsuarioTableTableManager
@@ -95177,6 +95634,7 @@ class $$UsuarioTableTableManager
             bool permisoUsuarioRefs,
             bool eliminacionFisicaEventoRefs,
             bool bovedaCredencialEventoRefs,
+            bool sesionPersistenteRefs,
           })
         > {
   $$UsuarioTableTableManager(_$AppDatabase db, $UsuarioTable table)
@@ -95277,6 +95735,7 @@ class $$UsuarioTableTableManager
             permisoUsuarioRefs = false,
             eliminacionFisicaEventoRefs = false,
             bovedaCredencialEventoRefs = false,
+            sesionPersistenteRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
@@ -95304,6 +95763,7 @@ class $$UsuarioTableTableManager
                 if (permisoUsuarioRefs) db.permisoUsuario,
                 if (eliminacionFisicaEventoRefs) db.eliminacionFisicaEvento,
                 if (bovedaCredencialEventoRefs) db.bovedaCredencialEvento,
+                if (sesionPersistenteRefs) db.sesionPersistente,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -95843,6 +96303,28 @@ class $$UsuarioTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (sesionPersistenteRefs)
+                    await $_getPrefetchedData<
+                      UsuarioData,
+                      $UsuarioTable,
+                      SesionPersistenteData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UsuarioTableReferences
+                          ._sesionPersistenteRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsuarioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).sesionPersistenteRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.usuarioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -95888,6 +96370,7 @@ typedef $$UsuarioTableProcessedTableManager =
         bool permisoUsuarioRefs,
         bool eliminacionFisicaEventoRefs,
         bool bovedaCredencialEventoRefs,
+        bool sesionPersistenteRefs,
       })
     >;
 typedef $$DocumentoPorEmitirEventoTableCreateCompanionBuilder =
@@ -141264,6 +141747,343 @@ typedef $$BovedaCredencialEventoTableProcessedTableManager =
       BovedaCredencialEventoData,
       PrefetchHooks Function({bool credencialId, bool actorUsuarioId})
     >;
+typedef $$SesionPersistenteTableCreateCompanionBuilder =
+    SesionPersistenteCompanion Function({
+      Value<int> id,
+      required String usuarioId,
+      required String tokenHash,
+      required DateTime createdAt,
+      Value<DateTime?> ultimoUsoAt,
+    });
+typedef $$SesionPersistenteTableUpdateCompanionBuilder =
+    SesionPersistenteCompanion Function({
+      Value<int> id,
+      Value<String> usuarioId,
+      Value<String> tokenHash,
+      Value<DateTime> createdAt,
+      Value<DateTime?> ultimoUsoAt,
+    });
+
+final class $$SesionPersistenteTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SesionPersistenteTable,
+          SesionPersistenteData
+        > {
+  $$SesionPersistenteTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsuarioTable _usuarioIdTable(_$AppDatabase db) =>
+      db.usuario.createAlias(
+        $_aliasNameGenerator(db.sesionPersistente.usuarioId, db.usuario.id),
+      );
+
+  $$UsuarioTableProcessedTableManager get usuarioId {
+    final $_column = $_itemColumn<String>('usuario_id')!;
+
+    final manager = $$UsuarioTableTableManager(
+      $_db,
+      $_db.usuario,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_usuarioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SesionPersistenteTableFilterComposer
+    extends Composer<_$AppDatabase, $SesionPersistenteTable> {
+  $$SesionPersistenteTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tokenHash => $composableBuilder(
+    column: $table.tokenHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get ultimoUsoAt => $composableBuilder(
+    column: $table.ultimoUsoAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsuarioTableFilterComposer get usuarioId {
+    final $$UsuarioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.usuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableFilterComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SesionPersistenteTableOrderingComposer
+    extends Composer<_$AppDatabase, $SesionPersistenteTable> {
+  $$SesionPersistenteTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tokenHash => $composableBuilder(
+    column: $table.tokenHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get ultimoUsoAt => $composableBuilder(
+    column: $table.ultimoUsoAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsuarioTableOrderingComposer get usuarioId {
+    final $$UsuarioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.usuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableOrderingComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SesionPersistenteTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SesionPersistenteTable> {
+  $$SesionPersistenteTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tokenHash =>
+      $composableBuilder(column: $table.tokenHash, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get ultimoUsoAt => $composableBuilder(
+    column: $table.ultimoUsoAt,
+    builder: (column) => column,
+  );
+
+  $$UsuarioTableAnnotationComposer get usuarioId {
+    final $$UsuarioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.usuarioId,
+      referencedTable: $db.usuario,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsuarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usuario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SesionPersistenteTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SesionPersistenteTable,
+          SesionPersistenteData,
+          $$SesionPersistenteTableFilterComposer,
+          $$SesionPersistenteTableOrderingComposer,
+          $$SesionPersistenteTableAnnotationComposer,
+          $$SesionPersistenteTableCreateCompanionBuilder,
+          $$SesionPersistenteTableUpdateCompanionBuilder,
+          (SesionPersistenteData, $$SesionPersistenteTableReferences),
+          SesionPersistenteData,
+          PrefetchHooks Function({bool usuarioId})
+        > {
+  $$SesionPersistenteTableTableManager(
+    _$AppDatabase db,
+    $SesionPersistenteTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$SesionPersistenteTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$SesionPersistenteTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$SesionPersistenteTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> usuarioId = const Value.absent(),
+                Value<String> tokenHash = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> ultimoUsoAt = const Value.absent(),
+              }) => SesionPersistenteCompanion(
+                id: id,
+                usuarioId: usuarioId,
+                tokenHash: tokenHash,
+                createdAt: createdAt,
+                ultimoUsoAt: ultimoUsoAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String usuarioId,
+                required String tokenHash,
+                required DateTime createdAt,
+                Value<DateTime?> ultimoUsoAt = const Value.absent(),
+              }) => SesionPersistenteCompanion.insert(
+                id: id,
+                usuarioId: usuarioId,
+                tokenHash: tokenHash,
+                createdAt: createdAt,
+                ultimoUsoAt: ultimoUsoAt,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$SesionPersistenteTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({usuarioId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (usuarioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.usuarioId,
+                            referencedTable: $$SesionPersistenteTableReferences
+                                ._usuarioIdTable(db),
+                            referencedColumn:
+                                $$SesionPersistenteTableReferences
+                                    ._usuarioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SesionPersistenteTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SesionPersistenteTable,
+      SesionPersistenteData,
+      $$SesionPersistenteTableFilterComposer,
+      $$SesionPersistenteTableOrderingComposer,
+      $$SesionPersistenteTableAnnotationComposer,
+      $$SesionPersistenteTableCreateCompanionBuilder,
+      $$SesionPersistenteTableUpdateCompanionBuilder,
+      (SesionPersistenteData, $$SesionPersistenteTableReferences),
+      SesionPersistenteData,
+      PrefetchHooks Function({bool usuarioId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -141572,4 +142392,6 @@ class $AppDatabaseManager {
         _db,
         _db.bovedaCredencialEvento,
       );
+  $$SesionPersistenteTableTableManager get sesionPersistente =>
+      $$SesionPersistenteTableTableManager(_db, _db.sesionPersistente);
 }
