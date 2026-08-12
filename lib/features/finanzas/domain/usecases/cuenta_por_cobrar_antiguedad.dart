@@ -39,3 +39,19 @@ RangoAntiguedadCuentaPorCobrar calcularRangoAntiguedad(CuentaPorCobrarData cuent
     _ => RangoAntiguedadCuentaPorCobrar.dias90Mas,
   };
 }
+
+/// Días que faltan para el vencimiento (Etapa 14B) — hacia adelante,
+/// a diferencia de `estaVencida`/`calcularRangoAntiguedad` (ambas
+/// retrospectivas). `null` si la cuenta no tiene fecha de vencimiento
+/// o ya está `pagada` — ninguna de las dos aplica a "próxima a
+/// vencer". `hoy` siempre se recibe desde afuera, mismo criterio que
+/// el resto de este archivo.
+int? diasParaVencerCxc(CuentaPorCobrarData cuenta, DateTime hoy) {
+  final vencimiento = cuenta.fechaVencimiento;
+  if (vencimiento == null) return null;
+  if (EstatusCuentaPorCobrar.values.byName(cuenta.estatus) == EstatusCuentaPorCobrar.pagada) return null;
+
+  final hoySinHora = DateTime(hoy.year, hoy.month, hoy.day);
+  final vencimientoSinHora = DateTime(vencimiento.year, vencimiento.month, vencimiento.day);
+  return vencimientoSinHora.difference(hoySinHora).inDays;
+}

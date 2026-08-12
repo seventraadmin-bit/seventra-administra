@@ -7,6 +7,7 @@ import '../../../core/design_system/tokens/app_color_scheme.dart';
 import '../../../core/design_system/tokens/app_spacing.dart';
 import '../../../core/design_system/tokens/app_typography.dart';
 import '../../../features/busqueda/presentation/widgets/global_search_field.dart';
+import '../../../features/notificaciones/presentation/widgets/notification_bell.dart';
 import '../../../features/usuarios/presentation/sesion_controller.dart';
 import '../../theme/theme_mode_controller.dart';
 import '../shell_breakpoints.dart';
@@ -55,7 +56,7 @@ class AppTopBar extends ConsumerWidget {
                 onChanged: (mode) => ref.read(themeModeControllerProvider.notifier).setThemeMode(mode),
               ),
               const SizedBox(width: AppSpacing.xxs),
-              const _NotificationsButton(),
+              const NotificationBell(),
               const SizedBox(width: AppSpacing.xxs),
               _ProfileChip(compact: compactProfile),
             ],
@@ -92,21 +93,6 @@ class _ThemeSelector extends StatelessWidget {
         PopupMenuItem(value: ThemeMode.dark, child: Text(l10n.themeModeDark)),
         PopupMenuItem(value: ThemeMode.system, child: Text(l10n.themeModeSystem)),
       ],
-    );
-  }
-}
-
-class _NotificationsButton extends StatelessWidget {
-  const _NotificationsButton();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return IconButton(
-      key: const Key('top_bar_notifications'),
-      tooltip: l10n.shellNotificationsTooltip,
-      icon: const Icon(Icons.notifications_outlined),
-      onPressed: () {},
     );
   }
 }

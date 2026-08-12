@@ -3642,5 +3642,13 @@
   "busquedaGrupoCompras": "Compras",
   "busquedaGrupoVehiculos": "Vehículos",
   "busquedaGrupoLineasTelefonicas": "Líneas telefónicas",
-  "busquedaGrupoUsuarios": "Usuarios"
+  "busquedaGrupoUsuarios": "Usuarios",
+
+  "notificacionesSinPendientes": "Sin notificaciones pendientes",
+  "notificacionesGrupoVerificacion": "Verificación vehicular",
+  "notificacionesGrupoTenenciaRefrendo": "Tenencia / Refrendo",
+  "notificacionesGrupoDocumentosPorEmitir": "Facturación pendiente",
+  "notificacionesGrupoCxcProxima": "Pagos próximos a vencer",
+  "notificacionesGrupoCxcVencida": "Pagos vencidos",
+  "notificacionesGrupoPagosRecientes": "Pagos recibidos hoy"
 }

@@ -505,16 +505,16 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                                         builder: (_) {
                                           final estado = calcularEstadoVigenciaDocumento(documento.fechaVencimiento);
                                           final detalle = detalleVigenciaDocumentoLabel(l10n, estado, documento.fechaVencimiento);
-                                          return Row(
+                                          return Wrap(
+                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            spacing: AppSpacing.xs,
                                             children: [
                                               RisegStatusBadge(
                                                 label: estadoVigenciaDocumentoLabel(l10n, estado),
                                                 tone: estadoVigenciaDocumentoTono(estado),
                                               ),
-                                              if (detalle.isNotEmpty) ...[
-                                                const SizedBox(width: AppSpacing.xs),
+                                              if (detalle.isNotEmpty)
                                                 Text(detalle, style: AppTypography.caption.copyWith(color: colors.textMuted)),
-                                              ],
                                             ],
                                           );
                                         },

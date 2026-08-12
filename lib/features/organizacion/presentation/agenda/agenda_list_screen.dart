@@ -7,6 +7,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_emitir_requiere_accion.dart';
 
 import '../../organizacion_providers.dart';
 import 'agenda_controller.dart';
@@ -79,15 +80,6 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
       TipoDocumentoCobro.cfdi => l10n.servicioCobroTipoDocumentoCfdi,
       TipoDocumentoCobro.reciboDePago => l10n.servicioCobroTipoDocumentoReciboDePago,
     };
-  }
-
-  bool _estaAtrasado(DocumentoPorEmitirData documento, DateTime hoy) {
-    final fecha = documento.fechaEmisionProgramada;
-    if (fecha == null) return false;
-    if (documento.estatus != 'pendiente' && documento.estatus != 'enPreparacion') return false;
-    final hoySinHora = DateTime(hoy.year, hoy.month, hoy.day);
-    final fechaSinHora = DateTime(fecha.year, fecha.month, fecha.day);
-    return fechaSinHora.isBefore(hoySinHora);
   }
 
   void _cambiarMes(AgendaState state, int delta) {
@@ -275,7 +267,7 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
                             ? l10n.agendaFechaSinCalcular
                             : _formatoFecha.format(d.fechaEmisionProgramada!),
                       ),
-                      if (_estaAtrasado(d, hoy)) ...[
+                      if (documentoPorEmitirRequiereAccion(d, hoy)) ...[
                         const SizedBox(width: AppSpacing.xxs),
                         Tooltip(
                           message: l10n.agendaEtiquetaAtrasado,
