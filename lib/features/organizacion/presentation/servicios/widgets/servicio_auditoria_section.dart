@@ -23,6 +23,7 @@ class ServicioAuditoriaSection extends StatelessWidget {
 
     return RisegFormSection(
       title: l10n.servicioSeccionAuditoriaTitulo,
+      grid: true,
       children: [
         CampoConsulta(label: l10n.servicioAuditoriaCreado, value: _formatoFechaHora.format(servicio.createdAt)),
         CampoConsulta(label: l10n.servicioAuditoriaActualizado, value: _formatoFechaHora.format(servicio.updatedAt)),

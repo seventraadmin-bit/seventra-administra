@@ -38,7 +38,7 @@ Future<bool> mostrarDialogoEliminarLineaTelefonicaFisicamente(
           return ResultadoEliminacionFisica.noExiste;
         case EliminarLineaTelefonicaFisicamenteTieneDependencias(:final detalle):
           if (context.mounted) RisegFeedback.showError(context, detalle);
-          return ResultadoEliminacionFisica.errorInesperado;
+          return ResultadoEliminacionFisica.tieneDependencias;
         case EliminarLineaTelefonicaFisicamenteErrorInesperado():
           return ResultadoEliminacionFisica.errorInesperado;
       }

@@ -13,7 +13,7 @@
 
 import 'dart:convert';
 
-import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,7 +44,9 @@ import 'package:riseg_one/features/organizacion/data/repositories/puesto_reposit
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/ubicacion_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart' show TratamientoIva;
+import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart' show TipoUbicacion;
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_area_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
@@ -56,6 +58,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/guardar_area_res
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 
@@ -622,18 +625,36 @@ void main() {
     });
   });
 
-  // Sucursal: sin caso Exitoso — ver el doc comment de
-  // `EliminarSucursalFisicamenteTieneDependencias` en el test siguiente.
+  // Sucursal (Etapa 15, hallazgo real): la Ubicación raíz + Almacén
+  // General automáticos de `crear()` ya NO cuentan como dependencia —
+  // ver el doc comment de `SucursalRepositoryImpl.eliminarFisicamente`.
   group('Eliminación física — Sucursal', () {
     late SucursalRepositoryImpl sucursalRepo;
+    late UbicacionRepositoryImpl ubicacionRepo;
+    late ClienteRepositoryImpl clienteRepo;
+    late ServicioRepositoryImpl servicioRepo;
     late CrearSucursalUseCase crearSucursal;
+    late CrearServicioUseCase crearServicio;
     late EliminarSucursalFisicamenteUseCase eliminar;
 
     setUp(() {
       sucursalRepo = SucursalRepositoryImpl(db);
+      ubicacionRepo = UbicacionRepositoryImpl(db);
+      clienteRepo = ClienteRepositoryImpl(db);
+      servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
+      final catalogoRepo = CatalogoRepositoryImpl(db);
+      final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
       crearSucursal = CrearSucursalUseCase(sucursalRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
+      crearServicio = CrearServicioUseCase(servicioRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)), servicioValidator);
       eliminar = EliminarSucursalFisicamenteUseCase(sucursalRepo);
     });
+
+    Future<String> crearSucursalDePrueba({String nombre = 'Sucursal Norte'}) async {
+      final resultado = await crearSucursal.ejecutar(nombre: nombre, tipoSucursalId: SeedIds.tipoSucursalBaseOperativa);
+      late String sucursalId;
+      resultado.when(ok: (s) => sucursalId = s.id, failure: (_) => fail('no debería fallar'));
+      return sucursalId;
+    }
 
     test('NoExiste cuando el id no existe', () async {
       final r = await eliminar.ejecutar(sucursalId: 'no-existe', motivo: 'prueba');
@@ -648,21 +669,168 @@ void main() {
     });
 
     test(
-      'TieneDependencias — cualquier Sucursal creada por el flujo normal siempre la dispara: '
-      'SucursalRepositoryImpl.crear inserta transaccionalmente una Ubicación raíz + su Almacén '
-      'General, así que no hay ningún camino real para llegar a un caso Exitoso con '
-      'CrearSucursalUseCase (confirmado, fuera de alcance de esta suite)',
+      '1. Exitoso — Sucursal recién creada, solo con su Ubicación raíz + Almacén General '
+      'automáticos: ya no queda bloqueada por su propia estructura interna',
       () async {
-        final resultado =
-            await crearSucursal.ejecutar(nombre: 'Sucursal Norte', tipoSucursalId: SeedIds.tipoSucursalBaseOperativa);
-        late String sucursalId;
-        resultado.when(ok: (s) => sucursalId = s.id, failure: (_) => fail('no debería fallar'));
+        final sucursalId = await crearSucursalDePrueba();
+
+        final r = await eliminar.ejecutar(sucursalId: sucursalId, motivo: 'prueba', actorUsuarioId: _actorUsuarioId);
+        expect(r, isA<EliminarSucursalFisicamenteExitoso>());
+        expect(await sucursalRepo.obtenerPorId(sucursalId), isNull);
+      },
+    );
+
+    test('2. TieneDependencias — con un Servicio administrado por la Sucursal', () async {
+      final sucursalId = await crearSucursalDePrueba();
+      final cliente = await clienteRepo.crear(ClienteCompanion.insert(codigo: 'CLI-9201', nombreComercial: 'Sportium'));
+      final servicioResultado = await crearServicio.ejecutar(
+        clienteId: cliente.id,
+        borrador: ServicioBorrador(
+          nombre: 'Vigilancia Sportium',
+          tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+          fechaInicio: DateTime(2026, 1, 1),
+        ),
+      );
+      final servicio = (servicioResultado as GuardarServicioExitoso).servicio;
+      await servicioRepo.asignarSucursalAdministrativa(servicioId: servicio.id, sucursalId: sucursalId);
+
+      final r = await eliminar.ejecutar(sucursalId: sucursalId, motivo: 'prueba');
+      expect(r, isA<EliminarSucursalFisicamenteTieneDependencias>());
+      expect((r as EliminarSucursalFisicamenteTieneDependencias).detalle, contains('1 servicio'));
+    });
+
+    test('3. TieneDependencias — con un Empleado adscrito a la Sucursal', () async {
+      final sucursalId = await crearSucursalDePrueba();
+      await db.into(db.empleado).insert(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+              sucursalId: Value(sucursalId),
+            ),
+          );
+
+      final r = await eliminar.ejecutar(sucursalId: sucursalId, motivo: 'prueba');
+      expect(r, isA<EliminarSucursalFisicamenteTieneDependencias>());
+      expect((r as EliminarSucursalFisicamenteTieneDependencias).detalle, contains('1 empleado'));
+    });
+
+    test('4. TieneDependencias — con un movimiento financiero (Ingreso) de la Sucursal', () async {
+      final sucursalId = await crearSucursalDePrueba();
+      await db.into(db.ingreso).insert(
+            IngresoCompanion.insert(
+              folioIngreso: 'ING-TEST-0001',
+              monto: 100000,
+              fecha: DateTime(2026, 1, 1),
+              formaPago: 'efectivo',
+              concepto: 'prueba',
+              sucursalId: Value(sucursalId),
+            ),
+          );
+
+      final r = await eliminar.ejecutar(sucursalId: sucursalId, motivo: 'prueba');
+      expect(r, isA<EliminarSucursalFisicamenteTieneDependencias>());
+      expect((r as EliminarSucursalFisicamenteTieneDependencias).detalle, contains('1 ingreso'));
+    });
+
+    test(
+      '5. TieneDependencias — una Ubicación real agregada bajo el Almacén General ya no es '
+      'solo estructura automática, aunque nunca haya un Servicio/Empleado/movimiento real',
+      () async {
+        final sucursalId = await crearSucursalDePrueba();
+        final raiz = await ubicacionRepo.obtenerRaizDeSucursal(sucursalId);
+        final almacenGeneral = (await ubicacionRepo.obtenerHijos(raiz!.id)).single;
+        await ubicacionRepo.crearHijo(
+          codigo: 'UBI-TEST-0001',
+          nombre: 'Oficina de guardias',
+          tipo: TipoUbicacion.oficina,
+          parentId: almacenGeneral.id,
+        );
 
         final r = await eliminar.ejecutar(sucursalId: sucursalId, motivo: 'prueba');
         expect(r, isA<EliminarSucursalFisicamenteTieneDependencias>());
-        expect((r as EliminarSucursalFisicamenteTieneDependencias).detalle, contains('ubicación'));
+        expect((r as EliminarSucursalFisicamenteTieneDependencias).detalle, contains('ubicaciones adicionales'));
       },
     );
+
+    test('6. Atomicidad — un bloqueo no borra nada: la Sucursal y sus dos Ubicaciones siguen intactas', () async {
+      final sucursalId = await crearSucursalDePrueba();
+      final cliente = await clienteRepo.crear(ClienteCompanion.insert(codigo: 'CLI-9202', nombreComercial: 'Sportium'));
+      final servicioResultado = await crearServicio.ejecutar(
+        clienteId: cliente.id,
+        borrador: ServicioBorrador(
+          nombre: 'Vigilancia Sportium',
+          tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+          fechaInicio: DateTime(2026, 1, 1),
+        ),
+      );
+      final servicio = (servicioResultado as GuardarServicioExitoso).servicio;
+      await servicioRepo.asignarSucursalAdministrativa(servicioId: servicio.id, sucursalId: sucursalId);
+
+      final r = await eliminar.ejecutar(sucursalId: sucursalId, motivo: 'prueba');
+      expect(r, isA<EliminarSucursalFisicamenteTieneDependencias>());
+
+      expect(await sucursalRepo.obtenerPorId(sucursalId), isNotNull);
+      final raiz = await ubicacionRepo.obtenerRaizDeSucursal(sucursalId);
+      expect(raiz, isNotNull);
+      expect(await ubicacionRepo.obtenerHijos(raiz!.id), hasLength(1));
+    });
+
+    test('7. Exitoso — el evento de eliminación conserva la Sucursal y sus dos Ubicaciones en el snapshot', () async {
+      final sucursalId = await crearSucursalDePrueba();
+      final raiz = await ubicacionRepo.obtenerRaizDeSucursal(sucursalId);
+      final almacenGeneralId = (await ubicacionRepo.obtenerHijos(raiz!.id)).single.id;
+
+      final r = await eliminar.ejecutar(sucursalId: sucursalId, motivo: 'prueba', actorUsuarioId: _actorUsuarioId);
+      expect(r, isA<EliminarSucursalFisicamenteExitoso>());
+
+      final evento =
+          await (db.select(db.eliminacionFisicaEvento)..where((t) => t.entidadIdOriginal.equals(sucursalId))).getSingle();
+      expect(evento.tipoEntidad, 'sucursal');
+      expect(evento.actorUsuarioId, _actorUsuarioId);
+      final snapshot = jsonDecode(evento.snapshotJson) as Map<String, dynamic>;
+      expect(snapshot['sucursal']['id'], sucursalId);
+      final ubicacionesEliminadas = (snapshot['ubicacionesEliminadas'] as List).cast<Map<String, dynamic>>();
+      expect(ubicacionesEliminadas.map((u) => u['id']), containsAll([raiz.id, almacenGeneralId]));
+    });
+
+    test('8. Exitoso — no deja Ubicación huérfana: ni la raíz ni el Almacén General sobreviven', () async {
+      final sucursalId = await crearSucursalDePrueba();
+      final raiz = await ubicacionRepo.obtenerRaizDeSucursal(sucursalId);
+      final almacenGeneralId = (await ubicacionRepo.obtenerHijos(raiz!.id)).single.id;
+
+      final r = await eliminar.ejecutar(sucursalId: sucursalId, motivo: 'prueba');
+      expect(r, isA<EliminarSucursalFisicamenteExitoso>());
+
+      expect(await ubicacionRepo.obtenerPorId(raiz.id), isNull);
+      expect(await ubicacionRepo.obtenerPorId(almacenGeneralId), isNull);
+    });
+
+    test('9. Maestro solamente — un no-Maestro con un código de permiso inventado sigue rechazado', () async {
+      final container = _container(
+        db,
+        const SesionUsuario(
+          usuarioId: _actorUsuarioId,
+          nombre: 'Usuario de prueba',
+          nombreUsuario: 'usuario-prueba',
+          esMaestro: false,
+          permisos: {'organizacion.eliminar'},
+        ),
+      );
+      final resultado =
+          await container.read(eliminarSucursalFisicamenteAutorizadoProvider)(sucursalId: 'no-existe', motivo: 'prueba');
+
+      expect(resultado, isA<EliminarSucursalFisicamenteErrorInesperado>());
+      expect((resultado as EliminarSucursalFisicamenteErrorInesperado).mensaje, 'Esta acción requiere el Usuario Maestro.');
+    });
   });
 
   // --- Estructural: la facultad es Maestro-only, independiente de

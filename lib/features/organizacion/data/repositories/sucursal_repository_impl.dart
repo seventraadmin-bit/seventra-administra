@@ -7,6 +7,7 @@ import 'package:riseg_one/core/database/tables/direccion_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/sucursal_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart';
 
+import 'ubicacion_repository_impl.dart';
 import '../../domain/repositories/sucursal_repository.dart';
 import '../../domain/shared/direccion_input.dart';
 import '../../domain/shared/horario_input.dart';
@@ -282,15 +283,21 @@ class SucursalRepositoryImpl implements SucursalRepository {
   /// crudo con `ON DELETE RESTRICT` en vez de `.references()` tipado —
   /// ver el doc comment de `Direccion` — así que no aparecen en una
   /// búsqueda superficial de `references(Sucursal,` pero son
-  /// restricciones reales a nivel de base de datos). Nota: toda
-  /// Sucursal creada por el flujo normal (`crear`) ya tiene
-  /// exactamente una fila raíz en `Ubicacion` con `sucursalId` propio
-  /// (ver ese método) — en la práctica esto bloquea la eliminación
-  /// física de cualquier Sucursal que haya pasado por el alta normal,
-  /// consistente con la condición tal como fue aprobada. Todo —
-  /// validación, snapshot, registro de auditoría y `DELETE` — ocurre en
-  /// una sola transacción; nunca `CASCADE` sobre ninguna de esas
-  /// tablas.
+  /// restricciones reales a nivel de base de datos).
+  ///
+  /// **Excepción de Ubicación estructural (Etapa 15, hallazgo real)**:
+  /// toda Sucursal creada por `crear` recibe automáticamente, en la
+  /// misma transacción, una `Ubicacion` raíz + un hijo "Almacén
+  /// General" — eso hacía que la condición aprobada bloqueara *toda*
+  /// Sucursal creada por el flujo normal, sin excepción, incluso sin
+  /// ninguna actividad real. No existe ninguna bandera que distinga
+  /// esa pareja estructural de una Ubicación real agregada después, así
+  /// que se identifica por *forma*: si la raíz tiene exactamente un
+  /// hijo y ese hijo no tiene hijos propios, es la estructura
+  /// automática intacta y no cuenta como dependencia — se elimina junto
+  /// con la Sucursal, explícitamente (nunca `CASCADE`), dentro de la
+  /// misma transacción. Cualquier otra forma (más hijos, nietos) sí
+  /// bloquea, igual que antes.
   @override
   Future<EliminarSucursalFisicamenteResultado> eliminarFisicamente({
     required String sucursalId,
@@ -309,11 +316,19 @@ class SucursalRepositoryImpl implements SucursalRepository {
         );
       }
 
-      final ubicaciones = await (_db.select(_db.ubicacion)..where((t) => t.sucursalId.equals(sucursalId))).get();
-      if (ubicaciones.isNotEmpty) {
-        return EliminarSucursalFisicamenteTieneDependencias(
-          'Tiene ${ubicaciones.length} ubicación(es) registrada(s).',
-        );
+      final ubicacionRepo = UbicacionRepositoryImpl(_db);
+      final raizUbicacion = await ubicacionRepo.obtenerRaizDeSucursal(sucursalId);
+      UbicacionData? almacenGeneral;
+      if (raizUbicacion != null) {
+        final hijosDeRaiz = await ubicacionRepo.obtenerHijos(raizUbicacion.id);
+        final esSoloEstructuraAutomatica =
+            hijosDeRaiz.length == 1 && (await ubicacionRepo.obtenerHijos(hijosDeRaiz.single.id)).isEmpty;
+        if (!esSoloEstructuraAutomatica) {
+          return EliminarSucursalFisicamenteTieneDependencias(
+            'La Sucursal tiene ubicaciones adicionales registradas.',
+          );
+        }
+        almacenGeneral = hijosDeRaiz.single;
       }
 
       final empleados = await (_db.select(_db.empleado)..where((t) => t.sucursalId.equals(sucursalId))).get();
@@ -361,10 +376,23 @@ class SucursalRepositoryImpl implements SucursalRepository {
               entidadIdOriginal: sucursalId,
               fechaHora: DateTime.now(),
               motivo: motivo,
-              snapshotJson: jsonEncode(sucursal.toJson()),
+              snapshotJson: jsonEncode({
+                'sucursal': sucursal.toJson(),
+                if (almacenGeneral != null)
+                  'ubicacionesEliminadas': [raizUbicacion!.toJson(), almacenGeneral.toJson()],
+              }),
               actorUsuarioId: Value(actorUsuarioId),
             ),
           );
+
+      // Sin CASCADE: se borran explícitamente, en orden — el hijo
+      // (Almacén General) antes que la raíz por el FK `restrict` de
+      // `parentId`, y ambas Ubicaciones antes que la Sucursal por el
+      // FK `restrict` de `sucursalId`.
+      if (almacenGeneral != null) {
+        await (_db.delete(_db.ubicacion)..where((t) => t.id.equals(almacenGeneral!.id))).go();
+        await (_db.delete(_db.ubicacion)..where((t) => t.id.equals(raizUbicacion!.id))).go();
+      }
       await (_db.delete(_db.sucursal)..where((t) => t.id.equals(sucursalId))).go();
 
       return EliminarSucursalFisicamenteExitoso();

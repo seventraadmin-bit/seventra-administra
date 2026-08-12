@@ -34,7 +34,7 @@ Future<bool> mostrarDialogoEliminarVehiculoFisicamente(BuildContext context, Wid
           return ResultadoEliminacionFisica.noExiste;
         case EliminarVehiculoFisicamenteTieneDependencias(:final detalle):
           if (context.mounted) RisegFeedback.showError(context, detalle);
-          return ResultadoEliminacionFisica.errorInesperado;
+          return ResultadoEliminacionFisica.tieneDependencias;
         case EliminarVehiculoFisicamenteErrorInesperado():
           return ResultadoEliminacionFisica.errorInesperado;
       }

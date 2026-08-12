@@ -14,9 +14,9 @@ import 'servicios/servicios_list_screen.dart';
 enum ComercialTab { clientes, servicios, agenda }
 
 /// Subnavegación de Comercial — `RisegTabs` sobre las pestañas estables
-/// de Comercial. A diferencia de `OrganizacionShellScreen`, `/comercial`
-/// en sí no muestra ninguna pestaña por defecto: redirige a
-/// `/comercial/clientes` (ver `createAppRouter`).
+/// de Comercial. `/comercial` en sí no muestra ninguna pestaña por
+/// defecto: redirige a `/comercial/clientes` (ver `createAppRouter`;
+/// mismo patrón que `OrganizacionShellScreen` desde la Etapa 15).
 class ComercialShellScreen extends StatelessWidget {
   const ComercialShellScreen({required this.tab, super.key});
 

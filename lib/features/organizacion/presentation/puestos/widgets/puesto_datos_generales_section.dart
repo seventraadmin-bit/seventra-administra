@@ -63,6 +63,7 @@ class PuestoDatosGeneralesSection extends StatelessWidget {
     if (modo == PuestoExpedienteModo.consulta) {
       return RisegFormSection(
         title: l10n.puestoSeccionDatosGeneralesTitulo,
+        grid: true,
         children: [
           CampoConsulta(label: l10n.puestoCampoCodigo, value: puesto.codigo),
           CampoConsulta(label: l10n.puestoCampoNombre, value: puesto.nombre),
@@ -81,6 +82,7 @@ class PuestoDatosGeneralesSection extends StatelessWidget {
 
     return RisegFormSection(
       title: l10n.puestoSeccionDatosGeneralesTitulo,
+      grid: true,
       children: [
         CampoConsulta(label: l10n.puestoCampoCodigo, value: puesto.codigo),
         RisegTextField(

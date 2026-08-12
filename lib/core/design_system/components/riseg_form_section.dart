@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme_context.dart';
 import '../tokens/app_spacing.dart';
 import '../tokens/app_typography.dart';
+import 'riseg_field_grid.dart';
 
 /// Agrupa campos relacionados dentro de un formulario, sin envolverlos en
 /// una card — el formulario completo ya vive dentro de una superficie
@@ -14,6 +15,7 @@ class RisegFormSection extends StatelessWidget {
     this.description,
     this.collapsible = false,
     this.initiallyExpanded = true,
+    this.grid = false,
     super.key,
   });
 
@@ -22,6 +24,12 @@ class RisegFormSection extends StatelessWidget {
   final List<Widget> children;
   final bool collapsible;
   final bool initiallyExpanded;
+
+  /// `true` para secciones de campos planos ("Datos generales",
+  /// "Dirección") — distribuye `children` en `RisegFieldGrid` en vez
+  /// de un `Column` vertical. Default `false`: no cambia nada para
+  /// los usos existentes (repetidores, `Horario`, diálogos).
+  final bool grid;
 
   @override
   Widget build(BuildContext context) {
@@ -39,10 +47,12 @@ class RisegFormSection extends StatelessWidget {
       ],
     );
 
-    final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [for (final child in children) Padding(padding: const EdgeInsets.only(top: AppSpacing.md), child: child)],
-    );
+    final body = grid
+        ? Padding(padding: const EdgeInsets.only(top: AppSpacing.md), child: RisegFieldGrid(children: children))
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [for (final child in children) Padding(padding: const EdgeInsets.only(top: AppSpacing.md), child: child)],
+          );
 
     if (!collapsible) {
       return Column(

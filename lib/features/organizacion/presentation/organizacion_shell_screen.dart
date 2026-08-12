@@ -15,15 +15,22 @@ import 'sucursales/sucursales_list_screen.dart';
 enum OrganizacionTab { empresa, sucursales, puestos, areas }
 
 /// Subnavegación de Organización — `RisegTabs` sobre las 4 pestañas
-/// estables de la Etapa 4D. `/organizacion` sigue mostrando Empresa por
-/// defecto (compatibilidad con la Etapa 4B).
+/// estables de la Etapa 4D. `/organizacion` redirige a
+/// `/organizacion/empresa` (Etapa 15, corrección de la pestaña activa) —
+/// mismo patrón que `/comercial`/`/finanzas`/`/personal`/`/inventario`:
+/// las 4 pestañas son rutas hermanas planas bajo un padre que solo
+/// redirige, nunca un padre con contenido propio + hijas anidadas (esa
+/// forma hacía que go_router mantuviera vivas varias instancias de esta
+/// pantalla a la vez — una por nivel de la ruta — y la que quedaba
+/// visible no siempre era la misma cuyo `RisegTabs` se había
+/// actualizado, desincronizando la pestaña marcada del contenido real).
 class OrganizacionShellScreen extends StatelessWidget {
   const OrganizacionShellScreen({required this.tab, super.key});
 
   final OrganizacionTab tab;
 
   static const _rutasPorIndice = [
-    '/organizacion',
+    '/organizacion/empresa',
     '/organizacion/sucursales',
     '/organizacion/puestos',
     '/organizacion/areas',

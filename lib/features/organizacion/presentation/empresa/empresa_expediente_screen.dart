@@ -122,11 +122,23 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
     final esEdicion = state.modo == EmpresaExpedienteModo.edicion;
     final habilitado = !state.guardando;
 
+    final logotipo = const RisegCard(child: LogotipoSection());
+    final mediosContacto = RisegCard(
+      child: MediosContactoSection(
+        modo: state.modo,
+        contacto: datos.medioContacto,
+        controllers: _medioContacto,
+        habilitado: habilitado,
+        errores: state.erroresGuardado,
+        onCampoModificado: notifier.marcarCambiosSinGuardar,
+      ),
+    );
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(maxWidth: AppBreakpoints.wide),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -165,24 +177,41 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              const RisegCard(child: LogotipoSection()),
+              // Logotipo es una tarjeta pequeña y de solo lectura — se
+              // coloca junto a Medios de contacto (también breve) en
+              // vez de dejarla sola ocupando el ancho completo con
+              // espacio vacío a la derecha.
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth < AppBreakpoints.medium) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [logotipo, const SizedBox(height: AppSpacing.xl), mediosContacto],
+                    );
+                  }
+                  // Sin `IntrinsicHeight`: `RisegFieldGrid` (dentro de
+                  // `mediosContacto`) usa su propio `LayoutBuilder`, y
+                  // Flutter no permite calcular dimensiones intrínsecas
+                  // a través de un `LayoutBuilder` — produce un error
+                  // real de layout, no solo una advertencia. Sin altura
+                  // forzada, cada tarjeta simplemente toma su propia
+                  // altura natural.
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 2, child: logotipo),
+                      const SizedBox(width: AppSpacing.xl),
+                      Expanded(flex: 3, child: mediosContacto),
+                    ],
+                  );
+                },
+              ),
               const SizedBox(height: AppSpacing.xl),
               RisegCard(
                 child: DireccionFiscalSection(
                   modo: state.modo,
                   direccion: datos.direccionFiscal,
                   controllers: _direccionFiscal,
-                  habilitado: habilitado,
-                  errores: state.erroresGuardado,
-                  onCampoModificado: notifier.marcarCambiosSinGuardar,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              RisegCard(
-                child: MediosContactoSection(
-                  modo: state.modo,
-                  contacto: datos.medioContacto,
-                  controllers: _medioContacto,
                   habilitado: habilitado,
                   errores: state.erroresGuardado,
                   onCampoModificado: notifier.marcarCambiosSinGuardar,

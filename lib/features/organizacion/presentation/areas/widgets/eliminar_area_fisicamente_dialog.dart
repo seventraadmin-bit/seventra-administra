@@ -30,7 +30,7 @@ Future<bool> mostrarDialogoEliminarAreaFisicamente(BuildContext context, WidgetR
           return ResultadoEliminacionFisica.noExiste;
         case EliminarAreaFisicamenteTieneDependencias(:final detalle):
           if (context.mounted) RisegFeedback.showError(context, detalle);
-          return ResultadoEliminacionFisica.errorInesperado;
+          return ResultadoEliminacionFisica.tieneDependencias;
         case EliminarAreaFisicamenteErrorInesperado():
           return ResultadoEliminacionFisica.errorInesperado;
       }

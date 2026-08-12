@@ -33,7 +33,7 @@ Future<bool> mostrarDialogoEliminarPuestoFisicamente(BuildContext context, Widge
           return ResultadoEliminacionFisica.noExiste;
         case EliminarPuestoFisicamenteTieneDependencias(:final detalle):
           if (context.mounted) RisegFeedback.showError(context, detalle);
-          return ResultadoEliminacionFisica.errorInesperado;
+          return ResultadoEliminacionFisica.tieneDependencias;
         case EliminarPuestoFisicamenteErrorInesperado():
           return ResultadoEliminacionFisica.errorInesperado;
       }

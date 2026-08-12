@@ -156,7 +156,7 @@ class _PuestoExpedienteScreenState extends ConsumerState<PuestoExpedienteScreen>
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(maxWidth: AppBreakpoints.wide),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

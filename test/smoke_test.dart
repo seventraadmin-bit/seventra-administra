@@ -7,6 +7,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -81,6 +82,16 @@ Future<AppDatabase> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 
   await tester.pumpAndSettle();
   return db;
 }
+
+/// Índice de la pestaña realmente marcada como activa en el `TabBar`
+/// visible — usado en la Etapa 15 para verificar que la pestaña
+/// superior de Organización coincide con la ruta real (`RisegTabs`
+/// sincroniza su `TabController` interno con `selectedIndex`; ver
+/// `riseg_tabs.dart`). `findsOneWidget` implícito en `tester.widget`:
+/// si el bug de instancias duplicadas de `OrganizacionShellScreen`
+/// reaparece, esta llamada falla con "too many elements" en vez de
+/// leer silenciosamente la instancia equivocada.
+int _pestanaActiva(WidgetTester tester) => tester.widget<TabBar>(find.byType(TabBar)).controller!.index;
 
 void main() {
   setUp(() {
@@ -297,6 +308,90 @@ void main() {
     expect(find.byKey(const Key('areas_boton_nueva')), findsOneWidget);
     expect(find.text('Operaciones'), findsOneWidget);
   });
+
+  testWidgets(
+    'Organización: la pestaña marcada sigue a la ruta real al navegar entre pestañas, en cualquier '
+    'dirección (Etapa 15, corrección de la pestaña activa desincronizada)',
+    (tester) async {
+      await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      await tester.tap(find.byKey(const Key('nav_item_organizacion')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('empresa_expediente_screen')), findsWidgets);
+      expect(_pestanaActiva(tester), 0);
+
+      await tester.tap(find.text(l10n.organizacionTabSucursales));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('sucursales_boton_nueva')), findsOneWidget);
+      expect(_pestanaActiva(tester), 1);
+
+      await tester.tap(find.text(l10n.organizacionTabPuestos));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('puestos_boton_nueva')), findsOneWidget);
+      expect(_pestanaActiva(tester), 2);
+
+      await tester.tap(find.text(l10n.organizacionTabAreas));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('areas_boton_nueva')), findsOneWidget);
+      expect(_pestanaActiva(tester), 3);
+
+      // De regreso a Empresa — la dirección "hacia atrás" es la que
+      // reproducía el bug original (Sucursales quedaba marcada aunque
+      // el contenido ya fuera Empresa).
+      await tester.tap(find.text(l10n.organizacionTabEmpresa));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('empresa_expediente_screen')), findsWidgets);
+      expect(_pestanaActiva(tester), 0);
+    },
+  );
+
+  testWidgets(
+    'Organización: entrar directo por ruta a /organizacion/puestos marca Puestos, no Empresa',
+    (tester) async {
+      await _pumpApp(tester);
+
+      final context = tester.element(find.byKey(const Key('app_shell')));
+      GoRouter.of(context).go('/organizacion/puestos');
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('puestos_boton_nueva')), findsOneWidget);
+      expect(_pestanaActiva(tester), 2);
+    },
+  );
+
+  testWidgets(
+    'Organización: volver del expediente recién creado de una Sucursal conserva la pestaña '
+    'Sucursales marcada (equipo de escritorio: "volver" es el botón de regreso del AppBar, '
+    'no un gesto/botón de sistema)',
+    (tester) async {
+      await _pumpApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      await tester.tap(find.byKey(const Key('nav_item_organizacion')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.organizacionTabSucursales));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('sucursales_boton_nueva')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).first, 'Sucursal Regreso E2E');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Oficina Administrativa').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.sucursalAltaBotonCrear));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('sucursal_expediente_boton_editar')), findsOneWidget);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('sucursales_boton_nueva')), findsOneWidget);
+      expect(_pestanaActiva(tester), 1);
+    },
+  );
 
   testWidgets(
     'El destino Comercial permite crear un Cliente y navega a su expediente',

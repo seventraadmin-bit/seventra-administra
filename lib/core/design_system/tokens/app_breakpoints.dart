@@ -19,4 +19,10 @@ abstract final class AppBreakpoints {
   static const double medium = 1000;
 
   // Por encima de `medium` se considera "expanded": espacio completo.
+
+  /// Ancho máximo de contenido para expedientes/pantallas de detalle
+  /// (`ConstrainedBox(maxWidth: ...)`) que usan `RisegFieldGrid` — deja
+  /// espacio real para 3 columnas por encima de `medium`, en vez del
+  /// ancho angosto de un formulario de una sola columna.
+  static const double wide = 1100;
 }

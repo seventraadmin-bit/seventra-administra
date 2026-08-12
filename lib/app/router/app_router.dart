@@ -114,13 +114,27 @@ GoRouter createAppRouter() {
               routes: [
                 if (def.path == '/organizacion')
                   // Organización tiene subnavegación propia (Empresa |
-                  // Sucursales | Puestos | Áreas) desde la Etapa 4D —
-                  // `/organizacion` en sí sigue mostrando Empresa por
-                  // defecto (compatibilidad con la Etapa 4B).
+                  // Sucursales | Puestos | Áreas) desde la Etapa 4D.
+                  // `/organizacion` en sí solo redirige a
+                  // `/organizacion/empresa` — mismo patrón que
+                  // `/comercial`/`/finanzas`/`/personal`/`/inventario`
+                  // (padre sin `builder` propio, las 4 pestañas como
+                  // rutas hermanas planas). Corregido en la Etapa 15:
+                  // antes `/organizacion` tenía su propio `builder`
+                  // (Empresa) *y* rutas hijas — eso hacía que go_router
+                  // mantuviera varias instancias de `OrganizacionShellScreen`
+                  // vivas a la vez (una por nivel de ruta coincidente) y
+                  // desincronizaba la pestaña marcada del contenido
+                  // realmente visible.
                   GoRoute(
                     path: def.path,
-                    builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.empresa),
+                    redirect: (context, state) =>
+                        state.uri.path == '/organizacion' ? '/organizacion/empresa' : null,
                     routes: [
+                      GoRoute(
+                        path: 'empresa',
+                        builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.empresa),
+                      ),
                       GoRoute(
                         path: 'sucursales',
                         builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.sucursales),
@@ -154,9 +168,8 @@ GoRouter createAppRouter() {
                   // Organización (Arquitectura Funcional v1.1). Desde la
                   // Etapa 4F.1 ya tiene 2 pestañas reales (Clientes,
                   // Servicios) — `/comercial` en sí ya no muestra nada
-                  // directamente, redirige a `/comercial/clientes` (a
-                  // diferencia de `/organizacion`, que sí muestra Empresa
-                  // en su propia ruta).
+                  // directamente, redirige a `/comercial/clientes` (mismo
+                  // patrón que `/organizacion` desde la Etapa 15).
                   GoRoute(
                     path: def.path,
                     // Condicionado a la ruta exacta: el `redirect` de un

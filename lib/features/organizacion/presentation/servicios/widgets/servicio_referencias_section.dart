@@ -36,6 +36,7 @@ class ServicioReferenciasSection extends StatelessWidget {
     if (modo == ServicioExpedienteModo.consulta) {
       return RisegFormSection(
         title: l10n.servicioSeccionReferenciasTitulo,
+        grid: true,
         children: [
           CampoConsulta(label: l10n.servicioCampoReferenciaComercial, value: servicio.referenciaComercial),
           CampoConsulta(label: l10n.servicioCampoReferenciaContractual, value: servicio.referenciaContractual),
@@ -45,6 +46,7 @@ class ServicioReferenciasSection extends StatelessWidget {
 
     return RisegFormSection(
       title: l10n.servicioSeccionReferenciasTitulo,
+      grid: true,
       children: [
         RisegTextField(
           label: l10n.servicioCampoReferenciaComercial,

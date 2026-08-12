@@ -32,6 +32,7 @@ class ServicioDireccionOperativaSection extends StatelessWidget {
 
     return RisegFormSection(
       title: l10n.servicioSeccionDireccionOperativaTitulo,
+      grid: d != null,
       children: [
         if (d == null)
           Row(

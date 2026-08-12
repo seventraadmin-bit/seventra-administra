@@ -38,6 +38,7 @@ class DatosGeneralesSection extends StatelessWidget {
     if (modo == EmpresaExpedienteModo.consulta) {
       return RisegFormSection(
         title: l10n.empresaSeccionDatosGeneralesTitulo,
+        grid: true,
         children: [
           CampoConsulta(label: l10n.empresaCampoCodigo, value: empresa.codigo),
           CampoConsulta(label: l10n.empresaCampoRazonSocial, value: empresa.razonSocial),
@@ -53,6 +54,7 @@ class DatosGeneralesSection extends StatelessWidget {
 
     return RisegFormSection(
       title: l10n.empresaSeccionDatosGeneralesTitulo,
+      grid: true,
       children: [
         CampoConsulta(label: l10n.empresaCampoCodigo, value: empresa.codigo),
         RisegTextField(

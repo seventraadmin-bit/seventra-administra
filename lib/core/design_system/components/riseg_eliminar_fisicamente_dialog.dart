@@ -4,11 +4,13 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../design_system.dart';
 
 /// Traduce cualquier tipo sellado `EliminarXxxFisicamenteResultado` a
-/// esta forma común (más `tieneDependencias`, que cada llamador valida
-/// aparte porque necesita mostrar el `detalle` específico *antes* de
-/// invocar [mostrarDialogoEliminarFisicamente] — ver cada
-/// `mostrarDialogoEliminarXxxFisicamente`).
-enum ResultadoEliminacionFisica { exitoso, motivoRequerido, noExiste, errorInesperado }
+/// esta forma común. `tieneDependencias` existe para que el caparazón
+/// **no** muestre un segundo aviso genérico encima del `detalle`
+/// específico que cada `mostrarDialogoEliminarXxxFisicamente` ya
+/// mostró antes de mapear el resultado (bug real, Etapa 15: antes se
+/// mapeaba a `errorInesperado` y el usuario veía dos avisos, uno
+/// específico y otro genérico, encimados).
+enum ResultadoEliminacionFisica { exitoso, motivoRequerido, noExiste, tieneDependencias, errorInesperado }
 
 /// Caparazón visual compartido de "Eliminar físicamente" (Etapa 11D) —
 /// **puramente presentacional**: solo captura el motivo obligatorio y
@@ -69,6 +71,10 @@ Future<bool> mostrarDialogoEliminarFisicamente(
           return null;
         case ResultadoEliminacionFisica.noExiste:
           RisegFeedback.showError(context, l10n.eliminacionFisicaErrorNoExiste);
+          return false;
+        case ResultadoEliminacionFisica.tieneDependencias:
+          // El `detalle` específico ya se mostró en el llamador, antes
+          // de mapear a este caso — no se muestra nada más aquí.
           return false;
         case ResultadoEliminacionFisica.errorInesperado:
           RisegFeedback.showError(context, l10n.eliminacionFisicaErrorInesperado);

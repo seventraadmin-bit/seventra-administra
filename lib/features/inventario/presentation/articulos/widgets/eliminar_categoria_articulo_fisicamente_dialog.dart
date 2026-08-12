@@ -38,7 +38,7 @@ Future<bool> mostrarDialogoEliminarCategoriaArticuloFisicamente(
           return ResultadoEliminacionFisica.noExiste;
         case EliminarCategoriaArticuloFisicamenteTieneDependencias(:final detalle):
           if (context.mounted) RisegFeedback.showError(context, detalle);
-          return ResultadoEliminacionFisica.errorInesperado;
+          return ResultadoEliminacionFisica.tieneDependencias;
         case EliminarCategoriaArticuloFisicamenteErrorInesperado():
           return ResultadoEliminacionFisica.errorInesperado;
       }

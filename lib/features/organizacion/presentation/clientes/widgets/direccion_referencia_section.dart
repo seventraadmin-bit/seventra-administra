@@ -36,6 +36,7 @@ class DireccionReferenciaSection extends StatelessWidget {
     if (modo == ClienteExpedienteModo.consulta) {
       return RisegFormSection(
         title: l10n.clienteSeccionDireccionReferenciaTitulo,
+        grid: true,
         children: [
           CampoConsulta(label: l10n.empresaCampoCalle, value: direccion?.calle),
           CampoConsulta(label: l10n.empresaCampoNumeroExterior, value: direccion?.numeroExterior),
@@ -61,6 +62,7 @@ class DireccionReferenciaSection extends StatelessWidget {
 
     return RisegFormSection(
       title: l10n.clienteSeccionDireccionReferenciaTitulo,
+      grid: true,
       children: [
         RisegTextField(
           label: l10n.empresaCampoCalle,

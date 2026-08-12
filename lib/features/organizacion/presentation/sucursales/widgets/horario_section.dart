@@ -58,6 +58,7 @@ class HorarioSection extends StatelessWidget {
     if (modo == SucursalExpedienteModo.consulta) {
       return RisegFormSection(
         title: l10n.sucursalSeccionHorarioTitulo,
+        grid: true,
         children: [
           for (var dia = 0; dia < 7; dia++) _filaConsulta(context, l10n, dia),
         ],
@@ -66,6 +67,7 @@ class HorarioSection extends StatelessWidget {
 
     return RisegFormSection(
       title: l10n.sucursalSeccionHorarioTitulo,
+      grid: true,
       children: [
         for (var dia = 0; dia < 7; dia++) _filaEdicion(context, l10n, dia),
       ],

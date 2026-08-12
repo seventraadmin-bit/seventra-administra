@@ -48,6 +48,7 @@ class SucursalDatosGeneralesSection extends StatelessWidget {
     if (modo == SucursalExpedienteModo.consulta) {
       return RisegFormSection(
         title: l10n.sucursalSeccionDatosGeneralesTitulo,
+        grid: true,
         children: [
           CampoConsulta(label: l10n.sucursalCampoCodigo, value: sucursal.codigo),
           CampoConsulta(label: l10n.sucursalCampoNombre, value: sucursal.nombre),
@@ -58,6 +59,7 @@ class SucursalDatosGeneralesSection extends StatelessWidget {
 
     return RisegFormSection(
       title: l10n.sucursalSeccionDatosGeneralesTitulo,
+      grid: true,
       children: [
         CampoConsulta(label: l10n.sucursalCampoCodigo, value: sucursal.codigo),
         RisegTextField(

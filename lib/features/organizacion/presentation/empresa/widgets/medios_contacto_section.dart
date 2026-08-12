@@ -38,6 +38,7 @@ class MediosContactoSection extends StatelessWidget {
     if (modo == EmpresaExpedienteModo.consulta) {
       return RisegFormSection(
         title: l10n.empresaSeccionMediosContactoTitulo,
+        grid: true,
         children: [
           CampoConsulta(label: l10n.empresaCampoTelefono, value: contacto?.telefono),
           CampoConsulta(label: l10n.empresaCampoCorreo, value: contacto?.correo),
@@ -53,6 +54,7 @@ class MediosContactoSection extends StatelessWidget {
 
     return RisegFormSection(
       title: l10n.empresaSeccionMediosContactoTitulo,
+      grid: true,
       children: [
         RisegTextField(
           label: l10n.empresaCampoTelefono,

@@ -14,12 +14,13 @@ import '../../../organizacion_providers.dart';
 /// `eliminarSucursalFisicamenteAutorizadoProvider` (`exigirMaestro`)
 /// — nunca en la UI.
 ///
-/// Nota operativa: toda Sucursal creada por
-/// `SucursalRepositoryImpl.crear` inserta transaccionalmente una
-/// `Ubicacion` raíz, así que en la práctica esta acción siempre
-/// devuelve `TieneDependencias` — se deja disponible por si en el
-/// futuro existe una Sucursal sin esa Ubicación (p. ej. capturada por
-/// otra vía), no porque hoy sea alcanzable en el flujo normal.
+/// Nota operativa (corregida en Etapa 15): `SucursalRepositoryImpl.crear`
+/// inserta transaccionalmente una `Ubicacion` raíz + su Almacén General,
+/// pero `eliminarFisicamente` reconoce esa pareja como estructura
+/// automática (no como historia real) y la elimina junto con la
+/// Sucursal — una Sucursal recién creada, sin actividad real, sí es
+/// alcanzable. Sigue devolviendo `TieneDependencias` si hay Servicios,
+/// Empleados, movimientos financieros, u otras Ubicaciones reales.
 Future<bool> mostrarDialogoEliminarSucursalFisicamente(BuildContext context, WidgetRef ref, String sucursalId) async {
   final l10n = AppLocalizations.of(context)!;
 
@@ -41,7 +42,7 @@ Future<bool> mostrarDialogoEliminarSucursalFisicamente(BuildContext context, Wid
           return ResultadoEliminacionFisica.noExiste;
         case EliminarSucursalFisicamenteTieneDependencias(:final detalle):
           if (context.mounted) RisegFeedback.showError(context, detalle);
-          return ResultadoEliminacionFisica.errorInesperado;
+          return ResultadoEliminacionFisica.tieneDependencias;
         case EliminarSucursalFisicamenteErrorInesperado():
           return ResultadoEliminacionFisica.errorInesperado;
       }
