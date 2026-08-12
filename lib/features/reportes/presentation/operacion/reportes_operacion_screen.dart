@@ -5,16 +5,21 @@ import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formatoCentavosPago;
+import 'package:riseg_one/features/reportes/domain/export/exportar_reporte_resultado.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_compras_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_inventario_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_telefonia_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_vehiculos_usecase.dart';
+import 'package:riseg_one/features/reportes/reportes_providers.dart';
 import 'package:riseg_one/features/telefonia/presentation/equipo_telefonico_labels.dart' show estatusEquipoTelefonicoLabel;
 import 'package:riseg_one/features/telefonia/presentation/linea_telefonica_labels.dart' show estatusLineaTelefonicaLabel;
 import 'package:riseg_one/features/vehiculos/presentation/vehiculo_labels.dart' show estatusVehiculoLabel;
 
+import '../widgets/construir_contexto_exportacion.dart';
+import '../widgets/reporte_export_button.dart';
 import '../widgets/reportes_filtro_bar.dart';
 import 'reportes_operacion_controller.dart';
+import 'reportes_operacion_state.dart';
 
 /// Pestaña Operación de Reportes (Etapa 12C) — 4 bloques compactos,
 /// cada uno omitido por completo si falta su permiso. Nunca reconstruye
@@ -59,7 +64,11 @@ class ReportesOperacionScreen extends ConsumerWidget {
             )
           else ...[
             if (controller.tieneCompras && state.resumenCompras != null) ...[
-              _SeccionCompras(l10n: l10n, resumen: state.resumenCompras!),
+              _SeccionCompras(
+                l10n: l10n,
+                resumen: state.resumenCompras!,
+                onExportar: () => _exportarCompras(context, ref, l10n, state, state.resumenCompras!),
+              ),
               const SizedBox(height: AppSpacing.xl),
             ],
             if (controller.tieneInventario && state.resumenInventario != null) ...[
@@ -67,11 +76,19 @@ class ReportesOperacionScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xl),
             ],
             if (controller.tieneVehiculos && state.resumenVehiculos != null) ...[
-              _SeccionVehiculos(l10n: l10n, resumen: state.resumenVehiculos!),
+              _SeccionVehiculos(
+                l10n: l10n,
+                resumen: state.resumenVehiculos!,
+                onExportar: () => _exportarVehiculos(context, ref, l10n, state, state.resumenVehiculos!),
+              ),
               const SizedBox(height: AppSpacing.xl),
             ],
             if (controller.tieneTelefonia && state.resumenTelefonia != null)
-              _SeccionTelefonia(l10n: l10n, resumen: state.resumenTelefonia!),
+              _SeccionTelefonia(
+                l10n: l10n,
+                resumen: state.resumenTelefonia!,
+                onExportar: () => _exportarTelefonia(context, ref, l10n, state, state.resumenTelefonia!),
+              ),
           ],
         ],
       ),
@@ -79,11 +96,82 @@ class ReportesOperacionScreen extends ConsumerWidget {
   }
 }
 
+Future<void> _exportarCompras(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  ReportesOperacionState state,
+  ResumenComprasReportes resumen,
+) async {
+  final contexto = construirContextoExportacion(
+    ref,
+    nombreReporte: l10n.reportesNombreComprasPeriodo,
+    rangoInicio: state.rangoInicio,
+    rangoFin: state.rangoFin,
+  );
+  final resultado = await ref.read(exportarComprasPeriodoXlsxUseCaseProvider).ejecutar(contexto: contexto, resumen: resumen);
+  if (!context.mounted) return;
+  switch (resultado) {
+    case ExportarReporteExitoso():
+      RisegFeedback.showSuccess(context, l10n.reportesExportoExito);
+    case ExportarReporteErrorInesperado():
+      RisegFeedback.showError(context, l10n.reportesExportoError);
+  }
+}
+
+Future<void> _exportarVehiculos(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  ReportesOperacionState state,
+  ResumenVehiculosReportes resumen,
+) async {
+  final contexto = construirContextoExportacion(
+    ref,
+    nombreReporte: l10n.reportesNombreVehiculosMantenimiento,
+    rangoInicio: state.rangoInicio,
+    rangoFin: state.rangoFin,
+  );
+  final resultado =
+      await ref.read(exportarVehiculosMantenimientoXlsxUseCaseProvider).ejecutar(contexto: contexto, resumen: resumen);
+  if (!context.mounted) return;
+  switch (resultado) {
+    case ExportarReporteExitoso():
+      RisegFeedback.showSuccess(context, l10n.reportesExportoExito);
+    case ExportarReporteErrorInesperado():
+      RisegFeedback.showError(context, l10n.reportesExportoError);
+  }
+}
+
+Future<void> _exportarTelefonia(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  ReportesOperacionState state,
+  ResumenTelefoniaReportes resumen,
+) async {
+  final contexto = construirContextoExportacion(
+    ref,
+    nombreReporte: l10n.reportesNombreTelefoniaRecargas,
+    rangoInicio: state.rangoInicio,
+    rangoFin: state.rangoFin,
+  );
+  final resultado = await ref.read(exportarTelefoniaRecargasXlsxUseCaseProvider).ejecutar(contexto: contexto, resumen: resumen);
+  if (!context.mounted) return;
+  switch (resultado) {
+    case ExportarReporteExitoso():
+      RisegFeedback.showSuccess(context, l10n.reportesExportoExito);
+    case ExportarReporteErrorInesperado():
+      RisegFeedback.showError(context, l10n.reportesExportoError);
+  }
+}
+
 class _SeccionCompras extends StatelessWidget {
-  const _SeccionCompras({required this.l10n, required this.resumen});
+  const _SeccionCompras({required this.l10n, required this.resumen, required this.onExportar});
 
   final AppLocalizations l10n;
   final ResumenComprasReportes resumen;
+  final Future<void> Function() onExportar;
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +185,7 @@ class _SeccionCompras extends StatelessWidget {
             variant: RisegButtonVariant.ghost,
             onPressed: () => context.go('/compras'),
           ),
+          secondaryAction: ReporteExportButton(label: l10n.reportesExportarExcel, icon: Icons.grid_on_outlined, onExportar: onExportar),
         ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
@@ -167,10 +256,11 @@ class _SeccionInventario extends StatelessWidget {
 }
 
 class _SeccionVehiculos extends StatelessWidget {
-  const _SeccionVehiculos({required this.l10n, required this.resumen});
+  const _SeccionVehiculos({required this.l10n, required this.resumen, required this.onExportar});
 
   final AppLocalizations l10n;
   final ResumenVehiculosReportes resumen;
+  final Future<void> Function() onExportar;
 
   @override
   Widget build(BuildContext context) {
@@ -184,6 +274,7 @@ class _SeccionVehiculos extends StatelessWidget {
             variant: RisegButtonVariant.ghost,
             onPressed: () => context.go('/vehiculos/flotilla'),
           ),
+          secondaryAction: ReporteExportButton(label: l10n.reportesExportarExcel, icon: Icons.grid_on_outlined, onExportar: onExportar),
         ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
@@ -227,10 +318,11 @@ class _SeccionVehiculos extends StatelessWidget {
 }
 
 class _SeccionTelefonia extends StatelessWidget {
-  const _SeccionTelefonia({required this.l10n, required this.resumen});
+  const _SeccionTelefonia({required this.l10n, required this.resumen, required this.onExportar});
 
   final AppLocalizations l10n;
   final ResumenTelefoniaReportes resumen;
+  final Future<void> Function() onExportar;
 
   @override
   Widget build(BuildContext context) {
@@ -244,6 +336,7 @@ class _SeccionTelefonia extends StatelessWidget {
             variant: RisegButtonVariant.ghost,
             onPressed: () => context.go('/telefonia/equipos'),
           ),
+          secondaryAction: ReporteExportButton(label: l10n.reportesExportarExcel, icon: Icons.grid_on_outlined, onExportar: onExportar),
         ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(

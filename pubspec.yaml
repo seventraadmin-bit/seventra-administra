@@ -63,6 +63,11 @@ dependencies:
   # el paquete `printing`.
   pdf: ^3.11.3
 
+  # Generación de XLSX (Etapa 12D) — solo escritura de workbooks en
+  # memoria; abrir el archivo resultante reutiliza `AttachmentStorage.abrir`
+  # igual que los PDF, nunca un editor propio embebido.
+  excel: ^4.0.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

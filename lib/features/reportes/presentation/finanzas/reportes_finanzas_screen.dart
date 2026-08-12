@@ -7,6 +7,10 @@ import 'package:riseg_one/features/finanzas/domain/usecases/cuenta_por_cobrar_an
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formatoCentavosPago;
 import 'package:riseg_one/features/reportes/domain/usecases/clasificar_egresos_por_origen_usecase.dart';
 
+import '../../domain/export/exportar_reporte_resultado.dart';
+import '../../reportes_providers.dart';
+import '../widgets/construir_contexto_exportacion.dart';
+import '../widgets/reporte_export_button.dart';
 import '../widgets/reportes_filtro_bar.dart';
 import 'reportes_finanzas_controller.dart';
 import 'reportes_finanzas_state.dart';
@@ -37,12 +41,67 @@ class ReportesFinanzasScreen extends ConsumerWidget {
     final state = ref.watch(reportesFinanzasControllerProvider);
     final controller = ref.read(reportesFinanzasControllerProvider.notifier);
 
+    Future<void> exportarPdf() async {
+      final contexto = construirContextoExportacion(
+        ref,
+        nombreReporte: l10n.reportesNombreReporteFinanzas,
+        rangoInicio: state.rangoInicio,
+        rangoFin: state.rangoFin,
+      );
+      final resultado =
+          await ref.read(exportarReporteFinanzasPdfUseCaseProvider).ejecutar(contexto: contexto, state: state);
+      if (!context.mounted) return;
+      switch (resultado) {
+        case ExportarReporteExitoso():
+          RisegFeedback.showSuccess(context, l10n.reportesExportoExito);
+        case ExportarReporteErrorInesperado():
+          RisegFeedback.showError(context, l10n.reportesExportoError);
+      }
+    }
+
+    Future<void> exportarEgresosXlsx() async {
+      final origen = state.egresosPorOrigen;
+      if (origen == null) return;
+      final contexto = construirContextoExportacion(
+        ref,
+        nombreReporte: l10n.reportesNombreFinanzasEgresos,
+        rangoInicio: state.rangoInicio,
+        rangoFin: state.rangoFin,
+      );
+      final resultado =
+          await ref.read(exportarFinanzasEgresosXlsxUseCaseProvider).ejecutar(contexto: contexto, detalle: origen.detalle);
+      if (!context.mounted) return;
+      switch (resultado) {
+        case ExportarReporteExitoso():
+          RisegFeedback.showSuccess(context, l10n.reportesExportoExito);
+        case ExportarReporteErrorInesperado():
+          RisegFeedback.showError(context, l10n.reportesExportoError);
+      }
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RisegSectionHeader(title: l10n.reportesFinanzasTitulo, description: l10n.reportesFinanzasDescripcion),
+          RisegSectionHeader(
+            title: l10n.reportesFinanzasTitulo,
+            description: l10n.reportesFinanzasDescripcion,
+            primaryAction: controller.sinAutorizacion || state.cargando
+                ? null
+                : Wrap(
+                    spacing: AppSpacing.xs,
+                    children: [
+                      ReporteExportButton(label: l10n.reportesExportarPdf, icon: Icons.picture_as_pdf_outlined, onExportar: exportarPdf),
+                      if (state.egresosPorOrigen != null)
+                        ReporteExportButton(
+                          label: l10n.reportesExportarExcel,
+                          icon: Icons.grid_on_outlined,
+                          onExportar: exportarEgresosXlsx,
+                        ),
+                    ],
+                  ),
+          ),
           const SizedBox(height: AppSpacing.md),
           ReportesFiltroBar(
             rangoInicio: state.rangoInicio,

@@ -225,7 +225,7 @@ void main() {
       registrarDocumento = RegistrarDocumentoVehiculoUseCase(documentoRepo, vehiculoRepo);
 
       final obtenerAlertas = ObtenerAlertasVehiculosUseCase(vehiculoRepo, documentoRepo, mantenimientoRepo, kilometrajeRepo);
-      obtenerResumen = ObtenerResumenVehiculosUseCase(obtenerAlertas, mantenimientoRepo);
+      obtenerResumen = ObtenerResumenVehiculosUseCase(obtenerAlertas, mantenimientoRepo, vehiculoRepo);
     });
 
     tearDown(() => db.close());

@@ -5,6 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formatoCentavosPago;
 
+import '../../domain/export/exportar_reporte_resultado.dart';
+import '../../reportes_providers.dart';
+import '../widgets/construir_contexto_exportacion.dart';
+import '../widgets/reporte_export_button.dart';
 import '../widgets/reportes_filtro_bar.dart';
 import 'reportes_general_controller.dart';
 
@@ -22,12 +26,37 @@ class ReportesGeneralScreen extends ConsumerWidget {
     final controller = ref.read(reportesGeneralControllerProvider.notifier);
     final resumen = state.resumen;
 
+    Future<void> exportarPdf() async {
+      if (resumen == null) return;
+      final contexto = construirContextoExportacion(
+        ref,
+        nombreReporte: l10n.reportesNombreReporteGeneral,
+        rangoInicio: state.rangoInicio,
+        rangoFin: state.rangoFin,
+      );
+      final resultado =
+          await ref.read(exportarReporteGeneralPdfUseCaseProvider).ejecutar(contexto: contexto, resumen: resumen);
+      if (!context.mounted) return;
+      switch (resultado) {
+        case ExportarReporteExitoso():
+          RisegFeedback.showSuccess(context, l10n.reportesExportoExito);
+        case ExportarReporteErrorInesperado():
+          RisegFeedback.showError(context, l10n.reportesExportoError);
+      }
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RisegSectionHeader(title: l10n.reportesGeneralTitulo, description: l10n.reportesGeneralDescripcion),
+          RisegSectionHeader(
+            title: l10n.reportesGeneralTitulo,
+            description: l10n.reportesGeneralDescripcion,
+            primaryAction: resumen == null
+                ? null
+                : ReporteExportButton(label: l10n.reportesExportarPdf, icon: Icons.picture_as_pdf_outlined, onExportar: exportarPdf),
+          ),
           const SizedBox(height: AppSpacing.md),
           ReportesFiltroBar(
             rangoInicio: state.rangoInicio,

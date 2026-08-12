@@ -31,4 +31,10 @@ class AppPaths {
 
   /// Raíz donde vivirán los respaldos de la base de datos — sin uso todavía.
   String get backupsDir => p.join(_root, 'backups');
+
+  /// Raíz donde se guardan los reportes exportados (Etapa 12D) — a
+  /// diferencia de [attachmentsDir], estos documentos no tienen un
+  /// dueño de negocio (empleado, vehículo, compra); son generados bajo
+  /// demanda desde Reportes, sin persistir ningún `Attachment`.
+  String get reportesDir => p.join(_root, 'reportes');
 }

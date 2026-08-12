@@ -3587,5 +3587,18 @@
   "reportesTelefoniaRecargasPorEmpleado": "Recargas por Empleado",
   "reportesTelefoniaColumnaServicio": "Servicio",
   "reportesTelefoniaColumnaEmpleado": "Empleado",
-  "reportesTelefoniaColumnaTotal": "Total"
+  "reportesTelefoniaColumnaTotal": "Total",
+
+  "reportesExportarPdf": "Exportar PDF",
+  "reportesExportarExcel": "Exportar Excel",
+  "reportesExportoExito": "Reporte exportado correctamente.",
+  "reportesExportoError": "No se pudo exportar el reporte.",
+  "reportesNombreReporteGeneral": "Reporte General",
+  "reportesNombreReporteFinanzas": "Resumen financiero",
+  "reportesNombreFinanzasEgresos": "Egresos por origen",
+  "reportesNombrePersonalEventos": "Eventos de Personal",
+  "reportesNombreNominaPeriodo": "Nóminas del periodo",
+  "reportesNombreComprasPeriodo": "Compras del periodo",
+  "reportesNombreVehiculosMantenimiento": "Mantenimientos y costos de Vehículos",
+  "reportesNombreTelefoniaRecargas": "Recargas de Telefonía"
 }

@@ -6,11 +6,16 @@ import 'package:go_router/go_router.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formatoCentavosPago;
 import 'package:riseg_one/features/personal/presentation/empleados/widgets/baja_laboral_empleado_dialog.dart' show motivoBajaEmpleadoLabel;
+import 'package:riseg_one/features/reportes/domain/export/exportar_reporte_resultado.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_nomina_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_personal_usecase.dart';
+import 'package:riseg_one/features/reportes/reportes_providers.dart';
 
+import '../widgets/construir_contexto_exportacion.dart';
+import '../widgets/reporte_export_button.dart';
 import '../widgets/reportes_filtro_bar.dart';
 import 'reportes_personal_nomina_controller.dart';
+import 'reportes_personal_nomina_state.dart';
 
 /// Pestaña Personal · Nómina de Reportes (Etapa 12B) — dos subsecciones
 /// independientes, cada una omitida por completo si falta su permiso.
@@ -56,10 +61,19 @@ class ReportesPersonalNominaScreen extends ConsumerWidget {
               )
             else ...[
               if (controller.tienePersonal && state.resumenPersonal != null) ...[
-                _SeccionPersonal(l10n: l10n, resumen: state.resumenPersonal!),
+                _SeccionPersonal(
+                  l10n: l10n,
+                  resumen: state.resumenPersonal!,
+                  onExportar: () => _exportarPersonal(context, ref, l10n, state, state.resumenPersonal!),
+                ),
                 const SizedBox(height: AppSpacing.xl),
               ],
-              if (controller.tieneNomina && state.resumenNomina != null) _SeccionNomina(l10n: l10n, resumen: state.resumenNomina!),
+              if (controller.tieneNomina && state.resumenNomina != null)
+                _SeccionNomina(
+                  l10n: l10n,
+                  resumen: state.resumenNomina!,
+                  onExportar: () => _exportarNomina(context, ref, l10n, state, state.resumenNomina!),
+                ),
             ],
           ],
         ],
@@ -68,18 +82,68 @@ class ReportesPersonalNominaScreen extends ConsumerWidget {
   }
 }
 
+Future<void> _exportarPersonal(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  ReportesPersonalNominaState state,
+  ResumenPersonalReportes resumen,
+) async {
+  final contexto = construirContextoExportacion(
+    ref,
+    nombreReporte: l10n.reportesNombrePersonalEventos,
+    rangoInicio: state.rangoInicio,
+    rangoFin: state.rangoFin,
+  );
+  final resultado = await ref.read(exportarPersonalEventosXlsxUseCaseProvider).ejecutar(contexto: contexto, resumen: resumen);
+  if (!context.mounted) return;
+  switch (resultado) {
+    case ExportarReporteExitoso():
+      RisegFeedback.showSuccess(context, l10n.reportesExportoExito);
+    case ExportarReporteErrorInesperado():
+      RisegFeedback.showError(context, l10n.reportesExportoError);
+  }
+}
+
+Future<void> _exportarNomina(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  ReportesPersonalNominaState state,
+  ResumenNominaReportes resumen,
+) async {
+  final contexto = construirContextoExportacion(
+    ref,
+    nombreReporte: l10n.reportesNombreNominaPeriodo,
+    rangoInicio: state.rangoInicio,
+    rangoFin: state.rangoFin,
+  );
+  final resultado = await ref.read(exportarNominaPeriodoXlsxUseCaseProvider).ejecutar(contexto: contexto, resumen: resumen);
+  if (!context.mounted) return;
+  switch (resultado) {
+    case ExportarReporteExitoso():
+      RisegFeedback.showSuccess(context, l10n.reportesExportoExito);
+    case ExportarReporteErrorInesperado():
+      RisegFeedback.showError(context, l10n.reportesExportoError);
+  }
+}
+
 class _SeccionPersonal extends StatelessWidget {
-  const _SeccionPersonal({required this.l10n, required this.resumen});
+  const _SeccionPersonal({required this.l10n, required this.resumen, required this.onExportar});
 
   final AppLocalizations l10n;
   final ResumenPersonalReportes resumen;
+  final Future<void> Function() onExportar;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.reportesPersonalSeccionTitulo, style: AppTypography.heading2),
+        RisegSectionHeader(
+          title: l10n.reportesPersonalSeccionTitulo,
+          secondaryAction: ReporteExportButton(label: l10n.reportesExportarExcel, icon: Icons.grid_on_outlined, onExportar: onExportar),
+        ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: AppSpacing.md,
@@ -129,17 +193,21 @@ class _SeccionPersonal extends StatelessWidget {
 }
 
 class _SeccionNomina extends StatelessWidget {
-  const _SeccionNomina({required this.l10n, required this.resumen});
+  const _SeccionNomina({required this.l10n, required this.resumen, required this.onExportar});
 
   final AppLocalizations l10n;
   final ResumenNominaReportes resumen;
+  final Future<void> Function() onExportar;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.reportesNominaSeccionTitulo, style: AppTypography.heading2),
+        RisegSectionHeader(
+          title: l10n.reportesNominaSeccionTitulo,
+          secondaryAction: ReporteExportButton(label: l10n.reportesExportarExcel, icon: Icons.grid_on_outlined, onExportar: onExportar),
+        ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: AppSpacing.md,
