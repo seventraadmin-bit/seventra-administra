@@ -8,6 +8,7 @@ import '../core/database/app_database.dart';
 import '../core/di/providers.dart';
 import '../core/error/error_boundary.dart';
 import '../core/logging/app_logger.dart';
+import '../features/respaldo/domain/usecases/aplicar_restauracion_pendiente_usecase.dart';
 import 'app.dart';
 
 /// Orquesta el arranque completo de RISEG ONE, en orden:
@@ -27,6 +28,19 @@ void bootstrap() {
 
     final appPaths = await AppPaths.resolve(env);
     logger.info('Carpeta de datos: ${appPaths.rootDir}');
+
+    // Si hay una restauración pendiente (Etapa 14C), se aplica aquí —
+    // antes de abrir la base de datos — para nunca intentar sustituir
+    // un archivo que la propia conexión Drift ya tiene abierto.
+    final restauracionAplicada = await AplicarRestauracionPendienteUseCase(
+      databaseFile: appPaths.databaseFile,
+      attachmentsDir: appPaths.attachmentsDir,
+      restorePendingDir: appPaths.restorePendingDir,
+      restorePendingMarkerFile: appPaths.restorePendingMarkerFile,
+    ).ejecutar();
+    if (restauracionAplicada) {
+      logger.info('Restauración pendiente aplicada antes del arranque.');
+    }
 
     final database = AppDatabase(openAppDatabaseConnection(appPaths.databaseFile));
     final metadata = await database.ensureMetadata(appVersion: kAppVersion);

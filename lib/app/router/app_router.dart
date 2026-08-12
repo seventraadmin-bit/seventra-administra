@@ -88,6 +88,17 @@ GoRouter createAppRouter() {
         // a construirse.
         return path == '/acceso-denegado' ? null : '/acceso-denegado';
       }
+
+      // Respaldo y restauración (Etapa 14C) es exclusiva del Usuario
+      // Maestro — `usuarios.administrar` (el permiso de todo
+      // `/configuracion`) no basta, igual que ningún permiso dinámico
+      // basta para la eliminación física de la Etapa 11D. Doble candado
+      // con `exigirMaestro` en `respaldo_providers.dart`: aquí se evita
+      // incluso construir la pantalla, allá se protege la acción aunque
+      // se invoque sin pasar por esta ruta.
+      if (path == '/configuracion/respaldo' && !sesion.esMaestro) {
+        return '/acceso-denegado';
+      }
       return null;
     },
     routes: [
@@ -449,6 +460,11 @@ GoRouter createAppRouter() {
                         path: 'auditoria',
                         builder: (context, state) =>
                             const ConfiguracionShellScreen(tab: ConfiguracionTab.auditoria),
+                      ),
+                      GoRoute(
+                        path: 'respaldo',
+                        builder: (context, state) =>
+                            const ConfiguracionShellScreen(tab: ConfiguracionTab.respaldo),
                       ),
                     ],
                   )

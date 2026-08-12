@@ -26,15 +26,35 @@ class AppPaths {
   /// Ruta del archivo de base de datos SQLite (Drift).
   String get databaseFile => p.join(_root, 'riseg_one.sqlite');
 
-  /// Raíz donde vivirán los adjuntos (fotos, documentos) — sin uso todavía.
+  /// Raíz de los adjuntos (fotos, comprobantes, PDFs de resguardo, etc.)
+  /// — fuente de verdad irremplazable, forma parte del respaldo (Etapa
+  /// 14C).
   String get attachmentsDir => p.join(_root, 'attachments');
 
-  /// Raíz donde vivirán los respaldos de la base de datos — sin uso todavía.
+  /// Raíz donde se guardan los `.zip` de respaldo (Etapa 14C), tanto los
+  /// creados manualmente por el Usuario Maestro como el respaldo
+  /// preventivo automático que se genera antes de cada restauración.
   String get backupsDir => p.join(_root, 'backups');
 
   /// Raíz donde se guardan los reportes exportados (Etapa 12D) — a
   /// diferencia de [attachmentsDir], estos documentos no tienen un
   /// dueño de negocio (empleado, vehículo, compra); son generados bajo
-  /// demanda desde Reportes, sin persistir ningún `Attachment`.
+  /// demanda desde Reportes, sin persistir ningún `Attachment`. 100%
+  /// regenerables desde la base de datos, por eso quedan fuera del
+  /// respaldo (Etapa 14C).
   String get reportesDir => p.join(_root, 'reportes');
+
+  /// Carpeta de espera de una restauración validada pero aún no aplicada
+  /// (Etapa 14C) — [bootstrap] revisa [restorePendingMarkerFile] antes
+  /// de abrir la base de datos; si existe, sustituye [databaseFile] y
+  /// [attachmentsDir] con el contenido de esta carpeta antes de
+  /// continuar el arranque. Nunca se toca mientras la aplicación está
+  /// en ejecución con la conexión ya abierta — ver
+  /// `PrepararRestauracionUseCase`.
+  String get restorePendingDir => p.join(_root, 'restore_pending');
+
+  /// Marcador de que hay una restauración pendiente de aplicar en
+  /// [restorePendingDir]. Su sola existencia es la señal — el contenido
+  /// es solo informativo (fecha de creación del paquete, para logging).
+  String get restorePendingMarkerFile => p.join(_root, 'restore_pending.json');
 }

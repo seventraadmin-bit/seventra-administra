@@ -68,6 +68,16 @@ dependencies:
   # igual que los PDF, nunca un editor propio embebido.
   excel: ^4.0.6
 
+  # Respaldo y restauración (Etapa 14C) — ya estaban resueltos de forma
+  # transitiva (excel arrastra `archive`; drift/sqlite3_flutter_libs
+  # arrastran `sqlite3`); se declaran directos porque ahora
+  # `lib/features/respaldo` los importa explícitamente: `sqlite3` para
+  # abrir una conexión aislada de solo lectura (Database.backup,
+  # PRAGMA integrity_check/user_version) sin tocar la conexión Drift
+  # viva, `archive` para empaquetar/extraer el `.zip` del respaldo.
+  sqlite3: ^2.9.4
+  archive: ^3.6.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

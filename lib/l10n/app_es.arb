@@ -3650,5 +3650,44 @@
   "notificacionesGrupoDocumentosPorEmitir": "Facturación pendiente",
   "notificacionesGrupoCxcProxima": "Pagos próximos a vencer",
   "notificacionesGrupoCxcVencida": "Pagos vencidos",
-  "notificacionesGrupoPagosRecientes": "Pagos recibidos hoy"
+  "notificacionesGrupoPagosRecientes": "Pagos recibidos hoy",
+
+  "configuracionTabRespaldo": "Respaldo",
+
+  "respaldoTitulo": "Respaldo y restauración",
+  "respaldoDescripcion": "El respaldo incluye la base de datos completa y todos los adjuntos (fotografías, comprobantes, documentos). No incluye los reportes exportados, que se regeneran desde Reportes, ni las credenciales cifradas de equipos telefónicos: viven en el Almacén de Credenciales de este equipo y deben capturarse de nuevo si restauras en otro equipo.",
+  "respaldoBotonCrear": "Crear respaldo ahora",
+  "respaldoBotonRestaurar": "Restaurar desde archivo",
+  "respaldoBotonEntendido": "Entendido",
+  "respaldoCrearSeleccionarDestinoTitulo": "Guardar respaldo como",
+  "respaldoCrearExitoTitulo": "Respaldo creado",
+  "respaldoCrearExitoMensaje": "El respaldo se creó correctamente.",
+  "respaldoErrorTitulo": "No fue posible completar la acción",
+  "respaldoCrearErrorIntegridad": "No fue posible verificar la integridad del respaldo. Intenta de nuevo.",
+  "respaldoErrorInesperadoMensaje": "Ocurrió un error inesperado: {mensaje}",
+  "@respaldoErrorInesperadoMensaje": {
+    "placeholders": { "mensaje": { "type": "String" } }
+  },
+  "respaldoListaVaciaTitulo": "Aún no hay respaldos",
+  "respaldoListaVaciaMensaje": "Crea el primero con el botón de arriba.",
+  "respaldoRestaurarConfirmarTitulo": "¿Restaurar este respaldo?",
+  "respaldoRestaurarConfirmarMensaje": "Esta acción reemplaza todos los datos actuales de RISEG ONE con los del archivo elegido. Antes de aplicar cualquier cambio se creará automáticamente un respaldo preventivo del estado actual. Si el respaldo proviene de otro equipo, las credenciales cifradas de equipos telefónicos no se restaurarán y deberán capturarse de nuevo.",
+  "respaldoRestaurarConfirmarBoton": "Restaurar",
+  "respaldoRestaurarCancelarBoton": "Cancelar",
+  "respaldoRestaurarErrorIntegridad": "El archivo elegido no pasó la verificación de integridad.",
+  "respaldoRestaurarErrorVersion": "Este respaldo requiere una versión más reciente de RISEG ONE (versión {versionPaquete}; esta instalación tiene la versión {versionApp}). Actualiza la aplicación antes de restaurar.",
+  "@respaldoRestaurarErrorVersion": {
+    "placeholders": {
+      "versionPaquete": { "type": "int" },
+      "versionApp": { "type": "int" }
+    }
+  },
+  "respaldoRestaurarErrorRespaldoPreventivo": "No fue posible crear el respaldo preventivo del estado actual, así que la restauración se canceló sin hacer ningún cambio: {detalle}",
+  "@respaldoRestaurarErrorRespaldoPreventivo": {
+    "placeholders": { "detalle": { "type": "String" } }
+  },
+  "respaldoRestaurarListaTitulo": "Restauración lista para aplicarse",
+  "respaldoRestaurarListaMensaje": "Los archivos ya fueron validados y preparados. RISEG ONE debe reiniciarse para completar la restauración. Puedes cerrar ahora o más tarde: se aplicará automáticamente la próxima vez que abras la aplicación.",
+  "respaldoRestaurarCerrarAhoraBoton": "Cerrar ahora",
+  "respaldoRestaurarMasTardeBoton": "Más tarde"
 }
