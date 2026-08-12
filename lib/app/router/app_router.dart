@@ -30,9 +30,9 @@ import '../../features/usuarios/usuarios_providers.dart';
 import '../../features/vehiculos/presentation/vehiculo_expediente_screen.dart';
 import '../../features/vehiculos/presentation/vehiculos_shell_screen.dart';
 import '../dev/design_system_catalog_screen.dart';
+import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../shell/acceso_denegado_screen.dart';
 import '../shell/app_shell_screen.dart';
-import '../shell/dashboard_welcome_screen.dart';
 import '../shell/module_placeholder_screen.dart';
 import '../shell/shell_destinations.dart';
 import '../shell/shell_permissions.dart';
@@ -458,9 +458,11 @@ GoRouter createAppRouter() {
                     builder: (context, state) {
                       // El Dashboard es la pantalla de inicio real del
                       // producto, no un módulo pendiente — tiene su
-                      // propia pantalla en vez del placeholder genérico.
+                      // propia pantalla en vez del placeholder genérico
+                      // (Etapa 13: dinámica por permisos, ya no una
+                      // bienvenida estática).
                       if (def.path == '/dashboard') {
-                        return const DashboardWelcomeScreen();
+                        return const DashboardScreen();
                       }
                       final l10n = AppLocalizations.of(context)!;
                       final destinations = buildShellDestinations(l10n);

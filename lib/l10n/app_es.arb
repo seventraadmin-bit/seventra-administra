@@ -45,17 +45,46 @@
   "shellProfileTooltip": "Perfil de usuario",
   "shellProfilePlaceholderName": "Marlon Ríos",
 
-  "dashboardWelcomeTitle": "Bienvenido a RISEG ONE",
-  "dashboardWelcomeMessage": "La infraestructura del sistema ya está lista. Los módulos irán apareciendo en este menú conforme avance el desarrollo.",
-  "dashboardVersionLabel": "Versión {version}",
-  "@dashboardVersionLabel": {
-    "description": "Etiqueta de versión mostrada en la pantalla de bienvenida del Dashboard.",
-    "placeholders": {
-      "version": {
-        "type": "String"
-      }
-    }
+  "dashboardTitulo": "Dashboard",
+  "dashboardDescripcion": "Qué pasa, qué requiere atención y qué está pendiente hoy",
+
+  "dashboardAccesoAltaPersonal": "Alta de Personal",
+  "dashboardAccesoRegistrarCompra": "Registrar Compra",
+  "dashboardAccesoGenerarNomina": "Generar Nómina",
+  "dashboardAccesoInventario": "Ir a Inventario",
+
+  "dashboardSeccionAtencion": "Requiere atención",
+  "dashboardSinPendientesTitulo": "No hay pendientes que requieran atención",
+  "dashboardSinPendientesMensaje": "Todas las secciones autorizadas están al corriente.",
+
+  "dashboardAlertaCxcVencida": "Cuentas por cobrar vencidas",
+  "dashboardAlertaCxcVencidaDetalle": "{cantidad} cuenta(s) — {monto}",
+  "@dashboardAlertaCxcVencidaDetalle": {
+    "placeholders": { "cantidad": { "type": "int" }, "monto": { "type": "String" } }
   },
+  "dashboardAlertaNominaPendiente": "Nómina pendiente de pago",
+  "dashboardAlertaDescuentosPendientes": "Descuentos de Inventario pendientes",
+  "dashboardAlertaInventarioDanado": "Inventario dañado o perdido",
+  "dashboardAlertaEmpleadosBajaPendiente": "Empleados de baja con Inventario pendiente",
+  "dashboardAlertaMantenimientoVencido": "Mantenimiento de Vehículos vencido",
+  "dashboardAlertaMantenimientoProximo": "Mantenimiento de Vehículos próximo",
+  "dashboardAlertaDocumentoVencido": "Documentos de Vehículos vencidos",
+  "dashboardAlertaDocumentoProximo": "Documentos de Vehículos por vencer",
+  "dashboardAlertaLineasSuspendidas": "Líneas telefónicas suspendidas",
+
+  "dashboardSeccionResumen": "Resumen",
+  "dashboardResumenLineasActivas": "Líneas activas",
+
+  "dashboardSeccionActividad": "Actividad reciente",
+  "dashboardActividadCompras": "Compras recientes",
+  "dashboardActividadPagos": "Pagos recientes",
+  "dashboardActividadAltas": "Altas recientes",
+  "dashboardActividadBajas": "Bajas recientes",
+  "dashboardActividadMovimientos": "Movimientos de Inventario",
+  "dashboardActividadNominas": "Últimas Nóminas",
+  "dashboardActividadMantenimientos": "Mantenimientos recientes",
+  "dashboardActividadRecargas": "Recargas recientes",
+  "dashboardActividadSinRegistros": "Sin registros recientes",
 
   "organizacionValorPendiente": "Pendiente de captura",
   "organizacionTabEmpresa": "Empresa",

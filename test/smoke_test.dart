@@ -91,7 +91,7 @@ void main() {
     await _pumpApp(tester);
 
     expect(find.byKey(const Key('app_shell')), findsOneWidget);
-    expect(find.byKey(const Key('dashboard_welcome')), findsOneWidget);
+    expect(find.byKey(const Key('dashboard_screen')), findsOneWidget);
   });
 
   testWidgets('Navegar a otra rama cambia el contenido sin reconstruir el shell', (tester) async {
