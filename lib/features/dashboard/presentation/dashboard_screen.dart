@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/permissions/permission_service.dart';
@@ -12,10 +13,17 @@ import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'dashboard_controller.dart';
 import 'dashboard_state.dart';
 
-/// Pantalla inicial dinámica por permisos (Etapa 13) — 3 zonas:
-/// Requiere atención (prioridad visual, primero), Resumen, Actividad
-/// reciente. Cada tarjeta se omite por completo si su sección llegó en
-/// `null` — nunca un hueco vacío ni un placeholder.
+final _formatoFecha = DateFormat('dd/MM/yyyy');
+
+/// Pantalla inicial dinámica por permisos (Etapa 13, rediseño visual
+/// Etapa 15) — centro de control: Requiere atención (compacto cuando no
+/// hay pendientes), zona financiera con jerarquía real (Resultado
+/// operativo por encima de Ingresos/Egresos), indicadores operativos
+/// compactos, y una sola Actividad reciente unificada en vez de 8
+/// tarjetas fragmentadas. Cada zona se omite por completo si no tiene
+/// contenido real que mostrar — nunca un hueco vacío ni una cifra
+/// inventada (sin datos históricos para comparar contra el periodo
+/// anterior hoy, así que ninguna tendencia se muestra).
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -31,6 +39,13 @@ class DashboardScreen extends ConsumerWidget {
         state.resumenInventario != null ||
         state.resumenVehiculos != null ||
         state.resumenTelefonia != null;
+
+    final secciones = <Widget>[
+      _SeccionAtencion(l10n: l10n, state: state),
+      if (_construirFinanciera(context, l10n, state) case final w?) w,
+      if (_construirIndicadores(context, l10n, state) case final w?) w,
+      if (_construirActividad(context, l10n, state) case final w?) w,
+    ];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -51,13 +66,11 @@ class DashboardScreen extends ConsumerWidget {
             )
           else if (state.errorCarga != null)
             RisegEmptyState(icon: Icons.error_outline, title: l10n.reportesErrorCargaTitulo, message: state.errorCarga!)
-          else ...[
-            _SeccionAtencion(l10n: l10n, state: state),
-            const SizedBox(height: AppSpacing.xl),
-            _SeccionResumen(l10n: l10n, state: state),
-            const SizedBox(height: AppSpacing.xl),
-            _SeccionActividad(l10n: l10n, state: state),
-          ],
+          else
+            for (var i = 0; i < secciones.length; i++) ...[
+              if (i > 0) const SizedBox(height: AppSpacing.xl),
+              secciones[i],
+            ],
         ],
       ),
     );
@@ -120,6 +133,7 @@ class _SeccionAtencion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final tarjetas = <Widget>[];
 
     final cxc = state.alertas?.cxcVencida;
@@ -231,10 +245,27 @@ class _SeccionAtencion extends StatelessWidget {
         Text(l10n.dashboardSeccionAtencion, style: AppTypography.heading2),
         const SizedBox(height: AppSpacing.sm),
         if (tarjetas.isEmpty)
-          RisegEmptyState(
-            icon: Icons.check_circle_outline,
-            title: l10n.dashboardSinPendientesTitulo,
-            message: l10n.dashboardSinPendientesMensaje,
+          // Estado compacto — una sola fila, nunca la zona vacía grande
+          // de antes (Etapa 15, hallazgo real de Marlon).
+          RisegCard(
+            variant: RisegCardVariant.subtle,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle_outline, size: AppSizes.iconMd, color: colors.success),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(l10n.dashboardSinPendientesTitulo, style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary)),
+                      Text(l10n.dashboardSinPendientesMensaje, style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           )
         else
           Wrap(spacing: AppSpacing.md, runSpacing: AppSpacing.md, children: tarjetas),
@@ -243,212 +274,420 @@ class _SeccionAtencion extends StatelessWidget {
   }
 }
 
-class _SeccionResumen extends StatelessWidget {
-  const _SeccionResumen({required this.l10n, required this.state});
+/// `null` cuando no hay ningún dato financiero autorizado que mostrar —
+/// el llamador la omite por completo (nunca una sección vacía).
+Widget? _construirFinanciera(BuildContext context, AppLocalizations l10n, DashboardState state) {
+  final general = state.resumenGeneral;
+  if (general == null) return null;
 
-  final AppLocalizations l10n;
-  final DashboardState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final general = state.resumenGeneral;
-    final personal = state.resumenPersonal;
-    final inventario = state.resumenInventario;
-    final telefonia = state.resumenTelefonia;
-
-    final tarjetas = <Widget>[
-      if (general?.totalIngresos != null)
-        RisegStatCard(label: l10n.reportesGeneralIngresos, value: formatoCentavosPago(general!.totalIngresos!), icon: Icons.trending_up),
-      if (general?.totalEgresos != null)
-        RisegStatCard(label: l10n.reportesGeneralEgresos, value: formatoCentavosPago(general!.totalEgresos!), icon: Icons.trending_down),
-      if (general?.resultadoOperativo != null)
-        RisegStatCard(
-          label: l10n.reportesGeneralResultadoOperativo,
-          value: formatoCentavosPago(general!.resultadoOperativo!),
-          icon: Icons.balance,
-          deltaTone: general.resultadoOperativo! >= 0 ? RisegStatusTone.success : RisegStatusTone.error,
-        ),
-      if (general?.totalComprasPeriodo != null)
-        RisegStatCard(
-          label: l10n.reportesGeneralCompras,
-          value: formatoCentavosPago(general!.totalComprasPeriodo!),
-          delta: l10n.reportesGeneralIndicadorInformativo,
-          deltaTone: RisegStatusTone.neutral,
-        ),
-      if (general?.totalNominaPagadaPeriodo != null)
-        RisegStatCard(
-          label: l10n.reportesGeneralNominaPagada,
-          value: formatoCentavosPago(general!.totalNominaPagadaPeriodo!),
-          delta: l10n.reportesGeneralIndicadorInformativo,
-          deltaTone: RisegStatusTone.neutral,
-        ),
-      if (personal != null)
-        RisegStatCard(label: l10n.reportesGeneralPersonalActivo, value: '${personal.totalActivos}', icon: Icons.people_outline),
-      if (general?.serviciosActivosActual != null)
-        RisegStatCard(label: l10n.reportesGeneralServiciosActivos, value: '${general!.serviciosActivosActual}', icon: Icons.handshake_outlined),
-      if (inventario != null) ...[
-        RisegStatCard(label: l10n.reportesInventarioExistencia, value: '${inventario.existenciaTotal}'),
-        RisegStatCard(label: l10n.reportesInventarioAsignaciones, value: '${inventario.asignacionesVigentes}'),
-      ],
-      if (telefonia != null)
-        RisegStatCard(label: l10n.dashboardResumenLineasActivas, value: '${telefonia.lineasPorEstatus['activa'] ?? 0}'),
-    ];
-
-    if (tarjetas.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.dashboardSeccionResumen, style: AppTypography.heading2),
-        const SizedBox(height: AppSpacing.sm),
-        Wrap(spacing: AppSpacing.md, runSpacing: AppSpacing.md, children: tarjetas),
-      ],
-    );
-  }
-}
-
-class _SeccionActividad extends StatelessWidget {
-  const _SeccionActividad({required this.l10n, required this.state});
-
-  final AppLocalizations l10n;
-  final DashboardState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final listas = <Widget>[];
-
-    final compras = state.actividad?.comprasRecientes;
-    if (compras != null) {
-      listas.add(_MiniLista(
-        titulo: l10n.dashboardActividadCompras,
-        filas: [
-          for (final c in compras)
-            _FilaActividad('${c.folioCompra} · ${c.proveedor ?? '—'}', _fechaCorta(c.fecha), onTap: () => context.go('/compras/${c.id}')),
-        ],
-      ));
-    }
-
-    final pagos = state.actividad?.pagosRecientes;
-    if (pagos != null) {
-      listas.add(_MiniLista(
-        titulo: l10n.dashboardActividadPagos,
-        filas: [for (final p in pagos) _FilaActividad('${p.pago.folioPago} · ${p.clienteNombre}', formatoCentavosPago(p.pago.montoTotal))],
-      ));
-    }
-
-    final personal = state.resumenPersonal;
-    if (personal != null) {
-      final altas = [...personal.altasEnPeriodo]..sort((a, b) => b.fechaIngreso.compareTo(a.fechaIngreso));
-      final bajas = [...personal.bajasEnPeriodo]..sort((a, b) => b.fechaBaja.compareTo(a.fechaBaja));
-      listas.add(_MiniLista(
-        titulo: l10n.dashboardActividadAltas,
-        filas: [for (final e in altas.take(3)) _FilaActividad(e.nombreCompleto, _fechaCorta(e.fechaIngreso))],
-      ));
-      listas.add(_MiniLista(
-        titulo: l10n.dashboardActividadBajas,
-        filas: [for (final b in bajas.take(3)) _FilaActividad(b.nombreCompleto, _fechaCorta(b.fechaBaja))],
-      ));
-    }
-
-    final movimientos = state.actividad?.movimientosRecientes;
-    if (movimientos != null) {
-      listas.add(_MiniLista(
-        titulo: l10n.dashboardActividadMovimientos,
-        filas: [
-          for (final m in movimientos)
-            _FilaActividad('${m.articuloNombre} · ${movimientoTipoLabel(l10n, m.movimiento.tipoMovimiento)}', '${m.movimiento.cantidad}'),
-        ],
-      ));
-    }
-
-    final nomina = state.resumenNomina;
-    if (nomina != null) {
-      final nominas = [...nomina.nominas]..sort((a, b) => b.nomina.fechaFinPeriodo.compareTo(a.nomina.fechaFinPeriodo));
-      listas.add(_MiniLista(
-        titulo: l10n.dashboardActividadNominas,
-        filas: [
-          for (final n in nominas.take(5))
-            _FilaActividad(n.nomina.folio, formatoCentavosPago(n.totalGenerado), onTap: () => context.go('/personal/nomina/${n.nomina.id}')),
-        ],
-      ));
-    }
-
-    final vehiculos = state.resumenVehiculos;
-    if (vehiculos != null) {
-      final mantenimientos = [...vehiculos.detalleMantenimientos]..sort((a, b) => b.registro.fecha.compareTo(a.registro.fecha));
-      listas.add(_MiniLista(
-        titulo: l10n.dashboardActividadMantenimientos,
-        filas: [for (final m in mantenimientos.take(5)) _FilaActividad(m.vehiculoLabel, _fechaCorta(m.registro.fecha))],
-      ));
-    }
-
-    final recargas = state.actividad?.recargasRecientes;
-    if (recargas != null) {
-      listas.add(_MiniLista(
-        titulo: l10n.dashboardActividadRecargas,
-        filas: [for (final r in recargas) _FilaActividad(r.lineaCodigo, formatoCentavosPago(r.recarga.importe))],
-      ));
-    }
-
-    if (listas.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.dashboardSeccionActividad, style: AppTypography.heading2),
-        const SizedBox(height: AppSpacing.sm),
-        Wrap(spacing: AppSpacing.md, runSpacing: AppSpacing.md, children: listas),
-      ],
-    );
+  final resultado = general.resultadoOperativo;
+  final ingresos = general.totalIngresos;
+  final egresos = general.totalEgresos;
+  final compras = general.totalComprasPeriodo;
+  final nominaPagada = general.totalNominaPagadaPeriodo;
+  if (resultado == null && ingresos == null && egresos == null && compras == null && nominaPagada == null) {
+    return null;
   }
 
-  String _fechaCorta(DateTime fecha) =>
-      '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
-}
+  final colors = context.colors;
+  final positivo = (resultado ?? 0) >= 0;
+  final tono = positivo ? colors.success : colors.error;
+  final tonoBg = positivo ? colors.successBg : colors.errorBg;
 
-class _FilaActividad {
-  const _FilaActividad(this.titulo, this.valor, {this.onTap});
-  final String titulo;
-  final String valor;
-  final VoidCallback? onTap;
-}
-
-class _MiniLista extends StatelessWidget {
-  const _MiniLista({required this.titulo, required this.filas});
-
-  final String titulo;
-  final List<_FilaActividad> filas;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 320,
-      child: RisegCard(
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(l10n.dashboardSeccionResumen, style: AppTypography.heading2),
+      const SizedBox(height: AppSpacing.sm),
+      RisegCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(titulo, style: AppTypography.heading3),
-            const SizedBox(height: AppSpacing.sm),
-            if (filas.isEmpty)
-              Text(AppLocalizations.of(context)!.dashboardActividadSinRegistros, style: AppTypography.caption)
-            else
-              for (final fila in filas)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-                  child: InkWell(
-                    onTap: fila.onTap,
-                    child: Row(
+            if (resultado != null)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(color: tonoBg, shape: BoxShape.circle),
+                    child: Icon(Icons.account_balance_outlined, size: AppSizes.iconMd, color: tono),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(child: Text(fila.titulo, overflow: TextOverflow.ellipsis)),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(fila.valor),
+                        Text(
+                          l10n.reportesGeneralResultadoOperativo,
+                          style: AppTypography.label.copyWith(color: colors.textMuted),
+                        ),
+                        Text(
+                          formatoCentavosPago(resultado),
+                          style: AppTypography.heading1.copyWith(color: tono),
+                        ),
                       ],
                     ),
                   ),
-                ),
+                ],
+              ),
+            if (ingresos != null || egresos != null) ...[
+              if (resultado != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                Divider(height: 1, color: colors.borderSubtle),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              Row(
+                children: [
+                  if (ingresos != null)
+                    Expanded(
+                      child: _MetricaFinancieraSecundaria(
+                        icon: Icons.trending_up,
+                        label: l10n.reportesGeneralIngresos,
+                        valor: formatoCentavosPago(ingresos),
+                      ),
+                    ),
+                  if (ingresos != null && egresos != null) const SizedBox(width: AppSpacing.lg),
+                  if (egresos != null)
+                    Expanded(
+                      child: _MetricaFinancieraSecundaria(
+                        icon: Icons.trending_down,
+                        label: l10n.reportesGeneralEgresos,
+                        valor: formatoCentavosPago(egresos),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            if (compras != null || nominaPagada != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Divider(height: 1, color: colors.borderSubtle),
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.xl,
+                runSpacing: AppSpacing.xs,
+                children: [
+                  if (compras != null)
+                    _MetricaFinancieraTerciaria(label: l10n.reportesGeneralCompras, valor: formatoCentavosPago(compras)),
+                  if (nominaPagada != null)
+                    _MetricaFinancieraTerciaria(label: l10n.reportesGeneralNominaPagada, valor: formatoCentavosPago(nominaPagada)),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _MetricaFinancieraSecundaria extends StatelessWidget {
+  const _MetricaFinancieraSecundaria({required this.icon, required this.label, required this.valor});
+
+  final IconData icon;
+  final String label;
+  final String valor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Row(
+      children: [
+        Icon(icon, size: AppSizes.iconSm, color: colors.textMuted),
+        const SizedBox(width: AppSpacing.xs),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label, style: AppTypography.label.copyWith(color: colors.textMuted)),
+              Text(valor, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MetricaFinancieraTerciaria extends StatelessWidget {
+  const _MetricaFinancieraTerciaria({required this.label, required this.valor});
+
+  final String label;
+  final String valor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('$label · $valor', style: AppTypography.body.copyWith(color: colors.textPrimary)),
+        Text(
+          AppLocalizations.of(context)!.reportesGeneralIndicadorInformativo,
+          style: AppTypography.caption.copyWith(color: colors.textMuted),
+        ),
+      ],
+    );
+  }
+}
+
+/// `null` cuando ningún indicador operativo está autorizado.
+Widget? _construirIndicadores(BuildContext context, AppLocalizations l10n, DashboardState state) {
+  final general = state.resumenGeneral;
+  final personal = state.resumenPersonal;
+  final inventario = state.resumenInventario;
+  final telefonia = state.resumenTelefonia;
+
+  final chips = <Widget>[
+    if (personal != null)
+      _ChipIndicador(icon: Icons.people_outline, label: l10n.reportesGeneralPersonalActivo, valor: '${personal.totalActivos}'),
+    if (general?.serviciosActivosActual != null)
+      _ChipIndicador(
+        icon: Icons.handshake_outlined,
+        label: l10n.reportesGeneralServiciosActivos,
+        valor: '${general!.serviciosActivosActual}',
+      ),
+    if (inventario != null)
+      _ChipIndicador(
+        icon: Icons.inventory_2_outlined,
+        label: l10n.reportesInventarioExistencia,
+        valor: '${inventario.existenciaTotal}',
+      ),
+    if (inventario != null)
+      _ChipIndicador(
+        icon: Icons.assignment_turned_in_outlined,
+        label: l10n.reportesInventarioAsignaciones,
+        valor: '${inventario.asignacionesVigentes}',
+      ),
+    if (telefonia != null)
+      _ChipIndicador(
+        icon: Icons.phone_iphone_outlined,
+        label: l10n.dashboardResumenLineasActivas,
+        valor: '${telefonia.lineasPorEstatus['activa'] ?? 0}',
+      ),
+  ];
+
+  if (chips.isEmpty) return null;
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(l10n.dashboardSeccionIndicadores, style: AppTypography.heading2),
+      const SizedBox(height: AppSpacing.sm),
+      Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: chips),
+    ],
+  );
+}
+
+class _ChipIndicador extends StatelessWidget {
+  const _ChipIndicador({required this.icon, required this.label, required this.valor});
+
+  final IconData icon;
+  final String label;
+  final String valor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 172),
+      child: RisegCard(
+        variant: RisegCardVariant.subtle,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: AppSizes.iconMd, color: colors.accentText),
+            const SizedBox(width: AppSpacing.xs),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(valor, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
+                Text(label, style: AppTypography.caption.copyWith(color: colors.textMuted)),
+              ],
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+/// Un renglón de la Actividad reciente unificada — presentación pura,
+/// nunca persistida (Etapa 15: sustituye 8 mini-listas fragmentadas por
+/// una sola lista ordenada). `fecha` es siempre la única precisión real
+/// disponible en el dominio de origen (nunca se inventa una hora).
+class _ActividadItem {
+  const _ActividadItem({
+    required this.icon,
+    required this.titulo,
+    required this.detalle,
+    required this.fecha,
+    this.valor,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String titulo;
+  final String detalle;
+  final DateTime fecha;
+  final String? valor;
+  final VoidCallback? onTap;
+}
+
+/// `null` cuando ninguna fuente de actividad está autorizada.
+Widget? _construirActividad(BuildContext context, AppLocalizations l10n, DashboardState state) {
+  final huboAlgunaFuente = state.actividad != null || state.resumenPersonal != null ||
+      state.resumenNomina != null || state.resumenVehiculos != null;
+  if (!huboAlgunaFuente) return null;
+
+  final items = <_ActividadItem>[];
+
+  for (final c in state.actividad?.comprasRecientes ?? const []) {
+    items.add(_ActividadItem(
+      icon: Icons.shopping_cart_outlined,
+      titulo: l10n.dashboardActividadItemCompra,
+      detalle: '${c.folioCompra} · ${c.proveedor ?? '—'}',
+      fecha: c.fecha,
+      onTap: () => context.go('/compras/${c.id}'),
+    ));
+  }
+  for (final p in state.actividad?.pagosRecientes ?? const []) {
+    items.add(_ActividadItem(
+      icon: Icons.payments_outlined,
+      titulo: l10n.dashboardActividadItemPago,
+      detalle: '${p.pago.folioPago} · ${p.clienteNombre}',
+      fecha: p.pago.fechaPago,
+      valor: formatoCentavosPago(p.pago.montoTotal),
+    ));
+  }
+  for (final m in state.actividad?.movimientosRecientes ?? const []) {
+    items.add(_ActividadItem(
+      icon: Icons.swap_horiz_outlined,
+      titulo: movimientoTipoLabel(l10n, m.movimiento.tipoMovimiento),
+      detalle: m.articuloNombre,
+      fecha: m.movimiento.fecha,
+      valor: '${m.movimiento.cantidad}',
+    ));
+  }
+  for (final e in state.resumenPersonal?.altasEnPeriodo ?? const []) {
+    items.add(_ActividadItem(
+      icon: Icons.person_add_outlined,
+      titulo: l10n.dashboardActividadItemAltaPersonal,
+      detalle: e.nombreCompleto,
+      fecha: e.fechaIngreso,
+      onTap: () => context.go('/personal/empleados/${e.id}'),
+    ));
+  }
+  for (final b in state.resumenPersonal?.bajasEnPeriodo ?? const []) {
+    items.add(_ActividadItem(
+      icon: Icons.person_off_outlined,
+      titulo: l10n.dashboardActividadItemBajaPersonal,
+      detalle: b.nombreCompleto,
+      fecha: b.fechaBaja,
+      onTap: () => context.go('/personal/empleados/${b.empleadoId}'),
+    ));
+  }
+  for (final n in state.resumenNomina?.nominas ?? const []) {
+    items.add(_ActividadItem(
+      icon: Icons.badge_outlined,
+      titulo: l10n.dashboardActividadItemNomina,
+      detalle: n.nomina.folio,
+      fecha: n.nomina.fechaFinPeriodo,
+      valor: formatoCentavosPago(n.totalGenerado),
+      onTap: () => context.go('/personal/nomina/${n.nomina.id}'),
+    ));
+  }
+  for (final m in state.resumenVehiculos?.detalleMantenimientos ?? const []) {
+    items.add(_ActividadItem(
+      icon: Icons.build_outlined,
+      titulo: l10n.dashboardActividadItemMantenimiento,
+      detalle: m.vehiculoLabel,
+      fecha: m.registro.fecha,
+    ));
+  }
+  for (final r in state.actividad?.recargasRecientes ?? const []) {
+    items.add(_ActividadItem(
+      icon: Icons.sim_card_outlined,
+      titulo: l10n.dashboardActividadItemRecarga,
+      detalle: r.lineaCodigo,
+      fecha: r.recarga.fecha,
+      valor: formatoCentavosPago(r.recarga.importe),
+    ));
+  }
+
+  items.sort((a, b) => b.fecha.compareTo(a.fecha));
+
+  final colors = context.colors;
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(l10n.dashboardSeccionActividad, style: AppTypography.heading2),
+      const SizedBox(height: AppSpacing.sm),
+      if (items.isEmpty)
+        Text(l10n.dashboardActividadVacia, style: AppTypography.body.copyWith(color: colors.textMuted))
+      else
+        RisegCard(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          child: Column(
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0) Divider(height: 1, color: colors.borderSubtle),
+                _FilaActividadUnificada(item: items[i]),
+              ],
+            ],
+          ),
+        ),
+    ],
+  );
+}
+
+class _FilaActividadUnificada extends StatelessWidget {
+  const _FilaActividadUnificada({required this.item});
+
+  final _ActividadItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final fila = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          Icon(item.icon, size: AppSizes.iconMd, color: colors.textMuted),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(item.titulo, style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary)),
+                Text(
+                  item.detalle,
+                  style: AppTypography.caption.copyWith(color: colors.textMuted),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (item.valor != null) Text(item.valor!, style: AppTypography.data.copyWith(color: colors.textPrimary)),
+              Text(_formatoFecha.format(item.fecha), style: AppTypography.caption.copyWith(color: colors.textMuted)),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (item.onTap == null) return fila;
+    return InkWell(onTap: item.onTap, child: fila);
   }
 }

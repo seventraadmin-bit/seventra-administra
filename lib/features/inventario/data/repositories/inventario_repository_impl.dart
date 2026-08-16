@@ -110,16 +110,19 @@ class InventarioRepositoryImpl implements InventarioRepository {
     String? observaciones,
     String? actorUsuarioId,
   }) {
-    return _db.transaction(() => _insertarMovimiento(
-          articuloId: articuloId,
-          varianteId: varianteId,
-          cantidad: cantidad,
-          tipo: TipoMovimientoInventario.entrada,
-          fecha: fecha,
-          costoUnitario: costoUnitario,
-          observaciones: observaciones,
-          actorUsuarioId: actorUsuarioId,
-        ));
+    return _db.transaction(() async {
+      await _validarVarianteCoherente(articuloId: articuloId, varianteId: varianteId);
+      return _insertarMovimiento(
+        articuloId: articuloId,
+        varianteId: varianteId,
+        cantidad: cantidad,
+        tipo: TipoMovimientoInventario.entrada,
+        fecha: fecha,
+        costoUnitario: costoUnitario,
+        observaciones: observaciones,
+        actorUsuarioId: actorUsuarioId,
+      );
+    });
   }
 
   @override
@@ -261,15 +264,39 @@ class InventarioRepositoryImpl implements InventarioRepository {
     required String observaciones,
     String? actorUsuarioId,
   }) {
-    return _db.transaction(() => _insertarMovimiento(
-          articuloId: articuloId,
-          varianteId: varianteId,
-          cantidad: cantidad,
-          tipo: TipoMovimientoInventario.baja,
-          fecha: DateTime.now(),
-          observaciones: observaciones,
-          actorUsuarioId: actorUsuarioId,
-        ));
+    return _db.transaction(() async {
+      await _validarVarianteCoherente(articuloId: articuloId, varianteId: varianteId);
+      await _validarNoNegativo(articuloId: articuloId, varianteId: varianteId, cantidad: cantidad);
+      return _insertarMovimiento(
+        articuloId: articuloId,
+        varianteId: varianteId,
+        cantidad: cantidad,
+        tipo: TipoMovimientoInventario.baja,
+        fecha: DateTime.now(),
+        observaciones: observaciones,
+        actorUsuarioId: actorUsuarioId,
+      );
+    });
+  }
+
+  /// Invariante de dominio (Etapa 15): nunca deja Disponible negativo,
+  /// sin importar el llamador — ver el doc comment de
+  /// `ExistenciaInsuficienteException`.
+  Future<void> _validarNoNegativo({required String articuloId, String? varianteId, required int cantidad}) async {
+    final existencia = await calcularExistencia(articuloId: articuloId, varianteId: varianteId);
+    if (cantidad > existencia.disponible) {
+      throw ExistenciaInsuficienteException(disponible: existencia.disponible, solicitado: cantidad);
+    }
+  }
+
+  /// Invariante de dominio (Etapa 15): un movimiento por cantidad de
+  /// un Artículo con variante SIEMPRE trae `varianteId` — ver el doc
+  /// comment de `VarianteInvalidaException`.
+  Future<void> _validarVarianteCoherente({required String articuloId, String? varianteId}) async {
+    final articulo = await (_db.select(_db.articulo)..where((t) => t.id.equals(articuloId))).getSingleOrNull();
+    if (articulo != null && articulo.manejaVariante != (varianteId != null)) {
+      throw VarianteInvalidaException(articuloId: articuloId, manejaVariante: articulo.manejaVariante);
+    }
   }
 
   @override
@@ -311,23 +338,34 @@ class InventarioRepositoryImpl implements InventarioRepository {
     required String observaciones,
     String? actorUsuarioId,
   }) {
-    return _db.transaction(() => _insertarMovimiento(
-          articuloId: articuloId,
-          varianteId: varianteId,
-          cantidad: cantidad,
-          tipo: esEntrada ? TipoMovimientoInventario.ajusteEntrada : TipoMovimientoInventario.ajusteSalida,
-          fecha: DateTime.now(),
-          observaciones: observaciones,
-          actorUsuarioId: actorUsuarioId,
-        ));
+    return _db.transaction(() async {
+      await _validarVarianteCoherente(articuloId: articuloId, varianteId: varianteId);
+      if (!esEntrada) {
+        await _validarNoNegativo(articuloId: articuloId, varianteId: varianteId, cantidad: cantidad);
+      }
+      return _insertarMovimiento(
+        articuloId: articuloId,
+        varianteId: varianteId,
+        cantidad: cantidad,
+        tipo: esEntrada ? TipoMovimientoInventario.ajusteEntrada : TipoMovimientoInventario.ajusteSalida,
+        fecha: DateTime.now(),
+        observaciones: observaciones,
+        actorUsuarioId: actorUsuarioId,
+      );
+    });
   }
 
   @override
   Future<ExistenciaArticulo> calcularExistencia({required String articuloId, String? varianteId}) async {
+    // `varianteId == null` agrega TODOS los movimientos del artículo
+    // (con o sin variante) — nunca se filtra por `varianteId IS NULL`,
+    // porque eso excluiría los movimientos reales de un artículo con
+    // variante (siempre traen `varianteId` no nulo) y dejaría su
+    // existencia total en 0 pese a tener entradas válidas. Un artículo
+    // SIN variante nunca genera movimientos con `varianteId`, así que
+    // el resultado no cambia para ese caso.
     final query = _db.select(_db.movimientoInventario)..where((t) => t.articuloId.equals(articuloId));
-    if (varianteId == null) {
-      query.where((t) => t.varianteId.isNull());
-    } else {
+    if (varianteId != null) {
       query.where((t) => t.varianteId.equals(varianteId));
     }
     final movimientos = await query.get();

@@ -106,49 +106,17 @@ class GuardarExpedienteSucursalUseCase {
 
   /// `null` cuando algún día abierto reporta un error — el llamador ya
   /// tiene esos errores en la lista compartida y no debe persistir nada.
+  /// Delega la validación día por día a `validarHorarioSemanal`
+  /// (compartida con el horario personalizado de línea comercial, Etapa
+  /// 15) y solo adapta cada `HorarioErrorDia` a `ErrorHorarioSucursal`.
   HorarioSemanalInput? _validarHorario(
     HorarioSemanalBorrador borrador,
     List<ErrorExpedienteSucursal> errores,
   ) {
-    final dias = <HorarioDiaInput>[];
-
-    for (var i = 0; i < borrador.dias.length; i++) {
-      final dia = borrador.dias[i];
-      final diaSemana = DiaSemana.values[i];
-
-      if (!dia.abierto) {
-        dias.add(HorarioDiaInput(diaSemana: i, abierto: false));
-        continue;
-      }
-
-      final inicio = dia.horaInicioMinutos;
-      final fin = dia.horaFinMinutos;
-
-      if (inicio == null) {
-        errores.add(ErrorHorarioSucursal(dia: diaSemana, codigo: CodigoErrorHorario.horaInicioRequerida));
-      }
-      if (fin == null) {
-        errores.add(ErrorHorarioSucursal(dia: diaSemana, codigo: CodigoErrorHorario.horaFinRequerida));
-      }
-      if (inicio == null || fin == null) continue;
-
-      if (inicio == fin) {
-        errores.add(ErrorHorarioSucursal(dia: diaSemana, codigo: CodigoErrorHorario.horasIguales));
-        continue;
-      }
-
-      dias.add(
-        HorarioDiaInput(
-          diaSemana: i,
-          abierto: true,
-          horaInicioMinutos: inicio,
-          horaFinMinutos: fin,
-          cruzaMedianoche: fin < inicio,
-        ),
-      );
+    final validacion = validarHorarioSemanal(borrador);
+    for (final error in validacion.errores) {
+      errores.add(ErrorHorarioSucursal(dia: error.dia, codigo: error.codigo));
     }
-
-    if (errores.any((e) => e is ErrorHorarioSucursal)) return null;
-    return HorarioSemanalInput(dias: dias);
+    return validacion.resultado;
   }
 }

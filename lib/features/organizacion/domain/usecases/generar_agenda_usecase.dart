@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 
 import '../repositories/configuracion_cobro_repository.dart';
@@ -7,6 +8,7 @@ import '../repositories/documento_por_emitir_repository.dart';
 import '../repositories/servicio_repository.dart';
 import 'agrupar_documentos_por_emitir.dart';
 import 'calcular_fechas_cobro_usecase.dart';
+import 'documento_por_emitir_armado.dart';
 import 'ensamblar_documento_por_emitir_usecase.dart';
 
 /// Resultado de una corrida de generación — nunca lanza, siempre
@@ -99,13 +101,14 @@ class GenerarAgendaUseCase {
             vigenciaAprox;
 
         if (vigencia.agrupacion != 'manual') {
-          final reglas = await _configuracionCobroRepository.listarReglas(vigencia.id);
+          final etapas = await _configuracionCobroRepository.listarEtapas(vigencia.id);
           final fechas = _calcularFechas.ejecutar(
-            reglas: reglas,
+            etapas: etapas,
             mesInicioPeriodo: DateTime(mesCandidato.year, mesCandidato.month, 1),
+            periodoFin: limites.periodoFin,
           );
 
-          final fechaEmision = fechas.fechaEmision;
+          final fechaEmision = fechaDeEtapaSistema(fechas, TipoEventoCobro.emision);
           if (fechaEmision != null &&
               !fechaEmision.isBefore(rangoInicio) &&
               !fechaEmision.isAfter(rangoFin)) {
@@ -115,8 +118,12 @@ class GenerarAgendaUseCase {
                 servicioId: servicio.id,
                 configuracionCobroVigenciaId: vigencia.id,
                 fechaEmisionProgramada: fechaEmision,
-                fechaProcesamientoProgramada: fechas.fechaProcesamiento,
-                fechaPagoEsperadoProgramada: fechas.fechaPagoEsperado,
+                fechaProcesamientoProgramada: fechaDeEtapaSistema(fechas, TipoEventoCobro.procesamiento),
+                fechaPagoEsperadoProgramada: fechaDeEtapaSistema(fechas, TipoEventoCobro.pagoEsperado),
+                hitos: [
+                  for (final f in fechas)
+                    if (f.fecha != null) HitoArmado(orden: f.orden, fecha: f.fecha!, tipoSistema: f.tipoSistema, nombre: f.nombre),
+                ],
               );
               infoAgrupacionPorClave[clave] = (agrupacion: vigencia.agrupacion, clienteId: servicio.clienteId);
               candidatos.add(
@@ -124,6 +131,7 @@ class GenerarAgendaUseCase {
                   servicioId: servicio.id,
                   clienteId: servicio.clienteId,
                   entidadFiscalId: vigencia.entidadFiscalId,
+                  clientePortalId: vigencia.clientePortalId,
                   tipoDocumento: vigencia.tipoDocumento,
                   metodo: vigencia.metodo,
                   requiereComplemento: vigencia.requiereComplemento,
@@ -178,6 +186,7 @@ class GenerarAgendaUseCase {
       final armado = await _ensamblar.ejecutar(
         clienteId: primero.clienteId,
         entidadFiscalId: primero.entidadFiscalId,
+        clientePortalId: primero.clientePortalId,
         tipoDocumento: primero.tipoDocumento,
         agrupacion: infoAgrupacionPorClave['${primero.servicioId}|${primero.periodoInicio.toIso8601String()}']!
             .agrupacion,

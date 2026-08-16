@@ -6,17 +6,21 @@ import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formaPagoLabel;
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
+import 'package:riseg_one/features/finanzas/presentation/egresos/egresos_controller.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart'
     show attachmentRepositoryProvider, attachmentStorageProvider;
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
+import '../../inventario/presentation/articulos/articulos_controller.dart';
 import '../../inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
 import '../data/tables/compra_partida_table.dart' show DestinoCompraPartida;
 import 'compras_controller.dart';
 import 'compras_list_screen.dart' show compraEstatusLabel, compraEstatusTono;
 import 'widgets/cancelar_compra_dialog.dart';
-import 'widgets/corregir_compra_dialog.dart';
+import 'widgets/eliminar_compra_fisicamente_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 
@@ -94,14 +98,34 @@ class _CompraExpedienteScreenState extends ConsumerState<CompraExpedienteScreen>
     return _articulosPorId[p.articuloId] ?? p.articuloId ?? '—';
   }
 
+  // Una Compra cancelada trae, además de su entrada original, la baja
+  // de reversa vinculada a la misma partida (Etapa 15) — sin el signo
+  // correcto, esa fila se leía como una segunda entrada.
+  String _signoMovimiento(String tipoMovimiento) => tipoMovimiento == 'baja' ? '-' : '+';
+
   Future<void> _corregir() async {
-    final corregida = await mostrarDialogoCorregirCompra(context, ref, widget.compraId);
-    if (corregida) await _cargar();
+    final corregida = await context.push<bool>('/compras/${widget.compraId}/corregir');
+    if (corregida ?? false) await _cargar();
   }
 
   Future<void> _cancelar() async {
     final cancelada = await mostrarDialogoCancelarCompra(context, ref, widget.compraId);
     if (cancelada) await _cargar();
+  }
+
+  Future<void> _eliminarFisicamente() async {
+    final eliminada = await mostrarDialogoEliminarCompraFisicamente(context, ref, widget.compraId);
+    if (!eliminada) return;
+    // La eliminación pasa por `eliminarCompraFisicamenteAutorizadoProvider`
+    // directo, nunca por `ComprasController` — a diferencia de
+    // registrar/cancelar, esta pantalla es responsable de invalidar
+    // los tres providers afectados (Compras, Egresos por su Egreso
+    // propio, Inventario por las entradas que revierte).
+    ref.invalidate(comprasControllerProvider);
+    ref.invalidate(egresosControllerProvider);
+    ref.invalidate(articulosControllerProvider);
+    ref.invalidate(dashboardControllerProvider);
+    if (mounted) context.pop();
   }
 
   Widget _campo(String etiqueta, String valor) {
@@ -133,6 +157,7 @@ class _CompraExpedienteScreenState extends ConsumerState<CompraExpedienteScreen>
 
     final esCancelada = compra.estatus == 'cancelada';
     final total = _partidas.fold<int>(0, (s, p) => s + p.cantidad * p.costoUnitario);
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text(compra.folioCompra)),
@@ -173,6 +198,17 @@ class _CompraExpedienteScreenState extends ConsumerState<CompraExpedienteScreen>
                       variant: RisegButtonVariant.danger,
                       onPressed: esCancelada ? null : _cancelar,
                     ),
+                    // Extraordinaria (Maestro) — nunca depende del
+                    // estatus: una Compra ya cancelada (captura de
+                    // prueba) sigue siendo elegible para limpiar por
+                    // completo (Etapa 15).
+                    if (esMaestro)
+                      RisegButton(
+                        key: const Key('compra_expediente_boton_eliminar_fisicamente'),
+                        label: l10n.eliminacionFisicaAccionMenu,
+                        variant: RisegButtonVariant.danger,
+                        onPressed: _eliminarFisicamente,
+                      ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -261,9 +297,10 @@ class _CompraExpedienteScreenState extends ConsumerState<CompraExpedienteScreen>
                                 Expanded(
                                   child: Text(
                                     m.unidadId == null
-                                        ? '${_articulosPorId[m.articuloId] ?? m.articuloId} · +${m.cantidad} · ${m.costoUnitario == null ? '—' : formatoCosto(m.costoUnitario!)}'
+                                        ? '${_articulosPorId[m.articuloId] ?? m.articuloId} · ${_signoMovimiento(m.tipoMovimiento)}${m.cantidad} · ${m.costoUnitario == null ? '—' : formatoCosto(m.costoUnitario!)}'
                                         : '${_articulosPorId[m.articuloId] ?? m.articuloId}\n'
-                                            '${_unidadesPorId[m.unidadId]?.codigo ?? m.unidadId} · Serie ${_unidadesPorId[m.unidadId]?.numeroSerie ?? '—'}',
+                                            '${_unidadesPorId[m.unidadId]?.codigo ?? m.unidadId} · Serie ${_unidadesPorId[m.unidadId]?.numeroSerie ?? '—'} '
+                                            '(${_signoMovimiento(m.tipoMovimiento)}1)',
                                   ),
                                 ),
                                 if (m.unidadId != null)

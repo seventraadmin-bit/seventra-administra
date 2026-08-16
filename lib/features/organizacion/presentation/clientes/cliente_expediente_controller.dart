@@ -5,12 +5,15 @@ import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_ciclo_vida_cliente_portal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_ciclo_vida_entidad_fiscal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_data.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_input.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cliente_portal_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/contacto_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/entidad_fiscal_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_cliente_portal_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_contacto_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_domicilio_fiscal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
@@ -19,6 +22,7 @@ import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'cliente_expediente_state.dart';
+import 'clientes_list_controller.dart';
 
 part 'cliente_expediente_controller.g.dart';
 
@@ -104,12 +108,20 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
             direccionReferencia: actualizado.direccionReferencia,
             contactos: state.datos!.contactos,
             entidadesFiscales: state.datos!.entidadesFiscales,
+            portales: state.datos!.portales,
           ),
           modo: ClienteExpedienteModo.consulta,
           tieneCambiosSinGuardar: false,
           erroresGuardado: const [],
           errorGuardadoGeneral: false,
         );
+        // El listado de Clientes (`ClientesListController`) no observa
+        // este `family` — sin esta invalidación explícita, el listado
+        // queda con los datos previos a la edición hasta que su propio
+        // `autoDispose` se dispare por otro motivo (Etapa 15, hallazgo
+        // real: un Cliente editado como Activo seguía viéndose como
+        // Prospecto en el listado hasta cambiar de pestaña y volver).
+        ref.invalidate(clientesListControllerProvider);
         return true;
       case GuardarExpedienteClienteErroresValidacion(errores: final errores):
         state = state.copyWith(guardando: false, erroresGuardado: errores, errorGuardadoGeneral: false);
@@ -141,8 +153,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
             direccionReferencia: datosActuales.direccionReferencia,
             contactos: datosActuales.contactos,
             entidadesFiscales: datosActuales.entidadesFiscales,
+            portales: datosActuales.portales,
           ),
         );
+        // Mismo motivo que en `guardar` — el listado no se refresca
+        // solo con un cambio de estatus hecho desde el expediente.
+        ref.invalidate(clientesListControllerProvider);
         return true;
       case CambiarEstatusClienteErrorInesperado():
         state = state.copyWith(cambiandoEstatus: false);
@@ -267,8 +283,63 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     return resultado;
   }
 
-  /// Refresca el expediente completo (contactos **y** Entidades
-  /// fiscales) preservando `cliente`/`direccionReferencia` ya cargados
+  Future<GuardarClientePortalResultado?> agregarClientePortal(ClientePortalBorrador borrador) async {
+    if (state.operandoClientePortal) return null;
+    state = state.copyWith(operandoClientePortal: true);
+
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(crearClientePortalUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador),
+      GuardarClientePortalErrorInesperado.new,
+    );
+    if (resultado is GuardarClientePortalExitoso) {
+      await _recargarExpediente();
+    }
+    state = state.copyWith(operandoClientePortal: false);
+    return resultado;
+  }
+
+  Future<GuardarClientePortalResultado?> actualizarClientePortal(
+    String clientePortalId,
+    ClientePortalBorrador borrador,
+  ) async {
+    if (state.operandoClientePortal) return null;
+    state = state.copyWith(operandoClientePortal: true);
+
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(actualizarClientePortalUseCaseProvider).ejecutar(id: clientePortalId, borrador: borrador),
+      GuardarClientePortalErrorInesperado.new,
+    );
+    if (resultado is GuardarClientePortalExitoso) {
+      await _recargarExpediente();
+    }
+    state = state.copyWith(operandoClientePortal: false);
+    return resultado;
+  }
+
+  Future<bool> cambiarCicloVidaClientePortal(String clientePortalId, CicloVidaRegistro nuevo) async {
+    if (state.operandoClientePortal) return false;
+    state = state.copyWith(operandoClientePortal: true);
+
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.archivar',
+      () => ref.read(cambiarCicloVidaClientePortalUseCaseProvider).ejecutar(clientePortalId: clientePortalId, nuevo: nuevo),
+      CambiarCicloVidaClientePortalErrorInesperado.new,
+    );
+    final exito = resultado is CambiarCicloVidaClientePortalExitoso;
+    if (exito) {
+      await _recargarExpediente();
+    }
+    state = state.copyWith(operandoClientePortal: false);
+    return exito;
+  }
+
+  /// Refresca el expediente completo (contactos, Entidades fiscales **y**
+  /// portales) preservando `cliente`/`direccionReferencia` ya cargados
   /// y sin tocar `modo` ni los errores de guardado del formulario
   /// principal — esas cosas son independientes de estas acciones.
   Future<void> _recargarExpediente() async {
@@ -284,6 +355,7 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
             direccionReferencia: datosActuales.direccionReferencia,
             contactos: expediente.contactos,
             entidadesFiscales: expediente.entidadesFiscales,
+            portales: expediente.portales,
           ),
         );
       },

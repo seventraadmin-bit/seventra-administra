@@ -8,6 +8,7 @@ import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_sucursal_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/shared/horario_input.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_expediente_sucursal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/obtener_expediente_sucursal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expediente_errors.dart';

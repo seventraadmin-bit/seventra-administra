@@ -16,6 +16,9 @@ class LineaComercialConVigencia {
     required this.vigenciasProgramadas,
     required this.puestoNombre,
     required this.modalidadTurnoNombre,
+    required this.esCorregible,
+    this.asignadosVigentes = 0,
+    this.horarioVigenciaMostrada = const [],
   });
 
   final ServicioLineaComercialData linea;
@@ -23,6 +26,36 @@ class LineaComercialConVigencia {
   final List<ServicioLineaComercialVigenciaData> vigenciasProgramadas;
   final String puestoNombre;
   final String modalidadTurnoNombre;
+
+  /// Horario personalizado (Etapa 15) de la vigencia mostrada
+  /// (`vigenciaActual`, o la programada más próxima si no hay ninguna
+  /// vigente — mismo criterio que `puestoNombre`/`modalidadTurnoNombre`)
+  /// — vacío salvo que esa vigencia tenga `modalidadTurnoId` =
+  /// Personalizado. Usado por la tabla de Configuración comercial para
+  /// mostrar un resumen corto en la columna Turno.
+  final List<ServicioLineaComercialVigenciaHorarioData> horarioVigenciaMostrada;
+
+  /// `true` si la línea todavía es una simple captura sin historia real
+  /// (Etapa 15) — su única vigencia, nunca pasó por "Nueva vigencia" ni
+  /// generó un `DocumentoPorEmitirLinea`. Habilita "Corregir" (in-place)
+  /// y "Eliminar físicamente" en vez de forzar "Nueva vigencia" para
+  /// arreglar un simple error de captura.
+  final bool esCorregible;
+
+  /// Cuántas `AsignacionServicio` vigentes (`fechaTermino IS NULL`)
+  /// apuntan hoy a esta línea (Etapa 15, rediseño de "Condiciones de
+  /// Personal") — comparado contra `vigenciaActual.cantidadElementos`
+  /// ("Asignados: X de Y") para advertir capacidad excedida, nunca para
+  /// bloquear: el modelo de asignaciones todavía no distingue una
+  /// suplencia/cobertura temporal de un puesto regular, así que un
+  /// bloqueo absoluto sería una regla inventada, no una ya aprobada.
+  final int asignadosVigentes;
+
+  /// `true` si `asignadosVigentes` ya alcanzó o superó
+  /// `cantidadElementos` de la vigencia vigente — `false` si la línea no
+  /// tiene ninguna vigencia en efecto (nada que comparar).
+  bool get capacidadExcedida =>
+      vigenciaActual != null && asignadosVigentes >= vigenciaActual!.cantidadElementos;
 
   /// `cantidad × precio` de la vigencia vigente — 0 si la línea todavía
   /// no tiene ninguna vigencia en efecto (solo programadas a futuro).
@@ -90,4 +123,60 @@ EstadoVigencia clasificarParaHistorial(ServicioLineaComercialVigenciaData vigenc
   if (inicio.isAfter(hoySinHora)) return EstadoVigencia.programada;
   if (fin != null && fin.isBefore(hoySinHora)) return EstadoVigencia.historica;
   return EstadoVigencia.vigente;
+}
+
+/// Un tramo de días consecutivos (orden semanal 0=lunes...6=domingo) que
+/// comparten exactamente el mismo horario — el bloque mínimo del resumen
+/// corto del horario personalizado ("L-V 20:00–07:00").
+class TramoHorarioPersonalizado {
+  const TramoHorarioPersonalizado({
+    required this.diaDesde,
+    required this.diaHasta,
+    required this.horaInicioMinutos,
+    required this.horaFinMinutos,
+  });
+
+  final int diaDesde;
+  final int diaHasta;
+  final int horaInicioMinutos;
+  final int horaFinMinutos;
+}
+
+/// Agrupa las filas de horario personalizado de una vigencia en tramos
+/// de días consecutivos con el mismo horario — pura función de datos,
+/// reutilizable por la columna Turno de la tabla (resumen corto) y por
+/// cualquier tooltip/detalle. Los días de descanso (`activo == false`)
+/// nunca generan tramo — quedan implícitos por ausencia, igual que en
+/// el ejemplo "L-V 20:00–07:00 · S-D 16:00–07:00" (ningún día de
+/// descanso en ese caso) tanto como en un esquema con días sueltos de
+/// descanso salteados entre tramos de trabajo.
+List<TramoHorarioPersonalizado> agruparHorarioPersonalizado(List<ServicioLineaComercialVigenciaHorarioData> filas) {
+  final porDia = {for (final f in filas) f.diaSemana: f};
+  final tramos = <TramoHorarioPersonalizado>[];
+
+  int dia = 0;
+  while (dia < 7) {
+    final fila = porDia[dia];
+    if (fila == null || !fila.activo) {
+      dia++;
+      continue;
+    }
+    var fin = dia;
+    while (fin + 1 < 7) {
+      final siguiente = porDia[fin + 1];
+      if (siguiente == null ||
+          !siguiente.activo ||
+          siguiente.horaInicio != fila.horaInicio ||
+          siguiente.horaFin != fila.horaFin) {
+        break;
+      }
+      fin++;
+    }
+    tramos.add(
+      TramoHorarioPersonalizado(diaDesde: dia, diaHasta: fin, horaInicioMinutos: fila.horaInicio, horaFinMinutos: fila.horaFin),
+    );
+    dia = fin + 1;
+  }
+
+  return tramos;
 }

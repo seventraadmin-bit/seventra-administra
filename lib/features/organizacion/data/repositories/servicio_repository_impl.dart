@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
@@ -8,6 +10,8 @@ import 'package:riseg_one/features/personal/domain/repositories/asignacion_servi
 
 import '../../domain/repositories/servicio_repository.dart';
 import '../../domain/shared/direccion_input.dart';
+import '../../domain/usecases/eliminar_servicio_fisicamente_usecase.dart';
+import 'ubicacion_repository_impl.dart';
 
 /// **Nota de arquitectura (Etapa 5D):** este repositorio, de
 /// `organizacion`, depende de `AsignacionServicioRepository`, del
@@ -249,19 +253,179 @@ class ServicioRepositoryImpl implements ServicioRepository {
     return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
   }
 
+  /// Eliminación física extraordinaria (Etapa 15, mismo patrón que la
+  /// Etapa 11D) — 17 tablas dependen realmente de `Servicio` (Personal,
+  /// Nómina, Comercial, Cobro, Telefonía, Vehículos, Inventario,
+  /// Finanzas, Agenda), pero igual que `crear` inserta automáticamente
+  /// un nodo raíz de `Ubicacion` (ancla del árbol) en la misma
+  /// transacción, esa Ubicación por sí sola no cuenta como dependencia
+  /// real — mismo criterio y misma verificación (por *forma* del
+  /// árbol: raíz con a lo más un hijo sin hijos propios) ya aplicado en
+  /// `SucursalRepositoryImpl.eliminarFisicamente`. Todo — validación,
+  /// snapshot, registro de auditoría y `DELETE` — ocurre en una sola
+  /// transacción; nunca `CASCADE`.
   @override
-  Future<ServicioData> guardarSueldoReferencia({
+  Future<EliminarServicioFisicamenteResultado> eliminarFisicamente({
     required String servicioId,
-    required int? sueldoMensualReferenciaPersonal,
-    required int? bonoMensualReferenciaPersonal,
-  }) async {
-    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
-      ServicioCompanion(
-        sueldoMensualReferenciaPersonal: Value(sueldoMensualReferenciaPersonal),
-        bonoMensualReferenciaPersonal: Value(bonoMensualReferenciaPersonal),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
-    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+    required String motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final servicio = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingleOrNull();
+      if (servicio == null) return EliminarServicioFisicamenteNoExiste();
+
+      final asignacionesPersonal =
+          await (_db.select(_db.asignacionServicio)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (asignacionesPersonal.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${asignacionesPersonal.length} asignación(es) de personal registrada(s).',
+        );
+      }
+
+      final lineasComerciales =
+          await (_db.select(_db.servicioLineaComercial)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (lineasComerciales.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${lineasComerciales.length} línea(s) de configuración comercial registrada(s).',
+        );
+      }
+
+      final configuracionesCobro =
+          await (_db.select(_db.configuracionCobro)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (configuracionesCobro.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias('Tiene configuración de cobro registrada.');
+      }
+
+      final fichasTecnicas =
+          await (_db.select(_db.fichaTecnicaEmpleado)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (fichasTecnicas.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${fichasTecnicas.length} ficha(s) técnica(s) registrada(s).',
+        );
+      }
+
+      final nominaEmpleado =
+          await (_db.select(_db.nominaEmpleado)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (nominaEmpleado.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${nominaEmpleado.length} registro(s) de nómina registrado(s).',
+        );
+      }
+
+      final nominaTramos =
+          await (_db.select(_db.nominaEmpleadoTramo)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (nominaTramos.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${nominaTramos.length} tramo(s) de nómina registrado(s).',
+        );
+      }
+
+      final lineasTelefonicas =
+          await (_db.select(_db.asignacionLineaTelefonica)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (lineasTelefonicas.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${lineasTelefonicas.length} línea(s) telefónica(s) asignada(s).',
+        );
+      }
+
+      final vehiculosAsignados =
+          await (_db.select(_db.asignacionVehiculo)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (vehiculosAsignados.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${vehiculosAsignados.length} vehículo(s) asignado(s).',
+        );
+      }
+
+      final inventarioAsignado =
+          await (_db.select(_db.asignacion)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (inventarioAsignado.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${inventarioAsignado.length} artículo(s) de inventario asignado(s).',
+        );
+      }
+
+      final ingresos = await (_db.select(_db.ingreso)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (ingresos.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias('Tiene ${ingresos.length} ingreso(s) registrado(s).');
+      }
+
+      final egresos = await (_db.select(_db.egreso)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (egresos.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias('Tiene ${egresos.length} egreso(s) registrado(s).');
+      }
+
+      final documentosServicio =
+          await (_db.select(_db.documentoPorEmitirServicio)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (documentosServicio.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${documentosServicio.length} documento(s) por emitir registrado(s).',
+        );
+      }
+
+      final documentosConfiguracion = await (_db.select(_db.documentoPorEmitirConfiguracion)
+            ..where((t) => t.servicioId.equals(servicioId)))
+          .get();
+      if (documentosConfiguracion.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${documentosConfiguracion.length} configuración(es) de agenda registrada(s).',
+        );
+      }
+
+      final documentosLinea =
+          await (_db.select(_db.documentoPorEmitirLinea)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (documentosLinea.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${documentosLinea.length} línea(s) de documento por emitir registrada(s).',
+        );
+      }
+
+      final direcciones = await (_db.select(_db.direccion)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (direcciones.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias(
+          'Tiene ${direcciones.length} dirección(es) registrada(s).',
+        );
+      }
+
+      final horarios = await (_db.select(_db.horario)..where((t) => t.servicioId.equals(servicioId))).get();
+      if (horarios.isNotEmpty) {
+        return EliminarServicioFisicamenteTieneDependencias('Tiene ${horarios.length} horario(s) registrado(s).');
+      }
+
+      // A diferencia de Sucursal (raíz + Almacén General), `crear` de
+      // Servicio solo inserta la raíz — sin hijo automático. Si tiene
+      // algún hijo, alguien lo agregó manualmente (real, no
+      // estructural): bloquea, igual que cualquier otra dependencia.
+      final ubicacionRepo = UbicacionRepositoryImpl(_db);
+      final raizUbicacion = await ubicacionRepo.obtenerRaizDeServicio(servicioId);
+      if (raizUbicacion != null) {
+        final hijosDeRaiz = await ubicacionRepo.obtenerHijos(raizUbicacion.id);
+        if (hijosDeRaiz.isNotEmpty) {
+          return EliminarServicioFisicamenteTieneDependencias('El Servicio tiene ubicaciones adicionales registradas.');
+        }
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'servicio',
+              entidadIdOriginal: servicioId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode({
+                'servicio': servicio.toJson(),
+                if (raizUbicacion != null) 'ubicacionesEliminadas': [raizUbicacion.toJson()],
+              }),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+
+      // Sin CASCADE: se borra explícitamente antes que el Servicio (FK
+      // `restrict` de `servicioId`).
+      if (raizUbicacion != null) {
+        await (_db.delete(_db.ubicacion)..where((t) => t.id.equals(raizUbicacion.id))).go();
+      }
+      await (_db.delete(_db.servicio)..where((t) => t.id.equals(servicioId))).go();
+
+      return EliminarServicioFisicamenteExitoso();
+    });
   }
 }

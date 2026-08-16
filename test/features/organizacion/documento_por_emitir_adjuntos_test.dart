@@ -15,13 +15,14 @@ import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repos
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/documento_por_emitir_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/cliente_portal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
@@ -46,18 +47,19 @@ void main() {
     final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     final catalogoRepo = CatalogoRepositoryImpl(db);
     final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+    final clientePortalRepo = ClientePortalRepositoryImpl(db);
     final comercialRepo = ServicioComercialRepositoryImpl(db);
     final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
     final configuracionCobroValidator =
-        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
+        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo, clientePortalRepo);
     final crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     final crearConfiguracionCobro = CrearConfiguracionCobroUseCase(
       configuracionCobroRepo,
       servicioRepo,
       configuracionCobroValidator,
-      const ConfiguracionCobroReglaEventoValidator(),
+      const ConfiguracionCobroEtapaValidator(),
     );
 
     final cliente = await clienteRepo.crear(ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Morgan'));

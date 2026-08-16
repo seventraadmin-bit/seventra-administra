@@ -1,15 +1,39 @@
 import 'package:riseg_one/core/database/app_database.dart';
-import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 
-/// Las 3 fechas calculables de un período de una Configuración de
-/// cobro — `null` para cualquier evento que todavía no tenga una regla
-/// capturada (Etapa 4H.2: "no inventa fechas").
-class FechasCobroCalculadas {
-  const FechasCobroCalculadas({this.fechaEmision, this.fechaProcesamiento, this.fechaPagoEsperado});
+/// La fecha calculada de una etapa — `fecha` es `null` para cualquier
+/// etapa cuya regla todavía no se captura, o cuya cadena de referencia
+/// tampoco es calculable (Etapa 4H.2, reafirmado en la Etapa 15: "no
+/// inventa fechas"). `tipoSistema`/`nombre` viajan aquí (en vez de
+/// forzar a quien llama a volver a resolverlos contra la etapa
+/// original) porque `EnsamblarDocumentoPorEmitirUseCase` los necesita
+/// tal cual para el snapshot de `DocumentoPorEmitirHito`.
+class FechaEtapaCalculada {
+  const FechaEtapaCalculada({
+    required this.etapaId,
+    required this.orden,
+    this.tipoSistema,
+    this.nombre,
+    this.fecha,
+  });
 
-  final DateTime? fechaEmision;
-  final DateTime? fechaProcesamiento;
-  final DateTime? fechaPagoEsperado;
+  final String etapaId;
+  final int orden;
+  final String? tipoSistema;
+  final String? nombre;
+  final DateTime? fecha;
+}
+
+/// Resuelve la fecha de la etapa de sistema [tipoSistema] dentro de una
+/// lista ya calculada — `null` si esa etapa no está activa en esta
+/// vigencia o su fecha no es calculable. Usado por los adaptadores que
+/// todavía necesitan las 3 columnas legacy (`DocumentoPorEmitir`/
+/// `DocumentoPorEmitirConfiguracion`) mientras sigan existiendo.
+DateTime? fechaDeEtapaSistema(List<FechaEtapaCalculada> fechas, TipoEventoCobro tipoSistema) {
+  for (final f in fechas) {
+    if (f.tipoSistema == tipoSistema.name) return f.fecha;
+  }
+  return null;
 }
 
 DateTime _soloFecha(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
@@ -28,6 +52,12 @@ DateTime diasHabilesDespues(DateTime fecha, int cantidad) {
   }
   return resultado;
 }
+
+/// Etapa 15: días de calendario (no solo hábiles) después de otra
+/// etapa (o del origen virtual Cierre de periodo) — `cantidad == 0` da
+/// literalmente la misma fecha de origen ("mismo día de la etapa
+/// anterior").
+DateTime diasCalendarioDespues(DateTime fecha, int cantidad) => _soloFecha(fecha).add(Duration(days: cantidad));
 
 int _ultimoDiaDelMes(int anio, int mes) => DateTime(anio, mes + 1, 0).day;
 
@@ -129,86 +159,109 @@ DateTime mesInicioDelPeriodoActual({required int diaInicioPeriodo, required Date
   return DateTime(hoySinHora.year, hoySinHora.month - 1, 1);
 }
 
-/// Calcula Emisión/Procesamiento/Pago esperado para un período dado a
-/// partir de las reglas capturadas — función pura (Etapa 4H.2): sin
-/// `Clock`, sin persistencia, sin generar ningún documento. Un evento
-/// sin regla capturada, o cuyo evento de referencia tampoco es
-/// calculable, resulta en `null` — nunca se inventa una fecha.
+/// Calcula la fecha de cada etapa activa de una vigencia (Etapa 15,
+/// reemplaza el trío fijo Emisión/Procesamiento/Pago esperado de la
+/// Etapa 4H.2) — función pura: sin `Clock`, sin persistencia, sin
+/// generar ningún documento. Una etapa sin regla capturada, o cuya
+/// cadena de referencia (a otra etapa, o al origen virtual Cierre de
+/// periodo) tampoco es calculable, resulta en `fecha == null` — nunca
+/// se inventa una fecha. [periodoFin] es el origen que usa
+/// `referenciaCierrePeriodo`.
 class CalcularFechasCobroUseCase {
   const CalcularFechasCobroUseCase();
 
-  FechasCobroCalculadas ejecutar({
-    required List<ConfiguracionCobroReglaEventoData> reglas,
+  List<FechaEtapaCalculada> ejecutar({
+    required List<ConfiguracionCobroEtapaData> etapas,
     required DateTime mesInicioPeriodo,
+    required DateTime periodoFin,
   }) {
-    final porEvento = {for (final r in reglas) TipoEventoCobro.values.byName(r.tipoEvento): r};
-    final resueltos = <TipoEventoCobro, DateTime?>{};
+    final porId = {for (final e in etapas) e.id: e};
+    final resueltos = <String, DateTime?>{};
 
-    DateTime? calcular(TipoEventoCobro evento, Set<TipoEventoCobro> enProgreso) {
-      if (resueltos.containsKey(evento)) return resueltos[evento];
-      // Ciclo — no debería ocurrir nunca sobre reglas ya validadas, pero
+    DateTime? calcular(String etapaId, Set<String> enProgreso) {
+      if (resueltos.containsKey(etapaId)) return resueltos[etapaId];
+      // Ciclo — no debería ocurrir nunca sobre etapas ya validadas, pero
       // una función pura no debe entrar en recursión infinita si se le
-      // pasan reglas malformadas directamente (ej. en una prueba).
-      if (enProgreso.contains(evento)) {
-        resueltos[evento] = null;
+      // pasan etapas malformadas directamente (ej. en una prueba).
+      if (enProgreso.contains(etapaId)) {
+        resueltos[etapaId] = null;
         return null;
       }
 
-      final regla = porEvento[evento];
-      if (regla == null) {
-        resueltos[evento] = null;
+      final etapa = porId[etapaId];
+      if (etapa == null || etapa.tipoRegla == null) {
+        resueltos[etapaId] = null;
         return null;
       }
 
-      final siguienteEnProgreso = {...enProgreso, evento};
-      final tipoRegla = TipoReglaEvento.values.byName(regla.tipoRegla);
-      final mesRelativo = regla.mesRelativo == null ? null : MesRelativoCobro.values.byName(regla.mesRelativo!);
+      final siguienteEnProgreso = {...enProgreso, etapaId};
+      final tipoRegla = TipoReglaEvento.values.byName(etapa.tipoRegla!);
+      final mesRelativo = etapa.mesRelativo == null ? null : MesRelativoCobro.values.byName(etapa.mesRelativo!);
       final mesObjetivo = mesRelativo == null
           ? null
           : (mesRelativo == MesRelativoCobro.actual
               ? mesInicioPeriodo
               : DateTime(mesInicioPeriodo.year, mesInicioPeriodo.month + 1, 1));
 
+      DateTime? origen() {
+        if (etapa.referenciaCierrePeriodo) return periodoFin;
+        if (etapa.etapaReferenciaId == null) return null;
+        return calcular(etapa.etapaReferenciaId!, siguienteEnProgreso);
+      }
+
       DateTime? resultado;
       switch (tipoRegla) {
         case TipoReglaEvento.diaFijoDelMes:
-          resultado = mesObjetivo == null || regla.diaDelMes == null
+          resultado = mesObjetivo == null || etapa.diaDelMes == null
               ? null
-              : diaFijoDelMes(mesObjetivo.year, mesObjetivo.month, regla.diaDelMes!);
+              : diaFijoDelMes(mesObjetivo.year, mesObjetivo.month, etapa.diaDelMes!);
         case TipoReglaEvento.nEsimoDiaSemanaDelMes:
-          resultado = mesObjetivo == null || regla.diaSemana == null || regla.ordinalSemana == null
+          resultado = mesObjetivo == null || etapa.diaSemana == null || etapa.ordinalSemana == null
               ? null
               : nEsimoDiaSemanaDelMes(
                   mesObjetivo.year,
                   mesObjetivo.month,
-                  DiaSemanaCobro.values.byName(regla.diaSemana!),
-                  OrdinalSemanaCobro.values.byName(regla.ordinalSemana!),
+                  DiaSemanaCobro.values.byName(etapa.diaSemana!),
+                  OrdinalSemanaCobro.values.byName(etapa.ordinalSemana!),
                 );
         case TipoReglaEvento.diasHabilesDespuesDe:
-          if (regla.eventoReferencia == null || regla.offsetDiasHabiles == null) {
+          if (etapa.offsetDias == null) {
             resultado = null;
           } else {
-            final refFecha = calcular(TipoEventoCobro.values.byName(regla.eventoReferencia!), siguienteEnProgreso);
-            resultado = refFecha == null ? null : diasHabilesDespues(refFecha, regla.offsetDiasHabiles!);
+            final refFecha = origen();
+            resultado = refFecha == null ? null : diasHabilesDespues(refFecha, etapa.offsetDias!);
+          }
+        case TipoReglaEvento.diasCalendarioDespuesDe:
+          if (etapa.offsetDias == null) {
+            resultado = null;
+          } else {
+            final refFecha = origen();
+            resultado = refFecha == null ? null : diasCalendarioDespues(refFecha, etapa.offsetDias!);
           }
         case TipoReglaEvento.mismoDiaSemanaSiguienteA:
-          if (regla.eventoReferencia == null || regla.diaSemana == null) {
+          if (etapa.diaSemana == null) {
             resultado = null;
           } else {
-            final refFecha = calcular(TipoEventoCobro.values.byName(regla.eventoReferencia!), siguienteEnProgreso);
+            final refFecha = origen();
             resultado =
-                refFecha == null ? null : mismoDiaSemanaSiguienteA(refFecha, DiaSemanaCobro.values.byName(regla.diaSemana!));
+                refFecha == null ? null : mismoDiaSemanaSiguienteA(refFecha, DiaSemanaCobro.values.byName(etapa.diaSemana!));
           }
       }
 
-      resueltos[evento] = resultado;
+      resueltos[etapaId] = resultado;
       return resultado;
     }
 
-    return FechasCobroCalculadas(
-      fechaEmision: calcular(TipoEventoCobro.emision, const {}),
-      fechaProcesamiento: calcular(TipoEventoCobro.procesamiento, const {}),
-      fechaPagoEsperado: calcular(TipoEventoCobro.pagoEsperado, const {}),
-    );
+    final ordenadas = [...etapas]..sort((a, b) => a.orden.compareTo(b.orden));
+    return [
+      for (final e in ordenadas)
+        FechaEtapaCalculada(
+          etapaId: e.id,
+          orden: e.orden,
+          tipoSistema: e.tipoSistema,
+          nombre: e.nombre,
+          fecha: calcular(e.id, const {}),
+        ),
+    ];
   }
 }

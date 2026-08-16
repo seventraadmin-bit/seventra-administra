@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
 import '../../features/compras/presentation/compra_expediente_screen.dart';
+import '../../features/compras/presentation/corregir_compra_screen.dart';
 import '../../features/compras/presentation/compras_list_screen.dart';
 import '../../features/compras/presentation/registrar_compra_screen.dart';
 import '../../features/finanzas/presentation/finanzas_shell_screen.dart';
@@ -420,6 +421,12 @@ GoRouter createAppRouter() {
                       GoRoute(
                         path: ':id',
                         builder: (context, state) => CompraExpedienteScreen(compraId: state.pathParameters['id']!),
+                        routes: [
+                          GoRoute(
+                            path: 'corregir',
+                            builder: (context, state) => CorregirCompraScreen(compraId: state.pathParameters['id']!),
+                          ),
+                        ],
                       ),
                     ],
                   )

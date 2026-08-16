@@ -20,9 +20,12 @@ import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/corregir_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/eliminar_linea_comercial_fisicamente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
+import 'package:riseg_one/features/organizacion/domain/shared/horario_input.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_errors.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
@@ -609,6 +612,371 @@ void main() {
           isTrue,
         );
       }
+    });
+  });
+
+  group('Corregir línea comercial (Etapa 15 — sin historia)', () {
+    late CorregirLineaComercialUseCase corregirLinea;
+
+    setUp(() {
+      corregirLinea = CorregirLineaComercialUseCase(
+        comercialRepo,
+        LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, ConfiguracionCobroRepositoryImpl(db)),
+      );
+    });
+
+    test('corrige in-place una línea recién creada, sin generar una nueva vigencia', () async {
+      final ctx = await crearServicioConLineaDePrueba();
+      final vigenciaOriginalId = (await comercialRepo.listarHistorial(ctx.lineaId)).single.id;
+
+      final resultado = await corregirLinea.ejecutar(
+        lineaComercialId: ctx.lineaId,
+        borrador: LineaComercialBorrador(
+          puestoId: ctx.puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 3,
+          precioUnitario: 1800000, // corrige un error de captura, no un incremento real
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CorregirLineaComercialExitoso>());
+      final vigenciaCorregida = (resultado as CorregirLineaComercialExitoso).vigencia;
+      expect(vigenciaCorregida.id, vigenciaOriginalId, reason: 'muta el mismo registro, no crea uno nuevo');
+
+      final historial = await comercialRepo.listarHistorial(ctx.lineaId);
+      expect(historial, hasLength(1), reason: 'corregir nunca cierra+inserta, solo muta la única vigencia');
+      expect(historial.single.cantidadElementos, 3);
+      expect(historial.single.precioUnitario, 1800000);
+
+      final lineas = await comercialRepo.listarLineas(ctx.servicio.id);
+      final linea = lineas.single;
+      expect(linea.vigenciaActual?.precioUnitario, 1800000);
+      expect(linea.subtotal, 3 * 1800000, reason: 'el subtotal se recalcula sobre la condición corregida');
+      expect(linea.esCorregible, isTrue, reason: 'sigue sin historia real tras corregirse a sí misma');
+    });
+
+    test('no reescribe una línea que ya pasó por "Nueva vigencia" — exige usar ese camino', () async {
+      final ctx = await crearServicioConLineaDePrueba();
+      await cambiarVigencia.ejecutar(
+        lineaComercialId: ctx.lineaId,
+        borrador: LineaComercialBorrador(
+          puestoId: ctx.puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 4,
+          precioUnitario: 1650000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2027, 1, 1),
+        ),
+      );
+
+      final resultado = await corregirLinea.ejecutar(
+        lineaComercialId: ctx.lineaId,
+        borrador: LineaComercialBorrador(
+          puestoId: ctx.puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 9,
+          precioUnitario: 999,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CorregirLineaComercialTieneHistoria>());
+      final historial = await comercialRepo.listarHistorial(ctx.lineaId);
+      expect(historial.firstWhere((v) => v.precioUnitario == 1500000), isNotNull, reason: 'la original no se tocó');
+
+      final lineas = await comercialRepo.listarLineas(ctx.servicio.id);
+      expect(lineas.single.esCorregible, isFalse);
+    });
+
+    test('no reescribe una vigencia que ya generó un DocumentoPorEmitirLinea', () async {
+      final ctx = await crearServicioConLineaDePrueba();
+      final vigenciaId = (await comercialRepo.listarHistorial(ctx.lineaId)).single.id;
+      final documento = await db.into(db.documentoPorEmitir).insertReturning(
+            DocumentoPorEmitirCompanion.insert(
+              codigo: 'DOC-0001',
+              clienteId: ctx.servicio.clienteId,
+              tipoDocumento: 'reciboDePago',
+              agrupacion: 'porServicio',
+              metodo: 'noAplica',
+              periodoInicio: DateTime(2026, 1, 1),
+              periodoFin: DateTime(2026, 1, 31),
+              generationKey: 'GK-0001',
+              importeBaseEsperado: 3000000,
+              importeFinalEsperado: 3000000,
+            ),
+          );
+      await db.into(db.documentoPorEmitirLinea).insert(
+            DocumentoPorEmitirLineaCompanion.insert(
+              documentoPorEmitirId: documento.id,
+              servicioId: ctx.servicio.id,
+              lineaComercialVigenciaId: vigenciaId,
+              puestoNombre: ctx.puesto.nombre,
+              modalidadTurnoNombre: 'Turno 24x24',
+              cantidadElementos: 2,
+              precioUnitario: 1500000,
+              tratamientoIva: 'masIva',
+              diasAplicables: 31,
+              subtotalProporcional: 3000000,
+            ),
+          );
+
+      final resultado = await corregirLinea.ejecutar(
+        lineaComercialId: ctx.lineaId,
+        borrador: LineaComercialBorrador(
+          puestoId: ctx.puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 9,
+          precioUnitario: 999,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CorregirLineaComercialTieneHistoria>());
+      final lineas = await comercialRepo.listarLineas(ctx.servicio.id);
+      expect(lineas.single.esCorregible, isFalse);
+    });
+
+    test('reporta errores de validación específicos en vez de mutar la vigencia', () async {
+      final ctx = await crearServicioConLineaDePrueba();
+
+      final resultado = await corregirLinea.ejecutar(
+        lineaComercialId: ctx.lineaId,
+        borrador: LineaComercialBorrador(
+          puestoId: ctx.puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: null,
+          precioUnitario: 1500000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CorregirLineaComercialErroresValidacion>());
+      final errores = (resultado as CorregirLineaComercialErroresValidacion).errores;
+      expect(errores.any((e) => e.campo == CampoLineaComercial.cantidadElementos), isTrue);
+
+      final historial = await comercialRepo.listarHistorial(ctx.lineaId);
+      expect(historial.single.cantidadElementos, 2, reason: 'no se mutó nada ante un borrador inválido');
+    });
+
+    test('línea inexistente', () async {
+      final resultado = await corregirLinea.ejecutar(
+        lineaComercialId: 'no-existe',
+        borrador: LineaComercialBorrador(
+          puestoId: 'x',
+          modalidadTurnoId: 'x',
+          cantidadElementos: 1,
+          precioUnitario: 1,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+      expect(resultado, isA<CorregirLineaComercialNoExiste>());
+    });
+  });
+
+  group('Eliminar línea comercial físicamente (Etapa 15 — sin historia)', () {
+    late EliminarLineaComercialFisicamenteUseCase eliminarLinea;
+
+    setUp(() {
+      eliminarLinea = EliminarLineaComercialFisicamenteUseCase(comercialRepo);
+    });
+
+    test('elimina una línea recién creada, sin historia', () async {
+      final ctx = await crearServicioConLineaDePrueba();
+
+      final resultado = await eliminarLinea.ejecutar(
+        lineaComercialId: ctx.lineaId,
+        motivo: 'Captura duplicada por error',
+      );
+
+      expect(resultado, isA<EliminarLineaComercialFisicamenteExitoso>());
+      final lineas = await comercialRepo.listarLineas(ctx.servicio.id);
+      expect(lineas, isEmpty);
+    });
+
+    test('bloqueada si la línea ya tiene más de una vigencia', () async {
+      final ctx = await crearServicioConLineaDePrueba();
+      await cambiarVigencia.ejecutar(
+        lineaComercialId: ctx.lineaId,
+        borrador: LineaComercialBorrador(
+          puestoId: ctx.puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 4,
+          precioUnitario: 1650000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2027, 1, 1),
+        ),
+      );
+
+      final resultado = await eliminarLinea.ejecutar(lineaComercialId: ctx.lineaId, motivo: 'Intento incorrecto');
+
+      expect(resultado, isA<EliminarLineaComercialFisicamenteTieneDependencias>());
+      final lineas = await comercialRepo.listarLineas(ctx.servicio.id);
+      expect(lineas, hasLength(1), reason: 'no debe borrarse nada');
+    });
+
+    test('motivo obligatorio', () async {
+      final ctx = await crearServicioConLineaDePrueba();
+      final resultado = await eliminarLinea.ejecutar(lineaComercialId: ctx.lineaId, motivo: '   ');
+      expect(resultado, isA<EliminarLineaComercialFisicamenteMotivoRequerido>());
+    });
+
+    test('línea inexistente', () async {
+      final resultado = await eliminarLinea.ejecutar(lineaComercialId: 'no-existe', motivo: 'x');
+      expect(resultado, isA<EliminarLineaComercialFisicamenteNoExiste>());
+    });
+  });
+
+  group('Horario personalizado (Etapa 15, "Modalidad de turno: Personalizado")', () {
+    /// 7 días — por defecto lunes a viernes trabajando 20:00→07:00
+    /// (turno nocturno real) y sábado/domingo de descanso, salvo que
+    /// [dias] los sobrescriba explícitamente.
+    HorarioSemanalBorrador horarioDePrueba({Map<int, HorarioDiaBorrador> dias = const {}}) {
+      return HorarioSemanalBorrador(
+        dias: [
+          for (var i = 0; i < 7; i++)
+            dias[i] ??
+                (i < 5
+                    ? const HorarioDiaBorrador(abierto: true, horaInicioMinutos: 1200, horaFinMinutos: 420)
+                    : const HorarioDiaBorrador(abierto: false)),
+        ],
+      );
+    }
+
+    test('días de descanso no requieren horas — sábado y domingo quedan sin capturar', () async {
+      final cliente = await crearClienteDePrueba();
+      final servicio = await crearServicioDePrueba(cliente.id);
+      final puesto = await crearPuestoDePrueba(codigo: 'PUE-JEFE', nombre: 'Jefe de Turno');
+
+      final resultado = await crearLineaComercial.ejecutar(
+        servicioId: servicio.id,
+        borrador: LineaComercialBorrador(
+          puestoId: puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurnoPersonalizado,
+          cantidadElementos: 1,
+          precioUnitario: 2200000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+          horario: horarioDePrueba(),
+        ),
+      );
+      expect(resultado, isA<CrearLineaComercialExitoso>(), reason: 'los días de descanso (sin horas) no deben bloquear la captura');
+
+      final vigenciaId = (resultado as CrearLineaComercialExitoso).vigencia.id;
+      final horario = await comercialRepo.obtenerHorario(vigenciaId);
+      expect(horario, hasLength(7), reason: 'los 7 días se guardan, incluidos los de descanso');
+
+      final sabado = horario.firstWhere((h) => h.diaSemana == 5);
+      final domingo = horario.firstWhere((h) => h.diaSemana == 6);
+      expect(sabado.activo, isFalse);
+      expect(domingo.activo, isFalse);
+
+      final lunes = horario.firstWhere((h) => h.diaSemana == 0);
+      expect(lunes.activo, isTrue);
+      expect(lunes.horaInicio, 1200);
+      expect(lunes.horaFin, 420);
+    });
+
+    test('turno nocturno 20:00→07:00 es válido y se marca cruzaMedianoche', () async {
+      final cliente = await crearClienteDePrueba();
+      final servicio = await crearServicioDePrueba(cliente.id);
+      final puesto = await crearPuestoDePrueba(codigo: 'PUE-NOCTURNO', nombre: 'Elemento Nocturno');
+
+      final resultado = await crearLineaComercial.ejecutar(
+        servicioId: servicio.id,
+        borrador: LineaComercialBorrador(
+          puestoId: puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurnoPersonalizado,
+          cantidadElementos: 1,
+          precioUnitario: 1800000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+          horario: horarioDePrueba(),
+        ),
+      );
+      expect(resultado, isA<CrearLineaComercialExitoso>());
+
+      final vigenciaId = (resultado as CrearLineaComercialExitoso).vigencia.id;
+      final horario = await comercialRepo.obtenerHorario(vigenciaId);
+      final lunes = horario.firstWhere((h) => h.diaSemana == 0);
+      expect(lunes.horaInicio, 1200, reason: '20:00 = 1200 minutos desde medianoche');
+      expect(lunes.horaFin, 420, reason: '07:00 = 420 minutos desde medianoche');
+      expect(lunes.cruzaMedianoche, isTrue, reason: 'salida (420) < entrada (1200) — se infiere automáticamente, nunca es una decisión de la UI');
+    });
+
+    test('rechaza un día "trabaja" sin hora de entrada ni de salida', () async {
+      final cliente = await crearClienteDePrueba();
+      final servicio = await crearServicioDePrueba(cliente.id);
+      final puesto = await crearPuestoDePrueba();
+
+      final resultado = await crearLineaComercial.ejecutar(
+        servicioId: servicio.id,
+        borrador: LineaComercialBorrador(
+          puestoId: puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurnoPersonalizado,
+          cantidadElementos: 1,
+          precioUnitario: 1500000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+          horario: horarioDePrueba(dias: {0: const HorarioDiaBorrador(abierto: true)}),
+        ),
+      );
+
+      expect(resultado, isA<CrearLineaComercialErroresValidacion>());
+      final errores = (resultado as CrearLineaComercialErroresValidacion).errores;
+      expect(errores.any((e) => e.campo == CampoLineaComercial.horario && e.diaSemana == 0), isTrue);
+    });
+
+    test('corregirVigencia reemplaza por completo el horario anterior de la misma vigencia', () async {
+      final ctx = await crearServicioConLineaDePrueba();
+
+      final validador = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, ConfiguracionCobroRepositoryImpl(db));
+      final corregir = CorregirLineaComercialUseCase(comercialRepo, validador);
+
+      final resultado = await corregir.ejecutar(
+        lineaComercialId: ctx.lineaId,
+        borrador: LineaComercialBorrador(
+          puestoId: ctx.puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurnoPersonalizado,
+          cantidadElementos: 2,
+          precioUnitario: 1500000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+          horario: horarioDePrueba(),
+        ),
+      );
+      expect(resultado, isA<CorregirLineaComercialExitoso>());
+
+      final vigenciaId = (resultado as CorregirLineaComercialExitoso).vigencia.id;
+      final horario = await comercialRepo.obtenerHorario(vigenciaId);
+      expect(horario, hasLength(7));
+      expect(horario.firstWhere((h) => h.diaSemana == 0).activo, isTrue);
+
+      // Corregir de nuevo, ahora con TODOS los días de descanso — el
+      // horario anterior debe reemplazarse por completo, no acumularse.
+      final segundo = await corregir.ejecutar(
+        lineaComercialId: ctx.lineaId,
+        borrador: LineaComercialBorrador(
+          puestoId: ctx.puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 2,
+          precioUnitario: 1500000,
+          tratamientoIva: TratamientoIva.masIva,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+      expect(segundo, isA<CorregirLineaComercialExitoso>());
+      final horarioTrasSegundo = await comercialRepo.obtenerHorario(vigenciaId);
+      expect(
+        horarioTrasSegundo,
+        isEmpty,
+        reason: 'al corregir a una modalidad que no es Personalizado, el horario de esa vigencia se limpia por completo',
+      );
     });
   });
 }

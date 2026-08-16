@@ -9,18 +9,19 @@ import 'package:riseg_one/core/utils/clock.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/cliente_portal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
-import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_observaciones_configuracion_cobro_vigencia_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_con_vigencia.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
@@ -59,13 +60,14 @@ void main() {
     servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     final catalogoRepo = CatalogoRepositoryImpl(db);
     final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+    final clientePortalRepo = ClientePortalRepositoryImpl(db);
     final comercialRepo = ServicioComercialRepositoryImpl(db);
     clock = _RelojFijo(hoy);
     configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db, clock: clock);
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
     final configuracionCobroValidator =
-        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
-    const reglaValidator = ConfiguracionCobroReglaEventoValidator();
+        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo, clientePortalRepo);
+    const reglaValidator = ConfiguracionCobroEtapaValidator();
 
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     crearConfiguracionCobro =
@@ -207,9 +209,11 @@ void main() {
           requiereComplemento: false,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
-        reglas: const [
-          ReglaEventoBorrador(
-            tipoEvento: TipoEventoCobro.pagoEsperado,
+        etapas: const [
+          EtapaCobroBorrador(
+            id: 'etapa-pago-anterior',
+            tipoSistema: TipoEventoCobro.pagoEsperado,
+            orden: 0,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
             diaDelMes: 10,
@@ -228,9 +232,11 @@ void main() {
           requiereComplemento: false,
           fechaInicioVigencia: hoy,
         ),
-        reglas: const [
-          ReglaEventoBorrador(
-            tipoEvento: TipoEventoCobro.pagoEsperado,
+        etapas: const [
+          EtapaCobroBorrador(
+            id: 'etapa-pago-nueva',
+            tipoSistema: TipoEventoCobro.pagoEsperado,
+            orden: 0,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
             diaDelMes: 20,
@@ -242,8 +248,8 @@ void main() {
       final historial = await obtenerHistorial.ejecutar(configuracionCobroId);
       final historica = historial.firstWhere((h) => h.estado == EstadoVigenciaCobro.historica);
       final vigente = historial.firstWhere((h) => h.estado == EstadoVigenciaCobro.vigente);
-      expect(historica.reglasEventos.single.diaDelMes, 10, reason: 'la regla histórica nunca cambia retroactivamente');
-      expect(vigente.reglasEventos.single.diaDelMes, 20);
+      expect(historica.etapas.single.diaDelMes, 10, reason: 'la etapa histórica nunca cambia retroactivamente');
+      expect(vigente.etapas.single.diaDelMes, 20);
     });
   });
 

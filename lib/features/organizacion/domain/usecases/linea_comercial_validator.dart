@@ -1,4 +1,5 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
@@ -7,6 +8,7 @@ import '../repositories/catalogo_repository.dart';
 import '../repositories/configuracion_cobro_repository.dart';
 import '../repositories/puesto_repository.dart';
 import '../repositories/servicio_repository.dart';
+import '../shared/horario_input.dart';
 import 'linea_comercial_con_vigencia.dart';
 import 'linea_comercial_errors.dart';
 
@@ -25,6 +27,9 @@ class LineaComercialBorrador {
     this.descripcion,
     this.fechaFinVigencia,
     this.observaciones,
+    this.sueldoMensualReferenciaPersonal,
+    this.bonoMensualReferenciaPersonal,
+    this.horario,
   });
 
   final String puestoId;
@@ -36,6 +41,21 @@ class LineaComercialBorrador {
   final String? descripcion;
   final DateTime? fechaFinVigencia;
   final String? observaciones;
+
+  /// Condiciones de personal de referencia de este perfil (Etapa 15,
+  /// rediseño de "Condiciones de Personal") — opcionales, igual que lo
+  /// eran como columnas globales de `Servicio`: una línea puede
+  /// capturarse antes de tener condición salarial definida. En
+  /// centavos.
+  final int? sueldoMensualReferenciaPersonal;
+  final int? bonoMensualReferenciaPersonal;
+
+  /// Horario personalizado (Etapa 15, "Modalidad de turno:
+  /// Personalizado") — solo relevante cuando `modalidadTurnoId` es la
+  /// modalidad Personalizado; se ignora (nunca se persiste) si la
+  /// modalidad es cualquier otra, aunque el formulario todavía tenga
+  /// datos capturados de un cambio de modalidad previo.
+  final HorarioSemanalBorrador? horario;
 }
 
 /// Condiciones ya validadas y normalizadas — listas para persistir.
@@ -50,6 +70,9 @@ class LineaComercialValidada {
     this.descripcion,
     this.fechaFinVigencia,
     this.observaciones,
+    this.sueldoMensualReferenciaPersonal,
+    this.bonoMensualReferenciaPersonal,
+    this.horario,
   });
 
   final String puestoId;
@@ -61,6 +84,12 @@ class LineaComercialValidada {
   final String? descripcion;
   final DateTime? fechaFinVigencia;
   final String? observaciones;
+  final int? sueldoMensualReferenciaPersonal;
+  final int? bonoMensualReferenciaPersonal;
+
+  /// `null` salvo cuando `modalidadTurnoId` es la modalidad
+  /// Personalizado — ya validado y normalizado, listo para persistir.
+  final HorarioSemanalInput? horario;
 }
 
 /// Validación compartida de una condición comercial — usada tanto por
@@ -159,7 +188,67 @@ class LineaComercialValidator {
       );
     }
 
+    // Sueldo/bono de referencia (Etapa 15) — opcionales, igual que lo
+    // eran a nivel de Servicio: solo se validan cuando sí se capturan.
+    final sueldo = borrador.sueldoMensualReferenciaPersonal;
+    if (sueldo != null && sueldo <= 0) {
+      errores.add(
+        const ErrorLineaComercial(
+          campo: CampoLineaComercial.sueldoMensualReferenciaPersonal,
+          codigo: CodigoErrorLineaComercial.invalido,
+        ),
+      );
+    }
+    final bono = borrador.bonoMensualReferenciaPersonal;
+    if (bono != null && bono < 0) {
+      errores.add(
+        const ErrorLineaComercial(
+          campo: CampoLineaComercial.bonoMensualReferenciaPersonal,
+          codigo: CodigoErrorLineaComercial.invalido,
+        ),
+      );
+    }
+
     return errores;
+  }
+
+  /// Horario personalizado (Etapa 15) — solo se valida/persiste cuando
+  /// `modalidadTurnoId` es la modalidad Personalizado; para cualquier
+  /// otra modalidad se ignora sin error, aunque el formulario todavía
+  /// traiga datos capturados de un cambio de modalidad previo (evita
+  /// "basura inválida" al cambiar de Personalizado a otra modalidad).
+  ({HorarioSemanalInput? resultado, List<ErrorLineaComercial> errores}) _validarHorarioSiAplica(
+    LineaComercialBorrador borrador,
+  ) {
+    if (borrador.modalidadTurnoId.trim() != SeedIds.modalidadTurnoPersonalizado) {
+      return (resultado: null, errores: const []);
+    }
+    final horarioBorrador = borrador.horario;
+    if (horarioBorrador == null) {
+      return (
+        resultado: null,
+        errores: const [
+          ErrorLineaComercial(campo: CampoLineaComercial.horario, codigo: CodigoErrorLineaComercial.requerido),
+        ],
+      );
+    }
+
+    final validacion = validarHorarioSemanal(horarioBorrador);
+    return (
+      resultado: validacion.resultado,
+      errores: [
+        for (final e in validacion.errores)
+          ErrorLineaComercial(
+            campo: CampoLineaComercial.horario,
+            codigo: switch (e.codigo) {
+              CodigoErrorHorario.horaInicioRequerida => CodigoErrorLineaComercial.horarioHoraInicioRequerida,
+              CodigoErrorHorario.horaFinRequerida => CodigoErrorLineaComercial.horarioHoraFinRequerida,
+              CodigoErrorHorario.horasIguales => CodigoErrorLineaComercial.horarioHorasIguales,
+            },
+            diaSemana: e.dia.index,
+          ),
+      ],
+    );
   }
 
   String? _vacioANull(String? valor) {
@@ -167,7 +256,7 @@ class LineaComercialValidator {
     return (recortado == null || recortado.isEmpty) ? null : recortado;
   }
 
-  LineaComercialValidada _normalizar(LineaComercialBorrador borrador) {
+  LineaComercialValidada _normalizar(LineaComercialBorrador borrador, HorarioSemanalInput? horario) {
     return LineaComercialValidada(
       puestoId: borrador.puestoId.trim(),
       modalidadTurnoId: borrador.modalidadTurnoId.trim(),
@@ -178,6 +267,9 @@ class LineaComercialValidator {
       descripcion: _vacioANull(borrador.descripcion),
       fechaFinVigencia: borrador.fechaFinVigencia,
       observaciones: _vacioANull(borrador.observaciones),
+      sueldoMensualReferenciaPersonal: borrador.sueldoMensualReferenciaPersonal,
+      bonoMensualReferenciaPersonal: borrador.bonoMensualReferenciaPersonal,
+      horario: horario,
     );
   }
 
@@ -189,6 +281,8 @@ class LineaComercialValidator {
     errores.addAll(
       await _validarCompatibilidadConfiguracionCobro(servicioId: servicioId, tratamientoIva: borrador.tratamientoIva),
     );
+    final horario = _validarHorarioSiAplica(borrador);
+    errores.addAll(horario.errores);
 
     final fechaInicioVigencia = borrador.fechaInicioVigencia;
     if (fechaInicioVigencia == null) {
@@ -213,7 +307,7 @@ class LineaComercialValidator {
     if (errores.isNotEmpty) {
       return (resultado: null, errores: errores);
     }
-    return (resultado: _normalizar(borrador), errores: const <ErrorLineaComercial>[]);
+    return (resultado: _normalizar(borrador, horario.resultado), errores: const <ErrorLineaComercial>[]);
   }
 
   /// Validación de una nueva vigencia sobre una línea ya existente
@@ -236,6 +330,8 @@ class LineaComercialValidator {
     errores.addAll(
       await _validarCompatibilidadConfiguracionCobro(servicioId: servicioId, tratamientoIva: borrador.tratamientoIva),
     );
+    final horario = _validarHorarioSiAplica(borrador);
+    errores.addAll(horario.errores);
 
     final fechaInicioVigencia = borrador.fechaInicioVigencia;
     if (fechaInicioVigencia == null) {
@@ -289,6 +385,6 @@ class LineaComercialValidator {
     if (errores.isNotEmpty) {
       return (resultado: null, errores: errores);
     }
-    return (resultado: _normalizar(borrador), errores: const <ErrorLineaComercial>[]);
+    return (resultado: _normalizar(borrador, horario.resultado), errores: const <ErrorLineaComercial>[]);
   }
 }

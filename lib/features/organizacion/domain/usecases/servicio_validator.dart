@@ -73,20 +73,6 @@ class ServicioValidator {
   /// explícita, a `prospecto` o `activo`.
   static const _estatusClientePermitidos = {EstatusCliente.prospecto, EstatusCliente.activo};
 
-  /// Sueldo de referencia (Etapa 6B) — debe ser `> 0` cuando se captura,
-  /// mismo criterio que `Empleado.sueldoMensualAdministrativo` (Etapa
-  /// 6A). `null` es válido — significa "sin sueldo de referencia
-  /// definido todavía".
-  bool sueldoReferenciaValido(int? sueldoMensualReferenciaPersonal) {
-    return sueldoMensualReferenciaPersonal == null || sueldoMensualReferenciaPersonal > 0;
-  }
-
-  /// A diferencia del sueldo, el bono de referencia sí acepta `0` —
-  /// mismo criterio que `Empleado.bonoMensualAdministrativo`.
-  bool bonoReferenciaValido(int? bonoMensualReferenciaPersonal) {
-    return bonoMensualReferenciaPersonal == null || bonoMensualReferenciaPersonal >= 0;
-  }
-
   Future<({ServicioValidado? resultado, List<ErrorCampoServicio> errores})> validar({
     required String clienteId,
     required ServicioBorrador borrador,

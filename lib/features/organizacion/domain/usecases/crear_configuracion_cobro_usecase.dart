@@ -4,8 +4,8 @@ import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart'
 import '../repositories/configuracion_cobro_repository.dart';
 import '../repositories/servicio_repository.dart';
 import 'configuracion_cobro_errors.dart';
-import 'configuracion_cobro_regla_evento_errors.dart';
-import 'configuracion_cobro_regla_evento_validator.dart';
+import 'configuracion_cobro_etapa_errors.dart';
+import 'configuracion_cobro_etapa_validator.dart';
 import 'configuracion_cobro_validator.dart';
 
 sealed class CrearConfiguracionCobroResultado {}
@@ -17,13 +17,13 @@ class CrearConfiguracionCobroExitoso extends CrearConfiguracionCobroResultado {
 }
 
 class CrearConfiguracionCobroErroresValidacion extends CrearConfiguracionCobroResultado {
-  CrearConfiguracionCobroErroresValidacion(this.errores, [this.erroresReglas = const []]);
+  CrearConfiguracionCobroErroresValidacion(this.errores, [this.erroresEtapas = const []]);
   final List<ErrorConfiguracionCobro> errores;
 
-  /// Errores de las reglas de evento (Etapa 4H.2) — lista separada
-  /// porque cada error ya lleva su propio `TipoEventoCobro`, un campo
-  /// que `ErrorConfiguracionCobro` no tiene.
-  final List<ErrorReglaEvento> erroresReglas;
+  /// Errores de las etapas (Etapa 15) — lista separada porque cada
+  /// error ya lleva su propio `etapaId`, un campo que
+  /// `ErrorConfiguracionCobro` no tiene.
+  final List<ErrorEtapaCobro> erroresEtapas;
 }
 
 /// Mismo criterio que `CrearLineaComercialUseCase`: un Servicio
@@ -45,17 +45,17 @@ class CrearConfiguracionCobroErrorInesperado extends CrearConfiguracionCobroResu
 /// configuración sin al menos una vigencia (mismo principio que
 /// `CrearLineaComercialUseCase`).
 class CrearConfiguracionCobroUseCase {
-  CrearConfiguracionCobroUseCase(this._repository, this._servicioRepository, this._validator, this._reglaValidator);
+  CrearConfiguracionCobroUseCase(this._repository, this._servicioRepository, this._validator, this._etapaValidator);
 
   final ConfiguracionCobroRepository _repository;
   final ServicioRepository _servicioRepository;
   final ConfiguracionCobroValidator _validator;
-  final ConfiguracionCobroReglaEventoValidator _reglaValidator;
+  final ConfiguracionCobroEtapaValidator _etapaValidator;
 
   Future<CrearConfiguracionCobroResultado> ejecutar({
     required String servicioId,
     required ConfiguracionCobroBorrador borrador,
-    List<ReglaEventoBorrador> reglas = const [],
+    List<EtapaCobroBorrador> etapas = const [],
   }) async {
     final servicio = await _servicioRepository.obtenerPorId(servicioId);
     if (servicio != null && EstatusServicio.values.byName(servicio.estatus) == EstatusServicio.terminado) {
@@ -68,16 +68,16 @@ class CrearConfiguracionCobroUseCase {
     }
 
     final validacion = await _validator.validar(servicioId: servicioId, borrador: borrador);
-    final validacionReglas = _reglaValidator.validar(reglas);
-    if (validacion.errores.isNotEmpty || validacionReglas.errores.isNotEmpty) {
-      return CrearConfiguracionCobroErroresValidacion(validacion.errores, validacionReglas.errores);
+    final validacionEtapas = _etapaValidator.validar(etapas);
+    if (validacion.errores.isNotEmpty || validacionEtapas.errores.isNotEmpty) {
+      return CrearConfiguracionCobroErroresValidacion(validacion.errores, validacionEtapas.errores);
     }
 
     try {
       final creado = await _repository.crearConfiguracion(
         servicioId: servicioId,
         datos: validacion.resultado!,
-        reglas: validacionReglas.resultado,
+        etapas: validacionEtapas.resultado,
       );
       return CrearConfiguracionCobroExitoso(creado.configuracion, creado.vigencia);
     } catch (e) {

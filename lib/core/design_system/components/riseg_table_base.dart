@@ -100,32 +100,55 @@ class RisegTableBase<T> extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                 child: emptyState ?? const SizedBox.shrink(),
               )
-            else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: width,
-                  child: FocusTraversalGroup(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (final row in rows)
-                          _RisegTableRow<T>(
-                            row: row,
-                            columns: columns,
-                            actionsWidth: _actionsWidth,
-                            actionsBuilder: rowActionsBuilder,
-                            onTap: onRowTap == null ? null : () => onRowTap!(row),
-                            selected: selectedRow != null && selectedRow == row,
-                          ),
-                      ],
-                    ),
+            else if (constraints.hasBoundedHeight)
+              // Scroll vertical PROPIO — solo válido cuando el padre da
+              // una altura acotada (`Expanded` en la pantalla llamadora,
+              // ej. Egresos/Ingresos/Pagos). Etapa 15, hallazgo real:
+              // sin esto, muchas filas desbordaban verticalmente
+              // ("BOTTOM OVERFLOWED BY N PIXELS").
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: width,
+                    child: SingleChildScrollView(child: _filas()),
                   ),
                 ),
+              )
+            else
+              // Padre con altura NO acotada (esta tabla embebida dentro
+              // de una página con su propio `SingleChildScrollView` de
+              // nivel superior, ej. la sección Unidades de Artículo) —
+              // `Expanded` sería inválido aquí (`RenderFlex... incoming
+              // height constraints are unbounded`). Se conserva el
+              // comportamiento original: la `Column` de filas crece
+              // libremente y es la página exterior quien scrollea.
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(width: width, child: _filas()),
               ),
           ],
         );
       },
+    );
+  }
+
+  Widget _filas() {
+    return FocusTraversalGroup(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final row in rows)
+            _RisegTableRow<T>(
+              row: row,
+              columns: columns,
+              actionsWidth: _actionsWidth,
+              actionsBuilder: rowActionsBuilder,
+              onTap: onRowTap == null ? null : () => onRowTap!(row),
+              selected: selectedRow != null && selectedRow == row,
+            ),
+        ],
+      ),
     );
   }
 
@@ -135,7 +158,21 @@ class RisegTableBase<T> extends StatelessWidget {
     // Ancho mínimo razonable por columna flexible, solo para que el
     // scroll horizontal tenga un punto de partida sensato en anchos muy
     // reducidos — no es un layout definitivo por columna.
-    return fixed + (flexCount * 120) + _actionsWidth;
+    //
+    // 80, no 120 (Etapa 15, hallazgo real de Marlon en Configuración
+    // comercial): con varias columnas fijas + acciones, 120px por
+    // columna flexible empujaba el ancho mínimo por encima del ancho
+    // real disponible (`AppBreakpoints.wide` menos el padding de página
+    // y de `RisegCard`) incluso en pantallas anchas — forzando scroll
+    // horizontal innecesario que dejaba la columna de acciones fuera del
+    // viewport visible, sin ninguna pista de que hubiera más contenido a
+    // la derecha. Bajar el piso es seguro en cualquier dirección: nunca
+    // reduce el ancho real que reciben las columnas flexibles (`Expanded`
+    // siempre usa el espacio disponible de verdad), solo pospone el
+    // punto en que se activa el scroll forzado.
+    final childCount = columns.length + (_actionsWidth > 0 ? 1 : 0);
+    final gaps = childCount > 1 ? (childCount - 1) * AppSpacing.sm : 0.0;
+    return fixed + (flexCount * 80) + _actionsWidth + gaps;
   }
 }
 
@@ -152,6 +189,12 @@ class _RisegTableHeader<T> extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: AppSpacing.sm),
       child: Row(
+        // Sin esto, columnas consecutivas de ancho fijo quedaban sin
+        // ningún espacio real entre sí — el label de una tocaba
+        // visualmente al de la siguiente ("Monto totalMonto aplicado",
+        // Etapa 15). Mismo `spacing` en `_RisegTableRow` para que
+        // encabezado y celdas de datos sigan alineados.
+        spacing: AppSpacing.sm,
         children: [
           for (final column in columns)
             _cellSlot(
@@ -161,6 +204,9 @@ class _RisegTableHeader<T> extends StatelessWidget {
                 child: Text(
                   column.label,
                   textAlign: column.alignment,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  softWrap: false,
                   style: AppTypography.label.copyWith(color: colors.textMuted),
                 ),
               ),
@@ -226,6 +272,7 @@ class _RisegTableRowState<T> extends State<_RisegTableRow<T>> {
       ),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
       child: Row(
+        spacing: AppSpacing.sm,
         children: [
           for (final column in widget.columns)
             _cellSlot(

@@ -6,9 +6,10 @@ import 'package:drift/native.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../features/organizacion/data/tables/cliente_attachment_table.dart';
+import '../../features/organizacion/data/tables/cliente_portal_table.dart';
 import '../../features/organizacion/data/tables/cliente_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_correo_table.dart';
-import '../../features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
+import '../../features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import '../../features/organizacion/data/tables/contacto_table.dart';
@@ -20,6 +21,7 @@ import '../../features/organizacion/data/tables/entidad_fiscal_table.dart';
 import '../../features/organizacion/data/tables/puesto_table.dart';
 import '../../features/organizacion/data/tables/servicio_linea_comercial_table.dart';
 import '../../features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
+import '../../features/organizacion/data/tables/servicio_linea_comercial_vigencia_horario_table.dart';
 import '../../features/organizacion/data/tables/servicio_table.dart';
 import '../../features/organizacion/data/tables/sucursal_table.dart';
 import '../../features/organizacion/data/tables/ubicacion_table.dart';
@@ -72,6 +74,7 @@ import '../../features/compras/data/tables/compra_table.dart';
 import '../../features/usuarios/data/tables/permiso_usuario_table.dart';
 import '../../features/usuarios/data/tables/sesion_persistente_table.dart';
 import '../../features/usuarios/data/tables/usuario_table.dart';
+import '../security/credential_cipher.dart';
 import 'migrations/migrar_asignacion_attachment_v29.dart';
 import 'migrations/migrar_asignacion_linea_telefonica_v35.dart';
 import 'migrations/migrar_asignacion_vehiculo_v31.dart';
@@ -85,6 +88,12 @@ import 'migrations/migrar_categoria_articulo_aplicacion_v43.dart';
 import 'migrations/migrar_articulo_unidad_evento_v44.dart';
 import 'migrations/migrar_boveda_v45.dart';
 import 'migrations/migrar_sesion_persistente_v46.dart';
+import 'migrations/migrar_documento_por_emitir_uuid_v47.dart';
+import 'migrations/migrar_configuracion_cobro_etapa_v49.dart';
+import 'migrations/migrar_condiciones_personal_linea_comercial_v50.dart';
+import 'migrations/migrar_horario_linea_comercial_v51.dart';
+import 'migrations/migrar_cliente_portal_v52.dart';
+import 'migrations/migrar_empleado_v48.dart';
 import 'migrations/migrar_linea_telefonica_v34.dart';
 import 'migrations/migrar_recarga_linea_telefonica_v36.dart';
 import 'migrations/migrar_vehiculo_v30.dart';
@@ -159,15 +168,18 @@ class AppMetadata extends Table {
   Contacto,
   Servicio,
   EntidadFiscal,
+  ClientePortal,
   ServicioLineaComercial,
   ServicioLineaComercialVigencia,
+  ServicioLineaComercialVigenciaHorario,
   ConfiguracionCobro,
   ConfiguracionCobroVigencia,
   ConfiguracionCobroCorreo,
-  ConfiguracionCobroReglaEvento,
+  ConfiguracionCobroEtapa,
   DocumentoPorEmitir,
   DocumentoPorEmitirServicio,
   DocumentoPorEmitirConfiguracion,
+  DocumentoPorEmitirHito,
   DocumentoPorEmitirLinea,
   DocumentoPorEmitirCorreo,
   DocumentoPorEmitirCorreoEnvio,
@@ -246,10 +258,17 @@ class AppMetadata extends Table {
   SesionPersistente,
 ])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase(super.executor);
+  AppDatabase(super.executor, {AlmacenClaveCifrado? almacenClaveCifrado}) : _almacenClaveCifrado = almacenClaveCifrado;
+
+  /// Solo se usa dentro de `onUpgrade`, para cifrar contraseñas legadas
+  /// de portal al migrar a `schemaVersion` 52 (`migrarClientePortalV52`).
+  /// En producción es `null` — `CredentialCipher` usa entonces el
+  /// Almacén de Credenciales de Windows real; las pruebas de migración
+  /// inyectan una implementación en memoria aquí.
+  final AlmacenClaveCifrado? _almacenClaveCifrado;
 
   @override
-  int get schemaVersion => 46;
+  int get schemaVersion => 52;
 
   @override
   MigrationStrategy get migration {
@@ -381,13 +400,17 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(configuracionCobroCorreo);
           await seedTipoFrecuenciaCobro(this);
         }
-        // Aditiva (Etapa 4H.2): ConfiguracionCobroReglaEvento — tabla
-        // completamente nueva, mismo motivo que los pasos `to >= 8`/
-        // `to >= 9` de arriba: nunca existió antes, `from <= 9` es
-        // seguro sin acotar un origen exacto. Sin siembra (no es un
-        // catálogo).
+        // Aditiva (Etapa 4H.2): originalmente creaba
+        // ConfiguracionCobroReglaEvento aquí — reemplazada por completo
+        // en la Etapa 15 (`migrarConfiguracionCobroEtapaV49`) por
+        // ConfiguracionCobroEtapa. Este paso ya **no** la crea: mismo
+        // criterio exacto que `migrarLineaTelefonicaV34` con
+        // `LineaTelefonicaPlan` — cualquier instalación que salte de una
+        // versión ≤9 directo a la actual (`to >= 49`) jamás necesita
+        // materializarla, porque el paso 49 la reemplazaría en el mismo
+        // salto de todos modos.
         if (to >= 10 && from <= 9) {
-          await m.createTable(configuracionCobroReglaEvento);
+          // Sin cuerpo — ver el comentario de arriba.
         }
         // Aditiva (Etapa 4I.1): DocumentoPorEmitir y sus 4 tablas hijas
         // (Servicio/Configuracion/Linea/Correo) — todas completamente
@@ -845,6 +868,50 @@ class AppDatabase extends _$AppDatabase {
         // nueva — "Recuérdame en este equipo".
         if (to >= 46 && from <= 45) {
           await migrarSesionPersistenteV46(this, m);
+        }
+        // Estructural (Etapa 15, corrección CFDI real): elimina
+        // `serieFiscal`, elimina `folioFiscal` (fusionado en `uuid`,
+        // con `COALESCE` para no perder datos ya capturados), en
+        // `DocumentoPorEmitir` y `CuentaPorCobrar`.
+        if (to >= 47 && from <= 46) {
+          await migrarDocumentoPorEmitirUuidV47(this, m);
+        }
+        // Aditiva (Etapa 15): `Empleado.bancoOtroDescripcion` — nombre
+        // del banco cuando `bancoId` apunta a la fila catálogo `'OTRO'`.
+        if (to >= 48 && from <= 47) {
+          await migrarEmpleadoV48(this, m);
+        }
+        // Estructural (Etapa 15, ampliación "flujo posterior a la
+        // emisión"): reemplaza `ConfiguracionCobroReglaEvento` (catálogo
+        // fijo de 3 eventos) por `ConfiguracionCobroEtapa` (colección
+        // dinámica de etapas de sistema + personalizadas), migrando cada
+        // fila existente sin perder ninguna captura real, y agrega
+        // `DocumentoPorEmitirHito` (tabla enteramente nueva).
+        if (to >= 49 && from <= 48) {
+          await migrarConfiguracionCobroEtapaV49(this, m);
+        }
+        // Aditiva (Etapa 15, rediseño "Condiciones de Personal"):
+        // sueldo/bono de referencia pasan de `Servicio` (global) a
+        // `ServicioLineaComercialVigencia` (por perfil contratado);
+        // `AsignacionServicio` gana `lineaComercialId`. Incluye
+        // migración asistida en el caso trivial (1 sola línea vigente
+        // hoy + sueldo global capturado) — ver el doc comment del
+        // archivo para el criterio exacto.
+        if (to >= 50 && from <= 49) {
+          await migrarCondicionesPersonalLineaComercialV50(this, m);
+        }
+        // Aditiva (Etapa 15, Horario personalizado de línea comercial):
+        // tabla enteramente nueva `ServicioLineaComercialVigenciaHorario`.
+        if (to >= 51 && from <= 50) {
+          await migrarHorarioLineaComercialV51(this, m);
+        }
+        // Aditiva+estructural (Etapa 15, portal único del Cliente): funda
+        // `ClientePortal` — única fuente de verdad nueva de portales,
+        // antes duplicados en cada `ConfiguracionCobroVigencia`. Migra
+        // los portales legados (cifrando cualquier contraseña en texto
+        // plano) sin tocar los correos — ver el doc comment del archivo.
+        if (to >= 52 && from <= 51) {
+          await migrarClientePortalV52(this, m, cipher: CredentialCipher(almacen: _almacenClaveCifrado));
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

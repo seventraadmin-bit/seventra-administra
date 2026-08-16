@@ -5,8 +5,8 @@ import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart'
 import '../repositories/configuracion_cobro_repository.dart';
 import '../repositories/servicio_repository.dart';
 import 'configuracion_cobro_errors.dart';
-import 'configuracion_cobro_regla_evento_errors.dart';
-import 'configuracion_cobro_regla_evento_validator.dart';
+import 'configuracion_cobro_etapa_errors.dart';
+import 'configuracion_cobro_etapa_validator.dart';
 import 'configuracion_cobro_validator.dart';
 
 sealed class CambiarVigenciaConfiguracionCobroResultado {}
@@ -17,9 +17,9 @@ class CambiarVigenciaConfiguracionCobroExitoso extends CambiarVigenciaConfigurac
 }
 
 class CambiarVigenciaConfiguracionCobroErroresValidacion extends CambiarVigenciaConfiguracionCobroResultado {
-  CambiarVigenciaConfiguracionCobroErroresValidacion(this.errores, [this.erroresReglas = const []]);
+  CambiarVigenciaConfiguracionCobroErroresValidacion(this.errores, [this.erroresEtapas = const []]);
   final List<ErrorConfiguracionCobro> errores;
-  final List<ErrorReglaEvento> erroresReglas;
+  final List<ErrorEtapaCobro> erroresEtapas;
 }
 
 class CambiarVigenciaConfiguracionCobroNoExiste extends CambiarVigenciaConfiguracionCobroResultado {}
@@ -46,18 +46,18 @@ class CambiarVigenciaConfiguracionCobroUseCase {
     this._repository,
     this._servicioRepository,
     this._validator,
-    this._reglaValidator,
+    this._etapaValidator,
   );
 
   final ConfiguracionCobroRepository _repository;
   final ServicioRepository _servicioRepository;
   final ConfiguracionCobroValidator _validator;
-  final ConfiguracionCobroReglaEventoValidator _reglaValidator;
+  final ConfiguracionCobroEtapaValidator _etapaValidator;
 
   Future<CambiarVigenciaConfiguracionCobroResultado> ejecutar({
     required String configuracionCobroId,
     required ConfiguracionCobroBorrador borrador,
-    List<ReglaEventoBorrador> reglas = const [],
+    List<EtapaCobroBorrador> etapas = const [],
   }) async {
     final configuracion = await _repository.obtenerConfiguracionPorId(configuracionCobroId);
     if (configuracion == null) {
@@ -77,16 +77,16 @@ class CambiarVigenciaConfiguracionCobroUseCase {
       borrador: borrador,
       vigenciasExistentes: vigenciasActivas,
     );
-    final validacionReglas = _reglaValidator.validar(reglas);
-    if (validacion.errores.isNotEmpty || validacionReglas.errores.isNotEmpty) {
-      return CambiarVigenciaConfiguracionCobroErroresValidacion(validacion.errores, validacionReglas.errores);
+    final validacionEtapas = _etapaValidator.validar(etapas);
+    if (validacion.errores.isNotEmpty || validacionEtapas.errores.isNotEmpty) {
+      return CambiarVigenciaConfiguracionCobroErroresValidacion(validacion.errores, validacionEtapas.errores);
     }
 
     try {
       final vigencia = await _repository.cambiarVigencia(
         configuracionCobroId: configuracionCobroId,
         datos: validacion.resultado!,
-        reglas: validacionReglas.resultado,
+        etapas: validacionEtapas.resultado,
       );
       return CambiarVigenciaConfiguracionCobroExitoso(vigencia);
     } catch (e) {

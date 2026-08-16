@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/organizacion/domain/shared/horario_input.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expediente_errors.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 import 'package:riseg_one/features/organizacion/presentation/sucursales/sucursal_expediente_form_controllers.dart';

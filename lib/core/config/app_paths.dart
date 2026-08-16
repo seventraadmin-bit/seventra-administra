@@ -44,6 +44,13 @@ class AppPaths {
   /// respaldo (Etapa 14C).
   String get reportesDir => p.join(_root, 'reportes');
 
+  /// Raíz donde se guardan los recibos de pago generados en PDF (Etapa
+  /// 15) — mismo criterio que [reportesDir]: un recibo es 100%
+  /// regenerable desde el `DocumentoPorEmitir` y sus tablas hijas, así
+  /// que no tiene dueño en `Attachment` ni forma parte del respaldo
+  /// (Etapa 14C).
+  String get recibosDir => p.join(_root, 'recibos');
+
   /// Carpeta de espera de una restauración validada pero aún no aplicada
   /// (Etapa 14C) — [bootstrap] revisa [restorePendingMarkerFile] antes
   /// de abrir la base de datos; si existe, sustituye [databaseFile] y

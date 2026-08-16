@@ -24,6 +24,7 @@ Future<bool> mostrarDialogoCorregirDatosEmision(
   final esCfdi = TipoDocumentoCobro.values.byName(documento.tipoDocumento) == TipoDocumentoCobro.cfdi;
 
   var datos = const _DatosCorreccion();
+  var errorUuidFormatoInvalido = false;
 
   final resultado = await RisegDialog.showForm<CorregirDatosEmisionDocumentoPorEmitirResultado?>(
     context: context,
@@ -33,20 +34,21 @@ Future<bool> mostrarDialogoCorregirDatosEmision(
     contentBuilder: (_) => _CorregirDatosEmisionForm(
       esCfdi: esCfdi,
       documento: documento,
+      errorUuidFormatoInvalido: errorUuidFormatoInvalido,
       onCambio: (nuevo) => datos = nuevo,
     ),
     onConfirm: () async {
-      return ref.read(agendaControllerProvider.notifier).corregirDatosEmision(
+      final resultado = await ref.read(agendaControllerProvider.notifier).corregirDatosEmision(
             documentoPorEmitirId: documento.id,
             motivo: datos.motivo,
             folioDocumento: datos.folioDocumento.trim().isEmpty ? null : datos.folioDocumento.trim(),
-            serieFiscal: esCfdi && datos.serieFiscal.trim().isNotEmpty ? datos.serieFiscal.trim() : null,
-            folioFiscal: esCfdi && datos.folioFiscal.trim().isNotEmpty ? datos.folioFiscal.trim() : null,
             uuid: esCfdi && datos.uuid.trim().isNotEmpty ? datos.uuid.trim() : null,
             fechaEmisionReal: datos.fechaEmisionReal,
             importeEmitido: datos.importeEmitidoCentavos,
             observacionesEmision: datos.observacionesEmision.trim().isEmpty ? null : datos.observacionesEmision.trim(),
           );
+      errorUuidFormatoInvalido = resultado is CorregirDatosEmisionDocumentoPorEmitirUuidFormatoInvalido;
+      return resultado;
     },
   );
 
@@ -62,6 +64,8 @@ Future<bool> mostrarDialogoCorregirDatosEmision(
       RisegFeedback.showError(context, l10n.agendaCorregirDatosEmisionErrorNoPermitido);
     case CorregirDatosEmisionDocumentoPorEmitirCamposNoPermitidosParaRecibo():
       RisegFeedback.showError(context, l10n.agendaRegistrarEmisionErrorCamposNoPermitidosParaRecibo);
+    case CorregirDatosEmisionDocumentoPorEmitirUuidFormatoInvalido():
+      RisegFeedback.showError(context, l10n.agendaRegistrarEmisionErrorUuidFormatoInvalido);
     case CorregirDatosEmisionDocumentoPorEmitirImporteInvalido():
       RisegFeedback.showError(context, l10n.agendaRegistrarEmisionErrorImporteInvalido);
     case CorregirDatosEmisionDocumentoPorEmitirNoExiste():
@@ -77,8 +81,6 @@ class _DatosCorreccion {
   const _DatosCorreccion({
     this.motivo = '',
     this.folioDocumento = '',
-    this.serieFiscal = '',
-    this.folioFiscal = '',
     this.uuid = '',
     this.fechaEmisionReal,
     this.importeEmitidoCentavos,
@@ -87,8 +89,6 @@ class _DatosCorreccion {
 
   final String motivo;
   final String folioDocumento;
-  final String serieFiscal;
-  final String folioFiscal;
   final String uuid;
   final DateTime? fechaEmisionReal;
   final int? importeEmitidoCentavos;
@@ -97,8 +97,6 @@ class _DatosCorreccion {
   _DatosCorreccion copyWith({
     String? motivo,
     String? folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     DateTime? fechaEmisionReal,
     int? importeEmitidoCentavos,
@@ -107,8 +105,6 @@ class _DatosCorreccion {
     return _DatosCorreccion(
       motivo: motivo ?? this.motivo,
       folioDocumento: folioDocumento ?? this.folioDocumento,
-      serieFiscal: serieFiscal ?? this.serieFiscal,
-      folioFiscal: folioFiscal ?? this.folioFiscal,
       uuid: uuid ?? this.uuid,
       fechaEmisionReal: fechaEmisionReal ?? this.fechaEmisionReal,
       importeEmitidoCentavos: importeEmitidoCentavos ?? this.importeEmitidoCentavos,
@@ -118,10 +114,16 @@ class _DatosCorreccion {
 }
 
 class _CorregirDatosEmisionForm extends StatefulWidget {
-  const _CorregirDatosEmisionForm({required this.esCfdi, required this.documento, required this.onCambio});
+  const _CorregirDatosEmisionForm({
+    required this.esCfdi,
+    required this.documento,
+    required this.errorUuidFormatoInvalido,
+    required this.onCambio,
+  });
 
   final bool esCfdi;
   final DocumentoPorEmitirData documento;
+  final bool errorUuidFormatoInvalido;
   final void Function(_DatosCorreccion datos) onCambio;
 
   @override
@@ -132,8 +134,6 @@ class _CorregirDatosEmisionFormState extends State<_CorregirDatosEmisionForm> {
   var _datos = const _DatosCorreccion();
   final _motivoController = TextEditingController();
   final _folioController = TextEditingController();
-  final _serieController = TextEditingController();
-  final _folioFiscalController = TextEditingController();
   final _uuidController = TextEditingController();
   final _importeController = TextEditingController();
   final _observacionesController = TextEditingController();
@@ -142,8 +142,6 @@ class _CorregirDatosEmisionFormState extends State<_CorregirDatosEmisionForm> {
   void dispose() {
     _motivoController.dispose();
     _folioController.dispose();
-    _serieController.dispose();
-    _folioFiscalController.dispose();
     _uuidController.dispose();
     _importeController.dispose();
     _observacionesController.dispose();
@@ -162,8 +160,6 @@ class _CorregirDatosEmisionFormState extends State<_CorregirDatosEmisionForm> {
     _datos = _datos.copyWith(
       motivo: _motivoController.text,
       folioDocumento: _folioController.text,
-      serieFiscal: _serieController.text,
-      folioFiscal: _folioFiscalController.text,
       uuid: _uuidController.text,
       importeEmitidoCentavos: _importeEnCentavos(),
       observacionesEmision: _observacionesController.text,
@@ -196,23 +192,10 @@ class _CorregirDatosEmisionFormState extends State<_CorregirDatosEmisionForm> {
         if (widget.esCfdi) ...[
           const SizedBox(height: AppSpacing.md),
           RisegTextField(
-            label: l10n.agendaDetalleCampoSerieFiscal,
-            controller: _serieController,
-            hint: d.serieFiscal,
-            onChanged: (_) => _notificar(),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          RisegTextField(
-            label: l10n.agendaDetalleCampoFolioFiscal,
-            controller: _folioFiscalController,
-            hint: d.folioFiscal,
-            onChanged: (_) => _notificar(),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          RisegTextField(
             label: l10n.agendaDetalleCampoUuid,
             controller: _uuidController,
             hint: d.uuid,
+            errorText: widget.errorUuidFormatoInvalido ? l10n.agendaRegistrarEmisionErrorUuidFormatoInvalido : null,
             onChanged: (_) => _notificar(),
           ),
         ],

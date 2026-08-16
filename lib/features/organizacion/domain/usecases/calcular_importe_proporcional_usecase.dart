@@ -15,10 +15,15 @@ int redondearCentavos(double valor) {
 /// aplica una vez, al final, por línea — nunca se sub-redondea a mitad
 /// de la fórmula.
 ///
-/// La base fija de 30 días (nunca los días reales del mes) es la
-/// convención contable ya aprobada para RISEG — un periodo de 31 días
-/// (ej. Sportium, 21 jul-20 ago) genuinamente cobra un poco más que un
-/// mes de 28.
+/// La base fija de 30 días es la convención contable de RISEG: un mes
+/// comercial completo siempre vale 30, sin importar si el calendario
+/// real tiene 28, 29, 30 o 31 días (Etapa 15, corrección explícita de
+/// Marlon — un periodo de 31 días NO cobra más que uno de 28).
+/// `diasAplicables` solo se aparta de 30 cuando el periodo es
+/// genuinamente parcial (la vigencia de la línea comercial cambió a
+/// mitad de mes) — ver `_calcularDiasAplicables` en
+/// `ensamblar_documento_por_emitir_usecase.dart`, la única fuente real
+/// de este valor.
 int calcularImporteProporcional({
   required int precioUnitarioCentavos,
   required int diasAplicables,

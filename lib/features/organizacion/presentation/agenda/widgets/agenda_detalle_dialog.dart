@@ -1,19 +1,25 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/finanzas/presentation/cuentas_por_cobrar/cuentas_por_cobrar_controller.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart' show TipoEventoCobro;
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_emitir_detalle.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/generar_recibo_pago_pdf_usecase.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/resumen_iva_documento_por_emitir.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion_providers.dart';
@@ -25,9 +31,24 @@ import 'agenda_corregir_datos_emision_dialog.dart';
 import 'agenda_registrar_emision_dialog.dart';
 import 'agenda_registrar_envio_dialog.dart';
 import 'agenda_versiones_archivadas_dialog.dart';
+import 'eliminar_documento_por_emitir_fisicamente_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
+
+/// Nombre visible de un hito ya generado (Etapa 15) — snapshot: de
+/// sistema vía l10n (nunca cambia retroactivamente lo que ya se
+/// generó), o el texto libre capturado si era una etapa personalizada.
+String _hitoLabel(AppLocalizations l10n, DocumentoPorEmitirHitoData hito) {
+  final tipoSistema = hito.tipoSistema;
+  if (tipoSistema == null) return hito.nombre ?? '';
+  return switch (TipoEventoCobro.values.byName(tipoSistema)) {
+    TipoEventoCobro.emision => l10n.servicioCobroEventoEmision,
+    TipoEventoCobro.procesamiento => l10n.servicioCobroEventoProcesamiento,
+    TipoEventoCobro.pagoEsperado => l10n.servicioCobroEventoPagoEsperado,
+    TipoEventoCobro.complementoPago => l10n.servicioCobroEventoComplementoPago,
+  };
+}
 
 /// Detalle de un `DocumentoPorEmitir` (Etapa 4I.1) — expediente completo
 /// de solo consulta salvo la máquina de estados de 4 estados. El ajuste
@@ -46,6 +67,7 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
   DocumentoPorEmitirDetalle? _detalle;
   bool _cargando = true;
   bool _procesando = false;
+  bool _generandoPdf = false;
   final Map<String, String> _nombresServicio = {};
   Map<String, String> _usuariosPorId = const {};
 
@@ -250,7 +272,7 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
   }
 
   Future<void> _registrarEmision(DocumentoPorEmitirData documento) async {
-    final actualizo = await mostrarDialogoRegistrarEmision(context, ref, documento);
+    final actualizo = await mostrarDialogoRegistrarEmision(context, ref, documento, _detalle!.resumenIva);
     if (actualizo) await _cargar();
   }
 
@@ -271,6 +293,58 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
 
   Future<void> _verVersionesArchivadas() async {
     await mostrarDialogoVersionesArchivadas(context, ref, widget.documentoPorEmitirId);
+  }
+
+  Future<void> _generarReciboPdf() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _generandoPdf = true);
+
+    // Fallback si Empresa no tiene logotipo propio configurado (hoy
+    // siempre el caso — no existe todavía esa pantalla): el mismo
+    // asset oficial que ya usa el resto de la app, nunca uno distinto
+    // ni duplicado (Etapa 15). El use case es dominio puro y no conoce
+    // `rootBundle`, así que se resuelve aquí, en la UI.
+    Uint8List? logoFallbackBytes;
+    try {
+      final datosLogo = await rootBundle.load('assets/images/logo.png');
+      logoFallbackBytes = datosLogo.buffer.asUint8List();
+    } catch (_) {
+      // Sin logotipo de respaldo disponible — el PDF se genera sin
+      // logo, nunca se bloquea la generación por esto.
+    }
+
+    final resultado = await ref.read(agendaControllerProvider.notifier).generarReciboPagoPdf(
+          widget.documentoPorEmitirId,
+          logoFallbackBytes: logoFallbackBytes,
+        );
+    if (!mounted) return;
+    setState(() => _generandoPdf = false);
+
+    switch (resultado) {
+      case GenerarReciboPagoPdfExitoso():
+        RisegFeedback.showSuccess(context, l10n.agendaDetalleReciboPdfExito);
+      case GenerarReciboPagoPdfNoExiste():
+      case GenerarReciboPagoPdfTipoDocumentoInvalido():
+      case GenerarReciboPagoPdfErrorInesperado():
+        RisegFeedback.showError(context, l10n.agendaDetalleReciboPdfError);
+    }
+  }
+
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarDocumentoPorEmitirFisicamente(context, ref, widget.documentoPorEmitirId);
+    if (!eliminado) return;
+    // A diferencia del resto de las mutaciones (que pasan por
+    // `AgendaController` y recargan su propia lista internamente), la
+    // eliminación física la ejecuta un provider aparte — sin esta
+    // invalidación explícita, la Agenda detrás de este diálogo sigue
+    // mostrando el documento ya eliminado hasta que su `autoDispose` se
+    // dispare por otro motivo (Etapa 15, hallazgo real).
+    ref.invalidate(agendaControllerProvider);
+    // El repositorio borra físicamente la `CuentaPorCobrar` asociada
+    // junto con el Documento (mismo agregado) — sin esto, el listado de
+    // Cuentas por cobrar seguía mostrando una cuenta ya eliminada.
+    ref.invalidate(cuentasPorCobrarControllerProvider);
+    if (mounted) Navigator.of(context).pop();
   }
 
   /// `Emitido → Procesado/Aceptado` directo omite el paso de envío —
@@ -303,7 +377,10 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
     } else {
       final d = _detalle!.documento;
       final estatusActual = EstatusDocumentoPorEmitir.values.byName(d.estatus);
-      final esCfdi = TipoDocumentoCobro.values.byName(d.tipoDocumento) == TipoDocumentoCobro.cfdi;
+      final tipoDocumento = TipoDocumentoCobro.values.byName(d.tipoDocumento);
+      final esCfdi = tipoDocumento == TipoDocumentoCobro.cfdi;
+      final esReciboDePago = tipoDocumento == TipoDocumentoCobro.reciboDePago;
+      final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
       content = SizedBox(
         width: 560,
@@ -311,15 +388,34 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
               children: [
-                Expanded(
-                  child: CampoConsulta(label: l10n.agendaDetalleCampoCodigo, value: d.codigo),
-                ),
+                CampoConsulta(label: l10n.agendaDetalleCampoCodigo, value: d.codigo),
                 RisegStatusBadge(
                   label: _estatusLabel(l10n, d.estatus),
                   tone: _estatusTono(estatusActual),
                 ),
+                if (esMaestro)
+                  RisegActionsMenu(
+                    menuKey: const Key('agenda_detalle_menu_acciones'),
+                    actions: [
+                      // El estatus ya no gatea esta acción (Etapa 15,
+                      // ampliación explícita de Marlon) — el único
+                      // bloqueo real (dinero real aplicado) se revisa
+                      // dentro del propio diálogo, con un mensaje
+                      // específico, antes de pedir el motivo.
+                      RisegMenuAction(
+                        key: const Key('agenda_detalle_accion_eliminar_fisicamente'),
+                        label: l10n.eliminacionFisicaAccionMenu,
+                        icon: Icons.delete_forever_outlined,
+                        destructive: true,
+                        onTap: _eliminarFisicamente,
+                      ),
+                    ],
+                  ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -336,44 +432,64 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
               value: '${_formatoFecha.format(d.periodoInicio)} - ${_formatoFecha.format(d.periodoFin)}',
             ),
             const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Expanded(
-                  child: CampoConsulta(
-                    label: l10n.agendaDetalleCampoFechaEmision,
-                    value: d.fechaEmisionProgramada == null
-                        ? l10n.agendaFechaSinCalcular
-                        : _formatoFecha.format(d.fechaEmisionProgramada!),
-                  ),
-                ),
-                Expanded(
-                  child: CampoConsulta(
-                    label: l10n.agendaDetalleCampoFechaProcesamiento,
-                    value: d.fechaProcesamientoProgramada == null
-                        ? null
-                        : _formatoFecha.format(d.fechaProcesamientoProgramada!),
-                  ),
-                ),
-                Expanded(
-                  child: CampoConsulta(
-                    label: l10n.agendaDetalleCampoFechaPago,
-                    value: d.fechaPagoEsperadoProgramada == null
-                        ? l10n.agendaFechaSinCalcular
-                        : _formatoFecha.format(d.fechaPagoEsperadoProgramada!),
-                  ),
-                ),
-              ],
-            ),
+            // Etapa 15: solo los hitos realmente configurados y activos
+            // para este documento — nunca los 3 slots fijos de antes.
+            // `_detalle!.hitos` es el snapshot tomado al generar (nunca
+            // se recalcula), ya en orden.
+            if (_detalle!.hitos.isEmpty)
+              CampoConsulta(
+                label: l10n.agendaDetalleCampoFechaEmision,
+                value: d.fechaEmisionProgramada == null ? l10n.agendaFechaSinCalcular : _formatoFecha.format(d.fechaEmisionProgramada!),
+              )
+            else
+              Wrap(
+                spacing: AppSpacing.md,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  for (final hito in _detalle!.hitos)
+                    SizedBox(
+                      width: 160,
+                      child: CampoConsulta(
+                        label: _hitoLabel(l10n, hito),
+                        value: _formatoFecha.format(hito.fechaProgramada),
+                      ),
+                    ),
+                ],
+              ),
             const SizedBox(height: AppSpacing.md),
             Text(l10n.agendaDetalleSeccionComparacionImportes, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
             const SizedBox(height: AppSpacing.xs),
-            Row(
-              children: [
-                Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteCalculado, value: formatoCentavosAgenda(d.importeBaseEsperado))),
-                Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionAjuste, value: _ajusteLabel(l10n, d.ajusteManual))),
-                Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteFinalEsperado, value: formatoCentavosAgenda(d.importeFinalEsperado))),
-              ],
-            ),
+            if (_detalle!.resumenIva == ResumenIvaDocumento.masIva && _detalle!.totalesEsperados != null)
+              Row(
+                children: [
+                  Expanded(
+                    child: CampoConsulta(
+                      label: l10n.agendaDetalleComparacionImporteBaseEsperado,
+                      value: formatoCentavosAgenda(_detalle!.totalesEsperados!.base),
+                    ),
+                  ),
+                  Expanded(
+                    child: CampoConsulta(
+                      label: l10n.agendaDetalleComparacionIvaEsperado,
+                      value: formatoCentavosAgenda(_detalle!.totalesEsperados!.ivaEsperado),
+                    ),
+                  ),
+                  Expanded(
+                    child: CampoConsulta(
+                      label: l10n.agendaDetalleComparacionTotalEsperado,
+                      value: formatoCentavosAgenda(_detalle!.totalesEsperados!.totalEsperado),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteCalculado, value: formatoCentavosAgenda(d.importeBaseEsperado))),
+                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionAjuste, value: _ajusteLabel(l10n, d.ajusteManual))),
+                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteFinalEsperado, value: formatoCentavosAgenda(d.importeFinalEsperado))),
+                ],
+              ),
             if (d.importeEmitido != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Row(
@@ -450,16 +566,9 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
               Row(
                 children: [
                   Expanded(child: CampoConsulta(label: l10n.agendaDetalleCampoFolioDocumento, value: d.folioDocumento)),
-                  if (esCfdi) ...[
-                    Expanded(child: CampoConsulta(label: l10n.agendaDetalleCampoSerieFiscal, value: d.serieFiscal)),
-                    Expanded(child: CampoConsulta(label: l10n.agendaDetalleCampoFolioFiscal, value: d.folioFiscal)),
-                  ],
+                  if (esCfdi) Expanded(child: CampoConsulta(label: l10n.agendaDetalleCampoUuid, value: d.uuid)),
                 ],
               ),
-              if (esCfdi) ...[
-                const SizedBox(height: AppSpacing.sm),
-                CampoConsulta(label: l10n.agendaDetalleCampoUuid, value: d.uuid),
-              ],
               const SizedBox(height: AppSpacing.sm),
               CampoConsulta(
                 label: l10n.agendaDetalleCampoFechaEmisionReal,
@@ -492,13 +601,15 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
             const SizedBox(height: AppSpacing.md),
             AgendaAdjuntosSection(documento: d),
             const SizedBox(height: AppSpacing.md),
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
               children: [
-                Expanded(
-                  child: Text(
-                    l10n.agendaDetalleSeccionHistorial,
-                    style: AppTypography.heading3.copyWith(color: colors.textPrimary),
-                  ),
+                Text(
+                  l10n.agendaDetalleSeccionHistorial,
+                  style: AppTypography.heading3.copyWith(color: colors.textPrimary),
                 ),
                 RisegButton(
                   label: l10n.agendaDetalleHistorialBotonVersionesArchivadas,
@@ -548,6 +659,14 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
               spacing: AppSpacing.xs,
               runSpacing: AppSpacing.xs,
               children: [
+                if (esReciboDePago)
+                  RisegButton(
+                    key: const Key('agenda_detalle_boton_generar_recibo_pdf'),
+                    label: l10n.agendaDetalleBotonGenerarReciboPdf,
+                    variant: RisegButtonVariant.secondary,
+                    loading: _generandoPdf,
+                    onPressed: _generarReciboPdf,
+                  ),
                 if (estatusActual == EstatusDocumentoPorEmitir.pendiente)
                   RisegButton(
                     label: l10n.agendaDetalleBotonMarcarEnPreparacion,
@@ -636,7 +755,13 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(l10n.agendaDetalleDialogoTitulo, style: AppTypography.heading2.copyWith(color: colors.textPrimary)),
+                    Expanded(
+                      child: Text(
+                        l10n.agendaDetalleDialogoTitulo,
+                        style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(),

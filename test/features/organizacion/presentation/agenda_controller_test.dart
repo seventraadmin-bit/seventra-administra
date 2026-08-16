@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
@@ -11,12 +12,12 @@ import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repos
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
-import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
@@ -77,6 +78,11 @@ void main() {
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
+        // `documentoPorEmitirRepositoryProvider` ahora depende de
+        // `attachmentStorageProvider` (Etapa 15, eliminación física
+        // ampliada) — se sobreescribe directo para no necesitar
+        // `appPathsProvider` (requiere `path_provider`).
+        attachmentStorageProvider.overrideWithValue(AttachmentStorage('.')),
       ],
     );
     addTearDown(container.dispose);
@@ -92,20 +98,22 @@ void main() {
   }
 
   Future<String> crearConfiguracionCobroConReglas({
-    List<ReglaEventoBorrador> reglas = const [],
+    List<EtapaCobroBorrador> etapas = const [],
     AgrupacionCobro agrupacion = AgrupacionCobro.porServicio,
   }) async {
     final entidadFiscalRepo = container.read(entidadFiscalRepositoryProvider);
+    final clientePortalRepo = container.read(clientePortalRepositoryProvider);
     final comercialRepo = container.read(servicioComercialRepositoryProvider);
     final servicioRepo = container.read(servicioRepositoryProvider);
     final configuracionCobroRepo = container.read(configuracionCobroRepositoryProvider);
     final catalogoRepo = container.read(catalogoRepositoryProvider);
-    final validator = ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
+    final validator =
+        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo, clientePortalRepo);
     final crearConfiguracionCobro = CrearConfiguracionCobroUseCase(
       configuracionCobroRepo,
       servicioRepo,
       validator,
-      const ConfiguracionCobroReglaEventoValidator(),
+      const ConfiguracionCobroEtapaValidator(),
     );
 
     final resultado = await crearConfiguracionCobro.ejecutar(
@@ -119,7 +127,7 @@ void main() {
         requiereComplemento: false,
         fechaInicioVigencia: DateTime(2026, 1, 1),
       ),
-      reglas: reglas,
+      etapas: etapas,
     );
     return (resultado as CrearConfiguracionCobroExitoso).configuracion.id;
   }
@@ -137,9 +145,11 @@ void main() {
   test('generar crea documentos para el rango filtrado y recarga la lista', () async {
     await esperarCarga();
     await crearConfiguracionCobroConReglas(
-      reglas: [
-        ReglaEventoBorrador(
-          tipoEvento: TipoEventoCobro.emision,
+      etapas: [
+        EtapaCobroBorrador(
+          id: 'etapa-emision',
+          tipoSistema: TipoEventoCobro.emision,
+          orden: 0,
           tipoRegla: TipoReglaEvento.diaFijoDelMes,
           mesRelativo: MesRelativoCobro.actual,
           diaDelMes: 1,

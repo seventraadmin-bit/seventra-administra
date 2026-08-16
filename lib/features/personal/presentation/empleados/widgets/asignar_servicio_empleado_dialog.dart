@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
 import 'package:riseg_one/features/personal/domain/usecases/asignar_empleado_servicio_usecase.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
@@ -16,24 +17,27 @@ import 'crear_empleado_dialog.dart' show centavosDesdeTexto;
 import 'sueldo_acordado_fields.dart';
 
 /// Diálogo "Asignar a servicio" (Etapa 5D) — solo cuando el Empleado no
-/// tiene una asignación vigente. Registra Servicio/Turno/Fecha de
-/// inicio/Observaciones, nada de horarios/incidencias (fuera de
-/// alcance explícito).
+/// tiene una asignación vigente. Registra Servicio/Perfil comercial/
+/// Turno/Fecha de inicio/Observaciones, nada de horarios/incidencias
+/// (fuera de alcance explícito).
 ///
 /// Devuelve `true` si se registró correctamente.
 Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetRef ref, EmpleadoData empleado) async {
   final l10n = AppLocalizations.of(context)!;
 
   String? servicioId;
+  String? lineaComercialId;
   String? turnoId;
   DateTime? fecha = DateTime.now();
   final observacionesController = TextEditingController();
   final sueldoController = TextEditingController();
   final bonoController = TextEditingController();
   String? errorServicio;
+  String? errorLinea;
   String? errorFecha;
   String? errorSueldo;
   String? errorBono;
+  List<LineaComercialConVigencia> lineasDelServicio = [];
 
   final servicios = (await ref.read(servicioRepositoryProvider).listar())
       .where((item) => item.servicio.estatus == EstatusServicio.activo.name)
@@ -48,6 +52,35 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
     cancelLabel: l10n.asignarServicioEmpleadoBotonCancelar,
     contentBuilder: (dialogContext) => StatefulBuilder(
       builder: (dialogContext, setState) {
+        Future<void> elegirServicio(String? valor) async {
+          final lineas = valor == null ? <LineaComercialConVigencia>[] : await ref.read(servicioComercialRepositoryProvider).listarLineas(valor);
+          setState(() {
+            servicioId = valor;
+            lineasDelServicio = lineas;
+            lineaComercialId = null;
+            errorServicio = null;
+            errorLinea = null;
+            errorSueldo = null;
+            errorBono = null;
+            precargarSueldoAcordado(linea: null, sueldoController: sueldoController, bonoController: bonoController);
+          });
+        }
+
+        void elegirLinea(String? valor) {
+          final linea = buscarLineaComercialPorId(lineasDelServicio, valor);
+          setState(() {
+            lineaComercialId = valor;
+            errorLinea = null;
+            errorSueldo = null;
+            errorBono = null;
+            if (linea?.vigenciaActual != null) turnoId = linea!.vigenciaActual!.modalidadTurnoId;
+            precargarSueldoAcordado(linea: linea, sueldoController: sueldoController, bonoController: bonoController);
+          });
+        }
+
+        final lineasVigentes = lineasDelServicio.where((l) => l.vigenciaActual != null).toList();
+        final lineaElegida = buscarLineaComercialPorId(lineasDelServicio, lineaComercialId);
+
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,18 +92,37 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
               items: [
                 for (final item in servicios) RisegSelectItem(value: item.servicio.id, label: item.servicio.nombre),
               ],
-              onChanged: (valor) => setState(() {
-                servicioId = valor;
-                errorServicio = null;
-                errorSueldo = null;
-                errorBono = null;
-                precargarSueldoAcordado(
-                  servicio: buscarServicioPorId(servicios, valor),
-                  sueldoController: sueldoController,
-                  bonoController: bonoController,
-                );
-              }),
+              onChanged: (valor) => elegirServicio(valor),
             ),
+            if (servicioId != null && lineasVigentes.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              RisegSelect<String?>(
+                label: l10n.empleadoCampoLineaComercial,
+                value: lineaComercialId,
+                errorText: errorLinea,
+                items: [
+                  for (final l in lineasVigentes) RisegSelectItem(value: l.linea.id, label: etiquetaLineaComercial(l10n, l)),
+                ],
+                onChanged: elegirLinea,
+              ),
+              if (lineaElegida?.vigenciaActual != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.empleadoLineaComercialCapacidad(
+                    lineaElegida!.asignadosVigentes,
+                    lineaElegida.vigenciaActual!.cantidadElementos,
+                  ),
+                  style: AppTypography.caption.copyWith(color: context.colors.textMuted),
+                ),
+                if (lineaElegida.capacidadExcedida) ...[
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    l10n.empleadoLineaComercialCapacidadExcedidaAdviso,
+                    style: AppTypography.caption.copyWith(color: context.colors.warning),
+                  ),
+                ],
+              ],
+            ],
             const SizedBox(height: AppSpacing.md),
             RisegSelect<String?>(
               label: l10n.empleadoCampoTurno,
@@ -91,14 +143,16 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
                 errorFecha = null;
               }),
             ),
-            const SizedBox(height: AppSpacing.md),
-            SueldoAcordadoFields(
-              servicio: buscarServicioPorId(servicios, servicioId),
-              sueldoController: sueldoController,
-              bonoController: bonoController,
-              errorSueldo: errorSueldo,
-              errorBono: errorBono,
-            ),
+            if (servicioId != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              SueldoAcordadoFields(
+                linea: lineaElegida,
+                sueldoController: sueldoController,
+                bonoController: bonoController,
+                errorSueldo: errorSueldo,
+                errorBono: errorBono,
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.empleadoCampoObservaciones, controller: observacionesController),
           ],
@@ -126,6 +180,7 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
             servicioId: servicioId!,
             fechaInicio: fecha!,
             turnoId: turnoId,
+            lineaComercialId: lineaComercialId,
             observaciones: observacionesController.text,
             sueldoMensual: centavosDesdeTexto(sueldoController.text),
             bonoMensual: centavosDesdeTexto(bonoController.text),
@@ -157,6 +212,12 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
         case AsignarEmpleadoServicioServicioNoActivo():
           errorServicio = l10n.empleadoErrorServicioNoActivo;
           return null;
+        case AsignarEmpleadoServicioLineaComercialRequerida():
+          errorLinea = l10n.empleadoErrorLineaComercialRequerida;
+          return null;
+        case AsignarEmpleadoServicioLineaComercialInvalida():
+          errorLinea = l10n.empleadoErrorLineaComercialInvalida;
+          return null;
         case AsignarEmpleadoServicioFechaInvalida():
           errorFecha = l10n.asignarServicioEmpleadoErrorFechaInvalida;
           return null;
@@ -169,7 +230,8 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
   // reproducir el crash "A TextEditingController was used after being
   // disposed" (mismo criterio que `crear_empleado_dialog.dart`, Etapa
   // 5D.1), y este diálogo ahora también intercambia condicionalmente
-  // los campos de sueldo/bono acordado según el Servicio elegido.
+  // los campos de sueldo/bono acordado según la línea comercial
+  // elegida.
   unawaited(
     Future.delayed(const Duration(milliseconds: 300), () {
       observacionesController.dispose();

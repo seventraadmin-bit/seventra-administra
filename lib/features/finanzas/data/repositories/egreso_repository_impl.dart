@@ -6,6 +6,7 @@ import 'package:riseg_one/features/finanzas/data/tables/egreso_table.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/repositories/egreso_repository.dart';
+import '../../domain/usecases/eliminar_egreso_fisicamente_usecase.dart';
 
 class EgresoRepositoryImpl implements EgresoRepository {
   EgresoRepositoryImpl(this._db);
@@ -147,6 +148,34 @@ class EgresoRepositoryImpl implements EgresoRepository {
   }
 
   @override
+  Future<EgresoData> corregirMonto({
+    required String egresoId,
+    required int nuevoMonto,
+    required String motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.egreso)..where((t) => t.id.equals(egresoId))).getSingle();
+
+      await (_db.update(_db.egreso)..where((t) => t.id.equals(egresoId))).write(
+        EgresoCompanion(monto: Value(nuevoMonto), updatedAt: Value(DateTime.now())),
+      );
+
+      await _registrarEvento(
+        egresoId: egresoId,
+        tipoEvento: TipoEventoEgreso.corregido,
+        estadoAnterior: anterior.estatus,
+        estadoNuevo: anterior.estatus,
+        observacion: motivo,
+        actorUsuarioId: actorUsuarioId,
+        datosRelevantes: {'montoAnterior': anterior.monto, 'montoNuevo': nuevoMonto},
+      );
+
+      return (_db.select(_db.egreso)..where((t) => t.id.equals(egresoId))).getSingle();
+    });
+  }
+
+  @override
   Future<EgresoData> cancelar({
     required String egresoId,
     required String motivo,
@@ -239,6 +268,97 @@ class EgresoRepositoryImpl implements EgresoRepository {
       for (final fila in filas)
         fila.read(_db.egreso.categoriaFinancieraId): fila.read(_db.egreso.monto.sum()) ?? 0,
     };
+  }
+
+  /// Único origen automático real (Etapa 15): `Compra.egresoId` y
+  /// `PagoNomina.egresoId` (ambas `onDelete: restrict`, ya lo
+  /// impedirían a nivel SQLite) — se verifican aquí primero para dar un
+  /// mensaje específico con el folio real, nunca una excepción SQL
+  /// cruda. `Egreso` no guarda su propio origen; se infiere por
+  /// relación inversa, la única fuente determinista real.
+  @override
+  Future<ResumenEliminacionEgreso> obtenerResumenEliminacionFisica(String egresoId) async {
+    final egreso = await obtenerPorId(egresoId);
+    if (egreso == null) return const ResumenEliminacionEgreso(existe: false);
+
+    final compra = await (_db.select(_db.compra)..where((t) => t.egresoId.equals(egresoId))).getSingleOrNull();
+    if (compra != null) {
+      return ResumenEliminacionEgreso(
+        existe: true,
+        detalleBloqueo:
+            'Este Egreso fue generado por la Compra ${compra.folioCompra}. Corrija o elimine la Compra desde su expediente.',
+      );
+    }
+
+    final pagoNomina =
+        await (_db.select(_db.pagoNomina)..where((t) => t.egresoId.equals(egresoId))).getSingleOrNull();
+    if (pagoNomina != null) {
+      return ResumenEliminacionEgreso(
+        existe: true,
+        detalleBloqueo:
+            'Este Egreso pertenece al Pago de Nómina ${pagoNomina.folioPagoNomina} y no puede eliminarse de forma independiente.',
+      );
+    }
+
+    return const ResumenEliminacionEgreso(existe: true);
+  }
+
+  /// Eliminación física extraordinaria (Etapa 15) — el único bloqueador
+  /// real es que el Egreso haya sido generado automáticamente por una
+  /// Compra o un Pago de Nómina (`obtenerResumenEliminacionFisica`); el
+  /// estatus (`registrado`/`cancelado`) nunca bloquea por sí solo — un
+  /// Egreso manual cancelado (captura de prueba) es el caso elegible
+  /// típico. Los comprobantes (`EgresoAttachment`) se limpian
+  /// explícitamente en la misma transacción, nunca vía `CASCADE`
+  /// indiscriminado: son solo soporte documental, no una dependencia
+  /// financiera real como `Compra`/`PagoNomina`.
+  @override
+  Future<EliminarEgresoFisicamenteResultado> eliminarFisicamente({
+    required String egresoId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) async {
+    final egresoInicial = await obtenerPorId(egresoId);
+    if (egresoInicial == null) return EliminarEgresoFisicamenteNoExiste();
+
+    final resumen = await obtenerResumenEliminacionFisica(egresoId);
+    if (resumen.bloqueado) {
+      return EliminarEgresoFisicamenteTieneDependencias(resumen.detalleBloqueo!);
+    }
+
+    final adjuntosQuery = _db.select(_db.attachment).join([
+      innerJoin(_db.egresoAttachment, _db.egresoAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.egresoAttachment.egresoId.equals(egresoId));
+    final adjuntos = await adjuntosQuery.map((row) => row.readTable(_db.attachment)).get();
+    final eventos = await listarEventos(egresoId);
+
+    await _db.transaction(() async {
+      final snapshot = <String, Object?>{
+        'egreso': egresoInicial.toJson(),
+        'eventos': [for (final e in eventos) e.toJson()],
+        'adjuntos': [for (final a in adjuntos) a.toJson()],
+      };
+
+      await (_db.delete(_db.egresoAttachment)..where((t) => t.egresoId.equals(egresoId))).go();
+      for (final adjunto in adjuntos) {
+        await (_db.delete(_db.attachment)..where((t) => t.id.equals(adjunto.id))).go();
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'egreso',
+              entidadIdOriginal: egresoId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode(snapshot),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+      await (_db.delete(_db.egreso)..where((t) => t.id.equals(egresoId))).go();
+    });
+
+    return EliminarEgresoFisicamenteExitoso();
   }
 
   Future<void> _registrarEvento({

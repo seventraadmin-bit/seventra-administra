@@ -13,8 +13,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:riseg_one/app/app.dart';
 import 'package:riseg_one/app/router/app_router.dart';
+import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/di/providers.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
@@ -85,6 +87,11 @@ Future<void> _pumpApp(
         appDatabaseProvider.overrideWithValue(db),
         contarUsuariosProvider.overrideWith((ref) async => 1),
         sesionControllerProvider.overrideWith(sesion),
+        // `documentoPorEmitirRepositoryProvider` ahora depende de
+        // `attachmentStorageProvider` (Etapa 15, eliminación física
+        // ampliada) — se sobreescribe directo para no necesitar
+        // `appPathsProvider` (requiere `path_provider`).
+        attachmentStorageProvider.overrideWithValue(AttachmentStorage('.')),
       ],
       child: RisegOneApp(router: createAppRouter()),
     ),

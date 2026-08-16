@@ -12,6 +12,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/empresa_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/pdf/ficha_tecnica_pdf_renderer.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
@@ -48,7 +49,8 @@ void main() {
     final storage = AttachmentStorage(tempDir.path);
 
     fichaTecnicaRepo = FichaTecnicaEmpleadoRepositoryImpl(db);
-    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, validator, servicioRepo);
+    crearEmpleado =
+        CrearEmpleadoUseCase(empleadoRepo, generarNumero, validator, servicioRepo, ServicioComercialRepositoryImpl(db));
     generarFichaTecnica = GenerarFichaTecnicaEmpleadoUseCase(
       empleadoRepo,
       asignacionServicioRepo,

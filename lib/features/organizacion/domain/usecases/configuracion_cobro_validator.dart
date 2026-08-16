@@ -4,6 +4,7 @@ import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 
 import '../repositories/catalogo_repository.dart';
+import '../repositories/cliente_portal_repository.dart';
 import '../repositories/entidad_fiscal_repository.dart';
 import '../repositories/servicio_comercial_repository.dart';
 import '../repositories/servicio_repository.dart';
@@ -23,11 +24,7 @@ class ConfiguracionCobroBorrador {
     required this.requiereComplemento,
     required this.fechaInicioVigencia,
     this.entidadFiscalId,
-    this.portalNombre,
-    this.portalUrl,
-    this.portalUsuario,
-    this.portalContrasena,
-    this.portalObservaciones,
+    this.clientePortalId,
     this.cuentaBancaria,
     this.observaciones,
     this.correos = const [],
@@ -41,11 +38,13 @@ class ConfiguracionCobroBorrador {
   final bool requiereComplemento;
   final DateTime? fechaInicioVigencia;
   final String? entidadFiscalId;
-  final String? portalNombre;
-  final String? portalUrl;
-  final String? portalUsuario;
-  final String? portalContrasena;
-  final String? portalObservaciones;
+
+  /// Qué `ClientePortal` del Cliente usa esta vigencia — referencia,
+  /// nunca los datos del portal capturados aquí (Etapa 15, retiro de
+  /// `portalNombre`/`portalUrl`/`portalUsuario`/`portalContrasena`/
+  /// `portalObservaciones`: ahora viven exclusivamente en
+  /// `ClientePortal`, administrados desde el expediente del Cliente).
+  final String? clientePortalId;
   final String? cuentaBancaria;
   final String? observaciones;
   final List<String> correos;
@@ -63,11 +62,7 @@ class ConfiguracionCobroValidada {
     required this.fechaInicioVigencia,
     required this.correos,
     this.entidadFiscalId,
-    this.portalNombre,
-    this.portalUrl,
-    this.portalUsuario,
-    this.portalContrasena,
-    this.portalObservaciones,
+    this.clientePortalId,
     this.cuentaBancaria,
     this.observaciones,
   });
@@ -81,11 +76,7 @@ class ConfiguracionCobroValidada {
   final DateTime fechaInicioVigencia;
   final List<String> correos;
   final String? entidadFiscalId;
-  final String? portalNombre;
-  final String? portalUrl;
-  final String? portalUsuario;
-  final String? portalContrasena;
-  final String? portalObservaciones;
+  final String? clientePortalId;
   final String? cuentaBancaria;
   final String? observaciones;
 }
@@ -103,12 +94,14 @@ class ConfiguracionCobroValidator {
     this._entidadFiscalRepository,
     this._catalogoRepository,
     this._servicioComercialRepository,
+    this._clientePortalRepository,
   );
 
   final ServicioRepository _servicioRepository;
   final EntidadFiscalRepository _entidadFiscalRepository;
   final CatalogoRepository _catalogoRepository;
   final ServicioComercialRepository _servicioComercialRepository;
+  final ClientePortalRepository _clientePortalRepository;
 
   bool _esCorreoValido(String correo) => correo.contains('@') && correo.contains('.') && !correo.contains(' ');
 
@@ -233,6 +226,31 @@ class ConfiguracionCobroValidator {
       }
     }
 
+    // El portal es siempre opcional (a diferencia de Entidad fiscal, que
+    // es condicional a `tipoDocumento`) — solo se valida si viene
+    // capturado, y solo que exista, pertenezca al mismo Cliente que el
+    // Servicio y no esté archivado (mismo criterio que Entidad fiscal).
+    final clientePortalId = borrador.clientePortalId;
+    if (clientePortalId != null && clientePortalId.isNotEmpty) {
+      final servicio = await _servicioRepository.obtenerPorId(servicioId);
+      final portal = await _clientePortalRepository.obtenerPorId(clientePortalId);
+      if (portal == null || servicio == null || portal.clienteId != servicio.clienteId) {
+        errores.add(
+          const ErrorConfiguracionCobro(
+            campo: CampoConfiguracionCobro.clientePortal,
+            codigo: CodigoErrorConfiguracionCobro.noExiste,
+          ),
+        );
+      } else if (portal.cicloVidaRegistro != CicloVidaRegistro.activo.name) {
+        errores.add(
+          const ErrorConfiguracionCobro(
+            campo: CampoConfiguracionCobro.clientePortal,
+            codigo: CodigoErrorConfiguracionCobro.inactivo,
+          ),
+        );
+      }
+    }
+
     final fechaInicioVigencia = borrador.fechaInicioVigencia;
     if (fechaInicioVigencia == null) {
       errores.add(
@@ -323,11 +341,7 @@ class ConfiguracionCobroValidator {
         fechaInicioVigencia: fechaInicioVigencia!,
         correos: borrador.correos,
         entidadFiscalId: vacioANull(borrador.entidadFiscalId),
-        portalNombre: vacioANull(borrador.portalNombre),
-        portalUrl: vacioANull(borrador.portalUrl),
-        portalUsuario: vacioANull(borrador.portalUsuario),
-        portalContrasena: vacioANull(borrador.portalContrasena),
-        portalObservaciones: vacioANull(borrador.portalObservaciones),
+        clientePortalId: vacioANull(borrador.clientePortalId),
         cuentaBancaria: vacioANull(borrador.cuentaBancaria),
         observaciones: vacioANull(borrador.observaciones),
       ),

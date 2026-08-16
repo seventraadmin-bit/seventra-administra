@@ -1,11 +1,13 @@
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 
 import '../repositories/configuracion_cobro_repository.dart';
 import '../repositories/documento_por_emitir_repository.dart';
 import 'agrupar_documentos_por_emitir.dart';
 import 'calcular_fechas_cobro_usecase.dart';
+import 'documento_por_emitir_armado.dart';
 import 'ensamblar_documento_por_emitir_usecase.dart';
 
 sealed class CrearDocumentoManualResultado {}
@@ -68,6 +70,7 @@ class CrearDocumentoManualUseCase {
     required DateTime periodoInicio,
     required DateTime periodoFin,
     String? entidadFiscalId,
+    String? clientePortalId,
   }) async {
     if (servicioIds.isEmpty) {
       return CrearDocumentoManualSinServicios();
@@ -91,9 +94,9 @@ class CrearDocumentoManualUseCase {
         return CrearDocumentoManualSinConfiguracionAplicable(servicioId);
       }
 
-      final reglas = await _configuracionCobroRepository.listarReglas(vigencia.id);
+      final etapas = await _configuracionCobroRepository.listarEtapas(vigencia.id);
       final mesInicioPeriodo = DateTime(periodoInicio.year, periodoInicio.month, 1);
-      final fechas = _calcularFechas.ejecutar(reglas: reglas, mesInicioPeriodo: mesInicioPeriodo);
+      final fechas = _calcularFechas.ejecutar(etapas: etapas, mesInicioPeriodo: mesInicioPeriodo, periodoFin: periodoFin);
 
       agrupacion ??= vigencia.agrupacion;
 
@@ -102,6 +105,7 @@ class CrearDocumentoManualUseCase {
           servicioId: servicioId,
           clienteId: clienteId,
           entidadFiscalId: vigencia.entidadFiscalId,
+          clientePortalId: vigencia.clientePortalId,
           tipoDocumento: vigencia.tipoDocumento,
           metodo: vigencia.metodo,
           requiereComplemento: vigencia.requiereComplemento,
@@ -114,9 +118,13 @@ class CrearDocumentoManualUseCase {
         ServicioResueltoParaDocumento(
           servicioId: servicioId,
           configuracionCobroVigenciaId: vigencia.id,
-          fechaEmisionProgramada: fechas.fechaEmision,
-          fechaProcesamientoProgramada: fechas.fechaProcesamiento,
-          fechaPagoEsperadoProgramada: fechas.fechaPagoEsperado,
+          fechaEmisionProgramada: fechaDeEtapaSistema(fechas, TipoEventoCobro.emision),
+          fechaProcesamientoProgramada: fechaDeEtapaSistema(fechas, TipoEventoCobro.procesamiento),
+          fechaPagoEsperadoProgramada: fechaDeEtapaSistema(fechas, TipoEventoCobro.pagoEsperado),
+          hitos: [
+            for (final f in fechas)
+              if (f.fecha != null) HitoArmado(orden: f.orden, fecha: f.fecha!, tipoSistema: f.tipoSistema, nombre: f.nombre),
+          ],
         ),
       );
     }
@@ -132,6 +140,7 @@ class CrearDocumentoManualUseCase {
       final armado = await _ensamblar.ejecutar(
         clienteId: clienteId,
         entidadFiscalId: entidadFiscalId ?? primero.entidadFiscalId,
+        clientePortalId: clientePortalId ?? primero.clientePortalId,
         tipoDocumento: primero.tipoDocumento,
         agrupacion: agrupacion!,
         metodo: primero.metodo,

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_aplicacion_pago_usecase.dart';
@@ -172,7 +173,19 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
       cuentaPorCobrarId: widget.cuentaPorCobrarId,
       saldoPendiente: _cuenta!.saldoPendiente,
     );
-    if (actualizo) await _cargar();
+    if (actualizo) {
+      await _cargar();
+      // `_cargar()` solo repuebla el estado local de este diálogo (por
+      // eso el saldo ya se veía correcto de inmediato) — el LISTADO
+      // (`cuentasPorCobrarControllerProvider`) es un provider aparte que
+      // nunca se enteraba de este pago, y quedaba con el estatus previo
+      // hasta que su `autoDispose` se disparaba por otro motivo (Etapa
+      // 15, mismo hallazgo real ya corregido en Clientes/Agenda).
+      ref.invalidate(cuentasPorCobrarControllerProvider);
+      // El pago aplicado genera un Ingreso automático (Etapa 4K.1) —
+      // afecta directamente el resumen de Ingresos del Dashboard.
+      ref.invalidate(dashboardControllerProvider);
+    }
   }
 
   Future<void> _verPago(AplicacionPagoData aplicacion) async {
@@ -199,12 +212,19 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
       ),
       onConfirm: () async => true,
     );
+    // Diferido con `addPostFrameCallback` (nunca síncrono aquí) — el
+    // diálogo de confirmación sigue en su transición de cierre cuando
+    // este `await` regresa, y su `RisegTextField` todavía usa
+    // `motivoController` en esos últimos frames; destruirlo antes
+    // produce "A TextEditingController was used after being disposed"
+    // (Etapa 15, mismo hallazgo real que en `egreso_detalle_dialog.dart`
+    // — mismo patrón ya probado en `riseg_eliminar_fisicamente_dialog.dart:86`).
     if (confirmado != true) {
-      motivoController.dispose();
+      WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
       return;
     }
     final motivo = motivoController.text.trim();
-    motivoController.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
     if (!mounted) return;
 
     setState(() => _procesando = true);
@@ -218,6 +238,10 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
       case CancelarAplicacionPagoExitoso():
         RisegFeedback.showSuccess(context, l10n.cancelarAplicacionPagoExito);
         await _cargar();
+        ref.invalidate(cuentasPorCobrarControllerProvider);
+        // Cancelar la aplicación revierte el Ingreso automático que
+        // generó — mismo motivo que en `_registrarPago`.
+        ref.invalidate(dashboardControllerProvider);
       case CancelarAplicacionPagoNoExiste():
       case CancelarAplicacionPagoYaCancelada():
       case CancelarAplicacionPagoErrorInesperado():
@@ -278,20 +302,12 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
                     value: c.folioDocumento,
                   ),
                 ),
-                if (esCfdi) ...[
+                if (esCfdi)
                   Expanded(
-                    child: CampoConsulta(label: l10n.cuentaPorCobrarDetalleCampoSerieFiscal, value: c.serieFiscal),
+                    child: CampoConsulta(label: l10n.cuentaPorCobrarDetalleCampoUuid, value: c.uuid),
                   ),
-                  Expanded(
-                    child: CampoConsulta(label: l10n.cuentaPorCobrarDetalleCampoFolioFiscal, value: c.folioFiscal),
-                  ),
-                ],
               ],
             ),
-            if (esCfdi) ...[
-              const SizedBox(height: AppSpacing.sm),
-              CampoConsulta(label: l10n.cuentaPorCobrarDetalleCampoUuid, value: c.uuid),
-            ],
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
@@ -511,9 +527,16 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      l10n.cuentaPorCobrarDetalleDialogoTitulo,
-                      style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                    // `Expanded` + `ellipsis` — mismo patrón ya aplicado
+                    // en `agenda_detalle_dialog.dart` (Etapa 15): sin
+                    // esto, el título largo desbordaba junto al botón
+                    // de cerrar ("BOTTOM OVERFLOWED" horizontal real).
+                    Expanded(
+                      child: Text(
+                        l10n.cuentaPorCobrarDetalleDialogoTitulo,
+                        style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop()),
                   ],

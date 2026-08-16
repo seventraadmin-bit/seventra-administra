@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../usuarios/data/tables/usuario_table.dart';
+import 'cliente_portal_table.dart';
 import 'cliente_table.dart';
 import 'configuracion_cobro_vigencia_table.dart';
 import 'entidad_fiscal_table.dart';
@@ -75,6 +76,14 @@ class DocumentoPorEmitir extends Table with AuditColumns {
   TextColumn get entidadFiscalId =>
       text().nullable().references(EntidadFiscal, #id, onDelete: KeyAction.restrict)();
 
+  /// Qué portal del Cliente se usó para este documento (Etapa 15) —
+  /// referencia, igual que `entidadFiscalId`, nunca un snapshot: si el
+  /// portal se edita después de generar este documento, el documento
+  /// histórico refleja el valor actual del portal (decisión explícita
+  /// de Marlon — sin duplicar datos de portal en Agenda).
+  TextColumn get clientePortalId =>
+      text().nullable().references(ClientePortal, #id, onDelete: KeyAction.restrict)();
+
   // Literales en vez de referencias a los enums — mismo motivo que
   // `AuditColumns.cicloVidaRegistro`. `tipoDocumento` reutiliza
   // `TipoDocumentoCobro`; `agrupacion` reutiliza `AgrupacionCobro`
@@ -131,19 +140,26 @@ class DocumentoPorEmitir extends Table with AuditColumns {
   // Todos nullable: no existen hasta que se registra la emisión.
   TextColumn get folioDocumento => text().nullable()();
 
-  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
-  TextColumn get serieFiscal => text().nullable()();
-
-  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
-  TextColumn get folioFiscal => text().nullable()();
-
-  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
-  /// Puede capturarse después de marcar `emitido` (ej. al adjuntar el
-  /// XML) — nunca obligatorio en el momento de la emisión misma.
+  /// Identificador fiscal único del CFDI ("folio fiscal" / UUID del
+  /// timbre — en un CFDI real son el mismo dato, nunca dos
+  /// independientes; corrección estructural Etapa 15, antes existían
+  /// `folioFiscal`/`uuid` por separado sin ninguna relación entre
+  /// ambos). Solo aplica a `tipoDocumento = cfdi` — `null` siempre para
+  /// recibo. Puede capturarse después de marcar `emitido` (ej. al
+  /// adjuntar el XML) — nunca obligatorio en el momento de la emisión
+  /// misma. Validado con formato UUID (`esUuidFormatoValido`, mismo
+  /// validador que ya usaba `ComplementoPago.uuid`).
   TextColumn get uuid => text().nullable()();
 
   DateTimeColumn get fechaEmisionReal => dateTime().nullable()();
 
+  /// Monto real y total del documento tal como fue emitido (Total del
+  /// CFDI, o importe del recibo) — el monto efectivamente cobrable al
+  /// Cliente, nunca un subtotal antes de impuestos. Para
+  /// `tratamientoIva = masIva` este valor NO se deriva de
+  /// `importeFinalEsperado` (que es antes de IVA): RISEG ONE no calcula
+  /// tasas de IVA, se captura el Total real del comprobante emitido
+  /// externamente (Etapa 15, corrección estructural CFDI real).
   IntColumn get importeEmitido => integer().nullable()();
 
   TextColumn get observacionesEmision => text().nullable()();
@@ -244,6 +260,43 @@ class DocumentoPorEmitirLinea extends Table {
         'CHECK (dias_aplicables > 0)',
         'CHECK (subtotal_proporcional >= 0)',
       ];
+}
+
+/// Hitos planeados de una vigencia de cobro, uno por etapa activa
+/// (Etapa 15, ampliación "flujo posterior a la emisión") — snapshot
+/// completo (`tipoSistema`/`nombre`/`orden`/`fechaProgramada`) tomado
+/// al generar el documento, nunca un join vivo a
+/// `ConfiguracionCobroEtapa` (mismo criterio que
+/// `DocumentoPorEmitirLinea`): si la Configuración de cobro cambia o
+/// una etapa se elimina después, los documentos ya generados conservan
+/// exactamente los hitos que tenían en ese momento. Por Servicio, igual
+/// que `DocumentoPorEmitirConfiguracion` — un documento agrupado puede
+/// incluir Servicios con vigencias de cobro distintas, cada una con su
+/// propio conjunto de etapas. Solo incluye etapas que sí resolvieron
+/// una fecha (`CalcularFechasCobroUseCase` nunca inventa una) — una
+/// etapa desactivada, o cuya regla todavía no se captura, nunca
+/// participa en Agenda. Sin lifecycle propio: se reconstruye completa
+/// junto con el documento, no se edita in place.
+class DocumentoPorEmitirHito extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get documentoPorEmitirId =>
+      text().references(DocumentoPorEmitir, #id, onDelete: KeyAction.cascade)();
+
+  TextColumn get servicioId => text().references(Servicio, #id, onDelete: KeyAction.restrict)();
+
+  /// Exactamente uno de `tipoSistema`/`nombre` es no nulo — mismo
+  /// criterio que `ConfiguracionCobroEtapa`.
+  TextColumn get tipoSistema => text().nullable()();
+
+  TextColumn get nombre => text().nullable()();
+
+  IntColumn get orden => integer()();
+
+  DateTimeColumn get fechaProgramada => dateTime()();
+
+  @override
+  List<String> get customConstraints => ['CHECK (tipo_sistema IS NOT NULL OR nombre IS NOT NULL)'];
 }
 
 /// Correos de envío snapshot — copiados de la Configuración de cobro al

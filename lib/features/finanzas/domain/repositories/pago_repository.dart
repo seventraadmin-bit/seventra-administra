@@ -1,5 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../usecases/eliminar_pago_fisicamente_usecase.dart';
+
 /// Pagos y su aplicación a Cuentas por cobrar (Etapa 4J.2, modelo N:M
 /// aprobado por Marlon) — `Pago` es el dinero recibido, nunca ligado a
 /// una Cuenta específica; `AplicacionPago` es cuánto de ese dinero se
@@ -130,6 +132,18 @@ abstract interface class PagoRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
+    String? actorUsuarioId,
+  });
+
+  /// Elegibilidad de solo lectura para [eliminarFisicamente] — ver el
+  /// doc comment de `ResumenEliminacionPago`.
+  Future<ResumenEliminacionPago> obtenerResumenEliminacionFisica(String pagoId);
+
+  /// Eliminación física extraordinaria (Etapa 15) — ver el doc comment
+  /// completo en `PagoRepositoryImpl.eliminarFisicamente`.
+  Future<EliminarPagoFisicamenteResultado> eliminarFisicamente({
+    required String pagoId,
+    required String motivo,
     String? actorUsuarioId,
   });
 }

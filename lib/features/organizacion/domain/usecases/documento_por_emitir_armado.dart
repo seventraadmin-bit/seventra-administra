@@ -1,8 +1,26 @@
+/// Un hito planeado de una etapa activa que sí resolvió fecha (Etapa
+/// 15) — snapshot listo para `DocumentoPorEmitirHito`, ya sin `null`
+/// (las etapas sin fecha calculable nunca llegan a ser un hito: no
+/// participan en Agenda).
+class HitoArmado {
+  const HitoArmado({required this.orden, required this.fecha, this.tipoSistema, this.nombre});
+
+  final int orden;
+  final DateTime fecha;
+  final String? tipoSistema;
+  final String? nombre;
+}
+
 /// Qué vigencia de Configuración de cobro se usó para un Servicio
 /// incluido, y las fechas que calculó — un elemento de
 /// `DocumentoPorEmitirArmado.configuraciones` (una fila por Servicio,
 /// nunca una sola para todo el documento — corrección estructural de la
-/// Etapa 4I.1).
+/// Etapa 4I.1). `fechaEmisionProgramada`/`fechaProcesamientoProgramada`/
+/// `fechaPagoEsperadoProgramada` son el adaptador legacy (Etapa 15):
+/// derivadas de [hitos] por `tipoSistema`, se conservan mientras Agenda/
+/// CxC sigan leyéndolas directamente. [hitos] es la fuente completa —
+/// cualquier etapa activa con fecha calculable, de sistema o
+/// personalizada.
 class ConfiguracionServicioArmada {
   const ConfiguracionServicioArmada({
     required this.servicioId,
@@ -10,6 +28,7 @@ class ConfiguracionServicioArmada {
     this.fechaEmisionProgramada,
     this.fechaProcesamientoProgramada,
     this.fechaPagoEsperadoProgramada,
+    this.hitos = const [],
   });
 
   final String servicioId;
@@ -17,6 +36,7 @@ class ConfiguracionServicioArmada {
   final DateTime? fechaEmisionProgramada;
   final DateTime? fechaProcesamientoProgramada;
   final DateTime? fechaPagoEsperadoProgramada;
+  final List<HitoArmado> hitos;
 }
 
 /// Snapshot ya calculado de una línea comercial incluida — un elemento
@@ -66,6 +86,7 @@ class DocumentoPorEmitirArmado {
     required this.lineas,
     required this.correos,
     this.entidadFiscalId,
+    this.clientePortalId,
     this.fechaEmisionProgramada,
     this.fechaProcesamientoProgramada,
     this.fechaPagoEsperadoProgramada,
@@ -73,6 +94,13 @@ class DocumentoPorEmitirArmado {
 
   final String clienteId;
   final String? entidadFiscalId;
+
+  /// Qué `ClientePortal` se usó al generar este documento — referencia,
+  /// nunca un snapshot de sus datos (decisión explícita de Marlon,
+  /// Etapa 15: si el portal se edita después, el documento histórico
+  /// refleja el valor actual del portal, mismo criterio que
+  /// `entidadFiscalId`).
+  final String? clientePortalId;
   final String tipoDocumento;
   final String agrupacion;
   final String metodo;

@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
-import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
-import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_con_vigencia.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/obtener_historial_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 
-import 'servicio_configuracion_cobro_section.dart' show describirRegla;
+import 'servicio_configuracion_cobro_section.dart' show describirEtapaCobro, etapaCobroNombre;
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 
@@ -47,13 +45,6 @@ class ServicioHistorialConfiguracionCobroContent extends StatelessWidget {
       EstadoVigenciaCobro.historica => RisegStatusTone.neutral,
       EstadoVigenciaCobro.cancelada => RisegStatusTone.error,
     };
-  }
-
-  String? _reglaDe(AppLocalizations l10n, List<ConfiguracionCobroReglaEventoData> reglas, TipoEventoCobro evento) {
-    for (final r in reglas) {
-      if (TipoEventoCobro.values.byName(r.tipoEvento) == evento) return describirRegla(l10n, r);
-    }
-    return null;
   }
 
   @override
@@ -101,21 +92,15 @@ class ServicioHistorialConfiguracionCobroContent extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              CampoConsulta(
-                label: l10n.servicioCobroReglaEmisionTitulo,
-                value: _reglaDe(l10n, fila.reglasEventos, TipoEventoCobro.emision),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              CampoConsulta(
-                label: l10n.servicioCobroReglaProcesamientoTitulo,
-                value: _reglaDe(l10n, fila.reglasEventos, TipoEventoCobro.procesamiento),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              CampoConsulta(
-                label: l10n.servicioCobroReglaPagoTitulo,
-                value: _reglaDe(l10n, fila.reglasEventos, TipoEventoCobro.pagoEsperado),
-              ),
-              const SizedBox(height: AppSpacing.sm),
+              Text(l10n.servicioCobroSeccionFlujoTitulo, style: AppTypography.label.copyWith(color: colors.textMuted)),
+              const SizedBox(height: AppSpacing.xs),
+              for (final etapa in fila.etapas) ...[
+                CampoConsulta(
+                  label: etapaCobroNombre(l10n, tipoSistema: etapa.tipoSistema, nombre: etapa.nombre),
+                  value: describirEtapaCobro(l10n, etapa, fila.etapas),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
               CampoConsulta(label: l10n.servicioCobroCampoObservaciones, value: v.observaciones),
               const SizedBox(height: AppSpacing.sm),
               CampoConsulta(label: l10n.servicioCobroHistorialCampoCreadaEl, value: _formatoFecha.format(v.createdAt)),

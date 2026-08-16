@@ -2,10 +2,12 @@ import 'package:drift/drift.dart';
 import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
+import 'package:riseg_one/features/organizacion/domain/repositories/servicio_comercial_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
 import '../repositories/empleado_repository.dart';
+import 'asignacion_servicio_validator.dart';
 import 'empleado_validator.dart';
 
 sealed class CrearEmpleadoResultado {}
@@ -41,19 +43,31 @@ class CrearEmpleadoServicioNoExiste extends CrearEmpleadoResultado {}
 
 class CrearEmpleadoServicioNoActivo extends CrearEmpleadoResultado {}
 
-/// El Servicio de adscripción no tiene `sueldoMensualReferenciaPersonal`
-/// capturado y tampoco se capturó una excepción individual
-/// (`sueldoMensualAsignacion`) — mismo criterio que
-/// `AsignarEmpleadoServicioSueldoRequerido` (Etapa 6B).
+/// Ni la línea comercial elegida del Servicio de adscripción ni una
+/// excepción individual (`sueldoMensualAsignacion`) dan un sueldo de
+/// referencia — mismo criterio que `AsignarEmpleadoServicioSueldoRequerido`.
 class CrearEmpleadoSueldoAsignacionRequerido extends CrearEmpleadoResultado {}
 
 class CrearEmpleadoSueldoAsignacionInvalido extends CrearEmpleadoResultado {}
 
 class CrearEmpleadoBonoAsignacionInvalido extends CrearEmpleadoResultado {}
 
+/// El Servicio de adscripción tiene al menos una línea comercial
+/// vigente y no se eligió ninguna (Etapa 15, rediseño de "Condiciones
+/// de Personal").
+class CrearEmpleadoLineaComercialRequerida extends CrearEmpleadoResultado {}
+
+/// La línea comercial elegida no pertenece al Servicio de adscripción,
+/// o no tiene una vigencia vigente hoy.
+class CrearEmpleadoLineaComercialInvalida extends CrearEmpleadoResultado {}
+
 /// Datos bancarios (Etapa 6A): se capturó algo pero falta el banco, o
 /// falta tanto tarjeta/cuenta como CLABE.
 class CrearEmpleadoDatosBancariosInvalidos extends CrearEmpleadoResultado {}
+
+/// Se seleccionó el banco "Otro" (Etapa 15) sin capturar cuál banco es
+/// en realidad.
+class CrearEmpleadoBancoOtroDescripcionRequerida extends CrearEmpleadoResultado {}
 
 class CrearEmpleadoSueldoAdministrativoInvalido extends CrearEmpleadoResultado {}
 
@@ -77,12 +91,19 @@ String? _vacioANull(String? valor) {
 /// `AdjuntarDocumentoEmpleadoUseCase`) — un expediente puede existir
 /// sin ninguno de los dos todavía.
 class CrearEmpleadoUseCase {
-  CrearEmpleadoUseCase(this._repository, this._generarNumero, this._validator, this._servicioRepository);
+  CrearEmpleadoUseCase(
+    this._repository,
+    this._generarNumero,
+    this._validator,
+    this._servicioRepository,
+    this._servicioComercialRepository,
+  );
 
   final EmpleadoRepository _repository;
   final GenerarNumeroUseCase _generarNumero;
   final EmpleadoValidator _validator;
   final ServicioRepository _servicioRepository;
+  final ServicioComercialRepository _servicioComercialRepository;
 
   Future<CrearEmpleadoResultado> ejecutar({
     required String nombres,
@@ -105,17 +126,20 @@ class CrearEmpleadoUseCase {
     String? puestoId,
     String? empresaId,
     // --- Adscripción (Etapa 5D): Servicio *o* Sucursal, nunca ambas.
-    // `servicioId`/`turnoId` nunca se guardan en Empleado — crean la
-    // `AsignacionServicio` inicial dentro de la misma transacción
-    // (ver `EmpleadoRepositoryImpl.crear`). ---
+    // `servicioId`/`turnoId`/`lineaComercialId` nunca se guardan en
+    // Empleado — crean la `AsignacionServicio` inicial dentro de la
+    // misma transacción (ver `EmpleadoRepositoryImpl.crear`). ---
     String? servicioId,
     String? turnoId,
-    // Excepción individual de sueldo/bono para la asignación inicial
-    // (Etapa 6B) — solo relevante cuando `servicioId != null`; si se
-    // omite, se precarga desde
-    // `Servicio.sueldoMensualReferenciaPersonal`/
-    // `bonoMensualReferenciaPersonal`. Mismo criterio que
-    // `AsignarEmpleadoServicioUseCase`.
+    // A qué línea/perfil comercial del Servicio pertenece esta
+    // adscripción (Etapa 15) — obligatoria si el Servicio tiene alguna
+    // línea vigente. De ahí se precarga sueldo/bono de referencia,
+    // salvo excepción individual explícita.
+    String? lineaComercialId,
+    // Excepción individual de sueldo/bono para la asignación inicial —
+    // solo relevante cuando `servicioId != null`; si se omite, se
+    // precarga desde la vigencia de `lineaComercialId`. Mismo criterio
+    // que `AsignarEmpleadoServicioUseCase`.
     int? sueldoMensualAsignacion,
     int? bonoMensualAsignacion,
     String? sucursalId,
@@ -123,6 +147,7 @@ class CrearEmpleadoUseCase {
     // algo, banco es obligatorio y se necesita al menos uno de
     // tarjeta/cuenta o CLABE. ---
     String? bancoId,
+    String? bancoOtroDescripcion,
     String? numeroCuentaTarjeta,
     String? clabe,
     // --- Condición laboral administrativa (Etapa 6A) — solo relevante
@@ -159,6 +184,9 @@ class CrearEmpleadoUseCase {
     if (!_validator.datosBancariosValidos(bancoId: bancoId, numeroCuentaTarjeta: numeroCuentaTarjeta, clabe: clabe)) {
       return CrearEmpleadoDatosBancariosInvalidos();
     }
+    if (!_validator.bancoOtroDescripcionValida(bancoId: bancoId, bancoOtroDescripcion: bancoOtroDescripcion)) {
+      return CrearEmpleadoBancoOtroDescripcionRequerida();
+    }
     if (!_validator.sueldoAdministrativoValido(sueldoMensualAdministrativo)) {
       return CrearEmpleadoSueldoAdministrativoInvalido();
     }
@@ -169,6 +197,7 @@ class CrearEmpleadoUseCase {
     if (servicioId != null && sucursalId != null) return CrearEmpleadoAdscripcionAmbigua();
     int? sueldoResuelto;
     int? bonoResuelto;
+    String? lineaComercialResuelta;
     if (servicioId != null) {
       final servicio = await _servicioRepository.obtenerPorId(servicioId);
       if (servicio == null) return CrearEmpleadoServicioNoExiste();
@@ -176,12 +205,31 @@ class CrearEmpleadoUseCase {
         return CrearEmpleadoServicioNoActivo();
       }
 
-      sueldoResuelto = sueldoMensualAsignacion ?? servicio.sueldoMensualReferenciaPersonal;
+      final lineas = await _servicioComercialRepository.listarLineas(servicioId);
+      final resolucionLinea = resolverLineaComercialAsignacion(
+        lineasDelServicio: lineas,
+        lineaComercialId: lineaComercialId,
+        sueldoMensual: sueldoMensualAsignacion,
+        bonoMensual: bonoMensualAsignacion,
+      );
+      switch (resolucionLinea) {
+        case ResolucionLineaComercialRequerida():
+          return CrearEmpleadoLineaComercialRequerida();
+        case ResolucionLineaComercialInvalida():
+          return CrearEmpleadoLineaComercialInvalida();
+        case ResolucionLineaComercialExitosa():
+          break;
+      }
+      final exitosa = resolucionLinea;
+
+      sueldoResuelto = exitosa.sueldoResuelto;
       if (sueldoResuelto == null) return CrearEmpleadoSueldoAsignacionRequerido();
       if (sueldoResuelto <= 0) return CrearEmpleadoSueldoAsignacionInvalido();
 
-      bonoResuelto = bonoMensualAsignacion ?? servicio.bonoMensualReferenciaPersonal ?? 0;
+      bonoResuelto = exitosa.bonoResuelto;
       if (bonoResuelto < 0) return CrearEmpleadoBonoAsignacionInvalido();
+
+      lineaComercialResuelta = exitosa.linea?.linea.id;
     }
 
     try {
@@ -208,6 +256,7 @@ class CrearEmpleadoUseCase {
           telefonoEmergencia: Value(_vacioANull(telefonoEmergencia)),
           parentescoEmergencia: Value(_vacioANull(parentescoEmergencia)),
           bancoId: Value(bancoId),
+          bancoOtroDescripcion: Value(_vacioANull(bancoOtroDescripcion)),
           numeroCuentaTarjeta: Value(_vacioANull(numeroCuentaTarjeta)),
           clabe: Value(_vacioANull(clabe)),
           fechaIngreso: fechaIngreso,
@@ -227,6 +276,7 @@ class CrearEmpleadoUseCase {
         ),
         servicioIdAsignacion: servicioId,
         turnoIdAsignacion: turnoId,
+        lineaComercialIdAsignacion: lineaComercialResuelta,
         sueldoMensualAsignacion: sueldoResuelto,
         bonoMensualAsignacion: bonoResuelto,
       );

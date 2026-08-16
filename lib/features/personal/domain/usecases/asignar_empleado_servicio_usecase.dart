@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
+import 'package:riseg_one/features/organizacion/domain/repositories/servicio_comercial_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
@@ -26,15 +27,24 @@ class AsignarEmpleadoServicioServicioNoActivo extends AsignarEmpleadoServicioRes
 
 class AsignarEmpleadoServicioFechaInvalida extends AsignarEmpleadoServicioResultado {}
 
-/// El Servicio no tiene `sueldoMensualReferenciaPersonal` capturado y la
-/// asignación tampoco recibió un `sueldoMensual` de excepción — no hay
-/// ninguna fuente de la que precargar (Etapa 6B, toda asignación
-/// necesita un sueldo `> 0`).
+/// Ni la línea comercial elegida (si el Servicio tiene alguna vigente)
+/// ni una excepción individual capturada dan un sueldo de referencia —
+/// no hay ninguna fuente de la que precargar (toda asignación necesita
+/// un sueldo `> 0`).
 class AsignarEmpleadoServicioSueldoRequerido extends AsignarEmpleadoServicioResultado {}
 
 class AsignarEmpleadoServicioSueldoInvalido extends AsignarEmpleadoServicioResultado {}
 
 class AsignarEmpleadoServicioBonoInvalido extends AsignarEmpleadoServicioResultado {}
+
+/// El Servicio tiene al menos una línea comercial vigente y no se
+/// eligió ninguna (Etapa 15, rediseño de "Condiciones de Personal") —
+/// ya no existe la opción de asignar "genérico" perdiendo esa relación.
+class AsignarEmpleadoServicioLineaComercialRequerida extends AsignarEmpleadoServicioResultado {}
+
+/// La línea comercial elegida no pertenece a este Servicio, o no tiene
+/// una vigencia vigente hoy.
+class AsignarEmpleadoServicioLineaComercialInvalida extends AsignarEmpleadoServicioResultado {}
 
 class AsignarEmpleadoServicioErrorInesperado extends AsignarEmpleadoServicioResultado {
   AsignarEmpleadoServicioErrorInesperado(this.mensaje);
@@ -47,24 +57,28 @@ class AsignarEmpleadoServicioErrorInesperado extends AsignarEmpleadoServicioResu
 /// solo puede tener una asignación vigente a la vez, reforzado también
 /// por el índice único parcial de `AsignacionServicio`.
 ///
-/// `sueldoMensual`/`bonoMensual` (Etapa 6B) son la excepción individual
-/// — si se omiten, se precargan desde
-/// `Servicio.sueldoMensualReferenciaPersonal`/
-/// `bonoMensualReferenciaPersonal` (Resolución explícita de Marlon: "Al
-/// asignar personal, esos valores se precargan"). El bono, a falta de
-/// referencia y de excepción, cae a `0` — nunca bloquea la asignación
-/// por sí solo (acepta `0`, a diferencia del sueldo).
+/// `lineaComercialId` (Etapa 15, rediseño de "Condiciones de Personal")
+/// es obligatoria en cuanto el Servicio tiene alguna línea comercial
+/// vigente — de ahí se precargan sueldo/bono de referencia (reemplaza
+/// el sueldo global de `Servicio`, retirado de la captura nueva).
+/// `sueldoMensual`/`bonoMensual` siguen siendo la excepción individual
+/// — si se omiten, se precargan desde la vigencia de la línea elegida.
+/// El bono, a falta de referencia y de excepción, cae a `0` — nunca
+/// bloquea la asignación por sí solo (acepta `0`, a diferencia del
+/// sueldo).
 class AsignarEmpleadoServicioUseCase {
   AsignarEmpleadoServicioUseCase(
     this._empleadoRepository,
     this._asignacionRepository,
     this._servicioRepository,
+    this._servicioComercialRepository,
     this._validator,
   );
 
   final EmpleadoRepository _empleadoRepository;
   final AsignacionServicioRepository _asignacionRepository;
   final ServicioRepository _servicioRepository;
+  final ServicioComercialRepository _servicioComercialRepository;
   final AsignacionServicioValidator _validator;
 
   Future<AsignarEmpleadoServicioResultado> ejecutar({
@@ -72,6 +86,7 @@ class AsignarEmpleadoServicioUseCase {
     required String servicioId,
     required DateTime fechaInicio,
     String? turnoId,
+    String? lineaComercialId,
     String? observaciones,
     int? sueldoMensual,
     int? bonoMensual,
@@ -96,12 +111,27 @@ class AsignarEmpleadoServicioUseCase {
       return AsignarEmpleadoServicioFechaInvalida();
     }
 
-    final sueldoResuelto = sueldoMensual ?? servicio.sueldoMensualReferenciaPersonal;
+    final lineas = await _servicioComercialRepository.listarLineas(servicioId);
+    final resolucionLinea = resolverLineaComercialAsignacion(
+      lineasDelServicio: lineas,
+      lineaComercialId: lineaComercialId,
+      sueldoMensual: sueldoMensual,
+      bonoMensual: bonoMensual,
+    );
+    switch (resolucionLinea) {
+      case ResolucionLineaComercialRequerida():
+        return AsignarEmpleadoServicioLineaComercialRequerida();
+      case ResolucionLineaComercialInvalida():
+        return AsignarEmpleadoServicioLineaComercialInvalida();
+      case ResolucionLineaComercialExitosa():
+        break;
+    }
+    final exitosa = resolucionLinea;
+
+    final sueldoResuelto = exitosa.sueldoResuelto;
     if (sueldoResuelto == null) return AsignarEmpleadoServicioSueldoRequerido();
     if (!_validator.sueldoValido(sueldoResuelto)) return AsignarEmpleadoServicioSueldoInvalido();
-
-    final bonoResuelto = bonoMensual ?? servicio.bonoMensualReferenciaPersonal ?? 0;
-    if (!_validator.bonoValido(bonoResuelto)) return AsignarEmpleadoServicioBonoInvalido();
+    if (!_validator.bonoValido(exitosa.bonoResuelto)) return AsignarEmpleadoServicioBonoInvalido();
 
     try {
       final asignacion = await _asignacionRepository.asignar(
@@ -109,8 +139,9 @@ class AsignarEmpleadoServicioUseCase {
         servicioId: servicioId,
         fechaInicio: fechaInicio,
         sueldoMensual: sueldoResuelto,
-        bonoMensual: bonoResuelto,
+        bonoMensual: exitosa.bonoResuelto,
         turnoId: turnoId,
+        lineaComercialId: exitosa.linea?.linea.id,
         observaciones: observaciones,
         actorUsuarioId: actorUsuarioId,
       );

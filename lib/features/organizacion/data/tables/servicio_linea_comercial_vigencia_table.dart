@@ -68,10 +68,32 @@ class ServicioLineaComercialVigencia extends Table with AuditColumns {
 
   TextColumn get observaciones => text().nullable()();
 
+  /// Condiciones de personal de referencia para este perfil contratado
+  /// (Etapa 15, rediseño de "Condiciones de Personal") — mismo criterio
+  /// exacto que las columnas globales que reemplazan
+  /// (`Servicio.sueldoMensualReferenciaPersonal`/
+  /// `bonoMensualReferenciaPersonal`, Etapa 6B): se precargan al asignar
+  /// personal contra ESTA línea (nunca contra el Servicio completo,
+  /// desde este rediseño); la asignación puede seguir capturando una
+  /// excepción individual. Versionadas junto con el resto de la
+  /// condición comercial (puesto/turno/cantidad/precio) — un cambio de
+  /// sueldo de referencia es, conceptualmente, la misma clase de cambio
+  /// que un cambio de precio: pasa por Corregir/Nueva vigencia, nunca
+  /// se edita in place fuera de ese ciclo. Nullable — una línea puede
+  /// capturarse antes de tener condición salarial definida; `> 0`
+  /// cuando se captura, igual que el resto de las fuentes de sueldo del
+  /// proyecto (`Empleado.sueldoMensualAdministrativo`,
+  /// `AsignacionServicioSueldoVigencia.sueldoMensual`). En centavos.
+  IntColumn get sueldoMensualReferenciaPersonal => integer().nullable()();
+
+  IntColumn get bonoMensualReferenciaPersonal => integer().nullable()();
+
   @override
   List<String> get customConstraints => [
         'CHECK (cantidad_elementos > 0)',
         'CHECK (precio_unitario > 0)',
         'CHECK (fecha_fin_vigencia IS NULL OR fecha_fin_vigencia >= fecha_inicio_vigencia)',
+        'CHECK (sueldo_mensual_referencia_personal IS NULL OR sueldo_mensual_referencia_personal > 0)',
+        'CHECK (bono_mensual_referencia_personal IS NULL OR bono_mensual_referencia_personal >= 0)',
       ];
 }

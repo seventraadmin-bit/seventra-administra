@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
+﻿import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,12 +21,14 @@ import 'package:riseg_one/features/nomina/domain/usecases/resolver_sueldo_emplea
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/guardar_sueldo_referencia_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
@@ -52,7 +54,8 @@ void main() {
   late RegistrarReingresoUseCase registrarReingreso;
   late AsignarEmpleadoServicioUseCase asignarEmpleadoServicio;
   late CambiarServicioEmpleadoUseCase cambiarServicioEmpleado;
-  late GuardarSueldoReferenciaServicioUseCase guardarSueldoReferenciaServicio;
+  late ServicioComercialRepositoryImpl comercialRepo;
+  late PuestoRepositoryImpl puestoRepo;
 
   late GenerarNominaUseCase generarNomina;
   late ActualizarNominaDesdePersonalUseCase actualizarDesdePersonal;
@@ -68,7 +71,8 @@ void main() {
     servicioRepo = ServicioRepositoryImpl(db, asignacionRepo);
     clienteRepo = ClienteRepositoryImpl(db);
     final catalogoRepo = CatalogoRepositoryImpl(db);
-    final puestoRepo = PuestoRepositoryImpl(db);
+    puestoRepo = PuestoRepositoryImpl(db);
+    comercialRepo = ServicioComercialRepositoryImpl(db);
     final codigoSecuencia = CodigoSecuenciaService(db);
     final generarCodigo = GenerarCodigoUseCase(codigoSecuencia);
     final generarNumero = GenerarNumeroUseCase(codigoSecuencia);
@@ -76,14 +80,15 @@ void main() {
     const asignacionValidator = AsignacionServicioValidator();
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
 
-    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, empleadoValidator, servicioRepo);
+    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, empleadoValidator, servicioRepo, comercialRepo);
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);
     registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator);
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, empleadoValidator);
-    asignarEmpleadoServicio = AsignarEmpleadoServicioUseCase(empleadoRepo, asignacionRepo, servicioRepo, asignacionValidator);
-    cambiarServicioEmpleado = CambiarServicioEmpleadoUseCase(empleadoRepo, asignacionRepo, servicioRepo, asignacionValidator);
-    guardarSueldoReferenciaServicio = GuardarSueldoReferenciaServicioUseCase(servicioRepo, servicioValidator);
+    asignarEmpleadoServicio =
+        AsignarEmpleadoServicioUseCase(empleadoRepo, asignacionRepo, servicioRepo, comercialRepo, asignacionValidator);
+    cambiarServicioEmpleado =
+        CambiarServicioEmpleadoUseCase(empleadoRepo, asignacionRepo, servicioRepo, comercialRepo, asignacionValidator);
 
     nominaRepo = NominaRepositoryImpl(db);
     final resolverSueldo = ResolverSueldoEmpleadoNomina(empleadoRepo, asignacionRepo, servicioRepo, catalogoRepo);
@@ -132,19 +137,48 @@ void main() {
     );
   }
 
+  // A qué línea comercial pertenece cada Servicio de prueba (Etapa 15,
+  // rediseño de "Condiciones de Personal") — el sueldo/bono de
+  // referencia ya no vive en `Servicio`, así que `asignar`/`cambiar`
+  // (abajo) la consultan aquí para seguir precargando automáticamente,
+  // sin tener que tocar cada llamada de este archivo una por una.
+  final lineaComercialPorServicio = <String, String>{};
+  var puestoContador = 0;
+
   Future<ServicioData> crearServicioDePrueba({String nombre = 'Servicio', int sueldoMensualReferencia = 1500000}) async {
     final cliente = await crearClienteDePrueba();
     final resultado = await crearServicio.ejecutar(
       clienteId: cliente.id,
       borrador: ServicioBorrador(nombre: nombre, tipoServicioId: SeedIds.tipoServicioVigilanciaFija, fechaInicio: DateTime(2024, 1, 1)),
     );
-    var servicio = (resultado as GuardarServicioExitoso).servicio;
-    final guardado = await guardarSueldoReferenciaServicio.ejecutar(
-      servicioId: servicio.id,
-      sueldoMensualReferenciaPersonal: sueldoMensualReferencia,
-      bonoMensualReferenciaPersonal: 0,
+    final servicio = (resultado as GuardarServicioExitoso).servicio;
+
+    puestoContador++;
+    final puesto = await puestoRepo.crear(
+      PuestoCompanion.insert(
+        codigo: 'PUE-${puestoContador.toString().padLeft(6, '0')}',
+        nombre: 'Elemento Operativo $puestoContador',
+        areaId: SeedIds.areaOperaciones,
+        tipo: 'operativo',
+        nivelJerarquico: 5,
+      ),
     );
-    servicio = (guardado as GuardarSueldoReferenciaServicioExitoso).servicio;
+    // Cantidad generosa — a estas pruebas de Nómina no les importa la
+    // capacidad del perfil, solo su sueldo/bono de referencia.
+    final linea = await comercialRepo.crearLinea(
+      servicioId: servicio.id,
+      datos: LineaComercialValidada(
+        puestoId: puesto.id,
+        modalidadTurnoId: SeedIds.modalidadTurno24x24,
+        cantidadElementos: 50,
+        precioUnitario: 100000,
+        tratamientoIva: TratamientoIva.noAplica,
+        fechaInicioVigencia: DateTime(2024, 1, 1),
+        sueldoMensualReferenciaPersonal: sueldoMensualReferencia,
+        bonoMensualReferenciaPersonal: 0,
+      ),
+    );
+    lineaComercialPorServicio[servicio.id] = linea.linea.id;
 
     await db.into(db.direccion).insert(
           DireccionCompanion.insert(
@@ -162,11 +196,46 @@ void main() {
     return (activado as CambiarEstatusServicioExitoso).servicio;
   }
 
+  // Envuelven `AsignarEmpleadoServicioUseCase`/`CambiarServicioEmpleadoUseCase`
+  // inyectando automáticamente `lineaComercialId` (Etapa 15) desde
+  // `lineaComercialPorServicio` — todas las pruebas de este archivo ya
+  // pasan por `crearServicioDePrueba`, así que ninguna necesita elegir
+  // la línea a mano; conservan el resto de los parámetros sin cambio.
+  Future<AsignarEmpleadoServicioResultado> asignar({
+    required String empleadoId,
+    required String servicioId,
+    required DateTime fechaInicio,
+    int? sueldoMensual,
+    int? bonoMensual,
+  }) {
+    return asignarEmpleadoServicio.ejecutar(
+      empleadoId: empleadoId,
+      servicioId: servicioId,
+      fechaInicio: fechaInicio,
+      lineaComercialId: lineaComercialPorServicio[servicioId],
+      sueldoMensual: sueldoMensual,
+      bonoMensual: bonoMensual,
+    );
+  }
+
+  Future<CambiarServicioEmpleadoResultado> cambiar({
+    required String empleadoId,
+    required String nuevoServicioId,
+    required DateTime fecha,
+  }) {
+    return cambiarServicioEmpleado.ejecutar(
+      empleadoId: empleadoId,
+      nuevoServicioId: nuevoServicioId,
+      fecha: fecha,
+      lineaComercialId: lineaComercialPorServicio[nuevoServicioId],
+    );
+  }
+
   group('GenerarNominaUseCase', () {
     test('cobertura laboral completa en un Servicio: 15 días pagables, bono en \$0 en la primera quincena', () async {
       final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1));
       final servicio = await crearServicioDePrueba(sueldoMensualReferencia: 1500000);
-      await asignarEmpleadoServicio.ejecutar(empleadoId: empleado.id, servicioId: servicio.id, fechaInicio: DateTime(2025, 6, 1));
+      await asignar(empleadoId: empleado.id, servicioId: servicio.id, fechaInicio: DateTime(2025, 6, 1));
 
       final resultado = await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera);
 
@@ -192,7 +261,7 @@ void main() {
     test('la segunda quincena sí propone bono automáticamente desde el bono de referencia del Servicio', () async {
       final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1));
       final servicio = await crearServicioDePrueba(sueldoMensualReferencia: 1500000);
-      await asignarEmpleadoServicio.ejecutar(
+      await asignar(
         empleadoId: empleado.id,
         servicioId: servicio.id,
         fechaInicio: DateTime(2025, 6, 1),
@@ -214,8 +283,8 @@ void main() {
         final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1));
         final servicioA = await crearServicioDePrueba(nombre: 'Servicio A', sueldoMensualReferencia: 2000000);
         final servicioB = await crearServicioDePrueba(nombre: 'Servicio B', sueldoMensualReferencia: 3000000);
-        await asignarEmpleadoServicio.ejecutar(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2025, 6, 1));
-        await cambiarServicioEmpleado.ejecutar(empleadoId: empleado.id, nuevoServicioId: servicioB.id, fecha: DateTime(2026, 1, 24));
+        await asignar(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2025, 6, 1));
+        await cambiar(empleadoId: empleado.id, nuevoServicioId: servicioB.id, fecha: DateTime(2026, 1, 24));
 
         // Enero 2026 tiene 31 días — la segunda quincena (16 al 31) tiene
         // 16 días reales, pero debe pagarse como si fueran 15.
@@ -234,7 +303,7 @@ void main() {
     test('un Empleado dado de baja a mitad de la quincena sigue incluido, con días parciales (nunca desaparece dinero pendiente)', () async {
       final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1));
       final servicio = await crearServicioDePrueba(sueldoMensualReferencia: 1500000);
-      await asignarEmpleadoServicio.ejecutar(empleadoId: empleado.id, servicioId: servicio.id, fechaInicio: DateTime(2025, 6, 1));
+      await asignar(empleadoId: empleado.id, servicioId: servicio.id, fechaInicio: DateTime(2025, 6, 1));
       await registrarBajaLaboral.ejecutar(empleadoId: empleado.id, fechaBaja: DateTime(2026, 1, 10), motivo: MotivoBajaEmpleado.renuncia);
 
       final resultado = await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera);
@@ -249,7 +318,7 @@ void main() {
     test('un reingreso dentro de la misma quincena produce dos tramos (dos segmentos laborales)', () async {
       final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2026, 1, 1));
       final servicio = await crearServicioDePrueba(sueldoMensualReferencia: 1500000);
-      await asignarEmpleadoServicio.ejecutar(empleadoId: empleado.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 1));
+      await asignar(empleadoId: empleado.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 1));
       final bajaResultado =
           await registrarBajaLaboral.ejecutar(empleadoId: empleado.id, fechaBaja: DateTime(2026, 1, 5), motivo: MotivoBajaEmpleado.renuncia);
       expect(bajaResultado, isA<RegistrarBajaLaboralExitoso>(), reason: bajaResultado.runtimeType.toString());
@@ -258,7 +327,7 @@ void main() {
       // Una baja retira automáticamente al Empleado del Servicio (cierra la
       // AsignacionServicio) — el reingreso no reasigna por sí solo, hace
       // falta una nueva asignación para cubrir el segundo segmento laboral.
-      await asignarEmpleadoServicio.ejecutar(empleadoId: empleado.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 10));
+      await asignar(empleadoId: empleado.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 10));
 
       final resultado = await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera);
 
@@ -370,7 +439,7 @@ void main() {
       final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1));
       final servicioA = await crearServicioDePrueba(nombre: 'Servicio A', sueldoMensualReferencia: 1500000);
       final servicioB = await crearServicioDePrueba(nombre: 'Servicio B', sueldoMensualReferencia: 2000000);
-      await asignarEmpleadoServicio.ejecutar(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2025, 6, 1));
+      await asignar(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2025, 6, 1));
 
       final generado = (await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
       final renglonOriginal = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
@@ -379,7 +448,7 @@ void main() {
       // Un día antes del periodo, para que todo el periodo quede limpiamente
       // del lado de Servicio B (cambiar justo el día 1 dejaría ese día
       // todavía traslapado con el cierre de la asignación anterior).
-      await cambiarServicioEmpleado.ejecutar(empleadoId: empleado.id, nuevoServicioId: servicioB.id, fecha: DateTime(2025, 12, 31));
+      await cambiar(empleadoId: empleado.id, nuevoServicioId: servicioB.id, fecha: DateTime(2025, 12, 31));
 
       final resultado = await actualizarDesdePersonal.ejecutar(nominaId: generado.nomina.id);
       expect(resultado, isA<ActualizarNominaDesdePersonalExitoso>());
@@ -470,7 +539,7 @@ void main() {
       final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1));
       final servicioA = await crearServicioDePrueba(nombre: 'Servicio A', sueldoMensualReferencia: 1500000);
       final servicioB = await crearServicioDePrueba(nombre: 'Servicio B', sueldoMensualReferencia: 2000000);
-      await asignarEmpleadoServicio.ejecutar(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2025, 6, 1));
+      await asignar(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2025, 6, 1));
 
       final generado = (await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
       final renglonOriginal = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
@@ -483,7 +552,7 @@ void main() {
 
       // El total cambia (nuevo Servicio con sueldo distinto) sin que el
       // usuario haya vuelto a resolver la distribución.
-      await cambiarServicioEmpleado.ejecutar(empleadoId: empleado.id, nuevoServicioId: servicioB.id, fecha: DateTime(2026, 1, 1));
+      await cambiar(empleadoId: empleado.id, nuevoServicioId: servicioB.id, fecha: DateTime(2026, 1, 1));
       await actualizarDesdePersonal.ejecutar(nominaId: generado.nomina.id);
 
       final resultado = await cerrarNomina.ejecutar(nominaId: generado.nomina.id);

@@ -173,8 +173,12 @@ void main() {
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
       expect(tester.takeException(), isNull);
-      expect(find.text(l10n.reportesGeneralCompras), findsOneWidget);
-      expect(find.text(l10n.dashboardActividadCompras), findsOneWidget);
+      // Etapa 15 (rediseño visual): "Compras del periodo" ahora se
+      // muestra junto con su valor en un solo texto ("Compras del
+      // periodo · $0.00"), y la Actividad reciente ahora es una sola
+      // lista unificada (nunca una tarjeta "Compras recientes" aparte).
+      expect(find.textContaining(l10n.reportesGeneralCompras), findsOneWidget);
+      expect(find.text(l10n.dashboardSeccionActividad), findsOneWidget);
       expect(find.text(l10n.dashboardAccesoRegistrarCompra), findsOneWidget);
       expect(find.text(l10n.reportesGeneralPersonalActivo), findsNothing);
       expect(find.text(l10n.reportesGeneralIngresos), findsNothing);

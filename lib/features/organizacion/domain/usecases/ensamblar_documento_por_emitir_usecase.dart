@@ -1,5 +1,6 @@
 import '../repositories/configuracion_cobro_repository.dart';
 import '../repositories/servicio_comercial_repository.dart';
+import 'calcular_fechas_cobro_usecase.dart';
 import 'calcular_importe_proporcional_usecase.dart';
 import 'documento_por_emitir_armado.dart';
 import 'documento_por_emitir_generation_key.dart';
@@ -14,6 +15,7 @@ class ServicioResueltoParaDocumento {
     this.fechaEmisionProgramada,
     this.fechaProcesamientoProgramada,
     this.fechaPagoEsperadoProgramada,
+    this.hitos = const [],
   });
 
   final String servicioId;
@@ -21,9 +23,45 @@ class ServicioResueltoParaDocumento {
   final DateTime? fechaEmisionProgramada;
   final DateTime? fechaProcesamientoProgramada;
   final DateTime? fechaPagoEsperadoProgramada;
+
+  /// Hitos planeados de todas las etapas activas con fecha calculable
+  /// (Etapa 15) — la fuente completa que alimenta `DocumentoPorEmitirHito`.
+  final List<HitoArmado> hitos;
 }
 
+/// `true` si `[periodoInicio, periodoFin]` es exactamente un mes
+/// calendario completo que arranca en el día de `periodoInicio` — misma
+/// construcción exacta que `calcularLimitesPeriodo` (mes siguiente +
+/// `diaFijoDelMes`, con el mismo recorte a fin de mes cuando el día no
+/// existe en el mes siguiente), para que un periodo mensual real
+/// generado por la Agenda automática, o un periodo manual que replica
+/// esa misma forma, se reconozcan igual — nunca una coincidencia
+/// numérica de días.
+bool _esPeriodoMensualCompleto(DateTime periodoInicio, DateTime periodoFin) {
+  final mesSiguiente = DateTime(periodoInicio.year, periodoInicio.month + 1, 1);
+  final inicioSiguientePeriodo = diaFijoDelMes(mesSiguiente.year, mesSiguiente.month, periodoInicio.day);
+  return periodoFin.add(const Duration(days: 1)) == inicioSiguientePeriodo;
+}
+
+/// Regla comercial de RISEG (Etapa 15, corrección explícita de Marlon):
+/// un periodo mensual completo siempre vale 30 días comerciales, sin
+/// importar si el mes calendario real tiene 28, 29, 30 o 31 días. Solo
+/// se considera completo cuando (a) `[periodoInicio, periodoFin]` tiene
+/// la forma exacta de un mes calendario completo (`_esPeriodoMensualCompleto`)
+/// y (b) la vigencia de la línea comercial no lo corta antes de
+/// `periodoFin` — un cambio de vigencia que coincide exactamente con el
+/// fin del periodo (ej. vigencia truncada el 31 de diciembre para un
+/// periodo que termina el 31 de diciembre) NO es un corte real, por eso
+/// la comparación es `!isBefore`, no `isAfter`. Cualquier otro caso
+/// (periodo parcial capturado manualmente, o vigencia que sí corta a
+/// mitad de mes) prorratea con días calendario reales, nunca con el
+/// fijo de 30 — un periodo parcial de 15 días nunca se vuelve 30.
 int _calcularDiasAplicables(DateTime periodoInicio, DateTime periodoFin, DateTime? vigenciaFin) {
+  final sinCorteDeVigencia = vigenciaFin == null || !vigenciaFin.isBefore(periodoFin);
+  if (sinCorteDeVigencia && _esPeriodoMensualCompleto(periodoInicio, periodoFin)) {
+    return 30;
+  }
+
   final finEfectivo = (vigenciaFin == null || vigenciaFin.isAfter(periodoFin)) ? periodoFin : vigenciaFin;
   return finEfectivo.difference(periodoInicio).inDays + 1;
 }
@@ -54,6 +92,7 @@ class EnsamblarDocumentoPorEmitirUseCase {
     required DateTime periodoFin,
     required List<ServicioResueltoParaDocumento> servicios,
     String? entidadFiscalId,
+    String? clientePortalId,
   }) async {
     final configuraciones = <ConfiguracionServicioArmada>[];
     final lineas = <LineaArmada>[];
@@ -68,6 +107,7 @@ class EnsamblarDocumentoPorEmitirUseCase {
           fechaEmisionProgramada: s.fechaEmisionProgramada,
           fechaProcesamientoProgramada: s.fechaProcesamientoProgramada,
           fechaPagoEsperadoProgramada: s.fechaPagoEsperadoProgramada,
+          hitos: s.hitos,
         ),
       );
 
@@ -111,6 +151,7 @@ class EnsamblarDocumentoPorEmitirUseCase {
     return DocumentoPorEmitirArmado(
       clienteId: clienteId,
       entidadFiscalId: entidadFiscalId,
+      clientePortalId: clientePortalId,
       tipoDocumento: tipoDocumento,
       agrupacion: agrupacion,
       metodo: metodo,

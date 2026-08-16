@@ -2,13 +2,16 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
+import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show EstatusAplicacionPago;
 import 'package:riseg_one/features/finanzas/domain/repositories/cuenta_por_cobrar_repository.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/repositories/documento_por_emitir_repository.dart';
 import '../../domain/usecases/documento_por_emitir_armado.dart';
 import '../../domain/usecases/documento_por_emitir_detalle.dart';
+import '../../domain/usecases/eliminar_documento_por_emitir_fisicamente_usecase.dart';
 import '../tables/documento_por_emitir_table.dart';
 
 /// **Nota de arquitectura (Etapa 4J.1):** este repositorio, de
@@ -23,11 +26,26 @@ import '../tables/documento_por_emitir_table.dart';
 /// con `AttachmentRepository` en 4I.2.2, aplicado aquí entre dos
 /// dominios de features en vez de entre un dominio y `core`.
 class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
-  DocumentoPorEmitirRepositoryImpl(this._db, this._attachmentRepository, this._cuentaPorCobrarRepository);
+  DocumentoPorEmitirRepositoryImpl(
+    this._db,
+    this._attachmentRepository,
+    this._cuentaPorCobrarRepository, {
+    AttachmentStorage? attachmentStorage,
+  }) : _attachmentStorage = attachmentStorage;
 
   final AppDatabase _db;
   final AttachmentRepository _attachmentRepository;
   final CuentaPorCobrarRepository _cuentaPorCobrarRepository;
+
+  /// Opcional a propósito (Etapa 15): la mayoría de los llamadores de
+  /// este repositorio (Nómina, Finanzas, otras pruebas) nunca ejecutan
+  /// `eliminarFisicamente` y no necesitan construir un
+  /// `AttachmentStorage` real solo para satisfacer el constructor. En
+  /// producción, el provider siempre lo pasa. Si es `null` y sí hay
+  /// adjuntos que limpiar, el archivo físico simplemente no se intenta
+  /// borrar — se reporta como no eliminado, nunca se oculta ni se
+  /// finge éxito completo.
+  final AttachmentStorage? _attachmentStorage;
 
   @override
   Future<DocumentoPorEmitirData?> obtenerPorGenerationKey(String generationKey) {
@@ -51,6 +69,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
               codigo: codigo,
               clienteId: armado.clienteId,
               entidadFiscalId: Value(armado.entidadFiscalId),
+              clientePortalId: Value(armado.clientePortalId),
               tipoDocumento: armado.tipoDocumento,
               agrupacion: armado.agrupacion,
               metodo: armado.metodo,
@@ -86,6 +105,18 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
                 fechaPagoEsperadoProgramada: Value(config.fechaPagoEsperadoProgramada),
               ),
             );
+        for (final hito in config.hitos) {
+          await _db.into(_db.documentoPorEmitirHito).insert(
+                DocumentoPorEmitirHitoCompanion.insert(
+                  documentoPorEmitirId: documento.id,
+                  servicioId: config.servicioId,
+                  tipoSistema: Value(hito.tipoSistema),
+                  nombre: Value(hito.nombre),
+                  orden: hito.orden,
+                  fechaProgramada: hito.fecha,
+                ),
+              );
+        }
       }
 
       for (final linea in armado.lineas) {
@@ -141,6 +172,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         .get();
     final correosEnvio = await listarCorreosEnvio(documentoPorEmitirId);
     final eventos = await listarEventos(documentoPorEmitirId);
+    final hitos = await listarHitos(documentoPorEmitirId);
 
     return DocumentoPorEmitirDetalle(
       documento: documento,
@@ -150,7 +182,16 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
       correos: [for (final c in correos) c.correo],
       correosEnvio: correosEnvio,
       eventos: eventos,
+      hitos: hitos,
     );
+  }
+
+  @override
+  Future<List<DocumentoPorEmitirHitoData>> listarHitos(String documentoPorEmitirId) {
+    return (_db.select(_db.documentoPorEmitirHito)
+          ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId))
+          ..orderBy([(t) => OrderingTerm.asc(t.orden)]))
+        .get();
   }
 
   @override
@@ -279,8 +320,6 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
           metodo: actualizado.metodo,
           requiereComplemento: actualizado.requiereComplemento,
           folioDocumento: actualizado.folioDocumento,
-          serieFiscal: actualizado.serieFiscal,
-          folioFiscal: actualizado.folioFiscal,
           uuid: actualizado.uuid,
           fechaEmisionReal: actualizado.fechaEmisionReal!,
           importeEmitido: actualizado.importeEmitido!,
@@ -297,8 +336,6 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
   Future<DocumentoPorEmitirData> registrarEmision({
     required String documentoPorEmitirId,
     required String folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     required DateTime fechaEmisionReal,
     required int importeEmitido,
@@ -313,8 +350,6 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         DocumentoPorEmitirCompanion(
           estatus: const Value(_estatusEmitido),
           folioDocumento: Value(folioDocumento),
-          serieFiscal: Value(serieFiscal),
-          folioFiscal: Value(folioFiscal),
           uuid: Value(uuid),
           fechaEmisionReal: Value(fechaEmisionReal),
           importeEmitido: Value(importeEmitido),
@@ -331,8 +366,6 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'folioDocumento': folioDocumento,
-          'serieFiscal': serieFiscal,
-          'folioFiscal': folioFiscal,
           'uuid': uuid,
           'importeEmitido': importeEmitido,
         },
@@ -347,8 +380,6 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required String documentoPorEmitirId,
     required String motivo,
     String? folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     DateTime? fechaEmisionReal,
     int? importeEmitido,
@@ -362,8 +393,6 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
       await (_db.update(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).write(
         DocumentoPorEmitirCompanion(
           folioDocumento: folioDocumento == null ? const Value.absent() : Value(folioDocumento),
-          serieFiscal: serieFiscal == null ? const Value.absent() : Value(serieFiscal),
-          folioFiscal: folioFiscal == null ? const Value.absent() : Value(folioFiscal),
           uuid: uuid == null ? const Value.absent() : Value(uuid),
           fechaEmisionReal: fechaEmisionReal == null ? const Value.absent() : Value(fechaEmisionReal),
           importeEmitido: importeEmitido == null ? const Value.absent() : Value(importeEmitido),
@@ -381,8 +410,6 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         actorUsuarioId: actorUsuarioId,
         datosRelevantes: {
           'folioDocumentoAnterior': anterior.folioDocumento,
-          'serieFiscalAnterior': anterior.serieFiscal,
-          'folioFiscalAnterior': anterior.folioFiscal,
           'uuidAnterior': anterior.uuid,
           'importeEmitidoAnterior': anterior.importeEmitido,
         },
@@ -596,6 +623,182 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
 
       return nuevo;
     });
+  }
+
+  /// Único bloqueador real (Etapa 15, corregido tras hallazgo real de
+  /// Marlon): la Cuenta por cobrar del documento tiene al menos una
+  /// `AplicacionPago` ACTIVA (`estatus == aplicada`). La versión
+  /// anterior contaba también las `cancelada`, lo que dejaba un Pago
+  /// cancelado (monto aplicado $0, sin efecto financiero real)
+  /// bloqueando indefinidamente la eliminación del Documento — una
+  /// aplicación cancelada ya no representa saldo aplicado, el mismo
+  /// criterio que ya usa `PagoRepositoryImpl` para recalcular
+  /// `CuentaPorCobrar.saldoPendiente`. Una Cuenta por cobrar sin
+  /// ninguna aplicación activa es limpieza explícita segura.
+  Future<({CuentaPorCobrarData? cuentaPorCobrar, bool bloqueado, String? detalleBloqueo})> _verificarCuentaPorCobrar(
+    String documentoPorEmitirId,
+  ) async {
+    final cuentaPorCobrar = await (_db.select(_db.cuentaPorCobrar)
+          ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId)))
+        .getSingleOrNull();
+    if (cuentaPorCobrar == null) {
+      return (cuentaPorCobrar: null, bloqueado: false, detalleBloqueo: null);
+    }
+
+    final aplicacionesActivas = await (_db.select(_db.aplicacionPago)
+          ..where(
+            (t) => t.cuentaPorCobrarId.equals(cuentaPorCobrar.id) & t.estatus.equals(EstatusAplicacionPago.aplicada.name),
+          ))
+        .get();
+    if (aplicacionesActivas.isNotEmpty) {
+      return (
+        cuentaPorCobrar: cuentaPorCobrar,
+        bloqueado: true,
+        detalleBloqueo:
+            'Tiene ${aplicacionesActivas.length} pago(s) aplicado(s) a su Cuenta por cobrar — resuelve o elimina esa aplicación de pago antes de continuar.',
+      );
+    }
+    return (cuentaPorCobrar: cuentaPorCobrar, bloqueado: false, detalleBloqueo: null);
+  }
+
+  @override
+  Future<ResumenEliminacionDocumentoPorEmitir> obtenerResumenEliminacionFisica(String documentoPorEmitirId) async {
+    final documento =
+        await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingleOrNull();
+    if (documento == null) {
+      return const ResumenEliminacionDocumentoPorEmitir(
+        existe: false,
+        tieneCuentaPorCobrar: false,
+        cantidadAdjuntos: 0,
+        bloqueadoPorPago: false,
+      );
+    }
+
+    final cxc = await _verificarCuentaPorCobrar(documentoPorEmitirId);
+    final adjuntos = await (_db.select(_db.documentoPorEmitirAttachment)
+          ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId)))
+        .get();
+
+    return ResumenEliminacionDocumentoPorEmitir(
+      existe: true,
+      tieneCuentaPorCobrar: cxc.cuentaPorCobrar != null,
+      cantidadAdjuntos: adjuntos.length,
+      bloqueadoPorPago: cxc.bloqueado,
+      detalleBloqueo: cxc.detalleBloqueo,
+    );
+  }
+
+  /// Eliminación física extraordinaria (Etapa 15, ampliada) — el
+  /// estatus del documento y la sola existencia de adjuntos o de una
+  /// Cuenta por cobrar ya NO bloquean por sí solos (corrección
+  /// explícita de Marlon: la facultad Maestro existe para poder
+  /// limpiar datos de prueba/errores de captura reales, sin quedar
+  /// atado a en qué estatus alcanzó a llegar el flujo). El único
+  /// bloqueador real es una `AplicacionPago` ACTIVA — dinero realmente
+  /// aplicado hoy (`_verificarCuentaPorCobrar`). Una aplicación
+  /// cancelada (Pago cancelado, monto aplicado $0) ya no representa
+  /// saldo real y no bloquea.
+  ///
+  /// Todo lo demás se limpia explícitamente, en una sola transacción:
+  /// tablas hijas propias del documento (cascada automática, detalle
+  /// interno, nunca una dependencia externa), la Cuenta por cobrar sin
+  /// pagos aplicados (y su `CuentaPorCobrarEvento`, cascada) junto con
+  /// sus `AplicacionPago` canceladas (solo la fila puente — el `Pago`
+  /// origen y su propio historial permanecen intactos), y cada adjunto
+  /// (fila puente + fila `Attachment`). Los archivos físicos en disco
+  /// se borran DESPUÉS de que la transacción de BD haga commit — nunca
+  /// antes: si el archivo no se puede borrar (permisos, en uso), la
+  /// base de datos ya quedó consistente (fuente de verdad) y el
+  /// documento ya está eliminado; el archivo huérfano se reporta
+  /// explícitamente en el resultado, nunca se oculta.
+  @override
+  Future<EliminarDocumentoPorEmitirFisicamenteResultado> eliminarFisicamente({
+    required String documentoPorEmitirId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) async {
+    final documentoInicial =
+        await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingleOrNull();
+    if (documentoInicial == null) return EliminarDocumentoPorEmitirFisicamenteNoExiste();
+
+    final cxc = await _verificarCuentaPorCobrar(documentoPorEmitirId);
+    if (cxc.bloqueado) {
+      return EliminarDocumentoPorEmitirFisicamenteTieneDependencias(cxc.detalleBloqueo!);
+    }
+
+    // Capturados antes de la transacción para poder borrar los
+    // archivos físicos después del commit.
+    final adjuntosQuery = _db.select(_db.attachment).join([
+      innerJoin(_db.documentoPorEmitirAttachment, _db.documentoPorEmitirAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.documentoPorEmitirAttachment.documentoPorEmitirId.equals(documentoPorEmitirId));
+    final adjuntos = await adjuntosQuery.map((row) => row.readTable(_db.attachment)).get();
+
+    // `AplicacionPago.cuentaPorCobrarId` es `restrict` — una fila
+    // cancelada (sin efecto financiero real, ya no cuenta como
+    // bloqueo desde `_verificarCuentaPorCobrar`) seguiría impidiendo
+    // el `DELETE` de la Cuenta por cobrar a nivel de motor si no se
+    // limpia explícitamente aquí. Se borra únicamente la fila puente
+    // (nunca el `Pago` ni su propio historial, que permanecen intactos
+    // — solo se pierde el vínculo hacia esta Cuenta ya eliminada).
+    final aplicacionesCanceladas = cxc.cuentaPorCobrar == null
+        ? const <AplicacionPagoData>[]
+        : await (_db.select(_db.aplicacionPago)
+              ..where(
+                (t) =>
+                    t.cuentaPorCobrarId.equals(cxc.cuentaPorCobrar!.id) &
+                    t.estatus.equals(EstatusAplicacionPago.cancelada.name),
+              ))
+            .get();
+
+    await _db.transaction(() async {
+      final snapshot = <String, Object?>{
+        'documento': documentoInicial.toJson(),
+        if (cxc.cuentaPorCobrar != null) 'cuentaPorCobrar': cxc.cuentaPorCobrar!.toJson(),
+        'aplicacionesPagoCanceladas': [for (final a in aplicacionesCanceladas) a.toJson()],
+        'adjuntos': [for (final a in adjuntos) a.toJson()],
+      };
+
+      await (_db.delete(_db.documentoPorEmitirAttachment)..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId)))
+          .go();
+      for (final adjunto in adjuntos) {
+        await _attachmentRepository.eliminarFisico(adjunto.id);
+      }
+
+      if (cxc.cuentaPorCobrar != null) {
+        for (final aplicacion in aplicacionesCanceladas) {
+          await (_db.delete(_db.aplicacionPago)..where((t) => t.id.equals(aplicacion.id))).go();
+        }
+        await (_db.delete(_db.cuentaPorCobrar)..where((t) => t.id.equals(cxc.cuentaPorCobrar!.id))).go();
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'documentoPorEmitir',
+              entidadIdOriginal: documentoPorEmitirId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode(snapshot),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+      await (_db.delete(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).go();
+    });
+
+    final archivosNoEliminados = <String>[];
+    for (final adjunto in adjuntos) {
+      if (_attachmentStorage == null) {
+        archivosNoEliminados.add(adjunto.originalFileName);
+        continue;
+      }
+      try {
+        await _attachmentStorage.eliminarArchivo(adjunto.path);
+      } catch (_) {
+        archivosNoEliminados.add(adjunto.originalFileName);
+      }
+    }
+
+    return EliminarDocumentoPorEmitirFisicamenteExitoso(archivosNoEliminadosFisicamente: archivosNoEliminados);
   }
 
   Future<void> _registrarEvento({

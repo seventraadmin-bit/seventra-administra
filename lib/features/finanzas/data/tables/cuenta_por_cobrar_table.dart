@@ -32,10 +32,10 @@ enum TipoEventoCuentaPorCobrar { creada, fechaVencimientoDefinida, pagoAplicado,
 ///
 /// Snapshot administrativo completo (Resolución explícita de Marlon:
 /// "no quiero depender de joins para reconstruir el documento años
-/// después") — copia folio/serie/folio fiscal/UUID/importe emitido/
-/// fecha de emisión real del documento al momento de crear la cuenta,
-/// además de los campos que la Cuenta por cobrar necesita para
-/// filtrar/reportar sin join (`clienteId`, `tipoDocumento`, `metodo`,
+/// después") — copia folio/UUID (folio fiscal)/importe emitido/fecha de
+/// emisión real del documento al momento de crear la cuenta, además de
+/// los campos que la Cuenta por cobrar necesita para filtrar/reportar
+/// sin join (`clienteId`, `tipoDocumento`, `metodo`,
 /// `requiereComplemento`).
 ///
 /// `saldoOriginal` es seguro de congelar: `CorregirDatosEmisionDocumentoPorEmitirUseCase`
@@ -64,14 +64,13 @@ class CuentaPorCobrar extends Table with AuditColumns {
 
   TextColumn get folioDocumento => text().nullable()();
 
-  TextColumn get serieFiscal => text().nullable()();
-
-  TextColumn get folioFiscal => text().nullable()();
-
   TextColumn get uuid => text().nullable()();
 
   DateTimeColumn get fechaEmisionReal => dateTime()();
 
+  /// Monto real y total del documento (Total del CFDI, o importe del
+  /// recibo) — el monto efectivamente cobrable al Cliente, copiado tal
+  /// cual de `DocumentoPorEmitir.importeEmitido` (ver su doc comment).
   IntColumn get importeEmitido => integer()();
 
   IntColumn get saldoOriginal => integer()();

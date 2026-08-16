@@ -17,6 +17,7 @@ import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/cliente_portal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
@@ -25,7 +26,7 @@ import 'package:riseg_one/features/personal/data/repositories/asignacion_servici
 import 'package:riseg_one/features/organizacion/data/repositories/sucursal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_cliente_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
@@ -141,14 +142,16 @@ Future<String> _crearConfiguracionCobro(AppDatabase db, String servicioId) async
   final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
   final catalogoRepo = CatalogoRepositoryImpl(db);
   final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+  final clientePortalRepo = ClientePortalRepositoryImpl(db);
   final comercialRepo = ServicioComercialRepositoryImpl(db);
   final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
-  final validator = ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
+  final validator =
+      ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo, clientePortalRepo);
   final crear = CrearConfiguracionCobroUseCase(
     configuracionCobroRepo,
     servicioRepo,
     validator,
-    const ConfiguracionCobroReglaEventoValidator(),
+    const ConfiguracionCobroEtapaValidator(),
   );
 
   final resultado = await crear.ejecutar(
@@ -398,46 +401,23 @@ void main() {
     expect(find.text(l10n.servicioResponsableInternoGuardadoExito), findsOneWidget);
   });
 
-  testWidgets('Condiciones de Personal: sin configurar por defecto, muestra el mensaje claro', (tester) async {
-    await _pumpScreen(tester, db, servicioId);
-    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+  testWidgets(
+    'la tarjeta global "Condiciones de Personal" ya no existe — sueldo/bono viven dentro de cada línea comercial (Etapa 15)',
+    (tester) async {
+      final puesto = await _crearPuesto(db);
+      await _crearLineaComercial(db, servicioId, puesto.id);
+      await _pumpScreen(tester, db, servicioId);
 
-    expect(find.text(l10n.servicioCondicionesPersonalSinConfigurar), findsOneWidget);
-  });
+      expect(find.byKey(const Key('servicio_condiciones_personal_boton_editar')), findsNothing);
+      expect(find.text('Condiciones salariales sin configurar'), findsNothing);
 
-  testWidgets('Condiciones de Personal: capturar sueldo/bono los muestra formateados', (tester) async {
-    await _pumpScreen(tester, db, servicioId);
-    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
-
-    await tester.ensureVisible(find.byKey(const Key('servicio_condiciones_personal_boton_editar')));
-    await tester.tap(find.byKey(const Key('servicio_condiciones_personal_boton_editar')));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextFormField).at(0), '15000');
-    await tester.enterText(find.byType(TextFormField).at(1), '800');
-    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
-    await tester.pumpAndSettle();
-
-    expect(find.text(l10n.servicioCondicionesPersonalGuardadoExito), findsOneWidget);
-    expect(find.text(l10n.servicioCondicionesPersonalSinConfigurar), findsNothing);
-    expect(find.textContaining('15,000'), findsOneWidget);
-    expect(find.textContaining('800'), findsWidgets);
-  });
-
-  testWidgets('Condiciones de Personal: rechaza un sueldo de referencia en 0', (tester) async {
-    await _pumpScreen(tester, db, servicioId);
-    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
-
-    await tester.ensureVisible(find.byKey(const Key('servicio_condiciones_personal_boton_editar')));
-    await tester.tap(find.byKey(const Key('servicio_condiciones_personal_boton_editar')));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextFormField).at(0), '0');
-    await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
-    await tester.pumpAndSettle();
-
-    expect(find.text(l10n.servicioCondicionesPersonalErrorSueldoInvalido), findsOneWidget);
-  });
+      // Solo el título de sección sobrevive — reutilizado dentro del
+      // formulario de línea comercial, nunca como tarjeta propia del
+      // Servicio.
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+      expect(find.text(l10n.servicioSeccionCondicionesPersonalTitulo), findsNothing);
+    },
+  );
 
   testWidgets('agregar una Dirección operativa completa habilita el botón Activar', (tester) async {
     await _pumpScreen(tester, db, servicioId);
@@ -501,7 +481,10 @@ void main() {
     await tester.tap(find.text(l10n.servicioComercialTratamientoIvaMasIva).last);
     await tester.pumpAndSettle();
 
-    final campoFechaInicio = find.byType(TextFormField).at(2);
+    // Índice 4: cantidad(0)/precio(1)/sueldo(2)/bono(3) de referencia
+    // (Etapa 15, "Condiciones de personal" ya viven dentro del mismo
+    // formulario) preceden a la fecha de inicio de vigencia.
+    final campoFechaInicio = find.byType(TextFormField).at(4);
     await tester.tap(campoFechaInicio);
     await tester.pumpAndSettle();
     var dialogoSelector = find.byType(Dialog).last;
@@ -518,18 +501,23 @@ void main() {
 
   testWidgets('nueva vigencia reemplaza la condición vigente y actualiza el subtotal', (tester) async {
     final puesto = await _crearPuesto(db);
-    await _crearLineaComercial(db, servicioId, puesto.id);
+    final lineaId = await _crearLineaComercial(db, servicioId, puesto.id);
     await _pumpScreen(tester, db, servicioId);
     final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
-    await tester.ensureVisible(find.byTooltip(l10n.servicioComercialBotonNuevaVigencia));
+    final menuLinea = find.byKey(Key('servicio_comercial_linea_menu_$lineaId'));
+    await tester.ensureVisible(menuLinea);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip(l10n.servicioComercialBotonNuevaVigencia));
+    await tester.tap(menuLinea);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.servicioComercialBotonNuevaVigencia).last);
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).at(0), '5');
 
-    final campoFechaInicio = find.byType(TextFormField).at(2);
+    // Índice 4: mismo desplazamiento que en el alta (sueldo/bono de
+    // referencia ahora ocupan los índices 2 y 3).
+    final campoFechaInicio = find.byType(TextFormField).at(4);
     await tester.tap(campoFechaInicio);
     await tester.pumpAndSettle();
     final dialogoSelector = find.byType(Dialog).last;
@@ -543,15 +531,93 @@ void main() {
     expect(find.text('5'), findsWidgets);
   });
 
+  testWidgets(
+    'corregir línea comercial (Etapa 15, sin historia): reutiliza el formulario completo de alta, precarga los '
+    'valores reales, y tras guardar la tabla, el subtotal de la línea, el Subtotal comercial y Elementos '
+    'comerciales vigentes se actualizan de inmediato',
+    (tester) async {
+      final puesto = await _crearPuesto(db);
+      final lineaId = await _crearLineaComercial(db, servicioId, puesto.id);
+      await _pumpScreen(tester, db, servicioId);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      // Subtotal inicial real: 2 × $15,000.00.
+      expect(find.text(r'$30,000.00'), findsWidgets);
+      expect(find.text('2'), findsWidgets, reason: 'cantidad y Elementos comerciales vigentes iniciales');
+
+      final menuLinea = find.byKey(Key('servicio_comercial_linea_menu_$lineaId'));
+      await tester.ensureVisible(menuLinea);
+      await tester.pumpAndSettle();
+      await tester.tap(menuLinea);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.servicioComercialBotonCorregir),
+        findsOneWidget,
+        reason: 'la línea recién creada nunca pasó por "Nueva vigencia" ni generó documentos — sigue siendo corregible',
+      );
+      await tester.tap(find.text(l10n.servicioComercialBotonCorregir).last);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.servicioComercialCorregirDialogoTitulo), findsOneWidget);
+      // Reutiliza el mismo formulario completo del alta, precargado —
+      // no un formulario reducido: puesto, turno, cantidad, precio,
+      // IVA, sueldo/bono de referencia (Etapa 15) y fecha de inicio ya
+      // vienen con los valores reales.
+      expect(
+        find.byType(TextFormField),
+        findsNWidgets(8),
+        reason: 'cantidad, precio, sueldo de referencia, bono de referencia, fecha de inicio, fecha de fin, descripción y observaciones',
+      );
+      final campoFechaInicio = find.byType(TextFormField).at(4);
+      expect(
+        tester.widget<TextFormField>(campoFechaInicio).initialValue,
+        isNot(anyOf(isNull, '')),
+        reason: 'a diferencia de "Nueva vigencia", "Corregir" sí precarga la fecha real capturada, nunca la pide vacía',
+      );
+      final campoCantidad = find.byType(TextFormField).at(0);
+      expect(tester.widget<TextFormField>(campoCantidad).controller!.text, '2');
+      final campoPrecio = find.byType(TextFormField).at(1);
+      expect(tester.widget<TextFormField>(campoPrecio).controller!.text, '15000.00');
+      final campoSueldo = find.byType(TextFormField).at(2);
+      expect(
+        tester.widget<TextFormField>(campoSueldo).controller!.text,
+        '',
+        reason: '_crearLineaComercial no captura sueldo/bono de referencia — deben precargarse vacíos, nunca inventados',
+      );
+
+      await tester.enterText(campoCantidad, '5');
+      await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.servicioComercialCorregirExito), findsOneWidget);
+      // Subtotal de la línea (5 × $15,000.00), Subtotal comercial (una
+      // sola línea, mismo monto) y Elementos comerciales vigentes (5)
+      // ya reflejan la corrección sin recargar manualmente.
+      expect(find.text(r'$75,000.00'), findsWidgets);
+      expect(find.text('5'), findsWidgets);
+
+      // "Corregir" sigue disponible: corregirse a sí misma no genera
+      // historia real (mismo criterio verificado a nivel de dominio en
+      // servicio_vigencias_comerciales_test.dart).
+      await tester.tap(menuLinea);
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.servicioComercialBotonCorregir), findsOneWidget);
+    },
+  );
+
   testWidgets('cerrar línea muestra la advertencia del efecto administrativo antes de confirmar', (tester) async {
     final puesto = await _crearPuesto(db);
-    await _crearLineaComercial(db, servicioId, puesto.id);
+    final lineaId = await _crearLineaComercial(db, servicioId, puesto.id);
     await _pumpScreen(tester, db, servicioId);
     final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
-    await tester.ensureVisible(find.byTooltip(l10n.servicioComercialBotonCerrarLinea));
+    final menuLinea = find.byKey(Key('servicio_comercial_linea_menu_$lineaId'));
+    await tester.ensureVisible(menuLinea);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip(l10n.servicioComercialBotonCerrarLinea));
+    await tester.tap(menuLinea);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.servicioComercialBotonCerrarLinea).last);
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.servicioComercialCerrarLineaAdvertencia), findsOneWidget);
@@ -564,13 +630,16 @@ void main() {
 
   testWidgets('ver historial muestra la vigencia vigente y permite editar anotaciones', (tester) async {
     final puesto = await _crearPuesto(db);
-    await _crearLineaComercial(db, servicioId, puesto.id);
+    final lineaId = await _crearLineaComercial(db, servicioId, puesto.id);
     await _pumpScreen(tester, db, servicioId);
     final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
-    await tester.ensureVisible(find.byTooltip(l10n.servicioComercialBotonHistorial));
+    final menuLinea = find.byKey(Key('servicio_comercial_linea_menu_$lineaId'));
+    await tester.ensureVisible(menuLinea);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip(l10n.servicioComercialBotonHistorial));
+    await tester.tap(menuLinea);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.servicioComercialBotonHistorial).last);
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.servicioComercialEstadoVigente), findsWidgets);

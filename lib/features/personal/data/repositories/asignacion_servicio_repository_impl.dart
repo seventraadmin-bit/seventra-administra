@@ -83,6 +83,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
     required int sueldoMensual,
     required int bonoMensual,
     String? turnoId,
+    String? lineaComercialId,
     String? observaciones,
     String? actorUsuarioId,
   }) {
@@ -93,6 +94,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
               servicioId: servicioId,
               fechaInicio: fechaInicio,
               turnoId: Value(turnoId),
+              lineaComercialId: Value(lineaComercialId),
               observaciones: Value(observaciones),
             ),
           );
@@ -121,6 +123,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
     required int sueldoMensual,
     required int bonoMensual,
     String? turnoId,
+    String? lineaComercialId,
     String? observaciones,
     String? actorUsuarioId,
   }) {
@@ -144,6 +147,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
               servicioId: nuevoServicioId,
               fechaInicio: fecha,
               turnoId: Value(turnoId),
+              lineaComercialId: Value(lineaComercialId),
               observaciones: Value(observaciones),
             ),
           );

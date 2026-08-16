@@ -249,8 +249,8 @@ class ArticulosController extends _$ArticulosController {
     int? costoUnitario,
     required DateTime fecha,
     String? observaciones,
-  }) {
-    return autorizarUseCase(
+  }) async {
+    final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'inventario.crear',
       () => ref.read(registrarEntradaUseCaseProvider).ejecutar(
@@ -264,6 +264,8 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarEntradaErrorInesperado.new,
     );
+    if (resultado is RegistrarEntradaExitoso) await _cargar();
+    return resultado;
   }
 
   Future<RegistrarEntradaUnidadResultado> registrarEntradaUnidad({
@@ -276,8 +278,8 @@ class ArticulosController extends _$ArticulosController {
     int? costoUnitario,
     required DateTime fecha,
     String? observaciones,
-  }) {
-    return autorizarUseCase(
+  }) async {
+    final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'inventario.crear',
       () => ref.read(registrarEntradaUnidadUseCaseProvider).ejecutar(
@@ -294,6 +296,8 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarEntradaUnidadErrorInesperado.new,
     );
+    if (resultado is RegistrarEntradaUnidadExitoso) await _cargar();
+    return resultado;
   }
 
   Future<RegistrarBajaResultado> registrarBaja({
@@ -301,8 +305,8 @@ class ArticulosController extends _$ArticulosController {
     String? varianteId,
     required int cantidad,
     required String observaciones,
-  }) {
-    return autorizarUseCase(
+  }) async {
+    final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'inventario.archivar',
       () => ref.read(registrarBajaUseCaseProvider).ejecutar(
@@ -314,10 +318,12 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarBajaErrorInesperado.new,
     );
+    if (resultado is RegistrarBajaExitoso) await _cargar();
+    return resultado;
   }
 
-  Future<RegistrarBajaUnidadResultado> registrarBajaUnidad({required String unidadId, required String observaciones}) {
-    return autorizarUseCase(
+  Future<RegistrarBajaUnidadResultado> registrarBajaUnidad({required String unidadId, required String observaciones}) async {
+    final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'inventario.archivar',
       () => ref.read(registrarBajaUnidadUseCaseProvider).ejecutar(
@@ -327,6 +333,8 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarBajaUnidadErrorInesperado.new,
     );
+    if (resultado is RegistrarBajaUnidadExitoso) await _cargar();
+    return resultado;
   }
 
   Future<RegistrarAjusteResultado> registrarAjuste({
@@ -335,8 +343,8 @@ class ArticulosController extends _$ArticulosController {
     required int cantidad,
     required bool esEntrada,
     required String observaciones,
-  }) {
-    return autorizarUseCase(
+  }) async {
+    final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'inventario.modificar',
       () => ref.read(registrarAjusteUseCaseProvider).ejecutar(
@@ -349,6 +357,8 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarAjusteErrorInesperado.new,
     );
+    if (resultado is RegistrarAjusteExitoso) await _cargar();
+    return resultado;
   }
 
   Future<AdjuntarComprobanteMovimientoResultado> adjuntarComprobante({

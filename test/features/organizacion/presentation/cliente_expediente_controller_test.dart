@@ -21,6 +21,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/guardar_domicili
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/presentation/clientes/cliente_expediente_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/clientes/cliente_expediente_state.dart';
+import 'package:riseg_one/features/organizacion/presentation/clientes/clientes_list_controller.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
@@ -154,6 +155,41 @@ void main() {
 
     expect(exito, isTrue);
     expect(container.read(clienteExpedienteControllerProvider(clienteId)).datos?.cliente.estatus, 'activo');
+  });
+
+  // Etapa 15, hallazgo real: un Cliente cambiado a Activo desde el
+  // expediente seguía viendo "Prospecto" en el listado hasta navegar a
+  // otra pestaña y volver — `ClientesListController` nunca se
+  // invalidaba tras `cambiarEstatus`. Esta prueba nunca llama
+  // `recargar()` a mano: el listado debe reflejar el estatus real
+  // solo por la invalidación que `cambiarEstatus` dispara.
+  test('cambiarEstatus desde el expediente refleja el nuevo estatus en el listado sin recargar manualmente', () async {
+    await esperarCargaInicial();
+    container.listen(clientesListControllerProvider, (_, _) {});
+    while (container.read(clientesListControllerProvider).cargando) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    expect(
+      container.read(clientesListControllerProvider).clientes.singleWhere((c) => c.id == clienteId).estatus,
+      'prospecto',
+    );
+
+    final notifier = container.read(clienteExpedienteControllerProvider(clienteId).notifier);
+    final exito = await notifier.cambiarEstatus(EstatusCliente.activo);
+    expect(exito, isTrue);
+
+    // `invalidate` reprograma la reconstrucción para el siguiente
+    // microtask — se espera esa vuelta antes de leer, sin tocar
+    // `recargar()` ni ningún mecanismo manual.
+    await Future<void>.delayed(Duration.zero);
+    while (container.read(clientesListControllerProvider).cargando) {
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    expect(
+      container.read(clientesListControllerProvider).clientes.singleWhere((c) => c.id == clienteId).estatus,
+      'activo',
+    );
   });
 
   test('agregarContacto exitoso refresca la lista de contactos sin salir de edición', () async {

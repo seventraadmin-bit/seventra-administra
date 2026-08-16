@@ -6,15 +6,18 @@ import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/finanzas/data/tables/egreso_table.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_comprobante_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_egreso_usecase.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../pagos/pagos_list_screen.dart' show formaPagoLabel, formatoCentavosPago;
 import '../egresos_controller.dart';
 import '../egresos_list_screen.dart' show egresoEstatusLabel, egresoEstatusTono;
 import 'corregir_egreso_dialog.dart';
+import 'eliminar_egreso_fisicamente_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
@@ -116,12 +119,20 @@ class _EgresoDetalleDialogState extends ConsumerState<EgresoDetalleDialog> {
       ),
       onConfirm: () async => true,
     );
+    // El diálogo de confirmación todavía está en su transición de
+    // cierre (fade/scale) cuando este `await` regresa — su
+    // `RisegTextField` sigue montado y usando `motivoController` en
+    // esos últimos frames. Destruirlo aquí mismo, de forma síncrona,
+    // producía "A TextEditingController was used after being disposed"
+    // (Etapa 15, pantalla roja real reproducida en prueba). Se difiere
+    // con `addPostFrameCallback` — mismo patrón ya usado y probado en
+    // `riseg_eliminar_fisicamente_dialog.dart:86` — nunca `Future.delayed`.
     if (confirmado != true) {
-      motivoController.dispose();
+      WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
       return;
     }
     final motivo = motivoController.text.trim();
-    motivoController.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
     if (!mounted) return;
 
     setState(() => _procesando = true);
@@ -141,10 +152,19 @@ class _EgresoDetalleDialogState extends ConsumerState<EgresoDetalleDialog> {
     }
   }
 
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarEgresoFisicamente(context, ref, widget.egresoId);
+    if (!eliminado) return;
+    ref.invalidate(egresosControllerProvider);
+    ref.invalidate(dashboardControllerProvider);
+    if (mounted) Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.colors;
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     Widget content;
     if (_cargando) {
@@ -262,22 +282,41 @@ class _EgresoDetalleDialogState extends ConsumerState<EgresoDetalleDialog> {
                   ),
                 ),
             const SizedBox(height: AppSpacing.lg),
-            if (!cancelado)
+            if (!cancelado || esMaestro)
               Wrap(
                 spacing: AppSpacing.xs,
                 runSpacing: AppSpacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  RisegButton(
-                    label: l10n.egresoDetalleBotonCorregir,
-                    variant: RisegButtonVariant.secondary,
-                    onPressed: _corregir,
-                  ),
-                  RisegButton(
-                    label: l10n.egresoDetalleBotonCancelar,
-                    variant: RisegButtonVariant.danger,
-                    loading: _procesando,
-                    onPressed: _cancelar,
-                  ),
+                  if (!cancelado) ...[
+                    RisegButton(
+                      label: l10n.egresoDetalleBotonCorregir,
+                      variant: RisegButtonVariant.secondary,
+                      onPressed: _corregir,
+                    ),
+                    RisegButton(
+                      label: l10n.egresoDetalleBotonCancelar,
+                      variant: RisegButtonVariant.danger,
+                      loading: _procesando,
+                      onPressed: _cancelar,
+                    ),
+                  ],
+                  // Extraordinaria (Maestro) — nunca depende del
+                  // estatus: un Egreso ya cancelado (captura de prueba)
+                  // sigue siendo elegible para limpiar por completo.
+                  if (esMaestro)
+                    RisegActionsMenu(
+                      menuKey: const Key('egreso_menu_acciones'),
+                      actions: [
+                        RisegMenuAction(
+                          key: const Key('egreso_accion_eliminar_fisicamente'),
+                          label: l10n.eliminacionFisicaAccionMenu,
+                          icon: Icons.delete_forever_outlined,
+                          destructive: true,
+                          onTap: _eliminarFisicamente,
+                        ),
+                      ],
+                    ),
                 ],
               ),
           ],

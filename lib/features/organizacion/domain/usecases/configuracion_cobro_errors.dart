@@ -7,6 +7,7 @@ enum CampoConfiguracionCobro {
   metodo,
   requiereComplemento,
   entidadFiscal,
+  clientePortal,
   fechaInicioVigencia,
   correos,
 

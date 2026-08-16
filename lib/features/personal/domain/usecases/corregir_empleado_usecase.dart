@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
 import '../repositories/empleado_repository.dart';
@@ -31,6 +32,10 @@ class CorregirEmpleadoExperienciaInvalida extends CorregirEmpleadoResultado {}
 /// Datos bancarios (Etapa 6A): tras aplicar los cambios, se capturó
 /// algo pero falta el banco, o falta tanto tarjeta/cuenta como CLABE.
 class CorregirEmpleadoDatosBancariosInvalidos extends CorregirEmpleadoResultado {}
+
+/// Se seleccionó (o ya estaba seleccionado) el banco "Otro" (Etapa 15)
+/// sin capturar cuál banco es en realidad.
+class CorregirEmpleadoBancoOtroDescripcionRequerida extends CorregirEmpleadoResultado {}
 
 class CorregirEmpleadoSueldoAdministrativoInvalido extends CorregirEmpleadoResultado {}
 
@@ -87,6 +92,8 @@ class CorregirEmpleadoUseCase {
     bool limpiarSucursal = false,
     String? bancoId,
     bool limpiarBanco = false,
+    String? bancoOtroDescripcion,
+    bool limpiarBancoOtroDescripcion = false,
     String? numeroCuentaTarjeta,
     bool limpiarNumeroCuentaTarjeta = false,
     String? clabe,
@@ -146,6 +153,20 @@ class CorregirEmpleadoUseCase {
     )) {
       return CorregirEmpleadoDatosBancariosInvalidos();
     }
+    // Se limpia siempre que el banco EFECTIVO deje de ser "Otro" — no
+    // solo cuando se limpia el banco por completo (`limpiarBanco`):
+    // cambiar de "Otro" a un banco normal (ej. BBVA) también debe
+    // limpiar la descripción, o quedaría huérfana apuntando a un banco
+    // que ya no es "Otro".
+    final bancoOtroDescripcionEfectiva = (bancoIdEfectivo != SeedIds.bancoOtro || limpiarBancoOtroDescripcion)
+        ? null
+        : (bancoOtroDescripcion != null ? _vacioANull(bancoOtroDescripcion) : actual.bancoOtroDescripcion);
+    if (!_validator.bancoOtroDescripcionValida(
+      bancoId: bancoIdEfectivo,
+      bancoOtroDescripcion: bancoOtroDescripcionEfectiva,
+    )) {
+      return CorregirEmpleadoBancoOtroDescripcionRequerida();
+    }
 
     final sueldoAdministrativoEfectivo =
         limpiarSueldoMensualAdministrativo ? null : (sueldoMensualAdministrativo ?? actual.sueldoMensualAdministrativo);
@@ -181,6 +202,9 @@ class CorregirEmpleadoUseCase {
         parentescoEmergencia:
             parentescoEmergencia == null ? const Value.absent() : Value(_vacioANull(parentescoEmergencia)),
         bancoId: limpiarBanco ? const Value(null) : (bancoId == null ? const Value.absent() : Value(bancoId)),
+        bancoOtroDescripcion: (bancoIdEfectivo != SeedIds.bancoOtro || limpiarBancoOtroDescripcion)
+            ? const Value(null)
+            : (bancoOtroDescripcion == null ? const Value.absent() : Value(_vacioANull(bancoOtroDescripcion))),
         numeroCuentaTarjeta: limpiarNumeroCuentaTarjeta
             ? const Value(null)
             : (numeroCuentaTarjeta == null ? const Value.absent() : Value(_vacioANull(numeroCuentaTarjeta))),

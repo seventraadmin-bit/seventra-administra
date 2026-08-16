@@ -16,11 +16,20 @@ class CandidatoDocumentoPorEmitir {
     required this.periodoFin,
     required this.configuracionCobroVigenciaId,
     this.entidadFiscalId,
+    this.clientePortalId,
   });
 
   final String servicioId;
   final String clienteId;
   final String? entidadFiscalId;
+
+  /// Qué `ClientePortal` usa la vigencia de este candidato — nunca es
+  /// criterio de compatibilidad de agrupación (a diferencia de Entidad
+  /// fiscal): dos Servicios con portales distintos se agrupan igual si
+  /// cumplen el resto de las condiciones; el documento resultante solo
+  /// hereda el portal del primer candidato del grupo, mismo criterio que
+  /// `entidadFiscalId` cuando `tipoDocumento != cfdi`.
+  final String? clientePortalId;
   final String tipoDocumento;
   final String metodo;
   final bool requiereComplemento;

@@ -8,18 +8,22 @@ import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/cliente_portal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_vigencia_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_errors.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/corregir_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
@@ -32,6 +36,7 @@ void main() {
   late ClienteRepositoryImpl clienteRepo;
   late ServicioRepositoryImpl servicioRepo;
   late EntidadFiscalRepositoryImpl entidadFiscalRepo;
+  late ClientePortalRepositoryImpl clientePortalRepo;
   late ServicioComercialRepositoryImpl comercialRepo;
   late ConfiguracionCobroRepositoryImpl configuracionCobroRepo;
   late CrearServicioUseCase crearServicio;
@@ -45,6 +50,7 @@ void main() {
     clienteRepo = ClienteRepositoryImpl(db);
     servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+    clientePortalRepo = ClientePortalRepositoryImpl(db);
     final puestoRepo = PuestoRepositoryImpl(db);
     final catalogoRepo = CatalogoRepositoryImpl(db);
     comercialRepo = ServicioComercialRepositoryImpl(db);
@@ -53,7 +59,7 @@ void main() {
     final lineaComercialValidator =
         LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, configuracionCobroRepo);
     final configuracionCobroValidator =
-        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
+        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo, clientePortalRepo);
 
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     crearLineaComercial = CrearLineaComercialUseCase(comercialRepo, servicioRepo, lineaComercialValidator);
@@ -62,7 +68,7 @@ void main() {
       configuracionCobroRepo,
       servicioRepo,
       configuracionCobroValidator,
-      const ConfiguracionCobroReglaEventoValidator(),
+      const ConfiguracionCobroEtapaValidator(),
     );
   });
 
@@ -531,6 +537,271 @@ void main() {
       );
 
       expect(resultadoLinea, isA<CrearLineaComercialErroresValidacion>());
+    });
+  });
+
+  group('Escenario real — Residencial Tikal (Etapa 15, diagnóstico y corrección)', () {
+    // Datos exactamente como los capturó Marlon: Documento=Recibo de pago,
+    // Frecuencia=Mensual, Día inicio=1, Agrupación=Por Cliente,
+    // Método=PUE, Complemento=No, Entidad fiscal=seleccionada,
+    // Vigente desde=01/06/2026, Emisión=día fijo/mismo mes/día 19,
+    // Procesamiento=día fijo/mismo mes/día 19, Pago esperado=día
+    // fijo/mismo mes/día 20, Portal/Cuenta/Observaciones/Correos vacíos.
+    ConfiguracionCobroBorrador borradorTikal(String entidadFiscalId, {required MetodoPagoCobro metodo}) {
+      return ConfiguracionCobroBorrador(
+        tipoDocumento: TipoDocumentoCobro.reciboDePago,
+        frecuenciaId: SeedIds.frecuenciaCobroMensual,
+        diaInicioPeriodo: 1,
+        agrupacion: AgrupacionCobro.porCliente,
+        metodo: metodo,
+        requiereComplemento: false,
+        fechaInicioVigencia: DateTime(2026, 6, 1),
+        entidadFiscalId: entidadFiscalId,
+      );
+    }
+
+    List<EtapaCobroBorrador> reglasTikal() => const [
+          EtapaCobroBorrador(
+            id: 'tikal-emision',
+            tipoSistema: TipoEventoCobro.emision,
+            orden: 0,
+            tipoRegla: TipoReglaEvento.diaFijoDelMes,
+            mesRelativo: MesRelativoCobro.actual,
+            diaDelMes: 19,
+          ),
+          EtapaCobroBorrador(
+            id: 'tikal-procesamiento',
+            tipoSistema: TipoEventoCobro.procesamiento,
+            orden: 1,
+            tipoRegla: TipoReglaEvento.diaFijoDelMes,
+            mesRelativo: MesRelativoCobro.actual,
+            diaDelMes: 19,
+          ),
+          EtapaCobroBorrador(
+            id: 'tikal-pago',
+            tipoSistema: TipoEventoCobro.pagoEsperado,
+            orden: 2,
+            tipoRegla: TipoReglaEvento.diaFijoDelMes,
+            mesRelativo: MesRelativoCobro.actual,
+            diaDelMes: 20,
+          ),
+        ];
+
+    test('reproduce el bug: Recibo de pago + PUE es rechazado por una regla real, no un mensaje genérico', () async {
+      final cliente = await crearClienteDePrueba(codigo: 'CLI-TIKAL', nombre: 'Residencial Tikal');
+      final servicio = await crearServicioDePrueba(cliente.id, nombre: 'Vigilancia Tikal', fechaInicio: DateTime(2026, 1, 1));
+      final entidad = await crearEntidadFiscalDePrueba(cliente.id, codigo: 'ENF-TIKAL', razonSocial: 'Tikal SA de CV', rfc: 'TIK010101AA1');
+      await agregarLineaComercialDePrueba(servicio.id, tratamientoIva: TratamientoIva.noAplica);
+
+      final resultado = await crearConfiguracionCobro.ejecutar(
+        servicioId: servicio.id,
+        borrador: borradorTikal(entidad.id, metodo: MetodoPagoCobro.pue),
+        etapas: reglasTikal(),
+      );
+
+      expect(resultado, isA<CrearConfiguracionCobroErroresValidacion>());
+      final fallo = resultado as CrearConfiguracionCobroErroresValidacion;
+      // La causa real y única: Recibo de pago no admite PUE/PPD — regla de
+      // negocio correcta (Etapa 4H.1), no un bug del validador. La
+      // Entidad fiscal seleccionada nunca fue evaluada para Recibo, y las
+      // 3 reglas de evento (día 19/19/20) son válidas por sí mismas.
+      expect(fallo.errores, hasLength(1));
+      expect(fallo.errores.single.codigo, CodigoErrorConfiguracionCobro.metodoInvalidoParaRecibo);
+      expect(fallo.errores.single.campo, CampoConfiguracionCobro.metodo);
+      expect(fallo.erroresEtapas, isEmpty, reason: 'emisión/procesamiento el mismo día no está prohibido');
+    });
+
+    test('corregido: Recibo de pago + método "No aplica" se acepta con las mismas reglas y datos', () async {
+      final cliente = await crearClienteDePrueba(codigo: 'CLI-TIKAL', nombre: 'Residencial Tikal');
+      final servicio = await crearServicioDePrueba(cliente.id, nombre: 'Vigilancia Tikal', fechaInicio: DateTime(2026, 1, 1));
+      final entidad = await crearEntidadFiscalDePrueba(cliente.id, codigo: 'ENF-TIKAL', razonSocial: 'Tikal SA de CV', rfc: 'TIK010101AA1');
+      await agregarLineaComercialDePrueba(servicio.id, tratamientoIva: TratamientoIva.noAplica);
+
+      final resultado = await crearConfiguracionCobro.ejecutar(
+        servicioId: servicio.id,
+        borrador: borradorTikal(entidad.id, metodo: MetodoPagoCobro.noAplica),
+        etapas: reglasTikal(),
+      );
+
+      expect(resultado, isA<CrearConfiguracionCobroExitoso>());
+      final exito = resultado as CrearConfiguracionCobroExitoso;
+      expect(exito.vigencia.metodo, 'noAplica');
+      expect(exito.vigencia.agrupacion, 'porCliente');
+
+      final configuracion = await configuracionCobroRepo.obtenerConfiguracion(servicio.id);
+      expect(configuracion!.etapas, hasLength(3));
+      expect(configuracion.correos, isEmpty);
+      expect(configuracion.vigenciaActual?.cuentaBancaria, isNull);
+      expect(configuracion.vigenciaActual?.portalNombre, isNull);
+      expect(configuracion.vigenciaActual?.observaciones, isNull);
+    });
+  });
+
+  group('Corregir Configuración de cobro (Etapa 15 — sin historia)', () {
+    late CorregirConfiguracionCobroUseCase corregirConfiguracionCobro;
+    late CambiarVigenciaConfiguracionCobroUseCase cambiarVigenciaConfiguracionCobro;
+
+    setUp(() {
+      final configuracionCobroValidator =
+          ConfiguracionCobroValidator(
+              servicioRepo, entidadFiscalRepo, CatalogoRepositoryImpl(db), comercialRepo, clientePortalRepo);
+      corregirConfiguracionCobro = CorregirConfiguracionCobroUseCase(
+        configuracionCobroRepo,
+        configuracionCobroValidator,
+        const ConfiguracionCobroEtapaValidator(),
+      );
+      cambiarVigenciaConfiguracionCobro = CambiarVigenciaConfiguracionCobroUseCase(
+        configuracionCobroRepo,
+        servicioRepo,
+        configuracionCobroValidator,
+        const ConfiguracionCobroEtapaValidator(),
+      );
+    });
+
+    Future<String> crearConfiguracionDePrueba(String servicioId) async {
+      final resultado = await crearConfiguracionCobro.ejecutar(
+        servicioId: servicioId,
+        borrador: ConfiguracionCobroBorrador(
+          tipoDocumento: TipoDocumentoCobro.reciboDePago,
+          frecuenciaId: SeedIds.frecuenciaCobroMensual,
+          diaInicioPeriodo: 1,
+          agrupacion: AgrupacionCobro.porServicio,
+          metodo: MetodoPagoCobro.noAplica,
+          requiereComplemento: false,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+      return ((resultado as CrearConfiguracionCobroExitoso).configuracion).id;
+    }
+
+    test('corrige in-place una configuración recién creada, sin generar una nueva vigencia', () async {
+      final cliente = await crearClienteDePrueba();
+      final servicio = await crearServicioDePrueba(cliente.id);
+      await agregarLineaComercialDePrueba(servicio.id);
+      final configuracionId = await crearConfiguracionDePrueba(servicio.id);
+      final vigenciaOriginalId = (await configuracionCobroRepo.listarHistorial(configuracionId)).single.id;
+
+      final resultado = await corregirConfiguracionCobro.ejecutar(
+        configuracionCobroId: configuracionId,
+        borrador: ConfiguracionCobroBorrador(
+          tipoDocumento: TipoDocumentoCobro.reciboDePago,
+          frecuenciaId: SeedIds.frecuenciaCobroMensual,
+          diaInicioPeriodo: 5, // corrige un error de captura (se quería día 5, no día 1)
+          agrupacion: AgrupacionCobro.porServicio,
+          metodo: MetodoPagoCobro.noAplica,
+          requiereComplemento: false,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CorregirConfiguracionCobroExitoso>());
+      final vigenciaCorregida = (resultado as CorregirConfiguracionCobroExitoso).vigencia;
+      expect(vigenciaCorregida.id, vigenciaOriginalId, reason: 'muta el mismo registro, no crea uno nuevo');
+      expect(vigenciaCorregida.diaInicioPeriodo, 5);
+
+      final historial = await configuracionCobroRepo.listarHistorial(configuracionId);
+      expect(historial, hasLength(1), reason: 'corregir nunca cierra+inserta, solo muta la única vigencia');
+
+      final configuracion = await configuracionCobroRepo.obtenerConfiguracion(servicio.id);
+      expect(configuracion!.esCorregible, isTrue);
+    });
+
+    test('no reescribe una configuración que ya pasó por "Nueva vigencia"', () async {
+      final cliente = await crearClienteDePrueba();
+      final servicio = await crearServicioDePrueba(cliente.id);
+      await agregarLineaComercialDePrueba(servicio.id);
+      final configuracionId = await crearConfiguracionDePrueba(servicio.id);
+
+      await cambiarVigenciaConfiguracionCobro.ejecutar(
+        configuracionCobroId: configuracionId,
+        borrador: ConfiguracionCobroBorrador(
+          tipoDocumento: TipoDocumentoCobro.reciboDePago,
+          frecuenciaId: SeedIds.frecuenciaCobroMensual,
+          diaInicioPeriodo: 1,
+          agrupacion: AgrupacionCobro.porServicio,
+          metodo: MetodoPagoCobro.noAplica,
+          requiereComplemento: false,
+          fechaInicioVigencia: DateTime(2027, 1, 1),
+        ),
+      );
+
+      final resultado = await corregirConfiguracionCobro.ejecutar(
+        configuracionCobroId: configuracionId,
+        borrador: ConfiguracionCobroBorrador(
+          tipoDocumento: TipoDocumentoCobro.reciboDePago,
+          frecuenciaId: SeedIds.frecuenciaCobroMensual,
+          diaInicioPeriodo: 9,
+          agrupacion: AgrupacionCobro.porServicio,
+          metodo: MetodoPagoCobro.noAplica,
+          requiereComplemento: false,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CorregirConfiguracionCobroTieneHistoria>());
+      final configuracion = await configuracionCobroRepo.obtenerConfiguracion(servicio.id);
+      expect(configuracion!.esCorregible, isFalse);
+    });
+
+    test('no reescribe una vigencia que ya generó un DocumentoPorEmitirConfiguracion', () async {
+      final cliente = await crearClienteDePrueba();
+      final servicio = await crearServicioDePrueba(cliente.id);
+      await agregarLineaComercialDePrueba(servicio.id);
+      final configuracionId = await crearConfiguracionDePrueba(servicio.id);
+      final vigenciaId = (await configuracionCobroRepo.listarHistorial(configuracionId)).single.id;
+
+      final documento = await db.into(db.documentoPorEmitir).insertReturning(
+            DocumentoPorEmitirCompanion.insert(
+              codigo: 'DOC-0001',
+              clienteId: cliente.id,
+              tipoDocumento: 'reciboDePago',
+              agrupacion: 'porServicio',
+              metodo: 'noAplica',
+              periodoInicio: DateTime(2026, 1, 1),
+              periodoFin: DateTime(2026, 1, 31),
+              generationKey: 'GK-0001',
+              importeBaseEsperado: 3000000,
+              importeFinalEsperado: 3000000,
+            ),
+          );
+      await db.into(db.documentoPorEmitirConfiguracion).insert(
+            DocumentoPorEmitirConfiguracionCompanion.insert(
+              documentoPorEmitirId: documento.id,
+              servicioId: servicio.id,
+              configuracionCobroVigenciaId: vigenciaId,
+            ),
+          );
+
+      final resultado = await corregirConfiguracionCobro.ejecutar(
+        configuracionCobroId: configuracionId,
+        borrador: ConfiguracionCobroBorrador(
+          tipoDocumento: TipoDocumentoCobro.reciboDePago,
+          frecuenciaId: SeedIds.frecuenciaCobroMensual,
+          diaInicioPeriodo: 9,
+          agrupacion: AgrupacionCobro.porServicio,
+          metodo: MetodoPagoCobro.noAplica,
+          requiereComplemento: false,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(resultado, isA<CorregirConfiguracionCobroTieneHistoria>());
+    });
+
+    test('configuración inexistente', () async {
+      final resultado = await corregirConfiguracionCobro.ejecutar(
+        configuracionCobroId: 'no-existe',
+        borrador: ConfiguracionCobroBorrador(
+          tipoDocumento: TipoDocumentoCobro.reciboDePago,
+          frecuenciaId: SeedIds.frecuenciaCobroMensual,
+          diaInicioPeriodo: 1,
+          agrupacion: AgrupacionCobro.porServicio,
+          metodo: MetodoPagoCobro.noAplica,
+          requiereComplemento: false,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+        ),
+      );
+      expect(resultado, isA<CorregirConfiguracionCobroNoExiste>());
     });
   });
 }

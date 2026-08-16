@@ -1,10 +1,10 @@
-// Pruebas de pantalla de los diálogos de sueldo/bono acordado (ajuste
-// funcional final de la Etapa 6B) — Asignar/Cambiar Servicio, Alta de
-// Personal con adscripción a Servicio, y Actualizar sueldo/bono de una
-// asignación vigente. Cada diálogo se monta sobre un host mínimo
-// (un botón que lo abre) — el mismo criterio que las pruebas de pantalla
-// de Organización, sin necesitar la pantalla de listado/expediente
-// completa para ejercer el diálogo en sí.
+// Pruebas de pantalla de los diálogos de sueldo/bono acordado (Etapa
+// 15, rediseño de "Condiciones de Personal") — Asignar/Cambiar
+// Servicio, Alta de Personal con adscripción a Servicio, y Actualizar
+// sueldo/bono de una asignación vigente. Cada diálogo se monta sobre
+// un host mínimo (un botón que lo abre) — el mismo criterio que las
+// pruebas de pantalla de Organización, sin necesitar la pantalla de
+// listado/expediente completa para ejercer el diálogo en sí.
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -24,12 +24,15 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/guardar_sueldo_referencia_servicio_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
@@ -42,6 +45,7 @@ import 'package:riseg_one/features/personal/presentation/empleados/widgets/actua
 import 'package:riseg_one/features/personal/presentation/empleados/widgets/asignar_servicio_empleado_dialog.dart';
 import 'package:riseg_one/features/personal/presentation/empleados/widgets/cambiar_servicio_empleado_dialog.dart';
 import 'package:riseg_one/features/personal/presentation/empleados/widgets/crear_empleado_dialog.dart';
+import 'package:riseg_one/features/personal/presentation/empleados/widgets/sueldo_acordado_fields.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
@@ -91,6 +95,15 @@ Future<void> _elegirEnSelector(WidgetTester tester, String label, String opcionT
   await tester.pumpAndSettle();
 }
 
+/// Etiqueta real del selector de línea comercial para el (único) perfil
+/// de un Servicio — se calcula en vez de fijarse a mano en cada prueba
+/// para no depender de coincidir "24×24" (con el signo de multiplicar
+/// real del catálogo) carácter por carácter.
+Future<String> _etiquetaLineaUnica(AppDatabase db, AppLocalizations l10n, String servicioId) async {
+  final lineas = await ServicioComercialRepositoryImpl(db).listarLineas(servicioId);
+  return etiquetaLineaComercial(l10n, lineas.single);
+}
+
 Future<void> _pumpHost(WidgetTester tester, AppDatabase db, Widget Function(BuildContext, WidgetRef) contenido) async {
   tester.view.physicalSize = const Size(1440, 2400);
   tester.view.devicePixelRatio = 1.0;
@@ -117,10 +130,12 @@ Future<void> _pumpHost(WidgetTester tester, AppDatabase db, Widget Function(Buil
 void main() {
   late AppDatabase db;
   var clienteContador = 0;
+  var puestoContador = 0;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     clienteContador = 0;
+    puestoContador = 0;
     // Fila real de Usuario para el `usuarioId` de `_SesionControllerDePrueba`
     // (Etapa 11D): `actorUsuarioId` ahora es una FK real hacia `Usuario` en
     // las tablas de evento que estos diálogos escriben, así que un id
@@ -138,10 +153,19 @@ void main() {
 
   tearDown(() => db.close());
 
+  /// Por defecto ya deja una línea comercial con
+  /// `sueldoMensualReferenciaPersonal`/`bonoMensualReferenciaPersonal`
+  /// capturados (Etapa 15) — para que los diálogos que solo prueban otro
+  /// comportamiento no tengan que resolver la precarga en cada caso.
+  /// Pasar `sueldoMensualReferencia: null` explícitamente para probar el
+  /// camino "sin referencia" (la línea existe igual, solo sin sueldo
+  /// capturado); pasar `conLinea: false` para probar un Servicio sin
+  /// ninguna línea comercial vigente.
   Future<ServicioData> crearServicio({
     String nombre = 'Vigilancia Sportium Toluca',
-    int? sueldoMensualReferencia,
-    int? bonoMensualReferencia,
+    int? sueldoMensualReferencia = 1500000,
+    int? bonoMensualReferencia = 0,
+    bool conLinea = true,
     bool activar = true,
   }) async {
     clienteContador++;
@@ -150,7 +174,7 @@ void main() {
     final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     final validator = ServicioValidator(clienteRepo, CatalogoRepositoryImpl(db));
     final crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, validator);
-    final guardarSueldoReferencia = GuardarSueldoReferenciaServicioUseCase(servicioRepo, validator);
+    final comercialRepo = ServicioComercialRepositoryImpl(db);
 
     final cliente = await clienteRepo.crear(
       ClienteCompanion.insert(codigo: 'CLI-${clienteContador.toString().padLeft(6, '0')}', nombreComercial: 'Sportium'),
@@ -161,13 +185,30 @@ void main() {
     );
     var servicio = (creado as GuardarServicioExitoso).servicio;
 
-    if (sueldoMensualReferencia != null || bonoMensualReferencia != null) {
-      final guardado = await guardarSueldoReferencia.ejecutar(
-        servicioId: servicio.id,
-        sueldoMensualReferenciaPersonal: sueldoMensualReferencia,
-        bonoMensualReferenciaPersonal: bonoMensualReferencia,
+    if (conLinea) {
+      puestoContador++;
+      final puesto = await PuestoRepositoryImpl(db).crear(
+        PuestoCompanion.insert(
+          codigo: 'PUE-${puestoContador.toString().padLeft(6, '0')}',
+          nombre: 'Elemento Operativo $puestoContador',
+          areaId: SeedIds.areaOperaciones,
+          tipo: 'operativo',
+          nivelJerarquico: 5,
+        ),
       );
-      servicio = (guardado as GuardarSueldoReferenciaServicioExitoso).servicio;
+      await comercialRepo.crearLinea(
+        servicioId: servicio.id,
+        datos: LineaComercialValidada(
+          puestoId: puesto.id,
+          modalidadTurnoId: SeedIds.modalidadTurno24x24,
+          cantidadElementos: 2,
+          precioUnitario: 100000,
+          tratamientoIva: TratamientoIva.noAplica,
+          fechaInicioVigencia: DateTime(2026, 1, 1),
+          sueldoMensualReferenciaPersonal: sueldoMensualReferencia,
+          bonoMensualReferenciaPersonal: bonoMensualReferencia,
+        ),
+      );
     }
 
     if (activar) {
@@ -199,6 +240,7 @@ void main() {
       GenerarNumeroUseCase(CodigoSecuenciaService(db)),
       const EmpleadoValidator(),
       ServicioRepositoryImpl(db, asignacionRepo),
+      ServicioComercialRepositoryImpl(db),
     );
     final resultado = await crearEmpleado.ejecutar(
       nombres: 'Juan',
@@ -216,7 +258,7 @@ void main() {
   }
 
   group('AsignarServicioEmpleadoDialog', () {
-    testWidgets('precarga sueldo/bono desde la referencia del Servicio y asigna con éxito', (tester) async {
+    testWidgets('elegir el perfil/línea comercial precarga sueldo/bono y asigna con éxito', (tester) async {
       final empleado = await crearEmpleado();
       final servicio = await crearServicio(sueldoMensualReferencia: 1600000, bonoMensualReferencia: 300000);
       bool? resultado;
@@ -237,12 +279,15 @@ void main() {
       await tester.pumpAndSettle();
 
       await _elegirEnSelector(tester, l10n.empleadoCampoServicio, servicio.nombre);
+      expect(_selector(l10n.empleadoCampoLineaComercial), findsOneWidget, reason: 'una única línea vigente debe ofrecerse en el selector');
+      await _elegirEnSelector(tester, l10n.empleadoCampoLineaComercial, await _etiquetaLineaUnica(db, l10n, servicio.id));
 
       // La precarga ya llenó "Sueldo acordado"/"Bono acordado" con la
-      // referencia del Servicio ($16,000.00 / $3,000.00) — se confirma
+      // referencia de la línea ($16,000.00 / $3,000.00) — se confirma
       // tal cual, sin editar nada.
       expect(_textoDe(tester, _campoTexto(l10n.empleadoCampoSueldoAcordado)), '16000.00');
       expect(_textoDe(tester, _campoTexto(l10n.empleadoCampoBonoAcordado)), '3000.00');
+      expect(find.textContaining('16,000.00'), findsWidgets, reason: 'la referencia del perfil también se muestra en su propio texto');
 
       await tester.tap(find.text(l10n.asignarServicioEmpleadoBotonConfirmar));
       await tester.pumpAndSettle();
@@ -251,7 +296,7 @@ void main() {
       expect(find.text(l10n.asignarServicioEmpleadoExito), findsOneWidget);
     });
 
-    testWidgets('permite una excepción individual que sustituye la precarga', (tester) async {
+    testWidgets('permite una excepción individual que sustituye la precarga de la línea', (tester) async {
       final empleado = await crearEmpleado();
       final servicio = await crearServicio(sueldoMensualReferencia: 1600000, bonoMensualReferencia: 300000);
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
@@ -269,6 +314,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await _elegirEnSelector(tester, l10n.empleadoCampoServicio, servicio.nombre);
+      await _elegirEnSelector(tester, l10n.empleadoCampoLineaComercial, await _etiquetaLineaUnica(db, l10n, servicio.id));
 
       await tester.enterText(_campoTexto(l10n.empleadoCampoSueldoAcordado), '2000');
       await tester.enterText(_campoTexto(l10n.empleadoCampoBonoAcordado), '0');
@@ -285,7 +331,7 @@ void main() {
       expect(vigencias.single.bonoMensual, 0, reason: r'bono $0 explícito sí es válido');
     });
 
-    testWidgets('muestra un mensaje claro cuando el Servicio no tiene sueldo de referencia y no hay excepción', (tester) async {
+    testWidgets('rechaza confirmar sin elegir línea cuando el Servicio tiene una vigente', (tester) async {
       final empleado = await crearEmpleado();
       final servicio = await crearServicio();
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
@@ -304,6 +350,32 @@ void main() {
 
       await _elegirEnSelector(tester, l10n.empleadoCampoServicio, servicio.nombre);
 
+      await tester.tap(find.text(l10n.asignarServicioEmpleadoBotonConfirmar));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.empleadoErrorLineaComercialRequerida), findsOneWidget, reason: 'el diálogo debe seguir abierto mostrando el mensaje claro');
+    });
+
+    testWidgets('muestra un mensaje claro cuando la línea elegida no tiene sueldo de referencia y no hay excepción', (tester) async {
+      final empleado = await crearEmpleado();
+      final servicio = await crearServicio(sueldoMensualReferencia: null, bonoMensualReferencia: null);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      await _pumpHost(
+        tester,
+        db,
+        (context, ref) => ElevatedButton(
+          key: const Key('abrir'),
+          onPressed: () => mostrarDialogoAsignarServicioEmpleado(context, ref, empleado),
+          child: const Text('abrir'),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('abrir')));
+      await tester.pumpAndSettle();
+
+      await _elegirEnSelector(tester, l10n.empleadoCampoServicio, servicio.nombre);
+      await _elegirEnSelector(tester, l10n.empleadoCampoLineaComercial, await _etiquetaLineaUnica(db, l10n, servicio.id));
+
       expect(find.textContaining(l10n.servicioCondicionesPersonalValorSinConfigurar), findsWidgets);
       expect(_textoDe(tester, _campoTexto(l10n.empleadoCampoSueldoAcordado)), isEmpty);
 
@@ -312,23 +384,61 @@ void main() {
 
       expect(find.text(l10n.empleadoErrorSueldoRequerido), findsOneWidget, reason: 'el diálogo debe seguir abierto mostrando el mensaje claro');
     });
+
+    testWidgets('un Servicio sin ninguna línea comercial vigente no ofrece el selector de perfil, pero sí acepta sueldo manual', (tester) async {
+      final empleado = await crearEmpleado();
+      final servicio = await crearServicio(conLinea: false);
+      final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+
+      await _pumpHost(
+        tester,
+        db,
+        (context, ref) => ElevatedButton(
+          key: const Key('abrir'),
+          onPressed: () => mostrarDialogoAsignarServicioEmpleado(context, ref, empleado),
+          child: const Text('abrir'),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('abrir')));
+      await tester.pumpAndSettle();
+
+      await _elegirEnSelector(tester, l10n.empleadoCampoServicio, servicio.nombre);
+      expect(_selector(l10n.empleadoCampoLineaComercial), findsNothing, reason: 'sin líneas vigentes no hay nada que elegir');
+      expect(_campoTexto(l10n.empleadoCampoSueldoAcordado), findsOneWidget, reason: 'el campo debe seguir visible para capturar la excepción manual');
+
+      await tester.enterText(_campoTexto(l10n.empleadoCampoSueldoAcordado), '1500');
+
+      await tester.tap(find.text(l10n.asignarServicioEmpleadoBotonConfirmar));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.asignarServicioEmpleadoExito), findsOneWidget);
+    });
   });
 
   group('CambiarServicioEmpleadoDialog', () {
-    testWidgets('precarga sueldo/bono desde la referencia del nuevo Servicio', (tester) async {
+    testWidgets('elegir el perfil/línea comercial del nuevo Servicio precarga sueldo/bono', (tester) async {
       final empleado = await crearEmpleado();
       final servicioA = await crearServicio(nombre: 'Servicio A', sueldoMensualReferencia: 1500000, bonoMensualReferencia: 0);
       final servicioB = await crearServicio(nombre: 'Servicio B', sueldoMensualReferencia: 2200000, bonoMensualReferencia: 400000);
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
       final asignacionRepo = AsignacionServicioRepositoryImpl(db);
+      final servicioRepo = ServicioRepositoryImpl(db, asignacionRepo);
+      final comercialRepo = ServicioComercialRepositoryImpl(db);
       final asignarUseCase = AsignarEmpleadoServicioUseCase(
         EmpleadoRepositoryImpl(db, asignacionRepo),
         asignacionRepo,
-        ServicioRepositoryImpl(db, asignacionRepo),
+        servicioRepo,
+        comercialRepo,
         const AsignacionServicioValidator(),
       );
-      await asignarUseCase.ejecutar(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2026, 1, 1));
+      final lineasA = await comercialRepo.listarLineas(servicioA.id);
+      await asignarUseCase.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicioA.id,
+        fechaInicio: DateTime(2026, 1, 1),
+        lineaComercialId: lineasA.single.linea.id,
+      );
 
       await _pumpHost(
         tester,
@@ -343,6 +453,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await _elegirEnSelector(tester, l10n.empleadoCampoServicioNuevo, servicioB.nombre);
+      await _elegirEnSelector(tester, l10n.empleadoCampoLineaComercial, await _etiquetaLineaUnica(db, l10n, servicioB.id));
 
       expect(_textoDe(tester, _campoTexto(l10n.empleadoCampoSueldoAcordado)), '22000.00');
       expect(_textoDe(tester, _campoTexto(l10n.empleadoCampoBonoAcordado)), '4000.00');
@@ -359,13 +470,21 @@ void main() {
       final empleado = await crearEmpleado();
       final servicio = await crearServicio(sueldoMensualReferencia: 1500000, bonoMensualReferencia: 0);
       final asignacionRepo = AsignacionServicioRepositoryImpl(db);
+      final comercialRepo = ServicioComercialRepositoryImpl(db);
       final asignarUseCase = AsignarEmpleadoServicioUseCase(
         EmpleadoRepositoryImpl(db, asignacionRepo),
         asignacionRepo,
         ServicioRepositoryImpl(db, asignacionRepo),
+        comercialRepo,
         const AsignacionServicioValidator(),
       );
-      final resultado = await asignarUseCase.ejecutar(empleadoId: empleado.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 1));
+      final lineas = await comercialRepo.listarLineas(servicio.id);
+      final resultado = await asignarUseCase.ejecutar(
+        empleadoId: empleado.id,
+        servicioId: servicio.id,
+        fechaInicio: DateTime(2026, 1, 1),
+        lineaComercialId: lineas.single.linea.id,
+      );
       return (resultado as AsignarEmpleadoServicioExitoso).asignacion;
     }
 
@@ -451,7 +570,7 @@ void main() {
   });
 
   group('CrearEmpleadoDialog con adscripción a Servicio', () {
-    testWidgets('seleccionar un Servicio con referencia precarga los campos de sueldo/bono acordado', (tester) async {
+    testWidgets('elegir el perfil/línea comercial de un Servicio precarga los campos de sueldo/bono acordado', (tester) async {
       final servicio = await crearServicio(sueldoMensualReferencia: 1700000, bonoMensualReferencia: 250000);
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
@@ -469,12 +588,13 @@ void main() {
 
       await _elegirEnSelector(tester, l10n.empleadoCampoTipoAdscripcion, l10n.empleadoTipoAdscripcionServicio);
       await _elegirEnSelector(tester, l10n.empleadoCampoServicio, servicio.nombre);
+      await _elegirEnSelector(tester, l10n.empleadoCampoLineaComercial, await _etiquetaLineaUnica(db, l10n, servicio.id));
 
       expect(_textoDe(tester, _campoTexto(l10n.empleadoCampoSueldoAcordado)), '17000.00');
       expect(_textoDe(tester, _campoTexto(l10n.empleadoCampoBonoAcordado)), '2500.00');
     });
 
-    testWidgets('sin sueldo de referencia y sin excepción, confirmar muestra el mensaje claro', (tester) async {
+    testWidgets('sin elegir línea cuando el Servicio tiene una vigente, confirmar muestra el mensaje claro', (tester) async {
       final servicio = await crearServicio();
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
@@ -514,7 +634,7 @@ void main() {
       await tester.tap(find.text(l10n.crearEmpleadoBotonConfirmar));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.empleadoErrorSueldoRequerido), findsOneWidget, reason: 'el diálogo debe seguir abierto mostrando el mensaje claro');
+      expect(find.text(l10n.empleadoErrorLineaComercialRequerida), findsOneWidget, reason: 'el diálogo debe seguir abierto mostrando el mensaje claro');
     });
   });
 }

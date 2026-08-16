@@ -1,4 +1,5 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/validation/uuid_validator.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 
@@ -23,6 +24,10 @@ class CorregirDatosEmisionDocumentoPorEmitirMotivoRequerido extends CorregirDato
 class CorregirDatosEmisionDocumentoPorEmitirCamposNoPermitidosParaRecibo
     extends CorregirDatosEmisionDocumentoPorEmitirResultado {}
 
+/// El UUID/folio fiscal no cumple el formato estándar (8-4-4-4-12) —
+/// Etapa 15, corrección estructural CFDI real.
+class CorregirDatosEmisionDocumentoPorEmitirUuidFormatoInvalido extends CorregirDatosEmisionDocumentoPorEmitirResultado {}
+
 class CorregirDatosEmisionDocumentoPorEmitirImporteInvalido extends CorregirDatosEmisionDocumentoPorEmitirResultado {}
 
 class CorregirDatosEmisionDocumentoPorEmitirErrorInesperado extends CorregirDatosEmisionDocumentoPorEmitirResultado {
@@ -44,8 +49,6 @@ class CorregirDatosEmisionDocumentoPorEmitirUseCase {
     required String documentoPorEmitirId,
     required String motivo,
     String? folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     DateTime? fechaEmisionReal,
     int? importeEmitido,
@@ -67,8 +70,12 @@ class CorregirDatosEmisionDocumentoPorEmitirUseCase {
     }
 
     final esRecibo = TipoDocumentoCobro.values.byName(documento.tipoDocumento) == TipoDocumentoCobro.reciboDePago;
-    if (esRecibo && (serieFiscal != null || folioFiscal != null || uuid != null)) {
+    if (esRecibo && uuid != null) {
       return CorregirDatosEmisionDocumentoPorEmitirCamposNoPermitidosParaRecibo();
+    }
+
+    if (uuid != null && !esUuidFormatoValido(uuid)) {
+      return CorregirDatosEmisionDocumentoPorEmitirUuidFormatoInvalido();
     }
 
     if (importeEmitido != null && importeEmitido < 0) {
@@ -80,8 +87,6 @@ class CorregirDatosEmisionDocumentoPorEmitirUseCase {
         documentoPorEmitirId: documentoPorEmitirId,
         motivo: motivoLimpio,
         folioDocumento: folioDocumento,
-        serieFiscal: serieFiscal,
-        folioFiscal: folioFiscal,
         uuid: uuid,
         fechaEmisionReal: fechaEmisionReal,
         importeEmitido: importeEmitido,

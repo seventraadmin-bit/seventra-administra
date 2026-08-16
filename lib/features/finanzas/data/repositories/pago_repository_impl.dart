@@ -9,6 +9,7 @@ import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/repositories/pago_repository.dart';
+import '../../domain/usecases/eliminar_pago_fisicamente_usecase.dart';
 
 /// **Nota de arquitectura:** a diferencia de
 /// `DocumentoPorEmitirRepositoryImpl` (que depende de
@@ -574,5 +575,131 @@ class PagoRepositoryImpl implements PagoRepository {
             datosRelevantes: Value(datosRelevantes == null ? null : jsonEncode(datosRelevantes)),
           ),
         );
+  }
+
+  /// Único bloqueo real (Etapa 15): el Pago sigue activo (debe
+  /// cancelarse primero — eso ya cancela en cascada todas sus
+  /// `AplicacionPago` activas y su `Ingreso` automático, así que un
+  /// Pago `cancelado` nunca tiene aplicaciones vigentes que revisar
+  /// aquí), o tiene un `ComplementoPago` registrado — constancia de un
+  /// CFDI ya timbrado externamente ante el SAT, nunca elegible sin
+  /// importar su propio estatus.
+  @override
+  Future<ResumenEliminacionPago> obtenerResumenEliminacionFisica(String pagoId) async {
+    final pago = await obtenerPorId(pagoId);
+    if (pago == null) return const ResumenEliminacionPago(existe: false);
+
+    if (EstatusPago.values.byName(pago.estatus) != EstatusPago.cancelado) {
+      return const ResumenEliminacionPago(
+        existe: true,
+        detalleBloqueo: 'Este Pago sigue activo — cancélalo antes de poder eliminarlo físicamente.',
+      );
+    }
+
+    final complemento = await (_db.select(_db.complementoPago)..where((t) => t.pagoId.equals(pagoId))).getSingleOrNull();
+    if (complemento != null) {
+      return ResumenEliminacionPago(
+        existe: true,
+        detalleBloqueo:
+            'Este Pago tiene un Complemento de pago (CFDI ${complemento.folioFiscal ?? complemento.uuid}) '
+            'registrado — representa una obligación fiscal real, no puede eliminarse.',
+      );
+    }
+
+    return const ResumenEliminacionPago(existe: true);
+  }
+
+  /// Eliminación física extraordinaria (Etapa 15) — Maestro-only. El
+  /// único bloqueador real es historia posterior verificada por
+  /// [obtenerResumenEliminacionFisica] (Pago activo o Complemento
+  /// real); un Pago cancelado sin Complemento es siempre elegible, sin
+  /// importar cuántas aplicaciones canceladas tenga. Todo se limpia
+  /// explícitamente en una sola transacción: las `AplicacionPago`
+  /// canceladas (Resolución 6 de Marlon sigue rigiendo la operación
+  /// normal — esto es la excepción Maestro explícita de la Etapa 15,
+  /// igual que ya rige para `DocumentoPorEmitir`/`Cliente`/`Servicio`),
+  /// el `Ingreso` automático (ya cancelado, cascada de `cancelar()`)
+  /// con sus propios comprobantes, los comprobantes propios del Pago,
+  /// y finalmente el Pago. Nunca toca `CuentaPorCobrar` (ya volvió a
+  /// su saldo real al cancelarse cada aplicación) ni `ComplementoPago`
+  /// (bloqueador, nunca se llega aquí si existe).
+  @override
+  Future<EliminarPagoFisicamenteResultado> eliminarFisicamente({
+    required String pagoId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) async {
+    final pagoInicial = await obtenerPorId(pagoId);
+    if (pagoInicial == null) return EliminarPagoFisicamenteNoExiste();
+
+    final resumen = await obtenerResumenEliminacionFisica(pagoId);
+    if (resumen.bloqueado) {
+      return EliminarPagoFisicamenteTieneDependencias(resumen.detalleBloqueo!);
+    }
+
+    final aplicaciones = await listarAplicacionesPorPago(pagoId);
+    final eventosPago = await listarEventos(pagoId);
+    final ingreso = await (_db.select(_db.ingreso)..where((t) => t.pagoId.equals(pagoId))).getSingleOrNull();
+
+    final pagoAdjuntosQuery = _db.select(_db.attachment).join([
+      innerJoin(_db.pagoAttachment, _db.pagoAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.pagoAttachment.pagoId.equals(pagoId));
+    final pagoAdjuntos = await pagoAdjuntosQuery.map((row) => row.readTable(_db.attachment)).get();
+
+    List<AttachmentData> ingresoAdjuntos = const [];
+    if (ingreso != null) {
+      final ingresoAdjuntosQuery = _db.select(_db.attachment).join([
+        innerJoin(_db.ingresoAttachment, _db.ingresoAttachment.attachmentId.equalsExp(_db.attachment.id)),
+      ])
+        ..where(_db.ingresoAttachment.ingresoId.equals(ingreso.id));
+      ingresoAdjuntos = await ingresoAdjuntosQuery.map((row) => row.readTable(_db.attachment)).get();
+    }
+
+    await _db.transaction(() async {
+      final snapshot = <String, Object?>{
+        'pago': pagoInicial.toJson(),
+        'eventosPago': [for (final e in eventosPago) e.toJson()],
+        'aplicacionesPago': [for (final a in aplicaciones) a.toJson()],
+        'ingreso': ingreso?.toJson(),
+        'pagoAdjuntos': [for (final a in pagoAdjuntos) a.toJson()],
+        'ingresoAdjuntos': [for (final a in ingresoAdjuntos) a.toJson()],
+      };
+
+      // 1. Aplicaciones (todas canceladas, garantizado por el bloqueo
+      // de arriba) — `restrict` hacia Pago y CuentaPorCobrar.
+      for (final aplicacion in aplicaciones) {
+        await (_db.delete(_db.aplicacionPago)..where((t) => t.id.equals(aplicacion.id))).go();
+      }
+
+      // 2. Ingreso automático (ya cancelado) — `restrict` hacia Pago.
+      if (ingreso != null) {
+        for (final adjunto in ingresoAdjuntos) {
+          await (_db.delete(_db.attachment)..where((t) => t.id.equals(adjunto.id))).go();
+        }
+        await (_db.delete(_db.ingreso)..where((t) => t.id.equals(ingreso.id))).go();
+      }
+
+      // 3. Comprobantes propios del Pago.
+      for (final adjunto in pagoAdjuntos) {
+        await (_db.delete(_db.attachment)..where((t) => t.id.equals(adjunto.id))).go();
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'pago',
+              entidadIdOriginal: pagoId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode(snapshot),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+
+      // `PagoEvento` es `cascade` — se limpia solo al borrar el Pago.
+      await (_db.delete(_db.pago)..where((t) => t.id.equals(pagoId))).go();
+    });
+
+    return EliminarPagoFisicamenteExitoso();
   }
 }

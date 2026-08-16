@@ -1,4 +1,5 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/validation/uuid_validator.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 
@@ -21,9 +22,14 @@ class RegistrarEmisionDocumentoPorEmitirTransicionInvalida extends RegistrarEmis
 
 class RegistrarEmisionDocumentoPorEmitirFolioRequerido extends RegistrarEmisionDocumentoPorEmitirResultado {}
 
-/// Un recibo nunca captura serie fiscal/folio fiscal/UUID — esos son
-/// exclusivos de CFDI (Resolución 11 de Marlon).
+/// Un recibo nunca captura UUID/folio fiscal — exclusivo de CFDI
+/// (Resolución 11 de Marlon).
 class RegistrarEmisionDocumentoPorEmitirCamposNoPermitidosParaRecibo extends RegistrarEmisionDocumentoPorEmitirResultado {}
+
+/// El UUID/folio fiscal no cumple el formato estándar (8-4-4-4-12) —
+/// Etapa 15, corrección estructural CFDI real: antes no se validaba en
+/// absoluto.
+class RegistrarEmisionDocumentoPorEmitirUuidFormatoInvalido extends RegistrarEmisionDocumentoPorEmitirResultado {}
 
 class RegistrarEmisionDocumentoPorEmitirImporteInvalido extends RegistrarEmisionDocumentoPorEmitirResultado {}
 
@@ -44,8 +50,6 @@ class RegistrarEmisionDocumentoPorEmitirUseCase {
   Future<RegistrarEmisionDocumentoPorEmitirResultado> ejecutar({
     required String documentoPorEmitirId,
     required String folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     required DateTime fechaEmisionReal,
     required int importeEmitido,
@@ -66,8 +70,12 @@ class RegistrarEmisionDocumentoPorEmitirUseCase {
     }
 
     final esRecibo = TipoDocumentoCobro.values.byName(documento.tipoDocumento) == TipoDocumentoCobro.reciboDePago;
-    if (esRecibo && (serieFiscal != null || folioFiscal != null || uuid != null)) {
+    if (esRecibo && uuid != null) {
       return RegistrarEmisionDocumentoPorEmitirCamposNoPermitidosParaRecibo();
+    }
+
+    if (uuid != null && !esUuidFormatoValido(uuid)) {
+      return RegistrarEmisionDocumentoPorEmitirUuidFormatoInvalido();
     }
 
     if (importeEmitido < 0) {
@@ -78,8 +86,6 @@ class RegistrarEmisionDocumentoPorEmitirUseCase {
       final actualizado = await _repository.registrarEmision(
         documentoPorEmitirId: documentoPorEmitirId,
         folioDocumento: folioDocumento.trim(),
-        serieFiscal: serieFiscal,
-        folioFiscal: folioFiscal,
         uuid: uuid,
         fechaEmisionReal: fechaEmisionReal,
         importeEmitido: importeEmitido,

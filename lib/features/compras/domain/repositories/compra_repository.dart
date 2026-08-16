@@ -1,5 +1,8 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../usecases/correccion_partida_compra.dart';
+import '../usecases/eliminar_compra_fisicamente_usecase.dart';
+
 /// Un renglón a registrar dentro de una `Compra` (Etapa 10) — la forma
 /// que recibe `CompraRepository.crear`, no la tabla `CompraPartida` en
 /// sí. Para `destino == inventario` sobre un Artículo serializado,
@@ -94,6 +97,13 @@ abstract interface class CompraRepository {
   /// `CancelarCompraUseCase` para el chequeo de bloqueo.
   Future<List<ArticuloUnidadData>> listarUnidadesGeneradas(String compraId);
 
+  /// Las `ArticuloUnidad` que pertenecen a una `CompraPartida`
+  /// puntual (vía `CompraPartidaMovimiento`, nunca por texto) — usado
+  /// por la pantalla de corrección para mostrar/gestionar las unidades
+  /// de una partida serializada (Etapa 15, ampliación de "Corregir
+  /// datos").
+  Future<List<ArticuloUnidadData>> listarUnidadesPorPartida(String compraPartidaId);
+
   /// Resuelve el origen de un `MovimientoInventario` puntual —
   /// `null` si no vino de ninguna Compra.
   Future<OrigenCompra?> obtenerOrigenPorMovimiento(String movimientoInventarioId);
@@ -122,17 +132,34 @@ abstract interface class CompraRepository {
     String? actorUsuarioId,
   });
 
-  /// Corrige únicamente campos administrativos — nunca partidas,
-  /// cantidades ni costos (ver el doc comment de `CompraPartida`: son
-  /// inmutables una vez creadas).
+  /// Corrige campos administrativos y, opcionalmente ([cambiosPartidas],
+  /// Etapa 15, ampliación real de "Corregir datos"), las partidas de una
+  /// Compra ya registrada — artículo/variante, cantidad, costo, o
+  /// partidas completas agregadas/quitadas. Cada cambio se reconcilia
+  /// contra Inventario solo por lo que le pertenece a esa partida (vía
+  /// `CompraPartidaMovimiento`, nunca por texto), nunca toca movimientos
+  /// ajenos. Si el total de la Compra cambia, sincroniza el mismo
+  /// `Egreso` (nunca crea uno nuevo). Todo en una sola transacción — si
+  /// cualquier cambio está bloqueado (existencia ya consumida), NINGÚN
+  /// cambio se aplica. Llamar [obtenerResumenCorreccion] antes para
+  /// verificar elegibilidad y mostrar el impacto real.
   Future<CompraData> corregir({
     required String compraId,
+    DateTime? fecha,
     String? proveedor,
     String? formaPago,
     String? formaPagoOtroDescripcion,
     String? observaciones,
+    List<CorreccionPartida> cambiosPartidas = const [],
     required String motivo,
     String? actorUsuarioId,
+  });
+
+  /// Elegibilidad de solo lectura de [cambiosPartidas] antes de
+  /// aplicarlos — ver el doc comment de `ResumenCorreccionCompra`.
+  Future<ResumenCorreccionCompra> obtenerResumenCorreccion({
+    required String compraId,
+    List<CorreccionPartida> cambiosPartidas = const [],
   });
 
   /// Reversión completa: por cada `MovimientoInventario` generado,
@@ -151,6 +178,18 @@ abstract interface class CompraRepository {
     required String path,
     required String mimeType,
     required int sizeBytes,
+    String? actorUsuarioId,
+  });
+
+  /// Elegibilidad de solo lectura para [eliminarFisicamente] — ver el
+  /// doc comment de `ResumenEliminacionCompra`.
+  Future<ResumenEliminacionCompra> obtenerResumenEliminacionFisica(String compraId);
+
+  /// Eliminación física extraordinaria (Etapa 15) — ver el doc comment
+  /// completo en `CompraRepositoryImpl.eliminarFisicamente`.
+  Future<EliminarCompraFisicamenteResultado> eliminarFisicamente({
+    required String compraId,
+    required String motivo,
     String? actorUsuarioId,
   });
 }

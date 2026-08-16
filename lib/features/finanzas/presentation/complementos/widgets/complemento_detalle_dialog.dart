@@ -152,12 +152,17 @@ class _ComplementoDetalleDialogState extends ConsumerState<ComplementoDetalleDia
       ),
       onConfirm: () async => true,
     );
+    // Diferido con `addPostFrameCallback` — mismo hallazgo real de
+    // `egreso_detalle_dialog.dart` (Etapa 15): destruir el controller
+    // de forma síncrona mientras el diálogo de confirmación sigue en su
+    // transición de cierre producía "A TextEditingController was used
+    // after being disposed".
     if (confirmado != true) {
-      motivoController.dispose();
+      WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
       return;
     }
     final motivo = motivoController.text.trim();
-    motivoController.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
     if (!mounted) return;
 
     setState(() => _procesando = true);

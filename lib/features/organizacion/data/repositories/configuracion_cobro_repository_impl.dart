@@ -5,7 +5,7 @@ import 'package:riseg_one/core/utils/clock.dart';
 
 import '../../domain/repositories/configuracion_cobro_repository.dart';
 import '../../domain/usecases/configuracion_cobro_con_vigencia.dart';
-import '../../domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import '../../domain/usecases/configuracion_cobro_etapa_validator.dart';
 import '../../domain/usecases/configuracion_cobro_validator.dart';
 
 class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
@@ -14,28 +14,38 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
   final AppDatabase _db;
   final Clock _clock;
 
-  Future<void> _insertarCorreosYReglas({
+  Future<void> _insertarCorreosYEtapas({
     required String vigenciaId,
     required List<String> correos,
-    required List<ReglaEventoValidada> reglas,
+    required List<EtapaCobroValidada> etapas,
   }) async {
+    // Una etapa puede referenciar a otra que aparezca después en la
+    // lista (el orden de captura del usuario no tiene por qué coincidir
+    // con el orden de dependencia) — diferir el chequeo de FK al final
+    // de la transacción evita depender de insertar en un orden
+    // topológico exacto.
+    await _db.customStatement('PRAGMA defer_foreign_keys = ON');
     for (final correo in correos) {
       await _db.into(_db.configuracionCobroCorreo).insert(
             ConfiguracionCobroCorreoCompanion.insert(configuracionCobroVigenciaId: vigenciaId, correo: correo),
           );
     }
-    for (final regla in reglas) {
-      await _db.into(_db.configuracionCobroReglaEvento).insert(
-            ConfiguracionCobroReglaEventoCompanion.insert(
+    for (final etapa in etapas) {
+      await _db.into(_db.configuracionCobroEtapa).insert(
+            ConfiguracionCobroEtapaCompanion.insert(
+              id: etapa.id,
               configuracionCobroVigenciaId: vigenciaId,
-              tipoEvento: regla.tipoEvento.name,
-              tipoRegla: regla.tipoRegla.name,
-              mesRelativo: Value(regla.mesRelativo?.name),
-              diaDelMes: Value(regla.diaDelMes),
-              ordinalSemana: Value(regla.ordinalSemana?.name),
-              diaSemana: Value(regla.diaSemana?.name),
-              offsetDiasHabiles: Value(regla.offsetDiasHabiles),
-              eventoReferencia: Value(regla.eventoReferencia?.name),
+              tipoSistema: Value(etapa.tipoSistema?.name),
+              nombre: Value(etapa.nombre),
+              orden: etapa.orden,
+              tipoRegla: Value(etapa.tipoRegla?.name),
+              mesRelativo: Value(etapa.mesRelativo?.name),
+              diaDelMes: Value(etapa.diaDelMes),
+              ordinalSemana: Value(etapa.ordinalSemana?.name),
+              diaSemana: Value(etapa.diaSemana?.name),
+              offsetDias: Value(etapa.offsetDias),
+              etapaReferenciaId: Value(etapa.etapaReferenciaId),
+              referenciaCierrePeriodo: Value(etapa.referenciaCierrePeriodo),
             ),
           );
     }
@@ -45,7 +55,7 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
   Future<({ConfiguracionCobroData configuracion, ConfiguracionCobroVigenciaData vigencia})> crearConfiguracion({
     required String servicioId,
     required ConfiguracionCobroValidada datos,
-    required List<ReglaEventoValidada> reglas,
+    required List<EtapaCobroValidada> etapas,
   }) {
     return _db.transaction(() async {
       final configuracion = await _db.into(_db.configuracionCobro).insertReturning(
@@ -62,18 +72,14 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
               metodo: datos.metodo.name,
               requiereComplemento: Value(datos.requiereComplemento),
               entidadFiscalId: Value(datos.entidadFiscalId),
-              portalNombre: Value(datos.portalNombre),
-              portalUrl: Value(datos.portalUrl),
-              portalUsuario: Value(datos.portalUsuario),
-              portalContrasena: Value(datos.portalContrasena),
-              portalObservaciones: Value(datos.portalObservaciones),
+              clientePortalId: Value(datos.clientePortalId),
               cuentaBancaria: Value(datos.cuentaBancaria),
               observaciones: Value(datos.observaciones),
               fechaInicioVigencia: datos.fechaInicioVigencia,
             ),
           );
 
-      await _insertarCorreosYReglas(vigenciaId: vigencia.id, correos: datos.correos, reglas: reglas);
+      await _insertarCorreosYEtapas(vigenciaId: vigencia.id, correos: datos.correos, etapas: etapas);
 
       return (configuracion: configuracion, vigencia: vigencia);
     });
@@ -102,12 +108,13 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
     final vigenciaParaDetalle = vigente ?? (programadas.isEmpty ? null : programadas.first);
 
     var correos = const <String>[];
-    var reglasEventos = const <ConfiguracionCobroReglaEventoData>[];
+    var etapas = const <ConfiguracionCobroEtapaData>[];
     String? entidadFiscalRazonSocial;
     String? frecuenciaNombre;
+    String? clientePortalNombre;
     if (vigenciaParaDetalle != null) {
       correos = await listarCorreos(vigenciaParaDetalle.id);
-      reglasEventos = await listarReglas(vigenciaParaDetalle.id);
+      etapas = await listarEtapas(vigenciaParaDetalle.id);
 
       final entidadFiscalId = vigenciaParaDetalle.entidadFiscalId;
       if (entidadFiscalId != null) {
@@ -116,20 +123,35 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
         entidadFiscalRazonSocial = entidad?.razonSocial;
       }
 
+      final clientePortalId = vigenciaParaDetalle.clientePortalId;
+      if (clientePortalId != null) {
+        final portal =
+            await (_db.select(_db.clientePortal)..where((t) => t.id.equals(clientePortalId))).getSingleOrNull();
+        clientePortalNombre = portal?.nombre;
+      }
+
       final frecuencia = await (_db.select(_db.tipoFrecuenciaCobro)
             ..where((t) => t.id.equals(vigenciaParaDetalle.frecuenciaId)))
           .getSingleOrNull();
       frecuenciaNombre = frecuencia?.nombre;
     }
 
+    // Etapa 15: "corregible" = sigue siendo la captura original, sin
+    // historia real todavía — mismo criterio que
+    // `ServicioComercialRepositoryImpl.listarLineasEnFecha`.
+    final esCorregible =
+        vigenciasActivas.length == 1 && !(await tieneDocumentosGenerados(vigenciasActivas.single.id));
+
     return ConfiguracionCobroConVigencia(
       configuracion: configuracion,
       vigenciaActual: vigente,
       vigenciasProgramadas: programadas,
       correos: correos,
-      reglasEventos: reglasEventos,
+      etapas: etapas,
+      esCorregible: esCorregible,
       entidadFiscalRazonSocial: entidadFiscalRazonSocial,
       frecuenciaNombre: frecuenciaNombre,
+      clientePortalNombre: clientePortalNombre,
     );
   }
 
@@ -160,9 +182,10 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
   }
 
   @override
-  Future<List<ConfiguracionCobroReglaEventoData>> listarReglas(String vigenciaId) {
-    return (_db.select(_db.configuracionCobroReglaEvento)
-          ..where((t) => t.configuracionCobroVigenciaId.equals(vigenciaId)))
+  Future<List<ConfiguracionCobroEtapaData>> listarEtapas(String vigenciaId) {
+    return (_db.select(_db.configuracionCobroEtapa)
+          ..where((t) => t.configuracionCobroVigenciaId.equals(vigenciaId))
+          ..orderBy([(t) => OrderingTerm.asc(t.orden)]))
         .get();
   }
 
@@ -170,7 +193,7 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
   Future<ConfiguracionCobroVigenciaData> cambiarVigencia({
     required String configuracionCobroId,
     required ConfiguracionCobroValidada datos,
-    required List<ReglaEventoValidada> reglas,
+    required List<EtapaCobroValidada> etapas,
   }) {
     return _db.transaction(() async {
       final existentes = await _vigenciasActivas(configuracionCobroId);
@@ -224,11 +247,7 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
               metodo: datos.metodo.name,
               requiereComplemento: Value(datos.requiereComplemento),
               entidadFiscalId: Value(datos.entidadFiscalId),
-              portalNombre: Value(datos.portalNombre),
-              portalUrl: Value(datos.portalUrl),
-              portalUsuario: Value(datos.portalUsuario),
-              portalContrasena: Value(datos.portalContrasena),
-              portalObservaciones: Value(datos.portalObservaciones),
+              clientePortalId: Value(datos.clientePortalId),
               cuentaBancaria: Value(datos.cuentaBancaria),
               observaciones: Value(datos.observaciones),
               fechaInicioVigencia: datos.fechaInicioVigencia,
@@ -236,7 +255,7 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
             ),
           );
 
-      await _insertarCorreosYReglas(vigenciaId: nueva.id, correos: datos.correos, reglas: reglas);
+      await _insertarCorreosYEtapas(vigenciaId: nueva.id, correos: datos.correos, etapas: etapas);
 
       return nueva;
     });
@@ -346,5 +365,61 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
     }
 
     return _db.select(_db.configuracionCobro).get();
+  }
+
+  @override
+  Future<bool> tieneDocumentosGenerados(String vigenciaId) async {
+    final documento = await (_db.select(_db.documentoPorEmitirConfiguracion)
+          ..where((t) => t.configuracionCobroVigenciaId.equals(vigenciaId))
+          ..limit(1))
+        .getSingleOrNull();
+    return documento != null;
+  }
+
+  @override
+  Future<ConfiguracionCobroVigenciaData> corregirVigencia({
+    required String vigenciaId,
+    required ConfiguracionCobroValidada datos,
+    required List<EtapaCobroValidada> etapas,
+  }) {
+    return _db.transaction(() async {
+      await (_db.update(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).write(
+        ConfiguracionCobroVigenciaCompanion(
+          tipoDocumento: Value(datos.tipoDocumento.name),
+          frecuenciaId: Value(datos.frecuenciaId),
+          diaInicioPeriodo: Value(datos.diaInicioPeriodo),
+          agrupacion: Value(datos.agrupacion.name),
+          metodo: Value(datos.metodo.name),
+          requiereComplemento: Value(datos.requiereComplemento),
+          entidadFiscalId: Value(datos.entidadFiscalId),
+          clientePortalId: Value(datos.clientePortalId),
+          cuentaBancaria: Value(datos.cuentaBancaria),
+          observaciones: Value(datos.observaciones),
+          fechaInicioVigencia: Value(datos.fechaInicioVigencia),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      // Correos y etapas se reemplazan por completo — no hay historia
+      // que proteger todavía (garantizado por el caso de uso antes de
+      // llegar aquí), así que no tiene sentido intentar conciliar filas
+      // existentes una por una. `etapaReferenciaId` es una FK propia
+      // (self-reference) con `onDelete: restrict` — borrar el lote
+      // completo en una sola sentencia puede intentar borrar una etapa
+      // todavía referenciada por otra fila del mismo lote (que también
+      // se va a borrar, pero el motor no lo sabe todavía sin diferir el
+      // chequeo); `PRAGMA defer_foreign_keys` pospone la validación de
+      // FK al final de la transacción, sin cambiar el significado de
+      // `restrict` para ningún otro caso (borrar una sola etapa
+      // referenciada por otra que sobrevive sigue rechazándose).
+      await _db.customStatement('PRAGMA defer_foreign_keys = ON');
+      await (_db.delete(_db.configuracionCobroCorreo)..where((t) => t.configuracionCobroVigenciaId.equals(vigenciaId)))
+          .go();
+      await (_db.delete(_db.configuracionCobroEtapa)..where((t) => t.configuracionCobroVigenciaId.equals(vigenciaId)))
+          .go();
+      await _insertarCorreosYEtapas(vigenciaId: vigenciaId, correos: datos.correos, etapas: etapas);
+
+      return (_db.select(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).getSingle();
+    });
   }
 }

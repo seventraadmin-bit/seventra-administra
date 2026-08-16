@@ -42,6 +42,7 @@ import 'package:riseg_one/features/nomina/domain/usecases/registrar_pago_nomina_
 import 'package:riseg_one/features/nomina/domain/usecases/resolver_sueldo_empleado_nomina.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
@@ -102,7 +103,13 @@ void main() {
     final puestoRepo = PuestoRepositoryImpl(db);
     final generarNumero = GenerarNumeroUseCase(CodigoSecuenciaService(db));
     const empleadoValidator = EmpleadoValidator();
-    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, empleadoValidator, servicioRepo);
+    crearEmpleado = CrearEmpleadoUseCase(
+      empleadoRepo,
+      generarNumero,
+      empleadoValidator,
+      servicioRepo,
+      ServicioComercialRepositoryImpl(db),
+    );
 
     nominaRepo = NominaRepositoryImpl(db);
     final resolverSueldo = ResolverSueldoEmpleadoNomina(empleadoRepo, asignacionRepo, servicioRepo, catalogoRepo);

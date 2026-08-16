@@ -38,24 +38,26 @@ class ServicioPersonalAsignadoSection extends StatelessWidget {
           if (personalVigente.isEmpty)
             Text(l10n.servicioPersonalAsignadoSinPersonal, style: AppTypography.body.copyWith(color: colors.textMuted))
           else
-            for (final p in personalVigente)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                child: Text('${p.empleado.nombres} ${p.empleado.apellidoPaterno} — ${l10n.servicioPersonalAsignadoDesde(_formatoFecha.format(p.asignacion.fechaInicio))}'),
-              ),
+            RisegFieldGrid(
+              children: [
+                for (final p in personalVigente)
+                  Text('${p.empleado.nombres} ${p.empleado.apellidoPaterno} — ${l10n.servicioPersonalAsignadoDesde(_formatoFecha.format(p.asignacion.fechaInicio))}'),
+              ],
+            ),
           if (historialCerrado.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             Text(l10n.servicioSeccionHistorialPersonal, style: AppTypography.label),
             const SizedBox(height: AppSpacing.xs),
-            for (final p in historialCerrado)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                child: Text(
-                  '${p.empleado.nombres} ${p.empleado.apellidoPaterno} — '
-                  '${_formatoFecha.format(p.asignacion.fechaInicio)} al ${_formatoFecha.format(p.asignacion.fechaTermino!)}',
-                  style: AppTypography.body.copyWith(color: colors.textMuted),
-                ),
-              ),
+            RisegFieldGrid(
+              children: [
+                for (final p in historialCerrado)
+                  Text(
+                    '${p.empleado.nombres} ${p.empleado.apellidoPaterno} — '
+                    '${_formatoFecha.format(p.asignacion.fechaInicio)} al ${_formatoFecha.format(p.asignacion.fechaTermino!)}',
+                    style: AppTypography.body.copyWith(color: colors.textMuted),
+                  ),
+              ],
+            ),
           ],
         ],
       ),

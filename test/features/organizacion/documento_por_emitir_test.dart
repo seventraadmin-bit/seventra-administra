@@ -1,5 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/cuenta_por_cobrar_repository_impl.dart';
@@ -11,18 +12,19 @@ import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repos
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/documento_por_emitir_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/cliente_portal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
-import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
@@ -34,6 +36,57 @@ import 'package:riseg_one/features/organizacion/domain/usecases/generar_agenda_u
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
+
+/// Adaptador de prueba (Etapa 15) — misma forma que el viejo
+/// `ReglaEventoBorrador` (Etapa 4H.2), para no tener que reescribir los
+/// ~15 escenarios reales ya cubiertos en este archivo (Sportium,
+/// Miluyole, Morgan, Toluca 32, Tikal, Mirabilia, ...) solo por el
+/// cambio de modelo. `_etapasDesdeReglas` resuelve `id`/`orden`/
+/// `etapaReferenciaId` automáticamente: cada llamada genera ids frescos
+/// (uuid), así que reutilizar la misma lista de `_ReglaLegacy` en
+/// varias iteraciones (ej. los 4 clubes de Sportium) nunca choca contra
+/// la restricción de llave primaria de `ConfiguracionCobroEtapa`.
+class _ReglaLegacy {
+  const _ReglaLegacy({
+    required this.tipoEvento,
+    this.tipoRegla,
+    this.mesRelativo,
+    this.diaDelMes,
+    this.ordinalSemana,
+    this.diaSemana,
+    this.offsetDiasHabiles,
+    this.eventoReferencia,
+  });
+
+  final TipoEventoCobro tipoEvento;
+  final TipoReglaEvento? tipoRegla;
+  final MesRelativoCobro? mesRelativo;
+  final int? diaDelMes;
+  final OrdinalSemanaCobro? ordinalSemana;
+  final DiaSemanaCobro? diaSemana;
+  final int? offsetDiasHabiles;
+  final TipoEventoCobro? eventoReferencia;
+}
+
+List<EtapaCobroBorrador> _etapasDesdeReglas(List<_ReglaLegacy> reglas) {
+  final idPorTipo = {for (final r in reglas) r.tipoEvento: const Uuid().v4()};
+  var orden = 0;
+  return [
+    for (final r in reglas)
+      EtapaCobroBorrador(
+        id: idPorTipo[r.tipoEvento]!,
+        tipoSistema: r.tipoEvento,
+        orden: orden++,
+        tipoRegla: r.tipoRegla,
+        mesRelativo: r.mesRelativo,
+        diaDelMes: r.diaDelMes,
+        ordinalSemana: r.ordinalSemana,
+        diaSemana: r.diaSemana,
+        offsetDias: r.offsetDiasHabiles,
+        etapaReferenciaId: r.eventoReferencia == null ? null : idPorTipo[r.eventoReferencia],
+      ),
+  ];
+}
 
 void main() {
   late AppDatabase db;
@@ -61,6 +114,7 @@ void main() {
     puestoRepo = PuestoRepositoryImpl(db);
     final catalogoRepo = CatalogoRepositoryImpl(db);
     final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+    final clientePortalRepo = ClientePortalRepositoryImpl(db);
     comercialRepo = ServicioComercialRepositoryImpl(db);
     configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
     documentoRepo = DocumentoPorEmitirRepositoryImpl(db, AttachmentRepository(db), CuentaPorCobrarRepositoryImpl(db));
@@ -68,8 +122,8 @@ void main() {
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
     final lineaComercialValidator = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, configuracionCobroRepo);
     final configuracionCobroValidator =
-        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
-    const reglaValidator = ConfiguracionCobroReglaEventoValidator();
+        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo, clientePortalRepo);
+    const reglaValidator = ConfiguracionCobroEtapaValidator();
 
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     crearLineaComercial = CrearLineaComercialUseCase(comercialRepo, servicioRepo, lineaComercialValidator);
@@ -149,7 +203,7 @@ void main() {
     int diaInicioPeriodo = 1,
     AgrupacionCobro agrupacion = AgrupacionCobro.porServicio,
     bool requiereComplemento = false,
-    List<ReglaEventoBorrador> reglas = const [],
+    List<_ReglaLegacy> reglas = const [],
     DateTime? fechaInicioVigencia,
   }) async {
     final resultado = await crearConfiguracionCobro.ejecutar(
@@ -163,7 +217,7 @@ void main() {
         requiereComplemento: requiereComplemento,
         fechaInicioVigencia: fechaInicioVigencia ?? DateTime(2026, 1, 1),
       ),
-      reglas: reglas,
+      etapas: _etapasDesdeReglas(reglas),
     );
     expect(resultado, isA<CrearConfiguracionCobroExitoso>());
     return (resultado as CrearConfiguracionCobroExitoso).configuracion.id;
@@ -179,13 +233,13 @@ void main() {
           servicio.id,
           diaInicioPeriodo: 21,
           reglas: [
-            ReglaEventoBorrador(
+            _ReglaLegacy(
               tipoEvento: TipoEventoCobro.emision,
               tipoRegla: TipoReglaEvento.diaFijoDelMes,
               mesRelativo: MesRelativoCobro.siguiente,
               diaDelMes: 21,
             ),
-            ReglaEventoBorrador(
+            _ReglaLegacy(
               tipoEvento: TipoEventoCobro.pagoEsperado,
               tipoRegla: TipoReglaEvento.diasHabilesDespuesDe,
               offsetDiasHabiles: 10,
@@ -204,12 +258,14 @@ void main() {
         expect(documento.periodoFin, DateTime(2026, 8, 20));
         expect(documento.fechaEmisionProgramada, DateTime(2026, 8, 21));
         expect(documento.fechaPagoEsperadoProgramada, DateTime(2026, 9, 4));
-        // Periodo de 31 días (Sportium) cobra más que un precio unitario
-        // exacto de 30 días — 1,800,000 * 31 / 30 = 1,860,000.
-        expect(documento.importeBaseEsperado, 1860000);
+        // Periodo mensual completo (Sportium, 21 jul-20 ago, 31 días de
+        // calendario) siempre vale 30 días comerciales — no cobra más
+        // que un precio unitario exacto: 1,800,000 * 30 / 30 = 1,800,000.
+        expect(documento.importeBaseEsperado, 1800000);
         final detalle = await documentoRepo.obtenerDetalle(documento.id);
         expect(detalle!.servicioIds, hasLength(1));
-        expect(detalle.lineas.single.subtotalProporcional, 1860000);
+        expect(detalle.lineas.single.diasAplicables, 30);
+        expect(detalle.lineas.single.subtotalProporcional, 1800000);
       }
     });
 
@@ -220,20 +276,20 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          ReglaEventoBorrador(
+          _ReglaLegacy(
             tipoEvento: TipoEventoCobro.emision,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
             diaDelMes: 1,
           ),
-          ReglaEventoBorrador(
+          _ReglaLegacy(
             tipoEvento: TipoEventoCobro.procesamiento,
             tipoRegla: TipoReglaEvento.nEsimoDiaSemanaDelMes,
             mesRelativo: MesRelativoCobro.actual,
             diaSemana: DiaSemanaCobro.miercoles,
             ordinalSemana: OrdinalSemanaCobro.primero,
           ),
-          ReglaEventoBorrador(
+          _ReglaLegacy(
             tipoEvento: TipoEventoCobro.pagoEsperado,
             tipoRegla: TipoReglaEvento.mismoDiaSemanaSiguienteA,
             diaSemana: DiaSemanaCobro.miercoles,
@@ -258,13 +314,13 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          ReglaEventoBorrador(
+          _ReglaLegacy(
             tipoEvento: TipoEventoCobro.emision,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
             diaDelMes: 1,
           ),
-          ReglaEventoBorrador(
+          _ReglaLegacy(
             tipoEvento: TipoEventoCobro.pagoEsperado,
             tipoRegla: TipoReglaEvento.nEsimoDiaSemanaDelMes,
             mesRelativo: MesRelativoCobro.siguiente,
@@ -290,7 +346,7 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          ReglaEventoBorrador(
+          _ReglaLegacy(
             tipoEvento: TipoEventoCobro.pagoEsperado,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
@@ -312,8 +368,9 @@ void main() {
       final documento = (manual as CrearDocumentoManualExitoso).documento;
       expect(documento.fechaEmisionProgramada, isNull);
       expect(documento.fechaPagoEsperadoProgramada, DateTime(2026, 1, 10));
-      // Enero tiene 31 días: 1,500,000 * 2 * 31 / 30 = 3,100,000.
-      expect(documento.importeBaseEsperado, 3100000);
+      // Enero completo (31 días de calendario) vale 30 días comerciales:
+      // 1,500,000 * 2 * 30 / 30 = 3,000,000.
+      expect(documento.importeBaseEsperado, 3000000);
     });
 
     test('Tikal: solo regla de pago (sin emisión) — la generación automática no lo encuentra, requiere creación manual', () async {
@@ -323,7 +380,7 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          ReglaEventoBorrador(
+          _ReglaLegacy(
             tipoEvento: TipoEventoCobro.pagoEsperado,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
@@ -368,6 +425,87 @@ void main() {
     });
   });
 
+  group('Regla comercial de 30 días (Etapa 15, corrección real de Marlon)', () {
+    test('Tikal: 19 agosto - 18 septiembre (mes comercial completo) → 30 días, \$34,000.00', () async {
+      final cliente = await crearClienteDePrueba('Residencial Tikal');
+      final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia Tikal', fechaInicio: DateTime(2026, 1, 1));
+      await crearLineaDePrueba(servicio.id, cantidadElementos: 2, precioUnitario: 1700000);
+      await crearConfiguracionCobroDePrueba(servicio.id, diaInicioPeriodo: 19);
+
+      final manual = await crearManual.ejecutar(
+        clienteId: cliente.id,
+        servicioIds: [servicio.id],
+        periodoInicio: DateTime(2026, 8, 19),
+        periodoFin: DateTime(2026, 9, 18),
+      );
+
+      expect(manual, isA<CrearDocumentoManualExitoso>());
+      final documento = (manual as CrearDocumentoManualExitoso).documento;
+      final detalle = await documentoRepo.obtenerDetalle(documento.id);
+      expect(detalle!.lineas.single.diasAplicables, 30);
+      expect(documento.importeBaseEsperado, 3400000, reason: '2 × \$17,000.00 = \$34,000.00, nunca prorrateado por 31 días');
+    });
+
+    test('Febrero completo (28 días de calendario) → 30 días comerciales', () async {
+      final cliente = await crearClienteDePrueba('Prueba Febrero');
+      final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia Febrero', fechaInicio: DateTime(2026, 1, 1));
+      await crearLineaDePrueba(servicio.id, cantidadElementos: 1, precioUnitario: 1500000);
+      await crearConfiguracionCobroDePrueba(servicio.id);
+
+      final manual = await crearManual.ejecutar(
+        clienteId: cliente.id,
+        servicioIds: [servicio.id],
+        periodoInicio: DateTime(2026, 2, 1),
+        periodoFin: DateTime(2026, 2, 28),
+      );
+
+      final documento = (manual as CrearDocumentoManualExitoso).documento;
+      final detalle = await documentoRepo.obtenerDetalle(documento.id);
+      expect(detalle!.lineas.single.diasAplicables, 30);
+      expect(documento.importeBaseEsperado, 1500000);
+    });
+
+    test('Enero completo (31 días de calendario) → 30 días comerciales', () async {
+      final cliente = await crearClienteDePrueba('Prueba Enero');
+      final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia Enero', fechaInicio: DateTime(2026, 1, 1));
+      await crearLineaDePrueba(servicio.id, cantidadElementos: 1, precioUnitario: 1500000);
+      await crearConfiguracionCobroDePrueba(servicio.id);
+
+      final manual = await crearManual.ejecutar(
+        clienteId: cliente.id,
+        servicioIds: [servicio.id],
+        periodoInicio: DateTime(2026, 1, 1),
+        periodoFin: DateTime(2026, 1, 31),
+      );
+
+      final documento = (manual as CrearDocumentoManualExitoso).documento;
+      final detalle = await documentoRepo.obtenerDetalle(documento.id);
+      expect(detalle!.lineas.single.diasAplicables, 30);
+      expect(documento.importeBaseEsperado, 1500000);
+    });
+
+    test('periodo parcial de 15 días nunca se vuelve 30 — sigue prorrateado', () async {
+      final cliente = await crearClienteDePrueba('Prueba Parcial');
+      final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia Parcial', fechaInicio: DateTime(2026, 1, 1));
+      await crearLineaDePrueba(servicio.id, cantidadElementos: 1, precioUnitario: 1500000);
+      await crearConfiguracionCobroDePrueba(servicio.id);
+
+      // 15 días reales (1 al 15 de enero) — no tiene la forma de un mes
+      // calendario completo, así que debe prorratearse con días reales.
+      final manual = await crearManual.ejecutar(
+        clienteId: cliente.id,
+        servicioIds: [servicio.id],
+        periodoInicio: DateTime(2026, 1, 1),
+        periodoFin: DateTime(2026, 1, 15),
+      );
+
+      final documento = (manual as CrearDocumentoManualExitoso).documento;
+      final detalle = await documentoRepo.obtenerDetalle(documento.id);
+      expect(detalle!.lineas.single.diasAplicables, 15);
+      expect(documento.importeBaseEsperado, 750000, reason: '1,500,000 * 15 / 30 = 750,000');
+    });
+  });
+
   group('Idempotencia', () {
     test('regenerar el mismo rango no duplica documentos', () async {
       final cliente = await crearClienteDePrueba('Morgan');
@@ -376,7 +514,7 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          ReglaEventoBorrador(
+          _ReglaLegacy(
             tipoEvento: TipoEventoCobro.emision,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
@@ -402,7 +540,7 @@ void main() {
     test('agrupación porCliente combina Servicios compatibles y separa el que no lo es', () async {
       final cliente = await crearClienteDePrueba('Grupo X');
       final reglaEmisionDia1 = [
-        ReglaEventoBorrador(
+        _ReglaLegacy(
           tipoEvento: TipoEventoCobro.emision,
           tipoRegla: TipoReglaEvento.diaFijoDelMes,
           mesRelativo: MesRelativoCobro.actual,
@@ -438,12 +576,13 @@ void main() {
       final detalleCombinado = await documentoRepo.obtenerDetalle(combinado.id);
       expect(detalleCombinado!.servicioIds, containsAll([servicioA.id, servicioB.id]));
       expect(detalleCombinado.servicioIds, hasLength(2));
-      // 31 días de enero: (1,000,000 + 2,000,000) * 31 / 30 = 3,100,000.
-      expect(combinado.importeBaseEsperado, 3100000);
+      // Enero completo vale 30 días comerciales: (1,000,000 + 2,000,000)
+      // * 30 / 30 = 3,000,000.
+      expect(combinado.importeBaseEsperado, 3000000);
 
       final detalleSeparado = await documentoRepo.obtenerDetalle(separado.id);
       expect(detalleSeparado!.servicioIds, [servicioC.id]);
-      expect(separado.importeBaseEsperado, 516667);
+      expect(separado.importeBaseEsperado, 500000);
     });
   });
 
@@ -457,7 +596,7 @@ void main() {
         servicio.id,
         fechaInicioVigencia: DateTime(2025, 1, 1),
         reglas: [
-          ReglaEventoBorrador(
+          _ReglaLegacy(
             tipoEvento: TipoEventoCobro.emision,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
@@ -490,12 +629,14 @@ void main() {
       final diciembre = resultado.creados.firstWhere((d) => d.periodoInicio == DateTime(2025, 12, 1));
       final enero = resultado.creados.firstWhere((d) => d.periodoInicio == DateTime(2026, 1, 1));
 
-      // Ambos periodos tienen 31 días (diciembre y enero): el importe es
-      // proporcional al precio vigente en cada uno, nunca el mismo valor
-      // fijo — 1,000,000 * 31 / 30 = 1,033,333 (diciembre, precio
-      // anterior); 1,200,000 * 31 / 30 = 1,240,000 (enero, precio nuevo).
-      expect(diciembre.importeBaseEsperado, 1033333, reason: 'diciembre usa el precio vigente antes del cambio');
-      expect(enero.importeBaseEsperado, 1240000, reason: 'enero usa el precio de la nueva vigencia');
+      // Ambos periodos son meses comerciales completos (30 días): la
+      // vigencia de diciembre queda truncada exactamente en el último
+      // día de diciembre — coincide con el fin del periodo, no lo corta
+      // a mitad de mes — así que sigue siendo un periodo completo, con
+      // el precio vigente en cada uno: 1,000,000 (diciembre, precio
+      // anterior); 1,200,000 (enero, precio nuevo).
+      expect(diciembre.importeBaseEsperado, 1000000, reason: 'diciembre usa el precio vigente antes del cambio');
+      expect(enero.importeBaseEsperado, 1200000, reason: 'enero usa el precio de la nueva vigencia');
       expect(configuracionId, isNotEmpty);
     });
   });
@@ -630,5 +771,152 @@ void main() {
       expect(exitoso.documento.motivoAjuste, isNull);
       expect(exitoso.documento.importeFinalEsperado, exitoso.documento.importeBaseEsperado);
     });
+  });
+
+  group('Flujo dinámico de etapas — Agenda y snapshot de hitos (Etapa 15)', () {
+    test(
+      'Sportium con cadena completa (Emisión → Validación → Carga a portal → Pago esperado) genera '
+      'exactamente 4 hitos con las fechas exactas del escenario acordado',
+      () async {
+        final cliente = await crearClienteDePrueba('Sportium');
+        final servicio = await crearServicioDePrueba(cliente.id, 'Club Sportium Toluca');
+        await crearLineaDePrueba(servicio.id, precioUnitario: 1800000);
+
+        final emisionId = const Uuid().v4();
+        final validacionId = const Uuid().v4();
+        final portalId = const Uuid().v4();
+        final pagoId = const Uuid().v4();
+
+        final resultadoConfiguracion = await crearConfiguracionCobro.ejecutar(
+          servicioId: servicio.id,
+          borrador: ConfiguracionCobroBorrador(
+            tipoDocumento: TipoDocumentoCobro.reciboDePago,
+            frecuenciaId: SeedIds.frecuenciaCobroMensual,
+            diaInicioPeriodo: 21,
+            agrupacion: AgrupacionCobro.porServicio,
+            metodo: MetodoPagoCobro.noAplica,
+            requiereComplemento: false,
+            fechaInicioVigencia: DateTime(2026, 1, 1),
+          ),
+          etapas: [
+            EtapaCobroBorrador(
+              id: emisionId,
+              tipoSistema: TipoEventoCobro.emision,
+              orden: 0,
+              tipoRegla: TipoReglaEvento.diaFijoDelMes,
+              mesRelativo: MesRelativoCobro.siguiente,
+              diaDelMes: 21,
+            ),
+            EtapaCobroBorrador(
+              id: validacionId,
+              nombre: 'Validación por correo',
+              orden: 1,
+              tipoRegla: TipoReglaEvento.diasCalendarioDespuesDe,
+              offsetDias: 0,
+              etapaReferenciaId: emisionId,
+            ),
+            EtapaCobroBorrador(
+              id: portalId,
+              nombre: 'Carga a portal',
+              orden: 2,
+              tipoRegla: TipoReglaEvento.diasCalendarioDespuesDe,
+              offsetDias: 4,
+              etapaReferenciaId: validacionId,
+            ),
+            EtapaCobroBorrador(
+              id: pagoId,
+              tipoSistema: TipoEventoCobro.pagoEsperado,
+              orden: 3,
+              tipoRegla: TipoReglaEvento.diasCalendarioDespuesDe,
+              offsetDias: 7,
+              etapaReferenciaId: portalId,
+            ),
+          ],
+        );
+        expect(resultadoConfiguracion, isA<CrearConfiguracionCobroExitoso>());
+
+        final resultado = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 8, 1), rangoFin: DateTime(2026, 8, 31));
+        expect(resultado.creados, hasLength(1));
+        final documento = resultado.creados.single;
+
+        // Compatibilidad legacy: CxC/Agenda siguen leyendo estas 2
+        // columnas sin saber nada de Validación/Carga a portal.
+        expect(documento.fechaEmisionProgramada, DateTime(2026, 8, 21));
+        expect(documento.fechaPagoEsperadoProgramada, DateTime(2026, 9, 1));
+
+        final hitos = await documentoRepo.listarHitos(documento.id);
+        expect(hitos, hasLength(4), reason: 'las 4 etapas activas, ni una fija de más ni de menos');
+
+        final porOrden = [...hitos]..sort((a, b) => a.orden.compareTo(b.orden));
+        expect(porOrden[0].tipoSistema, 'emision');
+        expect(porOrden[0].nombre, isNull);
+        expect(porOrden[0].fechaProgramada, DateTime(2026, 8, 21));
+
+        expect(porOrden[1].tipoSistema, isNull);
+        expect(porOrden[1].nombre, 'Validación por correo');
+        expect(porOrden[1].fechaProgramada, DateTime(2026, 8, 21), reason: 'mismo día de Emisión');
+
+        expect(porOrden[2].tipoSistema, isNull);
+        expect(porOrden[2].nombre, 'Carga a portal');
+        expect(porOrden[2].fechaProgramada, DateTime(2026, 8, 25), reason: '4 días después de Validación');
+
+        expect(porOrden[3].tipoSistema, 'pagoEsperado');
+        expect(porOrden[3].nombre, isNull);
+        expect(porOrden[3].fechaProgramada, DateTime(2026, 9, 1), reason: '7 días después de Carga a portal');
+      },
+    );
+
+    test(
+      'cliente simple con Cierre → Emisión → Pago esperado solo genera los 2 hitos realmente '
+      'configurados — Agenda nunca muestra una etapa intermedia inexistente',
+      () async {
+        final cliente = await crearClienteDePrueba('Cliente simple');
+        final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia simple');
+        await crearLineaDePrueba(servicio.id, precioUnitario: 1200000);
+
+        final emisionId = const Uuid().v4();
+
+        final resultadoConfiguracion = await crearConfiguracionCobro.ejecutar(
+          servicioId: servicio.id,
+          borrador: ConfiguracionCobroBorrador(
+            tipoDocumento: TipoDocumentoCobro.reciboDePago,
+            frecuenciaId: SeedIds.frecuenciaCobroMensual,
+            diaInicioPeriodo: 1,
+            agrupacion: AgrupacionCobro.porServicio,
+            metodo: MetodoPagoCobro.noAplica,
+            requiereComplemento: false,
+            fechaInicioVigencia: DateTime(2026, 1, 1),
+          ),
+          etapas: [
+            EtapaCobroBorrador(
+              id: emisionId,
+              tipoSistema: TipoEventoCobro.emision,
+              orden: 0,
+              tipoRegla: TipoReglaEvento.diaFijoDelMes,
+              mesRelativo: MesRelativoCobro.actual,
+              diaDelMes: 1,
+            ),
+            EtapaCobroBorrador(
+              id: const Uuid().v4(),
+              tipoSistema: TipoEventoCobro.pagoEsperado,
+              orden: 1,
+              tipoRegla: TipoReglaEvento.diasCalendarioDespuesDe,
+              offsetDias: 15,
+              etapaReferenciaId: emisionId,
+            ),
+          ],
+        );
+        expect(resultadoConfiguracion, isA<CrearConfiguracionCobroExitoso>());
+
+        final resultado = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 9, 1), rangoFin: DateTime(2026, 9, 30));
+        expect(resultado.creados, hasLength(1));
+        final documento = resultado.creados.single;
+
+        final hitos = await documentoRepo.listarHitos(documento.id);
+        expect(hitos, hasLength(2), reason: 'nunca se inventa Validación/Procesamiento/Carga a portal');
+        expect(hitos.map((h) => h.tipoSistema).toSet(), {'emision', 'pagoEsperado'});
+        expect(hitos.every((h) => h.nombre == null), isTrue, reason: 'ambas son etapas de sistema, ninguna personalizada');
+      },
+    );
   });
 }

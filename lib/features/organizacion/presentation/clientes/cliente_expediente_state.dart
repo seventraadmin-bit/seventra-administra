@@ -14,6 +14,7 @@ class ClienteExpedienteState {
     this.guardando = false,
     this.cambiandoEstatus = false,
     this.operandoEntidadFiscal = false,
+    this.operandoClientePortal = false,
     this.tieneCambiosSinGuardar = false,
     this.modo = ClienteExpedienteModo.consulta,
     this.datos,
@@ -30,6 +31,10 @@ class ClienteExpedienteState {
   /// reactivar/domicilio) mientras una está en curso — evita doble
   /// ejecución por doble clic (punto 8 de la Etapa 4E.2).
   final bool operandoEntidadFiscal;
+
+  /// Mismo criterio que `operandoEntidadFiscal`, para las acciones de
+  /// portal (Etapa 15).
+  final bool operandoClientePortal;
   final bool tieneCambiosSinGuardar;
   final ClienteExpedienteModo modo;
   final ClienteExpedienteData? datos;
@@ -42,6 +47,7 @@ class ClienteExpedienteState {
     bool? guardando,
     bool? cambiandoEstatus,
     bool? operandoEntidadFiscal,
+    bool? operandoClientePortal,
     bool? tieneCambiosSinGuardar,
     ClienteExpedienteModo? modo,
     ClienteExpedienteData? datos,
@@ -54,6 +60,7 @@ class ClienteExpedienteState {
       guardando: guardando ?? this.guardando,
       cambiandoEstatus: cambiandoEstatus ?? this.cambiandoEstatus,
       operandoEntidadFiscal: operandoEntidadFiscal ?? this.operandoEntidadFiscal,
+      operandoClientePortal: operandoClientePortal ?? this.operandoClientePortal,
       tieneCambiosSinGuardar: tieneCambiosSinGuardar ?? this.tieneCambiosSinGuardar,
       modo: modo ?? this.modo,
       datos: datos ?? this.datos,

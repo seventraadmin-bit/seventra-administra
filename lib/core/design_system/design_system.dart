@@ -15,6 +15,7 @@ export 'tokens/app_spacing.dart';
 export 'tokens/app_typography.dart';
 export 'theme_context.dart';
 
+export 'components/riseg_actions_menu.dart';
 export 'components/riseg_button.dart';
 export 'components/riseg_card.dart';
 export 'components/riseg_checkbox.dart';

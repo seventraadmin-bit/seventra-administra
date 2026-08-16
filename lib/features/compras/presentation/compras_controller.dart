@@ -5,10 +5,15 @@ import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
+import 'package:riseg_one/features/finanzas/presentation/egresos/egresos_controller.dart';
+import 'package:riseg_one/features/inventario/presentation/articulos/articulos_controller.dart';
+
 import '../compras_providers.dart';
 import '../domain/repositories/compra_repository.dart';
 import '../domain/usecases/adjuntar_comprobante_compra_usecase.dart';
 import '../domain/usecases/cancelar_compra_usecase.dart';
+import '../domain/usecases/correccion_partida_compra.dart';
 import '../domain/usecases/corregir_compra_usecase.dart';
 import '../domain/usecases/registrar_compra_usecase.dart';
 import 'compras_state.dart';
@@ -107,6 +112,17 @@ class ComprasController extends _$ComprasController {
     return ref.read(compraRepositoryProvider).listarMovimientosGenerados(compraId);
   }
 
+  Future<List<ArticuloUnidadData>> obtenerUnidadesPorPartida(String compraPartidaId) {
+    return ref.read(compraRepositoryProvider).listarUnidadesPorPartida(compraPartidaId);
+  }
+
+  Future<ResumenCorreccionCompra> obtenerResumenCorreccion({
+    required String compraId,
+    List<CorreccionPartida> cambiosPartidas = const [],
+  }) {
+    return ref.read(corregirCompraUseCaseProvider).obtenerResumen(compraId: compraId, cambiosPartidas: cambiosPartidas);
+  }
+
   Future<RegistrarCompraResultado> registrarCompra({
     required DateTime fecha,
     String? proveedor,
@@ -129,16 +145,28 @@ class ComprasController extends _$ComprasController {
           ),
       RegistrarCompraErrorInesperado.new,
     );
-    if (resultado is RegistrarCompraExitosa) await _cargar();
+    if (resultado is RegistrarCompraExitosa) {
+      await _cargar();
+      // Toda Compra genera un Egreso automático (Etapa 10); si su
+      // destino es Inventario, también genera un `MovimientoInventario`
+      // — ambos módulos son ajenos a `ComprasController` y nunca se
+      // enteran de este cambio si no se invalidan explícitamente
+      // (Etapa 15, mismo patrón cruzado ya usado en `cancelarCompra`).
+      ref.invalidate(egresosControllerProvider);
+      ref.invalidate(articulosControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
   Future<CorregirCompraResultado> corregirCompra({
     required String compraId,
+    DateTime? fecha,
     String? proveedor,
     String? formaPago,
     String? formaPagoOtroDescripcion,
     String? observaciones,
+    List<CorreccionPartida> cambiosPartidas = const [],
     required String motivo,
   }) async {
     final resultado = await autorizarUseCase(
@@ -146,16 +174,29 @@ class ComprasController extends _$ComprasController {
       'compras.crear',
       () => ref.read(corregirCompraUseCaseProvider).ejecutar(
             compraId: compraId,
+            fecha: fecha,
             proveedor: proveedor,
             formaPago: formaPago,
             formaPagoOtroDescripcion: formaPagoOtroDescripcion,
             observaciones: observaciones,
+            cambiosPartidas: cambiosPartidas,
             motivo: motivo,
             actorUsuarioId: _actorUsuarioId,
           ),
       CorregirCompraErrorInesperado.new,
     );
-    if (resultado is CorregirCompraExitosa) await _cargar();
+    if (resultado is CorregirCompraExitosa) {
+      await _cargar();
+      // Una corrección de partidas puede tocar Inventario y el Egreso
+      // relacionado (Etapa 15, ampliación de "Corregir datos") — mismo
+      // criterio de invalidación cruzada ya usado en
+      // `registrarCompra`/`cancelarCompra`.
+      if (cambiosPartidas.isNotEmpty) {
+        ref.invalidate(egresosControllerProvider);
+        ref.invalidate(articulosControllerProvider);
+        ref.invalidate(dashboardControllerProvider);
+      }
+    }
     return resultado;
   }
 
@@ -166,7 +207,24 @@ class ComprasController extends _$ComprasController {
       () => ref.read(cancelarCompraUseCaseProvider).ejecutar(compraId: compraId, motivo: motivo, actorUsuarioId: _actorUsuarioId),
       CancelarCompraErrorInesperado.new,
     );
-    if (resultado is CancelarCompraExitosa) await _cargar();
+    if (resultado is CancelarCompraExitosa) {
+      await _cargar();
+      // `CompraRepositoryImpl.cancelar` ya cancela el Egreso asociado en
+      // la misma transacción (Etapa 10) — lo que faltaba era avisarle al
+      // módulo de Finanzas: `egresosControllerProvider` es un provider
+      // de otra feature que nunca se enteraba de este cambio, y su
+      // listado seguía mostrando "Registrado" hasta que su `autoDispose`
+      // se disparaba por otro motivo (Etapa 15, mismo patrón real ya
+      // corregido en Clientes/Agenda/Cuentas por cobrar — aquí cruzando
+      // de módulo, Compras → Finanzas).
+      ref.invalidate(egresosControllerProvider);
+      // Si la Compra tenía destino Inventario, `cancelar` revierte esa
+      // entrada con un movimiento de baja en la misma transacción — sin
+      // esto, Existencia seguía mostrando el valor previo hasta cambiar
+      // de pestaña.
+      ref.invalidate(articulosControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 

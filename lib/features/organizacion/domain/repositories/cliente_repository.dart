@@ -2,6 +2,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 
 import '../shared/direccion_input.dart';
+import '../usecases/eliminar_cliente_fisicamente_usecase.dart';
 
 /// Cliente comercial junto con su dirección de referencia resultante —
 /// lo que devuelve `guardarExpediente` tras persistir ambas secciones en
@@ -52,4 +53,13 @@ abstract interface class ClienteRepository {
   /// responsable aunque después se haya archivado (ver
   /// `ServicioExpedienteScreen`, Etapa 4F.2).
   Future<ContactoData?> obtenerContactoPorId(String id);
+
+  /// Eliminación física extraordinaria (Etapa 15, mismo patrón que la
+  /// Etapa 11D) — ver el doc comment de la implementación para las
+  /// condiciones exactas.
+  Future<EliminarClienteFisicamenteResultado> eliminarFisicamente({
+    required String clienteId,
+    required String motivo,
+    String? actorUsuarioId,
+  });
 }

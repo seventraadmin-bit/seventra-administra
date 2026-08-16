@@ -85,6 +85,15 @@
   "dashboardActividadMantenimientos": "Mantenimientos recientes",
   "dashboardActividadRecargas": "Recargas recientes",
   "dashboardActividadSinRegistros": "Sin registros recientes",
+  "dashboardSeccionIndicadores": "Indicadores operativos",
+  "dashboardActividadVacia": "Sin actividad reciente.",
+  "dashboardActividadItemCompra": "Compra registrada",
+  "dashboardActividadItemPago": "Pago registrado",
+  "dashboardActividadItemAltaPersonal": "Alta de personal",
+  "dashboardActividadItemBajaPersonal": "Baja de personal",
+  "dashboardActividadItemNomina": "Nómina generada",
+  "dashboardActividadItemMantenimiento": "Mantenimiento registrado",
+  "dashboardActividadItemRecarga": "Recarga registrada",
 
   "organizacionValorPendiente": "Pendiente de captura",
   "organizacionTabEmpresa": "Empresa",
@@ -455,6 +464,42 @@
   "entidadFiscalDomicilioGuardadoExito": "Domicilio fiscal guardado correctamente.",
   "entidadFiscalDomicilioGuardadoError": "No se pudo guardar el domicilio fiscal. Intenta de nuevo.",
 
+  "clienteCobranzaSeccionTitulo": "Datos de cobranza / Facturación",
+  "clienteCobranzaCorreosSubtitulo": "Correos de contacto",
+  "clienteCobranzaSinCorreos": "Sin contactos con correo registrado.",
+
+  "clientePortalSeccionTitulo": "Portales",
+  "clientePortalBotonAgregar": "Agregar portal",
+  "clientePortalDialogoTituloAlta": "Nuevo portal",
+  "clientePortalDialogoTituloEdicion": "Editar portal",
+  "clientePortalDialogoBotonGuardar": "Guardar",
+  "clientePortalDialogoBotonCancelar": "Cancelar",
+  "clientePortalCampoNombre": "Nombre del portal",
+  "clientePortalCampoTipo": "Tipo",
+  "clientePortalCampoUrl": "URL",
+  "clientePortalCampoUsuario": "Usuario",
+  "clientePortalCampoContrasena": "Contraseña",
+  "clientePortalCampoContrasenaAyudaAlta": "Se cifra antes de guardarse. Opcional.",
+  "clientePortalCampoContrasenaAyudaEdicion": "Se guarda cifrada — nunca se muestra de nuevo. Deja en blanco para no cambiarla.",
+  "clientePortalCampoObservaciones": "Observaciones",
+  "clientePortalGuardadoExito": "Portal guardado correctamente.",
+  "clientePortalGuardadoError": "No se pudo guardar el portal. Intenta de nuevo.",
+  "clientePortalErrorNombreRequerido": "El nombre del portal es obligatorio.",
+  "clientePortalErrorClienteInactivo": "El Cliente no está activo.",
+  "clientePortalArchivadaNoEditable": "Este portal está archivado. Reactívalo para poder editarlo.",
+  "clientePortalEstadoActivo": "Activo",
+  "clientePortalEstadoArchivada": "Archivado",
+  "clientePortalBotonEditar": "Editar",
+  "clientePortalBotonArchivar": "Archivar",
+  "clientePortalBotonReactivar": "Reactivar",
+  "clientePortalConfirmarArchivarTitulo": "Archivar portal",
+  "clientePortalConfirmarArchivarMensaje": "¿Confirmas archivar este portal? Las Configuraciones de cobro que ya lo usan seguirán mostrándolo.",
+  "clientePortalConfirmarReactivarTitulo": "Reactivar portal",
+  "clientePortalConfirmarReactivarMensaje": "¿Confirmas reactivar este portal?",
+  "clientePortalCicloVidaCambiadoExito": "Portal actualizado correctamente.",
+  "clientePortalCicloVidaCambiadoError": "No se pudo actualizar el portal. Intenta de nuevo.",
+  "clientePortalSinPortales": "Sin portales registrados.",
+
   "comercialTabClientes": "Clientes",
   "comercialTabServicios": "Servicios",
 
@@ -595,25 +640,21 @@
   "servicioResponsableInternoGuardadoExito": "Responsable interno guardado correctamente.",
   "servicioResponsableInternoGuardadoError": "No se pudo guardar el Responsable interno. Intenta de nuevo.",
 
-  "servicioSeccionCondicionesPersonalTitulo": "Condiciones de Personal",
-  "servicioCondicionesPersonalSinConfigurar": "Condiciones salariales sin configurar",
+  "servicioSeccionCondicionesPersonalTitulo": "Condiciones de este perfil",
   "servicioCampoSueldoReferencia": "Sueldo mensual de referencia",
   "servicioCampoBonoReferencia": "Bono mensual de referencia",
   "servicioCondicionesPersonalValorSinConfigurar": "Sin configurar",
-  "servicioCondicionesPersonalDialogoTitulo": "Condiciones de Personal",
-  "servicioCondicionesPersonalAyuda": "Se precargan automáticamente al asignar personal a este Servicio — cada asignación puede capturar una excepción individual sin modificar esta referencia.",
-  "servicioCondicionesPersonalGuardadoExito": "Condiciones de Personal guardadas correctamente.",
-  "servicioCondicionesPersonalErrorSueldoInvalido": "El sueldo de referencia debe ser mayor a \\$0 cuando se configura.",
-  "servicioCondicionesPersonalErrorBonoInvalido": "El bono de referencia no puede ser negativo.",
-  "servicioCondicionesPersonalErrorInesperado": "No se pudieron guardar las Condiciones de Personal. Intenta de nuevo.",
 
   "servicioSeccionConfiguracionComercialTitulo": "Configuración comercial",
   "servicioComercialSinLineas": "Sin líneas comerciales registradas.",
   "servicioComercialBotonAgregarLinea": "Agregar línea",
+  "servicioComercialAyudaAgregarLinea": "Agrega una línea por cada perfil/turno/costo diferente.",
   "servicioComercialColumnaPuesto": "Puesto",
   "servicioComercialColumnaTurno": "Turno",
   "servicioComercialColumnaCantidad": "Cantidad",
   "servicioComercialColumnaPrecioUnitario": "Precio unitario",
+  "servicioComercialColumnaSueldoReferencia": "Sueldo ref.",
+  "servicioComercialColumnaBonoReferencia": "Bono ref.",
   "servicioComercialColumnaIva": "IVA",
   "servicioComercialColumnaSubtotal": "Subtotal",
   "servicioComercialColumnaVigenciaDesde": "Vigente desde",
@@ -628,9 +669,15 @@
   "servicioComercialTratamientoIvaNoAplica": "No aplica",
 
   "servicioComercialDialogoAltaTitulo": "Agregar línea comercial",
+  "servicioComercialSeccionDatosComercialesTitulo": "Datos comerciales",
   "servicioComercialCampoPuesto": "Puesto o perfil",
   "servicioComercialCampoModalidadTurno": "Modalidad de turno",
+  "servicioComercialHorarioPersonalizadoTitulo": "Horario personalizado",
+  "servicioComercialHorarioTrabaja": "Trabaja",
+  "servicioComercialHorarioCampoEntrada": "Entrada",
+  "servicioComercialHorarioCampoSalida": "Salida",
   "servicioComercialCampoCantidadElementos": "Cantidad de elementos",
+  "servicioComercialCampoCantidadElementosAyuda": "Todos los elementos de esta línea comparten puesto, turno, precio y condiciones salariales. Si existen perfiles diferentes, agrega otra línea comercial.",
   "servicioComercialCampoPrecioUnitario": "Precio unitario mensual (MXN)",
   "servicioComercialCampoTratamientoIva": "Tratamiento de IVA",
   "servicioComercialCampoFechaInicioVigencia": "Vigente desde",
@@ -656,6 +703,10 @@
   "servicioComercialErrorFechaDuplicada": "Ya existe una vigencia de esta línea con esa misma fecha de inicio.",
   "servicioComercialErrorSolapamiento": "La fecha de fin capturada se solapa con una vigencia posterior ya registrada.",
 
+  "servicioComercialBotonCorregir": "Corregir",
+  "servicioComercialCorregirDialogoTitulo": "Corregir línea comercial",
+  "servicioComercialCorregirExito": "Línea comercial corregida.",
+  "servicioComercialCorregirErrorTieneHistoria": "Esta línea ya tiene historia — usa \"Nueva vigencia\" en su lugar.",
   "servicioComercialBotonNuevaVigencia": "Nueva vigencia",
   "servicioComercialBotonCerrarLinea": "Cerrar línea",
   "servicioComercialBotonHistorial": "Historial",
@@ -761,7 +812,14 @@
   "servicioCobroCampoRequiereComplemento": "Requiere complemento de pago",
   "servicioCobroCampoEntidadFiscal": "Entidad fiscal",
   "servicioCobroCampoFechaInicioVigencia": "Vigente desde",
+  "clientePortalTipoFacturacion": "Facturación",
+  "clientePortalTipoProveedores": "Proveedores",
+  "clientePortalTipoPagos": "Pagos",
+  "clientePortalTipoOtro": "Otro",
+
   "servicioCobroSeccionPortalTitulo": "Portal del cliente (opcional)",
+  "servicioCobroCampoPortal": "Portal",
+  "servicioCobroSinPortalConfigurado": "Sin portal configurado.",
   "servicioCobroCampoPortalNombre": "Nombre del portal",
   "servicioCobroCampoPortalUrl": "URL",
   "servicioCobroCampoPortalUsuario": "Usuario",
@@ -772,7 +830,10 @@
   "servicioCobroCampoCuentaBancariaAyuda": "Solución temporal — texto libre hasta que exista el catálogo de cuentas.",
   "servicioCobroCampoObservaciones": "Observaciones (opcional)",
   "servicioCobroSeccionCorreosTitulo": "Correos de envío",
-  "servicioCobroCampoNuevoCorreo": "Agregar correo",
+  "servicioCobroSeccionCorreosContactosTitulo": "Correos de contactos del Cliente",
+  "servicioCobroSinContactosConCorreo": "Este Cliente no tiene contactos con correo registrado.",
+  "servicioCobroCampoOtroCorreoTitulo": "Agregar otro correo",
+  "servicioCobroCampoNuevoCorreo": "Correo",
   "servicioCobroBotonAgregarCorreo": "Agregar",
   "servicioCobroBotonQuitarCorreo": "Quitar correo",
   "servicioCobroSinCorreos": "Sin correos capturados.",
@@ -783,14 +844,37 @@
   "servicioCobroErrorYaExiste": "Este Servicio ya tiene una Configuración de cobro registrada.",
   "servicioCobroErrorInesperado": "No se pudo agregar la Configuración de cobro. Intenta de nuevo.",
 
+  "servicioCobroErrorReglasEvento": "Revisa las reglas de Emisión, Procesamiento y Pago esperado.",
+  "servicioCobroErrorCampoRequerido": "Este campo es obligatorio.",
+  "servicioCobroErrorEntidadFiscalNoExiste": "La Entidad fiscal seleccionada no existe o no pertenece a este Cliente.",
+  "servicioCobroErrorEntidadFiscalInactiva": "La Entidad fiscal seleccionada está archivada.",
+  "servicioCobroErrorPortalNoExiste": "El portal seleccionado no existe o no pertenece a este Cliente.",
+  "servicioCobroErrorPortalInactivo": "El portal seleccionado está archivado.",
+  "servicioCobroErrorEntidadFiscalRequeridaParaCfdi": "Este tipo de documento requiere Entidad fiscal.",
+  "servicioCobroErrorMetodoInvalidoParaRecibo": "Recibo de pago no usa método PUE/PPD — selecciona \"No aplica\".",
+  "servicioCobroErrorComplementoRequeridoParaPpd": "El método PPD requiere \"Requiere complemento de pago\" activado.",
+  "servicioCobroErrorCfdiIncompatibleConIvaNoAplica": "Este tipo de documento no es compatible con líneas comerciales configuradas en \"IVA no aplica\".",
+  "servicioCobroErrorReciboRequiereIvaNoAplica": "Recibo de pago requiere que las líneas comerciales vigentes usen \"IVA no aplica\".",
+  "servicioCobroErrorFechaAnteriorInicioServicio": "La vigencia no puede iniciar antes del inicio del Servicio.",
+  "servicioCobroErrorFechaDuplicada": "Ya existe una vigencia con esa misma fecha de inicio.",
+  "servicioCobroErrorCorreoInvalido": "Uno o más correos no tienen un formato válido.",
+  "servicioCobroAyudaMetodoBloqueadoRecibo": "Recibo de pago no usa método de pago SAT.",
+
+  "servicioCobroBotonCorregir": "Corregir",
+  "servicioCobroCorregirDialogoTitulo": "Corregir Configuración de cobro",
+  "servicioCobroCorregirExito": "Configuración de cobro corregida.",
+  "servicioCobroCorregirErrorTieneHistoria": "Esta configuración ya tiene historia — usa \"Nueva vigencia\" en su lugar.",
+
   "servicioCobroEventoEmision": "Emisión",
   "servicioCobroEventoProcesamiento": "Procesamiento",
   "servicioCobroEventoPagoEsperado": "Pago esperado",
+  "servicioCobroEventoComplementoPago": "Complemento de pago",
 
   "servicioCobroReglaDiaFijoDelMes": "Día fijo del mes",
-  "servicioCobroReglaDiasHabilesDespuesDe": "N días hábiles después de otro evento",
+  "servicioCobroReglaDiasHabilesDespuesDe": "N días hábiles después de otra etapa",
+  "servicioCobroReglaDiasCalendarioDespuesDe": "N días de calendario después de otra etapa (0 = mismo día)",
   "servicioCobroReglaNEsimoDiaSemanaDelMes": "N-ésimo día de la semana del mes",
-  "servicioCobroReglaMismoDiaSemanaSiguienteA": "Siguiente mismo día de la semana, después de otro evento",
+  "servicioCobroReglaMismoDiaSemanaSiguienteA": "Siguiente mismo día de la semana, después de otra etapa",
 
   "servicioCobroMesRelativoActual": "Mes en que inicia el periodo",
   "servicioCobroMesRelativoSiguiente": "Mes siguiente al inicio del periodo",
@@ -815,14 +899,24 @@
   "servicioCobroCampoOrdinalSemana": "Ordinal",
   "servicioCobroCampoDiaSemana": "Día de la semana",
   "servicioCobroCampoOffsetDiasHabiles": "Días hábiles",
-  "servicioCobroCampoEventoReferencia": "Evento de referencia",
+  "servicioCobroCampoOffsetDiasCalendario": "Días de calendario",
+  "servicioCobroEtapaMismoDia": "Mismo día",
+  "servicioCobroCampoEventoReferencia": "Depende de",
+  "servicioCobroOrigenCierrePeriodo": "Cierre de periodo",
 
   "servicioCobroSeccionReglasTitulo": "Reglas temporales",
+  "servicioCobroSeccionFlujoTitulo": "Flujo posterior a la emisión",
   "servicioCobroReglaEmisionTitulo": "Regla de emisión",
   "servicioCobroReglaProcesamientoTitulo": "Regla de procesamiento (opcional)",
   "servicioCobroReglaPagoTitulo": "Regla de pago esperado",
   "servicioCobroReglaPendiente": "Pendiente de captura",
   "servicioCobroReglaNoAplicaOPendiente": "No aplica / Pendiente",
+
+  "servicioCobroCampoNombreEtapa": "Nombre de la etapa",
+  "servicioCobroBotonAgregarEtapa": "Agregar etapa",
+  "servicioCobroBotonQuitarEtapa": "Quitar",
+  "servicioCobroBotonSubirEtapa": "Mover antes",
+  "servicioCobroBotonBajarEtapa": "Mover después",
 
   "servicioCobroFechasCalculadasTitulo": "Fechas calculadas del periodo actual",
   "servicioCobroFechaEmisionCalculada": "Emisión",
@@ -995,9 +1089,7 @@
   "agendaDetalleSeccionHistorial": "Historial administrativo",
 
   "agendaDetalleCampoFolioDocumento": "Folio del documento",
-  "agendaDetalleCampoSerieFiscal": "Serie fiscal",
-  "agendaDetalleCampoFolioFiscal": "Folio fiscal",
-  "agendaDetalleCampoUuid": "UUID",
+  "agendaDetalleCampoUuid": "UUID / Folio fiscal",
   "agendaDetalleCampoFechaEmisionReal": "Fecha de emisión",
   "agendaDetalleCampoImporteEmitido": "Importe emitido",
   "agendaDetalleCampoObservacionesEmision": "Observaciones de emisión",
@@ -1008,6 +1100,9 @@
   "agendaDetalleComparacionImporteCalculado": "Importe calculado",
   "agendaDetalleComparacionAjuste": "Ajuste",
   "agendaDetalleComparacionImporteFinalEsperado": "Importe final esperado",
+  "agendaDetalleComparacionImporteBaseEsperado": "Importe base esperado",
+  "agendaDetalleComparacionIvaEsperado": "IVA esperado (16%)",
+  "agendaDetalleComparacionTotalEsperado": "Total esperado",
   "agendaDetalleComparacionImporteEmitido": "Importe emitido",
   "agendaDetalleComparacionDiferencia": "Diferencia",
 
@@ -1047,10 +1142,21 @@
   "agendaRegistrarEmisionBotonCancelar": "Cancelar",
   "agendaRegistrarEmisionExito": "Emisión registrada correctamente.",
   "agendaRegistrarEmisionErrorFolioRequerido": "El folio del documento es obligatorio.",
-  "agendaRegistrarEmisionErrorCamposNoPermitidosParaRecibo": "Un recibo no captura serie fiscal, folio fiscal ni UUID.",
+  "agendaRegistrarEmisionErrorCamposNoPermitidosParaRecibo": "Un recibo no captura UUID/folio fiscal.",
+  "agendaRegistrarEmisionErrorUuidFormatoInvalido": "El UUID/folio fiscal no tiene un formato válido (ej. FE6FC43F-B308-4F0B-B610-A079E69A64BC).",
   "agendaRegistrarEmisionErrorImporteInvalido": "El importe emitido no puede ser negativo.",
   "agendaRegistrarEmisionErrorTransicionInvalida": "Este documento ya no puede pasar a Emitido por esta vía.",
   "agendaRegistrarEmisionErrorInesperado": "No se pudo registrar la emisión. Intenta de nuevo.",
+  "agendaRegistrarEmisionErrorImporteRequerido": "Captura el importe emitido — puedes dejarlo en $0.00 solo si es intencional.",
+  "agendaRegistrarEmisionDesgloseMasIva": "Base: {base} + IVA 16%: {iva} = Total esperado: {total}",
+  "@agendaRegistrarEmisionDesgloseMasIva": {
+    "placeholders": {
+      "base": {"type": "String"},
+      "iva": {"type": "String"},
+      "total": {"type": "String"}
+    }
+  },
+  "agendaRegistrarEmisionAvisoSinCalculoAutomatico": "Este documento combina líneas con distinto tratamiento de IVA — RISEG no puede calcular el total automáticamente. Captura el Total real del comprobante emitido.",
 
   "agendaCorregirDatosEmisionDialogoTitulo": "Corregir datos de emisión",
   "agendaCorregirDatosEmisionBotonConfirmar": "Guardar corrección",
@@ -1072,6 +1178,30 @@
   "agendaRegistrarEnvioErrorInesperado": "No se pudo registrar el envío. Intenta de nuevo.",
 
   "agendaDetalleBotonAjusteManual": "Ajuste manual",
+  "agendaDetalleBotonGenerarReciboPdf": "Generar recibo PDF",
+  "agendaDetalleReciboPdfExito": "Recibo generado — se abrió para su revisión.",
+  "agendaDetalleReciboPdfError": "No se pudo generar el recibo. Intenta de nuevo.",
+  "agendaDetalleEliminarResumenCuentaPorCobrar": "una Cuenta por Cobrar sin pagos",
+  "agendaDetalleEliminarResumenAdjuntos": "{cantidad, plural, one{1 archivo adjunto} other{{cantidad} archivos adjuntos}}",
+  "@agendaDetalleEliminarResumenAdjuntos": {
+    "placeholders": {
+      "cantidad": {"type": "int"}
+    }
+  },
+  "agendaDetalleEliminarResumenSinDependencias": "Este documento no tiene ninguna dependencia real — se eliminará de forma permanente.",
+  "agendaDetalleEliminarResumenMensaje": "Este documento tiene {detalle}. Se eliminarán junto con el documento.",
+  "@agendaDetalleEliminarResumenMensaje": {
+    "placeholders": {
+      "detalle": {"type": "String"}
+    }
+  },
+  "agendaDetalleEliminarArchivosNoEliminados": "El documento se eliminó, pero {cantidad, plural, one{1 archivo} other{{cantidad} archivos}} no se pudo(eron) borrar del disco: {lista}.",
+  "@agendaDetalleEliminarArchivosNoEliminados": {
+    "placeholders": {
+      "cantidad": {"type": "int"},
+      "lista": {"type": "String"}
+    }
+  },
   "agendaAjusteManualDialogoTitulo": "Ajuste manual",
   "agendaAjusteManualBotonConfirmar": "Guardar ajuste",
   "agendaAjusteManualBotonCancelar": "Cancelar",
@@ -1151,9 +1281,7 @@
 
   "cuentaPorCobrarDetalleDialogoTitulo": "Detalle de la Cuenta por cobrar",
   "cuentaPorCobrarDetalleCampoFolioDocumento": "Folio del documento",
-  "cuentaPorCobrarDetalleCampoSerieFiscal": "Serie fiscal",
-  "cuentaPorCobrarDetalleCampoFolioFiscal": "Folio fiscal",
-  "cuentaPorCobrarDetalleCampoUuid": "UUID",
+  "cuentaPorCobrarDetalleCampoUuid": "UUID / Folio fiscal",
   "cuentaPorCobrarDetalleCampoTipoDocumento": "Tipo de documento",
   "cuentaPorCobrarDetalleCampoMetodo": "Método de pago",
   "cuentaPorCobrarDetalleCampoRequiereComplemento": "Requiere complemento de pago",
@@ -1632,6 +1760,8 @@
   "empleadoCampoParentescoEmergencia": "Parentesco",
   "empleadoSeccionDatosBancarios": "Datos bancarios",
   "empleadoCampoBanco": "Banco",
+  "empleadoCampoBancoOtroDescripcion": "Nombre del banco",
+  "empleadoErrorBancoOtroDescripcionRequerido": "Indica el nombre del banco cuando el banco seleccionado es \"Otro\".",
   "empleadoCampoNumeroCuentaTarjeta": "Número de tarjeta o cuenta",
   "empleadoCampoClabe": "CLABE",
   "empleadoErrorDatosBancariosInvalidos": "Si capturas datos bancarios, indica el banco y al menos una forma de pago (tarjeta/cuenta o CLABE).",
@@ -1653,13 +1783,32 @@
   "empleadoCampoServicio": "Servicio",
   "empleadoCampoServicioNuevo": "Nuevo servicio",
   "empleadoCampoTurno": "Turno",
-  "empleadoCampoSueldoReferenciaServicio": "Sueldo de referencia del Servicio",
+  "empleadoCampoLineaComercial": "Perfil / línea comercial",
+  "empleadoCampoSueldoReferenciaPerfil": "Sueldo de referencia del perfil",
   "empleadoCampoSueldoAcordado": "Sueldo acordado",
-  "empleadoCampoBonoReferenciaServicio": "Bono de referencia del Servicio",
+  "empleadoCampoBonoReferenciaPerfil": "Bono de referencia del perfil",
   "empleadoCampoBonoAcordado": "Bono acordado",
   "empleadoErrorAdscripcionAmbigua": "Elige Servicio o Sucursal, no ambos.",
   "empleadoErrorServicioNoActivo": "El Servicio no existe o no está activo.",
-  "empleadoErrorSueldoRequerido": "Este Servicio todavía no tiene sueldo de referencia configurado. Configura las Condiciones de Personal del Servicio, o captura un sueldo acordado manualmente.",
+  "empleadoErrorLineaComercialRequerida": "Este Servicio tiene perfiles contratados — selecciona uno.",
+  "empleadoErrorLineaComercialInvalida": "El perfil elegido ya no está vigente para este Servicio.",
+  "empleadoLineaComercialOpcion": "{puesto} · {turno} · {cantidad, plural, one{1 posición} other{{cantidad} posiciones}}",
+  "@empleadoLineaComercialOpcion": {
+    "placeholders": {
+      "puesto": { "type": "String" },
+      "turno": { "type": "String" },
+      "cantidad": { "type": "int" }
+    }
+  },
+  "empleadoLineaComercialCapacidad": "Asignados: {asignados} de {cantidad}",
+  "@empleadoLineaComercialCapacidad": {
+    "placeholders": {
+      "asignados": { "type": "int" },
+      "cantidad": { "type": "int" }
+    }
+  },
+  "empleadoLineaComercialCapacidadExcedidaAdviso": "Este perfil ya alcanzó su capacidad contratada — puedes continuar si corresponde a una cobertura o suplencia temporal.",
+  "empleadoErrorSueldoRequerido": "El perfil elegido todavía no tiene sueldo de referencia configurado. Captúralo en la línea comercial del Servicio, o ingresa un sueldo acordado manualmente.",
   "empleadoErrorSueldoAcordadoInvalido": "El sueldo acordado debe ser mayor a \\$0.",
   "empleadoErrorBonoAcordadoInvalido": "El bono acordado no puede ser negativo.",
   "empleadoErrorCodigoPostalFiscalInvalido": "El código postal fiscal debe tener 5 dígitos.",
@@ -1693,6 +1842,7 @@
   "crearEmpleadoBotonCancelar": "Cancelar",
   "crearEmpleadoExito": "Empleado registrado correctamente.",
   "crearEmpleadoErrorInesperado": "No se pudo registrar el Empleado. Intenta de nuevo.",
+  "empleadoErrorBaseDatosDesactualizada": "No se pudo guardar: la base de datos local necesita actualizarse. Cierra RISEG ONE por completo, vuelve a abrirlo e inténtalo de nuevo.",
   "empleadoSeccionFotografia": "Fotografía (opcional)",
   "crearEmpleadoBotonSeleccionarImagen": "Seleccionar imagen",
   "crearEmpleadoBotonCambiarImagen": "Cambiar",
@@ -1786,6 +1936,33 @@
   "empleadoDetalleBotonRegistrarReingreso": "Registrar reingreso",
   "empleadoDetalleBotonEditar": "Editar",
   "empleadoDetalleBotonAdjuntar": "Adjuntar",
+  "empleadoDetalleBotonEliminarFisicamente": "Eliminar físicamente (Maestro)",
+  "empleadoDetalleEliminarResumenFichasTecnicas": "{cantidad, plural, one{1 ficha técnica} other{{cantidad} fichas técnicas}}",
+  "@empleadoDetalleEliminarResumenFichasTecnicas": {
+    "placeholders": {
+      "cantidad": {"type": "int"}
+    }
+  },
+  "empleadoDetalleEliminarResumenDocumentos": "{cantidad, plural, one{1 documento adjunto} other{{cantidad} documentos adjuntos}}",
+  "@empleadoDetalleEliminarResumenDocumentos": {
+    "placeholders": {
+      "cantidad": {"type": "int"}
+    }
+  },
+  "empleadoDetalleEliminarResumenSinDependencias": "Este empleado no tiene fichas técnicas ni documentos adjuntos — se eliminará de forma permanente.",
+  "empleadoDetalleEliminarResumenMensaje": "Este empleado tiene {detalle}. Se eliminarán junto con el expediente.",
+  "@empleadoDetalleEliminarResumenMensaje": {
+    "placeholders": {
+      "detalle": {"type": "String"}
+    }
+  },
+  "empleadoDetalleEliminarArchivosNoEliminados": "El empleado se eliminó, pero {cantidad, plural, one{1 archivo} other{{cantidad} archivos}} no se pudo(eron) borrar del disco: {lista}.",
+  "@empleadoDetalleEliminarArchivosNoEliminados": {
+    "placeholders": {
+      "cantidad": {"type": "int"},
+      "lista": {"type": "String"}
+    }
+  },
   "empleadoDetalleCampoEdad": "Edad",
   "empleadoDetalleEdadAnios": "{anios} años",
   "@empleadoDetalleEdadAnios": {
@@ -2205,6 +2382,7 @@
   "inventarioColumnaTipo": "Tipo",
   "inventarioColumnaTotal": "Total",
   "inventarioColumnaDisponible": "Disponible",
+  "inventarioColumnaAsignado": "Asignado",
   "inventarioColumnaDanado": "Dañado/Perdido",
 
   "gestionarArticuloDialogoTituloAlta": "Nuevo artículo",
@@ -2269,11 +2447,17 @@
   "articuloExpedienteSeccionExistencia": "Existencia",
   "articuloExpedienteCampoTotal": "Total",
   "articuloExpedienteCampoDisponible": "Disponible",
+  "articuloExpedienteCampoAsignado": "Asignado",
   "articuloExpedienteCampoDanado": "Dañado",
   "articuloExpedienteCampoPerdido": "Perdido",
-  "articuloExpedienteSeccionVariantes": "Tallas/variantes",
+  "articuloExpedienteSeccionVariantes": "Existencia por talla",
   "articuloExpedienteBotonNuevaVariante": "Nueva talla",
   "articuloExpedienteVariantesVacio": "Sin tallas capturadas.",
+  "articuloExpedienteColumnaTalla": "Talla/variante",
+  "articuloExpedienteExistenciaVarianteResumen": "{valor} {disponible} disponible",
+  "@articuloExpedienteExistenciaVarianteResumen": {
+    "placeholders": { "valor": { "type": "String" }, "disponible": { "type": "int" } }
+  },
   "articuloExpedienteSeccionUnidades": "Unidades",
   "articuloExpedienteUnidadesVacio": "Sin unidades capturadas.",
   "articuloExpedienteColumnaCodigo": "Código",
@@ -2331,7 +2515,10 @@
   "registrarBajaCampoObservaciones": "Motivo / observaciones",
   "registrarBajaExito": "Baja registrada correctamente.",
   "registrarBajaErrorCantidadInvalida": "La cantidad debe ser mayor a cero.",
-  "registrarBajaErrorSobrepasaDisponible": "La cantidad excede el disponible actual.",
+  "registrarBajaErrorSobrepasaDisponible": "La cantidad excede el disponible actual ({disponible} disponible(s)).",
+  "@registrarBajaErrorSobrepasaDisponible": {
+    "placeholders": { "disponible": { "type": "int" } }
+  },
   "registrarBajaErrorObservacionesRequeridas": "Indica el motivo de la baja.",
   "registrarBajaErrorYaDeBaja": "Esta unidad ya está dada de baja.",
   "registrarBajaErrorInesperado": "Ocurrió un error al registrar la baja.",
@@ -2347,7 +2534,10 @@
   "registrarAjusteCampoObservaciones": "Motivo del ajuste",
   "registrarAjusteExito": "Ajuste registrado correctamente.",
   "registrarAjusteErrorCantidadInvalida": "La cantidad debe ser mayor a cero.",
-  "registrarAjusteErrorSobrepasaDisponible": "La cantidad excede el disponible actual.",
+  "registrarAjusteErrorSobrepasaDisponible": "La cantidad excede el disponible actual ({disponible} disponible(s)).",
+  "@registrarAjusteErrorSobrepasaDisponible": {
+    "placeholders": { "disponible": { "type": "int" } }
+  },
   "registrarAjusteErrorObservacionesRequeridas": "Indica el motivo del ajuste.",
   "registrarAjusteErrorInesperado": "Ocurrió un error al registrar el ajuste.",
 
@@ -3321,6 +3511,60 @@
   "compraCorregirCampoMotivo": "Motivo de la corrección",
   "compraCorregirBotonGuardar": "Guardar corrección",
   "compraCorregirExito": "Compra corregida.",
+  "compraCorregirScreenTitulo": "Corregir Compra {folio}",
+  "@compraCorregirScreenTitulo": {
+    "placeholders": {"folio": {"type": "String"}}
+  },
+  "compraCorregirSeccionPartidas": "Partidas",
+  "compraCorregirPartidaSerializadaAyuda": "Artículo serializado: para cambiar el artículo/variante, quita esta partida y agrega una nueva.",
+  "compraCorregirUnidadExistente": "Unidad {codigo} · Serie {serie}",
+  "@compraCorregirUnidadExistente": {
+    "placeholders": {"codigo": {"type": "String"}, "serie": {"type": "String"}}
+  },
+  "compraCorregirBotonAgregarUnidad": "Agregar unidad",
+  "compraCorregirCampoNumeroSerieNueva": "Número de serie de la unidad nueva",
+  "compraCorregirResumenImpactoTitulo": "Esta corrección modificará:",
+  "compraCorregirResumenTotalLinea": "Total de Compra: {anterior} → {nuevo}",
+  "@compraCorregirResumenTotalLinea": {
+    "placeholders": {"anterior": {"type": "String"}, "nuevo": {"type": "String"}}
+  },
+  "compraCorregirResumenEgresoLinea": "Egreso relacionado: {anterior} → {nuevo}",
+  "@compraCorregirResumenEgresoLinea": {
+    "placeholders": {"anterior": {"type": "String"}, "nuevo": {"type": "String"}}
+  },
+  "compraCorregirResumenPartidaLinea": "{articulo}: {cantidadAnterior} → {cantidadNueva} · {costoAnterior} → {costoNuevo}",
+  "@compraCorregirResumenPartidaLinea": {
+    "placeholders": {
+      "articulo": {"type": "String"},
+      "cantidadAnterior": {"type": "String"},
+      "cantidadNueva": {"type": "String"},
+      "costoAnterior": {"type": "String"},
+      "costoNuevo": {"type": "String"}
+    }
+  },
+  "compraCorregirResumenPartidaNuevaLinea": "Nueva: {articulo} × {cantidad}",
+  "@compraCorregirResumenPartidaNuevaLinea": {
+    "placeholders": {"articulo": {"type": "String"}, "cantidad": {"type": "String"}}
+  },
+  "compraCorregirResumenPartidaQuitadaLinea": "Se quita: {articulo}",
+  "@compraCorregirResumenPartidaQuitadaLinea": {
+    "placeholders": {"articulo": {"type": "String"}}
+  },
+  "compraCorregirBotonConfirmarImpacto": "Confirmar y guardar",
+  "compraCorregirDependenciaBloqueada": "No se puede aplicar esta corrección: {detalle}",
+  "@compraCorregirDependenciaBloqueada": {
+    "placeholders": {"detalle": {"type": "String"}}
+  },
+  "compraCorregirBotonQuitarUnidad": "Quitar unidad",
+  "compraCorregirBotonQuitarPartidaCompleta": "Quitar esta partida",
+  "compraCorregirBotonDeshacerQuitar": "Deshacer",
+  "compraCorregirErrorMotivoRequerido": "El motivo de la corrección es obligatorio.",
+  "compraCorregirPartidaInvalida": "Partida {indice}: {motivo}",
+  "@compraCorregirPartidaInvalida": {
+    "placeholders": {"indice": {"type": "int"}, "motivo": {"type": "String"}}
+  },
+  "compraCorregirNoExiste": "La compra ya no existe.",
+  "compraCorregirCancelada": "No se puede corregir una compra cancelada.",
 
   "compraCancelarDialogoTitulo": "Cancelar compra",
   "compraCancelarMensaje": "Esta acción revertirá las entradas de Inventario generadas y cancelará el Egreso relacionado. No se puede deshacer.",

@@ -1,11 +1,17 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/adjuntar_resguardo_firmado_dialog.dart';
@@ -37,6 +43,7 @@ import 'widgets/cambiar_servicio_empleado_dialog.dart';
 import 'widgets/corregir_empleado_dialog.dart';
 import 'widgets/crear_empleado_dialog.dart';
 import 'widgets/domicilio_empleado_dialog.dart';
+import 'widgets/eliminar_empleado_fisicamente_dialog.dart';
 import 'widgets/estudio_socioeconomico_empleado_dialog.dart';
 import 'widgets/generar_ficha_tecnica_empleado_dialog.dart';
 import 'widgets/perfil_psicologico_empleado_dialog.dart';
@@ -77,6 +84,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   EmpresaData? _empresa;
   SucursalData? _sucursal;
   String? _bancoNombre;
+  AttachmentData? _fotografia;
   List<FichaTecnicaEmpleadoData> _fichasTecnicas = const [];
   Map<String, String> _fichaTecnicaRutasPorAttachmentId = const {};
   List<AsignacionData> _inventarioAsignado = const [];
@@ -106,6 +114,13 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     final documentos = (await ref.read(attachmentRepositoryProvider).listarActivosPorEmpleado(widget.empleadoId))
         .where((d) => d.categoria != 'fotografia' && d.categoria != 'fichaTecnica')
         .toList();
+    // Fotografía vigente (Etapa 15) — puntero directo
+    // `Empleado.fotografiaAttachmentId`, misma fuente de verdad que
+    // guarda `ActualizarFotografiaEmpleadoUseCase`, nunca duplicada.
+    AttachmentData? fotografia;
+    if (empleado?.fotografiaAttachmentId != null) {
+      fotografia = await ref.read(attachmentRepositoryProvider).obtenerPorId(empleado!.fotografiaAttachmentId!);
+    }
     final eventos = await empleadoRepo.listarEventos(widget.empleadoId);
     final periodosArchivados = await empleadoRepo.listarPeriodosLaboralesArchivados(widget.empleadoId);
     final fichasTecnicas = await ref.read(fichaTecnicaEmpleadoRepositoryProvider).listarPorEmpleado(widget.empleadoId);
@@ -220,6 +235,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       _empresa = empresa;
       _sucursal = sucursal;
       _bancoNombre = bancoNombre;
+      _fotografia = fotografia;
       _fichasTecnicas = fichasTecnicas;
       _fichaTecnicaRutasPorAttachmentId = fichaTecnicaRutasPorAttachmentId;
       _inventarioAsignado = inventarioAsignado;
@@ -320,11 +336,21 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     }
   }
 
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarEmpleadoFisicamente(context, ref, widget.empleadoId);
+    if (!eliminado) return;
+    ref.read(empleadosListControllerProvider.notifier).recargar();
+    if (mounted) context.pop();
+  }
+
   Future<void> _registrarBajaLaboral() async {
     final actualizo = await mostrarDialogoBajaLaboralEmpleado(context, ref, _empleado!);
     if (actualizo) {
       await _cargar();
       ref.read(empleadosListControllerProvider.notifier).recargar();
+      // Un Empleado dado de baja con Inventario todavía pendiente
+      // alimenta "Requiere atención" del Dashboard.
+      ref.invalidate(dashboardControllerProvider);
     }
   }
 
@@ -446,6 +472,8 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
 
     final cancelado = EstatusEmpleado.values.byName(empleado.estatus) == EstatusEmpleado.baja;
     final cicloLaboral = calcularCicloLaboralEmpleado(empleado);
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
+    final fotografia = _fotografia;
 
     return Scaffold(
       appBar: AppBar(title: Text(empleadoNombreCompleto(empleado))),
@@ -461,7 +489,12 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                   children: [
                     GestureDetector(
                       onTap: _procesando ? null : _actualizarFotografia,
-                      child: CircleAvatar(radius: 32, backgroundColor: colors.surfaceSunken, child: const Icon(Icons.person, size: 32)),
+                      child: CircleAvatar(
+                        radius: 32,
+                        backgroundColor: colors.surfaceSunken,
+                        backgroundImage: fotografia == null ? null : FileImage(File(fotografia.path)),
+                        child: fotografia == null ? const Icon(Icons.person, size: 32) : null,
+                      ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
@@ -498,6 +531,17 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                         label: l10n.empleadoDetalleBotonDarDeBaja,
                         variant: RisegButtonVariant.danger,
                         onPressed: _registrarBajaLaboral,
+                      ),
+                    // Facultad extraordinaria Maestro-only (Etapa 15) —
+                    // mismo patrón ya usado en Compra/Documento por
+                    // emitir: botón suelto en el mismo `Wrap` de
+                    // acciones, nunca un menú nuevo.
+                    if (esMaestro)
+                      RisegButton(
+                        key: const Key('empleado_expediente_boton_eliminar_fisicamente'),
+                        label: l10n.empleadoDetalleBotonEliminarFisicamente,
+                        variant: RisegButtonVariant.danger,
+                        onPressed: _eliminarFisicamente,
                       ),
                   ],
                 ),
@@ -586,7 +630,12 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                     children: [
                       Text(l10n.empleadoSeccionDatosBancarios, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
                       const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoBanco, value: _bancoNombre),
+                      CampoConsulta(
+                        label: l10n.empleadoCampoBanco,
+                        value: empleado.bancoId == SeedIds.bancoOtro && empleado.bancoOtroDescripcion != null
+                            ? '$_bancoNombre · ${empleado.bancoOtroDescripcion}'
+                            : _bancoNombre,
+                      ),
                       const SizedBox(height: AppSpacing.sm),
                       CampoConsulta(label: l10n.empleadoCampoNumeroCuentaTarjeta, value: empleado.numeroCuentaTarjeta),
                       const SizedBox(height: AppSpacing.sm),

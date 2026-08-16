@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
+import 'package:riseg_one/core/attachments/attachment_repository.dart';
+import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
@@ -7,14 +11,28 @@ import 'package:riseg_one/features/personal/domain/repositories/asignacion_servi
 import 'package:uuid/uuid.dart';
 
 import '../../domain/repositories/empleado_repository.dart';
+import '../../domain/usecases/eliminar_empleado_fisicamente_usecase.dart';
 import '../tables/empleado_table.dart';
 import 'empleado_evento_writer.dart';
 
 class EmpleadoRepositoryImpl implements EmpleadoRepository {
-  EmpleadoRepositoryImpl(this._db, this._asignacionServicioRepository);
+  EmpleadoRepositoryImpl(this._db, this._asignacionServicioRepository, {AttachmentStorage? attachmentStorage})
+      : _attachmentStorage = attachmentStorage;
 
   final AppDatabase _db;
   final AsignacionServicioRepository _asignacionServicioRepository;
+  late final AttachmentRepository _attachmentRepository = AttachmentRepository(_db);
+
+  /// Opcional a propósito (Etapa 15): la mayoría de los llamadores de
+  /// este repositorio (Nómina, Reportes, Servicio, otras pruebas)
+  /// nunca ejecutan `eliminarFisicamente` y no necesitan construir un
+  /// `AttachmentStorage` real solo para satisfacer el constructor. En
+  /// producción, el provider siempre lo pasa. Si es `null` y sí hay
+  /// adjuntos que limpiar, el archivo físico simplemente no se intenta
+  /// borrar — se reporta como no eliminado, nunca se oculta ni se
+  /// finge éxito completo. Mismo criterio ya usado por
+  /// `DocumentoPorEmitirRepositoryImpl`.
+  final AttachmentStorage? _attachmentStorage;
 
   @override
   Future<EmpleadoData?> obtenerPorId(String id) {
@@ -110,6 +128,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     EmpleadoCompanion datos, {
     String? servicioIdAsignacion,
     String? turnoIdAsignacion,
+    String? lineaComercialIdAsignacion,
     int? sueldoMensualAsignacion,
     int? bonoMensualAsignacion,
   }) {
@@ -137,6 +156,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
           sueldoMensual: sueldoMensualAsignacion!,
           bonoMensual: bonoMensualAsignacion!,
           turnoId: turnoIdAsignacion,
+          lineaComercialId: lineaComercialIdAsignacion,
         );
       }
       return empleado;
@@ -516,5 +536,182 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       );
       return actualizado;
     });
+  }
+
+  /// Única historia real que bloquea la eliminación física (Etapa 15,
+  /// decisión explícita de Marlon): Nómina generada, Asignación a
+  /// Servicio, resguardo/reclamo de Inventario, Vehículo o Línea
+  /// telefónica asignados — todas FK `restrict` reales hacia Empleado.
+  /// `FichaTecnicaEmpleado` (también `restrict`) deliberadamente NO
+  /// está aquí: se limpia junto con el Empleado (ver
+  /// [eliminarFisicamente]), nunca bloquea — los expedientes de prueba
+  /// de esta etapa ya generaron fichas técnicas y eso no debe impedir
+  /// limpiarlos.
+  Future<String?> _detalleBloqueoEliminacionFisica(String empleadoId) async {
+    final asignacionesServicio =
+        await (_db.select(_db.asignacionServicio)..where((t) => t.empleadoId.equals(empleadoId))).get();
+    if (asignacionesServicio.isNotEmpty) {
+      return 'Este Empleado tiene historial de Asignación a Servicio — no puede eliminarse físicamente.';
+    }
+
+    final nomina = await (_db.select(_db.nominaEmpleado)..where((t) => t.empleadoId.equals(empleadoId))).get();
+    if (nomina.isNotEmpty) {
+      return 'Este Empleado tiene Nómina generada — no puede eliminarse físicamente.';
+    }
+
+    final asignacionesInventario = await (_db.select(_db.asignacion)..where((t) => t.empleadoId.equals(empleadoId))).get();
+    if (asignacionesInventario.isNotEmpty) {
+      return 'Este Empleado tiene resguardos de Inventario registrados — no puede eliminarse físicamente.';
+    }
+
+    final descuentos = await (_db.select(_db.descuentoInventario)..where((t) => t.empleadoId.equals(empleadoId))).get();
+    if (descuentos.isNotEmpty) {
+      return 'Este Empleado tiene reclamos de Inventario (daño/pérdida) registrados — no puede eliminarse '
+          'físicamente.';
+    }
+
+    final vehiculos = await (_db.select(_db.asignacionVehiculo)..where((t) => t.empleadoId.equals(empleadoId))).get();
+    if (vehiculos.isNotEmpty) {
+      return 'Este Empleado tiene Vehículos asignados — no puede eliminarse físicamente.';
+    }
+
+    final lineas =
+        await (_db.select(_db.asignacionLineaTelefonica)..where((t) => t.empleadoId.equals(empleadoId))).get();
+    if (lineas.isNotEmpty) {
+      return 'Este Empleado tiene Líneas telefónicas asignadas — no puede eliminarse físicamente.';
+    }
+
+    return null;
+  }
+
+  @override
+  Future<ResumenEliminacionEmpleado> obtenerResumenEliminacionFisica(String empleadoId) async {
+    final empleado = await obtenerPorId(empleadoId);
+    if (empleado == null) return const ResumenEliminacionEmpleado(existe: false);
+
+    final detalleBloqueo = await _detalleBloqueoEliminacionFisica(empleadoId);
+    final fichas = await (_db.select(_db.fichaTecnicaEmpleado)..where((t) => t.empleadoId.equals(empleadoId))).get();
+    final documentos = await (_db.select(_db.empleadoAttachment)..where((t) => t.empleadoId.equals(empleadoId))).get();
+
+    return ResumenEliminacionEmpleado(
+      existe: true,
+      cantidadFichasTecnicas: fichas.length,
+      cantidadDocumentos: documentos.length,
+      detalleBloqueo: detalleBloqueo,
+    );
+  }
+
+  /// Eliminación física extraordinaria (Etapa 15) — el único bloqueador
+  /// real es historia posterior verificada por
+  /// [_detalleBloqueoEliminacionFisica]. `FichaTecnicaEmpleado` nunca
+  /// bloquea (decisión explícita de Marlon): se limpia junto con el
+  /// Empleado, incluido su PDF físico, con el mismo criterio seguro ya
+  /// usado por `DocumentoPorEmitirRepositoryImpl.eliminarFisicamente`:
+  /// las filas de BD (fichas técnicas, domicilio, Empleado, y los
+  /// `Attachment` ahora huérfanos de la ficha y del propio expediente
+  /// — fotografía/documentos) se borran todas dentro de una sola
+  /// transacción; los archivos físicos en disco se borran DESPUÉS de
+  /// que esa transacción haga commit — nunca antes: si la transacción
+  /// falla, ningún registro queda apuntando a un archivo ya borrado; si
+  /// un archivo no se puede borrar (permisos, en uso), la base de datos
+  /// ya quedó consistente y el Empleado ya está eliminado — el archivo
+  /// huérfano se reporta explícitamente en el resultado, nunca se
+  /// oculta. `EmpleadoEvento`/`EmpleadoPeriodoLaboral`/
+  /// `EmpleadoAttachment` (la tabla puente) son `cascade`, se limpian
+  /// solos al borrar la fila de Empleado.
+  @override
+  Future<EliminarEmpleadoFisicamenteResultado> eliminarFisicamente({
+    required String empleadoId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) async {
+    final empleadoInicial = await obtenerPorId(empleadoId);
+    if (empleadoInicial == null) return EliminarEmpleadoFisicamenteNoExiste();
+
+    final detalleBloqueo = await _detalleBloqueoEliminacionFisica(empleadoId);
+    if (detalleBloqueo != null) return EliminarEmpleadoFisicamenteTieneDependencias(detalleBloqueo);
+
+    final fichas = await (_db.select(_db.fichaTecnicaEmpleado)..where((t) => t.empleadoId.equals(empleadoId))).get();
+    final eventos = await listarEventos(empleadoId);
+    final periodos = await listarPeriodosLaboralesArchivados(empleadoId);
+    final domicilio = await _buscarDomicilioDeEmpleado(empleadoId);
+
+    // Capturados antes de la transacción para poder borrar los
+    // archivos físicos después del commit.
+    final fichaAdjuntosQuery = _db.select(_db.attachment).join([
+      innerJoin(_db.fichaTecnicaEmpleado, _db.fichaTecnicaEmpleado.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.fichaTecnicaEmpleado.empleadoId.equals(empleadoId));
+    final fichaAdjuntos = await fichaAdjuntosQuery.map((row) => row.readTable(_db.attachment)).get();
+
+    final empleadoAdjuntosQuery = _db.select(_db.attachment).join([
+      innerJoin(_db.empleadoAttachment, _db.empleadoAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])
+      ..where(_db.empleadoAttachment.empleadoId.equals(empleadoId));
+    final empleadoAdjuntos = await empleadoAdjuntosQuery.map((row) => row.readTable(_db.attachment)).get();
+
+    await _db.transaction(() async {
+      final snapshot = <String, Object?>{
+        'empleado': empleadoInicial.toJson(),
+        'domicilio': domicilio?.toJson(),
+        'eventos': [for (final e in eventos) e.toJson()],
+        'periodosLaboralesArchivados': [for (final p in periodos) p.toJson()],
+        'fichasTecnicas': [for (final f in fichas) f.toJson()],
+        'fichaAdjuntos': [for (final a in fichaAdjuntos) a.toJson()],
+        'empleadoAdjuntos': [for (final a in empleadoAdjuntos) a.toJson()],
+      };
+
+      // 1. Fichas técnicas — su FK hacia Empleado es `restrict`, deben
+      // limpiarse antes de poder borrar el Empleado.
+      for (final ficha in fichas) {
+        await (_db.delete(_db.fichaTecnicaEmpleado)..where((t) => t.id.equals(ficha.id))).go();
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'empleado',
+              entidadIdOriginal: empleadoId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode(snapshot),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+
+      // 2. Domicilio (`Direccion.empleadoId` — columna simple, sin FK
+      // real) — se limpia explícitamente para no dejarlo huérfano.
+      if (domicilio != null) {
+        await (_db.delete(_db.direccion)..where((t) => t.id.equals(domicilio.id))).go();
+      }
+
+      // 3. El Empleado en sí — `EmpleadoEvento`/`EmpleadoPeriodoLaboral`/
+      // `EmpleadoAttachment` son `cascade`, se limpian solos.
+      await (_db.delete(_db.empleado)..where((t) => t.id.equals(empleadoId))).go();
+
+      // 4. Attachments ahora huérfanos (PDFs de fichas técnicas +
+      // fotografía/documentos propios del expediente) — ninguna FK los
+      // cascada automáticamente, se borran explícitamente.
+      for (final adjunto in fichaAdjuntos) {
+        await _attachmentRepository.eliminarFisico(adjunto.id);
+      }
+      for (final adjunto in empleadoAdjuntos) {
+        await _attachmentRepository.eliminarFisico(adjunto.id);
+      }
+    });
+
+    final archivosNoEliminados = <String>[];
+    for (final adjunto in [...fichaAdjuntos, ...empleadoAdjuntos]) {
+      if (_attachmentStorage == null) {
+        archivosNoEliminados.add(adjunto.originalFileName);
+        continue;
+      }
+      try {
+        await _attachmentStorage.eliminarArchivo(adjunto.path);
+      } catch (_) {
+        archivosNoEliminados.add(adjunto.originalFileName);
+      }
+    }
+
+    return EliminarEmpleadoFisicamenteExitoso(archivosNoEliminadosFisicamente: archivosNoEliminados);
   }
 }

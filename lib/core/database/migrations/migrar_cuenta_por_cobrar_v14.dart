@@ -43,8 +43,6 @@ Future<void> migrarCuentaPorCobrarV14(AppDatabase db) async {
               metodo: documento.metodo,
               requiereComplemento: Value(documento.requiereComplemento),
               folioDocumento: Value(documento.folioDocumento),
-              serieFiscal: Value(documento.serieFiscal),
-              folioFiscal: Value(documento.folioFiscal),
               uuid: Value(documento.uuid),
               fechaEmisionReal: documento.fechaEmisionReal!,
               importeEmitido: documento.importeEmitido!,

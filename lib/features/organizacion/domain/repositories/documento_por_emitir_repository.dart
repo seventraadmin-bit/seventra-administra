@@ -3,6 +3,7 @@ import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir
 
 import '../usecases/documento_por_emitir_armado.dart';
 import '../usecases/documento_por_emitir_detalle.dart';
+import '../usecases/eliminar_documento_por_emitir_fisicamente_usecase.dart';
 
 /// Agenda de documentos por emitir (Etapa 4I.1, ciclo administrativo
 /// completo desde la 4I.2.1) — obligaciones administrativas de
@@ -27,6 +28,10 @@ abstract interface class DocumentoPorEmitirRepository {
   });
 
   Future<DocumentoPorEmitirDetalle?> obtenerDetalle(String documentoPorEmitirId);
+
+  /// Hitos planeados del documento (Etapa 15), ordenados por `orden` —
+  /// ver el doc comment de `DocumentoPorEmitirDetalle.hitos`.
+  Future<List<DocumentoPorEmitirHitoData>> listarHitos(String documentoPorEmitirId);
 
   Future<List<DocumentoPorEmitirData>> listar({
     DateTime? rangoInicio,
@@ -54,8 +59,6 @@ abstract interface class DocumentoPorEmitirRepository {
   Future<DocumentoPorEmitirData> registrarEmision({
     required String documentoPorEmitirId,
     required String folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     required DateTime fechaEmisionReal,
     required int importeEmitido,
@@ -74,8 +77,6 @@ abstract interface class DocumentoPorEmitirRepository {
     required String documentoPorEmitirId,
     required String motivo,
     String? folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     DateTime? fechaEmisionReal,
     int? importeEmitido,
@@ -142,6 +143,20 @@ abstract interface class DocumentoPorEmitirRepository {
     required String mimeType,
     required int sizeBytes,
     String? motivo,
+    String? actorUsuarioId,
+  });
+
+  /// Resumen de solo lectura para el mensaje de confirmación dinámico
+  /// de la UI antes de pedir el motivo — ver el doc comment de
+  /// `ResumenEliminacionDocumentoPorEmitir`.
+  Future<ResumenEliminacionDocumentoPorEmitir> obtenerResumenEliminacionFisica(String documentoPorEmitirId);
+
+  /// Eliminación física extraordinaria (Etapa 15, ampliada) — ver el
+  /// doc comment de la implementación para las condiciones exactas de
+  /// elegibilidad (único bloqueador real: `AplicacionPago` existente).
+  Future<EliminarDocumentoPorEmitirFisicamenteResultado> eliminarFisicamente({
+    required String documentoPorEmitirId,
+    required String motivo,
     String? actorUsuarioId,
   });
 }

@@ -48,7 +48,7 @@ void main() {
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
     registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
-    corregirCompra = CorregirCompraUseCase(compraRepo);
+    corregirCompra = CorregirCompraUseCase(compraRepo, articuloRepo, inventarioRepo);
     cancelarCompra = CancelarCompraUseCase(compraRepo);
   });
 

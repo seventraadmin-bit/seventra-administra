@@ -15,7 +15,7 @@ class VigenciaHistorialCobro {
     required this.vigencia,
     required this.estado,
     required this.correos,
-    required this.reglasEventos,
+    required this.etapas,
     this.entidadFiscalRazonSocial,
     this.frecuenciaNombre,
   });
@@ -23,7 +23,7 @@ class VigenciaHistorialCobro {
   final ConfiguracionCobroVigenciaData vigencia;
   final EstadoVigenciaCobro estado;
   final List<String> correos;
-  final List<ConfiguracionCobroReglaEventoData> reglasEventos;
+  final List<ConfiguracionCobroEtapaData> etapas;
   final String? entidadFiscalRazonSocial;
   final String? frecuenciaNombre;
 }
@@ -52,7 +52,7 @@ class ObtenerHistorialConfiguracionCobroUseCase {
     final resultado = <VigenciaHistorialCobro>[];
     for (final v in historial) {
       final correos = await _repository.listarCorreos(v.id);
-      final reglas = await _repository.listarReglas(v.id);
+      final etapas = await _repository.listarEtapas(v.id);
 
       String? entidadFiscalRazonSocial;
       final entidadFiscalId = v.entidadFiscalId;
@@ -74,7 +74,7 @@ class ObtenerHistorialConfiguracionCobroUseCase {
           vigencia: v,
           estado: clasificarParaHistorialCobro(v, hoy),
           correos: correos,
-          reglasEventos: reglas,
+          etapas: etapas,
           entidadFiscalRazonSocial: entidadFiscalRazonSocial,
           frecuenciaNombre: frecuencia?.nombre,
         ),

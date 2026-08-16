@@ -6,7 +6,7 @@ part of 'egresos_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$egresosControllerHash() => r'59bc81227a389aa496e64963acabe2c266e6461d';
+String _$egresosControllerHash() => r'd054b92163d1f049e3cfbef280807d14db31f52d';
 
 /// Controlador del listado de Egresos (Etapa 4K.1) — mismo diseño que
 /// `IngresosController`.

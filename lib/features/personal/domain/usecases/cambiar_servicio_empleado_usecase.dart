@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
+import 'package:riseg_one/features/organizacion/domain/repositories/servicio_comercial_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
 
 import '../repositories/asignacion_servicio_repository.dart';
@@ -25,14 +26,22 @@ class CambiarServicioEmpleadoMismoServicio extends CambiarServicioEmpleadoResult
 
 class CambiarServicioEmpleadoFechaInvalida extends CambiarServicioEmpleadoResultado {}
 
-/// Mismo criterio que `AsignarEmpleadoServicioSueldoRequerido`: el nuevo
-/// Servicio no tiene sueldo de referencia y tampoco se capturó una
-/// excepción individual.
+/// Mismo criterio que `AsignarEmpleadoServicioSueldoRequerido`: ni la
+/// línea comercial elegida del nuevo Servicio ni una excepción
+/// individual capturada dan un sueldo de referencia.
 class CambiarServicioEmpleadoSueldoRequerido extends CambiarServicioEmpleadoResultado {}
 
 class CambiarServicioEmpleadoSueldoInvalido extends CambiarServicioEmpleadoResultado {}
 
 class CambiarServicioEmpleadoBonoInvalido extends CambiarServicioEmpleadoResultado {}
+
+/// El nuevo Servicio tiene al menos una línea comercial vigente y no se
+/// eligió ninguna (Etapa 15, rediseño de "Condiciones de Personal").
+class CambiarServicioEmpleadoLineaComercialRequerida extends CambiarServicioEmpleadoResultado {}
+
+/// La línea comercial elegida no pertenece al nuevo Servicio, o no
+/// tiene una vigencia vigente hoy.
+class CambiarServicioEmpleadoLineaComercialInvalida extends CambiarServicioEmpleadoResultado {}
 
 class CambiarServicioEmpleadoErrorInesperado extends CambiarServicioEmpleadoResultado {
   CambiarServicioEmpleadoErrorInesperado(this.mensaje);
@@ -44,21 +53,25 @@ class CambiarServicioEmpleadoErrorInesperado extends CambiarServicioEmpleadoResu
 /// y crea la nueva, en una sola transacción. Nunca obliga a "retirar
 /// primero, asignar después" (Resolución explícita de Marlon).
 ///
-/// `sueldoMensual`/`bonoMensual` (Etapa 6B) son la excepción individual
-/// de la asignación *nueva* — mismo criterio de precarga/resolución que
-/// `AsignarEmpleadoServicioUseCase`. La asignación anterior conserva su
-/// propio historial de vigencias de sueldo sin tocarse.
+/// `sueldoMensual`/`bonoMensual` son la excepción individual de la
+/// asignación *nueva* — mismo criterio de precarga/resolución que
+/// `AsignarEmpleadoServicioUseCase` (Etapa 15: desde la línea comercial
+/// elegida del nuevo Servicio, ya no desde su sueldo global). La
+/// asignación anterior conserva su propio historial de vigencias de
+/// sueldo sin tocarse.
 class CambiarServicioEmpleadoUseCase {
   CambiarServicioEmpleadoUseCase(
     this._empleadoRepository,
     this._asignacionRepository,
     this._servicioRepository,
+    this._servicioComercialRepository,
     this._validator,
   );
 
   final EmpleadoRepository _empleadoRepository;
   final AsignacionServicioRepository _asignacionRepository;
   final ServicioRepository _servicioRepository;
+  final ServicioComercialRepository _servicioComercialRepository;
   final AsignacionServicioValidator _validator;
 
   Future<CambiarServicioEmpleadoResultado> ejecutar({
@@ -66,6 +79,7 @@ class CambiarServicioEmpleadoUseCase {
     required String nuevoServicioId,
     required DateTime fecha,
     String? turnoId,
+    String? lineaComercialId,
     String? observaciones,
     int? sueldoMensual,
     int? bonoMensual,
@@ -88,12 +102,27 @@ class CambiarServicioEmpleadoUseCase {
       return CambiarServicioEmpleadoFechaInvalida();
     }
 
-    final sueldoResuelto = sueldoMensual ?? nuevoServicio.sueldoMensualReferenciaPersonal;
+    final lineas = await _servicioComercialRepository.listarLineas(nuevoServicioId);
+    final resolucionLinea = resolverLineaComercialAsignacion(
+      lineasDelServicio: lineas,
+      lineaComercialId: lineaComercialId,
+      sueldoMensual: sueldoMensual,
+      bonoMensual: bonoMensual,
+    );
+    switch (resolucionLinea) {
+      case ResolucionLineaComercialRequerida():
+        return CambiarServicioEmpleadoLineaComercialRequerida();
+      case ResolucionLineaComercialInvalida():
+        return CambiarServicioEmpleadoLineaComercialInvalida();
+      case ResolucionLineaComercialExitosa():
+        break;
+    }
+    final exitosa = resolucionLinea;
+
+    final sueldoResuelto = exitosa.sueldoResuelto;
     if (sueldoResuelto == null) return CambiarServicioEmpleadoSueldoRequerido();
     if (!_validator.sueldoValido(sueldoResuelto)) return CambiarServicioEmpleadoSueldoInvalido();
-
-    final bonoResuelto = bonoMensual ?? nuevoServicio.bonoMensualReferenciaPersonal ?? 0;
-    if (!_validator.bonoValido(bonoResuelto)) return CambiarServicioEmpleadoBonoInvalido();
+    if (!_validator.bonoValido(exitosa.bonoResuelto)) return CambiarServicioEmpleadoBonoInvalido();
 
     try {
       final asignacion = await _asignacionRepository.cambiarServicio(
@@ -101,8 +130,9 @@ class CambiarServicioEmpleadoUseCase {
         nuevoServicioId: nuevoServicioId,
         fecha: fecha,
         sueldoMensual: sueldoResuelto,
-        bonoMensual: bonoResuelto,
+        bonoMensual: exitosa.bonoResuelto,
         turnoId: turnoId,
+        lineaComercialId: exitosa.linea?.linea.id,
         observaciones: observaciones,
         actorUsuarioId: actorUsuarioId,
       );

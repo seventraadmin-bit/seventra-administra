@@ -2,6 +2,8 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/domain/shared/direccion_input.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
+import '../usecases/eliminar_empleado_fisicamente_usecase.dart';
+
 /// Proyección segura de `Empleado` para Reportes (Etapa 12B) — allow-list
 /// explícito, poblado siempre vía `selectOnly` (nunca cargando
 /// `EmpleadoData` completo y filtrando después). Deliberadamente **sin**
@@ -69,6 +71,7 @@ abstract interface class EmpleadoRepository {
     EmpleadoCompanion datos, {
     String? servicioIdAsignacion,
     String? turnoIdAsignacion,
+    String? lineaComercialIdAsignacion,
     int? sueldoMensualAsignacion,
     int? bonoMensualAsignacion,
   });
@@ -191,6 +194,19 @@ abstract interface class EmpleadoRepository {
     required ResultadoSustanciaAntidoping met,
     required ResultadoSustanciaAntidoping opi,
     String? observaciones,
+    String? actorUsuarioId,
+  });
+
+  /// Resumen de elegibilidad para eliminación física (Etapa 15) — ver
+  /// el doc comment de `ResumenEliminacionEmpleado`.
+  Future<ResumenEliminacionEmpleado> obtenerResumenEliminacionFisica(String empleadoId);
+
+  /// Eliminación física extraordinaria (Etapa 15) — Maestro-only. Ver
+  /// el doc comment de `EliminarEmpleadoFisicamenteUseCase` y de
+  /// `EmpleadoRepositoryImpl.eliminarFisicamente`.
+  Future<EliminarEmpleadoFisicamenteResultado> eliminarFisicamente({
+    required String empleadoId,
+    required String motivo,
     String? actorUsuarioId,
   });
 }

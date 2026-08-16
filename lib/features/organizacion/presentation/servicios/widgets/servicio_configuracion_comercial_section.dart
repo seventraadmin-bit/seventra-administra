@@ -3,11 +3,14 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/catalogo_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
+import 'package:riseg_one/features/organizacion/presentation/sucursales/sucursal_expediente_form_controllers.dart'
+    show HorarioControllers, HorarioDiaControlador;
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoMoneda = NumberFormat.currency(locale: 'es_MX', symbol: r'$');
@@ -16,8 +19,23 @@ String formatoCentavos(int centavos) => _formatoMoneda.format(centavos / 100);
 
 /// Sección "Configuración comercial" de Servicio — una o varias líneas
 /// comerciales, cada una mostrando su vigencia vigente (o, si todavía no
-/// ha empezado, la programada más próxima) y las 3 acciones de historial
-/// de la Etapa 4G.2 (Nueva vigencia, Cerrar línea, Historial).
+/// ha empezado, la programada más próxima) y sus acciones consolidadas
+/// en un menú ⋮ (Etapa 15: por espacio de fila, a diferencia de un
+/// encabezado, aquí sí se consolida todo — "Corregir" (solo si
+/// `esCorregible`, arregla un error de captura sin dejar rastro) y
+/// "Nueva vigencia" (siempre disponible, registra una condición real
+/// distinta a partir de una fecha) NO son mutuamente excluyentes: una
+/// línea recién creada puede necesitar cualquiera de las dos — más
+/// "Cerrar línea", "Historial" y, solo Maestro, "Eliminar físicamente".
+///
+/// El menú ⋮ en sí **nunca** se oculta ni desaparece — `esCorregible`
+/// solo decide cuáles acciones puntuales aparecen dentro de él (Etapa
+/// 15, hallazgo real de Marlon: una línea con historia real, como
+/// MORGAN, debe seguir teniendo forma de administrarse). "Eliminar
+/// físicamente" tampoco se precondiciona a `esCorregible` — el caso de
+/// uso (`ServicioComercialRepositoryImpl.eliminarFisicamente`) ya
+/// rechaza con un mensaje claro cuando hay historia real; la UI no debe
+/// adelantarse a esa decisión ocultando la opción.
 class ServicioConfiguracionComercialSection extends StatelessWidget {
   const ServicioConfiguracionComercialSection({
     required this.lineas,
@@ -28,10 +46,13 @@ class ServicioConfiguracionComercialSection extends StatelessWidget {
     required this.elementosDifierenDeAutorizados,
     required this.proximaFechaProgramada,
     required this.deshabilitado,
+    required this.esMaestro,
     required this.onAgregarLinea,
+    required this.onCorregir,
     required this.onNuevaVigencia,
     required this.onCerrarLinea,
     required this.onVerHistorial,
+    required this.onEliminarFisicamente,
     super.key,
   });
 
@@ -43,13 +64,39 @@ class ServicioConfiguracionComercialSection extends StatelessWidget {
   final bool elementosDifierenDeAutorizados;
   final DateTime? proximaFechaProgramada;
   final bool deshabilitado;
+  final bool esMaestro;
   final VoidCallback onAgregarLinea;
+  final ValueChanged<LineaComercialConVigencia> onCorregir;
   final ValueChanged<LineaComercialConVigencia> onNuevaVigencia;
   final ValueChanged<LineaComercialConVigencia> onCerrarLinea;
   final ValueChanged<LineaComercialConVigencia> onVerHistorial;
+  final ValueChanged<LineaComercialConVigencia> onEliminarFisicamente;
 
   ServicioLineaComercialVigenciaData? _filaVisible(LineaComercialConVigencia l) =>
       l.vigenciaActual ?? (l.vigenciasProgramadas.isEmpty ? null : l.vigenciasProgramadas.first);
+
+  static const _letrasDia = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+  static String _formatoHoraMinutos(int minutos) {
+    final h = (minutos ~/ 60).toString().padLeft(2, '0');
+    final m = (minutos % 60).toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  /// Resumen corto del horario personalizado de la vigencia mostrada —
+  /// "L-V 20:00–07:00 · S-D 16:00–07:00". Vacío si la línea no tiene
+  /// horario personalizado capturado (cualquier otra modalidad de
+  /// turno).
+  String _resumenHorarioCorto(LineaComercialConVigencia l) {
+    final tramos = agruparHorarioPersonalizado(l.horarioVigenciaMostrada);
+    if (tramos.isEmpty) return '';
+    return tramos
+        .map((t) {
+          final dias = t.diaDesde == t.diaHasta ? _letrasDia[t.diaDesde] : '${_letrasDia[t.diaDesde]}-${_letrasDia[t.diaHasta]}';
+          return '$dias ${_formatoHoraMinutos(t.horaInicioMinutos)}–${_formatoHoraMinutos(t.horaFinMinutos)}';
+        })
+        .join(' · ');
+  }
 
   String _tratamientoIvaLabel(AppLocalizations l10n, String valor) {
     return switch (TratamientoIva.values.byName(valor)) {
@@ -87,26 +134,71 @@ class ServicioConfiguracionComercialSection extends StatelessWidget {
               ),
               RisegColumn(
                 label: l10n.servicioComercialColumnaTurno,
-                cellBuilder: (l) => Text(l.modalidadTurnoNombre),
+                cellBuilder: (l) {
+                  final resumen = _resumenHorarioCorto(l);
+                  if (resumen.isEmpty) return Text(l.modalidadTurnoNombre);
+                  return Tooltip(
+                    message: resumen,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(l.modalidadTurnoNombre),
+                        Text(
+                          resumen,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.caption.copyWith(color: context.colors.textMuted),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               RisegColumn(
                 label: l10n.servicioComercialColumnaCantidad,
                 alignment: TextAlign.right,
-                width: 90,
+                width: 70,
                 cellBuilder: (l) => Text('${_filaVisible(l)?.cantidadElementos ?? '—'}'),
               ),
               RisegColumn(
                 label: l10n.servicioComercialColumnaPrecioUnitario,
                 alignment: TextAlign.right,
-                width: 130,
+                width: 95,
                 cellBuilder: (l) {
                   final fila = _filaVisible(l);
                   return Text(fila == null ? '—' : formatoCentavos(fila.precioUnitario));
                 },
               ),
+              // Sueldo/bono de referencia (Etapa 15, rediseño de
+              // "Condiciones de Personal") — cada línea es un perfil
+              // distinto con su propia condición salarial; sin estas dos
+              // columnas, dos líneas con el mismo puesto pero sueldos
+              // distintos (o el mismo puesto en turnos distintos) eran
+              // indistinguibles de un vistazo en la tabla.
+              RisegColumn(
+                label: l10n.servicioComercialColumnaSueldoReferencia,
+                alignment: TextAlign.right,
+                width: 90,
+                cellBuilder: (l) {
+                  final fila = _filaVisible(l);
+                  final sueldo = fila?.sueldoMensualReferenciaPersonal;
+                  return Text(sueldo == null ? '—' : formatoCentavos(sueldo));
+                },
+              ),
+              RisegColumn(
+                label: l10n.servicioComercialColumnaBonoReferencia,
+                alignment: TextAlign.right,
+                width: 80,
+                cellBuilder: (l) {
+                  final fila = _filaVisible(l);
+                  final bono = fila?.bonoMensualReferenciaPersonal;
+                  return Text(bono == null ? '—' : formatoCentavos(bono));
+                },
+              ),
               RisegColumn(
                 label: l10n.servicioComercialColumnaIva,
-                width: 110,
+                width: 85,
                 cellBuilder: (l) {
                   final fila = _filaVisible(l);
                   return Text(fila == null ? '—' : _tratamientoIvaLabel(l10n, fila.tratamientoIva));
@@ -115,12 +207,12 @@ class ServicioConfiguracionComercialSection extends StatelessWidget {
               RisegColumn(
                 label: l10n.servicioComercialColumnaSubtotal,
                 alignment: TextAlign.right,
-                width: 130,
+                width: 100,
                 cellBuilder: (l) => Text(formatoCentavos(l.subtotal)),
               ),
               RisegColumn(
                 label: l10n.servicioComercialColumnaVigenciaDesde,
-                width: 110,
+                width: 85,
                 cellBuilder: (l) {
                   final fila = _filaVisible(l);
                   return Text(fila == null ? '—' : _formatoFecha.format(fila.fechaInicioVigencia));
@@ -128,39 +220,51 @@ class ServicioConfiguracionComercialSection extends StatelessWidget {
               ),
               RisegColumn(
                 label: l10n.servicioComercialColumnaEstado,
-                width: 150,
+                width: 100,
                 cellBuilder: (l) => _estadoBadge(l10n, l),
               ),
             ],
             rows: lineas,
-            actionsWidth: 140,
-            rowActionsBuilder: (l) => Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: l10n.servicioComercialBotonNuevaVigencia,
-                  icon: const Icon(Icons.update, size: 18),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: deshabilitado ? null : () => onNuevaVigencia(l),
+            actionsWidth: 56,
+            rowActionsBuilder: (l) => RisegActionsMenu(
+              menuKey: Key('servicio_comercial_linea_menu_${l.linea.id}'),
+              actions: [
+                if (l.esCorregible)
+                  RisegMenuAction(
+                    label: l10n.servicioComercialBotonCorregir,
+                    icon: Icons.edit_outlined,
+                    onTap: deshabilitado ? null : () => onCorregir(l),
+                  ),
+                RisegMenuAction(
+                  label: l10n.servicioComercialBotonNuevaVigencia,
+                  icon: Icons.update,
+                  onTap: deshabilitado ? null : () => onNuevaVigencia(l),
                 ),
-                IconButton(
-                  tooltip: l.vigenciaActual == null
-                      ? l10n.servicioComercialCerrarLineaBotonAyudaSinCondicion
-                      : (l.vigenciasProgramadas.isNotEmpty
-                          ? l10n.servicioComercialCerrarLineaBotonAyudaTieneProgramada
-                          : l10n.servicioComercialBotonCerrarLinea),
-                  icon: const Icon(Icons.block_outlined, size: 18),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: deshabilitado || l.vigenciaActual == null || l.vigenciasProgramadas.isNotEmpty
+                RisegMenuAction(
+                  label: l10n.servicioComercialBotonCerrarLinea,
+                  icon: Icons.block_outlined,
+                  onTap: deshabilitado || l.vigenciaActual == null || l.vigenciasProgramadas.isNotEmpty
                       ? null
                       : () => onCerrarLinea(l),
                 ),
-                IconButton(
-                  tooltip: l10n.servicioComercialBotonHistorial,
-                  icon: const Icon(Icons.history, size: 18),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => onVerHistorial(l),
+                RisegMenuAction(
+                  label: l10n.servicioComercialBotonHistorial,
+                  icon: Icons.history,
+                  onTap: () => onVerHistorial(l),
                 ),
+                // Sin condicionar a `esCorregible`: la elegibilidad real
+                // (línea con exactamente 1 vigencia y sin documentos de
+                // Agenda generados) ya la decide
+                // `ServicioComercialRepositoryImpl.eliminarFisicamente`,
+                // que rechaza con un mensaje claro cuando no aplica — la
+                // UI no debe ocultar la opción de antemano.
+                if (esMaestro)
+                  RisegMenuAction(
+                    label: l10n.eliminacionFisicaAccionMenu,
+                    icon: Icons.delete_forever_outlined,
+                    destructive: true,
+                    onTap: () => onEliminarFisicamente(l),
+                  ),
               ],
             ),
           ),
@@ -215,6 +319,15 @@ class ServicioConfiguracionComercialSection extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: AppSpacing.xxs),
+        // Línea completa, nunca dentro del `Row` de arriba — un texto
+        // sin ancho fijo como sibling de `RisegButton` forzaba el ancho
+        // intrínseco de esa columna y producía overflow horizontal en
+        // pantallas reducidas (hallazgo real, Etapa 15).
+        Text(
+          l10n.servicioComercialAyudaAgregarLinea,
+          style: AppTypography.caption.copyWith(color: context.colors.textMuted),
+        ),
       ],
     );
   }
@@ -232,6 +345,8 @@ class ServicioLineaComercialForm extends StatefulWidget {
     required this.modalidadesTurno,
     required this.onCambio,
     this.valoresIniciales,
+    this.precargarFechas = false,
+    this.horarioInicial = const [],
     super.key,
   });
 
@@ -240,12 +355,29 @@ class ServicioLineaComercialForm extends StatefulWidget {
   final ValueChanged<LineaComercialBorrador> onCambio;
 
   /// Prellenar con la condición vigente actual al registrar una nueva
-  /// vigencia (Etapa 4G.2) — normalmente solo 1-2 campos cambian. `null`
-  /// en el alta (Etapa 4G.1), donde no hay nada que prellenar.
-  /// Deliberadamente NO prellena `fechaInicioVigencia`/`fechaFinVigencia`
-  /// — la fecha de una nueva vigencia siempre debe elegirse de forma
-  /// explícita, nunca heredarse de la condición que reemplaza.
+  /// vigencia (Etapa 4G.2) — normalmente solo 1-2 campos cambian, o al
+  /// corregir un error de captura (Etapa 15). `null` en el alta (Etapa
+  /// 4G.1), donde no hay nada que prellenar.
   final ServicioLineaComercialVigenciaData? valoresIniciales;
+
+  /// `false` por defecto: "Nueva vigencia" deliberadamente NO prellena
+  /// `fechaInicioVigencia`/`fechaFinVigencia` aunque [valoresIniciales]
+  /// no sea nulo — la fecha de una nueva vigencia siempre debe elegirse
+  /// de forma explícita, nunca heredarse de la condición que reemplaza
+  /// (Etapa 4G.2, Resolución H). "Corregir" (Etapa 15) es la única
+  /// excepción: ahí sí se corrige un error de captura en la fecha
+  /// misma, así que pasa `true` para precargarla igual que el resto de
+  /// los campos.
+  final bool precargarFechas;
+
+  /// Horario personalizado de [valoresIniciales] (Etapa 15) — el
+  /// llamador ya lo resolvió vía
+  /// `ServicioComercialRepository.obtenerHorario`. Se precarga siempre
+  /// que exista, tanto en "Corregir" (edita el horario real) como en
+  /// "Nueva vigencia" (lo copia como punto de partida editable, sin
+  /// alterar la vigencia histórica de la que vino — mismo criterio que
+  /// el resto de los campos en Nueva vigencia).
+  final List<ServicioLineaComercialVigenciaHorarioData> horarioInicial;
 
   @override
   State<ServicioLineaComercialForm> createState() => _ServicioLineaComercialFormState();
@@ -266,6 +398,27 @@ class _ServicioLineaComercialFormState extends State<ServicioLineaComercialForm>
   late final _descripcionController = TextEditingController(text: widget.valoresIniciales?.descripcion ?? '');
   late final _observacionesController = TextEditingController(text: widget.valoresIniciales?.observaciones ?? '');
 
+  // Condiciones de personal de referencia de este perfil (Etapa 15,
+  // rediseño de "Condiciones de Personal") — opcionales, mismo criterio
+  // que precio (texto en pesos, se convierte a centavos al notificar),
+  // pero a diferencia de precio nunca son obligatorias.
+  late final _sueldoController = TextEditingController(
+    text: _centavosAPesosTexto(widget.valoresIniciales?.sueldoMensualReferenciaPersonal),
+  );
+  late final _bonoController = TextEditingController(
+    text: _centavosAPesosTexto(widget.valoresIniciales?.bonoMensualReferenciaPersonal),
+  );
+
+  // Horario personalizado (Etapa 15, "Modalidad de turno:
+  // Personalizado") — mismo modelo de estado que Sucursal
+  // (`HorarioControllers`), reutilizado en vez de duplicado; solo se
+  // envía en `_notificar` cuando la modalidad elegida es Personalizado.
+  final HorarioControllers _horarioControllers = HorarioControllers();
+
+  static String _centavosAPesosTexto(int? centavos) => centavos == null ? '' : (centavos / 100).toStringAsFixed(2);
+
+  static TimeOfDay _minutosATimeOfDay(int minutos) => TimeOfDay(hour: minutos ~/ 60, minute: minutos % 60);
+
   @override
   void initState() {
     super.initState();
@@ -273,6 +426,18 @@ class _ServicioLineaComercialFormState extends State<ServicioLineaComercialForm>
     _modalidadTurnoId = widget.valoresIniciales?.modalidadTurnoId;
     _tratamientoIva =
         widget.valoresIniciales == null ? null : TratamientoIva.values.byName(widget.valoresIniciales!.tratamientoIva);
+    if (widget.precargarFechas) {
+      _fechaInicioVigencia = widget.valoresIniciales?.fechaInicioVigencia;
+      _fechaFinVigencia = widget.valoresIniciales?.fechaFinVigencia;
+    }
+    for (final fila in widget.horarioInicial) {
+      final dia = _horarioControllers.dias[fila.diaSemana];
+      dia.abierto = fila.activo;
+      if (dia.abierto) {
+        dia.horaInicio = _minutosATimeOfDay(fila.horaInicio);
+        dia.horaFin = _minutosATimeOfDay(fila.horaFin);
+      }
+    }
     // Notifica de inmediato para que un envío sin tocar ningún campo
     // (caso raro, pero posible si solo cambia la fecha) ya lleve los
     // valores prellenados.
@@ -285,16 +450,22 @@ class _ServicioLineaComercialFormState extends State<ServicioLineaComercialForm>
     _precioController.dispose();
     _descripcionController.dispose();
     _observacionesController.dispose();
+    _sueldoController.dispose();
+    _bonoController.dispose();
     super.dispose();
   }
 
-  int? _precioEnCentavos() {
-    final texto = _precioController.text.trim().replaceAll(',', '');
-    if (texto.isEmpty) return null;
-    final valor = double.tryParse(texto);
+  int? _pesosTextoACentavos(String texto) {
+    final limpio = texto.trim().replaceAll(',', '');
+    if (limpio.isEmpty) return null;
+    final valor = double.tryParse(limpio);
     if (valor == null) return null;
     return (valor * 100).round();
   }
+
+  int? _precioEnCentavos() => _pesosTextoACentavos(_precioController.text);
+
+  bool get _esModalidadPersonalizada => _modalidadTurnoId == SeedIds.modalidadTurnoPersonalizado;
 
   void _notificar() {
     widget.onCambio(
@@ -308,6 +479,9 @@ class _ServicioLineaComercialFormState extends State<ServicioLineaComercialForm>
         fechaFinVigencia: _fechaFinVigencia,
         descripcion: _descripcionController.text,
         observaciones: _observacionesController.text,
+        sueldoMensualReferenciaPersonal: _pesosTextoACentavos(_sueldoController.text),
+        bonoMensualReferenciaPersonal: _pesosTextoACentavos(_bonoController.text),
+        horario: _esModalidadPersonalizada ? _horarioControllers.capturar() : null,
       ),
     );
   }
@@ -315,11 +489,14 @@ class _ServicioLineaComercialFormState extends State<ServicioLineaComercialForm>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.colors;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(l10n.servicioComercialSeccionDatosComercialesTitulo, style: AppTypography.label.copyWith(color: colors.textMuted)),
+        const SizedBox(height: AppSpacing.xs),
         RisegSelect<String>(
           label: l10n.servicioComercialCampoPuesto,
           value: _puestoId,
@@ -339,11 +516,16 @@ class _ServicioLineaComercialFormState extends State<ServicioLineaComercialForm>
             _notificar();
           },
         ),
+        if (_esModalidadPersonalizada) ...[
+          const SizedBox(height: AppSpacing.md),
+          _horarioPersonalizadoSection(l10n, colors),
+        ],
         const SizedBox(height: AppSpacing.md),
         RisegTextField(
           label: l10n.servicioComercialCampoCantidadElementos,
           controller: _cantidadController,
           keyboardType: TextInputType.number,
+          helperText: l10n.servicioComercialCampoCantidadElementosAyuda,
           onChanged: (_) => _notificar(),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -367,7 +549,23 @@ class _ServicioLineaComercialFormState extends State<ServicioLineaComercialForm>
             _notificar();
           },
         ),
+        const SizedBox(height: AppSpacing.lg),
+        Text(l10n.servicioSeccionCondicionesPersonalTitulo, style: AppTypography.label.copyWith(color: colors.textMuted)),
+        const SizedBox(height: AppSpacing.xs),
+        RisegTextField(
+          label: l10n.servicioCampoSueldoReferencia,
+          controller: _sueldoController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (_) => _notificar(),
+        ),
         const SizedBox(height: AppSpacing.md),
+        RisegTextField(
+          label: l10n.servicioCampoBonoReferencia,
+          controller: _bonoController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (_) => _notificar(),
+        ),
+        const SizedBox(height: AppSpacing.lg),
         RisegDateField(
           label: l10n.servicioComercialCampoFechaInicioVigencia,
           value: _fechaInicioVigencia,
@@ -398,6 +596,93 @@ class _ServicioLineaComercialFormState extends State<ServicioLineaComercialForm>
           onChanged: (_) => _notificar(),
         ),
       ],
+    );
+  }
+
+  static String _nombreDia(AppLocalizations l10n, int diaSemana) {
+    return switch (diaSemana) {
+      0 => l10n.horarioDiaLunes,
+      1 => l10n.horarioDiaMartes,
+      2 => l10n.horarioDiaMiercoles,
+      3 => l10n.horarioDiaJueves,
+      4 => l10n.horarioDiaViernes,
+      5 => l10n.horarioDiaSabado,
+      _ => l10n.horarioDiaDomingo,
+    };
+  }
+
+  /// Sección "Horario personalizado" (Etapa 15) — 7 filas fijas, visible
+  /// únicamente cuando la modalidad elegida es Personalizado. Al
+  /// desactivar "Trabaja" en un día, sus campos de hora se deshabilitan
+  /// y ese día queda como descanso — nunca se le pide capturar horas
+  /// (ni se le exige limpiarlas: `HorarioDiaControlador` simplemente dejó
+  /// de reportarlas mientras `abierto == false`).
+  Widget _horarioPersonalizadoSection(AppLocalizations l10n, AppColorScheme colors) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(color: colors.surfaceSunken, borderRadius: AppRadius.mdRadius),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.servicioComercialHorarioPersonalizadoTitulo, style: AppTypography.label.copyWith(color: colors.textMuted)),
+          const SizedBox(height: AppSpacing.sm),
+          for (var dia = 0; dia < 7; dia++) _filaHorarioDia(l10n, colors, dia),
+        ],
+      ),
+    );
+  }
+
+  Widget _filaHorarioDia(AppLocalizations l10n, AppColorScheme colors, int diaSemana) {
+    final HorarioDiaControlador dia = _horarioControllers.dias[diaSemana];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(_nombreDia(l10n, diaSemana), style: AppTypography.body.copyWith(color: colors.textPrimary)),
+              ),
+              Text(l10n.servicioComercialHorarioTrabaja, style: AppTypography.caption.copyWith(color: colors.textMuted)),
+              Switch(
+                value: dia.abierto,
+                onChanged: (valor) => setState(() {
+                  dia.abierto = valor;
+                  _notificar();
+                }),
+              ),
+            ],
+          ),
+          if (dia.abierto)
+            Row(
+              children: [
+                Expanded(
+                  child: RisegTimeField(
+                    label: l10n.servicioComercialHorarioCampoEntrada,
+                    value: dia.horaInicio,
+                    onChanged: (valor) => setState(() {
+                      dia.horaInicio = valor;
+                      _notificar();
+                    }),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: RisegTimeField(
+                    label: l10n.servicioComercialHorarioCampoSalida,
+                    value: dia.horaFin,
+                    onChanged: (valor) => setState(() {
+                      dia.horaFin = valor;
+                      _notificar();
+                    }),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }

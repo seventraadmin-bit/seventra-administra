@@ -10,6 +10,7 @@ import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
@@ -52,7 +53,8 @@ void main() {
     final generarNumero = GenerarNumeroUseCase(CodigoSecuenciaService(db));
     const validator = EmpleadoValidator();
 
-    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, validator, servicioRepo);
+    crearEmpleado =
+        CrearEmpleadoUseCase(empleadoRepo, generarNumero, validator, servicioRepo, ServicioComercialRepositoryImpl(db));
     corregirEmpleado = CorregirEmpleadoUseCase(empleadoRepo, validator);
     registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, validator);
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, validator);
@@ -133,6 +135,25 @@ void main() {
       expect(validator.bonoAdministrativoValido(0), isTrue);
       expect(validator.bonoAdministrativoValido(500000), isTrue);
       expect(validator.bonoAdministrativoValido(-1), isFalse);
+    });
+
+    test('bancoOtroDescripcionValida es irrelevante para cualquier banco distinto de "Otro" (o sin banco)', () {
+      expect(validator.bancoOtroDescripcionValida(), isTrue);
+      expect(validator.bancoOtroDescripcionValida(bancoId: SeedIds.bancoBbva), isTrue);
+      expect(
+        validator.bancoOtroDescripcionValida(bancoId: SeedIds.bancoBbva, bancoOtroDescripcion: null),
+        isTrue,
+        reason: 'banco distinto de Otro nunca exige descripción',
+      );
+    });
+
+    test('bancoOtroDescripcionValida exige descripción no vacía cuando bancoId es "Otro"', () {
+      expect(validator.bancoOtroDescripcionValida(bancoId: SeedIds.bancoOtro), isFalse);
+      expect(validator.bancoOtroDescripcionValida(bancoId: SeedIds.bancoOtro, bancoOtroDescripcion: '   '), isFalse);
+      expect(
+        validator.bancoOtroDescripcionValida(bancoId: SeedIds.bancoOtro, bancoOtroDescripcion: 'Banco Regional XYZ'),
+        isTrue,
+      );
     });
   });
 
@@ -298,6 +319,46 @@ void main() {
       expect(empleado.sueldoMensualAdministrativo, 1500000);
       expect(empleado.bonoMensualAdministrativo, 0);
     });
+
+    test('rechaza banco "Otro" sin nombre del banco', () async {
+      final resultado = await crearEmpleado.ejecutar(
+        nombres: 'Juan',
+        apellidoPaterno: 'Pérez',
+        sexo: SexoEmpleado.masculino,
+        fechaNacimiento: DateTime(1990, 1, 1),
+        curp: 'PEXJ900101HDFXXX01',
+        rfc: 'PEXJ900101AB1',
+        nss: '12345678901',
+        estadoCivil: EstadoCivilEmpleado.soltero,
+        fechaIngreso: DateTime(2026, 1, 1),
+        aniosExperienciaSeguridad: 3,
+        bancoId: SeedIds.bancoOtro,
+        clabe: '123456789012345678',
+      );
+      expect(resultado, isA<CrearEmpleadoBancoOtroDescripcionRequerida>());
+    });
+
+    test('acepta banco "Otro" con nombre del banco y lo persiste', () async {
+      final resultado = await crearEmpleado.ejecutar(
+        nombres: 'Juan',
+        apellidoPaterno: 'Pérez',
+        sexo: SexoEmpleado.masculino,
+        fechaNacimiento: DateTime(1990, 1, 1),
+        curp: 'PEXJ900101HDFXXX01',
+        rfc: 'PEXJ900101AB1',
+        nss: '12345678901',
+        estadoCivil: EstadoCivilEmpleado.soltero,
+        fechaIngreso: DateTime(2026, 1, 1),
+        aniosExperienciaSeguridad: 3,
+        bancoId: SeedIds.bancoOtro,
+        bancoOtroDescripcion: 'Banco Regional XYZ',
+        clabe: '123456789012345678',
+      );
+      expect(resultado, isA<CrearEmpleadoExitoso>());
+      final empleado = (resultado as CrearEmpleadoExitoso).empleado;
+      expect(empleado.bancoId, SeedIds.bancoOtro);
+      expect(empleado.bancoOtroDescripcion, 'Banco Regional XYZ');
+    });
   });
 
   group('CorregirEmpleadoUseCase', () {
@@ -407,6 +468,63 @@ void main() {
       final actualizado = (resultado as CorregirEmpleadoExitoso).empleado;
       expect(actualizado.bancoId, isNull);
       expect(actualizado.clabe, isNull);
+    });
+
+    test('rechaza corregir a banco "Otro" sin nombre del banco', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        bancoId: SeedIds.bancoOtro,
+        clabe: '123456789012345678',
+        motivo: 'x',
+      );
+      expect(resultado, isA<CorregirEmpleadoBancoOtroDescripcionRequerida>());
+    });
+
+    test('acepta y persiste corregir a banco "Otro" con nombre del banco', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+
+      final resultado = await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        bancoId: SeedIds.bancoOtro,
+        bancoOtroDescripcion: 'Banco Regional XYZ',
+        clabe: '123456789012345678',
+        motivo: 'x',
+      );
+      expect(resultado, isA<CorregirEmpleadoExitoso>());
+      final actualizado = (resultado as CorregirEmpleadoExitoso).empleado;
+      expect(actualizado.bancoId, SeedIds.bancoOtro);
+      expect(actualizado.bancoOtroDescripcion, 'Banco Regional XYZ');
+    });
+
+    test('cambiar de banco "Otro" a un banco normal limpia bancoOtroDescripcion automáticamente', () async {
+      final creado = await crearEmpleadoDePrueba();
+      final empleado = (creado as CrearEmpleadoExitoso).empleado;
+      await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        bancoId: SeedIds.bancoOtro,
+        bancoOtroDescripcion: 'Banco Regional XYZ',
+        clabe: '123456789012345678',
+        motivo: 'x',
+      );
+
+      final resultado = await corregirEmpleado.ejecutar(
+        empleadoId: empleado.id,
+        bancoId: SeedIds.bancoBbva,
+        motivo: 'Corrige a banco real',
+      );
+
+      expect(resultado, isA<CorregirEmpleadoExitoso>());
+      final actualizado = (resultado as CorregirEmpleadoExitoso).empleado;
+      expect(actualizado.bancoId, SeedIds.bancoBbva);
+      expect(
+        actualizado.bancoOtroDescripcion,
+        isNull,
+        reason: 'nunca debe quedar una descripción huérfana apuntando a un banco que ya no es Otro',
+      );
     });
   });
 

@@ -21,6 +21,7 @@ import 'domain/usecases/cambiar_servicio_empleado_usecase.dart';
 import 'domain/usecases/cambiar_vigencia_sueldo_asignacion_usecase.dart';
 import 'domain/usecases/corregir_empleado_usecase.dart';
 import 'domain/usecases/crear_empleado_usecase.dart';
+import 'domain/usecases/eliminar_empleado_fisicamente_usecase.dart';
 import 'domain/usecases/empleado_validator.dart';
 import 'domain/usecases/generar_ficha_tecnica_empleado_usecase.dart';
 import 'domain/usecases/guardar_domicilio_empleado_usecase.dart';
@@ -42,6 +43,18 @@ final asignacionServicioValidatorProvider = Provider<AsignacionServicioValidator
   return const AsignacionServicioValidator();
 });
 
+// Deliberadamente SIN `attachmentStorage` (a diferencia de
+// `documentoPorEmitirRepositoryProvider`): este provider lo observa
+// (`watch`, no `read`) TODA pantalla que toca Personal, incluido el
+// propio Dashboard vía `obtenerEmpleadosBajaConPendienteUseCaseProvider`
+// — encadenar aquí `attachmentStorageProvider` (que requiere
+// `appPathsProvider`, resuelto solo en bootstrap real) rompería
+// cualquier prueba de Dashboard/Personal que no lo sobreescriba
+// explícitamente, aunque nunca vaya a eliminar físicamente a nadie
+// (Etapa 15, hallazgo real). La eliminación física (única consumidora
+// real de `AttachmentStorage` en este dominio) construye su propia
+// instancia de `EmpleadoRepositoryImpl` en
+// `eliminarEmpleadoFisicamenteUseCaseProvider`, más abajo.
 final empleadoRepositoryProvider = Provider<EmpleadoRepository>((ref) {
   return EmpleadoRepositoryImpl(ref.watch(appDatabaseProvider), ref.watch(asignacionServicioRepositoryProvider));
 });
@@ -56,6 +69,7 @@ final crearEmpleadoUseCaseProvider = Provider<CrearEmpleadoUseCase>((ref) {
     ref.watch(generarNumeroUseCaseProvider),
     ref.watch(empleadoValidatorProvider),
     ref.watch(servicioRepositoryProvider),
+    ref.watch(servicioComercialRepositoryProvider),
   );
 });
 
@@ -64,6 +78,7 @@ final asignarEmpleadoServicioUseCaseProvider = Provider<AsignarEmpleadoServicioU
     ref.watch(empleadoRepositoryProvider),
     ref.watch(asignacionServicioRepositoryProvider),
     ref.watch(servicioRepositoryProvider),
+    ref.watch(servicioComercialRepositoryProvider),
     ref.watch(asignacionServicioValidatorProvider),
   );
 });
@@ -73,6 +88,7 @@ final cambiarServicioEmpleadoUseCaseProvider = Provider<CambiarServicioEmpleadoU
     ref.watch(empleadoRepositoryProvider),
     ref.watch(asignacionServicioRepositoryProvider),
     ref.watch(servicioRepositoryProvider),
+    ref.watch(servicioComercialRepositoryProvider),
     ref.watch(asignacionServicioValidatorProvider),
   );
 });
@@ -204,10 +220,12 @@ typedef CrearEmpleadoAutorizado = Future<CrearEmpleadoResultado> Function({
   String? empresaId,
   String? servicioId,
   String? turnoId,
+  String? lineaComercialId,
   int? sueldoMensualAsignacion,
   int? bonoMensualAsignacion,
   String? sucursalId,
   String? bancoId,
+  String? bancoOtroDescripcion,
   String? numeroCuentaTarjeta,
   String? clabe,
   int? sueldoMensualAdministrativo,
@@ -245,10 +263,12 @@ final crearEmpleadoAutorizadoProvider = Provider<CrearEmpleadoAutorizado>((ref) 
     String? empresaId,
     String? servicioId,
     String? turnoId,
+    String? lineaComercialId,
     int? sueldoMensualAsignacion,
     int? bonoMensualAsignacion,
     String? sucursalId,
     String? bancoId,
+    String? bancoOtroDescripcion,
     String? numeroCuentaTarjeta,
     String? clabe,
     int? sueldoMensualAdministrativo,
@@ -288,10 +308,12 @@ final crearEmpleadoAutorizadoProvider = Provider<CrearEmpleadoAutorizado>((ref) 
             empresaId: empresaId,
             servicioId: servicioId,
             turnoId: turnoId,
+            lineaComercialId: lineaComercialId,
             sueldoMensualAsignacion: sueldoMensualAsignacion,
             bonoMensualAsignacion: bonoMensualAsignacion,
             sucursalId: sucursalId,
             bancoId: bancoId,
+            bancoOtroDescripcion: bancoOtroDescripcion,
             numeroCuentaTarjeta: numeroCuentaTarjeta,
             clabe: clabe,
             sueldoMensualAdministrativo: sueldoMensualAdministrativo,
@@ -339,6 +361,8 @@ typedef CorregirEmpleadoAutorizado = Future<CorregirEmpleadoResultado> Function(
   bool limpiarSucursal,
   String? bancoId,
   bool limpiarBanco,
+  String? bancoOtroDescripcion,
+  bool limpiarBancoOtroDescripcion,
   String? numeroCuentaTarjeta,
   bool limpiarNumeroCuentaTarjeta,
   String? clabe,
@@ -387,6 +411,8 @@ final corregirEmpleadoAutorizadoProvider = Provider<CorregirEmpleadoAutorizado>(
     bool limpiarSucursal = false,
     String? bancoId,
     bool limpiarBanco = false,
+    String? bancoOtroDescripcion,
+    bool limpiarBancoOtroDescripcion = false,
     String? numeroCuentaTarjeta,
     bool limpiarNumeroCuentaTarjeta = false,
     String? clabe,
@@ -437,6 +463,8 @@ final corregirEmpleadoAutorizadoProvider = Provider<CorregirEmpleadoAutorizado>(
             limpiarSucursal: limpiarSucursal,
             bancoId: bancoId,
             limpiarBanco: limpiarBanco,
+            bancoOtroDescripcion: bancoOtroDescripcion,
+            limpiarBancoOtroDescripcion: limpiarBancoOtroDescripcion,
             numeroCuentaTarjeta: numeroCuentaTarjeta,
             limpiarNumeroCuentaTarjeta: limpiarNumeroCuentaTarjeta,
             clabe: clabe,
@@ -576,6 +604,43 @@ final generarFichaTecnicaEmpleadoAutorizadoProvider = Provider<GenerarFichaTecni
             seccionesExcluidas: seccionesExcluidas,
           ),
       GenerarFichaTecnicaEmpleadoErrorInesperado.new,
+    );
+  };
+});
+
+// Eliminación física extraordinaria (Etapa 15) — facultad exclusiva del
+// Usuario Maestro, mismo patrón exacto que Cliente/Servicio/Compra/
+// Egreso/Documento por emitir (`exigirMaestro`, nunca
+// `AuthorizationService.verificar`) — primer caso de `exigirMaestro` en
+// el dominio Personal.
+final eliminarEmpleadoFisicamenteUseCaseProvider = Provider<EliminarEmpleadoFisicamenteUseCase>((ref) {
+  // Instancia propia (no `empleadoRepositoryProvider`) — ver el doc
+  // comment de ese provider: solo aquí hace falta `AttachmentStorage`
+  // para poder limpiar los archivos físicos (fotografía, documentos,
+  // PDFs de fichas técnicas) cuando el Empleado se elimina.
+  final repo = EmpleadoRepositoryImpl(
+    ref.watch(appDatabaseProvider),
+    ref.watch(asignacionServicioRepositoryProvider),
+    attachmentStorage: ref.watch(attachmentStorageProvider),
+  );
+  return EliminarEmpleadoFisicamenteUseCase(repo);
+});
+
+typedef EliminarEmpleadoFisicamenteAutorizado = Future<EliminarEmpleadoFisicamenteResultado> Function({
+  required String empleadoId,
+  required String motivo,
+});
+
+final eliminarEmpleadoFisicamenteAutorizadoProvider = Provider<EliminarEmpleadoFisicamenteAutorizado>((ref) {
+  return ({required String empleadoId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarEmpleadoFisicamenteUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarEmpleadoFisicamenteErrorInesperado.new,
     );
   };
 });

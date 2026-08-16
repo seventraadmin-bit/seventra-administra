@@ -1,4 +1,17 @@
-import 'package:drift/drift.dart' show Value;
+// Nota (Etapa 15, verificada al cerrar ClientePortal): los archivos
+// `riseg_one.sqlite.bak-<etapa>-<timestamp>` de
+// `AppData/Roaming/RISEG/RISEG ONE/RISEGONE-dev/` NO son fixtures
+// confiables de versiones históricas reales — se verificó abriendo el
+// más reciente (etiquetado "horario-v51") en modo solo lectura:
+// `PRAGMA user_version` reportó 4 y ni siquiera existe la tabla
+// `configuracion_cobro_vigencia` (existe desde la Etapa 4H.1). Además,
+// todos esos archivos pesan exactamente lo mismo sin importar la
+// etapa, señal de que nunca acumularon datos reales. Nunca usar esos
+// `.bak-*` como snapshot de prueba — el patrón correcto para "datos
+// reales" en este archivo es `SchemaVerifier.schemaAt(N)` + `INSERT`
+// manual de una fila representativa (ver los tests "... conserva una
+// fila real" de más abajo), nunca un `.sqlite` de esa carpeta.
+import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,6 +21,10 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/migrations/migrar_cuenta_por_cobrar_v14.dart';
 import 'package:riseg_one/core/database/seed/seed_data.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
+import 'package:riseg_one/core/security/credential_cipher.dart';
+import 'package:riseg_one/features/organizacion/data/tables/cliente_portal_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/calcular_fechas_cobro_usecase.dart';
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
@@ -27,7 +44,22 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 46;
+const _currentSchemaVersion = 52;
+
+/// `AlmacenClaveCifrado` en memoria — la migración a `schemaVersion` 52
+/// cifra contraseñas de portal legadas con `CredentialCipher`, y el
+/// almacén real (`AlmacenClaveSeguraWindows`) usa canales de
+/// plataforma que no responden bajo `flutter test` (mismo motivo que
+/// `boveda_usecases_test.dart`).
+class _AlmacenClaveCifradoEnMemoria implements AlmacenClaveCifrado {
+  String? _clave;
+
+  @override
+  Future<String?> leer() async => _clave;
+
+  @override
+  Future<void> escribir(String valor) async => _clave = valor;
+}
 
 /// Verifica la migración real 1 → 2 sobre una base física construida
 /// desde el snapshot de schemaVersion 1 (`drift_schemas/riseg_one/`) —
@@ -2385,7 +2417,8 @@ void main() {
   );
 
   test(
-    'migración 9 → 10 conserva una Configuración de cobro real y crea la tabla de reglas de evento vacía',
+    'migración 9 → actual conserva una Configuración de cobro real y crea la tabla de etapas de cobro vacía '
+    '(Etapa 15: configuracion_cobro_regla_evento fue reemplazada por configuracion_cobro_etapa)',
     () async {
       final schemaV9 = await verifier.schemaAt(9);
       final raw = schemaV9.rawDatabase;
@@ -2445,8 +2478,8 @@ void main() {
       final vigencias = await db.select(db.configuracionCobroVigencia).get();
       expect(vigencias, hasLength(1));
 
-      final reglas = await db.select(db.configuracionCobroReglaEvento).get();
-      expect(reglas, isEmpty);
+      final etapas = await db.select(db.configuracionCobroEtapa).get();
+      expect(etapas, isEmpty);
 
       final violacionesFk =
           await db.customSelect('PRAGMA foreign_key_check').get();
@@ -2469,7 +2502,7 @@ void main() {
     },
   );
 
-  test('acepta una regla de evento válida tras la migración', () async {
+  test('acepta una etapa de cobro válida tras la migración (Etapa 15)', () async {
     final schemaV8 = await verifier.schemaAt(8);
     final db = AppDatabase(schemaV8.newConnection());
     await verifier.migrateAndValidate(db, _currentSchemaVersion);
@@ -2513,25 +2546,27 @@ void main() {
           ),
         );
 
-    final regla = await db
-        .into(db.configuracionCobroReglaEvento)
+    final etapa = await db
+        .into(db.configuracionCobroEtapa)
         .insertReturning(
-          ConfiguracionCobroReglaEventoCompanion.insert(
+          ConfiguracionCobroEtapaCompanion.insert(
+            id: 'etapa-emision-real',
             configuracionCobroVigenciaId: vigencia.id,
-            tipoEvento: 'emision',
-            tipoRegla: 'diaFijoDelMes',
+            tipoSistema: const Value('emision'),
+            orden: 0,
+            tipoRegla: const Value('diaFijoDelMes'),
             mesRelativo: const Value('siguiente'),
             diaDelMes: const Value(21),
           ),
         );
-    expect(regla.tipoEvento, 'emision');
-    expect(regla.diaDelMes, 21);
+    expect(etapa.tipoSistema, 'emision');
+    expect(etapa.diaDelMes, 21);
 
     await db.close();
   });
 
   test(
-    'rechaza dos reglas de evento con el mismo tipoEvento en la misma vigencia tras la migración',
+    'rechaza dos etapas de cobro con el mismo tipoSistema en la misma vigencia tras la migración (Etapa 15)',
     () async {
       final schemaV8 = await verifier.schemaAt(8);
       final db = AppDatabase(schemaV8.newConnection());
@@ -2575,12 +2610,14 @@ void main() {
             ),
           );
       await db
-          .into(db.configuracionCobroReglaEvento)
+          .into(db.configuracionCobroEtapa)
           .insert(
-            ConfiguracionCobroReglaEventoCompanion.insert(
+            ConfiguracionCobroEtapaCompanion.insert(
+              id: 'etapa-pago-1',
               configuracionCobroVigenciaId: vigencia.id,
-              tipoEvento: 'pagoEsperado',
-              tipoRegla: 'diaFijoDelMes',
+              tipoSistema: const Value('pagoEsperado'),
+              orden: 2,
+              tipoRegla: const Value('diaFijoDelMes'),
               mesRelativo: const Value('actual'),
               diaDelMes: const Value(10),
             ),
@@ -2588,12 +2625,14 @@ void main() {
 
       expect(
         () => db
-            .into(db.configuracionCobroReglaEvento)
+            .into(db.configuracionCobroEtapa)
             .insert(
-              ConfiguracionCobroReglaEventoCompanion.insert(
+              ConfiguracionCobroEtapaCompanion.insert(
+                id: 'etapa-pago-2',
                 configuracionCobroVigenciaId: vigencia.id,
-                tipoEvento: 'pagoEsperado',
-                tipoRegla: 'diaFijoDelMes',
+                tipoSistema: const Value('pagoEsperado'),
+                orden: 2,
+                tipoRegla: const Value('diaFijoDelMes'),
                 mesRelativo: const Value('actual'),
                 diaDelMes: const Value(20),
               ),
@@ -2606,7 +2645,7 @@ void main() {
   );
 
   test(
-    'rechaza una regla de evento con vigencia inexistente tras la migración',
+    'rechaza una etapa de cobro con vigencia inexistente tras la migración (Etapa 15)',
     () async {
       final schemaV8 = await verifier.schemaAt(8);
       final db = AppDatabase(schemaV8.newConnection());
@@ -2614,10 +2653,10 @@ void main() {
 
       expect(
         () => db.customStatement('''
-        INSERT INTO configuracion_cobro_regla_evento (
-          configuracion_cobro_vigencia_id, tipo_evento, tipo_regla, mes_relativo, dia_del_mes
+        INSERT INTO configuracion_cobro_etapa (
+          id, configuracion_cobro_vigencia_id, tipo_sistema, orden, tipo_regla, mes_relativo, dia_del_mes
         ) VALUES (
-          'vigencia-inexistente', 'emision', 'diaFijoDelMes', 'actual', 1
+          'etapa-huerfana', 'vigencia-inexistente', 'emision', 0, 'diaFijoDelMes', 'actual', 1
         );
       '''),
         throwsA(anything),
@@ -3239,8 +3278,6 @@ void main() {
               importeFinalEsperado: 3000000,
               estatus: const Value('enviado'),
               folioDocumento: const Value('A-001'),
-              serieFiscal: const Value('A'),
-              folioFiscal: const Value('001'),
               uuid: const Value('11111111-1111-1111-1111-111111111111'),
               fechaEmisionReal: Value(DateTime(2026, 1, 5)),
               importeEmitido: const Value(3000000),
@@ -3677,8 +3714,6 @@ void main() {
       expect(cuenta.tipoDocumento, 'cfdi');
       expect(cuenta.metodo, 'pue');
       expect(cuenta.folioDocumento, 'A-001');
-      expect(cuenta.serieFiscal, 'A');
-      expect(cuenta.folioFiscal, '001');
       expect(cuenta.uuid, '11111111-1111-1111-1111-111111111111');
       expect(cuenta.importeEmitido, 620000);
       expect(cuenta.saldoOriginal, 620000);
@@ -9373,6 +9408,108 @@ void main() {
   });
 
   test(
+    '47.json elimina serieFiscal/folioFiscal de DocumentoPorEmitir y CuentaPorCobrar (Etapa 15, '
+    'corrección estructural CFDI real: uuid único, sin certificado CSD)',
+    () async {
+      final schema = await verifier.schemaAt(47);
+
+      final sqlDocumento =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir'")
+                  .single['sql']
+              as String;
+      expect(sqlDocumento, isNot(contains('serie_fiscal')));
+      expect(sqlDocumento, isNot(contains('folio_fiscal')));
+      expect(sqlDocumento, contains('"uuid" TEXT'));
+      expect(sqlDocumento, contains('"folio_documento" TEXT'));
+
+      final sqlCuenta =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'cuenta_por_cobrar'")
+                  .single['sql']
+              as String;
+      expect(sqlCuenta, isNot(contains('serie_fiscal')));
+      expect(sqlCuenta, isNot(contains('folio_fiscal')));
+      expect(sqlCuenta, contains('"uuid" TEXT'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test(
+    'migración 46 → 47 fusiona folioFiscal en uuid con COALESCE (caso real MILUYOLE) y descarta '
+    'serieFiscal sin perder ningún dato de negocio',
+    () async {
+      final schemaV46 = await verifier.schemaAt(46);
+      final raw = schemaV46.rawDatabase;
+
+      raw.execute('''
+        INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+        VALUES ('cliente-miluyole', 'CLI-000099', 'MILUYOLE', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+      ''');
+      // Caso real reportado por Marlon: `serieFiscal` fue capturado por
+      // error con el número de serie del CSD (nunca un dato real de
+      // "serie fiscal"), y el UUID del CFDI real se había capturado en
+      // `folioFiscal`, dejando `uuid` vacío — exactamente el escenario
+      // que `COALESCE(uuid, folio_fiscal)` debe resolver sin pérdida.
+      raw.execute('''
+        INSERT INTO documento_por_emitir (
+          id, codigo, cliente_id, tipo_documento, agrupacion, metodo, requiere_complemento,
+          periodo_inicio, periodo_fin, generation_key, importe_base_esperado, importe_final_esperado,
+          estatus, folio_documento, serie_fiscal, folio_fiscal, uuid, fecha_emision_real, importe_emitido,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'documento-miluyole', 'DOC-000099', 'cliente-miluyole', 'cfdi', 'porServicio', 'PUE', 0,
+          1700000000, 1701000000, 'clave-miluyole-v47', 2180000, 2180000,
+          'procesadoAceptado', 'F-1523', '00001000000709181459', 'FE6FC43F-B308-4F0B-B610-A079E69A64BC', NULL,
+          1700500000, 2180000,
+          1700000000, 1700000000, 'activo'
+        );
+      ''');
+      raw.execute('''
+        INSERT INTO cuenta_por_cobrar (
+          id, documento_por_emitir_id, cliente_id, tipo_documento, metodo, requiere_complemento,
+          folio_documento, serie_fiscal, folio_fiscal, uuid, fecha_emision_real, importe_emitido,
+          saldo_original, saldo_pendiente, moneda, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'cxc-miluyole', 'documento-miluyole', 'cliente-miluyole', 'cfdi', 'PUE', 0,
+          'F-1523', '00001000000709181459', 'FE6FC43F-B308-4F0B-B610-A079E69A64BC', NULL, 1700500000, 2180000,
+          2180000, 2180000, 'MXN', 'pendiente',
+          1700000000, 1700000000, 'activo'
+        );
+      ''');
+
+      final db = AppDatabase(schemaV46.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final documento = await (db.select(db.documentoPorEmitir)
+            ..where((t) => t.id.equals('documento-miluyole')))
+          .getSingle();
+      expect(
+        documento.uuid,
+        'FE6FC43F-B308-4F0B-B610-A079E69A64BC',
+        reason: 'uuid estaba vacío; debe heredar el valor de folioFiscal vía COALESCE',
+      );
+      expect(documento.folioDocumento, 'F-1523', reason: 'folioDocumento no se toca');
+
+      final cuenta = await (db.select(db.cuentaPorCobrar)
+            ..where((t) => t.id.equals('cxc-miluyole')))
+          .getSingle();
+      expect(cuenta.uuid, 'FE6FC43F-B308-4F0B-B610-A079E69A64BC');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
     'corregir identidad de una ArticuloUnidad real tras la migración: número de serie y marca '
     'cambian, mismo id/código, evento de auditoría con valor anterior y nuevo',
     () async {
@@ -9434,6 +9571,638 @@ void main() {
 
       final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
+
+      await db.close();
+    },
+  );
+
+  test(
+    '48.json agrega Empleado.bancoOtroDescripcion (Etapa 15: nombre del banco cuando bancoId apunta a la '
+    'fila catálogo "OTRO")',
+    () async {
+      final schema = await verifier.schemaAt(48);
+
+      final sqlEmpleado =
+          schema.rawDatabase
+                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado'")
+                  .single['sql']
+              as String;
+      expect(sqlEmpleado, contains('"banco_otro_descripcion" TEXT'));
+
+      schema.rawDatabase.dispose();
+    },
+  );
+
+  test('migración 47 → 48 conserva datos existentes y agrega bancoOtroDescripcion nulo por defecto', () async {
+    final schemaV47 = await verifier.schemaAt(47);
+    final raw = schemaV47.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, nacionalidad, fecha_ingreso, estatus, anios_experiencia_seguridad,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real-existente', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 'Mexicana', 1700000000, 'activo', 3,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV47.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final empleado = await (db.select(db.empleado)..where((t) => t.id.equals('empleado-real-existente'))).getSingle();
+    expect(empleado.nombres, 'Juan', reason: 'ningún Empleado real debe perderse en una migración puramente aditiva');
+    expect(empleado.bancoOtroDescripcion, isNull, reason: 'columna nueva, sin backfill');
+
+    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty);
+
+    final integridad =
+        await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+    expect(integridad, ['ok']);
+
+    await db.close();
+  });
+
+  test(
+    'migración 48 → 49 preserva configuraciones reales de configuracion_cobro_regla_evento como '
+    'ConfiguracionCobroEtapa equivalentes, resolviendo evento_referencia al id nuevo (Etapa 15)',
+    () async {
+      final schemaV48 = await verifier.schemaAt(48);
+      final raw = schemaV48.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-miluyole-real', 'CLI-000099', 'MILUYOLE', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('tipo-servicio-real', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+      // `schemaAt(48)` da un snapshot estructural puro, sin la siembra que
+      // una instalación real ya habría aplicado (mismo criterio que el
+      // fixture de schemaAt(9) más arriba) — se inserta a mano.
+      raw.execute('''
+      INSERT INTO tipo_frecuencia_cobro (id, codigo, nombre, created_at, updated_at)
+      VALUES ('${SeedIds.frecuenciaCobroMensual}', 'MENSUAL', 'Mensual', 1700000000, 1700000000);
+    ''');
+
+      // Vigencia real con encadenamiento completo (emisión → procesamiento
+      // → pago esperado), el caso Miluyole ya validado en
+      // calcular_fechas_cobro_test.dart — aquí se comprueba que la
+      // migración conserva exactamente esa cadena, no solo filas sueltas.
+      raw.execute('''
+      INSERT INTO servicio (id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('servicio-miluyole-real', 'SER-000099', 'cliente-miluyole-real', 'Vigilancia Miluyole', 'tipo-servicio-real', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('configuracion-miluyole-real', 'servicio-miluyole-real', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro_vigencia (
+        id, configuracion_cobro_id, tipo_documento, frecuencia_id, dia_inicio_periodo,
+        agrupacion, metodo, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vigencia-miluyole-real', 'configuracion-miluyole-real', 'reciboDePago', '${SeedIds.frecuenciaCobroMensual}', 1,
+        'porServicio', 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro_regla_evento (configuracion_cobro_vigencia_id, tipo_evento, tipo_regla, mes_relativo, dia_del_mes)
+      VALUES ('vigencia-miluyole-real', 'emision', 'diaFijoDelMes', 'actual', 1);
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro_regla_evento (configuracion_cobro_vigencia_id, tipo_evento, tipo_regla, mes_relativo, dia_semana, ordinal_semana)
+      VALUES ('vigencia-miluyole-real', 'procesamiento', 'nEsimoDiaSemanaDelMes', 'actual', 'miercoles', 'primero');
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro_regla_evento (configuracion_cobro_vigencia_id, tipo_evento, tipo_regla, dia_semana, evento_referencia)
+      VALUES ('vigencia-miluyole-real', 'pagoEsperado', 'mismoDiaSemanaSiguienteA', 'miercoles', 'procesamiento');
+    ''');
+
+      // Segunda vigencia real, caso Tikal: una sola regla suelta, sin
+      // ninguna referencia — confirma que la migración no inventa
+      // dependencias donde el modelo viejo nunca tuvo ninguna.
+      raw.execute('''
+      INSERT INTO servicio (id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('servicio-tikal-real', 'SER-000098', 'cliente-miluyole-real', 'Residencial Tikal', 'tipo-servicio-real', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('configuracion-tikal-real', 'servicio-tikal-real', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro_vigencia (
+        id, configuracion_cobro_id, tipo_documento, frecuencia_id, dia_inicio_periodo,
+        agrupacion, metodo, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vigencia-tikal-real', 'configuracion-tikal-real', 'reciboDePago', '${SeedIds.frecuenciaCobroMensual}', 1,
+        'porServicio', 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro_regla_evento (configuracion_cobro_vigencia_id, tipo_evento, tipo_regla, mes_relativo, dia_del_mes)
+      VALUES ('vigencia-tikal-real', 'pagoEsperado', 'diaFijoDelMes', 'actual', 20);
+    ''');
+
+      final conteoOriginal =
+          raw.select('SELECT COUNT(*) AS n FROM configuracion_cobro_regla_evento').single['n'] as int;
+      expect(conteoOriginal, 4, reason: 'fixture: 3 reglas de Miluyole + 1 de Tikal');
+
+      final db = AppDatabase(schemaV48.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final tablaVieja = await db
+          .customSelect("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'configuracion_cobro_regla_evento'")
+          .get();
+      expect(tablaVieja, isEmpty, reason: 'la tabla vieja se retira tras copiar sus datos');
+
+      final etapasMiluyole = await (db.select(db.configuracionCobroEtapa)
+            ..where((t) => t.configuracionCobroVigenciaId.equals('vigencia-miluyole-real'))
+            ..orderBy([(t) => OrderingTerm(expression: t.orden)]))
+          .get();
+      expect(etapasMiluyole, hasLength(3), reason: 'ninguna regla real debe perderse');
+
+      final emision = etapasMiluyole[0];
+      expect(emision.tipoSistema, 'emision');
+      expect(emision.orden, 0);
+      expect(emision.tipoRegla, 'diaFijoDelMes');
+      expect(emision.mesRelativo, 'actual');
+      expect(emision.diaDelMes, 1);
+      expect(emision.etapaReferenciaId, isNull);
+
+      final procesamiento = etapasMiluyole[1];
+      expect(procesamiento.tipoSistema, 'procesamiento');
+      expect(procesamiento.orden, 1);
+      expect(procesamiento.tipoRegla, 'nEsimoDiaSemanaDelMes');
+      expect(procesamiento.diaSemana, 'miercoles');
+      expect(procesamiento.ordinalSemana, 'primero');
+
+      final pagoMiluyole = etapasMiluyole[2];
+      expect(pagoMiluyole.tipoSistema, 'pagoEsperado');
+      expect(pagoMiluyole.orden, 2);
+      expect(pagoMiluyole.tipoRegla, 'mismoDiaSemanaSiguienteA');
+      expect(pagoMiluyole.diaSemana, 'miercoles');
+      expect(
+        pagoMiluyole.etapaReferenciaId,
+        procesamiento.id,
+        reason: 'evento_referencia ("procesamiento", un TipoEventoCobro) se resuelve al id real de la etapa hermana',
+      );
+
+      // La configuración migrada sigue siendo calculable de punta a
+      // punta con el motor nuevo — no solo se copiaron columnas sueltas.
+      const calcular = CalcularFechasCobroUseCase();
+      final fechasMiluyole = calcular.ejecutar(
+        etapas: etapasMiluyole,
+        mesInicioPeriodo: DateTime(2026, 1, 1),
+        periodoFin: DateTime(2026, 1, 31),
+      );
+      expect(fechaDeEtapaSistema(fechasMiluyole, TipoEventoCobro.emision), DateTime(2026, 1, 1));
+      expect(fechaDeEtapaSistema(fechasMiluyole, TipoEventoCobro.procesamiento), DateTime(2026, 1, 7));
+      expect(fechaDeEtapaSistema(fechasMiluyole, TipoEventoCobro.pagoEsperado), DateTime(2026, 1, 14));
+
+      final etapasTikal = await (db.select(db.configuracionCobroEtapa)
+            ..where((t) => t.configuracionCobroVigenciaId.equals('vigencia-tikal-real')))
+          .get();
+      expect(etapasTikal, hasLength(1));
+      expect(etapasTikal.single.tipoSistema, 'pagoEsperado');
+      expect(etapasTikal.single.diaDelMes, 20);
+      expect(etapasTikal.single.etapaReferenciaId, isNull, reason: 'el modelo viejo nunca tuvo referencia aquí');
+
+      final totalEtapas = await db.select(db.configuracionCobroEtapa).get();
+      expect(totalEtapas, hasLength(4), reason: '3 + 1, ninguna fila extra ni faltante');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 49 → 50 (Etapa 15, rediseño Condiciones de Personal): copia sueldo/bono global a la '
+    'vigencia vigente cuando el Servicio tiene exactamente 1 línea comercial (caso MORGAN); nunca '
+    'adivina con 2+ líneas',
+    () async {
+      final schemaV49 = await verifier.schemaAt(49);
+      final raw = schemaV49.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-morgan', 'CLI-000088', 'Morgan Atlacomulco', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('tipo-servicio-morgan', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+      // `schemaAt(49)` da un snapshot estructural puro, sin la siembra
+      // de catálogos que una instalación real ya habría aplicado (mismo
+      // criterio que el fixture de `tipo_frecuencia_cobro` más arriba).
+      raw.execute('''
+      INSERT INTO area (id, codigo, nombre, activo, created_at, updated_at)
+      VALUES ('${SeedIds.areaOperaciones}', 'OPERACIONES', 'Operaciones', 1, 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO tipo_modalidad_turno (id, codigo, nombre, created_at, updated_at)
+      VALUES ('${SeedIds.modalidadTurnoMixto}', 'MIXTO', 'Mixto', 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO tipo_modalidad_turno (id, codigo, nombre, created_at, updated_at)
+      VALUES ('${SeedIds.modalidadTurno24x24}', '24X24', '24x24', 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO tipo_modalidad_turno (id, codigo, nombre, created_at, updated_at)
+      VALUES ('${SeedIds.modalidadTurno12x12}', '12X12', '12x12', 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO puesto (id, codigo, nombre, area_id, tipo, nivel_jerarquico, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('puesto-elemento', 'PUE-000001', 'Elemento Operativo', '${SeedIds.areaOperaciones}', 'operativo', 5, 1700000000, 1700000000, 'activo');
+    ''');
+
+      // Servicio A: sueldo/bono global capturado + exactamente 1 línea
+      // comercial, con exactamente 1 vigencia vigente hoy — el caso
+      // trivial y determinista (real: MORGAN ATLACOMULCO).
+      raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio,
+        sueldo_mensual_referencia_personal, bono_mensual_referencia_personal,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-morgan', 'SER-000088', 'cliente-morgan', 'Vigilancia Morgan Atlacomulco', 'tipo-servicio-morgan',
+        'activo', 1700000000, 1200000, 50000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO servicio_linea_comercial (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('linea-morgan', 'servicio-morgan', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO servicio_linea_comercial_vigencia (
+        id, linea_comercial_id, puesto_id, modalidad_turno_id, cantidad_elementos, precio_unitario,
+        tratamiento_iva, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vigencia-morgan', 'linea-morgan', 'puesto-elemento', '${SeedIds.modalidadTurnoMixto}',
+        3, 1645000, 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      // Servicio B: sueldo/bono global también capturado, pero con 2
+      // líneas comerciales — nunca se adivina a cuál pertenecía.
+      raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio,
+        sueldo_mensual_referencia_personal, bono_mensual_referencia_personal,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-dos-lineas', 'SER-000089', 'cliente-morgan', 'Servicio con 2 líneas', 'tipo-servicio-morgan',
+        'activo', 1700000000, 900000, 0, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO servicio_linea_comercial (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('linea-dos-a', 'servicio-dos-lineas', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO servicio_linea_comercial (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('linea-dos-b', 'servicio-dos-lineas', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO servicio_linea_comercial_vigencia (
+        id, linea_comercial_id, puesto_id, modalidad_turno_id, cantidad_elementos, precio_unitario,
+        tratamiento_iva, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vigencia-dos-a', 'linea-dos-a', 'puesto-elemento', '${SeedIds.modalidadTurno24x24}',
+        2, 1500000, 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO servicio_linea_comercial_vigencia (
+        id, linea_comercial_id, puesto_id, modalidad_turno_id, cantidad_elementos, precio_unitario,
+        tratamiento_iva, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vigencia-dos-b', 'linea-dos-b', 'puesto-elemento', '${SeedIds.modalidadTurno12x12}',
+        1, 2000000, 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV49.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final vigenciaMorgan =
+          await (db.select(db.servicioLineaComercialVigencia)..where((t) => t.id.equals('vigencia-morgan'))).getSingle();
+      expect(vigenciaMorgan.sueldoMensualReferenciaPersonal, 1200000, reason: 'caso trivial: 1 sola línea vigente, se copia');
+      expect(vigenciaMorgan.bonoMensualReferenciaPersonal, 50000);
+
+      final vigenciaDosA =
+          await (db.select(db.servicioLineaComercialVigencia)..where((t) => t.id.equals('vigencia-dos-a'))).getSingle();
+      final vigenciaDosB =
+          await (db.select(db.servicioLineaComercialVigencia)..where((t) => t.id.equals('vigencia-dos-b'))).getSingle();
+      expect(vigenciaDosA.sueldoMensualReferenciaPersonal, isNull, reason: '2+ líneas — nunca se adivina');
+      expect(vigenciaDosB.sueldoMensualReferenciaPersonal, isNull);
+
+      // Las columnas globales de Servicio permanecen intactas — nunca
+      // se borran, solo dejan de ser la fuente para operación nueva.
+      final servicioMorgan = await (db.select(db.servicio)..where((t) => t.id.equals('servicio-morgan'))).getSingle();
+      expect(servicioMorgan.sueldoMensualReferenciaPersonal, 1200000);
+
+      final columnasAsignacion = await db.customSelect("PRAGMA table_info('asignacion_servicio')").get();
+      expect(columnasAsignacion.any((fila) => fila.data['name'] == 'linea_comercial_id'), isTrue);
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 50 → 51 (Etapa 15, Horario personalizado de línea comercial) conserva una '
+    'ServicioLineaComercialVigencia real y crea ServicioLineaComercialVigenciaHorario vacía',
+    () async {
+      final schemaV50 = await verifier.schemaAt(50);
+      final raw = schemaV50.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real', 'CLI-000090', 'Vigilancia Real', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      // `schemaAt(50)` da un snapshot estructural puro, sin la siembra
+      // de catálogos que una instalación real ya habría aplicado (mismo
+      // criterio que los fixtures anteriores de este archivo).
+      raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('${SeedIds.tipoServicioVigilanciaFija}', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO area (id, codigo, nombre, activo, created_at, updated_at)
+      VALUES ('${SeedIds.areaOperaciones}', 'OPERACIONES', 'Operaciones', 1, 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO tipo_modalidad_turno (id, codigo, nombre, created_at, updated_at)
+      VALUES ('${SeedIds.modalidadTurno24x24}', '24X24', '24x24', 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO servicio (
+        id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio,
+        elementos_autorizados, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'servicio-real', 'SRV-000090', 'cliente-real', 'Vigilancia Real', '${SeedIds.tipoServicioVigilanciaFija}',
+        'activo', 1700000000, 1, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO puesto (id, codigo, nombre, area_id, tipo, nivel_jerarquico, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('puesto-real', 'PUE-000090', 'Elemento Operativo', '${SeedIds.areaOperaciones}', 'operativo', 5,
+        1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO servicio_linea_comercial (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('linea-real', 'servicio-real', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO servicio_linea_comercial_vigencia (
+        id, linea_comercial_id, puesto_id, modalidad_turno_id, cantidad_elementos, precio_unitario,
+        tratamiento_iva, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vigencia-real', 'linea-real', 'puesto-real', '${SeedIds.modalidadTurno24x24}',
+        2, 1500000, 'masIva', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV50.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final vigencia =
+          await (db.select(db.servicioLineaComercialVigencia)..where((t) => t.id.equals('vigencia-real'))).getSingle();
+      expect(vigencia.cantidadElementos, 2, reason: 'ninguna vigencia real debe perderse en una migración puramente aditiva');
+      expect(vigencia.precioUnitario, 1500000);
+
+      final horario = await db.select(db.servicioLineaComercialVigenciaHorario).get();
+      expect(horario, isEmpty, reason: 'tabla nueva, sin backfill');
+
+      // La tabla nueva sí acepta una fila real después de migrar —
+      // confirma que la FK hacia la vigencia y los CHECK de rango
+      // quedaron bien formados, no solo que la tabla existe vacía.
+      await db.into(db.servicioLineaComercialVigenciaHorario).insert(
+            ServicioLineaComercialVigenciaHorarioCompanion.insert(
+              lineaComercialVigenciaId: 'vigencia-real',
+              diaSemana: 0,
+              horaInicio: 1200,
+              horaFin: 420,
+              cruzaMedianoche: const Value(true),
+            ),
+          );
+      final horarioTrasInsertar = await db.select(db.servicioLineaComercialVigenciaHorario).get();
+      expect(horarioTrasInsertar, hasLength(1));
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 51 → 52 (Etapa 15, portal único del Cliente) crea/reutiliza ClientePortal por Cliente a partir '
+    'de portales legados reales, cifra cualquier contraseña capturada, deduplica por Cliente+URL+usuario, nunca '
+    'toca los correos y conserva intactas las 5 columnas legacy',
+    () async {
+      final schemaV51 = await verifier.schemaAt(51);
+      final raw = schemaV51.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+      VALUES ('tipo-servicio-real', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO tipo_frecuencia_cobro (id, codigo, nombre, created_at, updated_at)
+      VALUES ('${SeedIds.frecuenciaCobroMensual}', 'MENSUAL', 'Mensual', 1700000000, 1700000000);
+    ''');
+
+      // SPORTIUM (real, caso del propio Marlon en su instrucción): un
+      // Cliente, dos Servicios (Coyoacán / San Ángel), cada uno con su
+      // propia Configuración de cobro capturando el MISMO portal —
+      // misma URL+usuario+contraseña, literalmente copiado y pegado al
+      // crear el segundo club — la migración debe deduplicar a una sola
+      // fila `ClientePortal`, nunca crear dos.
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-sportium', 'CLI-000091', 'SPORTIUM', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      for (final club in ['coyoacan', 'sanangel']) {
+        raw.execute('''
+        INSERT INTO servicio (id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro)
+        VALUES ('servicio-sportium-$club', 'SER-$club', 'cliente-sportium', 'SPORTIUM ${club.toUpperCase()}', 'tipo-servicio-real', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+      ''');
+        raw.execute('''
+        INSERT INTO configuracion_cobro (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+        VALUES ('configuracion-sportium-$club', 'servicio-sportium-$club', 1700000000, 1700000000, 'activo');
+      ''');
+        raw.execute('''
+        INSERT INTO configuracion_cobro_vigencia (
+          id, configuracion_cobro_id, tipo_documento, frecuencia_id, dia_inicio_periodo, agrupacion, metodo,
+          portal_nombre, portal_url, portal_usuario, portal_contrasena, portal_observaciones,
+          fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'vigencia-sportium-$club', 'configuracion-sportium-$club', 'reciboDePago', '${SeedIds.frecuenciaCobroMensual}', 21,
+          'porServicio', 'noAplica',
+          'Portal SIPOT', 'https://sipot.sportium.mx', 'sportium_admin', 'ClaveOriginal2025!', 'Acceso compartido entre clubes',
+          1700000000, 1700000000, 1700000000, 'activo'
+        );
+      ''');
+      }
+      // Un correo real ya capturado en San Ángel — la migración no debe
+      // tocarlo (instrucción explícita: "no migres ni alteres los
+      // correos").
+      raw.execute('''
+      INSERT INTO configuracion_cobro_correo (configuracion_cobro_vigencia_id, correo)
+      VALUES ('vigencia-sportium-sanangel', 'facturacion@sportium.mx');
+    ''');
+
+      // MORGAN: portal legado capturado sin contraseña (campo vacío,
+      // como sí ocurría en más de una instalación real) — nunca debe
+      // cifrarse un vacío, `contrasena_cifrada` debe quedar NULL.
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-morgan', 'CLI-000092', 'Morgan Atlacomulco', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO servicio (id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('servicio-morgan', 'SER-morgan', 'cliente-morgan', 'Vigilancia Morgan', 'tipo-servicio-real', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('configuracion-morgan', 'servicio-morgan', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro_vigencia (
+        id, configuracion_cobro_id, tipo_documento, frecuencia_id, dia_inicio_periodo, agrupacion, metodo,
+        portal_nombre, portal_url, portal_usuario, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vigencia-morgan', 'configuracion-morgan', 'reciboDePago', '${SeedIds.frecuenciaCobroMensual}', 1,
+        'porServicio', 'noAplica', 'Portal Morgan', 'https://portal.morgan.mx', 'morgan_admin',
+        1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      // TOLUCA 32: sin ningún portal capturado — caso real ya conocido
+      // de este archivo. Debe seguir sin portal después de migrar,
+      // nunca inventar uno.
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-toluca', 'CLI-000093', 'Toluca 32', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO servicio (id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('servicio-toluca', 'SER-toluca', 'cliente-toluca', 'Vigilancia Toluca 32', 'tipo-servicio-real', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro (id, servicio_id, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('configuracion-toluca', 'servicio-toluca', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO configuracion_cobro_vigencia (
+        id, configuracion_cobro_id, tipo_documento, frecuencia_id, dia_inicio_periodo, agrupacion, metodo,
+        fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'vigencia-toluca', 'configuracion-toluca', 'reciboDePago', '${SeedIds.frecuenciaCobroMensual}', 1,
+        'porServicio', 'noAplica', 1700000000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final almacen = _AlmacenClaveCifradoEnMemoria();
+      final db = AppDatabase(schemaV51.newConnection(), almacenClaveCifrado: almacen);
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      // Deduplicación: 2 vigencias de SPORTIUM con el mismo Cliente +
+      // URL + usuario → un solo ClientePortal nuevo, nunca dos.
+      final vigenciaCoyoacan =
+          await (db.select(db.configuracionCobroVigencia)..where((t) => t.id.equals('vigencia-sportium-coyoacan'))).getSingle();
+      final vigenciaSanAngel =
+          await (db.select(db.configuracionCobroVigencia)..where((t) => t.id.equals('vigencia-sportium-sanangel'))).getSingle();
+      expect(vigenciaCoyoacan.clientePortalId, isNotNull);
+      expect(vigenciaCoyoacan.clientePortalId, vigenciaSanAngel.clientePortalId, reason: 'mismo Cliente+URL+usuario → un solo portal, deduplicado');
+
+      final portalSportium =
+          await (db.select(db.clientePortal)..where((t) => t.id.equals(vigenciaCoyoacan.clientePortalId!))).getSingle();
+      expect(portalSportium.clienteId, 'cliente-sportium');
+      expect(portalSportium.nombre, 'Portal SIPOT');
+      expect(portalSportium.url, 'https://sipot.sportium.mx');
+      expect(portalSportium.usuario, 'sportium_admin');
+      expect(portalSportium.observaciones, 'Acceso compartido entre clubes');
+      expect(portalSportium.tipo, TipoPortalCliente.otro.name, reason: 'el modelo legado nunca capturó tipo/propósito');
+      expect(portalSportium.cicloVidaRegistro, 'activo');
+
+      // La contraseña legada quedó cifrada — nunca en texto plano —
+      // pero descifra exactamente al valor original.
+      expect(portalSportium.contrasenaCifrada, isNotNull);
+      expect(portalSportium.contrasenaCifrada, isNot(equals('ClaveOriginal2025!')));
+      expect(portalSportium.contrasenaCifrada, startsWith('aesgcm\$1\$'));
+      final cipherVerificacion = CredentialCipher(almacen: almacen);
+      expect(await cipherVerificacion.descifrar(portalSportium.contrasenaCifrada!), 'ClaveOriginal2025!');
+
+      // Las 5 columnas legacy de ambas vigencias de SPORTIUM se
+      // conservan intactas — nunca se borran ni se alteran.
+      expect(vigenciaCoyoacan.portalNombre, 'Portal SIPOT');
+      expect(vigenciaCoyoacan.portalUrl, 'https://sipot.sportium.mx');
+      expect(vigenciaCoyoacan.portalUsuario, 'sportium_admin');
+      expect(vigenciaCoyoacan.portalContrasena, 'ClaveOriginal2025!');
+      expect(vigenciaSanAngel.portalContrasena, 'ClaveOriginal2025!');
+
+      // El correo real de San Ángel no se tocó — ni se migró a otra
+      // parte, ni se alteró su contenido.
+      final correosSanAngel = await (db.select(db.configuracionCobroCorreo)
+            ..where((t) => t.configuracionCobroVigenciaId.equals('vigencia-sportium-sanangel')))
+          .get();
+      expect(correosSanAngel, hasLength(1));
+      expect(correosSanAngel.single.correo, 'facturacion@sportium.mx');
+
+      // MORGAN: portal propio (Cliente distinto, nunca se mezcla con
+      // SPORTIUM), sin contraseña — nunca se inventa ni se cifra un
+      // vacío.
+      final vigenciaMorgan =
+          await (db.select(db.configuracionCobroVigencia)..where((t) => t.id.equals('vigencia-morgan'))).getSingle();
+      expect(vigenciaMorgan.clientePortalId, isNotNull);
+      expect(vigenciaMorgan.clientePortalId, isNot(equals(vigenciaCoyoacan.clientePortalId)));
+      final portalMorgan =
+          await (db.select(db.clientePortal)..where((t) => t.id.equals(vigenciaMorgan.clientePortalId!))).getSingle();
+      expect(portalMorgan.clienteId, 'cliente-morgan');
+      expect(portalMorgan.nombre, 'Portal Morgan');
+      expect(portalMorgan.contrasenaCifrada, isNull, reason: 'nunca se inventa ni se cifra una contraseña que no existía');
+
+      // TOLUCA 32: nunca tuvo portal — sigue sin ninguno, la migración
+      // nunca inventa uno donde el modelo legado no capturó nada.
+      final vigenciaToluca =
+          await (db.select(db.configuracionCobroVigencia)..where((t) => t.id.equals('vigencia-toluca'))).getSingle();
+      expect(vigenciaToluca.clientePortalId, isNull);
+      final portalesToluca = await (db.select(db.clientePortal)..where((t) => t.clienteId.equals('cliente-toluca'))).get();
+      expect(portalesToluca, isEmpty);
+
+      // Exactamente 2 portales nuevos en total: SPORTIUM (deduplicado) + MORGAN.
+      final totalPortales = await db.select(db.clientePortal).get();
+      expect(totalPortales, hasLength(2));
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
 
       await db.close();
     },

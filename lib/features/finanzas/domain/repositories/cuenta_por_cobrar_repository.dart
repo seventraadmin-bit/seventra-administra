@@ -25,8 +25,6 @@ abstract interface class CuentaPorCobrarRepository {
     required String metodo,
     required bool requiereComplemento,
     String? folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     required DateTime fechaEmisionReal,
     required int importeEmitido,

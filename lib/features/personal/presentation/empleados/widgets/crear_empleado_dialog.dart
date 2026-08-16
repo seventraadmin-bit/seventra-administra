@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/actualizar_fotografia_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/adjuntar_documento_empleado_usecase.dart';
@@ -93,6 +95,21 @@ String pesosDesdeCentavosParaEditar(int? centavos) {
   return (centavos / 100).toStringAsFixed(2);
 }
 
+/// Traduce el mensaje técnico de un `XxxErrorInesperado` (Etapa 15,
+/// hallazgo real) a un mensaje accionable cuando reconoce un patrón
+/// conocido — nunca expone el texto crudo de la excepción/SQLite al
+/// usuario. Hoy solo distingue el caso real ya visto: la base de datos
+/// local todavía no tiene una columna que el código ya espera (falta
+/// reabrir la app para que la migración pendiente corra) — cualquier
+/// otro error cae al mensaje genérico ya existente.
+String mensajeErrorTecnicoEmpleado(AppLocalizations l10n, String mensajeTecnico, String mensajeGenerico) {
+  final texto = mensajeTecnico.toLowerCase();
+  if (texto.contains('no such column') || texto.contains('has no column named')) {
+    return l10n.empleadoErrorBaseDatosDesactualizada;
+  }
+  return mensajeGenerico;
+}
+
 /// Campos de sueldo/bono mensual administrativo (Etapa 6A) — solo
 /// tienen sentido cuando la adscripción **no** es a Servicio (ver el
 /// doc comment de `Empleado.sueldoMensualAdministrativo`); reutilizado
@@ -158,6 +175,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   // --- Datos bancarios (Etapa 6A) — todo opcional; ver
   // `EmpleadoValidator.datosBancariosValidos`. ---
   String? bancoId;
+  final bancoOtroDescripcionController = TextEditingController();
   final numeroCuentaTarjetaController = TextEditingController();
   final clabeController = TextEditingController();
 
@@ -165,8 +183,10 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   String? puestoId;
   _TipoAdscripcion tipoAdscripcion = _TipoAdscripcion.ninguna;
   String? servicioId;
+  String? lineaComercialId;
   String? turnoId;
   String? sucursalId;
+  List<LineaComercialConVigencia> lineasDelServicio = [];
   // --- Condición laboral administrativa (Etapa 6A) — solo relevante
   // cuando la adscripción no es a Servicio (ver doc comment de
   // `Empleado`). ---
@@ -208,7 +228,9 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
   String? errorFechaNacimiento;
   String? errorFechaIngreso;
   String? errorAdscripcion;
+  String? errorLinea;
   String? errorDatosBancarios;
+  String? errorBancoOtroDescripcion;
   String? errorSueldoAdministrativo;
   String? errorBonoAdministrativo;
   String? errorSueldoAcordado;
@@ -350,8 +372,18 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
               onChanged: (valor) => setState(() {
                 bancoId = valor;
                 errorDatosBancarios = null;
+                errorBancoOtroDescripcion = null;
               }),
             ),
+            if (bancoId == SeedIds.bancoOtro) ...[
+              const SizedBox(height: AppSpacing.md),
+              RisegTextField(
+                label: l10n.empleadoCampoBancoOtroDescripcion,
+                controller: bancoOtroDescripcionController,
+                errorText: errorBancoOtroDescripcion,
+                onChanged: (_) => setState(() => errorBancoOtroDescripcion = null),
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             RisegTextField(
               label: l10n.empleadoCampoNumeroCuentaTarjeta,
@@ -402,9 +434,12 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
               onChanged: (valor) => setState(() {
                 tipoAdscripcion = valor ?? _TipoAdscripcion.ninguna;
                 servicioId = null;
+                lineaComercialId = null;
+                lineasDelServicio = [];
                 turnoId = null;
                 sucursalId = null;
                 errorAdscripcion = null;
+                errorLinea = null;
               }),
             ),
             // `KeyedSubtree` con `ValueKey(tipoAdscripcion)` — sin esto,
@@ -421,50 +456,109 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
             KeyedSubtree(
               key: ValueKey(tipoAdscripcion),
               child: switch (tipoAdscripcion) {
-                _TipoAdscripcion.servicio => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: AppSpacing.md),
-                      RisegSelect<String?>(
-                        label: l10n.empleadoCampoServicio,
-                        value: servicioId,
-                        errorText: errorAdscripcion,
-                        items: [
-                          for (final item in servicios)
-                            RisegSelectItem(value: item.servicio.id, label: item.servicio.nombre),
+                _TipoAdscripcion.servicio => Builder(
+                    builder: (_) {
+                      final lineasVigentes = lineasDelServicio.where((l) => l.vigenciaActual != null).toList();
+                      final lineaElegida = buscarLineaComercialPorId(lineasDelServicio, lineaComercialId);
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: AppSpacing.md),
+                          RisegSelect<String?>(
+                            label: l10n.empleadoCampoServicio,
+                            value: servicioId,
+                            errorText: errorAdscripcion,
+                            items: [
+                              for (final item in servicios)
+                                RisegSelectItem(value: item.servicio.id, label: item.servicio.nombre),
+                            ],
+                            onChanged: (valor) async {
+                              final lineas = valor == null
+                                  ? <LineaComercialConVigencia>[]
+                                  : await ref.read(servicioComercialRepositoryProvider).listarLineas(valor);
+                              setState(() {
+                                servicioId = valor;
+                                lineasDelServicio = lineas;
+                                lineaComercialId = null;
+                                errorAdscripcion = null;
+                                errorLinea = null;
+                                errorSueldoAcordado = null;
+                                errorBonoAcordado = null;
+                                precargarSueldoAcordado(
+                                  linea: null,
+                                  sueldoController: sueldoAcordadoController,
+                                  bonoController: bonoAcordadoController,
+                                );
+                              });
+                            },
+                          ),
+                          if (servicioId != null && lineasVigentes.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            RisegSelect<String?>(
+                              label: l10n.empleadoCampoLineaComercial,
+                              value: lineaComercialId,
+                              errorText: errorLinea,
+                              items: [
+                                for (final l in lineasVigentes)
+                                  RisegSelectItem(value: l.linea.id, label: etiquetaLineaComercial(l10n, l)),
+                              ],
+                              onChanged: (valor) => setState(() {
+                                final linea = buscarLineaComercialPorId(lineasDelServicio, valor);
+                                lineaComercialId = valor;
+                                errorLinea = null;
+                                errorSueldoAcordado = null;
+                                errorBonoAcordado = null;
+                                if (linea?.vigenciaActual != null) turnoId = linea!.vigenciaActual!.modalidadTurnoId;
+                                precargarSueldoAcordado(
+                                  linea: linea,
+                                  sueldoController: sueldoAcordadoController,
+                                  bonoController: bonoAcordadoController,
+                                );
+                              }),
+                            ),
+                            if (lineaElegida?.vigenciaActual != null) ...[
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                l10n.empleadoLineaComercialCapacidad(
+                                  lineaElegida!.asignadosVigentes,
+                                  lineaElegida.vigenciaActual!.cantidadElementos,
+                                ),
+                                style: AppTypography.caption.copyWith(color: context.colors.textMuted),
+                              ),
+                              if (lineaElegida.capacidadExcedida) ...[
+                                const SizedBox(height: AppSpacing.xxs),
+                                Text(
+                                  l10n.empleadoLineaComercialCapacidadExcedidaAdviso,
+                                  style: AppTypography.caption.copyWith(color: context.colors.warning),
+                                ),
+                              ],
+                            ],
+                          ],
+                          const SizedBox(height: AppSpacing.md),
+                          RisegSelect<String?>(
+                            label: l10n.empleadoCampoTurno,
+                            value: turnoId,
+                            items: [
+                              RisegSelectItem(value: null, label: l10n.empleadoCampoSinAsignar),
+                              for (final m in modalidadesTurno) RisegSelectItem(value: m.id, label: m.nombre),
+                            ],
+                            onChanged: (valor) => setState(() => turnoId = valor),
+                          ),
+                          if (servicioId != null) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            SueldoAcordadoFields(
+                              linea: lineaElegida,
+                              sueldoController: sueldoAcordadoController,
+                              bonoController: bonoAcordadoController,
+                              errorSueldo: errorSueldoAcordado,
+                              errorBono: errorBonoAcordado,
+                            ),
+                          ],
                         ],
-                        onChanged: (valor) => setState(() {
-                          servicioId = valor;
-                          errorAdscripcion = null;
-                          errorSueldoAcordado = null;
-                          errorBonoAcordado = null;
-                          precargarSueldoAcordado(
-                            servicio: buscarServicioPorId(servicios, valor),
-                            sueldoController: sueldoAcordadoController,
-                            bonoController: bonoAcordadoController,
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      RisegSelect<String?>(
-                        label: l10n.empleadoCampoTurno,
-                        value: turnoId,
-                        items: [
-                          RisegSelectItem(value: null, label: l10n.empleadoCampoSinAsignar),
-                          for (final m in modalidadesTurno) RisegSelectItem(value: m.id, label: m.nombre),
-                        ],
-                        onChanged: (valor) => setState(() => turnoId = valor),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      SueldoAcordadoFields(
-                        servicio: buscarServicioPorId(servicios, servicioId),
-                        sueldoController: sueldoAcordadoController,
-                        bonoController: bonoAcordadoController,
-                        errorSueldo: errorSueldoAcordado,
-                        errorBono: errorBonoAcordado,
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 _TipoAdscripcion.sucursal => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -706,6 +800,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
             telefonoEmergencia: telefonoEmergenciaController.text,
             parentescoEmergencia: parentescoEmergenciaController.text,
             bancoId: bancoId,
+            bancoOtroDescripcion: bancoId == SeedIds.bancoOtro ? bancoOtroDescripcionController.text : null,
             numeroCuentaTarjeta: numeroCuentaTarjetaController.text,
             clabe: clabeController.text,
             fechaIngreso: fechaIngreso!,
@@ -713,6 +808,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
             empresaId: empresaActiva.id,
             servicioId: tipoAdscripcion == _TipoAdscripcion.servicio ? servicioId : null,
             turnoId: tipoAdscripcion == _TipoAdscripcion.servicio ? turnoId : null,
+            lineaComercialId: tipoAdscripcion == _TipoAdscripcion.servicio ? lineaComercialId : null,
             sucursalId: tipoAdscripcion == _TipoAdscripcion.sucursal ? sucursalId : null,
             sueldoMensualAsignacion: tipoAdscripcion == _TipoAdscripcion.servicio
                 ? centavosDesdeTexto(sueldoAcordadoController.text)
@@ -813,6 +909,12 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         case CrearEmpleadoServicioNoActivo():
           errorAdscripcion = l10n.empleadoErrorServicioNoActivo;
           return null;
+        case CrearEmpleadoLineaComercialRequerida():
+          errorLinea = l10n.empleadoErrorLineaComercialRequerida;
+          return null;
+        case CrearEmpleadoLineaComercialInvalida():
+          errorLinea = l10n.empleadoErrorLineaComercialInvalida;
+          return null;
         case CrearEmpleadoSueldoAsignacionRequerido():
           errorSueldoAcordado = l10n.empleadoErrorSueldoRequerido;
           return null;
@@ -825,14 +927,20 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         case CrearEmpleadoDatosBancariosInvalidos():
           errorDatosBancarios = l10n.empleadoErrorDatosBancariosInvalidos;
           return null;
+        case CrearEmpleadoBancoOtroDescripcionRequerida():
+          errorBancoOtroDescripcion = l10n.empleadoErrorBancoOtroDescripcionRequerido;
+          return null;
         case CrearEmpleadoSueldoAdministrativoInvalido():
           errorSueldoAdministrativo = l10n.empleadoErrorSueldoAdministrativoInvalido;
           return null;
         case CrearEmpleadoBonoAdministrativoInvalido():
           errorBonoAdministrativo = l10n.empleadoErrorBonoAdministrativoInvalido;
           return null;
-        case CrearEmpleadoErrorInesperado():
-          RisegFeedback.showError(context, l10n.crearEmpleadoErrorInesperado);
+        case CrearEmpleadoErrorInesperado(:final mensaje):
+          RisegFeedback.showError(
+            context,
+            mensajeErrorTecnicoEmpleado(l10n, mensaje, l10n.crearEmpleadoErrorInesperado),
+          );
           return null;
       }
     },
@@ -864,6 +972,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
         contactoEmergenciaNombreController,
         telefonoEmergenciaController,
         parentescoEmergenciaController,
+        bancoOtroDescripcionController,
         numeroCuentaTarjetaController,
         clabeController,
         sueldoMensualAdministrativoController,

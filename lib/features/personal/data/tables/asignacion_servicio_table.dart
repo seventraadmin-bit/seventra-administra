@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../../core/database/tables/catalogos_tables.dart';
+import '../../../organizacion/data/tables/servicio_linea_comercial_table.dart';
 import '../../../organizacion/data/tables/servicio_table.dart';
 import 'empleado_table.dart';
 
@@ -84,6 +85,20 @@ class AsignacionServicio extends Table with AuditColumns {
   /// concepto real, evita duplicar catálogo. Vive aquí y no en
   /// `Empleado` porque cambia cuando el Empleado cambia de Servicio.
   TextColumn get turnoId => text().nullable().references(TipoModalidadTurno, #id, onDelete: KeyAction.restrict)();
+
+  /// A qué perfil/línea comercial contratado pertenece esta asignación
+  /// (Etapa 15, rediseño de "Condiciones de Personal") — nullable solo
+  /// por compatibilidad con asignaciones históricas (nunca se adivina
+  /// retroactivamente, Resolución explícita de Marlon); en la captura
+  /// nueva, la UI la exige en cuanto el Servicio tiene alguna línea
+  /// comercial vigente (`AsignacionServicioValidator.lineaRequerida`) —
+  /// nunca vuelve a existir la opción de asignar "genérico" perdiendo
+  /// esta relación. De aquí se precargan
+  /// `ServicioLineaComercialVigencia.sueldoMensualReferenciaPersonal`/
+  /// `bonoMensualReferenciaPersonal` (reemplaza el sueldo global de
+  /// `Servicio`, retirado de la captura nueva).
+  TextColumn get lineaComercialId =>
+      text().nullable().references(ServicioLineaComercial, #id, onDelete: KeyAction.restrict)();
 
   DateTimeColumn get fechaInicio => dateTime()();
 

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/nomina/data/tables/nomina_table.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/actualizar_distribucion_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/actualizar_movimientos_nomina_usecase.dart';
@@ -205,7 +206,10 @@ class NominasController extends _$NominasController {
           ),
       RegistrarPagoNominaErrorInesperado.new,
     );
-    if (resultado is RegistrarPagoNominaExitoso) await _cargar();
+    if (resultado is RegistrarPagoNominaExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -218,7 +222,10 @@ class NominasController extends _$NominasController {
           .ejecutar(pagoNominaId: pagoNominaId, motivo: motivo, actorUsuarioId: _actorUsuarioId),
       CancelarPagoNominaErrorInesperado.new,
     );
-    if (resultado is CancelarPagoNominaExitoso) await _cargar();
+    if (resultado is CancelarPagoNominaExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 

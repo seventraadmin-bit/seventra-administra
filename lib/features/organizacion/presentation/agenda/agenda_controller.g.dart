@@ -6,7 +6,7 @@ part of 'agenda_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$agendaControllerHash() => r'62a2c800a00b0facac1f96536a2d0860c270205e';
+String _$agendaControllerHash() => r'045005b375967ac12bda377c66ef321d81597046';
 
 /// Controlador de la Agenda de documentos por emitir (Etapa 4I.1) —
 /// mismo diseño que `ServiciosListController`, con acciones propias de

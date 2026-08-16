@@ -1,30 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
+import 'package:riseg_one/features/organizacion/data/tables/cliente_portal_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/contacto_table.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/entidad_fiscal_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_errors.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cliente_expediente_input.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cliente_portal_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/contacto_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/entidad_fiscal_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/guardar_cliente_portal_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_contacto_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_domicilio_fiscal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/direccion_controllers.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import 'cliente_expediente_controller.dart';
 import 'cliente_expediente_form_controllers.dart';
 import 'cliente_expediente_state.dart';
+import 'widgets/client_portales_section.dart';
 import 'widgets/cliente_datos_generales_section.dart';
 import 'widgets/contactos_section.dart';
 import 'widgets/direccion_referencia_section.dart';
 import 'widgets/entidades_fiscales_section.dart';
+import 'widgets/eliminar_cliente_fisicamente_dialog.dart';
 
 /// Pantalla de expediente de Cliente comercial — mismo patrón consulta/
 /// edición que Puesto/Sucursal; se apila (`push`) sobre el listado, así
@@ -96,6 +103,11 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
     } else if (estadoActual.errorGuardadoGeneral) {
       RisegFeedback.showError(context, l10n.clienteGuardadoErrorGeneral);
     }
+  }
+
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarClienteFisicamente(context, ref, widget.clienteId);
+    if (eliminado && mounted) context.pop();
   }
 
   Future<void> _mostrarDialogoCambiarEstatus(EstatusCliente actual) async {
@@ -340,6 +352,89 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
     }
   }
 
+  Future<void> _mostrarDialogoClientePortal({ClientePortalData? portalExistente}) async {
+    final l10n = AppLocalizations.of(context)!;
+    var borrador = ClientePortalBorrador(
+      nombre: portalExistente?.nombre ?? '',
+      tipo: portalExistente == null ? TipoPortalCliente.otro : TipoPortalCliente.values.byName(portalExistente.tipo),
+      url: portalExistente?.url,
+      usuario: portalExistente?.usuario,
+      observaciones: portalExistente?.observaciones,
+    );
+
+    final resultado = await RisegDialog.showForm<GuardarClientePortalResultado>(
+      context: context,
+      title: portalExistente == null ? l10n.clientePortalDialogoTituloAlta : l10n.clientePortalDialogoTituloEdicion,
+      confirmLabel: l10n.clientePortalDialogoBotonGuardar,
+      cancelLabel: l10n.clientePortalDialogoBotonCancelar,
+      contentBuilder: (_) => ClientePortalForm(
+        portalInicial: portalExistente,
+        onCambio: (nuevo) => borrador = nuevo,
+      ),
+      onConfirm: () async {
+        if (portalExistente == null) {
+          return _notifier.agregarClientePortal(borrador);
+        }
+        return _notifier.actualizarClientePortal(portalExistente.id, borrador);
+      },
+    );
+
+    if (!mounted) return;
+
+    switch (resultado) {
+      case GuardarClientePortalExitoso():
+        RisegFeedback.showSuccess(context, l10n.clientePortalGuardadoExito);
+      case GuardarClientePortalErroresValidacion():
+      case GuardarClientePortalErrorInesperado():
+        RisegFeedback.showError(context, l10n.clientePortalGuardadoError);
+      case GuardarClientePortalArchivado():
+        RisegFeedback.showError(context, l10n.clientePortalArchivadaNoEditable);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _archivarClientePortal(ClientePortalData portal) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: l10n.clientePortalConfirmarArchivarTitulo,
+      message: l10n.clientePortalConfirmarArchivarMensaje,
+      confirmLabel: l10n.sucursalConfirmarAceptar,
+      cancelLabel: l10n.sucursalConfirmarCancelar,
+      destructive: true,
+    );
+    if (confirmado != true) return;
+
+    final exito = await _notifier.cambiarCicloVidaClientePortal(portal.id, CicloVidaRegistro.archivado);
+    if (!mounted) return;
+    if (exito) {
+      RisegFeedback.showSuccess(context, l10n.clientePortalCicloVidaCambiadoExito);
+    } else {
+      RisegFeedback.showError(context, l10n.clientePortalCicloVidaCambiadoError);
+    }
+  }
+
+  Future<void> _reactivarClientePortal(ClientePortalData portal) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: l10n.clientePortalConfirmarReactivarTitulo,
+      message: l10n.clientePortalConfirmarReactivarMensaje,
+      confirmLabel: l10n.sucursalConfirmarAceptar,
+      cancelLabel: l10n.sucursalConfirmarCancelar,
+    );
+    if (confirmado != true) return;
+
+    final exito = await _notifier.cambiarCicloVidaClientePortal(portal.id, CicloVidaRegistro.activo);
+    if (!mounted) return;
+    if (exito) {
+      RisegFeedback.showSuccess(context, l10n.clientePortalCicloVidaCambiadoExito);
+    } else {
+      RisegFeedback.showError(context, l10n.clientePortalCicloVidaCambiadoError);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -376,6 +471,7 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
     final erroresDireccion = state.erroresGuardado.whereType<ErrorDireccionCliente>().map((e) => e.error).toList();
     final errorNombreRequerido = state.erroresGuardado.any((e) => e is ErrorNombreComercialRequerido);
     final estatusActual = EstatusCliente.values.byName(cliente.estatus);
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -409,10 +505,12 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
                     : null,
               ),
               const SizedBox(height: AppSpacing.sm),
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
                 children: [
                   RisegStatusBadge(label: _nombreEstatus(l10n, estatusActual), tone: _tonoEstatus(estatusActual)),
-                  const SizedBox(width: AppSpacing.sm),
                   RisegButton(
                     key: const Key('cliente_boton_cambiar_estatus'),
                     label: l10n.clienteBotonCambiarEstatus,
@@ -421,6 +519,19 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
                     loading: state.cambiandoEstatus,
                     onPressed: () => _mostrarDialogoCambiarEstatus(estatusActual),
                   ),
+                  if (esMaestro && !esEdicion)
+                    RisegActionsMenu(
+                      menuKey: const Key('cliente_menu_acciones'),
+                      actions: [
+                        RisegMenuAction(
+                          key: const Key('cliente_accion_eliminar_fisicamente'),
+                          label: l10n.eliminacionFisicaAccionMenu,
+                          icon: Icons.delete_forever_outlined,
+                          destructive: true,
+                          onTap: _eliminarFisicamente,
+                        ),
+                      ],
+                    ),
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -465,6 +576,18 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
                   onEditarDomicilio: _mostrarDialogoDomicilioFiscal,
                   onArchivar: _archivarEntidadFiscal,
                   onReactivar: _reactivarEntidadFiscal,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              RisegCard(
+                child: _DatosCobranzaSection(
+                  contactos: datos.contactos,
+                  portales: datos.portales,
+                  deshabilitado: state.operandoClientePortal,
+                  onAgregarPortal: () => _mostrarDialogoClientePortal(),
+                  onEditarPortal: (portal) => _mostrarDialogoClientePortal(portalExistente: portal),
+                  onArchivarPortal: _archivarClientePortal,
+                  onReactivarPortal: _reactivarClientePortal,
                 ),
               ),
             ],
@@ -530,6 +653,74 @@ class _CambiarEstatusFormState extends State<_CambiarEstatusForm> {
         setState(() => _valor = valor);
         widget.onCambio(valor);
       },
+    );
+  }
+}
+
+/// Sección "Datos de cobranza / Facturación" del expediente de Cliente
+/// (Etapa 15) — reúne lo que antes se capturaba repetido en cada
+/// Configuración de cobro de cada Servicio: los correos de contacto ya
+/// registrados (solo lectura aquí; se editan desde la sección
+/// Contactos, arriba, para no duplicar esa gestión) y los portales del
+/// Cliente (CRUD completo, mismo patrón que `EntidadesFiscalesSection`).
+class _DatosCobranzaSection extends StatelessWidget {
+  const _DatosCobranzaSection({
+    required this.contactos,
+    required this.portales,
+    required this.deshabilitado,
+    required this.onAgregarPortal,
+    required this.onEditarPortal,
+    required this.onArchivarPortal,
+    required this.onReactivarPortal,
+  });
+
+  final List<ContactoData> contactos;
+  final List<ClientePortalData> portales;
+  final bool deshabilitado;
+  final VoidCallback onAgregarPortal;
+  final ValueChanged<ClientePortalData> onEditarPortal;
+  final ValueChanged<ClientePortalData> onArchivarPortal;
+  final ValueChanged<ClientePortalData> onReactivarPortal;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.colors;
+    final contactosConCorreo = contactos.where((c) => c.correo != null && c.correo!.isNotEmpty).toList();
+
+    return RisegFormSection(
+      title: l10n.clienteCobranzaSeccionTitulo,
+      children: [
+        Text(l10n.clienteCobranzaCorreosSubtitulo, style: AppTypography.label.copyWith(color: colors.textMuted)),
+        const SizedBox(height: AppSpacing.xs),
+        if (contactosConCorreo.isEmpty)
+          Text(l10n.clienteCobranzaSinCorreos, style: AppTypography.caption.copyWith(color: colors.textMuted))
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final contacto in contactosConCorreo)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                  child: Text(
+                    contacto.puesto == null || contacto.puesto!.isEmpty
+                        ? '${contacto.nombre} — ${contacto.correo}'
+                        : '${contacto.nombre} (${contacto.puesto}) — ${contacto.correo}',
+                    style: AppTypography.body.copyWith(color: colors.textPrimary),
+                  ),
+                ),
+            ],
+          ),
+        const SizedBox(height: AppSpacing.lg),
+        ClientePortalesSection(
+          portales: portales,
+          deshabilitado: deshabilitado,
+          onAgregar: onAgregarPortal,
+          onEditar: onEditarPortal,
+          onArchivar: onArchivarPortal,
+          onReactivar: onReactivarPortal,
+        ),
+      ],
     );
   }
 }

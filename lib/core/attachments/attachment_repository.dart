@@ -229,4 +229,16 @@ class AttachmentRepository {
       const AttachmentCompanion(estado: Value('archivado')),
     );
   }
+
+  /// Eliminación física extraordinaria de la fila de metadatos (Etapa
+  /// 15) — a diferencia de [archivar], borra la fila de verdad. Nunca
+  /// toca el archivo físico por sí mismo (eso es
+  /// `AttachmentStorage.eliminarArchivo`, una responsabilidad separada);
+  /// el llamador siempre debe borrar primero cualquier fila puente que
+  /// referencie este `Attachment` (ninguna FK hacia `Attachment` es
+  /// `cascade`, así que esta operación falla si queda alguna referencia
+  /// — es la protección real contra un borrado a mitad de camino).
+  Future<void> eliminarFisico(String id) {
+    return (_db.delete(_db.attachment)..where((t) => t.id.equals(id))).go();
+  }
 }

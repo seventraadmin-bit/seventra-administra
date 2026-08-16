@@ -10,12 +10,14 @@ import '../../core/di/providers.dart';
 import '../../core/error/failure.dart';
 import '../../core/error/result.dart';
 import '../../core/permissions/authorization_service.dart';
+import '../../core/security/credential_cipher.dart';
 import '../finanzas/finanzas_providers.dart';
 import '../personal/personal_providers.dart';
 import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/area_repository_impl.dart';
 import 'data/repositories/catalogo_repository_impl.dart';
+import 'data/repositories/cliente_portal_repository_impl.dart';
 import 'data/repositories/cliente_repository_impl.dart';
 import 'data/repositories/configuracion_cobro_repository_impl.dart';
 import 'data/repositories/documento_por_emitir_repository_impl.dart';
@@ -28,6 +30,7 @@ import 'data/repositories/sucursal_repository_impl.dart';
 import 'data/repositories/ubicacion_repository_impl.dart';
 import 'domain/repositories/area_repository.dart';
 import 'domain/repositories/catalogo_repository.dart';
+import 'domain/repositories/cliente_portal_repository.dart';
 import 'domain/repositories/cliente_repository.dart';
 import 'domain/repositories/configuracion_cobro_repository.dart';
 import 'domain/repositories/documento_por_emitir_repository.dart';
@@ -43,6 +46,7 @@ import 'domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.da
 import 'domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
 import 'domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
 import 'domain/usecases/actualizar_area_usecase.dart';
+import 'domain/usecases/actualizar_cliente_portal_usecase.dart';
 import 'domain/usecases/actualizar_contacto_usecase.dart';
 import 'domain/usecases/actualizar_empresa_usecase.dart';
 import 'domain/usecases/actualizar_entidad_fiscal_usecase.dart';
@@ -54,6 +58,7 @@ import 'domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'domain/usecases/asignar_sucursal_administrativa_usecase.dart';
 import 'domain/usecases/actualizar_observaciones_configuracion_cobro_vigencia_usecase.dart';
+import 'domain/usecases/cambiar_ciclo_vida_cliente_portal_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_entidad_fiscal_usecase.dart';
 import 'domain/usecases/cambiar_ciclo_vida_puesto_usecase.dart';
 import 'domain/usecases/cambiar_estado_operativo_sucursal_usecase.dart';
@@ -66,9 +71,10 @@ import 'domain/usecases/cancelar_vigencia_programada_configuracion_cobro_usecase
 import 'domain/usecases/cancelar_vigencia_programada_usecase.dart';
 import 'domain/usecases/cerrar_configuracion_cobro_usecase.dart';
 import 'domain/usecases/cerrar_linea_comercial_usecase.dart';
-import 'domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'domain/usecases/configuracion_cobro_validator.dart';
 import 'domain/usecases/crear_area_usecase.dart';
+import 'domain/usecases/crear_cliente_portal_usecase.dart';
 import 'domain/usecases/crear_cliente_usecase.dart';
 import 'domain/usecases/corregir_datos_emision_documento_por_emitir_usecase.dart';
 import 'domain/usecases/crear_configuracion_cobro_usecase.dart';
@@ -79,23 +85,33 @@ import 'domain/usecases/crear_puesto_usecase.dart';
 import 'domain/usecases/crear_servicio_usecase.dart';
 import 'domain/usecases/crear_sucursal_usecase.dart';
 import 'domain/usecases/crear_ubicacion_usecase.dart';
+import 'domain/usecases/corregir_configuracion_cobro_usecase.dart';
+import 'domain/usecases/corregir_linea_comercial_usecase.dart';
 import 'domain/usecases/eliminar_area_fisicamente_usecase.dart';
+import 'data/pdf/recibo_pago_pdf_renderer.dart';
+import 'domain/usecases/eliminar_cliente_fisicamente_usecase.dart';
+import 'domain/usecases/eliminar_cliente_portal_fisicamente_usecase.dart';
+import 'domain/usecases/eliminar_documento_por_emitir_fisicamente_usecase.dart';
+import 'domain/usecases/eliminar_linea_comercial_fisicamente_usecase.dart';
+import 'domain/usecases/generar_recibo_pago_pdf_usecase.dart';
 import 'domain/usecases/eliminar_puesto_fisicamente_usecase.dart';
+import 'domain/usecases/eliminar_servicio_fisicamente_usecase.dart';
 import 'domain/usecases/eliminar_sucursal_fisicamente_usecase.dart';
 import 'domain/usecases/ensamblar_documento_por_emitir_usecase.dart';
 import 'domain/usecases/generar_agenda_usecase.dart';
 import 'domain/usecases/desactivar_area_usecase.dart';
+import 'domain/usecases/cliente_portal_validator.dart';
 import 'domain/usecases/entidad_fiscal_validator.dart';
 import 'domain/usecases/guardar_area_resultado.dart';
 import 'domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'domain/usecases/guardar_domicilio_fiscal_usecase.dart';
 import 'domain/usecases/guardar_expediente_cliente_usecase.dart';
+import 'domain/usecases/listar_portales_de_cliente_usecase.dart';
 import 'domain/usecases/guardar_expediente_empresa_usecase.dart';
 import 'domain/usecases/guardar_expediente_sucursal_usecase.dart';
 import 'domain/usecases/guardar_puesto_resultado.dart';
 import 'domain/usecases/guardar_responsable_interno_usecase.dart';
 import 'domain/usecases/guardar_servicio_resultado.dart';
-import 'domain/usecases/guardar_sueldo_referencia_servicio_usecase.dart';
 import 'domain/usecases/linea_comercial_validator.dart';
 import 'domain/usecases/listar_areas_activas_usecase.dart';
 import 'domain/usecases/listar_areas_usecase.dart';
@@ -174,6 +190,16 @@ final areaRepositoryProvider = Provider<AreaRepository>((ref) {
 final entidadFiscalRepositoryProvider = Provider<EntidadFiscalRepository>((ref) {
   return EntidadFiscalRepositoryImpl(ref.watch(appDatabaseProvider));
 });
+
+final clientePortalRepositoryProvider = Provider<ClientePortalRepository>((ref) {
+  return ClientePortalRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+/// Mismo cifrado que Bóveda/Telefonía (`CredentialCipher`, AES-256-GCM)
+/// — nunca una implementación propia. Declarado aquí (no reutilizado
+/// desde `boveda_providers.dart`) porque cada dominio declara el suyo,
+/// mismo criterio ya establecido entre Bóveda y Telefonía.
+final credentialCipherProvider = Provider<CredentialCipher>((ref) => CredentialCipher());
 
 final servicioComercialRepositoryProvider = Provider<ServicioComercialRepository>((ref) {
   return ServicioComercialRepositoryImpl(ref.watch(appDatabaseProvider), clock: ref.watch(clockProvider));
@@ -318,7 +344,11 @@ final listarClientesUseCaseProvider = Provider<ListarClientesUseCase>((ref) {
 });
 
 final obtenerExpedienteClienteUseCaseProvider = Provider<ObtenerExpedienteClienteUseCase>((ref) {
-  return ObtenerExpedienteClienteUseCase(ref.watch(clienteRepositoryProvider), ref.watch(entidadFiscalRepositoryProvider));
+  return ObtenerExpedienteClienteUseCase(
+    ref.watch(clienteRepositoryProvider),
+    ref.watch(entidadFiscalRepositoryProvider),
+    ref.watch(clientePortalRepositoryProvider),
+  );
 });
 
 final agregarContactoUseCaseProvider = Provider<AgregarContactoUseCase>((ref) {
@@ -335,6 +365,34 @@ final archivarContactoUseCaseProvider = Provider<ArchivarContactoUseCase>((ref) 
 
 final entidadFiscalValidatorProvider = Provider<EntidadFiscalValidator>((ref) {
   return EntidadFiscalValidator(ref.watch(clienteRepositoryProvider), ref.watch(entidadFiscalRepositoryProvider));
+});
+
+final clientePortalValidatorProvider = Provider<ClientePortalValidator>((ref) {
+  return ClientePortalValidator(ref.watch(clienteRepositoryProvider));
+});
+
+final crearClientePortalUseCaseProvider = Provider<CrearClientePortalUseCase>((ref) {
+  return CrearClientePortalUseCase(
+    ref.watch(clientePortalRepositoryProvider),
+    ref.watch(clientePortalValidatorProvider),
+    ref.watch(credentialCipherProvider),
+  );
+});
+
+final actualizarClientePortalUseCaseProvider = Provider<ActualizarClientePortalUseCase>((ref) {
+  return ActualizarClientePortalUseCase(
+    ref.watch(clientePortalRepositoryProvider),
+    ref.watch(clientePortalValidatorProvider),
+    ref.watch(credentialCipherProvider),
+  );
+});
+
+final cambiarCicloVidaClientePortalUseCaseProvider = Provider<CambiarCicloVidaClientePortalUseCase>((ref) {
+  return CambiarCicloVidaClientePortalUseCase(ref.watch(clientePortalRepositoryProvider));
+});
+
+final listarPortalesDeClienteUseCaseProvider = Provider<ListarPortalesDeClienteUseCase>((ref) {
+  return ListarPortalesDeClienteUseCase(ref.watch(clientePortalRepositoryProvider));
 });
 
 final crearEntidadFiscalUseCaseProvider = Provider<CrearEntidadFiscalUseCase>((ref) {
@@ -418,10 +476,6 @@ final guardarResponsableInternoUseCaseProvider = Provider<GuardarResponsableInte
   return GuardarResponsableInternoUseCase(ref.watch(servicioRepositoryProvider));
 });
 
-final guardarSueldoReferenciaServicioUseCaseProvider = Provider<GuardarSueldoReferenciaServicioUseCase>((ref) {
-  return GuardarSueldoReferenciaServicioUseCase(ref.watch(servicioRepositoryProvider), ref.watch(servicioValidatorProvider));
-});
-
 final lineaComercialValidatorProvider = Provider<LineaComercialValidator>((ref) {
   return LineaComercialValidator(
     ref.watch(puestoRepositoryProvider),
@@ -437,11 +491,12 @@ final configuracionCobroValidatorProvider = Provider<ConfiguracionCobroValidator
     ref.watch(entidadFiscalRepositoryProvider),
     ref.watch(catalogoRepositoryProvider),
     ref.watch(servicioComercialRepositoryProvider),
+    ref.watch(clientePortalRepositoryProvider),
   );
 });
 
-final configuracionCobroReglaEventoValidatorProvider = Provider<ConfiguracionCobroReglaEventoValidator>((ref) {
-  return const ConfiguracionCobroReglaEventoValidator();
+final configuracionCobroReglaEventoValidatorProvider = Provider<ConfiguracionCobroEtapaValidator>((ref) {
+  return const ConfiguracionCobroEtapaValidator();
 });
 
 final crearConfiguracionCobroUseCaseProvider = Provider<CrearConfiguracionCobroUseCase>((ref) {
@@ -457,6 +512,16 @@ final cambiarVigenciaConfiguracionCobroUseCaseProvider = Provider<CambiarVigenci
   return CambiarVigenciaConfiguracionCobroUseCase(
     ref.watch(configuracionCobroRepositoryProvider),
     ref.watch(servicioRepositoryProvider),
+    ref.watch(configuracionCobroValidatorProvider),
+    ref.watch(configuracionCobroReglaEventoValidatorProvider),
+  );
+});
+
+// Etapa 15 — corrección de captura sin historia (mismo criterio que
+// corregirLineaComercialUseCaseProvider).
+final corregirConfiguracionCobroUseCaseProvider = Provider<CorregirConfiguracionCobroUseCase>((ref) {
+  return CorregirConfiguracionCobroUseCase(
+    ref.watch(configuracionCobroRepositoryProvider),
     ref.watch(configuracionCobroValidatorProvider),
     ref.watch(configuracionCobroReglaEventoValidatorProvider),
   );
@@ -507,6 +572,16 @@ final cambiarVigenciaLineaComercialUseCaseProvider = Provider<CambiarVigenciaLin
   );
 });
 
+// Etapa 15 — corrección de captura sin historia; mismo criterio de
+// autorización que crear/cambiar vigencia (sin exigirMaestro, es una
+// acción normal, no extraordinaria).
+final corregirLineaComercialUseCaseProvider = Provider<CorregirLineaComercialUseCase>((ref) {
+  return CorregirLineaComercialUseCase(
+    ref.watch(servicioComercialRepositoryProvider),
+    ref.watch(lineaComercialValidatorProvider),
+  );
+});
+
 final cerrarLineaComercialUseCaseProvider = Provider<CerrarLineaComercialUseCase>((ref) {
   return CerrarLineaComercialUseCase(ref.watch(servicioComercialRepositoryProvider), ref.watch(clockProvider));
 });
@@ -543,6 +618,7 @@ final documentoPorEmitirRepositoryProvider = Provider<DocumentoPorEmitirReposito
     ref.watch(appDatabaseProvider),
     ref.watch(attachmentRepositoryProvider),
     ref.watch(cuentaPorCobrarRepositoryProvider),
+    attachmentStorage: ref.watch(attachmentStorageProvider),
   );
 });
 
@@ -611,6 +687,23 @@ final reemplazarArchivoDocumentoPorEmitirUseCaseProvider = Provider<ReemplazarAr
     ref.watch(documentoPorEmitirRepositoryProvider),
     ref.watch(attachmentRepositoryProvider),
     ref.watch(attachmentStorageProvider),
+  );
+});
+
+// Etapa 15 — Generar recibo PDF (documento entregable, solo para
+// tipoDocumento == reciboDePago; nunca un CFDI timbrado).
+final reciboPagoPdfRendererProvider = Provider<ReciboPagoPdfRenderer>((ref) => ReciboPagoPdfRenderer());
+
+final generarReciboPagoPdfUseCaseProvider = Provider<GenerarReciboPagoPdfUseCase>((ref) {
+  return GenerarReciboPagoPdfUseCase(
+    ref.watch(documentoPorEmitirRepositoryProvider),
+    ref.watch(clienteRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(empresaRepositoryProvider),
+    ref.watch(attachmentRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(appPathsProvider).recibosDir,
+    ref.watch(reciboPagoPdfRendererProvider),
   );
 });
 
@@ -825,6 +918,124 @@ final eliminarSucursalFisicamenteAutorizadoProvider = Provider<EliminarSucursalF
             actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           ),
       EliminarSucursalFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+// Etapa 15 (Comercial) — mismo patrón exacto que Área/Puesto/Sucursal.
+final eliminarClienteFisicamenteUseCaseProvider = Provider<EliminarClienteFisicamenteUseCase>((ref) {
+  return EliminarClienteFisicamenteUseCase(ref.watch(clienteRepositoryProvider));
+});
+
+typedef EliminarClienteFisicamenteAutorizado = Future<EliminarClienteFisicamenteResultado> Function({
+  required String clienteId,
+  required String motivo,
+});
+
+final eliminarClienteFisicamenteAutorizadoProvider = Provider<EliminarClienteFisicamenteAutorizado>((ref) {
+  return ({required String clienteId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarClienteFisicamenteUseCaseProvider).ejecutar(
+            clienteId: clienteId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarClienteFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+final eliminarClientePortalFisicamenteUseCaseProvider = Provider<EliminarClientePortalFisicamenteUseCase>((ref) {
+  return EliminarClientePortalFisicamenteUseCase(ref.watch(clientePortalRepositoryProvider));
+});
+
+typedef EliminarClientePortalFisicamenteAutorizado = Future<EliminarClientePortalFisicamenteResultado> Function({
+  required String clientePortalId,
+  required String motivo,
+});
+
+final eliminarClientePortalFisicamenteAutorizadoProvider = Provider<EliminarClientePortalFisicamenteAutorizado>((ref) {
+  return ({required String clientePortalId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarClientePortalFisicamenteUseCaseProvider).ejecutar(
+            clientePortalId: clientePortalId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarClientePortalFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+final eliminarServicioFisicamenteUseCaseProvider = Provider<EliminarServicioFisicamenteUseCase>((ref) {
+  return EliminarServicioFisicamenteUseCase(ref.watch(servicioRepositoryProvider));
+});
+
+typedef EliminarServicioFisicamenteAutorizado = Future<EliminarServicioFisicamenteResultado> Function({
+  required String servicioId,
+  required String motivo,
+});
+
+final eliminarServicioFisicamenteAutorizadoProvider = Provider<EliminarServicioFisicamenteAutorizado>((ref) {
+  return ({required String servicioId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarServicioFisicamenteUseCaseProvider).ejecutar(
+            servicioId: servicioId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarServicioFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+final eliminarLineaComercialFisicamenteUseCaseProvider = Provider<EliminarLineaComercialFisicamenteUseCase>((ref) {
+  return EliminarLineaComercialFisicamenteUseCase(ref.watch(servicioComercialRepositoryProvider));
+});
+
+typedef EliminarLineaComercialFisicamenteAutorizado = Future<EliminarLineaComercialFisicamenteResultado> Function({
+  required String lineaComercialId,
+  required String motivo,
+});
+
+final eliminarLineaComercialFisicamenteAutorizadoProvider =
+    Provider<EliminarLineaComercialFisicamenteAutorizado>((ref) {
+  return ({required String lineaComercialId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarLineaComercialFisicamenteUseCaseProvider).ejecutar(
+            lineaComercialId: lineaComercialId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarLineaComercialFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+// Etapa 15 (Agenda) — mismo patrón exacto que Cliente/Servicio/línea comercial.
+final eliminarDocumentoPorEmitirFisicamenteUseCaseProvider =
+    Provider<EliminarDocumentoPorEmitirFisicamenteUseCase>((ref) {
+  return EliminarDocumentoPorEmitirFisicamenteUseCase(ref.watch(documentoPorEmitirRepositoryProvider));
+});
+
+typedef EliminarDocumentoPorEmitirFisicamenteAutorizado = Future<EliminarDocumentoPorEmitirFisicamenteResultado>
+    Function({required String documentoPorEmitirId, required String motivo});
+
+final eliminarDocumentoPorEmitirFisicamenteAutorizadoProvider =
+    Provider<EliminarDocumentoPorEmitirFisicamenteAutorizado>((ref) {
+  return ({required String documentoPorEmitirId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarDocumentoPorEmitirFisicamenteUseCaseProvider).ejecutar(
+            documentoPorEmitirId: documentoPorEmitirId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarDocumentoPorEmitirFisicamenteErrorInesperado.new,
     );
   };
 });

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_comprobante_ingreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_ingreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_ingreso_usecase.dart';
@@ -109,6 +110,7 @@ class IngresosController extends _$IngresosController {
     );
     if (resultado is RegistrarIngresoManualExitoso) {
       await _cargar();
+      ref.invalidate(dashboardControllerProvider);
     }
     return resultado;
   }
@@ -147,6 +149,7 @@ class IngresosController extends _$IngresosController {
     );
     if (resultado is CorregirIngresoExitoso) {
       await _cargar();
+      ref.invalidate(dashboardControllerProvider);
     }
     return resultado;
   }
@@ -162,6 +165,7 @@ class IngresosController extends _$IngresosController {
     );
     if (resultado is CancelarIngresoExitoso) {
       await _cargar();
+      ref.invalidate(dashboardControllerProvider);
     }
     return resultado;
   }

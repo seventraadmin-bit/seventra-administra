@@ -1,5 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
@@ -13,17 +14,18 @@ import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repos
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/documento_por_emitir_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/cliente_portal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
-import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
@@ -58,6 +60,7 @@ void main() {
     final puestoRepo = PuestoRepositoryImpl(db);
     final catalogoRepo = CatalogoRepositoryImpl(db);
     final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+    final clientePortalRepo = ClientePortalRepositoryImpl(db);
     final comercialRepo = ServicioComercialRepositoryImpl(db);
     final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
     cuentaRepo = CuentaPorCobrarRepositoryImpl(db);
@@ -66,8 +69,8 @@ void main() {
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
     final lineaComercialValidator = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, configuracionCobroRepo);
     final configuracionCobroValidator =
-        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
-    const reglaValidator = ConfiguracionCobroReglaEventoValidator();
+        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo, clientePortalRepo);
+    const reglaValidator = ConfiguracionCobroEtapaValidator();
 
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     crearLineaComercial = CrearLineaComercialUseCase(comercialRepo, servicioRepo, lineaComercialValidator);
@@ -144,6 +147,7 @@ void main() {
       ),
     );
 
+    final emisionEtapaId = const Uuid().v4();
     final configuracionResultado = await crearConfiguracionCobro.ejecutar(
       servicioId: servicioId,
       borrador: ConfiguracionCobroBorrador(
@@ -156,19 +160,23 @@ void main() {
         fechaInicioVigencia: DateTime(2026, 1, 1),
         entidadFiscalId: entidadFiscalId,
       ),
-      reglas: reglaPago
+      etapas: reglaPago
           ? [
-              ReglaEventoBorrador(
-                tipoEvento: TipoEventoCobro.emision,
+              EtapaCobroBorrador(
+                id: emisionEtapaId,
+                tipoSistema: TipoEventoCobro.emision,
+                orden: 0,
                 tipoRegla: TipoReglaEvento.diaFijoDelMes,
                 mesRelativo: MesRelativoCobro.actual,
                 diaDelMes: 1,
               ),
-              ReglaEventoBorrador(
-                tipoEvento: TipoEventoCobro.pagoEsperado,
+              EtapaCobroBorrador(
+                id: const Uuid().v4(),
+                tipoSistema: TipoEventoCobro.pagoEsperado,
+                orden: 1,
                 tipoRegla: TipoReglaEvento.diasHabilesDespuesDe,
-                offsetDiasHabiles: 10,
-                eventoReferencia: TipoEventoCobro.emision,
+                offsetDias: 10,
+                etapaReferenciaId: emisionEtapaId,
               ),
             ]
           : const [],
@@ -188,8 +196,6 @@ void main() {
     final emisionResultado = await registrarEmision.ejecutar(
       documentoPorEmitirId: documento.id,
       folioDocumento: 'FOL-001',
-      serieFiscal: tipoDocumento == TipoDocumentoCobro.cfdi ? 'A' : null,
-      folioFiscal: tipoDocumento == TipoDocumentoCobro.cfdi ? '001' : null,
       uuid: tipoDocumento == TipoDocumentoCobro.cfdi ? '11111111-1111-1111-1111-111111111111' : null,
       fechaEmisionReal: DateTime(2026, 1, 5),
       importeEmitido: importeEmitido,
@@ -224,14 +230,12 @@ void main() {
       expect(cuenta.fechaVencimiento, isNotNull);
     });
 
-    test('CFDI conserva serie fiscal, folio fiscal y UUID en el snapshot', () async {
+    test('CFDI conserva el UUID/folio fiscal en el snapshot', () async {
       final documentoId = await crearDocumentoEmitido(nombreCliente: 'Sportium', tipoDocumento: TipoDocumentoCobro.cfdi);
       await cambiarEstatus.ejecutar(documentoPorEmitirId: documentoId, nuevo: EstatusDocumentoPorEmitir.procesadoAceptado);
 
       final cuenta = await cuentaRepo.obtenerPorDocumentoPorEmitirId(documentoId);
-      expect(cuenta!.serieFiscal, 'A');
-      expect(cuenta.folioFiscal, '001');
-      expect(cuenta.uuid, '11111111-1111-1111-1111-111111111111');
+      expect(cuenta!.uuid, '11111111-1111-1111-1111-111111111111');
     });
 
     test('Mirabilia: documento sin regla de Pago genera una Cuenta por cobrar sin fecha de vencimiento', () async {

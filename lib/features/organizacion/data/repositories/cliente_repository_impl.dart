@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
@@ -6,6 +8,7 @@ import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 
 import '../../domain/repositories/cliente_repository.dart';
 import '../../domain/shared/direccion_input.dart';
+import '../../domain/usecases/eliminar_cliente_fisicamente_usecase.dart';
 
 class ClienteRepositoryImpl implements ClienteRepository {
   ClienteRepositoryImpl(this._db);
@@ -214,5 +217,99 @@ class ClienteRepositoryImpl implements ClienteRepository {
   @override
   Future<ContactoData?> obtenerContactoPorId(String id) {
     return (_db.select(_db.contacto)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  /// Eliminación física extraordinaria (Etapa 15, mismo patrón que la
+  /// Etapa 11D) — a diferencia de Sucursal/Servicio, `crear` es un
+  /// `insert` simple sin ninguna fila automática (confirmado: sin
+  /// transacción, sin Ubicación ni equivalente estructural), así que no
+  /// existe ninguna excepción de "estructura automática" que
+  /// distinguir — un Cliente recién creado, sin actividad real, ya es
+  /// el caso elegible. Se verifican, en orden, las 7 dependencias
+  /// reales confirmadas en el grafo de FK: `Servicio`, `Contacto`,
+  /// `EntidadFiscal`, `ClienteAttachment`, `DocumentoPorEmitir`, `Pago`
+  /// (todas `onDelete: restrict`) y `Direccion` (FK declarada como SQL
+  /// crudo en `core/database/tables/direccion_table.dart`, invisible a
+  /// una búsqueda superficial de `references(Cliente,`).
+  /// `CuentaPorCobrar.clienteId` no es una FK real (es un snapshot
+  /// copiado del documento de origen, según su propio doc comment) —
+  /// no se verifica aparte; cualquier CxC real ya implica un
+  /// `DocumentoPorEmitir`, que sí se verifica. Todo — validación,
+  /// snapshot, registro de auditoría y `DELETE` — ocurre en una sola
+  /// transacción; nunca `CASCADE`.
+  @override
+  Future<EliminarClienteFisicamenteResultado> eliminarFisicamente({
+    required String clienteId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final cliente = await (_db.select(_db.cliente)..where((t) => t.id.equals(clienteId))).getSingleOrNull();
+      if (cliente == null) return EliminarClienteFisicamenteNoExiste();
+
+      final servicios = await (_db.select(_db.servicio)..where((t) => t.clienteId.equals(clienteId))).get();
+      if (servicios.isNotEmpty) {
+        return EliminarClienteFisicamenteTieneDependencias(
+          'Tiene ${servicios.length} servicio(s) registrado(s).',
+        );
+      }
+
+      final contactos = await (_db.select(_db.contacto)..where((t) => t.clienteId.equals(clienteId))).get();
+      if (contactos.isNotEmpty) {
+        return EliminarClienteFisicamenteTieneDependencias(
+          'Tiene ${contactos.length} contacto(s) registrado(s).',
+        );
+      }
+
+      final entidadesFiscales =
+          await (_db.select(_db.entidadFiscal)..where((t) => t.clienteId.equals(clienteId))).get();
+      if (entidadesFiscales.isNotEmpty) {
+        return EliminarClienteFisicamenteTieneDependencias(
+          'Tiene ${entidadesFiscales.length} entidad(es) fiscal(es) registrada(s).',
+        );
+      }
+
+      final adjuntos =
+          await (_db.select(_db.clienteAttachment)..where((t) => t.clienteId.equals(clienteId))).get();
+      if (adjuntos.isNotEmpty) {
+        return EliminarClienteFisicamenteTieneDependencias(
+          'Tiene ${adjuntos.length} documento(s) adjunto(s) registrado(s).',
+        );
+      }
+
+      final documentos =
+          await (_db.select(_db.documentoPorEmitir)..where((t) => t.clienteId.equals(clienteId))).get();
+      if (documentos.isNotEmpty) {
+        return EliminarClienteFisicamenteTieneDependencias(
+          'Tiene ${documentos.length} documento(s) por emitir registrado(s).',
+        );
+      }
+
+      final pagos = await (_db.select(_db.pago)..where((t) => t.clienteId.equals(clienteId))).get();
+      if (pagos.isNotEmpty) {
+        return EliminarClienteFisicamenteTieneDependencias('Tiene ${pagos.length} pago(s) registrado(s).');
+      }
+
+      final direcciones = await (_db.select(_db.direccion)..where((t) => t.clienteId.equals(clienteId))).get();
+      if (direcciones.isNotEmpty) {
+        return EliminarClienteFisicamenteTieneDependencias(
+          'Tiene ${direcciones.length} dirección(es) registrada(s).',
+        );
+      }
+
+      await _db.into(_db.eliminacionFisicaEvento).insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'cliente',
+              entidadIdOriginal: clienteId,
+              fechaHora: DateTime.now(),
+              motivo: motivo,
+              snapshotJson: jsonEncode(cliente.toJson()),
+              actorUsuarioId: Value(actorUsuarioId),
+            ),
+          );
+      await (_db.delete(_db.cliente)..where((t) => t.id.equals(clienteId))).go();
+
+      return EliminarClienteFisicamenteExitoso();
+    });
   }
 }

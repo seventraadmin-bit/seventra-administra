@@ -16,13 +16,14 @@ import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigenci
 import 'package:riseg_one/features/organizacion/domain/usecases/cancelar_vigencia_programada_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cerrar_linea_comercial_usecase.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/corregir_configuracion_cobro_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/corregir_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_linea_comercial_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_direccion_operativa_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/guardar_sueldo_referencia_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_expediente_data.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
@@ -239,7 +240,7 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
   Future<CrearConfiguracionCobroResultado?> agregarConfiguracionCobro(
     ConfiguracionCobroBorrador borrador, {
-    List<ReglaEventoBorrador> reglas = const [],
+    List<EtapaCobroBorrador> etapas = const [],
   }) async {
     if (state.operandoCobro) return null;
     state = state.copyWith(operandoCobro: true);
@@ -247,7 +248,7 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'comercial.crear',
-      () => ref.read(crearConfiguracionCobroUseCaseProvider).ejecutar(servicioId: servicioId, borrador: borrador, reglas: reglas),
+      () => ref.read(crearConfiguracionCobroUseCaseProvider).ejecutar(servicioId: servicioId, borrador: borrador, etapas: etapas),
       CrearConfiguracionCobroErrorInesperado.new,
     );
     if (resultado is CrearConfiguracionCobroExitoso) {
@@ -257,10 +258,37 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     return resultado;
   }
 
+  /// Etapa 15 — corrección in-place de una Configuración de cobro
+  /// recién creada, sin historia (ver `CorregirConfiguracionCobroUseCase`).
+  Future<CorregirConfiguracionCobroResultado?> corregirConfiguracionCobro(
+    String configuracionCobroId,
+    ConfiguracionCobroBorrador borrador, {
+    List<EtapaCobroBorrador> etapas = const [],
+  }) async {
+    if (state.operandoCobro) return null;
+    state = state.copyWith(operandoCobro: true);
+
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(corregirConfiguracionCobroUseCaseProvider).ejecutar(
+            configuracionCobroId: configuracionCobroId,
+            borrador: borrador,
+            etapas: etapas,
+          ),
+      CorregirConfiguracionCobroErrorInesperado.new,
+    );
+    if (resultado is CorregirConfiguracionCobroExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoCobro: false);
+    return resultado;
+  }
+
   Future<CambiarVigenciaConfiguracionCobroResultado?> cambiarVigenciaConfiguracionCobro(
     String configuracionCobroId,
     ConfiguracionCobroBorrador borrador, {
-    List<ReglaEventoBorrador> reglas = const [],
+    List<EtapaCobroBorrador> etapas = const [],
   }) async {
     if (state.operandoCobro) return null;
     state = state.copyWith(operandoCobro: true);
@@ -271,7 +299,7 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
       () => ref.read(cambiarVigenciaConfiguracionCobroUseCaseProvider).ejecutar(
             configuracionCobroId: configuracionCobroId,
             borrador: borrador,
-            reglas: reglas,
+            etapas: etapas,
           ),
       CambiarVigenciaConfiguracionCobroErrorInesperado.new,
     );
@@ -341,6 +369,30 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
       await _recargarDatos();
     }
     state = state.copyWith(operandoCobro: false);
+    return resultado;
+  }
+
+  /// Etapa 15 — corrección in-place de una línea comercial recién
+  /// creada, sin historia (ver `CorregirLineaComercialUseCase`). Mismo
+  /// permiso dinámico que "Nueva vigencia" — no es una facultad
+  /// extraordinaria, es una corrección de captura normal.
+  Future<CorregirLineaComercialResultado?> corregirLinea(
+    String lineaComercialId,
+    LineaComercialBorrador borrador,
+  ) async {
+    if (state.operandoComercial) return null;
+    state = state.copyWith(operandoComercial: true);
+
+    final resultado = await autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'comercial.modificar',
+      () => ref.read(corregirLineaComercialUseCaseProvider).ejecutar(lineaComercialId: lineaComercialId, borrador: borrador),
+      CorregirLineaComercialErrorInesperado.new,
+    );
+    if (resultado is CorregirLineaComercialExitoso) {
+      await _recargarDatos();
+    }
+    state = state.copyWith(operandoComercial: false);
     return resultado;
   }
 
@@ -452,30 +504,6 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
       state = state.copyWith(operandoRelacion: false);
       return false;
     }
-  }
-
-  Future<GuardarSueldoReferenciaServicioResultado?> guardarSueldoReferencia({
-    required int? sueldoMensualReferenciaPersonal,
-    required int? bonoMensualReferenciaPersonal,
-  }) async {
-    if (state.operandoRelacion) return null;
-    state = state.copyWith(operandoRelacion: true);
-
-    final resultado = await autorizarUseCase(
-      ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(guardarSueldoReferenciaServicioUseCaseProvider).ejecutar(
-            servicioId: servicioId,
-            sueldoMensualReferenciaPersonal: sueldoMensualReferenciaPersonal,
-            bonoMensualReferenciaPersonal: bonoMensualReferenciaPersonal,
-          ),
-      GuardarSueldoReferenciaServicioErrorInesperado.new,
-    );
-    if (resultado is GuardarSueldoReferenciaServicioExitoso) {
-      await _recargarDatos();
-    }
-    state = state.copyWith(operandoRelacion: false);
-    return resultado;
   }
 
   /// Reemplaza únicamente el `ServicioData` dentro del expediente ya

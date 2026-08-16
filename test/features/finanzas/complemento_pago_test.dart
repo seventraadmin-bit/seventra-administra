@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
@@ -24,17 +25,18 @@ import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repos
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/documento_por_emitir_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/cliente_portal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
-import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_regla_evento_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
@@ -76,6 +78,7 @@ void main() {
     final puestoRepo = PuestoRepositoryImpl(db);
     final catalogoRepo = CatalogoRepositoryImpl(db);
     entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+    final clientePortalRepo = ClientePortalRepositoryImpl(db);
     final comercialRepo = ServicioComercialRepositoryImpl(db);
     final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
     cuentaRepo = CuentaPorCobrarRepositoryImpl(db);
@@ -86,8 +89,8 @@ void main() {
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
     final lineaComercialValidator = LineaComercialValidator(puestoRepo, catalogoRepo, servicioRepo, configuracionCobroRepo);
     final configuracionCobroValidator =
-        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
-    const reglaValidator = ConfiguracionCobroReglaEventoValidator();
+        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo, clientePortalRepo);
+    const reglaValidator = ConfiguracionCobroEtapaValidator();
 
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigoInterno, servicioValidator);
     crearLineaComercial = CrearLineaComercialUseCase(comercialRepo, servicioRepo, lineaComercialValidator);
@@ -164,6 +167,7 @@ void main() {
       ),
     );
 
+    final emisionEtapaId = const Uuid().v4();
     final configuracionResultado = await crearConfiguracionCobro.ejecutar(
       servicioId: servicioId,
       borrador: ConfiguracionCobroBorrador(
@@ -176,18 +180,22 @@ void main() {
         fechaInicioVigencia: DateTime(2026, 1, 1),
         entidadFiscalId: entidad.id,
       ),
-      reglas: [
-        ReglaEventoBorrador(
-          tipoEvento: TipoEventoCobro.emision,
+      etapas: [
+        EtapaCobroBorrador(
+          id: emisionEtapaId,
+          tipoSistema: TipoEventoCobro.emision,
+          orden: 0,
           tipoRegla: TipoReglaEvento.diaFijoDelMes,
           mesRelativo: MesRelativoCobro.actual,
           diaDelMes: 1,
         ),
-        ReglaEventoBorrador(
-          tipoEvento: TipoEventoCobro.pagoEsperado,
+        EtapaCobroBorrador(
+          id: const Uuid().v4(),
+          tipoSistema: TipoEventoCobro.pagoEsperado,
+          orden: 1,
           tipoRegla: TipoReglaEvento.diasHabilesDespuesDe,
-          offsetDiasHabiles: 10,
-          eventoReferencia: TipoEventoCobro.emision,
+          offsetDias: 10,
+          etapaReferenciaId: emisionEtapaId,
         ),
       ],
     );
@@ -205,8 +213,6 @@ void main() {
     await registrarEmision.ejecutar(
       documentoPorEmitirId: documento.id,
       folioDocumento: 'A-${documento.id.hashCode.toUnsigned(16)}',
-      serieFiscal: 'A',
-      folioFiscal: '${documento.id.hashCode.toUnsigned(8)}',
       uuid: '11111111-1111-1111-1111-111111111111',
       fechaEmisionReal: DateTime(2026, 1, 5),
       importeEmitido: importeEmitido,

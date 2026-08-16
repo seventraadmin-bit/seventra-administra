@@ -12,15 +12,18 @@ import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_aplicacion_
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/complemento_pago_derivado.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../finanzas_providers.dart';
 import '../../complementos/widgets/complemento_detalle_dialog.dart';
+import '../../cuentas_por_cobrar/cuentas_por_cobrar_controller.dart';
 import '../../cuentas_por_cobrar/cuentas_por_cobrar_list_screen.dart' show formatoCentavosCuentaPorCobrar;
 import '../pagos_controller.dart';
 import '../pagos_list_screen.dart' show formaPagoLabel, formatoCentavosPago, pagoEstatusLabel, pagoEstatusTono;
 import 'corregir_pago_dialog.dart';
+import 'eliminar_pago_fisicamente_dialog.dart';
 import 'registrar_complemento_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
@@ -143,12 +146,17 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
       ),
       onConfirm: () async => true,
     );
+    // Diferido con `addPostFrameCallback` — el diálogo de confirmación
+    // sigue en su transición de cierre cuando este `await` regresa
+    // (Etapa 15, mismo hallazgo real de `egreso_detalle_dialog.dart`;
+    // destruir el controller de forma síncrona aquí producía "A
+    // TextEditingController was used after being disposed").
     if (confirmado != true) {
-      motivoController.dispose();
+      WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
       return;
     }
     final motivo = motivoController.text.trim();
-    motivoController.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
     if (!mounted) return;
 
     setState(() => _procesando = true);
@@ -187,11 +195,11 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
       onConfirm: () async => true,
     );
     if (confirmado != true) {
-      motivoController.dispose();
+      WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
       return;
     }
     final motivo = motivoController.text.trim();
-    motivoController.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) => motivoController.dispose());
     if (!mounted) return;
 
     setState(() => _procesando = true);
@@ -246,6 +254,20 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
     };
   }
 
+  Future<void> _eliminarFisicamente() async {
+    final eliminado = await mostrarDialogoEliminarPagoFisicamente(context, ref, widget.pagoId);
+    if (!eliminado) return;
+    ref.invalidate(pagosControllerProvider);
+    // Un Pago cancelado sin Complemento no puede tener aplicaciones
+    // activas (garantizado por el bloqueo del propio use case), pero
+    // sus aplicaciones canceladas dejan de existir junto con él — el
+    // listado de Cuentas por cobrar no depende de esto para su saldo
+    // (ya se revirtió al cancelar), pero sí puede depender de esta
+    // eliminación para dejar de estar bloqueado (Etapa 15).
+    ref.invalidate(cuentasPorCobrarControllerProvider);
+    if (mounted) Navigator.of(context).pop();
+  }
+
   String _aplicacionEstatusLabel(AppLocalizations l10n, String estatus) {
     return switch (EstatusAplicacionPago.values.byName(estatus)) {
       EstatusAplicacionPago.aplicada => l10n.aplicacionPagoEstatusAplicada,
@@ -257,6 +279,7 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.colors;
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     Widget content;
     if (_cargando) {
@@ -465,22 +488,42 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
                   ),
                 ),
             const SizedBox(height: AppSpacing.lg),
-            if (!cancelado)
+            if (!cancelado || esMaestro)
               Wrap(
                 spacing: AppSpacing.xs,
                 runSpacing: AppSpacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  RisegButton(
-                    label: l10n.pagoDetalleBotonCorregir,
-                    variant: RisegButtonVariant.secondary,
-                    onPressed: _corregir,
-                  ),
-                  RisegButton(
-                    label: l10n.pagoDetalleBotonCancelar,
-                    variant: RisegButtonVariant.danger,
-                    loading: _procesando,
-                    onPressed: _cancelarPago,
-                  ),
+                  if (!cancelado) ...[
+                    RisegButton(
+                      label: l10n.pagoDetalleBotonCorregir,
+                      variant: RisegButtonVariant.secondary,
+                      onPressed: _corregir,
+                    ),
+                    RisegButton(
+                      label: l10n.pagoDetalleBotonCancelar,
+                      variant: RisegButtonVariant.danger,
+                      loading: _procesando,
+                      onPressed: _cancelarPago,
+                    ),
+                  ],
+                  // Extraordinaria (Maestro) — nunca depende del
+                  // estatus: un Pago ya cancelado (captura de prueba)
+                  // sigue siendo elegible para limpiar por completo,
+                  // salvo que tenga un Complemento real (Etapa 15).
+                  if (esMaestro)
+                    RisegActionsMenu(
+                      menuKey: const Key('pago_menu_acciones'),
+                      actions: [
+                        RisegMenuAction(
+                          key: const Key('pago_accion_eliminar_fisicamente'),
+                          label: l10n.eliminacionFisicaAccionMenu,
+                          icon: Icons.delete_forever_outlined,
+                          destructive: true,
+                          onTap: _eliminarFisicamente,
+                        ),
+                      ],
+                    ),
                 ],
               ),
           ],

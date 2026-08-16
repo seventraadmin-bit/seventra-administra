@@ -100,8 +100,8 @@ Future<bool> mostrarDialogoRegistrarAjuste(
         case RegistrarAjusteObservacionesRequeridas():
           errorGeneral = l10n.registrarAjusteErrorObservacionesRequeridas;
           return null;
-        case RegistrarAjusteSobrepasaDisponible():
-          errorGeneral = l10n.registrarAjusteErrorSobrepasaDisponible;
+        case RegistrarAjusteSobrepasaDisponible(:final disponible):
+          errorGeneral = l10n.registrarAjusteErrorSobrepasaDisponible(disponible);
           return null;
         case RegistrarAjusteArticuloNoExiste():
         case RegistrarAjusteArticuloManejaSerie():

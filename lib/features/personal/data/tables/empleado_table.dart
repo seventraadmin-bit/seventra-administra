@@ -187,6 +187,16 @@ class Empleado extends Table with AuditColumns {
 
   TextColumn get bancoId => text().nullable().references(Banco, #id, onDelete: KeyAction.restrict)();
 
+  /// Nombre del banco cuando `bancoId` apunta al catálogo `'OTRO'`
+  /// (Etapa 15) — la fila `Banco` "Otro" no tiene forma de guardar cuál
+  /// banco es en realidad; este campo captura ese detalle. Solo tiene
+  /// sentido cuando `bancoId == SeedIds.bancoOtro`, validado en
+  /// `EmpleadoValidator`, no como `CHECK` (misma razón que el resto del
+  /// bloque de datos bancarios: es una regla condicional entre
+  /// columnas, no un invariante estructural simple). Mismo criterio ya
+  /// usado por `Compra.formaPagoOtroDescripcion`.
+  TextColumn get bancoOtroDescripcion => text().nullable()();
+
   TextColumn get numeroCuentaTarjeta => text().nullable()();
 
   TextColumn get clabe => text().nullable()();

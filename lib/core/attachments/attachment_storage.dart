@@ -66,4 +66,18 @@ class AttachmentStorage {
       await Process.run('cmd', ['/c', 'start', '""', path]);
     }
   }
+
+  /// Borra el archivo físico de un adjunto (Etapa 15, eliminación física
+  /// extraordinaria) — recibe la ruta ya resuelta desde `Attachment.path`
+  /// (cada fila de `Attachment` es siempre dueña única de su propio
+  /// archivo, nunca compartido entre entidades, así que nunca afecta a
+  /// otra referencia). Si el archivo ya no existe, no es un error — el
+  /// objetivo ("que no exista en disco") ya se cumple. Propaga
+  /// cualquier otra excepción (permisos, archivo en uso) para que el
+  /// llamador la reporte explícitamente, nunca la trague en silencio.
+  Future<void> eliminarArchivo(String path) async {
+    final archivo = File(path);
+    if (!archivo.existsSync()) return;
+    await archivo.delete();
+  }
 }

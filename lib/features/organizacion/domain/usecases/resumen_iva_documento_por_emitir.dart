@@ -9,6 +9,10 @@ enum ResumenIvaDocumento { masIva, ivaIncluido, noAplica, mixto }
 /// en cuanto aparece más de un valor distinto, sin importar cuáles.
 ResumenIvaDocumento calcularResumenIva(List<String> tratamientosIva) {
   final distintos = tratamientosIva.toSet();
+  // Un documento sin líneas comerciales (servicio recién incorporado,
+  // sin condición comercial vigente todavía) no tiene nada que gravar
+  // — mismo criterio que `noAplica`, nunca un error.
+  if (distintos.isEmpty) return ResumenIvaDocumento.noAplica;
   if (distintos.length > 1) return ResumenIvaDocumento.mixto;
 
   final unico = distintos.single;

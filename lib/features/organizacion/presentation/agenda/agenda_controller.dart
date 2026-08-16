@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/attachment_table.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/finanzas/presentation/cuentas_por_cobrar/cuentas_por_cobrar_controller.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
@@ -11,6 +14,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/corregir_datos_e
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_emitir_detalle.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/generar_agenda_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/generar_recibo_pago_pdf_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_emision_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_envio_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/reemplazar_archivo_documento_por_emitir_usecase.dart';
@@ -150,6 +154,17 @@ class AgendaController extends _$AgendaController {
     );
     if (resultado is CambiarEstatusDocumentoPorEmitirExitoso) {
       await _cargar();
+      // La transición a `procesadoAceptado` crea la Cuenta por cobrar
+      // en la misma transacción (Etapa 4J.1, Resolución A) —
+      // `cuentasPorCobrarControllerProvider` es un provider ajeno a
+      // Agenda que nunca se enteraba de esta CxC nueva, y el listado
+      // de Finanzas → Cuentas por cobrar no la mostraba hasta cambiar
+      // de pestaña (Etapa 15, hallazgo real). Ninguna otra transición
+      // de estatus toca `CuentaPorCobrar`, así que la invalidación se
+      // limita a este caso — nunca una recarga global.
+      if (nuevo == EstatusDocumentoPorEmitir.procesadoAceptado) {
+        ref.invalidate(cuentasPorCobrarControllerProvider);
+      }
     }
     return resultado;
   }
@@ -182,8 +197,6 @@ class AgendaController extends _$AgendaController {
   Future<RegistrarEmisionDocumentoPorEmitirResultado?> registrarEmision({
     required String documentoPorEmitirId,
     required String folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     required DateTime fechaEmisionReal,
     required int importeEmitido,
@@ -195,8 +208,6 @@ class AgendaController extends _$AgendaController {
       () => ref.read(registrarEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
             documentoPorEmitirId: documentoPorEmitirId,
             folioDocumento: folioDocumento,
-            serieFiscal: serieFiscal,
-            folioFiscal: folioFiscal,
             uuid: uuid,
             fechaEmisionReal: fechaEmisionReal,
             importeEmitido: importeEmitido,
@@ -214,8 +225,6 @@ class AgendaController extends _$AgendaController {
     required String documentoPorEmitirId,
     required String motivo,
     String? folioDocumento,
-    String? serieFiscal,
-    String? folioFiscal,
     String? uuid,
     DateTime? fechaEmisionReal,
     int? importeEmitido,
@@ -228,8 +237,6 @@ class AgendaController extends _$AgendaController {
             documentoPorEmitirId: documentoPorEmitirId,
             motivo: motivo,
             folioDocumento: folioDocumento,
-            serieFiscal: serieFiscal,
-            folioFiscal: folioFiscal,
             uuid: uuid,
             fechaEmisionReal: fechaEmisionReal,
             importeEmitido: importeEmitido,
@@ -348,5 +355,21 @@ class AgendaController extends _$AgendaController {
 
   Future<void> abrirArchivo(String path) {
     return ref.read(attachmentStorageProvider).abrir(path);
+  }
+
+  /// Genera el PDF administrativo del Recibo de pago y lo abre — acción
+  /// de solo lectura sobre datos ya visibles en el detalle, sin nueva
+  /// frontera de autorización (mismo criterio que las exportaciones de
+  /// Reportes, que tampoco pasan por `autorizarUseCase`). `logoFallbackBytes`
+  /// ya viene resuelto por la UI (`rootBundle.load`, Etapa 15) — este
+  /// controlador no importa Flutter, solo lo reenvía.
+  Future<GenerarReciboPagoPdfResultado> generarReciboPagoPdf(
+    String documentoPorEmitirId, {
+    Uint8List? logoFallbackBytes,
+  }) {
+    return ref.read(generarReciboPagoPdfUseCaseProvider).ejecutar(
+          documentoPorEmitirId: documentoPorEmitirId,
+          logoFallbackBytes: logoFallbackBytes,
+        );
   }
 }

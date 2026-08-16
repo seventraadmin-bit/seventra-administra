@@ -16,11 +16,14 @@ import 'compra_table.dart';
 enum DestinoCompraPartida { inventario, gastoDirecto }
 
 /// Un renglón de una `Compra` (Etapa 10) — "qué se compró, cuánto, a
-/// cuánto". Inmutable una vez creado: no existe ningún
-/// `corregirPartida`; un error de cantidad/costo ya comprometido a
-/// Inventario/Finanzas se corrige cancelando la `Compra` completa y
-/// registrando una nueva (mismo criterio que `MovimientoInventario`
-/// nunca se edita).
+/// cuánto". Corregible dentro de límites seguros vía
+/// `CompraRepository.corregir(cambiosPartidas: ...)` (Etapa 15,
+/// ampliación de "Corregir datos") — artículo/variante, cantidad,
+/// costo, o alta/baja de partida completa, siempre reconciliando
+/// Inventario/Egreso en la misma transacción y bloqueado si la
+/// existencia ya fue consumida. `MovimientoInventario` en sí sigue sin
+/// editarse nunca: una corrección revierte con una baja real y
+/// registra una entrada nueva, nunca reescribe un movimiento existente.
 ///
 /// `varianteId` solo se valida contra `Articulo.manejaVariante` en el
 /// caso de uso, nunca vía `CHECK` (no puede leer una columna de la

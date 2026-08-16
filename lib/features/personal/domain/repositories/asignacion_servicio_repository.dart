@@ -46,6 +46,7 @@ abstract interface class AsignacionServicioRepository {
     required int sueldoMensual,
     required int bonoMensual,
     String? turnoId,
+    String? lineaComercialId,
     String? observaciones,
     String? actorUsuarioId,
   });
@@ -62,6 +63,7 @@ abstract interface class AsignacionServicioRepository {
     required int sueldoMensual,
     required int bonoMensual,
     String? turnoId,
+    String? lineaComercialId,
     String? observaciones,
     String? actorUsuarioId,
   });

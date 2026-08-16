@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_comprobante_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_aplicacion_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_pago_usecase.dart';
@@ -11,6 +12,7 @@ import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import '../../finanzas_providers.dart';
+import '../cuentas_por_cobrar/cuentas_por_cobrar_controller.dart';
 import 'pagos_state.dart';
 
 part 'pagos_controller.g.dart';
@@ -127,6 +129,14 @@ class PagosController extends _$PagosController {
     );
     if (resultado is CancelarPagoExitoso) {
       await _cargar();
+      // Cancelar el Pago completo cascada a cancelar todas sus
+      // `AplicacionPago` activas y reabre el saldo de cada
+      // `CuentaPorCobrar` afectada — `cuentasPorCobrarControllerProvider`
+      // es un provider ajeno a Pagos que nunca se enteraba de este
+      // cambio (a diferencia de la ruta de cancelación desde el propio
+      // diálogo de CxC, que ya invalida correctamente).
+      ref.invalidate(cuentasPorCobrarControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
     }
     return resultado;
   }
@@ -147,6 +157,8 @@ class PagosController extends _$PagosController {
     );
     if (resultado is CancelarAplicacionPagoExitoso) {
       await _cargar();
+      ref.invalidate(cuentasPorCobrarControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
     }
     return resultado;
   }

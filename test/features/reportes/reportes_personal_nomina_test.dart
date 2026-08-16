@@ -31,6 +31,7 @@ import 'package:riseg_one/features/nomina/domain/usecases/resolver_sueldo_emplea
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/puesto_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
@@ -89,7 +90,13 @@ void main() {
     const empleadoValidator = EmpleadoValidator();
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
 
-    crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, empleadoValidator, servicioRepo);
+    crearEmpleado = CrearEmpleadoUseCase(
+      empleadoRepo,
+      generarNumero,
+      empleadoValidator,
+      servicioRepo,
+      ServicioComercialRepositoryImpl(db),
+    );
     registrarBaja = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator);
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, empleadoValidator);
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);

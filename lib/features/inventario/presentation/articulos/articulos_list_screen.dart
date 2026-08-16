@@ -121,6 +121,12 @@ class ArticulosListScreen extends ConsumerWidget {
                   cellBuilder: (r) => Text(r.existencia.disponible.toString()),
                 ),
                 RisegColumn<ArticuloResumen>(
+                  label: l10n.inventarioColumnaAsignado,
+                  width: 100,
+                  alignment: TextAlign.right,
+                  cellBuilder: (r) => Text(r.existencia.asignado.toString()),
+                ),
+                RisegColumn<ArticuloResumen>(
                   label: l10n.inventarioColumnaDanado,
                   width: 130,
                   alignment: TextAlign.right,

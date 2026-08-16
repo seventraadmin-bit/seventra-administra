@@ -34,6 +34,8 @@ import 'domain/usecases/corregir_egreso_usecase.dart';
 import 'domain/usecases/corregir_ingreso_usecase.dart';
 import 'domain/usecases/corregir_pago_usecase.dart';
 import 'domain/usecases/crear_categoria_financiera_usecase.dart';
+import 'domain/usecases/eliminar_egreso_fisicamente_usecase.dart';
+import 'domain/usecases/eliminar_pago_fisicamente_usecase.dart';
 import 'domain/usecases/obtener_resumen_financiero_usecase.dart';
 import 'domain/usecases/registrar_complemento_pago_usecase.dart';
 import 'domain/usecases/registrar_egreso_usecase.dart';
@@ -138,6 +140,33 @@ final cancelarPagoUseCaseProvider = Provider<CancelarPagoUseCase>((ref) {
 
 final adjuntarComprobantePagoUseCaseProvider = Provider<AdjuntarComprobantePagoUseCase>((ref) {
   return AdjuntarComprobantePagoUseCase(ref.watch(pagoRepositoryProvider), ref.watch(attachmentStorageProvider));
+});
+
+// Eliminación física extraordinaria (Etapa 15) — facultad exclusiva del
+// Usuario Maestro, mismo patrón exacto que Cliente/Servicio/Documento
+// por emitir/Egreso/Compra (`exigirMaestro`, nunca
+// `AuthorizationService.verificar`).
+final eliminarPagoFisicamenteUseCaseProvider = Provider<EliminarPagoFisicamenteUseCase>((ref) {
+  return EliminarPagoFisicamenteUseCase(ref.watch(pagoRepositoryProvider));
+});
+
+typedef EliminarPagoFisicamenteAutorizado = Future<EliminarPagoFisicamenteResultado> Function({
+  required String pagoId,
+  required String motivo,
+});
+
+final eliminarPagoFisicamenteAutorizadoProvider = Provider<EliminarPagoFisicamenteAutorizado>((ref) {
+  return ({required String pagoId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarPagoFisicamenteUseCaseProvider).ejecutar(
+            pagoId: pagoId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarPagoFisicamenteErrorInesperado.new,
+    );
+  };
 });
 
 // --- Etapa 4J.3 — Complementos de pago y cierre de cobranza ---
@@ -262,4 +291,30 @@ final adjuntarComprobanteEgresoUseCaseProvider = Provider<AdjuntarComprobanteEgr
 
 final obtenerResumenFinancieroUseCaseProvider = Provider<ObtenerResumenFinancieroUseCase>((ref) {
   return ObtenerResumenFinancieroUseCase(ref.watch(ingresoRepositoryProvider), ref.watch(egresoRepositoryProvider));
+});
+
+// Eliminación física extraordinaria (Etapa 15) — facultad exclusiva del
+// Usuario Maestro, mismo patrón exacto que Cliente/Servicio/Documento
+// por emitir (`exigirMaestro`, nunca `AuthorizationService.verificar`).
+final eliminarEgresoFisicamenteUseCaseProvider = Provider<EliminarEgresoFisicamenteUseCase>((ref) {
+  return EliminarEgresoFisicamenteUseCase(ref.watch(egresoRepositoryProvider));
+});
+
+typedef EliminarEgresoFisicamenteAutorizado = Future<EliminarEgresoFisicamenteResultado> Function({
+  required String egresoId,
+  required String motivo,
+});
+
+final eliminarEgresoFisicamenteAutorizadoProvider = Provider<EliminarEgresoFisicamenteAutorizado>((ref) {
+  return ({required String egresoId, required String motivo}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarEgresoFisicamenteUseCaseProvider).ejecutar(
+            egresoId: egresoId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarEgresoFisicamenteErrorInesperado.new,
+    );
+  };
 });

@@ -128,8 +128,8 @@ Future<bool> mostrarDialogoRegistrarBaja(
         case RegistrarBajaObservacionesRequeridas():
           errorGeneral = l10n.registrarBajaErrorObservacionesRequeridas;
           return null;
-        case RegistrarBajaSobrepasaDisponible():
-          errorGeneral = l10n.registrarBajaErrorSobrepasaDisponible;
+        case RegistrarBajaSobrepasaDisponible(:final disponible):
+          errorGeneral = l10n.registrarBajaErrorSobrepasaDisponible(disponible);
           return null;
         case RegistrarBajaArticuloNoExiste():
         case RegistrarBajaArticuloManejaSerie():

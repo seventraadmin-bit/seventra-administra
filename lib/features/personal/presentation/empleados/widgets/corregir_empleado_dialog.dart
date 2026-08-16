@@ -5,6 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/corregir_empleado_usecase.dart';
@@ -18,6 +19,7 @@ import 'crear_empleado_dialog.dart'
         empleadoEstadoCivilLabel,
         empleadoNivelEstudiosLabel,
         empleadoSexoLabel,
+        mensajeErrorTecnicoEmpleado,
         pesosDesdeCentavosParaEditar;
 
 int? _enteroDesdeTexto(String texto) {
@@ -54,6 +56,7 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
   final parentescoEmergenciaController = TextEditingController(text: empleado.parentescoEmergencia ?? '');
 
   String? bancoId = empleado.bancoId;
+  final bancoOtroDescripcionController = TextEditingController(text: empleado.bancoOtroDescripcion ?? '');
   final numeroCuentaTarjetaController = TextEditingController(text: empleado.numeroCuentaTarjeta ?? '');
   final clabeController = TextEditingController(text: empleado.clabe ?? '');
 
@@ -85,6 +88,7 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
   String? errorFechaNacimiento;
   String? errorFechaIngreso;
   String? errorDatosBancarios;
+  String? errorBancoOtroDescripcion;
   String? errorSueldoAdministrativo;
   String? errorBonoAdministrativo;
 
@@ -206,8 +210,18 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
               onChanged: (valor) => setState(() {
                 bancoId = valor;
                 errorDatosBancarios = null;
+                errorBancoOtroDescripcion = null;
               }),
             ),
+            if (bancoId == SeedIds.bancoOtro) ...[
+              const SizedBox(height: AppSpacing.md),
+              RisegTextField(
+                label: l10n.empleadoCampoBancoOtroDescripcion,
+                controller: bancoOtroDescripcionController,
+                errorText: errorBancoOtroDescripcion,
+                onChanged: (_) => setState(() => errorBancoOtroDescripcion = null),
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             RisegTextField(
               label: l10n.empleadoCampoNumeroCuentaTarjeta,
@@ -334,6 +348,8 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
             parentescoEmergencia: parentescoEmergenciaController.text,
             bancoId: bancoId,
             limpiarBanco: bancoId == null,
+            bancoOtroDescripcion: bancoId == SeedIds.bancoOtro ? bancoOtroDescripcionController.text : null,
+            limpiarBancoOtroDescripcion: bancoId != SeedIds.bancoOtro,
             numeroCuentaTarjeta: numeroCuentaTarjetaController.text,
             limpiarNumeroCuentaTarjeta: numeroCuentaTarjetaController.text.trim().isEmpty,
             clabe: clabeController.text,
@@ -391,14 +407,20 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
         case CorregirEmpleadoDatosBancariosInvalidos():
           errorDatosBancarios = l10n.empleadoErrorDatosBancariosInvalidos;
           return false;
+        case CorregirEmpleadoBancoOtroDescripcionRequerida():
+          errorBancoOtroDescripcion = l10n.empleadoErrorBancoOtroDescripcionRequerido;
+          return false;
         case CorregirEmpleadoSueldoAdministrativoInvalido():
           errorSueldoAdministrativo = l10n.empleadoErrorSueldoAdministrativoInvalido;
           return false;
         case CorregirEmpleadoBonoAdministrativoInvalido():
           errorBonoAdministrativo = l10n.empleadoErrorBonoAdministrativoInvalido;
           return false;
-        case CorregirEmpleadoErrorInesperado():
-          RisegFeedback.showError(context, l10n.corregirEmpleadoErrorInesperado);
+        case CorregirEmpleadoErrorInesperado(:final mensaje):
+          RisegFeedback.showError(
+            context,
+            mensajeErrorTecnicoEmpleado(l10n, mensaje, l10n.corregirEmpleadoErrorInesperado),
+          );
           return false;
       }
     },
@@ -427,6 +449,7 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
         contactoEmergenciaNombreController,
         telefonoEmergenciaController,
         parentescoEmergenciaController,
+        bancoOtroDescripcionController,
         numeroCuentaTarjetaController,
         clabeController,
         sueldoMensualAdministrativoController,

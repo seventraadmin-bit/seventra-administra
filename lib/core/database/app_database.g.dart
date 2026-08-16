@@ -13546,6 +13546,690 @@ class PuestoCompanion extends UpdateCompanion<PuestoData> {
   }
 }
 
+class $ClientePortalTable extends ClientePortal
+    with TableInfo<$ClientePortalTable, ClientePortalData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ClientePortalTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _clienteIdMeta = const VerificationMeta(
+    'clienteId',
+  );
+  @override
+  late final GeneratedColumn<String> clienteId = GeneratedColumn<String>(
+    'cliente_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cliente (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _usuarioMeta = const VerificationMeta(
+    'usuario',
+  );
+  @override
+  late final GeneratedColumn<String> usuario = GeneratedColumn<String>(
+    'usuario',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _contrasenaCifradaMeta = const VerificationMeta(
+    'contrasenaCifrada',
+  );
+  @override
+  late final GeneratedColumn<String> contrasenaCifrada =
+      GeneratedColumn<String>(
+        'contrasena_cifrada',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _observacionesMeta = const VerificationMeta(
+    'observaciones',
+  );
+  @override
+  late final GeneratedColumn<String> observaciones = GeneratedColumn<String>(
+    'observaciones',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    clienteId,
+    nombre,
+    tipo,
+    url,
+    usuario,
+    contrasenaCifrada,
+    observaciones,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cliente_portal';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ClientePortalData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cliente_id')) {
+      context.handle(
+        _clienteIdMeta,
+        clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_clienteIdMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('usuario')) {
+      context.handle(
+        _usuarioMeta,
+        usuario.isAcceptableOrUnknown(data['usuario']!, _usuarioMeta),
+      );
+    }
+    if (data.containsKey('contrasena_cifrada')) {
+      context.handle(
+        _contrasenaCifradaMeta,
+        contrasenaCifrada.isAcceptableOrUnknown(
+          data['contrasena_cifrada']!,
+          _contrasenaCifradaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observaciones')) {
+      context.handle(
+        _observacionesMeta,
+        observaciones.isAcceptableOrUnknown(
+          data['observaciones']!,
+          _observacionesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ClientePortalData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ClientePortalData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      clienteId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}cliente_id'],
+          )!,
+      nombre:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}nombre'],
+          )!,
+      tipo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}tipo'],
+          )!,
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      ),
+      usuario: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}usuario'],
+      ),
+      contrasenaCifrada: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}contrasena_cifrada'],
+      ),
+      observaciones: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observaciones'],
+      ),
+    );
+  }
+
+  @override
+  $ClientePortalTable createAlias(String alias) {
+    return $ClientePortalTable(attachedDatabase, alias);
+  }
+}
+
+class ClientePortalData extends DataClass
+    implements Insertable<ClientePortalData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+  final String clienteId;
+  final String nombre;
+  final String tipo;
+  final String? url;
+  final String? usuario;
+  final String? contrasenaCifrada;
+  final String? observaciones;
+  const ClientePortalData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.clienteId,
+    required this.nombre,
+    required this.tipo,
+    this.url,
+    this.usuario,
+    this.contrasenaCifrada,
+    this.observaciones,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['cliente_id'] = Variable<String>(clienteId);
+    map['nombre'] = Variable<String>(nombre);
+    map['tipo'] = Variable<String>(tipo);
+    if (!nullToAbsent || url != null) {
+      map['url'] = Variable<String>(url);
+    }
+    if (!nullToAbsent || usuario != null) {
+      map['usuario'] = Variable<String>(usuario);
+    }
+    if (!nullToAbsent || contrasenaCifrada != null) {
+      map['contrasena_cifrada'] = Variable<String>(contrasenaCifrada);
+    }
+    if (!nullToAbsent || observaciones != null) {
+      map['observaciones'] = Variable<String>(observaciones);
+    }
+    return map;
+  }
+
+  ClientePortalCompanion toCompanion(bool nullToAbsent) {
+    return ClientePortalCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      clienteId: Value(clienteId),
+      nombre: Value(nombre),
+      tipo: Value(tipo),
+      url: url == null && nullToAbsent ? const Value.absent() : Value(url),
+      usuario:
+          usuario == null && nullToAbsent
+              ? const Value.absent()
+              : Value(usuario),
+      contrasenaCifrada:
+          contrasenaCifrada == null && nullToAbsent
+              ? const Value.absent()
+              : Value(contrasenaCifrada),
+      observaciones:
+          observaciones == null && nullToAbsent
+              ? const Value.absent()
+              : Value(observaciones),
+    );
+  }
+
+  factory ClientePortalData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ClientePortalData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      clienteId: serializer.fromJson<String>(json['clienteId']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      url: serializer.fromJson<String?>(json['url']),
+      usuario: serializer.fromJson<String?>(json['usuario']),
+      contrasenaCifrada: serializer.fromJson<String?>(
+        json['contrasenaCifrada'],
+      ),
+      observaciones: serializer.fromJson<String?>(json['observaciones']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'clienteId': serializer.toJson<String>(clienteId),
+      'nombre': serializer.toJson<String>(nombre),
+      'tipo': serializer.toJson<String>(tipo),
+      'url': serializer.toJson<String?>(url),
+      'usuario': serializer.toJson<String?>(usuario),
+      'contrasenaCifrada': serializer.toJson<String?>(contrasenaCifrada),
+      'observaciones': serializer.toJson<String?>(observaciones),
+    };
+  }
+
+  ClientePortalData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? clienteId,
+    String? nombre,
+    String? tipo,
+    Value<String?> url = const Value.absent(),
+    Value<String?> usuario = const Value.absent(),
+    Value<String?> contrasenaCifrada = const Value.absent(),
+    Value<String?> observaciones = const Value.absent(),
+  }) => ClientePortalData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    clienteId: clienteId ?? this.clienteId,
+    nombre: nombre ?? this.nombre,
+    tipo: tipo ?? this.tipo,
+    url: url.present ? url.value : this.url,
+    usuario: usuario.present ? usuario.value : this.usuario,
+    contrasenaCifrada:
+        contrasenaCifrada.present
+            ? contrasenaCifrada.value
+            : this.contrasenaCifrada,
+    observaciones:
+        observaciones.present ? observaciones.value : this.observaciones,
+  );
+  ClientePortalData copyWithCompanion(ClientePortalCompanion data) {
+    return ClientePortalData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      url: data.url.present ? data.url.value : this.url,
+      usuario: data.usuario.present ? data.usuario.value : this.usuario,
+      contrasenaCifrada:
+          data.contrasenaCifrada.present
+              ? data.contrasenaCifrada.value
+              : this.contrasenaCifrada,
+      observaciones:
+          data.observaciones.present
+              ? data.observaciones.value
+              : this.observaciones,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClientePortalData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('nombre: $nombre, ')
+          ..write('tipo: $tipo, ')
+          ..write('url: $url, ')
+          ..write('usuario: $usuario, ')
+          ..write('contrasenaCifrada: $contrasenaCifrada, ')
+          ..write('observaciones: $observaciones')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    clienteId,
+    nombre,
+    tipo,
+    url,
+    usuario,
+    contrasenaCifrada,
+    observaciones,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ClientePortalData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.clienteId == this.clienteId &&
+          other.nombre == this.nombre &&
+          other.tipo == this.tipo &&
+          other.url == this.url &&
+          other.usuario == this.usuario &&
+          other.contrasenaCifrada == this.contrasenaCifrada &&
+          other.observaciones == this.observaciones);
+}
+
+class ClientePortalCompanion extends UpdateCompanion<ClientePortalData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> clienteId;
+  final Value<String> nombre;
+  final Value<String> tipo;
+  final Value<String?> url;
+  final Value<String?> usuario;
+  final Value<String?> contrasenaCifrada;
+  final Value<String?> observaciones;
+  final Value<int> rowid;
+  const ClientePortalCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.clienteId = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.url = const Value.absent(),
+    this.usuario = const Value.absent(),
+    this.contrasenaCifrada = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ClientePortalCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String clienteId,
+    required String nombre,
+    required String tipo,
+    this.url = const Value.absent(),
+    this.usuario = const Value.absent(),
+    this.contrasenaCifrada = const Value.absent(),
+    this.observaciones = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : clienteId = Value(clienteId),
+       nombre = Value(nombre),
+       tipo = Value(tipo);
+  static Insertable<ClientePortalData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? clienteId,
+    Expression<String>? nombre,
+    Expression<String>? tipo,
+    Expression<String>? url,
+    Expression<String>? usuario,
+    Expression<String>? contrasenaCifrada,
+    Expression<String>? observaciones,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (clienteId != null) 'cliente_id': clienteId,
+      if (nombre != null) 'nombre': nombre,
+      if (tipo != null) 'tipo': tipo,
+      if (url != null) 'url': url,
+      if (usuario != null) 'usuario': usuario,
+      if (contrasenaCifrada != null) 'contrasena_cifrada': contrasenaCifrada,
+      if (observaciones != null) 'observaciones': observaciones,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ClientePortalCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? clienteId,
+    Value<String>? nombre,
+    Value<String>? tipo,
+    Value<String?>? url,
+    Value<String?>? usuario,
+    Value<String?>? contrasenaCifrada,
+    Value<String?>? observaciones,
+    Value<int>? rowid,
+  }) {
+    return ClientePortalCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      clienteId: clienteId ?? this.clienteId,
+      nombre: nombre ?? this.nombre,
+      tipo: tipo ?? this.tipo,
+      url: url ?? this.url,
+      usuario: usuario ?? this.usuario,
+      contrasenaCifrada: contrasenaCifrada ?? this.contrasenaCifrada,
+      observaciones: observaciones ?? this.observaciones,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (clienteId.present) {
+      map['cliente_id'] = Variable<String>(clienteId.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (usuario.present) {
+      map['usuario'] = Variable<String>(usuario.value);
+    }
+    if (contrasenaCifrada.present) {
+      map['contrasena_cifrada'] = Variable<String>(contrasenaCifrada.value);
+    }
+    if (observaciones.present) {
+      map['observaciones'] = Variable<String>(observaciones.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClientePortalCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('nombre: $nombre, ')
+          ..write('tipo: $tipo, ')
+          ..write('url: $url, ')
+          ..write('usuario: $usuario, ')
+          ..write('contrasenaCifrada: $contrasenaCifrada, ')
+          ..write('observaciones: $observaciones, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ServicioLineaComercialTable extends ServicioLineaComercial
     with TableInfo<$ServicioLineaComercialTable, ServicioLineaComercialData> {
   @override
@@ -14102,6 +14786,28 @@ class $ServicioLineaComercialVigenciaTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sueldoMensualReferenciaPersonalMeta =
+      const VerificationMeta('sueldoMensualReferenciaPersonal');
+  @override
+  late final GeneratedColumn<int> sueldoMensualReferenciaPersonal =
+      GeneratedColumn<int>(
+        'sueldo_mensual_referencia_personal',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _bonoMensualReferenciaPersonalMeta =
+      const VerificationMeta('bonoMensualReferenciaPersonal');
+  @override
+  late final GeneratedColumn<int> bonoMensualReferenciaPersonal =
+      GeneratedColumn<int>(
+        'bono_mensual_referencia_personal',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -14118,6 +14824,8 @@ class $ServicioLineaComercialVigenciaTable
     fechaInicioVigencia,
     fechaFinVigencia,
     observaciones,
+    sueldoMensualReferenciaPersonal,
+    bonoMensualReferenciaPersonal,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -14256,6 +14964,24 @@ class $ServicioLineaComercialVigenciaTable
         ),
       );
     }
+    if (data.containsKey('sueldo_mensual_referencia_personal')) {
+      context.handle(
+        _sueldoMensualReferenciaPersonalMeta,
+        sueldoMensualReferenciaPersonal.isAcceptableOrUnknown(
+          data['sueldo_mensual_referencia_personal']!,
+          _sueldoMensualReferenciaPersonalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bono_mensual_referencia_personal')) {
+      context.handle(
+        _bonoMensualReferenciaPersonalMeta,
+        bonoMensualReferenciaPersonal.isAcceptableOrUnknown(
+          data['bono_mensual_referencia_personal']!,
+          _bonoMensualReferenciaPersonalMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -14335,6 +15061,14 @@ class $ServicioLineaComercialVigenciaTable
         DriftSqlType.string,
         data['${effectivePrefix}observaciones'],
       ),
+      sueldoMensualReferenciaPersonal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sueldo_mensual_referencia_personal'],
+      ),
+      bonoMensualReferenciaPersonal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bono_mensual_referencia_personal'],
+      ),
     );
   }
 
@@ -14365,6 +15099,25 @@ class ServicioLineaComercialVigenciaData extends DataClass
   final DateTime fechaInicioVigencia;
   final DateTime? fechaFinVigencia;
   final String? observaciones;
+
+  /// Condiciones de personal de referencia para este perfil contratado
+  /// (Etapa 15, rediseño de "Condiciones de Personal") — mismo criterio
+  /// exacto que las columnas globales que reemplazan
+  /// (`Servicio.sueldoMensualReferenciaPersonal`/
+  /// `bonoMensualReferenciaPersonal`, Etapa 6B): se precargan al asignar
+  /// personal contra ESTA línea (nunca contra el Servicio completo,
+  /// desde este rediseño); la asignación puede seguir capturando una
+  /// excepción individual. Versionadas junto con el resto de la
+  /// condición comercial (puesto/turno/cantidad/precio) — un cambio de
+  /// sueldo de referencia es, conceptualmente, la misma clase de cambio
+  /// que un cambio de precio: pasa por Corregir/Nueva vigencia, nunca
+  /// se edita in place fuera de ese ciclo. Nullable — una línea puede
+  /// capturarse antes de tener condición salarial definida; `> 0`
+  /// cuando se captura, igual que el resto de las fuentes de sueldo del
+  /// proyecto (`Empleado.sueldoMensualAdministrativo`,
+  /// `AsignacionServicioSueldoVigencia.sueldoMensual`). En centavos.
+  final int? sueldoMensualReferenciaPersonal;
+  final int? bonoMensualReferenciaPersonal;
   const ServicioLineaComercialVigenciaData({
     required this.id,
     required this.createdAt,
@@ -14380,6 +15133,8 @@ class ServicioLineaComercialVigenciaData extends DataClass
     required this.fechaInicioVigencia,
     this.fechaFinVigencia,
     this.observaciones,
+    this.sueldoMensualReferenciaPersonal,
+    this.bonoMensualReferenciaPersonal,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -14403,6 +15158,16 @@ class ServicioLineaComercialVigenciaData extends DataClass
     }
     if (!nullToAbsent || observaciones != null) {
       map['observaciones'] = Variable<String>(observaciones);
+    }
+    if (!nullToAbsent || sueldoMensualReferenciaPersonal != null) {
+      map['sueldo_mensual_referencia_personal'] = Variable<int>(
+        sueldoMensualReferenciaPersonal,
+      );
+    }
+    if (!nullToAbsent || bonoMensualReferenciaPersonal != null) {
+      map['bono_mensual_referencia_personal'] = Variable<int>(
+        bonoMensualReferenciaPersonal,
+      );
     }
     return map;
   }
@@ -14432,6 +15197,14 @@ class ServicioLineaComercialVigenciaData extends DataClass
           observaciones == null && nullToAbsent
               ? const Value.absent()
               : Value(observaciones),
+      sueldoMensualReferenciaPersonal:
+          sueldoMensualReferenciaPersonal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(sueldoMensualReferenciaPersonal),
+      bonoMensualReferenciaPersonal:
+          bonoMensualReferenciaPersonal == null && nullToAbsent
+              ? const Value.absent()
+              : Value(bonoMensualReferenciaPersonal),
     );
   }
 
@@ -14459,6 +15232,12 @@ class ServicioLineaComercialVigenciaData extends DataClass
         json['fechaFinVigencia'],
       ),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
+      sueldoMensualReferenciaPersonal: serializer.fromJson<int?>(
+        json['sueldoMensualReferenciaPersonal'],
+      ),
+      bonoMensualReferenciaPersonal: serializer.fromJson<int?>(
+        json['bonoMensualReferenciaPersonal'],
+      ),
     );
   }
   @override
@@ -14479,6 +15258,12 @@ class ServicioLineaComercialVigenciaData extends DataClass
       'fechaInicioVigencia': serializer.toJson<DateTime>(fechaInicioVigencia),
       'fechaFinVigencia': serializer.toJson<DateTime?>(fechaFinVigencia),
       'observaciones': serializer.toJson<String?>(observaciones),
+      'sueldoMensualReferenciaPersonal': serializer.toJson<int?>(
+        sueldoMensualReferenciaPersonal,
+      ),
+      'bonoMensualReferenciaPersonal': serializer.toJson<int?>(
+        bonoMensualReferenciaPersonal,
+      ),
     };
   }
 
@@ -14497,6 +15282,8 @@ class ServicioLineaComercialVigenciaData extends DataClass
     DateTime? fechaInicioVigencia,
     Value<DateTime?> fechaFinVigencia = const Value.absent(),
     Value<String?> observaciones = const Value.absent(),
+    Value<int?> sueldoMensualReferenciaPersonal = const Value.absent(),
+    Value<int?> bonoMensualReferenciaPersonal = const Value.absent(),
   }) => ServicioLineaComercialVigenciaData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -14516,6 +15303,14 @@ class ServicioLineaComercialVigenciaData extends DataClass
             : this.fechaFinVigencia,
     observaciones:
         observaciones.present ? observaciones.value : this.observaciones,
+    sueldoMensualReferenciaPersonal:
+        sueldoMensualReferenciaPersonal.present
+            ? sueldoMensualReferenciaPersonal.value
+            : this.sueldoMensualReferenciaPersonal,
+    bonoMensualReferenciaPersonal:
+        bonoMensualReferenciaPersonal.present
+            ? bonoMensualReferenciaPersonal.value
+            : this.bonoMensualReferenciaPersonal,
   );
   ServicioLineaComercialVigenciaData copyWithCompanion(
     ServicioLineaComercialVigenciaCompanion data,
@@ -14563,6 +15358,14 @@ class ServicioLineaComercialVigenciaData extends DataClass
           data.observaciones.present
               ? data.observaciones.value
               : this.observaciones,
+      sueldoMensualReferenciaPersonal:
+          data.sueldoMensualReferenciaPersonal.present
+              ? data.sueldoMensualReferenciaPersonal.value
+              : this.sueldoMensualReferenciaPersonal,
+      bonoMensualReferenciaPersonal:
+          data.bonoMensualReferenciaPersonal.present
+              ? data.bonoMensualReferenciaPersonal.value
+              : this.bonoMensualReferenciaPersonal,
     );
   }
 
@@ -14582,7 +15385,13 @@ class ServicioLineaComercialVigenciaData extends DataClass
           ..write('descripcion: $descripcion, ')
           ..write('fechaInicioVigencia: $fechaInicioVigencia, ')
           ..write('fechaFinVigencia: $fechaFinVigencia, ')
-          ..write('observaciones: $observaciones')
+          ..write('observaciones: $observaciones, ')
+          ..write(
+            'sueldoMensualReferenciaPersonal: $sueldoMensualReferenciaPersonal, ',
+          )
+          ..write(
+            'bonoMensualReferenciaPersonal: $bonoMensualReferenciaPersonal',
+          )
           ..write(')'))
         .toString();
   }
@@ -14603,6 +15412,8 @@ class ServicioLineaComercialVigenciaData extends DataClass
     fechaInicioVigencia,
     fechaFinVigencia,
     observaciones,
+    sueldoMensualReferenciaPersonal,
+    bonoMensualReferenciaPersonal,
   );
   @override
   bool operator ==(Object other) =>
@@ -14621,7 +15432,11 @@ class ServicioLineaComercialVigenciaData extends DataClass
           other.descripcion == this.descripcion &&
           other.fechaInicioVigencia == this.fechaInicioVigencia &&
           other.fechaFinVigencia == this.fechaFinVigencia &&
-          other.observaciones == this.observaciones);
+          other.observaciones == this.observaciones &&
+          other.sueldoMensualReferenciaPersonal ==
+              this.sueldoMensualReferenciaPersonal &&
+          other.bonoMensualReferenciaPersonal ==
+              this.bonoMensualReferenciaPersonal);
 }
 
 class ServicioLineaComercialVigenciaCompanion
@@ -14640,6 +15455,8 @@ class ServicioLineaComercialVigenciaCompanion
   final Value<DateTime> fechaInicioVigencia;
   final Value<DateTime?> fechaFinVigencia;
   final Value<String?> observaciones;
+  final Value<int?> sueldoMensualReferenciaPersonal;
+  final Value<int?> bonoMensualReferenciaPersonal;
   final Value<int> rowid;
   const ServicioLineaComercialVigenciaCompanion({
     this.id = const Value.absent(),
@@ -14656,6 +15473,8 @@ class ServicioLineaComercialVigenciaCompanion
     this.fechaInicioVigencia = const Value.absent(),
     this.fechaFinVigencia = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.sueldoMensualReferenciaPersonal = const Value.absent(),
+    this.bonoMensualReferenciaPersonal = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ServicioLineaComercialVigenciaCompanion.insert({
@@ -14673,6 +15492,8 @@ class ServicioLineaComercialVigenciaCompanion
     required DateTime fechaInicioVigencia,
     this.fechaFinVigencia = const Value.absent(),
     this.observaciones = const Value.absent(),
+    this.sueldoMensualReferenciaPersonal = const Value.absent(),
+    this.bonoMensualReferenciaPersonal = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : lineaComercialId = Value(lineaComercialId),
        puestoId = Value(puestoId),
@@ -14696,6 +15517,8 @@ class ServicioLineaComercialVigenciaCompanion
     Expression<DateTime>? fechaInicioVigencia,
     Expression<DateTime>? fechaFinVigencia,
     Expression<String>? observaciones,
+    Expression<int>? sueldoMensualReferenciaPersonal,
+    Expression<int>? bonoMensualReferenciaPersonal,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -14714,6 +15537,10 @@ class ServicioLineaComercialVigenciaCompanion
         'fecha_inicio_vigencia': fechaInicioVigencia,
       if (fechaFinVigencia != null) 'fecha_fin_vigencia': fechaFinVigencia,
       if (observaciones != null) 'observaciones': observaciones,
+      if (sueldoMensualReferenciaPersonal != null)
+        'sueldo_mensual_referencia_personal': sueldoMensualReferenciaPersonal,
+      if (bonoMensualReferenciaPersonal != null)
+        'bono_mensual_referencia_personal': bonoMensualReferenciaPersonal,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -14733,6 +15560,8 @@ class ServicioLineaComercialVigenciaCompanion
     Value<DateTime>? fechaInicioVigencia,
     Value<DateTime?>? fechaFinVigencia,
     Value<String?>? observaciones,
+    Value<int?>? sueldoMensualReferenciaPersonal,
+    Value<int?>? bonoMensualReferenciaPersonal,
     Value<int>? rowid,
   }) {
     return ServicioLineaComercialVigenciaCompanion(
@@ -14750,6 +15579,11 @@ class ServicioLineaComercialVigenciaCompanion
       fechaInicioVigencia: fechaInicioVigencia ?? this.fechaInicioVigencia,
       fechaFinVigencia: fechaFinVigencia ?? this.fechaFinVigencia,
       observaciones: observaciones ?? this.observaciones,
+      sueldoMensualReferenciaPersonal:
+          sueldoMensualReferenciaPersonal ??
+          this.sueldoMensualReferenciaPersonal,
+      bonoMensualReferenciaPersonal:
+          bonoMensualReferenciaPersonal ?? this.bonoMensualReferenciaPersonal,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -14801,6 +15635,16 @@ class ServicioLineaComercialVigenciaCompanion
     if (observaciones.present) {
       map['observaciones'] = Variable<String>(observaciones.value);
     }
+    if (sueldoMensualReferenciaPersonal.present) {
+      map['sueldo_mensual_referencia_personal'] = Variable<int>(
+        sueldoMensualReferenciaPersonal.value,
+      );
+    }
+    if (bonoMensualReferenciaPersonal.present) {
+      map['bono_mensual_referencia_personal'] = Variable<int>(
+        bonoMensualReferenciaPersonal.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -14824,7 +15668,523 @@ class ServicioLineaComercialVigenciaCompanion
           ..write('fechaInicioVigencia: $fechaInicioVigencia, ')
           ..write('fechaFinVigencia: $fechaFinVigencia, ')
           ..write('observaciones: $observaciones, ')
+          ..write(
+            'sueldoMensualReferenciaPersonal: $sueldoMensualReferenciaPersonal, ',
+          )
+          ..write(
+            'bonoMensualReferenciaPersonal: $bonoMensualReferenciaPersonal, ',
+          )
           ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ServicioLineaComercialVigenciaHorarioTable
+    extends ServicioLineaComercialVigenciaHorario
+    with
+        TableInfo<
+          $ServicioLineaComercialVigenciaHorarioTable,
+          ServicioLineaComercialVigenciaHorarioData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServicioLineaComercialVigenciaHorarioTable(
+    this.attachedDatabase, [
+    this._alias,
+  ]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _lineaComercialVigenciaIdMeta =
+      const VerificationMeta('lineaComercialVigenciaId');
+  @override
+  late final GeneratedColumn<String> lineaComercialVigenciaId =
+      GeneratedColumn<String>(
+        'linea_comercial_vigencia_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES servicio_linea_comercial_vigencia (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _diaSemanaMeta = const VerificationMeta(
+    'diaSemana',
+  );
+  @override
+  late final GeneratedColumn<int> diaSemana = GeneratedColumn<int>(
+    'dia_semana',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _horaInicioMeta = const VerificationMeta(
+    'horaInicio',
+  );
+  @override
+  late final GeneratedColumn<int> horaInicio = GeneratedColumn<int>(
+    'hora_inicio',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _horaFinMeta = const VerificationMeta(
+    'horaFin',
+  );
+  @override
+  late final GeneratedColumn<int> horaFin = GeneratedColumn<int>(
+    'hora_fin',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cruzaMedianocheMeta = const VerificationMeta(
+    'cruzaMedianoche',
+  );
+  @override
+  late final GeneratedColumn<bool> cruzaMedianoche = GeneratedColumn<bool>(
+    'cruza_medianoche',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("cruza_medianoche" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _activoMeta = const VerificationMeta('activo');
+  @override
+  late final GeneratedColumn<bool> activo = GeneratedColumn<bool>(
+    'activo',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("activo" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    lineaComercialVigenciaId,
+    diaSemana,
+    horaInicio,
+    horaFin,
+    cruzaMedianoche,
+    activo,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'servicio_linea_comercial_vigencia_horario';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ServicioLineaComercialVigenciaHorarioData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('linea_comercial_vigencia_id')) {
+      context.handle(
+        _lineaComercialVigenciaIdMeta,
+        lineaComercialVigenciaId.isAcceptableOrUnknown(
+          data['linea_comercial_vigencia_id']!,
+          _lineaComercialVigenciaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lineaComercialVigenciaIdMeta);
+    }
+    if (data.containsKey('dia_semana')) {
+      context.handle(
+        _diaSemanaMeta,
+        diaSemana.isAcceptableOrUnknown(data['dia_semana']!, _diaSemanaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_diaSemanaMeta);
+    }
+    if (data.containsKey('hora_inicio')) {
+      context.handle(
+        _horaInicioMeta,
+        horaInicio.isAcceptableOrUnknown(data['hora_inicio']!, _horaInicioMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_horaInicioMeta);
+    }
+    if (data.containsKey('hora_fin')) {
+      context.handle(
+        _horaFinMeta,
+        horaFin.isAcceptableOrUnknown(data['hora_fin']!, _horaFinMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_horaFinMeta);
+    }
+    if (data.containsKey('cruza_medianoche')) {
+      context.handle(
+        _cruzaMedianocheMeta,
+        cruzaMedianoche.isAcceptableOrUnknown(
+          data['cruza_medianoche']!,
+          _cruzaMedianocheMeta,
+        ),
+      );
+    }
+    if (data.containsKey('activo')) {
+      context.handle(
+        _activoMeta,
+        activo.isAcceptableOrUnknown(data['activo']!, _activoMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ServicioLineaComercialVigenciaHorarioData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ServicioLineaComercialVigenciaHorarioData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      lineaComercialVigenciaId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}linea_comercial_vigencia_id'],
+          )!,
+      diaSemana:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}dia_semana'],
+          )!,
+      horaInicio:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}hora_inicio'],
+          )!,
+      horaFin:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}hora_fin'],
+          )!,
+      cruzaMedianoche:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}cruza_medianoche'],
+          )!,
+      activo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}activo'],
+          )!,
+    );
+  }
+
+  @override
+  $ServicioLineaComercialVigenciaHorarioTable createAlias(String alias) {
+    return $ServicioLineaComercialVigenciaHorarioTable(attachedDatabase, alias);
+  }
+}
+
+class ServicioLineaComercialVigenciaHorarioData extends DataClass
+    implements Insertable<ServicioLineaComercialVigenciaHorarioData> {
+  final int id;
+  final String lineaComercialVigenciaId;
+
+  /// 0 = lunes ... 6 = domingo.
+  final int diaSemana;
+  final int horaInicio;
+  final int horaFin;
+  final bool cruzaMedianoche;
+
+  /// `true` si ese día se trabaja — `false` significa descanso (sin
+  /// importar el valor de `horaInicio`/`horaFin`, que quedan en `0`).
+  final bool activo;
+  const ServicioLineaComercialVigenciaHorarioData({
+    required this.id,
+    required this.lineaComercialVigenciaId,
+    required this.diaSemana,
+    required this.horaInicio,
+    required this.horaFin,
+    required this.cruzaMedianoche,
+    required this.activo,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['linea_comercial_vigencia_id'] = Variable<String>(
+      lineaComercialVigenciaId,
+    );
+    map['dia_semana'] = Variable<int>(diaSemana);
+    map['hora_inicio'] = Variable<int>(horaInicio);
+    map['hora_fin'] = Variable<int>(horaFin);
+    map['cruza_medianoche'] = Variable<bool>(cruzaMedianoche);
+    map['activo'] = Variable<bool>(activo);
+    return map;
+  }
+
+  ServicioLineaComercialVigenciaHorarioCompanion toCompanion(
+    bool nullToAbsent,
+  ) {
+    return ServicioLineaComercialVigenciaHorarioCompanion(
+      id: Value(id),
+      lineaComercialVigenciaId: Value(lineaComercialVigenciaId),
+      diaSemana: Value(diaSemana),
+      horaInicio: Value(horaInicio),
+      horaFin: Value(horaFin),
+      cruzaMedianoche: Value(cruzaMedianoche),
+      activo: Value(activo),
+    );
+  }
+
+  factory ServicioLineaComercialVigenciaHorarioData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ServicioLineaComercialVigenciaHorarioData(
+      id: serializer.fromJson<int>(json['id']),
+      lineaComercialVigenciaId: serializer.fromJson<String>(
+        json['lineaComercialVigenciaId'],
+      ),
+      diaSemana: serializer.fromJson<int>(json['diaSemana']),
+      horaInicio: serializer.fromJson<int>(json['horaInicio']),
+      horaFin: serializer.fromJson<int>(json['horaFin']),
+      cruzaMedianoche: serializer.fromJson<bool>(json['cruzaMedianoche']),
+      activo: serializer.fromJson<bool>(json['activo']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'lineaComercialVigenciaId': serializer.toJson<String>(
+        lineaComercialVigenciaId,
+      ),
+      'diaSemana': serializer.toJson<int>(diaSemana),
+      'horaInicio': serializer.toJson<int>(horaInicio),
+      'horaFin': serializer.toJson<int>(horaFin),
+      'cruzaMedianoche': serializer.toJson<bool>(cruzaMedianoche),
+      'activo': serializer.toJson<bool>(activo),
+    };
+  }
+
+  ServicioLineaComercialVigenciaHorarioData copyWith({
+    int? id,
+    String? lineaComercialVigenciaId,
+    int? diaSemana,
+    int? horaInicio,
+    int? horaFin,
+    bool? cruzaMedianoche,
+    bool? activo,
+  }) => ServicioLineaComercialVigenciaHorarioData(
+    id: id ?? this.id,
+    lineaComercialVigenciaId:
+        lineaComercialVigenciaId ?? this.lineaComercialVigenciaId,
+    diaSemana: diaSemana ?? this.diaSemana,
+    horaInicio: horaInicio ?? this.horaInicio,
+    horaFin: horaFin ?? this.horaFin,
+    cruzaMedianoche: cruzaMedianoche ?? this.cruzaMedianoche,
+    activo: activo ?? this.activo,
+  );
+  ServicioLineaComercialVigenciaHorarioData copyWithCompanion(
+    ServicioLineaComercialVigenciaHorarioCompanion data,
+  ) {
+    return ServicioLineaComercialVigenciaHorarioData(
+      id: data.id.present ? data.id.value : this.id,
+      lineaComercialVigenciaId:
+          data.lineaComercialVigenciaId.present
+              ? data.lineaComercialVigenciaId.value
+              : this.lineaComercialVigenciaId,
+      diaSemana: data.diaSemana.present ? data.diaSemana.value : this.diaSemana,
+      horaInicio:
+          data.horaInicio.present ? data.horaInicio.value : this.horaInicio,
+      horaFin: data.horaFin.present ? data.horaFin.value : this.horaFin,
+      cruzaMedianoche:
+          data.cruzaMedianoche.present
+              ? data.cruzaMedianoche.value
+              : this.cruzaMedianoche,
+      activo: data.activo.present ? data.activo.value : this.activo,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServicioLineaComercialVigenciaHorarioData(')
+          ..write('id: $id, ')
+          ..write('lineaComercialVigenciaId: $lineaComercialVigenciaId, ')
+          ..write('diaSemana: $diaSemana, ')
+          ..write('horaInicio: $horaInicio, ')
+          ..write('horaFin: $horaFin, ')
+          ..write('cruzaMedianoche: $cruzaMedianoche, ')
+          ..write('activo: $activo')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    lineaComercialVigenciaId,
+    diaSemana,
+    horaInicio,
+    horaFin,
+    cruzaMedianoche,
+    activo,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ServicioLineaComercialVigenciaHorarioData &&
+          other.id == this.id &&
+          other.lineaComercialVigenciaId == this.lineaComercialVigenciaId &&
+          other.diaSemana == this.diaSemana &&
+          other.horaInicio == this.horaInicio &&
+          other.horaFin == this.horaFin &&
+          other.cruzaMedianoche == this.cruzaMedianoche &&
+          other.activo == this.activo);
+}
+
+class ServicioLineaComercialVigenciaHorarioCompanion
+    extends UpdateCompanion<ServicioLineaComercialVigenciaHorarioData> {
+  final Value<int> id;
+  final Value<String> lineaComercialVigenciaId;
+  final Value<int> diaSemana;
+  final Value<int> horaInicio;
+  final Value<int> horaFin;
+  final Value<bool> cruzaMedianoche;
+  final Value<bool> activo;
+  const ServicioLineaComercialVigenciaHorarioCompanion({
+    this.id = const Value.absent(),
+    this.lineaComercialVigenciaId = const Value.absent(),
+    this.diaSemana = const Value.absent(),
+    this.horaInicio = const Value.absent(),
+    this.horaFin = const Value.absent(),
+    this.cruzaMedianoche = const Value.absent(),
+    this.activo = const Value.absent(),
+  });
+  ServicioLineaComercialVigenciaHorarioCompanion.insert({
+    this.id = const Value.absent(),
+    required String lineaComercialVigenciaId,
+    required int diaSemana,
+    required int horaInicio,
+    required int horaFin,
+    this.cruzaMedianoche = const Value.absent(),
+    this.activo = const Value.absent(),
+  }) : lineaComercialVigenciaId = Value(lineaComercialVigenciaId),
+       diaSemana = Value(diaSemana),
+       horaInicio = Value(horaInicio),
+       horaFin = Value(horaFin);
+  static Insertable<ServicioLineaComercialVigenciaHorarioData> custom({
+    Expression<int>? id,
+    Expression<String>? lineaComercialVigenciaId,
+    Expression<int>? diaSemana,
+    Expression<int>? horaInicio,
+    Expression<int>? horaFin,
+    Expression<bool>? cruzaMedianoche,
+    Expression<bool>? activo,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (lineaComercialVigenciaId != null)
+        'linea_comercial_vigencia_id': lineaComercialVigenciaId,
+      if (diaSemana != null) 'dia_semana': diaSemana,
+      if (horaInicio != null) 'hora_inicio': horaInicio,
+      if (horaFin != null) 'hora_fin': horaFin,
+      if (cruzaMedianoche != null) 'cruza_medianoche': cruzaMedianoche,
+      if (activo != null) 'activo': activo,
+    });
+  }
+
+  ServicioLineaComercialVigenciaHorarioCompanion copyWith({
+    Value<int>? id,
+    Value<String>? lineaComercialVigenciaId,
+    Value<int>? diaSemana,
+    Value<int>? horaInicio,
+    Value<int>? horaFin,
+    Value<bool>? cruzaMedianoche,
+    Value<bool>? activo,
+  }) {
+    return ServicioLineaComercialVigenciaHorarioCompanion(
+      id: id ?? this.id,
+      lineaComercialVigenciaId:
+          lineaComercialVigenciaId ?? this.lineaComercialVigenciaId,
+      diaSemana: diaSemana ?? this.diaSemana,
+      horaInicio: horaInicio ?? this.horaInicio,
+      horaFin: horaFin ?? this.horaFin,
+      cruzaMedianoche: cruzaMedianoche ?? this.cruzaMedianoche,
+      activo: activo ?? this.activo,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (lineaComercialVigenciaId.present) {
+      map['linea_comercial_vigencia_id'] = Variable<String>(
+        lineaComercialVigenciaId.value,
+      );
+    }
+    if (diaSemana.present) {
+      map['dia_semana'] = Variable<int>(diaSemana.value);
+    }
+    if (horaInicio.present) {
+      map['hora_inicio'] = Variable<int>(horaInicio.value);
+    }
+    if (horaFin.present) {
+      map['hora_fin'] = Variable<int>(horaFin.value);
+    }
+    if (cruzaMedianoche.present) {
+      map['cruza_medianoche'] = Variable<bool>(cruzaMedianoche.value);
+    }
+    if (activo.present) {
+      map['activo'] = Variable<bool>(activo.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServicioLineaComercialVigenciaHorarioCompanion(')
+          ..write('id: $id, ')
+          ..write('lineaComercialVigenciaId: $lineaComercialVigenciaId, ')
+          ..write('diaSemana: $diaSemana, ')
+          ..write('horaInicio: $horaInicio, ')
+          ..write('horaFin: $horaFin, ')
+          ..write('cruzaMedianoche: $cruzaMedianoche, ')
+          ..write('activo: $activo')
           ..write(')'))
         .toString();
   }
@@ -15358,6 +16718,20 @@ class $ConfiguracionCobroVigenciaTable extends ConfiguracionCobroVigencia
       'REFERENCES entidad_fiscal (id) ON DELETE RESTRICT',
     ),
   );
+  static const VerificationMeta _clientePortalIdMeta = const VerificationMeta(
+    'clientePortalId',
+  );
+  @override
+  late final GeneratedColumn<String> clientePortalId = GeneratedColumn<String>(
+    'cliente_portal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cliente_portal (id) ON DELETE RESTRICT',
+    ),
+  );
   static const VerificationMeta _portalNombreMeta = const VerificationMeta(
     'portalNombre',
   );
@@ -15472,6 +16846,7 @@ class $ConfiguracionCobroVigenciaTable extends ConfiguracionCobroVigencia
     metodo,
     requiereComplemento,
     entidadFiscalId,
+    clientePortalId,
     portalNombre,
     portalUrl,
     portalUsuario,
@@ -15593,6 +16968,15 @@ class $ConfiguracionCobroVigenciaTable extends ConfiguracionCobroVigencia
         entidadFiscalId.isAcceptableOrUnknown(
           data['entidad_fiscal_id']!,
           _entidadFiscalIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cliente_portal_id')) {
+      context.handle(
+        _clientePortalIdMeta,
+        clientePortalId.isAcceptableOrUnknown(
+          data['cliente_portal_id']!,
+          _clientePortalIdMeta,
         ),
       );
     }
@@ -15747,6 +17131,10 @@ class $ConfiguracionCobroVigenciaTable extends ConfiguracionCobroVigencia
         DriftSqlType.string,
         data['${effectivePrefix}entidad_fiscal_id'],
       ),
+      clientePortalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cliente_portal_id'],
+      ),
       portalNombre: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}portal_nombre'],
@@ -15814,6 +17202,13 @@ class ConfiguracionCobroVigenciaData extends DataClass
   /// — validado en `ConfiguracionCobroValidator`, no aquí (requeriría
   /// una subconsulta condicional que SQLite no expresa como `CHECK`).
   final String? entidadFiscalId;
+
+  /// Qué portal del Cliente usa esta vigencia (Etapa 15) — referencia,
+  /// nunca una copia (mismo patrón que `entidadFiscalId`): si el portal
+  /// se edita después, esta vigencia sigue apuntando a la misma fila y
+  /// ve el valor actual. `null` si el Cliente no tiene ningún portal
+  /// configurado, o si esta vigencia simplemente no usa ninguno.
+  final String? clientePortalId;
   final String? portalNombre;
   final String? portalUrl;
   final String? portalUsuario;
@@ -15841,6 +17236,7 @@ class ConfiguracionCobroVigenciaData extends DataClass
     required this.metodo,
     required this.requiereComplemento,
     this.entidadFiscalId,
+    this.clientePortalId,
     this.portalNombre,
     this.portalUrl,
     this.portalUsuario,
@@ -15867,6 +17263,9 @@ class ConfiguracionCobroVigenciaData extends DataClass
     map['requiere_complemento'] = Variable<bool>(requiereComplemento);
     if (!nullToAbsent || entidadFiscalId != null) {
       map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId);
+    }
+    if (!nullToAbsent || clientePortalId != null) {
+      map['cliente_portal_id'] = Variable<String>(clientePortalId);
     }
     if (!nullToAbsent || portalNombre != null) {
       map['portal_nombre'] = Variable<String>(portalNombre);
@@ -15913,6 +17312,10 @@ class ConfiguracionCobroVigenciaData extends DataClass
           entidadFiscalId == null && nullToAbsent
               ? const Value.absent()
               : Value(entidadFiscalId),
+      clientePortalId:
+          clientePortalId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(clientePortalId),
       portalNombre:
           portalNombre == null && nullToAbsent
               ? const Value.absent()
@@ -15971,6 +17374,7 @@ class ConfiguracionCobroVigenciaData extends DataClass
         json['requiereComplemento'],
       ),
       entidadFiscalId: serializer.fromJson<String?>(json['entidadFiscalId']),
+      clientePortalId: serializer.fromJson<String?>(json['clientePortalId']),
       portalNombre: serializer.fromJson<String?>(json['portalNombre']),
       portalUrl: serializer.fromJson<String?>(json['portalUrl']),
       portalUsuario: serializer.fromJson<String?>(json['portalUsuario']),
@@ -16004,6 +17408,7 @@ class ConfiguracionCobroVigenciaData extends DataClass
       'metodo': serializer.toJson<String>(metodo),
       'requiereComplemento': serializer.toJson<bool>(requiereComplemento),
       'entidadFiscalId': serializer.toJson<String?>(entidadFiscalId),
+      'clientePortalId': serializer.toJson<String?>(clientePortalId),
       'portalNombre': serializer.toJson<String?>(portalNombre),
       'portalUrl': serializer.toJson<String?>(portalUrl),
       'portalUsuario': serializer.toJson<String?>(portalUsuario),
@@ -16029,6 +17434,7 @@ class ConfiguracionCobroVigenciaData extends DataClass
     String? metodo,
     bool? requiereComplemento,
     Value<String?> entidadFiscalId = const Value.absent(),
+    Value<String?> clientePortalId = const Value.absent(),
     Value<String?> portalNombre = const Value.absent(),
     Value<String?> portalUrl = const Value.absent(),
     Value<String?> portalUsuario = const Value.absent(),
@@ -16052,6 +17458,8 @@ class ConfiguracionCobroVigenciaData extends DataClass
     requiereComplemento: requiereComplemento ?? this.requiereComplemento,
     entidadFiscalId:
         entidadFiscalId.present ? entidadFiscalId.value : this.entidadFiscalId,
+    clientePortalId:
+        clientePortalId.present ? clientePortalId.value : this.clientePortalId,
     portalNombre: portalNombre.present ? portalNombre.value : this.portalNombre,
     portalUrl: portalUrl.present ? portalUrl.value : this.portalUrl,
     portalUsuario:
@@ -16112,6 +17520,10 @@ class ConfiguracionCobroVigenciaData extends DataClass
           data.entidadFiscalId.present
               ? data.entidadFiscalId.value
               : this.entidadFiscalId,
+      clientePortalId:
+          data.clientePortalId.present
+              ? data.clientePortalId.value
+              : this.clientePortalId,
       portalNombre:
           data.portalNombre.present
               ? data.portalNombre.value
@@ -16163,6 +17575,7 @@ class ConfiguracionCobroVigenciaData extends DataClass
           ..write('metodo: $metodo, ')
           ..write('requiereComplemento: $requiereComplemento, ')
           ..write('entidadFiscalId: $entidadFiscalId, ')
+          ..write('clientePortalId: $clientePortalId, ')
           ..write('portalNombre: $portalNombre, ')
           ..write('portalUrl: $portalUrl, ')
           ..write('portalUsuario: $portalUsuario, ')
@@ -16190,6 +17603,7 @@ class ConfiguracionCobroVigenciaData extends DataClass
     metodo,
     requiereComplemento,
     entidadFiscalId,
+    clientePortalId,
     portalNombre,
     portalUrl,
     portalUsuario,
@@ -16216,6 +17630,7 @@ class ConfiguracionCobroVigenciaData extends DataClass
           other.metodo == this.metodo &&
           other.requiereComplemento == this.requiereComplemento &&
           other.entidadFiscalId == this.entidadFiscalId &&
+          other.clientePortalId == this.clientePortalId &&
           other.portalNombre == this.portalNombre &&
           other.portalUrl == this.portalUrl &&
           other.portalUsuario == this.portalUsuario &&
@@ -16241,6 +17656,7 @@ class ConfiguracionCobroVigenciaCompanion
   final Value<String> metodo;
   final Value<bool> requiereComplemento;
   final Value<String?> entidadFiscalId;
+  final Value<String?> clientePortalId;
   final Value<String?> portalNombre;
   final Value<String?> portalUrl;
   final Value<String?> portalUsuario;
@@ -16264,6 +17680,7 @@ class ConfiguracionCobroVigenciaCompanion
     this.metodo = const Value.absent(),
     this.requiereComplemento = const Value.absent(),
     this.entidadFiscalId = const Value.absent(),
+    this.clientePortalId = const Value.absent(),
     this.portalNombre = const Value.absent(),
     this.portalUrl = const Value.absent(),
     this.portalUsuario = const Value.absent(),
@@ -16288,6 +17705,7 @@ class ConfiguracionCobroVigenciaCompanion
     required String metodo,
     this.requiereComplemento = const Value.absent(),
     this.entidadFiscalId = const Value.absent(),
+    this.clientePortalId = const Value.absent(),
     this.portalNombre = const Value.absent(),
     this.portalUrl = const Value.absent(),
     this.portalUsuario = const Value.absent(),
@@ -16318,6 +17736,7 @@ class ConfiguracionCobroVigenciaCompanion
     Expression<String>? metodo,
     Expression<bool>? requiereComplemento,
     Expression<String>? entidadFiscalId,
+    Expression<String>? clientePortalId,
     Expression<String>? portalNombre,
     Expression<String>? portalUrl,
     Expression<String>? portalUsuario,
@@ -16344,6 +17763,7 @@ class ConfiguracionCobroVigenciaCompanion
       if (requiereComplemento != null)
         'requiere_complemento': requiereComplemento,
       if (entidadFiscalId != null) 'entidad_fiscal_id': entidadFiscalId,
+      if (clientePortalId != null) 'cliente_portal_id': clientePortalId,
       if (portalNombre != null) 'portal_nombre': portalNombre,
       if (portalUrl != null) 'portal_url': portalUrl,
       if (portalUsuario != null) 'portal_usuario': portalUsuario,
@@ -16372,6 +17792,7 @@ class ConfiguracionCobroVigenciaCompanion
     Value<String>? metodo,
     Value<bool>? requiereComplemento,
     Value<String?>? entidadFiscalId,
+    Value<String?>? clientePortalId,
     Value<String?>? portalNombre,
     Value<String?>? portalUrl,
     Value<String?>? portalUsuario,
@@ -16396,6 +17817,7 @@ class ConfiguracionCobroVigenciaCompanion
       metodo: metodo ?? this.metodo,
       requiereComplemento: requiereComplemento ?? this.requiereComplemento,
       entidadFiscalId: entidadFiscalId ?? this.entidadFiscalId,
+      clientePortalId: clientePortalId ?? this.clientePortalId,
       portalNombre: portalNombre ?? this.portalNombre,
       portalUrl: portalUrl ?? this.portalUrl,
       portalUsuario: portalUsuario ?? this.portalUsuario,
@@ -16450,6 +17872,9 @@ class ConfiguracionCobroVigenciaCompanion
     if (entidadFiscalId.present) {
       map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId.value);
     }
+    if (clientePortalId.present) {
+      map['cliente_portal_id'] = Variable<String>(clientePortalId.value);
+    }
     if (portalNombre.present) {
       map['portal_nombre'] = Variable<String>(portalNombre.value);
     }
@@ -16500,6 +17925,7 @@ class ConfiguracionCobroVigenciaCompanion
           ..write('metodo: $metodo, ')
           ..write('requiereComplemento: $requiereComplemento, ')
           ..write('entidadFiscalId: $entidadFiscalId, ')
+          ..write('clientePortalId: $clientePortalId, ')
           ..write('portalNombre: $portalNombre, ')
           ..write('portalUrl: $portalUrl, ')
           ..write('portalUsuario: $portalUsuario, ')
@@ -16810,28 +18236,20 @@ class ConfiguracionCobroCorreoCompanion
   }
 }
 
-class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
-    with
-        TableInfo<
-          $ConfiguracionCobroReglaEventoTable,
-          ConfiguracionCobroReglaEventoData
-        > {
+class $ConfiguracionCobroEtapaTable extends ConfiguracionCobroEtapa
+    with TableInfo<$ConfiguracionCobroEtapaTable, ConfiguracionCobroEtapaData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $ConfiguracionCobroReglaEventoTable(this.attachedDatabase, [this._alias]);
+  $ConfiguracionCobroEtapaTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _configuracionCobroVigenciaIdMeta =
       const VerificationMeta('configuracionCobroVigenciaId');
@@ -16847,15 +18265,33 @@ class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
           'REFERENCES configuracion_cobro_vigencia (id) ON DELETE CASCADE',
         ),
       );
-  static const VerificationMeta _tipoEventoMeta = const VerificationMeta(
-    'tipoEvento',
+  static const VerificationMeta _tipoSistemaMeta = const VerificationMeta(
+    'tipoSistema',
   );
   @override
-  late final GeneratedColumn<String> tipoEvento = GeneratedColumn<String>(
-    'tipo_evento',
+  late final GeneratedColumn<String> tipoSistema = GeneratedColumn<String>(
+    'tipo_sistema',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
     aliasedName,
     false,
-    type: DriftSqlType.string,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _tipoReglaMeta = const VerificationMeta(
@@ -16865,9 +18301,9 @@ class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
   late final GeneratedColumn<String> tipoRegla = GeneratedColumn<String>(
     'tipo_regla',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _mesRelativoMeta = const VerificationMeta(
     'mesRelativo',
@@ -16913,55 +18349,79 @@ class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _offsetDiasHabilesMeta = const VerificationMeta(
-    'offsetDiasHabiles',
+  static const VerificationMeta _offsetDiasMeta = const VerificationMeta(
+    'offsetDias',
   );
   @override
-  late final GeneratedColumn<int> offsetDiasHabiles = GeneratedColumn<int>(
-    'offset_dias_habiles',
+  late final GeneratedColumn<int> offsetDias = GeneratedColumn<int>(
+    'offset_dias',
     aliasedName,
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _eventoReferenciaMeta = const VerificationMeta(
-    'eventoReferencia',
+  static const VerificationMeta _etapaReferenciaIdMeta = const VerificationMeta(
+    'etapaReferenciaId',
   );
   @override
-  late final GeneratedColumn<String> eventoReferencia = GeneratedColumn<String>(
-    'evento_referencia',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
+  late final GeneratedColumn<String> etapaReferenciaId =
+      GeneratedColumn<String>(
+        'etapa_referencia_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES configuracion_cobro_etapa (id) ON DELETE RESTRICT',
+        ),
+      );
+  static const VerificationMeta _referenciaCierrePeriodoMeta =
+      const VerificationMeta('referenciaCierrePeriodo');
+  @override
+  late final GeneratedColumn<bool> referenciaCierrePeriodo =
+      GeneratedColumn<bool>(
+        'referencia_cierre_periodo',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("referencia_cierre_periodo" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     configuracionCobroVigenciaId,
-    tipoEvento,
+    tipoSistema,
+    nombre,
+    orden,
     tipoRegla,
     mesRelativo,
     diaDelMes,
     ordinalSemana,
     diaSemana,
-    offsetDiasHabiles,
-    eventoReferencia,
+    offsetDias,
+    etapaReferenciaId,
+    referenciaCierrePeriodo,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'configuracion_cobro_regla_evento';
+  static const String $name = 'configuracion_cobro_etapa';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ConfiguracionCobroReglaEventoData> instance, {
+    Insertable<ConfiguracionCobroEtapaData> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('configuracion_cobro_vigencia_id')) {
       context.handle(
@@ -16974,21 +18434,34 @@ class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
     } else if (isInserting) {
       context.missing(_configuracionCobroVigenciaIdMeta);
     }
-    if (data.containsKey('tipo_evento')) {
+    if (data.containsKey('tipo_sistema')) {
       context.handle(
-        _tipoEventoMeta,
-        tipoEvento.isAcceptableOrUnknown(data['tipo_evento']!, _tipoEventoMeta),
+        _tipoSistemaMeta,
+        tipoSistema.isAcceptableOrUnknown(
+          data['tipo_sistema']!,
+          _tipoSistemaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
       );
     } else if (isInserting) {
-      context.missing(_tipoEventoMeta);
+      context.missing(_ordenMeta);
     }
     if (data.containsKey('tipo_regla')) {
       context.handle(
         _tipoReglaMeta,
         tipoRegla.isAcceptableOrUnknown(data['tipo_regla']!, _tipoReglaMeta),
       );
-    } else if (isInserting) {
-      context.missing(_tipoReglaMeta);
     }
     if (data.containsKey('mes_relativo')) {
       context.handle(
@@ -17020,21 +18493,27 @@ class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
         diaSemana.isAcceptableOrUnknown(data['dia_semana']!, _diaSemanaMeta),
       );
     }
-    if (data.containsKey('offset_dias_habiles')) {
+    if (data.containsKey('offset_dias')) {
       context.handle(
-        _offsetDiasHabilesMeta,
-        offsetDiasHabiles.isAcceptableOrUnknown(
-          data['offset_dias_habiles']!,
-          _offsetDiasHabilesMeta,
+        _offsetDiasMeta,
+        offsetDias.isAcceptableOrUnknown(data['offset_dias']!, _offsetDiasMeta),
+      );
+    }
+    if (data.containsKey('etapa_referencia_id')) {
+      context.handle(
+        _etapaReferenciaIdMeta,
+        etapaReferenciaId.isAcceptableOrUnknown(
+          data['etapa_referencia_id']!,
+          _etapaReferenciaIdMeta,
         ),
       );
     }
-    if (data.containsKey('evento_referencia')) {
+    if (data.containsKey('referencia_cierre_periodo')) {
       context.handle(
-        _eventoReferenciaMeta,
-        eventoReferencia.isAcceptableOrUnknown(
-          data['evento_referencia']!,
-          _eventoReferenciaMeta,
+        _referenciaCierrePeriodoMeta,
+        referenciaCierrePeriodo.isAcceptableOrUnknown(
+          data['referencia_cierre_periodo']!,
+          _referenciaCierrePeriodoMeta,
         ),
       );
     }
@@ -17044,15 +18523,15 @@ class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  ConfiguracionCobroReglaEventoData map(
+  ConfiguracionCobroEtapaData map(
     Map<String, dynamic> data, {
     String? tablePrefix,
   }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ConfiguracionCobroReglaEventoData(
+    return ConfiguracionCobroEtapaData(
       id:
           attachedDatabase.typeMapping.read(
-            DriftSqlType.int,
+            DriftSqlType.string,
             data['${effectivePrefix}id'],
           )!,
       configuracionCobroVigenciaId:
@@ -17060,16 +18539,23 @@ class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
             DriftSqlType.string,
             data['${effectivePrefix}configuracion_cobro_vigencia_id'],
           )!,
-      tipoEvento:
+      tipoSistema: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo_sistema'],
+      ),
+      nombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nombre'],
+      ),
+      orden:
           attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}tipo_evento'],
+            DriftSqlType.int,
+            data['${effectivePrefix}orden'],
           )!,
-      tipoRegla:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}tipo_regla'],
-          )!,
+      tipoRegla: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo_regla'],
+      ),
       mesRelativo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}mes_relativo'],
@@ -17086,29 +18572,36 @@ class $ConfiguracionCobroReglaEventoTable extends ConfiguracionCobroReglaEvento
         DriftSqlType.string,
         data['${effectivePrefix}dia_semana'],
       ),
-      offsetDiasHabiles: attachedDatabase.typeMapping.read(
+      offsetDias: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}offset_dias_habiles'],
+        data['${effectivePrefix}offset_dias'],
       ),
-      eventoReferencia: attachedDatabase.typeMapping.read(
+      etapaReferenciaId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}evento_referencia'],
+        data['${effectivePrefix}etapa_referencia_id'],
       ),
+      referenciaCierrePeriodo:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}referencia_cierre_periodo'],
+          )!,
     );
   }
 
   @override
-  $ConfiguracionCobroReglaEventoTable createAlias(String alias) {
-    return $ConfiguracionCobroReglaEventoTable(attachedDatabase, alias);
+  $ConfiguracionCobroEtapaTable createAlias(String alias) {
+    return $ConfiguracionCobroEtapaTable(attachedDatabase, alias);
   }
 }
 
-class ConfiguracionCobroReglaEventoData extends DataClass
-    implements Insertable<ConfiguracionCobroReglaEventoData> {
-  final int id;
+class ConfiguracionCobroEtapaData extends DataClass
+    implements Insertable<ConfiguracionCobroEtapaData> {
+  final String id;
   final String configuracionCobroVigenciaId;
-  final String tipoEvento;
-  final String tipoRegla;
+  final String? tipoSistema;
+  final String? nombre;
+  final int orden;
+  final String? tipoRegla;
 
   /// Solo aplica a `diaFijoDelMes`/`nEsimoDiaSemanaDelMes`.
   final String? mesRelativo;
@@ -17122,37 +18615,43 @@ class ConfiguracionCobroReglaEventoData extends DataClass
   /// Aplica a `nEsimoDiaSemanaDelMes` y `mismoDiaSemanaSiguienteA`.
   final String? diaSemana;
 
-  /// Solo aplica a `diasHabilesDespuesDe`.
-  final int? offsetDiasHabiles;
-
-  /// De qué evento de la misma vigencia depende — solo aplica a
-  /// `diasHabilesDespuesDe`/`mismoDiaSemanaSiguienteA`. Emisión nunca
-  /// tiene un valor aquí (no puede depender de otro evento); las
-  /// combinaciones válidas (Procesamiento→Emisión;
-  /// Pago esperado→Emisión o →Procesamiento; nunca auto-referencia ni
-  /// ciclos) se validan en el dominio, no aquí.
-  final String? eventoReferencia;
-  const ConfiguracionCobroReglaEventoData({
+  /// Aplica a `diasHabilesDespuesDe`/`diasCalendarioDespuesDe` — el
+  /// mismo valor 0 en la variante de calendario expresa "mismo día".
+  final int? offsetDias;
+  final String? etapaReferenciaId;
+  final bool referenciaCierrePeriodo;
+  const ConfiguracionCobroEtapaData({
     required this.id,
     required this.configuracionCobroVigenciaId,
-    required this.tipoEvento,
-    required this.tipoRegla,
+    this.tipoSistema,
+    this.nombre,
+    required this.orden,
+    this.tipoRegla,
     this.mesRelativo,
     this.diaDelMes,
     this.ordinalSemana,
     this.diaSemana,
-    this.offsetDiasHabiles,
-    this.eventoReferencia,
+    this.offsetDias,
+    this.etapaReferenciaId,
+    required this.referenciaCierrePeriodo,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['configuracion_cobro_vigencia_id'] = Variable<String>(
       configuracionCobroVigenciaId,
     );
-    map['tipo_evento'] = Variable<String>(tipoEvento);
-    map['tipo_regla'] = Variable<String>(tipoRegla);
+    if (!nullToAbsent || tipoSistema != null) {
+      map['tipo_sistema'] = Variable<String>(tipoSistema);
+    }
+    if (!nullToAbsent || nombre != null) {
+      map['nombre'] = Variable<String>(nombre);
+    }
+    map['orden'] = Variable<int>(orden);
+    if (!nullToAbsent || tipoRegla != null) {
+      map['tipo_regla'] = Variable<String>(tipoRegla);
+    }
     if (!nullToAbsent || mesRelativo != null) {
       map['mes_relativo'] = Variable<String>(mesRelativo);
     }
@@ -17165,21 +18664,31 @@ class ConfiguracionCobroReglaEventoData extends DataClass
     if (!nullToAbsent || diaSemana != null) {
       map['dia_semana'] = Variable<String>(diaSemana);
     }
-    if (!nullToAbsent || offsetDiasHabiles != null) {
-      map['offset_dias_habiles'] = Variable<int>(offsetDiasHabiles);
+    if (!nullToAbsent || offsetDias != null) {
+      map['offset_dias'] = Variable<int>(offsetDias);
     }
-    if (!nullToAbsent || eventoReferencia != null) {
-      map['evento_referencia'] = Variable<String>(eventoReferencia);
+    if (!nullToAbsent || etapaReferenciaId != null) {
+      map['etapa_referencia_id'] = Variable<String>(etapaReferenciaId);
     }
+    map['referencia_cierre_periodo'] = Variable<bool>(referenciaCierrePeriodo);
     return map;
   }
 
-  ConfiguracionCobroReglaEventoCompanion toCompanion(bool nullToAbsent) {
-    return ConfiguracionCobroReglaEventoCompanion(
+  ConfiguracionCobroEtapaCompanion toCompanion(bool nullToAbsent) {
+    return ConfiguracionCobroEtapaCompanion(
       id: Value(id),
       configuracionCobroVigenciaId: Value(configuracionCobroVigenciaId),
-      tipoEvento: Value(tipoEvento),
-      tipoRegla: Value(tipoRegla),
+      tipoSistema:
+          tipoSistema == null && nullToAbsent
+              ? const Value.absent()
+              : Value(tipoSistema),
+      nombre:
+          nombre == null && nullToAbsent ? const Value.absent() : Value(nombre),
+      orden: Value(orden),
+      tipoRegla:
+          tipoRegla == null && nullToAbsent
+              ? const Value.absent()
+              : Value(tipoRegla),
       mesRelativo:
           mesRelativo == null && nullToAbsent
               ? const Value.absent()
@@ -17196,98 +18705,117 @@ class ConfiguracionCobroReglaEventoData extends DataClass
           diaSemana == null && nullToAbsent
               ? const Value.absent()
               : Value(diaSemana),
-      offsetDiasHabiles:
-          offsetDiasHabiles == null && nullToAbsent
+      offsetDias:
+          offsetDias == null && nullToAbsent
               ? const Value.absent()
-              : Value(offsetDiasHabiles),
-      eventoReferencia:
-          eventoReferencia == null && nullToAbsent
+              : Value(offsetDias),
+      etapaReferenciaId:
+          etapaReferenciaId == null && nullToAbsent
               ? const Value.absent()
-              : Value(eventoReferencia),
+              : Value(etapaReferenciaId),
+      referenciaCierrePeriodo: Value(referenciaCierrePeriodo),
     );
   }
 
-  factory ConfiguracionCobroReglaEventoData.fromJson(
+  factory ConfiguracionCobroEtapaData.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ConfiguracionCobroReglaEventoData(
-      id: serializer.fromJson<int>(json['id']),
+    return ConfiguracionCobroEtapaData(
+      id: serializer.fromJson<String>(json['id']),
       configuracionCobroVigenciaId: serializer.fromJson<String>(
         json['configuracionCobroVigenciaId'],
       ),
-      tipoEvento: serializer.fromJson<String>(json['tipoEvento']),
-      tipoRegla: serializer.fromJson<String>(json['tipoRegla']),
+      tipoSistema: serializer.fromJson<String?>(json['tipoSistema']),
+      nombre: serializer.fromJson<String?>(json['nombre']),
+      orden: serializer.fromJson<int>(json['orden']),
+      tipoRegla: serializer.fromJson<String?>(json['tipoRegla']),
       mesRelativo: serializer.fromJson<String?>(json['mesRelativo']),
       diaDelMes: serializer.fromJson<int?>(json['diaDelMes']),
       ordinalSemana: serializer.fromJson<String?>(json['ordinalSemana']),
       diaSemana: serializer.fromJson<String?>(json['diaSemana']),
-      offsetDiasHabiles: serializer.fromJson<int?>(json['offsetDiasHabiles']),
-      eventoReferencia: serializer.fromJson<String?>(json['eventoReferencia']),
+      offsetDias: serializer.fromJson<int?>(json['offsetDias']),
+      etapaReferenciaId: serializer.fromJson<String?>(
+        json['etapaReferenciaId'],
+      ),
+      referenciaCierrePeriodo: serializer.fromJson<bool>(
+        json['referenciaCierrePeriodo'],
+      ),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'configuracionCobroVigenciaId': serializer.toJson<String>(
         configuracionCobroVigenciaId,
       ),
-      'tipoEvento': serializer.toJson<String>(tipoEvento),
-      'tipoRegla': serializer.toJson<String>(tipoRegla),
+      'tipoSistema': serializer.toJson<String?>(tipoSistema),
+      'nombre': serializer.toJson<String?>(nombre),
+      'orden': serializer.toJson<int>(orden),
+      'tipoRegla': serializer.toJson<String?>(tipoRegla),
       'mesRelativo': serializer.toJson<String?>(mesRelativo),
       'diaDelMes': serializer.toJson<int?>(diaDelMes),
       'ordinalSemana': serializer.toJson<String?>(ordinalSemana),
       'diaSemana': serializer.toJson<String?>(diaSemana),
-      'offsetDiasHabiles': serializer.toJson<int?>(offsetDiasHabiles),
-      'eventoReferencia': serializer.toJson<String?>(eventoReferencia),
+      'offsetDias': serializer.toJson<int?>(offsetDias),
+      'etapaReferenciaId': serializer.toJson<String?>(etapaReferenciaId),
+      'referenciaCierrePeriodo': serializer.toJson<bool>(
+        referenciaCierrePeriodo,
+      ),
     };
   }
 
-  ConfiguracionCobroReglaEventoData copyWith({
-    int? id,
+  ConfiguracionCobroEtapaData copyWith({
+    String? id,
     String? configuracionCobroVigenciaId,
-    String? tipoEvento,
-    String? tipoRegla,
+    Value<String?> tipoSistema = const Value.absent(),
+    Value<String?> nombre = const Value.absent(),
+    int? orden,
+    Value<String?> tipoRegla = const Value.absent(),
     Value<String?> mesRelativo = const Value.absent(),
     Value<int?> diaDelMes = const Value.absent(),
     Value<String?> ordinalSemana = const Value.absent(),
     Value<String?> diaSemana = const Value.absent(),
-    Value<int?> offsetDiasHabiles = const Value.absent(),
-    Value<String?> eventoReferencia = const Value.absent(),
-  }) => ConfiguracionCobroReglaEventoData(
+    Value<int?> offsetDias = const Value.absent(),
+    Value<String?> etapaReferenciaId = const Value.absent(),
+    bool? referenciaCierrePeriodo,
+  }) => ConfiguracionCobroEtapaData(
     id: id ?? this.id,
     configuracionCobroVigenciaId:
         configuracionCobroVigenciaId ?? this.configuracionCobroVigenciaId,
-    tipoEvento: tipoEvento ?? this.tipoEvento,
-    tipoRegla: tipoRegla ?? this.tipoRegla,
+    tipoSistema: tipoSistema.present ? tipoSistema.value : this.tipoSistema,
+    nombre: nombre.present ? nombre.value : this.nombre,
+    orden: orden ?? this.orden,
+    tipoRegla: tipoRegla.present ? tipoRegla.value : this.tipoRegla,
     mesRelativo: mesRelativo.present ? mesRelativo.value : this.mesRelativo,
     diaDelMes: diaDelMes.present ? diaDelMes.value : this.diaDelMes,
     ordinalSemana:
         ordinalSemana.present ? ordinalSemana.value : this.ordinalSemana,
     diaSemana: diaSemana.present ? diaSemana.value : this.diaSemana,
-    offsetDiasHabiles:
-        offsetDiasHabiles.present
-            ? offsetDiasHabiles.value
-            : this.offsetDiasHabiles,
-    eventoReferencia:
-        eventoReferencia.present
-            ? eventoReferencia.value
-            : this.eventoReferencia,
+    offsetDias: offsetDias.present ? offsetDias.value : this.offsetDias,
+    etapaReferenciaId:
+        etapaReferenciaId.present
+            ? etapaReferenciaId.value
+            : this.etapaReferenciaId,
+    referenciaCierrePeriodo:
+        referenciaCierrePeriodo ?? this.referenciaCierrePeriodo,
   );
-  ConfiguracionCobroReglaEventoData copyWithCompanion(
-    ConfiguracionCobroReglaEventoCompanion data,
+  ConfiguracionCobroEtapaData copyWithCompanion(
+    ConfiguracionCobroEtapaCompanion data,
   ) {
-    return ConfiguracionCobroReglaEventoData(
+    return ConfiguracionCobroEtapaData(
       id: data.id.present ? data.id.value : this.id,
       configuracionCobroVigenciaId:
           data.configuracionCobroVigenciaId.present
               ? data.configuracionCobroVigenciaId.value
               : this.configuracionCobroVigenciaId,
-      tipoEvento:
-          data.tipoEvento.present ? data.tipoEvento.value : this.tipoEvento,
+      tipoSistema:
+          data.tipoSistema.present ? data.tipoSistema.value : this.tipoSistema,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      orden: data.orden.present ? data.orden.value : this.orden,
       tipoRegla: data.tipoRegla.present ? data.tipoRegla.value : this.tipoRegla,
       mesRelativo:
           data.mesRelativo.present ? data.mesRelativo.value : this.mesRelativo,
@@ -17297,32 +18825,37 @@ class ConfiguracionCobroReglaEventoData extends DataClass
               ? data.ordinalSemana.value
               : this.ordinalSemana,
       diaSemana: data.diaSemana.present ? data.diaSemana.value : this.diaSemana,
-      offsetDiasHabiles:
-          data.offsetDiasHabiles.present
-              ? data.offsetDiasHabiles.value
-              : this.offsetDiasHabiles,
-      eventoReferencia:
-          data.eventoReferencia.present
-              ? data.eventoReferencia.value
-              : this.eventoReferencia,
+      offsetDias:
+          data.offsetDias.present ? data.offsetDias.value : this.offsetDias,
+      etapaReferenciaId:
+          data.etapaReferenciaId.present
+              ? data.etapaReferenciaId.value
+              : this.etapaReferenciaId,
+      referenciaCierrePeriodo:
+          data.referenciaCierrePeriodo.present
+              ? data.referenciaCierrePeriodo.value
+              : this.referenciaCierrePeriodo,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('ConfiguracionCobroReglaEventoData(')
+    return (StringBuffer('ConfiguracionCobroEtapaData(')
           ..write('id: $id, ')
           ..write(
             'configuracionCobroVigenciaId: $configuracionCobroVigenciaId, ',
           )
-          ..write('tipoEvento: $tipoEvento, ')
+          ..write('tipoSistema: $tipoSistema, ')
+          ..write('nombre: $nombre, ')
+          ..write('orden: $orden, ')
           ..write('tipoRegla: $tipoRegla, ')
           ..write('mesRelativo: $mesRelativo, ')
           ..write('diaDelMes: $diaDelMes, ')
           ..write('ordinalSemana: $ordinalSemana, ')
           ..write('diaSemana: $diaSemana, ')
-          ..write('offsetDiasHabiles: $offsetDiasHabiles, ')
-          ..write('eventoReferencia: $eventoReferencia')
+          ..write('offsetDias: $offsetDias, ')
+          ..write('etapaReferenciaId: $etapaReferenciaId, ')
+          ..write('referenciaCierrePeriodo: $referenciaCierrePeriodo')
           ..write(')'))
         .toString();
   }
@@ -17331,121 +18864,157 @@ class ConfiguracionCobroReglaEventoData extends DataClass
   int get hashCode => Object.hash(
     id,
     configuracionCobroVigenciaId,
-    tipoEvento,
+    tipoSistema,
+    nombre,
+    orden,
     tipoRegla,
     mesRelativo,
     diaDelMes,
     ordinalSemana,
     diaSemana,
-    offsetDiasHabiles,
-    eventoReferencia,
+    offsetDias,
+    etapaReferenciaId,
+    referenciaCierrePeriodo,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ConfiguracionCobroReglaEventoData &&
+      (other is ConfiguracionCobroEtapaData &&
           other.id == this.id &&
           other.configuracionCobroVigenciaId ==
               this.configuracionCobroVigenciaId &&
-          other.tipoEvento == this.tipoEvento &&
+          other.tipoSistema == this.tipoSistema &&
+          other.nombre == this.nombre &&
+          other.orden == this.orden &&
           other.tipoRegla == this.tipoRegla &&
           other.mesRelativo == this.mesRelativo &&
           other.diaDelMes == this.diaDelMes &&
           other.ordinalSemana == this.ordinalSemana &&
           other.diaSemana == this.diaSemana &&
-          other.offsetDiasHabiles == this.offsetDiasHabiles &&
-          other.eventoReferencia == this.eventoReferencia);
+          other.offsetDias == this.offsetDias &&
+          other.etapaReferenciaId == this.etapaReferenciaId &&
+          other.referenciaCierrePeriodo == this.referenciaCierrePeriodo);
 }
 
-class ConfiguracionCobroReglaEventoCompanion
-    extends UpdateCompanion<ConfiguracionCobroReglaEventoData> {
-  final Value<int> id;
+class ConfiguracionCobroEtapaCompanion
+    extends UpdateCompanion<ConfiguracionCobroEtapaData> {
+  final Value<String> id;
   final Value<String> configuracionCobroVigenciaId;
-  final Value<String> tipoEvento;
-  final Value<String> tipoRegla;
+  final Value<String?> tipoSistema;
+  final Value<String?> nombre;
+  final Value<int> orden;
+  final Value<String?> tipoRegla;
   final Value<String?> mesRelativo;
   final Value<int?> diaDelMes;
   final Value<String?> ordinalSemana;
   final Value<String?> diaSemana;
-  final Value<int?> offsetDiasHabiles;
-  final Value<String?> eventoReferencia;
-  const ConfiguracionCobroReglaEventoCompanion({
+  final Value<int?> offsetDias;
+  final Value<String?> etapaReferenciaId;
+  final Value<bool> referenciaCierrePeriodo;
+  final Value<int> rowid;
+  const ConfiguracionCobroEtapaCompanion({
     this.id = const Value.absent(),
     this.configuracionCobroVigenciaId = const Value.absent(),
-    this.tipoEvento = const Value.absent(),
+    this.tipoSistema = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.orden = const Value.absent(),
     this.tipoRegla = const Value.absent(),
     this.mesRelativo = const Value.absent(),
     this.diaDelMes = const Value.absent(),
     this.ordinalSemana = const Value.absent(),
     this.diaSemana = const Value.absent(),
-    this.offsetDiasHabiles = const Value.absent(),
-    this.eventoReferencia = const Value.absent(),
+    this.offsetDias = const Value.absent(),
+    this.etapaReferenciaId = const Value.absent(),
+    this.referenciaCierrePeriodo = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
-  ConfiguracionCobroReglaEventoCompanion.insert({
-    this.id = const Value.absent(),
+  ConfiguracionCobroEtapaCompanion.insert({
+    required String id,
     required String configuracionCobroVigenciaId,
-    required String tipoEvento,
-    required String tipoRegla,
+    this.tipoSistema = const Value.absent(),
+    this.nombre = const Value.absent(),
+    required int orden,
+    this.tipoRegla = const Value.absent(),
     this.mesRelativo = const Value.absent(),
     this.diaDelMes = const Value.absent(),
     this.ordinalSemana = const Value.absent(),
     this.diaSemana = const Value.absent(),
-    this.offsetDiasHabiles = const Value.absent(),
-    this.eventoReferencia = const Value.absent(),
-  }) : configuracionCobroVigenciaId = Value(configuracionCobroVigenciaId),
-       tipoEvento = Value(tipoEvento),
-       tipoRegla = Value(tipoRegla);
-  static Insertable<ConfiguracionCobroReglaEventoData> custom({
-    Expression<int>? id,
+    this.offsetDias = const Value.absent(),
+    this.etapaReferenciaId = const Value.absent(),
+    this.referenciaCierrePeriodo = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       configuracionCobroVigenciaId = Value(configuracionCobroVigenciaId),
+       orden = Value(orden);
+  static Insertable<ConfiguracionCobroEtapaData> custom({
+    Expression<String>? id,
     Expression<String>? configuracionCobroVigenciaId,
-    Expression<String>? tipoEvento,
+    Expression<String>? tipoSistema,
+    Expression<String>? nombre,
+    Expression<int>? orden,
     Expression<String>? tipoRegla,
     Expression<String>? mesRelativo,
     Expression<int>? diaDelMes,
     Expression<String>? ordinalSemana,
     Expression<String>? diaSemana,
-    Expression<int>? offsetDiasHabiles,
-    Expression<String>? eventoReferencia,
+    Expression<int>? offsetDias,
+    Expression<String>? etapaReferenciaId,
+    Expression<bool>? referenciaCierrePeriodo,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (configuracionCobroVigenciaId != null)
         'configuracion_cobro_vigencia_id': configuracionCobroVigenciaId,
-      if (tipoEvento != null) 'tipo_evento': tipoEvento,
+      if (tipoSistema != null) 'tipo_sistema': tipoSistema,
+      if (nombre != null) 'nombre': nombre,
+      if (orden != null) 'orden': orden,
       if (tipoRegla != null) 'tipo_regla': tipoRegla,
       if (mesRelativo != null) 'mes_relativo': mesRelativo,
       if (diaDelMes != null) 'dia_del_mes': diaDelMes,
       if (ordinalSemana != null) 'ordinal_semana': ordinalSemana,
       if (diaSemana != null) 'dia_semana': diaSemana,
-      if (offsetDiasHabiles != null) 'offset_dias_habiles': offsetDiasHabiles,
-      if (eventoReferencia != null) 'evento_referencia': eventoReferencia,
+      if (offsetDias != null) 'offset_dias': offsetDias,
+      if (etapaReferenciaId != null) 'etapa_referencia_id': etapaReferenciaId,
+      if (referenciaCierrePeriodo != null)
+        'referencia_cierre_periodo': referenciaCierrePeriodo,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
-  ConfiguracionCobroReglaEventoCompanion copyWith({
-    Value<int>? id,
+  ConfiguracionCobroEtapaCompanion copyWith({
+    Value<String>? id,
     Value<String>? configuracionCobroVigenciaId,
-    Value<String>? tipoEvento,
-    Value<String>? tipoRegla,
+    Value<String?>? tipoSistema,
+    Value<String?>? nombre,
+    Value<int>? orden,
+    Value<String?>? tipoRegla,
     Value<String?>? mesRelativo,
     Value<int?>? diaDelMes,
     Value<String?>? ordinalSemana,
     Value<String?>? diaSemana,
-    Value<int?>? offsetDiasHabiles,
-    Value<String?>? eventoReferencia,
+    Value<int?>? offsetDias,
+    Value<String?>? etapaReferenciaId,
+    Value<bool>? referenciaCierrePeriodo,
+    Value<int>? rowid,
   }) {
-    return ConfiguracionCobroReglaEventoCompanion(
+    return ConfiguracionCobroEtapaCompanion(
       id: id ?? this.id,
       configuracionCobroVigenciaId:
           configuracionCobroVigenciaId ?? this.configuracionCobroVigenciaId,
-      tipoEvento: tipoEvento ?? this.tipoEvento,
+      tipoSistema: tipoSistema ?? this.tipoSistema,
+      nombre: nombre ?? this.nombre,
+      orden: orden ?? this.orden,
       tipoRegla: tipoRegla ?? this.tipoRegla,
       mesRelativo: mesRelativo ?? this.mesRelativo,
       diaDelMes: diaDelMes ?? this.diaDelMes,
       ordinalSemana: ordinalSemana ?? this.ordinalSemana,
       diaSemana: diaSemana ?? this.diaSemana,
-      offsetDiasHabiles: offsetDiasHabiles ?? this.offsetDiasHabiles,
-      eventoReferencia: eventoReferencia ?? this.eventoReferencia,
+      offsetDias: offsetDias ?? this.offsetDias,
+      etapaReferenciaId: etapaReferenciaId ?? this.etapaReferenciaId,
+      referenciaCierrePeriodo:
+          referenciaCierrePeriodo ?? this.referenciaCierrePeriodo,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -17453,15 +19022,21 @@ class ConfiguracionCobroReglaEventoCompanion
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (configuracionCobroVigenciaId.present) {
       map['configuracion_cobro_vigencia_id'] = Variable<String>(
         configuracionCobroVigenciaId.value,
       );
     }
-    if (tipoEvento.present) {
-      map['tipo_evento'] = Variable<String>(tipoEvento.value);
+    if (tipoSistema.present) {
+      map['tipo_sistema'] = Variable<String>(tipoSistema.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
     }
     if (tipoRegla.present) {
       map['tipo_regla'] = Variable<String>(tipoRegla.value);
@@ -17478,30 +19053,42 @@ class ConfiguracionCobroReglaEventoCompanion
     if (diaSemana.present) {
       map['dia_semana'] = Variable<String>(diaSemana.value);
     }
-    if (offsetDiasHabiles.present) {
-      map['offset_dias_habiles'] = Variable<int>(offsetDiasHabiles.value);
+    if (offsetDias.present) {
+      map['offset_dias'] = Variable<int>(offsetDias.value);
     }
-    if (eventoReferencia.present) {
-      map['evento_referencia'] = Variable<String>(eventoReferencia.value);
+    if (etapaReferenciaId.present) {
+      map['etapa_referencia_id'] = Variable<String>(etapaReferenciaId.value);
+    }
+    if (referenciaCierrePeriodo.present) {
+      map['referencia_cierre_periodo'] = Variable<bool>(
+        referenciaCierrePeriodo.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
 
   @override
   String toString() {
-    return (StringBuffer('ConfiguracionCobroReglaEventoCompanion(')
+    return (StringBuffer('ConfiguracionCobroEtapaCompanion(')
           ..write('id: $id, ')
           ..write(
             'configuracionCobroVigenciaId: $configuracionCobroVigenciaId, ',
           )
-          ..write('tipoEvento: $tipoEvento, ')
+          ..write('tipoSistema: $tipoSistema, ')
+          ..write('nombre: $nombre, ')
+          ..write('orden: $orden, ')
           ..write('tipoRegla: $tipoRegla, ')
           ..write('mesRelativo: $mesRelativo, ')
           ..write('diaDelMes: $diaDelMes, ')
           ..write('ordinalSemana: $ordinalSemana, ')
           ..write('diaSemana: $diaSemana, ')
-          ..write('offsetDiasHabiles: $offsetDiasHabiles, ')
-          ..write('eventoReferencia: $eventoReferencia')
+          ..write('offsetDias: $offsetDias, ')
+          ..write('etapaReferenciaId: $etapaReferenciaId, ')
+          ..write('referenciaCierrePeriodo: $referenciaCierrePeriodo, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -17596,6 +19183,20 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES entidad_fiscal (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _clientePortalIdMeta = const VerificationMeta(
+    'clientePortalId',
+  );
+  @override
+  late final GeneratedColumn<String> clientePortalId = GeneratedColumn<String>(
+    'cliente_portal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cliente_portal (id) ON DELETE RESTRICT',
     ),
   );
   static const VerificationMeta _tipoDocumentoMeta = const VerificationMeta(
@@ -17798,28 +19399,6 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _serieFiscalMeta = const VerificationMeta(
-    'serieFiscal',
-  );
-  @override
-  late final GeneratedColumn<String> serieFiscal = GeneratedColumn<String>(
-    'serie_fiscal',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _folioFiscalMeta = const VerificationMeta(
-    'folioFiscal',
-  );
-  @override
-  late final GeneratedColumn<String> folioFiscal = GeneratedColumn<String>(
-    'folio_fiscal',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
   @override
   late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
@@ -17894,6 +19473,7 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
     codigo,
     clienteId,
     entidadFiscalId,
+    clientePortalId,
     tipoDocumento,
     agrupacion,
     metodo,
@@ -17912,8 +19492,6 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
     motivoEstatus,
     observaciones,
     folioDocumento,
-    serieFiscal,
-    folioFiscal,
     uuid,
     fechaEmisionReal,
     importeEmitido,
@@ -17979,6 +19557,15 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
         entidadFiscalId.isAcceptableOrUnknown(
           data['entidad_fiscal_id']!,
           _entidadFiscalIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cliente_portal_id')) {
+      context.handle(
+        _clientePortalIdMeta,
+        clientePortalId.isAcceptableOrUnknown(
+          data['cliente_portal_id']!,
+          _clientePortalIdMeta,
         ),
       );
     }
@@ -18148,24 +19735,6 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
         ),
       );
     }
-    if (data.containsKey('serie_fiscal')) {
-      context.handle(
-        _serieFiscalMeta,
-        serieFiscal.isAcceptableOrUnknown(
-          data['serie_fiscal']!,
-          _serieFiscalMeta,
-        ),
-      );
-    }
-    if (data.containsKey('folio_fiscal')) {
-      context.handle(
-        _folioFiscalMeta,
-        folioFiscal.isAcceptableOrUnknown(
-          data['folio_fiscal']!,
-          _folioFiscalMeta,
-        ),
-      );
-    }
     if (data.containsKey('uuid')) {
       context.handle(
         _uuidMeta,
@@ -18257,6 +19826,10 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
         DriftSqlType.string,
         data['${effectivePrefix}entidad_fiscal_id'],
       ),
+      clientePortalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cliente_portal_id'],
+      ),
       tipoDocumento:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -18339,14 +19912,6 @@ class $DocumentoPorEmitirTable extends DocumentoPorEmitir
         DriftSqlType.string,
         data['${effectivePrefix}folio_documento'],
       ),
-      serieFiscal: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}serie_fiscal'],
-      ),
-      folioFiscal: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}folio_fiscal'],
-      ),
       uuid: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}uuid'],
@@ -18389,6 +19954,13 @@ class DocumentoPorEmitirData extends DataClass
   final String codigo;
   final String clienteId;
   final String? entidadFiscalId;
+
+  /// Qué portal del Cliente se usó para este documento (Etapa 15) —
+  /// referencia, igual que `entidadFiscalId`, nunca un snapshot: si el
+  /// portal se edita después de generar este documento, el documento
+  /// histórico refleja el valor actual del portal (decisión explícita
+  /// de Marlon — sin duplicar datos de portal en Agenda).
+  final String? clientePortalId;
   final String tipoDocumento;
   final String agrupacion;
   final String metodo;
@@ -18420,17 +19992,25 @@ class DocumentoPorEmitirData extends DataClass
   final String? observaciones;
   final String? folioDocumento;
 
-  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
-  final String? serieFiscal;
-
-  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
-  final String? folioFiscal;
-
-  /// Solo aplica a `tipoDocumento = cfdi` — `null` siempre para recibo.
-  /// Puede capturarse después de marcar `emitido` (ej. al adjuntar el
-  /// XML) — nunca obligatorio en el momento de la emisión misma.
+  /// Identificador fiscal único del CFDI ("folio fiscal" / UUID del
+  /// timbre — en un CFDI real son el mismo dato, nunca dos
+  /// independientes; corrección estructural Etapa 15, antes existían
+  /// `folioFiscal`/`uuid` por separado sin ninguna relación entre
+  /// ambos). Solo aplica a `tipoDocumento = cfdi` — `null` siempre para
+  /// recibo. Puede capturarse después de marcar `emitido` (ej. al
+  /// adjuntar el XML) — nunca obligatorio en el momento de la emisión
+  /// misma. Validado con formato UUID (`esUuidFormatoValido`, mismo
+  /// validador que ya usaba `ComplementoPago.uuid`).
   final String? uuid;
   final DateTime? fechaEmisionReal;
+
+  /// Monto real y total del documento tal como fue emitido (Total del
+  /// CFDI, o importe del recibo) — el monto efectivamente cobrable al
+  /// Cliente, nunca un subtotal antes de impuestos. Para
+  /// `tratamientoIva = masIva` este valor NO se deriva de
+  /// `importeFinalEsperado` (que es antes de IVA): RISEG ONE no calcula
+  /// tasas de IVA, se captura el Total real del comprobante emitido
+  /// externamente (Etapa 15, corrección estructural CFDI real).
   final int? importeEmitido;
   final String? observacionesEmision;
   final DateTime? fechaEnvio;
@@ -18443,6 +20023,7 @@ class DocumentoPorEmitirData extends DataClass
     required this.codigo,
     required this.clienteId,
     this.entidadFiscalId,
+    this.clientePortalId,
     required this.tipoDocumento,
     required this.agrupacion,
     required this.metodo,
@@ -18461,8 +20042,6 @@ class DocumentoPorEmitirData extends DataClass
     this.motivoEstatus,
     this.observaciones,
     this.folioDocumento,
-    this.serieFiscal,
-    this.folioFiscal,
     this.uuid,
     this.fechaEmisionReal,
     this.importeEmitido,
@@ -18481,6 +20060,9 @@ class DocumentoPorEmitirData extends DataClass
     map['cliente_id'] = Variable<String>(clienteId);
     if (!nullToAbsent || entidadFiscalId != null) {
       map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId);
+    }
+    if (!nullToAbsent || clientePortalId != null) {
+      map['cliente_portal_id'] = Variable<String>(clientePortalId);
     }
     map['tipo_documento'] = Variable<String>(tipoDocumento);
     map['agrupacion'] = Variable<String>(agrupacion);
@@ -18522,12 +20104,6 @@ class DocumentoPorEmitirData extends DataClass
     if (!nullToAbsent || folioDocumento != null) {
       map['folio_documento'] = Variable<String>(folioDocumento);
     }
-    if (!nullToAbsent || serieFiscal != null) {
-      map['serie_fiscal'] = Variable<String>(serieFiscal);
-    }
-    if (!nullToAbsent || folioFiscal != null) {
-      map['folio_fiscal'] = Variable<String>(folioFiscal);
-    }
     if (!nullToAbsent || uuid != null) {
       map['uuid'] = Variable<String>(uuid);
     }
@@ -18561,6 +20137,10 @@ class DocumentoPorEmitirData extends DataClass
           entidadFiscalId == null && nullToAbsent
               ? const Value.absent()
               : Value(entidadFiscalId),
+      clientePortalId:
+          clientePortalId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(clientePortalId),
       tipoDocumento: Value(tipoDocumento),
       agrupacion: Value(agrupacion),
       metodo: Value(metodo),
@@ -18603,14 +20183,6 @@ class DocumentoPorEmitirData extends DataClass
           folioDocumento == null && nullToAbsent
               ? const Value.absent()
               : Value(folioDocumento),
-      serieFiscal:
-          serieFiscal == null && nullToAbsent
-              ? const Value.absent()
-              : Value(serieFiscal),
-      folioFiscal:
-          folioFiscal == null && nullToAbsent
-              ? const Value.absent()
-              : Value(folioFiscal),
       uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
       fechaEmisionReal:
           fechaEmisionReal == null && nullToAbsent
@@ -18648,6 +20220,7 @@ class DocumentoPorEmitirData extends DataClass
       codigo: serializer.fromJson<String>(json['codigo']),
       clienteId: serializer.fromJson<String>(json['clienteId']),
       entidadFiscalId: serializer.fromJson<String?>(json['entidadFiscalId']),
+      clientePortalId: serializer.fromJson<String?>(json['clientePortalId']),
       tipoDocumento: serializer.fromJson<String>(json['tipoDocumento']),
       agrupacion: serializer.fromJson<String>(json['agrupacion']),
       metodo: serializer.fromJson<String>(json['metodo']),
@@ -18678,8 +20251,6 @@ class DocumentoPorEmitirData extends DataClass
       motivoEstatus: serializer.fromJson<String?>(json['motivoEstatus']),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
       folioDocumento: serializer.fromJson<String?>(json['folioDocumento']),
-      serieFiscal: serializer.fromJson<String?>(json['serieFiscal']),
-      folioFiscal: serializer.fromJson<String?>(json['folioFiscal']),
       uuid: serializer.fromJson<String?>(json['uuid']),
       fechaEmisionReal: serializer.fromJson<DateTime?>(
         json['fechaEmisionReal'],
@@ -18705,6 +20276,7 @@ class DocumentoPorEmitirData extends DataClass
       'codigo': serializer.toJson<String>(codigo),
       'clienteId': serializer.toJson<String>(clienteId),
       'entidadFiscalId': serializer.toJson<String?>(entidadFiscalId),
+      'clientePortalId': serializer.toJson<String?>(clientePortalId),
       'tipoDocumento': serializer.toJson<String>(tipoDocumento),
       'agrupacion': serializer.toJson<String>(agrupacion),
       'metodo': serializer.toJson<String>(metodo),
@@ -18729,8 +20301,6 @@ class DocumentoPorEmitirData extends DataClass
       'motivoEstatus': serializer.toJson<String?>(motivoEstatus),
       'observaciones': serializer.toJson<String?>(observaciones),
       'folioDocumento': serializer.toJson<String?>(folioDocumento),
-      'serieFiscal': serializer.toJson<String?>(serieFiscal),
-      'folioFiscal': serializer.toJson<String?>(folioFiscal),
       'uuid': serializer.toJson<String?>(uuid),
       'fechaEmisionReal': serializer.toJson<DateTime?>(fechaEmisionReal),
       'importeEmitido': serializer.toJson<int?>(importeEmitido),
@@ -18748,6 +20318,7 @@ class DocumentoPorEmitirData extends DataClass
     String? codigo,
     String? clienteId,
     Value<String?> entidadFiscalId = const Value.absent(),
+    Value<String?> clientePortalId = const Value.absent(),
     String? tipoDocumento,
     String? agrupacion,
     String? metodo,
@@ -18766,8 +20337,6 @@ class DocumentoPorEmitirData extends DataClass
     Value<String?> motivoEstatus = const Value.absent(),
     Value<String?> observaciones = const Value.absent(),
     Value<String?> folioDocumento = const Value.absent(),
-    Value<String?> serieFiscal = const Value.absent(),
-    Value<String?> folioFiscal = const Value.absent(),
     Value<String?> uuid = const Value.absent(),
     Value<DateTime?> fechaEmisionReal = const Value.absent(),
     Value<int?> importeEmitido = const Value.absent(),
@@ -18783,6 +20352,8 @@ class DocumentoPorEmitirData extends DataClass
     clienteId: clienteId ?? this.clienteId,
     entidadFiscalId:
         entidadFiscalId.present ? entidadFiscalId.value : this.entidadFiscalId,
+    clientePortalId:
+        clientePortalId.present ? clientePortalId.value : this.clientePortalId,
     tipoDocumento: tipoDocumento ?? this.tipoDocumento,
     agrupacion: agrupacion ?? this.agrupacion,
     metodo: metodo ?? this.metodo,
@@ -18813,8 +20384,6 @@ class DocumentoPorEmitirData extends DataClass
         observaciones.present ? observaciones.value : this.observaciones,
     folioDocumento:
         folioDocumento.present ? folioDocumento.value : this.folioDocumento,
-    serieFiscal: serieFiscal.present ? serieFiscal.value : this.serieFiscal,
-    folioFiscal: folioFiscal.present ? folioFiscal.value : this.folioFiscal,
     uuid: uuid.present ? uuid.value : this.uuid,
     fechaEmisionReal:
         fechaEmisionReal.present
@@ -18847,6 +20416,10 @@ class DocumentoPorEmitirData extends DataClass
           data.entidadFiscalId.present
               ? data.entidadFiscalId.value
               : this.entidadFiscalId,
+      clientePortalId:
+          data.clientePortalId.present
+              ? data.clientePortalId.value
+              : this.clientePortalId,
       tipoDocumento:
           data.tipoDocumento.present
               ? data.tipoDocumento.value
@@ -18909,10 +20482,6 @@ class DocumentoPorEmitirData extends DataClass
           data.folioDocumento.present
               ? data.folioDocumento.value
               : this.folioDocumento,
-      serieFiscal:
-          data.serieFiscal.present ? data.serieFiscal.value : this.serieFiscal,
-      folioFiscal:
-          data.folioFiscal.present ? data.folioFiscal.value : this.folioFiscal,
       uuid: data.uuid.present ? data.uuid.value : this.uuid,
       fechaEmisionReal:
           data.fechaEmisionReal.present
@@ -18945,6 +20514,7 @@ class DocumentoPorEmitirData extends DataClass
           ..write('codigo: $codigo, ')
           ..write('clienteId: $clienteId, ')
           ..write('entidadFiscalId: $entidadFiscalId, ')
+          ..write('clientePortalId: $clientePortalId, ')
           ..write('tipoDocumento: $tipoDocumento, ')
           ..write('agrupacion: $agrupacion, ')
           ..write('metodo: $metodo, ')
@@ -18965,8 +20535,6 @@ class DocumentoPorEmitirData extends DataClass
           ..write('motivoEstatus: $motivoEstatus, ')
           ..write('observaciones: $observaciones, ')
           ..write('folioDocumento: $folioDocumento, ')
-          ..write('serieFiscal: $serieFiscal, ')
-          ..write('folioFiscal: $folioFiscal, ')
           ..write('uuid: $uuid, ')
           ..write('fechaEmisionReal: $fechaEmisionReal, ')
           ..write('importeEmitido: $importeEmitido, ')
@@ -18986,6 +20554,7 @@ class DocumentoPorEmitirData extends DataClass
     codigo,
     clienteId,
     entidadFiscalId,
+    clientePortalId,
     tipoDocumento,
     agrupacion,
     metodo,
@@ -19004,8 +20573,6 @@ class DocumentoPorEmitirData extends DataClass
     motivoEstatus,
     observaciones,
     folioDocumento,
-    serieFiscal,
-    folioFiscal,
     uuid,
     fechaEmisionReal,
     importeEmitido,
@@ -19024,6 +20591,7 @@ class DocumentoPorEmitirData extends DataClass
           other.codigo == this.codigo &&
           other.clienteId == this.clienteId &&
           other.entidadFiscalId == this.entidadFiscalId &&
+          other.clientePortalId == this.clientePortalId &&
           other.tipoDocumento == this.tipoDocumento &&
           other.agrupacion == this.agrupacion &&
           other.metodo == this.metodo &&
@@ -19044,8 +20612,6 @@ class DocumentoPorEmitirData extends DataClass
           other.motivoEstatus == this.motivoEstatus &&
           other.observaciones == this.observaciones &&
           other.folioDocumento == this.folioDocumento &&
-          other.serieFiscal == this.serieFiscal &&
-          other.folioFiscal == this.folioFiscal &&
           other.uuid == this.uuid &&
           other.fechaEmisionReal == this.fechaEmisionReal &&
           other.importeEmitido == this.importeEmitido &&
@@ -19063,6 +20629,7 @@ class DocumentoPorEmitirCompanion
   final Value<String> codigo;
   final Value<String> clienteId;
   final Value<String?> entidadFiscalId;
+  final Value<String?> clientePortalId;
   final Value<String> tipoDocumento;
   final Value<String> agrupacion;
   final Value<String> metodo;
@@ -19081,8 +20648,6 @@ class DocumentoPorEmitirCompanion
   final Value<String?> motivoEstatus;
   final Value<String?> observaciones;
   final Value<String?> folioDocumento;
-  final Value<String?> serieFiscal;
-  final Value<String?> folioFiscal;
   final Value<String?> uuid;
   final Value<DateTime?> fechaEmisionReal;
   final Value<int?> importeEmitido;
@@ -19098,6 +20663,7 @@ class DocumentoPorEmitirCompanion
     this.codigo = const Value.absent(),
     this.clienteId = const Value.absent(),
     this.entidadFiscalId = const Value.absent(),
+    this.clientePortalId = const Value.absent(),
     this.tipoDocumento = const Value.absent(),
     this.agrupacion = const Value.absent(),
     this.metodo = const Value.absent(),
@@ -19116,8 +20682,6 @@ class DocumentoPorEmitirCompanion
     this.motivoEstatus = const Value.absent(),
     this.observaciones = const Value.absent(),
     this.folioDocumento = const Value.absent(),
-    this.serieFiscal = const Value.absent(),
-    this.folioFiscal = const Value.absent(),
     this.uuid = const Value.absent(),
     this.fechaEmisionReal = const Value.absent(),
     this.importeEmitido = const Value.absent(),
@@ -19134,6 +20698,7 @@ class DocumentoPorEmitirCompanion
     required String codigo,
     required String clienteId,
     this.entidadFiscalId = const Value.absent(),
+    this.clientePortalId = const Value.absent(),
     required String tipoDocumento,
     required String agrupacion,
     required String metodo,
@@ -19152,8 +20717,6 @@ class DocumentoPorEmitirCompanion
     this.motivoEstatus = const Value.absent(),
     this.observaciones = const Value.absent(),
     this.folioDocumento = const Value.absent(),
-    this.serieFiscal = const Value.absent(),
-    this.folioFiscal = const Value.absent(),
     this.uuid = const Value.absent(),
     this.fechaEmisionReal = const Value.absent(),
     this.importeEmitido = const Value.absent(),
@@ -19179,6 +20742,7 @@ class DocumentoPorEmitirCompanion
     Expression<String>? codigo,
     Expression<String>? clienteId,
     Expression<String>? entidadFiscalId,
+    Expression<String>? clientePortalId,
     Expression<String>? tipoDocumento,
     Expression<String>? agrupacion,
     Expression<String>? metodo,
@@ -19197,8 +20761,6 @@ class DocumentoPorEmitirCompanion
     Expression<String>? motivoEstatus,
     Expression<String>? observaciones,
     Expression<String>? folioDocumento,
-    Expression<String>? serieFiscal,
-    Expression<String>? folioFiscal,
     Expression<String>? uuid,
     Expression<DateTime>? fechaEmisionReal,
     Expression<int>? importeEmitido,
@@ -19215,6 +20777,7 @@ class DocumentoPorEmitirCompanion
       if (codigo != null) 'codigo': codigo,
       if (clienteId != null) 'cliente_id': clienteId,
       if (entidadFiscalId != null) 'entidad_fiscal_id': entidadFiscalId,
+      if (clientePortalId != null) 'cliente_portal_id': clientePortalId,
       if (tipoDocumento != null) 'tipo_documento': tipoDocumento,
       if (agrupacion != null) 'agrupacion': agrupacion,
       if (metodo != null) 'metodo': metodo,
@@ -19239,8 +20802,6 @@ class DocumentoPorEmitirCompanion
       if (motivoEstatus != null) 'motivo_estatus': motivoEstatus,
       if (observaciones != null) 'observaciones': observaciones,
       if (folioDocumento != null) 'folio_documento': folioDocumento,
-      if (serieFiscal != null) 'serie_fiscal': serieFiscal,
-      if (folioFiscal != null) 'folio_fiscal': folioFiscal,
       if (uuid != null) 'uuid': uuid,
       if (fechaEmisionReal != null) 'fecha_emision_real': fechaEmisionReal,
       if (importeEmitido != null) 'importe_emitido': importeEmitido,
@@ -19260,6 +20821,7 @@ class DocumentoPorEmitirCompanion
     Value<String>? codigo,
     Value<String>? clienteId,
     Value<String?>? entidadFiscalId,
+    Value<String?>? clientePortalId,
     Value<String>? tipoDocumento,
     Value<String>? agrupacion,
     Value<String>? metodo,
@@ -19278,8 +20840,6 @@ class DocumentoPorEmitirCompanion
     Value<String?>? motivoEstatus,
     Value<String?>? observaciones,
     Value<String?>? folioDocumento,
-    Value<String?>? serieFiscal,
-    Value<String?>? folioFiscal,
     Value<String?>? uuid,
     Value<DateTime?>? fechaEmisionReal,
     Value<int?>? importeEmitido,
@@ -19296,6 +20856,7 @@ class DocumentoPorEmitirCompanion
       codigo: codigo ?? this.codigo,
       clienteId: clienteId ?? this.clienteId,
       entidadFiscalId: entidadFiscalId ?? this.entidadFiscalId,
+      clientePortalId: clientePortalId ?? this.clientePortalId,
       tipoDocumento: tipoDocumento ?? this.tipoDocumento,
       agrupacion: agrupacion ?? this.agrupacion,
       metodo: metodo ?? this.metodo,
@@ -19317,8 +20878,6 @@ class DocumentoPorEmitirCompanion
       motivoEstatus: motivoEstatus ?? this.motivoEstatus,
       observaciones: observaciones ?? this.observaciones,
       folioDocumento: folioDocumento ?? this.folioDocumento,
-      serieFiscal: serieFiscal ?? this.serieFiscal,
-      folioFiscal: folioFiscal ?? this.folioFiscal,
       uuid: uuid ?? this.uuid,
       fechaEmisionReal: fechaEmisionReal ?? this.fechaEmisionReal,
       importeEmitido: importeEmitido ?? this.importeEmitido,
@@ -19352,6 +20911,9 @@ class DocumentoPorEmitirCompanion
     }
     if (entidadFiscalId.present) {
       map['entidad_fiscal_id'] = Variable<String>(entidadFiscalId.value);
+    }
+    if (clientePortalId.present) {
+      map['cliente_portal_id'] = Variable<String>(clientePortalId.value);
     }
     if (tipoDocumento.present) {
       map['tipo_documento'] = Variable<String>(tipoDocumento.value);
@@ -19413,12 +20975,6 @@ class DocumentoPorEmitirCompanion
     if (folioDocumento.present) {
       map['folio_documento'] = Variable<String>(folioDocumento.value);
     }
-    if (serieFiscal.present) {
-      map['serie_fiscal'] = Variable<String>(serieFiscal.value);
-    }
-    if (folioFiscal.present) {
-      map['folio_fiscal'] = Variable<String>(folioFiscal.value);
-    }
     if (uuid.present) {
       map['uuid'] = Variable<String>(uuid.value);
     }
@@ -19455,6 +21011,7 @@ class DocumentoPorEmitirCompanion
           ..write('codigo: $codigo, ')
           ..write('clienteId: $clienteId, ')
           ..write('entidadFiscalId: $entidadFiscalId, ')
+          ..write('clientePortalId: $clientePortalId, ')
           ..write('tipoDocumento: $tipoDocumento, ')
           ..write('agrupacion: $agrupacion, ')
           ..write('metodo: $metodo, ')
@@ -19475,8 +21032,6 @@ class DocumentoPorEmitirCompanion
           ..write('motivoEstatus: $motivoEstatus, ')
           ..write('observaciones: $observaciones, ')
           ..write('folioDocumento: $folioDocumento, ')
-          ..write('serieFiscal: $serieFiscal, ')
-          ..write('folioFiscal: $folioFiscal, ')
           ..write('uuid: $uuid, ')
           ..write('fechaEmisionReal: $fechaEmisionReal, ')
           ..write('importeEmitido: $importeEmitido, ')
@@ -20352,6 +21907,502 @@ class DocumentoPorEmitirConfiguracionCompanion
             'fechaProcesamientoProgramada: $fechaProcesamientoProgramada, ',
           )
           ..write('fechaPagoEsperadoProgramada: $fechaPagoEsperadoProgramada')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DocumentoPorEmitirHitoTable extends DocumentoPorEmitirHito
+    with TableInfo<$DocumentoPorEmitirHitoTable, DocumentoPorEmitirHitoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentoPorEmitirHitoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _documentoPorEmitirIdMeta =
+      const VerificationMeta('documentoPorEmitirId');
+  @override
+  late final GeneratedColumn<String> documentoPorEmitirId =
+      GeneratedColumn<String>(
+        'documento_por_emitir_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES documento_por_emitir (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _servicioIdMeta = const VerificationMeta(
+    'servicioId',
+  );
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+    'servicio_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _tipoSistemaMeta = const VerificationMeta(
+    'tipoSistema',
+  );
+  @override
+  late final GeneratedColumn<String> tipoSistema = GeneratedColumn<String>(
+    'tipo_sistema',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaProgramadaMeta = const VerificationMeta(
+    'fechaProgramada',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fechaProgramada =
+      GeneratedColumn<DateTime>(
+        'fecha_programada',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    documentoPorEmitirId,
+    servicioId,
+    tipoSistema,
+    nombre,
+    orden,
+    fechaProgramada,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento_por_emitir_hito';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentoPorEmitirHitoData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('documento_por_emitir_id')) {
+      context.handle(
+        _documentoPorEmitirIdMeta,
+        documentoPorEmitirId.isAcceptableOrUnknown(
+          data['documento_por_emitir_id']!,
+          _documentoPorEmitirIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentoPorEmitirIdMeta);
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+        _servicioIdMeta,
+        servicioId.isAcceptableOrUnknown(data['servicio_id']!, _servicioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_servicioIdMeta);
+    }
+    if (data.containsKey('tipo_sistema')) {
+      context.handle(
+        _tipoSistemaMeta,
+        tipoSistema.isAcceptableOrUnknown(
+          data['tipo_sistema']!,
+          _tipoSistemaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ordenMeta);
+    }
+    if (data.containsKey('fecha_programada')) {
+      context.handle(
+        _fechaProgramadaMeta,
+        fechaProgramada.isAcceptableOrUnknown(
+          data['fecha_programada']!,
+          _fechaProgramadaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaProgramadaMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentoPorEmitirHitoData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentoPorEmitirHitoData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      documentoPorEmitirId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}documento_por_emitir_id'],
+          )!,
+      servicioId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}servicio_id'],
+          )!,
+      tipoSistema: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo_sistema'],
+      ),
+      nombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nombre'],
+      ),
+      orden:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}orden'],
+          )!,
+      fechaProgramada:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}fecha_programada'],
+          )!,
+    );
+  }
+
+  @override
+  $DocumentoPorEmitirHitoTable createAlias(String alias) {
+    return $DocumentoPorEmitirHitoTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentoPorEmitirHitoData extends DataClass
+    implements Insertable<DocumentoPorEmitirHitoData> {
+  final int id;
+  final String documentoPorEmitirId;
+  final String servicioId;
+
+  /// Exactamente uno de `tipoSistema`/`nombre` es no nulo — mismo
+  /// criterio que `ConfiguracionCobroEtapa`.
+  final String? tipoSistema;
+  final String? nombre;
+  final int orden;
+  final DateTime fechaProgramada;
+  const DocumentoPorEmitirHitoData({
+    required this.id,
+    required this.documentoPorEmitirId,
+    required this.servicioId,
+    this.tipoSistema,
+    this.nombre,
+    required this.orden,
+    required this.fechaProgramada,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['documento_por_emitir_id'] = Variable<String>(documentoPorEmitirId);
+    map['servicio_id'] = Variable<String>(servicioId);
+    if (!nullToAbsent || tipoSistema != null) {
+      map['tipo_sistema'] = Variable<String>(tipoSistema);
+    }
+    if (!nullToAbsent || nombre != null) {
+      map['nombre'] = Variable<String>(nombre);
+    }
+    map['orden'] = Variable<int>(orden);
+    map['fecha_programada'] = Variable<DateTime>(fechaProgramada);
+    return map;
+  }
+
+  DocumentoPorEmitirHitoCompanion toCompanion(bool nullToAbsent) {
+    return DocumentoPorEmitirHitoCompanion(
+      id: Value(id),
+      documentoPorEmitirId: Value(documentoPorEmitirId),
+      servicioId: Value(servicioId),
+      tipoSistema:
+          tipoSistema == null && nullToAbsent
+              ? const Value.absent()
+              : Value(tipoSistema),
+      nombre:
+          nombre == null && nullToAbsent ? const Value.absent() : Value(nombre),
+      orden: Value(orden),
+      fechaProgramada: Value(fechaProgramada),
+    );
+  }
+
+  factory DocumentoPorEmitirHitoData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentoPorEmitirHitoData(
+      id: serializer.fromJson<int>(json['id']),
+      documentoPorEmitirId: serializer.fromJson<String>(
+        json['documentoPorEmitirId'],
+      ),
+      servicioId: serializer.fromJson<String>(json['servicioId']),
+      tipoSistema: serializer.fromJson<String?>(json['tipoSistema']),
+      nombre: serializer.fromJson<String?>(json['nombre']),
+      orden: serializer.fromJson<int>(json['orden']),
+      fechaProgramada: serializer.fromJson<DateTime>(json['fechaProgramada']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'documentoPorEmitirId': serializer.toJson<String>(documentoPorEmitirId),
+      'servicioId': serializer.toJson<String>(servicioId),
+      'tipoSistema': serializer.toJson<String?>(tipoSistema),
+      'nombre': serializer.toJson<String?>(nombre),
+      'orden': serializer.toJson<int>(orden),
+      'fechaProgramada': serializer.toJson<DateTime>(fechaProgramada),
+    };
+  }
+
+  DocumentoPorEmitirHitoData copyWith({
+    int? id,
+    String? documentoPorEmitirId,
+    String? servicioId,
+    Value<String?> tipoSistema = const Value.absent(),
+    Value<String?> nombre = const Value.absent(),
+    int? orden,
+    DateTime? fechaProgramada,
+  }) => DocumentoPorEmitirHitoData(
+    id: id ?? this.id,
+    documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+    servicioId: servicioId ?? this.servicioId,
+    tipoSistema: tipoSistema.present ? tipoSistema.value : this.tipoSistema,
+    nombre: nombre.present ? nombre.value : this.nombre,
+    orden: orden ?? this.orden,
+    fechaProgramada: fechaProgramada ?? this.fechaProgramada,
+  );
+  DocumentoPorEmitirHitoData copyWithCompanion(
+    DocumentoPorEmitirHitoCompanion data,
+  ) {
+    return DocumentoPorEmitirHitoData(
+      id: data.id.present ? data.id.value : this.id,
+      documentoPorEmitirId:
+          data.documentoPorEmitirId.present
+              ? data.documentoPorEmitirId.value
+              : this.documentoPorEmitirId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      tipoSistema:
+          data.tipoSistema.present ? data.tipoSistema.value : this.tipoSistema,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      orden: data.orden.present ? data.orden.value : this.orden,
+      fechaProgramada:
+          data.fechaProgramada.present
+              ? data.fechaProgramada.value
+              : this.fechaProgramada,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirHitoData(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('tipoSistema: $tipoSistema, ')
+          ..write('nombre: $nombre, ')
+          ..write('orden: $orden, ')
+          ..write('fechaProgramada: $fechaProgramada')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    documentoPorEmitirId,
+    servicioId,
+    tipoSistema,
+    nombre,
+    orden,
+    fechaProgramada,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentoPorEmitirHitoData &&
+          other.id == this.id &&
+          other.documentoPorEmitirId == this.documentoPorEmitirId &&
+          other.servicioId == this.servicioId &&
+          other.tipoSistema == this.tipoSistema &&
+          other.nombre == this.nombre &&
+          other.orden == this.orden &&
+          other.fechaProgramada == this.fechaProgramada);
+}
+
+class DocumentoPorEmitirHitoCompanion
+    extends UpdateCompanion<DocumentoPorEmitirHitoData> {
+  final Value<int> id;
+  final Value<String> documentoPorEmitirId;
+  final Value<String> servicioId;
+  final Value<String?> tipoSistema;
+  final Value<String?> nombre;
+  final Value<int> orden;
+  final Value<DateTime> fechaProgramada;
+  const DocumentoPorEmitirHitoCompanion({
+    this.id = const Value.absent(),
+    this.documentoPorEmitirId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.tipoSistema = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.fechaProgramada = const Value.absent(),
+  });
+  DocumentoPorEmitirHitoCompanion.insert({
+    this.id = const Value.absent(),
+    required String documentoPorEmitirId,
+    required String servicioId,
+    this.tipoSistema = const Value.absent(),
+    this.nombre = const Value.absent(),
+    required int orden,
+    required DateTime fechaProgramada,
+  }) : documentoPorEmitirId = Value(documentoPorEmitirId),
+       servicioId = Value(servicioId),
+       orden = Value(orden),
+       fechaProgramada = Value(fechaProgramada);
+  static Insertable<DocumentoPorEmitirHitoData> custom({
+    Expression<int>? id,
+    Expression<String>? documentoPorEmitirId,
+    Expression<String>? servicioId,
+    Expression<String>? tipoSistema,
+    Expression<String>? nombre,
+    Expression<int>? orden,
+    Expression<DateTime>? fechaProgramada,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (documentoPorEmitirId != null)
+        'documento_por_emitir_id': documentoPorEmitirId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (tipoSistema != null) 'tipo_sistema': tipoSistema,
+      if (nombre != null) 'nombre': nombre,
+      if (orden != null) 'orden': orden,
+      if (fechaProgramada != null) 'fecha_programada': fechaProgramada,
+    });
+  }
+
+  DocumentoPorEmitirHitoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? documentoPorEmitirId,
+    Value<String>? servicioId,
+    Value<String?>? tipoSistema,
+    Value<String?>? nombre,
+    Value<int>? orden,
+    Value<DateTime>? fechaProgramada,
+  }) {
+    return DocumentoPorEmitirHitoCompanion(
+      id: id ?? this.id,
+      documentoPorEmitirId: documentoPorEmitirId ?? this.documentoPorEmitirId,
+      servicioId: servicioId ?? this.servicioId,
+      tipoSistema: tipoSistema ?? this.tipoSistema,
+      nombre: nombre ?? this.nombre,
+      orden: orden ?? this.orden,
+      fechaProgramada: fechaProgramada ?? this.fechaProgramada,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (documentoPorEmitirId.present) {
+      map['documento_por_emitir_id'] = Variable<String>(
+        documentoPorEmitirId.value,
+      );
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (tipoSistema.present) {
+      map['tipo_sistema'] = Variable<String>(tipoSistema.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
+    if (fechaProgramada.present) {
+      map['fecha_programada'] = Variable<DateTime>(fechaProgramada.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentoPorEmitirHitoCompanion(')
+          ..write('id: $id, ')
+          ..write('documentoPorEmitirId: $documentoPorEmitirId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('tipoSistema: $tipoSistema, ')
+          ..write('nombre: $nombre, ')
+          ..write('orden: $orden, ')
+          ..write('fechaProgramada: $fechaProgramada')
           ..write(')'))
         .toString();
   }
@@ -23110,28 +25161,6 @@ class $CuentaPorCobrarTable extends CuentaPorCobrar
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _serieFiscalMeta = const VerificationMeta(
-    'serieFiscal',
-  );
-  @override
-  late final GeneratedColumn<String> serieFiscal = GeneratedColumn<String>(
-    'serie_fiscal',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _folioFiscalMeta = const VerificationMeta(
-    'folioFiscal',
-  );
-  @override
-  late final GeneratedColumn<String> folioFiscal = GeneratedColumn<String>(
-    'folio_fiscal',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
   @override
   late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
@@ -23243,8 +25272,6 @@ class $CuentaPorCobrarTable extends CuentaPorCobrar
     metodo,
     requiereComplemento,
     folioDocumento,
-    serieFiscal,
-    folioFiscal,
     uuid,
     fechaEmisionReal,
     importeEmitido,
@@ -23344,24 +25371,6 @@ class $CuentaPorCobrarTable extends CuentaPorCobrar
         folioDocumento.isAcceptableOrUnknown(
           data['folio_documento']!,
           _folioDocumentoMeta,
-        ),
-      );
-    }
-    if (data.containsKey('serie_fiscal')) {
-      context.handle(
-        _serieFiscalMeta,
-        serieFiscal.isAcceptableOrUnknown(
-          data['serie_fiscal']!,
-          _serieFiscalMeta,
-        ),
-      );
-    }
-    if (data.containsKey('folio_fiscal')) {
-      context.handle(
-        _folioFiscalMeta,
-        folioFiscal.isAcceptableOrUnknown(
-          data['folio_fiscal']!,
-          _folioFiscalMeta,
         ),
       );
     }
@@ -23503,14 +25512,6 @@ class $CuentaPorCobrarTable extends CuentaPorCobrar
         DriftSqlType.string,
         data['${effectivePrefix}folio_documento'],
       ),
-      serieFiscal: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}serie_fiscal'],
-      ),
-      folioFiscal: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}folio_fiscal'],
-      ),
       uuid: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}uuid'],
@@ -23574,10 +25575,12 @@ class CuentaPorCobrarData extends DataClass
   final String metodo;
   final bool requiereComplemento;
   final String? folioDocumento;
-  final String? serieFiscal;
-  final String? folioFiscal;
   final String? uuid;
   final DateTime fechaEmisionReal;
+
+  /// Monto real y total del documento (Total del CFDI, o importe del
+  /// recibo) — el monto efectivamente cobrable al Cliente, copiado tal
+  /// cual de `DocumentoPorEmitir.importeEmitido` (ver su doc comment).
   final int importeEmitido;
   final int saldoOriginal;
   final int saldoPendiente;
@@ -23601,8 +25604,6 @@ class CuentaPorCobrarData extends DataClass
     required this.metodo,
     required this.requiereComplemento,
     this.folioDocumento,
-    this.serieFiscal,
-    this.folioFiscal,
     this.uuid,
     required this.fechaEmisionReal,
     required this.importeEmitido,
@@ -23627,12 +25628,6 @@ class CuentaPorCobrarData extends DataClass
     map['requiere_complemento'] = Variable<bool>(requiereComplemento);
     if (!nullToAbsent || folioDocumento != null) {
       map['folio_documento'] = Variable<String>(folioDocumento);
-    }
-    if (!nullToAbsent || serieFiscal != null) {
-      map['serie_fiscal'] = Variable<String>(serieFiscal);
-    }
-    if (!nullToAbsent || folioFiscal != null) {
-      map['folio_fiscal'] = Variable<String>(folioFiscal);
     }
     if (!nullToAbsent || uuid != null) {
       map['uuid'] = Variable<String>(uuid);
@@ -23667,14 +25662,6 @@ class CuentaPorCobrarData extends DataClass
           folioDocumento == null && nullToAbsent
               ? const Value.absent()
               : Value(folioDocumento),
-      serieFiscal:
-          serieFiscal == null && nullToAbsent
-              ? const Value.absent()
-              : Value(serieFiscal),
-      folioFiscal:
-          folioFiscal == null && nullToAbsent
-              ? const Value.absent()
-              : Value(folioFiscal),
       uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
       fechaEmisionReal: Value(fechaEmisionReal),
       importeEmitido: Value(importeEmitido),
@@ -23713,8 +25700,6 @@ class CuentaPorCobrarData extends DataClass
         json['requiereComplemento'],
       ),
       folioDocumento: serializer.fromJson<String?>(json['folioDocumento']),
-      serieFiscal: serializer.fromJson<String?>(json['serieFiscal']),
-      folioFiscal: serializer.fromJson<String?>(json['folioFiscal']),
       uuid: serializer.fromJson<String?>(json['uuid']),
       fechaEmisionReal: serializer.fromJson<DateTime>(json['fechaEmisionReal']),
       importeEmitido: serializer.fromJson<int>(json['importeEmitido']),
@@ -23742,8 +25727,6 @@ class CuentaPorCobrarData extends DataClass
       'metodo': serializer.toJson<String>(metodo),
       'requiereComplemento': serializer.toJson<bool>(requiereComplemento),
       'folioDocumento': serializer.toJson<String?>(folioDocumento),
-      'serieFiscal': serializer.toJson<String?>(serieFiscal),
-      'folioFiscal': serializer.toJson<String?>(folioFiscal),
       'uuid': serializer.toJson<String?>(uuid),
       'fechaEmisionReal': serializer.toJson<DateTime>(fechaEmisionReal),
       'importeEmitido': serializer.toJson<int>(importeEmitido),
@@ -23767,8 +25750,6 @@ class CuentaPorCobrarData extends DataClass
     String? metodo,
     bool? requiereComplemento,
     Value<String?> folioDocumento = const Value.absent(),
-    Value<String?> serieFiscal = const Value.absent(),
-    Value<String?> folioFiscal = const Value.absent(),
     Value<String?> uuid = const Value.absent(),
     DateTime? fechaEmisionReal,
     int? importeEmitido,
@@ -23790,8 +25771,6 @@ class CuentaPorCobrarData extends DataClass
     requiereComplemento: requiereComplemento ?? this.requiereComplemento,
     folioDocumento:
         folioDocumento.present ? folioDocumento.value : this.folioDocumento,
-    serieFiscal: serieFiscal.present ? serieFiscal.value : this.serieFiscal,
-    folioFiscal: folioFiscal.present ? folioFiscal.value : this.folioFiscal,
     uuid: uuid.present ? uuid.value : this.uuid,
     fechaEmisionReal: fechaEmisionReal ?? this.fechaEmisionReal,
     importeEmitido: importeEmitido ?? this.importeEmitido,
@@ -23833,10 +25812,6 @@ class CuentaPorCobrarData extends DataClass
           data.folioDocumento.present
               ? data.folioDocumento.value
               : this.folioDocumento,
-      serieFiscal:
-          data.serieFiscal.present ? data.serieFiscal.value : this.serieFiscal,
-      folioFiscal:
-          data.folioFiscal.present ? data.folioFiscal.value : this.folioFiscal,
       uuid: data.uuid.present ? data.uuid.value : this.uuid,
       fechaEmisionReal:
           data.fechaEmisionReal.present
@@ -23880,8 +25855,6 @@ class CuentaPorCobrarData extends DataClass
           ..write('metodo: $metodo, ')
           ..write('requiereComplemento: $requiereComplemento, ')
           ..write('folioDocumento: $folioDocumento, ')
-          ..write('serieFiscal: $serieFiscal, ')
-          ..write('folioFiscal: $folioFiscal, ')
           ..write('uuid: $uuid, ')
           ..write('fechaEmisionReal: $fechaEmisionReal, ')
           ..write('importeEmitido: $importeEmitido, ')
@@ -23896,7 +25869,7 @@ class CuentaPorCobrarData extends DataClass
   }
 
   @override
-  int get hashCode => Object.hashAll([
+  int get hashCode => Object.hash(
     id,
     createdAt,
     updatedAt,
@@ -23907,8 +25880,6 @@ class CuentaPorCobrarData extends DataClass
     metodo,
     requiereComplemento,
     folioDocumento,
-    serieFiscal,
-    folioFiscal,
     uuid,
     fechaEmisionReal,
     importeEmitido,
@@ -23918,7 +25889,7 @@ class CuentaPorCobrarData extends DataClass
     estatus,
     fechaVencimiento,
     observaciones,
-  ]);
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -23933,8 +25904,6 @@ class CuentaPorCobrarData extends DataClass
           other.metodo == this.metodo &&
           other.requiereComplemento == this.requiereComplemento &&
           other.folioDocumento == this.folioDocumento &&
-          other.serieFiscal == this.serieFiscal &&
-          other.folioFiscal == this.folioFiscal &&
           other.uuid == this.uuid &&
           other.fechaEmisionReal == this.fechaEmisionReal &&
           other.importeEmitido == this.importeEmitido &&
@@ -23957,8 +25926,6 @@ class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
   final Value<String> metodo;
   final Value<bool> requiereComplemento;
   final Value<String?> folioDocumento;
-  final Value<String?> serieFiscal;
-  final Value<String?> folioFiscal;
   final Value<String?> uuid;
   final Value<DateTime> fechaEmisionReal;
   final Value<int> importeEmitido;
@@ -23980,8 +25947,6 @@ class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
     this.metodo = const Value.absent(),
     this.requiereComplemento = const Value.absent(),
     this.folioDocumento = const Value.absent(),
-    this.serieFiscal = const Value.absent(),
-    this.folioFiscal = const Value.absent(),
     this.uuid = const Value.absent(),
     this.fechaEmisionReal = const Value.absent(),
     this.importeEmitido = const Value.absent(),
@@ -24004,8 +25969,6 @@ class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
     required String metodo,
     this.requiereComplemento = const Value.absent(),
     this.folioDocumento = const Value.absent(),
-    this.serieFiscal = const Value.absent(),
-    this.folioFiscal = const Value.absent(),
     this.uuid = const Value.absent(),
     required DateTime fechaEmisionReal,
     required int importeEmitido,
@@ -24035,8 +25998,6 @@ class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
     Expression<String>? metodo,
     Expression<bool>? requiereComplemento,
     Expression<String>? folioDocumento,
-    Expression<String>? serieFiscal,
-    Expression<String>? folioFiscal,
     Expression<String>? uuid,
     Expression<DateTime>? fechaEmisionReal,
     Expression<int>? importeEmitido,
@@ -24061,8 +26022,6 @@ class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
       if (requiereComplemento != null)
         'requiere_complemento': requiereComplemento,
       if (folioDocumento != null) 'folio_documento': folioDocumento,
-      if (serieFiscal != null) 'serie_fiscal': serieFiscal,
-      if (folioFiscal != null) 'folio_fiscal': folioFiscal,
       if (uuid != null) 'uuid': uuid,
       if (fechaEmisionReal != null) 'fecha_emision_real': fechaEmisionReal,
       if (importeEmitido != null) 'importe_emitido': importeEmitido,
@@ -24087,8 +26046,6 @@ class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
     Value<String>? metodo,
     Value<bool>? requiereComplemento,
     Value<String?>? folioDocumento,
-    Value<String?>? serieFiscal,
-    Value<String?>? folioFiscal,
     Value<String?>? uuid,
     Value<DateTime>? fechaEmisionReal,
     Value<int>? importeEmitido,
@@ -24111,8 +26068,6 @@ class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
       metodo: metodo ?? this.metodo,
       requiereComplemento: requiereComplemento ?? this.requiereComplemento,
       folioDocumento: folioDocumento ?? this.folioDocumento,
-      serieFiscal: serieFiscal ?? this.serieFiscal,
-      folioFiscal: folioFiscal ?? this.folioFiscal,
       uuid: uuid ?? this.uuid,
       fechaEmisionReal: fechaEmisionReal ?? this.fechaEmisionReal,
       importeEmitido: importeEmitido ?? this.importeEmitido,
@@ -24161,12 +26116,6 @@ class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
     if (folioDocumento.present) {
       map['folio_documento'] = Variable<String>(folioDocumento.value);
     }
-    if (serieFiscal.present) {
-      map['serie_fiscal'] = Variable<String>(serieFiscal.value);
-    }
-    if (folioFiscal.present) {
-      map['folio_fiscal'] = Variable<String>(folioFiscal.value);
-    }
     if (uuid.present) {
       map['uuid'] = Variable<String>(uuid.value);
     }
@@ -24213,8 +26162,6 @@ class CuentaPorCobrarCompanion extends UpdateCompanion<CuentaPorCobrarData> {
           ..write('metodo: $metodo, ')
           ..write('requiereComplemento: $requiereComplemento, ')
           ..write('folioDocumento: $folioDocumento, ')
-          ..write('serieFiscal: $serieFiscal, ')
-          ..write('folioFiscal: $folioFiscal, ')
           ..write('uuid: $uuid, ')
           ..write('fechaEmisionReal: $fechaEmisionReal, ')
           ..write('importeEmitido: $importeEmitido, ')
@@ -32871,6 +34818,17 @@ class $EmpleadoTable extends Empleado
       'REFERENCES banco (id) ON DELETE RESTRICT',
     ),
   );
+  static const VerificationMeta _bancoOtroDescripcionMeta =
+      const VerificationMeta('bancoOtroDescripcion');
+  @override
+  late final GeneratedColumn<String> bancoOtroDescripcion =
+      GeneratedColumn<String>(
+        'banco_otro_descripcion',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _numeroCuentaTarjetaMeta =
       const VerificationMeta('numeroCuentaTarjeta');
   @override
@@ -33269,6 +35227,7 @@ class $EmpleadoTable extends Empleado
     telefonoEmergencia,
     parentescoEmergencia,
     bancoId,
+    bancoOtroDescripcion,
     numeroCuentaTarjeta,
     clabe,
     fechaIngreso,
@@ -33505,6 +35464,15 @@ class $EmpleadoTable extends Empleado
       context.handle(
         _bancoIdMeta,
         bancoId.isAcceptableOrUnknown(data['banco_id']!, _bancoIdMeta),
+      );
+    }
+    if (data.containsKey('banco_otro_descripcion')) {
+      context.handle(
+        _bancoOtroDescripcionMeta,
+        bancoOtroDescripcion.isAcceptableOrUnknown(
+          data['banco_otro_descripcion']!,
+          _bancoOtroDescripcionMeta,
+        ),
       );
     }
     if (data.containsKey('numero_cuenta_tarjeta')) {
@@ -33902,6 +35870,10 @@ class $EmpleadoTable extends Empleado
         DriftSqlType.string,
         data['${effectivePrefix}banco_id'],
       ),
+      bancoOtroDescripcion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}banco_otro_descripcion'],
+      ),
       numeroCuentaTarjeta: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}numero_cuenta_tarjeta'],
@@ -34092,6 +36064,16 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
   final String? telefonoEmergencia;
   final String? parentescoEmergencia;
   final String? bancoId;
+
+  /// Nombre del banco cuando `bancoId` apunta al catálogo `'OTRO'`
+  /// (Etapa 15) — la fila `Banco` "Otro" no tiene forma de guardar cuál
+  /// banco es en realidad; este campo captura ese detalle. Solo tiene
+  /// sentido cuando `bancoId == SeedIds.bancoOtro`, validado en
+  /// `EmpleadoValidator`, no como `CHECK` (misma razón que el resto del
+  /// bloque de datos bancarios: es una regla condicional entre
+  /// columnas, no un invariante estructural simple). Mismo criterio ya
+  /// usado por `Compra.formaPagoOtroDescripcion`.
+  final String? bancoOtroDescripcion;
   final String? numeroCuentaTarjeta;
   final String? clabe;
   final DateTime fechaIngreso;
@@ -34160,6 +36142,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     this.telefonoEmergencia,
     this.parentescoEmergencia,
     this.bancoId,
+    this.bancoOtroDescripcion,
     this.numeroCuentaTarjeta,
     this.clabe,
     required this.fechaIngreso,
@@ -34241,6 +36224,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     }
     if (!nullToAbsent || bancoId != null) {
       map['banco_id'] = Variable<String>(bancoId);
+    }
+    if (!nullToAbsent || bancoOtroDescripcion != null) {
+      map['banco_otro_descripcion'] = Variable<String>(bancoOtroDescripcion);
     }
     if (!nullToAbsent || numeroCuentaTarjeta != null) {
       map['numero_cuenta_tarjeta'] = Variable<String>(numeroCuentaTarjeta);
@@ -34416,6 +36402,10 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           bancoId == null && nullToAbsent
               ? const Value.absent()
               : Value(bancoId),
+      bancoOtroDescripcion:
+          bancoOtroDescripcion == null && nullToAbsent
+              ? const Value.absent()
+              : Value(bancoOtroDescripcion),
       numeroCuentaTarjeta:
           numeroCuentaTarjeta == null && nullToAbsent
               ? const Value.absent()
@@ -34581,6 +36571,9 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
         json['parentescoEmergencia'],
       ),
       bancoId: serializer.fromJson<String?>(json['bancoId']),
+      bancoOtroDescripcion: serializer.fromJson<String?>(
+        json['bancoOtroDescripcion'],
+      ),
       numeroCuentaTarjeta: serializer.fromJson<String?>(
         json['numeroCuentaTarjeta'],
       ),
@@ -34681,6 +36674,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
       'telefonoEmergencia': serializer.toJson<String?>(telefonoEmergencia),
       'parentescoEmergencia': serializer.toJson<String?>(parentescoEmergencia),
       'bancoId': serializer.toJson<String?>(bancoId),
+      'bancoOtroDescripcion': serializer.toJson<String?>(bancoOtroDescripcion),
       'numeroCuentaTarjeta': serializer.toJson<String?>(numeroCuentaTarjeta),
       'clabe': serializer.toJson<String?>(clabe),
       'fechaIngreso': serializer.toJson<DateTime>(fechaIngreso),
@@ -34767,6 +36761,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     Value<String?> telefonoEmergencia = const Value.absent(),
     Value<String?> parentescoEmergencia = const Value.absent(),
     Value<String?> bancoId = const Value.absent(),
+    Value<String?> bancoOtroDescripcion = const Value.absent(),
     Value<String?> numeroCuentaTarjeta = const Value.absent(),
     Value<String?> clabe = const Value.absent(),
     DateTime? fechaIngreso,
@@ -34843,6 +36838,10 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
             ? parentescoEmergencia.value
             : this.parentescoEmergencia,
     bancoId: bancoId.present ? bancoId.value : this.bancoId,
+    bancoOtroDescripcion:
+        bancoOtroDescripcion.present
+            ? bancoOtroDescripcion.value
+            : this.bancoOtroDescripcion,
     numeroCuentaTarjeta:
         numeroCuentaTarjeta.present
             ? numeroCuentaTarjeta.value
@@ -34991,6 +36990,10 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
               ? data.parentescoEmergencia.value
               : this.parentescoEmergencia,
       bancoId: data.bancoId.present ? data.bancoId.value : this.bancoId,
+      bancoOtroDescripcion:
+          data.bancoOtroDescripcion.present
+              ? data.bancoOtroDescripcion.value
+              : this.bancoOtroDescripcion,
       numeroCuentaTarjeta:
           data.numeroCuentaTarjeta.present
               ? data.numeroCuentaTarjeta.value
@@ -35133,6 +37136,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           ..write('telefonoEmergencia: $telefonoEmergencia, ')
           ..write('parentescoEmergencia: $parentescoEmergencia, ')
           ..write('bancoId: $bancoId, ')
+          ..write('bancoOtroDescripcion: $bancoOtroDescripcion, ')
           ..write('numeroCuentaTarjeta: $numeroCuentaTarjeta, ')
           ..write('clabe: $clabe, ')
           ..write('fechaIngreso: $fechaIngreso, ')
@@ -35199,6 +37203,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
     telefonoEmergencia,
     parentescoEmergencia,
     bancoId,
+    bancoOtroDescripcion,
     numeroCuentaTarjeta,
     clabe,
     fechaIngreso,
@@ -35260,6 +37265,7 @@ class EmpleadoData extends DataClass implements Insertable<EmpleadoData> {
           other.telefonoEmergencia == this.telefonoEmergencia &&
           other.parentescoEmergencia == this.parentescoEmergencia &&
           other.bancoId == this.bancoId &&
+          other.bancoOtroDescripcion == this.bancoOtroDescripcion &&
           other.numeroCuentaTarjeta == this.numeroCuentaTarjeta &&
           other.clabe == this.clabe &&
           other.fechaIngreso == this.fechaIngreso &&
@@ -35323,6 +37329,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
   final Value<String?> telefonoEmergencia;
   final Value<String?> parentescoEmergencia;
   final Value<String?> bancoId;
+  final Value<String?> bancoOtroDescripcion;
   final Value<String?> numeroCuentaTarjeta;
   final Value<String?> clabe;
   final Value<DateTime> fechaIngreso;
@@ -35381,6 +37388,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.telefonoEmergencia = const Value.absent(),
     this.parentescoEmergencia = const Value.absent(),
     this.bancoId = const Value.absent(),
+    this.bancoOtroDescripcion = const Value.absent(),
     this.numeroCuentaTarjeta = const Value.absent(),
     this.clabe = const Value.absent(),
     this.fechaIngreso = const Value.absent(),
@@ -35440,6 +37448,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     this.telefonoEmergencia = const Value.absent(),
     this.parentescoEmergencia = const Value.absent(),
     this.bancoId = const Value.absent(),
+    this.bancoOtroDescripcion = const Value.absent(),
     this.numeroCuentaTarjeta = const Value.absent(),
     this.clabe = const Value.absent(),
     required DateTime fechaIngreso,
@@ -35509,6 +37518,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Expression<String>? telefonoEmergencia,
     Expression<String>? parentescoEmergencia,
     Expression<String>? bancoId,
+    Expression<String>? bancoOtroDescripcion,
     Expression<String>? numeroCuentaTarjeta,
     Expression<String>? clabe,
     Expression<DateTime>? fechaIngreso,
@@ -35572,6 +37582,8 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       if (parentescoEmergencia != null)
         'parentesco_emergencia': parentescoEmergencia,
       if (bancoId != null) 'banco_id': bancoId,
+      if (bancoOtroDescripcion != null)
+        'banco_otro_descripcion': bancoOtroDescripcion,
       if (numeroCuentaTarjeta != null)
         'numero_cuenta_tarjeta': numeroCuentaTarjeta,
       if (clabe != null) 'clabe': clabe,
@@ -35648,6 +37660,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     Value<String?>? telefonoEmergencia,
     Value<String?>? parentescoEmergencia,
     Value<String?>? bancoId,
+    Value<String?>? bancoOtroDescripcion,
     Value<String?>? numeroCuentaTarjeta,
     Value<String?>? clabe,
     Value<DateTime>? fechaIngreso,
@@ -35709,6 +37722,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
       telefonoEmergencia: telefonoEmergencia ?? this.telefonoEmergencia,
       parentescoEmergencia: parentescoEmergencia ?? this.parentescoEmergencia,
       bancoId: bancoId ?? this.bancoId,
+      bancoOtroDescripcion: bancoOtroDescripcion ?? this.bancoOtroDescripcion,
       numeroCuentaTarjeta: numeroCuentaTarjeta ?? this.numeroCuentaTarjeta,
       clabe: clabe ?? this.clabe,
       fechaIngreso: fechaIngreso ?? this.fechaIngreso,
@@ -35837,6 +37851,11 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
     }
     if (bancoId.present) {
       map['banco_id'] = Variable<String>(bancoId.value);
+    }
+    if (bancoOtroDescripcion.present) {
+      map['banco_otro_descripcion'] = Variable<String>(
+        bancoOtroDescripcion.value,
+      );
     }
     if (numeroCuentaTarjeta.present) {
       map['numero_cuenta_tarjeta'] = Variable<String>(
@@ -35997,6 +38016,7 @@ class EmpleadoCompanion extends UpdateCompanion<EmpleadoData> {
           ..write('telefonoEmergencia: $telefonoEmergencia, ')
           ..write('parentescoEmergencia: $parentescoEmergencia, ')
           ..write('bancoId: $bancoId, ')
+          ..write('bancoOtroDescripcion: $bancoOtroDescripcion, ')
           ..write('numeroCuentaTarjeta: $numeroCuentaTarjeta, ')
           ..write('clabe: $clabe, ')
           ..write('fechaIngreso: $fechaIngreso, ')
@@ -37231,6 +39251,20 @@ class $AsignacionServicioTable extends AsignacionServicio
       'REFERENCES tipo_modalidad_turno (id) ON DELETE RESTRICT',
     ),
   );
+  static const VerificationMeta _lineaComercialIdMeta = const VerificationMeta(
+    'lineaComercialId',
+  );
+  @override
+  late final GeneratedColumn<String> lineaComercialId = GeneratedColumn<String>(
+    'linea_comercial_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES servicio_linea_comercial (id) ON DELETE RESTRICT',
+    ),
+  );
   static const VerificationMeta _fechaInicioMeta = const VerificationMeta(
     'fechaInicio',
   );
@@ -37295,6 +39329,7 @@ class $AsignacionServicioTable extends AsignacionServicio
     empleadoId,
     servicioId,
     turnoId,
+    lineaComercialId,
     fechaInicio,
     fechaTermino,
     motivoTermino,
@@ -37357,6 +39392,15 @@ class $AsignacionServicioTable extends AsignacionServicio
       context.handle(
         _turnoIdMeta,
         turnoId.isAcceptableOrUnknown(data['turno_id']!, _turnoIdMeta),
+      );
+    }
+    if (data.containsKey('linea_comercial_id')) {
+      context.handle(
+        _lineaComercialIdMeta,
+        lineaComercialId.isAcceptableOrUnknown(
+          data['linea_comercial_id']!,
+          _lineaComercialIdMeta,
+        ),
       );
     }
     if (data.containsKey('fecha_inicio')) {
@@ -37449,6 +39493,10 @@ class $AsignacionServicioTable extends AsignacionServicio
         DriftSqlType.string,
         data['${effectivePrefix}turno_id'],
       ),
+      lineaComercialId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}linea_comercial_id'],
+      ),
       fechaInicio:
           attachedDatabase.typeMapping.read(
             DriftSqlType.dateTime,
@@ -37494,6 +39542,19 @@ class AsignacionServicioData extends DataClass
   /// concepto real, evita duplicar catálogo. Vive aquí y no en
   /// `Empleado` porque cambia cuando el Empleado cambia de Servicio.
   final String? turnoId;
+
+  /// A qué perfil/línea comercial contratado pertenece esta asignación
+  /// (Etapa 15, rediseño de "Condiciones de Personal") — nullable solo
+  /// por compatibilidad con asignaciones históricas (nunca se adivina
+  /// retroactivamente, Resolución explícita de Marlon); en la captura
+  /// nueva, la UI la exige en cuanto el Servicio tiene alguna línea
+  /// comercial vigente (`AsignacionServicioValidator.lineaRequerida`) —
+  /// nunca vuelve a existir la opción de asignar "genérico" perdiendo
+  /// esta relación. De aquí se precargan
+  /// `ServicioLineaComercialVigencia.sueldoMensualReferenciaPersonal`/
+  /// `bonoMensualReferenciaPersonal` (reemplaza el sueldo global de
+  /// `Servicio`, retirado de la captura nueva).
+  final String? lineaComercialId;
   final DateTime fechaInicio;
   final DateTime? fechaTermino;
   final String? motivoTermino;
@@ -37507,6 +39568,7 @@ class AsignacionServicioData extends DataClass
     required this.empleadoId,
     required this.servicioId,
     this.turnoId,
+    this.lineaComercialId,
     required this.fechaInicio,
     this.fechaTermino,
     this.motivoTermino,
@@ -37524,6 +39586,9 @@ class AsignacionServicioData extends DataClass
     map['servicio_id'] = Variable<String>(servicioId);
     if (!nullToAbsent || turnoId != null) {
       map['turno_id'] = Variable<String>(turnoId);
+    }
+    if (!nullToAbsent || lineaComercialId != null) {
+      map['linea_comercial_id'] = Variable<String>(lineaComercialId);
     }
     map['fecha_inicio'] = Variable<DateTime>(fechaInicio);
     if (!nullToAbsent || fechaTermino != null) {
@@ -37553,6 +39618,10 @@ class AsignacionServicioData extends DataClass
           turnoId == null && nullToAbsent
               ? const Value.absent()
               : Value(turnoId),
+      lineaComercialId:
+          lineaComercialId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(lineaComercialId),
       fechaInicio: Value(fechaInicio),
       fechaTermino:
           fechaTermino == null && nullToAbsent
@@ -37586,6 +39655,7 @@ class AsignacionServicioData extends DataClass
       empleadoId: serializer.fromJson<String>(json['empleadoId']),
       servicioId: serializer.fromJson<String>(json['servicioId']),
       turnoId: serializer.fromJson<String?>(json['turnoId']),
+      lineaComercialId: serializer.fromJson<String?>(json['lineaComercialId']),
       fechaInicio: serializer.fromJson<DateTime>(json['fechaInicio']),
       fechaTermino: serializer.fromJson<DateTime?>(json['fechaTermino']),
       motivoTermino: serializer.fromJson<String?>(json['motivoTermino']),
@@ -37606,6 +39676,7 @@ class AsignacionServicioData extends DataClass
       'empleadoId': serializer.toJson<String>(empleadoId),
       'servicioId': serializer.toJson<String>(servicioId),
       'turnoId': serializer.toJson<String?>(turnoId),
+      'lineaComercialId': serializer.toJson<String?>(lineaComercialId),
       'fechaInicio': serializer.toJson<DateTime>(fechaInicio),
       'fechaTermino': serializer.toJson<DateTime?>(fechaTermino),
       'motivoTermino': serializer.toJson<String?>(motivoTermino),
@@ -37622,6 +39693,7 @@ class AsignacionServicioData extends DataClass
     String? empleadoId,
     String? servicioId,
     Value<String?> turnoId = const Value.absent(),
+    Value<String?> lineaComercialId = const Value.absent(),
     DateTime? fechaInicio,
     Value<DateTime?> fechaTermino = const Value.absent(),
     Value<String?> motivoTermino = const Value.absent(),
@@ -37635,6 +39707,10 @@ class AsignacionServicioData extends DataClass
     empleadoId: empleadoId ?? this.empleadoId,
     servicioId: servicioId ?? this.servicioId,
     turnoId: turnoId.present ? turnoId.value : this.turnoId,
+    lineaComercialId:
+        lineaComercialId.present
+            ? lineaComercialId.value
+            : this.lineaComercialId,
     fechaInicio: fechaInicio ?? this.fechaInicio,
     fechaTermino: fechaTermino.present ? fechaTermino.value : this.fechaTermino,
     motivoTermino:
@@ -37660,6 +39736,10 @@ class AsignacionServicioData extends DataClass
       servicioId:
           data.servicioId.present ? data.servicioId.value : this.servicioId,
       turnoId: data.turnoId.present ? data.turnoId.value : this.turnoId,
+      lineaComercialId:
+          data.lineaComercialId.present
+              ? data.lineaComercialId.value
+              : this.lineaComercialId,
       fechaInicio:
           data.fechaInicio.present ? data.fechaInicio.value : this.fechaInicio,
       fechaTermino:
@@ -37691,6 +39771,7 @@ class AsignacionServicioData extends DataClass
           ..write('empleadoId: $empleadoId, ')
           ..write('servicioId: $servicioId, ')
           ..write('turnoId: $turnoId, ')
+          ..write('lineaComercialId: $lineaComercialId, ')
           ..write('fechaInicio: $fechaInicio, ')
           ..write('fechaTermino: $fechaTermino, ')
           ..write('motivoTermino: $motivoTermino, ')
@@ -37709,6 +39790,7 @@ class AsignacionServicioData extends DataClass
     empleadoId,
     servicioId,
     turnoId,
+    lineaComercialId,
     fechaInicio,
     fechaTermino,
     motivoTermino,
@@ -37726,6 +39808,7 @@ class AsignacionServicioData extends DataClass
           other.empleadoId == this.empleadoId &&
           other.servicioId == this.servicioId &&
           other.turnoId == this.turnoId &&
+          other.lineaComercialId == this.lineaComercialId &&
           other.fechaInicio == this.fechaInicio &&
           other.fechaTermino == this.fechaTermino &&
           other.motivoTermino == this.motivoTermino &&
@@ -37742,6 +39825,7 @@ class AsignacionServicioCompanion
   final Value<String> empleadoId;
   final Value<String> servicioId;
   final Value<String?> turnoId;
+  final Value<String?> lineaComercialId;
   final Value<DateTime> fechaInicio;
   final Value<DateTime?> fechaTermino;
   final Value<String?> motivoTermino;
@@ -37756,6 +39840,7 @@ class AsignacionServicioCompanion
     this.empleadoId = const Value.absent(),
     this.servicioId = const Value.absent(),
     this.turnoId = const Value.absent(),
+    this.lineaComercialId = const Value.absent(),
     this.fechaInicio = const Value.absent(),
     this.fechaTermino = const Value.absent(),
     this.motivoTermino = const Value.absent(),
@@ -37771,6 +39856,7 @@ class AsignacionServicioCompanion
     required String empleadoId,
     required String servicioId,
     this.turnoId = const Value.absent(),
+    this.lineaComercialId = const Value.absent(),
     required DateTime fechaInicio,
     this.fechaTermino = const Value.absent(),
     this.motivoTermino = const Value.absent(),
@@ -37788,6 +39874,7 @@ class AsignacionServicioCompanion
     Expression<String>? empleadoId,
     Expression<String>? servicioId,
     Expression<String>? turnoId,
+    Expression<String>? lineaComercialId,
     Expression<DateTime>? fechaInicio,
     Expression<DateTime>? fechaTermino,
     Expression<String>? motivoTermino,
@@ -37803,6 +39890,7 @@ class AsignacionServicioCompanion
       if (empleadoId != null) 'empleado_id': empleadoId,
       if (servicioId != null) 'servicio_id': servicioId,
       if (turnoId != null) 'turno_id': turnoId,
+      if (lineaComercialId != null) 'linea_comercial_id': lineaComercialId,
       if (fechaInicio != null) 'fecha_inicio': fechaInicio,
       if (fechaTermino != null) 'fecha_termino': fechaTermino,
       if (motivoTermino != null) 'motivo_termino': motivoTermino,
@@ -37821,6 +39909,7 @@ class AsignacionServicioCompanion
     Value<String>? empleadoId,
     Value<String>? servicioId,
     Value<String?>? turnoId,
+    Value<String?>? lineaComercialId,
     Value<DateTime>? fechaInicio,
     Value<DateTime?>? fechaTermino,
     Value<String?>? motivoTermino,
@@ -37836,6 +39925,7 @@ class AsignacionServicioCompanion
       empleadoId: empleadoId ?? this.empleadoId,
       servicioId: servicioId ?? this.servicioId,
       turnoId: turnoId ?? this.turnoId,
+      lineaComercialId: lineaComercialId ?? this.lineaComercialId,
       fechaInicio: fechaInicio ?? this.fechaInicio,
       fechaTermino: fechaTermino ?? this.fechaTermino,
       motivoTermino: motivoTermino ?? this.motivoTermino,
@@ -37868,6 +39958,9 @@ class AsignacionServicioCompanion
     }
     if (turnoId.present) {
       map['turno_id'] = Variable<String>(turnoId.value);
+    }
+    if (lineaComercialId.present) {
+      map['linea_comercial_id'] = Variable<String>(lineaComercialId.value);
     }
     if (fechaInicio.present) {
       map['fecha_inicio'] = Variable<DateTime>(fechaInicio.value);
@@ -37902,6 +39995,7 @@ class AsignacionServicioCompanion
           ..write('empleadoId: $empleadoId, ')
           ..write('servicioId: $servicioId, ')
           ..write('turnoId: $turnoId, ')
+          ..write('lineaComercialId: $lineaComercialId, ')
           ..write('fechaInicio: $fechaInicio, ')
           ..write('fechaTermino: $fechaTermino, ')
           ..write('motivoTermino: $motivoTermino, ')
@@ -69369,24 +71463,30 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ServicioTable servicio = $ServicioTable(this);
   late final $UbicacionTable ubicacion = $UbicacionTable(this);
   late final $PuestoTable puesto = $PuestoTable(this);
+  late final $ClientePortalTable clientePortal = $ClientePortalTable(this);
   late final $ServicioLineaComercialTable servicioLineaComercial =
       $ServicioLineaComercialTable(this);
   late final $ServicioLineaComercialVigenciaTable
   servicioLineaComercialVigencia = $ServicioLineaComercialVigenciaTable(this);
+  late final $ServicioLineaComercialVigenciaHorarioTable
+  servicioLineaComercialVigenciaHorario =
+      $ServicioLineaComercialVigenciaHorarioTable(this);
   late final $ConfiguracionCobroTable configuracionCobro =
       $ConfiguracionCobroTable(this);
   late final $ConfiguracionCobroVigenciaTable configuracionCobroVigencia =
       $ConfiguracionCobroVigenciaTable(this);
   late final $ConfiguracionCobroCorreoTable configuracionCobroCorreo =
       $ConfiguracionCobroCorreoTable(this);
-  late final $ConfiguracionCobroReglaEventoTable configuracionCobroReglaEvento =
-      $ConfiguracionCobroReglaEventoTable(this);
+  late final $ConfiguracionCobroEtapaTable configuracionCobroEtapa =
+      $ConfiguracionCobroEtapaTable(this);
   late final $DocumentoPorEmitirTable documentoPorEmitir =
       $DocumentoPorEmitirTable(this);
   late final $DocumentoPorEmitirServicioTable documentoPorEmitirServicio =
       $DocumentoPorEmitirServicioTable(this);
   late final $DocumentoPorEmitirConfiguracionTable
   documentoPorEmitirConfiguracion = $DocumentoPorEmitirConfiguracionTable(this);
+  late final $DocumentoPorEmitirHitoTable documentoPorEmitirHito =
+      $DocumentoPorEmitirHitoTable(this);
   late final $DocumentoPorEmitirLineaTable documentoPorEmitirLinea =
       $DocumentoPorEmitirLineaTable(this);
   late final $DocumentoPorEmitirCorreoTable documentoPorEmitirCorreo =
@@ -69598,15 +71698,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     servicio,
     ubicacion,
     puesto,
+    clientePortal,
     servicioLineaComercial,
     servicioLineaComercialVigencia,
+    servicioLineaComercialVigenciaHorario,
     configuracionCobro,
     configuracionCobroVigencia,
     configuracionCobroCorreo,
-    configuracionCobroReglaEvento,
+    configuracionCobroEtapa,
     documentoPorEmitir,
     documentoPorEmitirServicio,
     documentoPorEmitirConfiguracion,
+    documentoPorEmitirHito,
     documentoPorEmitirLinea,
     documentoPorEmitirCorreo,
     documentoPorEmitirCorreoEnvio,
@@ -69706,6 +71809,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'servicio_linea_comercial_vigencia',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate(
+          'servicio_linea_comercial_vigencia_horario',
+          kind: UpdateKind.delete,
+        ),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'configuracion_cobro_vigencia',
         limitUpdateKind: UpdateKind.delete,
       ),
@@ -69719,10 +71834,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [
-        TableUpdate(
-          'configuracion_cobro_regla_evento',
-          kind: UpdateKind.delete,
-        ),
+        TableUpdate('configuracion_cobro_etapa', kind: UpdateKind.delete),
       ],
     ),
     WritePropagation(
@@ -69744,6 +71856,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
           'documento_por_emitir_configuracion',
           kind: UpdateKind.delete,
         ),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'documento_por_emitir',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('documento_por_emitir_hito', kind: UpdateKind.delete),
       ],
     ),
     WritePropagation(
@@ -79346,6 +81467,24 @@ final class $$ClienteTableReferences
     );
   }
 
+  static MultiTypedResultKey<$ClientePortalTable, List<ClientePortalData>>
+  _clientePortalRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.clientePortal,
+    aliasName: $_aliasNameGenerator(db.cliente.id, db.clientePortal.clienteId),
+  );
+
+  $$ClientePortalTableProcessedTableManager get clientePortalRefs {
+    final manager = $$ClientePortalTableTableManager(
+      $_db,
+      $_db.clientePortal,
+    ).filter((f) => f.clienteId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_clientePortalRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<
     $DocumentoPorEmitirTable,
     List<DocumentoPorEmitirData>
@@ -79563,6 +81702,31 @@ class $$ClienteTableFilterComposer
           }) => $$ServicioTableFilterComposer(
             $db: $db,
             $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> clientePortalRefs(
+    Expression<bool> Function($$ClientePortalTableFilterComposer f) f,
+  ) {
+    final $$ClientePortalTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.clientePortal,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientePortalTableFilterComposer(
+            $db: $db,
+            $table: $db.clientePortal,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -79866,6 +82030,31 @@ class $$ClienteTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> clientePortalRefs<T extends Object>(
+    Expression<T> Function($$ClientePortalTableAnnotationComposer a) f,
+  ) {
+    final $$ClientePortalTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.clientePortal,
+      getReferencedColumn: (t) => t.clienteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientePortalTableAnnotationComposer(
+            $db: $db,
+            $table: $db.clientePortal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> documentoPorEmitirRefs<T extends Object>(
     Expression<T> Function($$DocumentoPorEmitirTableAnnotationComposer a) f,
   ) {
@@ -79962,6 +82151,7 @@ class $$ClienteTableTableManager
             bool contactoRefs,
             bool entidadFiscalRefs,
             bool servicioRefs,
+            bool clientePortalRefs,
             bool documentoPorEmitirRefs,
             bool pagoRefs,
             bool clienteAttachmentRefs,
@@ -80045,6 +82235,7 @@ class $$ClienteTableTableManager
             contactoRefs = false,
             entidadFiscalRefs = false,
             servicioRefs = false,
+            clientePortalRefs = false,
             documentoPorEmitirRefs = false,
             pagoRefs = false,
             clienteAttachmentRefs = false,
@@ -80055,6 +82246,7 @@ class $$ClienteTableTableManager
                 if (contactoRefs) db.contacto,
                 if (entidadFiscalRefs) db.entidadFiscal,
                 if (servicioRefs) db.servicio,
+                if (clientePortalRefs) db.clientePortal,
                 if (documentoPorEmitirRefs) db.documentoPorEmitir,
                 if (pagoRefs) db.pago,
                 if (clienteAttachmentRefs) db.clienteAttachment,
@@ -80159,6 +82351,28 @@ class $$ClienteTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (clientePortalRefs)
+                    await $_getPrefetchedData<
+                      ClienteData,
+                      $ClienteTable,
+                      ClientePortalData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ClienteTableReferences
+                          ._clientePortalRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ClienteTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).clientePortalRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.clienteId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                   if (documentoPorEmitirRefs)
                     await $_getPrefetchedData<
                       ClienteData,
@@ -80247,6 +82461,7 @@ typedef $$ClienteTableProcessedTableManager =
         bool contactoRefs,
         bool entidadFiscalRefs,
         bool servicioRefs,
+        bool clientePortalRefs,
         bool documentoPorEmitirRefs,
         bool pagoRefs,
         bool clienteAttachmentRefs,
@@ -81786,6 +84001,34 @@ final class $$ServicioTableReferences
   }
 
   static MultiTypedResultKey<
+    $DocumentoPorEmitirHitoTable,
+    List<DocumentoPorEmitirHitoData>
+  >
+  _documentoPorEmitirHitoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirHito,
+        aliasName: $_aliasNameGenerator(
+          db.servicio.id,
+          db.documentoPorEmitirHito.servicioId,
+        ),
+      );
+
+  $$DocumentoPorEmitirHitoTableProcessedTableManager
+  get documentoPorEmitirHitoRefs {
+    final manager = $$DocumentoPorEmitirHitoTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirHito,
+    ).filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirHitoRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
     $DocumentoPorEmitirLineaTable,
     List<DocumentoPorEmitirLineaData>
   >
@@ -82354,6 +84597,32 @@ class $$ServicioTableFilterComposer
               }) => $$DocumentoPorEmitirConfiguracionTableFilterComposer(
                 $db: $db,
                 $table: $db.documentoPorEmitirConfiguracion,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirHitoRefs(
+    Expression<bool> Function($$DocumentoPorEmitirHitoTableFilterComposer f) f,
+  ) {
+    final $$DocumentoPorEmitirHitoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirHito,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirHitoTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirHito,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -83151,6 +85420,32 @@ class $$ServicioTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> documentoPorEmitirHitoRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirHitoTableAnnotationComposer a) f,
+  ) {
+    final $$DocumentoPorEmitirHitoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirHito,
+          getReferencedColumn: (t) => t.servicioId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirHitoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirHito,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> documentoPorEmitirLineaRefs<T extends Object>(
     Expression<T> Function($$DocumentoPorEmitirLineaTableAnnotationComposer a)
     f,
@@ -83434,6 +85729,7 @@ class $$ServicioTableTableManager
             bool configuracionCobroRefs,
             bool documentoPorEmitirServicioRefs,
             bool documentoPorEmitirConfiguracionRefs,
+            bool documentoPorEmitirHitoRefs,
             bool documentoPorEmitirLineaRefs,
             bool ingresoRefs,
             bool egresoRefs,
@@ -83582,6 +85878,7 @@ class $$ServicioTableTableManager
             configuracionCobroRefs = false,
             documentoPorEmitirServicioRefs = false,
             documentoPorEmitirConfiguracionRefs = false,
+            documentoPorEmitirHitoRefs = false,
             documentoPorEmitirLineaRefs = false,
             ingresoRefs = false,
             egresoRefs = false,
@@ -83603,6 +85900,7 @@ class $$ServicioTableTableManager
                   db.documentoPorEmitirServicio,
                 if (documentoPorEmitirConfiguracionRefs)
                   db.documentoPorEmitirConfiguracion,
+                if (documentoPorEmitirHitoRefs) db.documentoPorEmitirHito,
                 if (documentoPorEmitirLineaRefs) db.documentoPorEmitirLinea,
                 if (ingresoRefs) db.ingreso,
                 if (egresoRefs) db.egreso,
@@ -83808,6 +86106,28 @@ class $$ServicioTableTableManager
                                 table,
                                 p0,
                               ).documentoPorEmitirConfiguracionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.servicioId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirHitoRefs)
+                    await $_getPrefetchedData<
+                      ServicioData,
+                      $ServicioTable,
+                      DocumentoPorEmitirHitoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioTableReferences
+                          ._documentoPorEmitirHitoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirHitoRefs,
                       referencedItemsForCurrentItem:
                           (item, referencedItems) => referencedItems.where(
                             (e) => e.servicioId == item.id,
@@ -84065,6 +86385,7 @@ typedef $$ServicioTableProcessedTableManager =
         bool configuracionCobroRefs,
         bool documentoPorEmitirServicioRefs,
         bool documentoPorEmitirConfiguracionRefs,
+        bool documentoPorEmitirHitoRefs,
         bool documentoPorEmitirLineaRefs,
         bool ingresoRefs,
         bool egresoRefs,
@@ -85410,6 +87731,683 @@ typedef $$PuestoTableProcessedTableManager =
         bool empleadoRefs,
       })
     >;
+typedef $$ClientePortalTableCreateCompanionBuilder =
+    ClientePortalCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String clienteId,
+      required String nombre,
+      required String tipo,
+      Value<String?> url,
+      Value<String?> usuario,
+      Value<String?> contrasenaCifrada,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+typedef $$ClientePortalTableUpdateCompanionBuilder =
+    ClientePortalCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> clienteId,
+      Value<String> nombre,
+      Value<String> tipo,
+      Value<String?> url,
+      Value<String?> usuario,
+      Value<String?> contrasenaCifrada,
+      Value<String?> observaciones,
+      Value<int> rowid,
+    });
+
+final class $$ClientePortalTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $ClientePortalTable, ClientePortalData> {
+  $$ClientePortalTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ClienteTable _clienteIdTable(_$AppDatabase db) =>
+      db.cliente.createAlias(
+        $_aliasNameGenerator(db.clientePortal.clienteId, db.cliente.id),
+      );
+
+  $$ClienteTableProcessedTableManager get clienteId {
+    final $_column = $_itemColumn<String>('cliente_id')!;
+
+    final manager = $$ClienteTableTableManager(
+      $_db,
+      $_db.cliente,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_clienteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ConfiguracionCobroVigenciaTable,
+    List<ConfiguracionCobroVigenciaData>
+  >
+  _configuracionCobroVigenciaRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.configuracionCobroVigencia,
+        aliasName: $_aliasNameGenerator(
+          db.clientePortal.id,
+          db.configuracionCobroVigencia.clientePortalId,
+        ),
+      );
+
+  $$ConfiguracionCobroVigenciaTableProcessedTableManager
+  get configuracionCobroVigenciaRefs {
+    final manager = $$ConfiguracionCobroVigenciaTableTableManager(
+      $_db,
+      $_db.configuracionCobroVigencia,
+    ).filter(
+      (f) => f.clientePortalId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _configuracionCobroVigenciaRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirTable,
+    List<DocumentoPorEmitirData>
+  >
+  _documentoPorEmitirRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitir,
+        aliasName: $_aliasNameGenerator(
+          db.clientePortal.id,
+          db.documentoPorEmitir.clientePortalId,
+        ),
+      );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirRefs {
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter(
+      (f) => f.clientePortalId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ClientePortalTableFilterComposer
+    extends Composer<_$AppDatabase, $ClientePortalTable> {
+  $$ClientePortalTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get usuario => $composableBuilder(
+    column: $table.usuario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contrasenaCifrada => $composableBuilder(
+    column: $table.contrasenaCifrada,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ClienteTableFilterComposer get clienteId {
+    final $$ClienteTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableFilterComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> configuracionCobroVigenciaRefs(
+    Expression<bool> Function($$ConfiguracionCobroVigenciaTableFilterComposer f)
+    f,
+  ) {
+    final $$ConfiguracionCobroVigenciaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.configuracionCobroVigencia,
+          getReferencedColumn: (t) => t.clientePortalId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroVigenciaTableFilterComposer(
+                $db: $db,
+                $table: $db.configuracionCobroVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirRefs(
+    Expression<bool> Function($$DocumentoPorEmitirTableFilterComposer f) f,
+  ) {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.clientePortalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ClientePortalTableOrderingComposer
+    extends Composer<_$AppDatabase, $ClientePortalTable> {
+  $$ClientePortalTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get usuario => $composableBuilder(
+    column: $table.usuario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contrasenaCifrada => $composableBuilder(
+    column: $table.contrasenaCifrada,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ClienteTableOrderingComposer get clienteId {
+    final $$ClienteTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableOrderingComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ClientePortalTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ClientePortalTable> {
+  $$ClientePortalTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get usuario =>
+      $composableBuilder(column: $table.usuario, builder: (column) => column);
+
+  GeneratedColumn<String> get contrasenaCifrada => $composableBuilder(
+    column: $table.contrasenaCifrada,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observaciones => $composableBuilder(
+    column: $table.observaciones,
+    builder: (column) => column,
+  );
+
+  $$ClienteTableAnnotationComposer get clienteId {
+    final $$ClienteTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clienteId,
+      referencedTable: $db.cliente,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClienteTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cliente,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> configuracionCobroVigenciaRefs<T extends Object>(
+    Expression<T> Function(
+      $$ConfiguracionCobroVigenciaTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$ConfiguracionCobroVigenciaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.configuracionCobroVigencia,
+          getReferencedColumn: (t) => t.clientePortalId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroVigenciaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.configuracionCobroVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> documentoPorEmitirRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirTableAnnotationComposer a) f,
+  ) {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.clientePortalId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ClientePortalTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ClientePortalTable,
+          ClientePortalData,
+          $$ClientePortalTableFilterComposer,
+          $$ClientePortalTableOrderingComposer,
+          $$ClientePortalTableAnnotationComposer,
+          $$ClientePortalTableCreateCompanionBuilder,
+          $$ClientePortalTableUpdateCompanionBuilder,
+          (ClientePortalData, $$ClientePortalTableReferences),
+          ClientePortalData,
+          PrefetchHooks Function({
+            bool clienteId,
+            bool configuracionCobroVigenciaRefs,
+            bool documentoPorEmitirRefs,
+          })
+        > {
+  $$ClientePortalTableTableManager(_$AppDatabase db, $ClientePortalTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ClientePortalTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () =>
+                  $$ClientePortalTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$ClientePortalTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> clienteId = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<String?> usuario = const Value.absent(),
+                Value<String?> contrasenaCifrada = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ClientePortalCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                clienteId: clienteId,
+                nombre: nombre,
+                tipo: tipo,
+                url: url,
+                usuario: usuario,
+                contrasenaCifrada: contrasenaCifrada,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String clienteId,
+                required String nombre,
+                required String tipo,
+                Value<String?> url = const Value.absent(),
+                Value<String?> usuario = const Value.absent(),
+                Value<String?> contrasenaCifrada = const Value.absent(),
+                Value<String?> observaciones = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ClientePortalCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                clienteId: clienteId,
+                nombre: nombre,
+                tipo: tipo,
+                url: url,
+                usuario: usuario,
+                contrasenaCifrada: contrasenaCifrada,
+                observaciones: observaciones,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ClientePortalTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            clienteId = false,
+            configuracionCobroVigenciaRefs = false,
+            documentoPorEmitirRefs = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (configuracionCobroVigenciaRefs)
+                  db.configuracionCobroVigencia,
+                if (documentoPorEmitirRefs) db.documentoPorEmitir,
+              ],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (clienteId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.clienteId,
+                            referencedTable: $$ClientePortalTableReferences
+                                ._clienteIdTable(db),
+                            referencedColumn:
+                                $$ClientePortalTableReferences
+                                    ._clienteIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (configuracionCobroVigenciaRefs)
+                    await $_getPrefetchedData<
+                      ClientePortalData,
+                      $ClientePortalTable,
+                      ConfiguracionCobroVigenciaData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ClientePortalTableReferences
+                          ._configuracionCobroVigenciaRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ClientePortalTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).configuracionCobroVigenciaRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.clientePortalId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirRefs)
+                    await $_getPrefetchedData<
+                      ClientePortalData,
+                      $ClientePortalTable,
+                      DocumentoPorEmitirData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ClientePortalTableReferences
+                          ._documentoPorEmitirRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ClientePortalTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.clientePortalId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ClientePortalTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ClientePortalTable,
+      ClientePortalData,
+      $$ClientePortalTableFilterComposer,
+      $$ClientePortalTableOrderingComposer,
+      $$ClientePortalTableAnnotationComposer,
+      $$ClientePortalTableCreateCompanionBuilder,
+      $$ClientePortalTableUpdateCompanionBuilder,
+      (ClientePortalData, $$ClientePortalTableReferences),
+      ClientePortalData,
+      PrefetchHooks Function({
+        bool clienteId,
+        bool configuracionCobroVigenciaRefs,
+        bool documentoPorEmitirRefs,
+      })
+    >;
 typedef $$ServicioLineaComercialTableCreateCompanionBuilder =
     ServicioLineaComercialCompanion Function({
       Value<String> id,
@@ -85488,6 +88486,35 @@ final class $$ServicioLineaComercialTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _servicioLineaComercialVigenciaRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $AsignacionServicioTable,
+    List<AsignacionServicioData>
+  >
+  _asignacionServicioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.asignacionServicio,
+        aliasName: $_aliasNameGenerator(
+          db.servicioLineaComercial.id,
+          db.asignacionServicio.lineaComercialId,
+        ),
+      );
+
+  $$AsignacionServicioTableProcessedTableManager get asignacionServicioRefs {
+    final manager = $$AsignacionServicioTableTableManager(
+      $_db,
+      $_db.asignacionServicio,
+    ).filter(
+      (f) => f.lineaComercialId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _asignacionServicioRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -85573,6 +88600,31 @@ class $$ServicioLineaComercialTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> asignacionServicioRefs(
+    Expression<bool> Function($$AsignacionServicioTableFilterComposer f) f,
+  ) {
+    final $$AsignacionServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.asignacionServicio,
+      getReferencedColumn: (t) => t.lineaComercialId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AsignacionServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.asignacionServicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -85704,6 +88756,32 @@ class $$ServicioLineaComercialTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> asignacionServicioRefs<T extends Object>(
+    Expression<T> Function($$AsignacionServicioTableAnnotationComposer a) f,
+  ) {
+    final $$AsignacionServicioTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.asignacionServicio,
+          getReferencedColumn: (t) => t.lineaComercialId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AsignacionServicioTableAnnotationComposer(
+                $db: $db,
+                $table: $db.asignacionServicio,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ServicioLineaComercialTableTableManager
@@ -85722,6 +88800,7 @@ class $$ServicioLineaComercialTableTableManager
           PrefetchHooks Function({
             bool servicioId,
             bool servicioLineaComercialVigenciaRefs,
+            bool asignacionServicioRefs,
           })
         > {
   $$ServicioLineaComercialTableTableManager(
@@ -85791,12 +88870,14 @@ class $$ServicioLineaComercialTableTableManager
           prefetchHooksCallback: ({
             servicioId = false,
             servicioLineaComercialVigenciaRefs = false,
+            asignacionServicioRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (servicioLineaComercialVigenciaRefs)
                   db.servicioLineaComercialVigencia,
+                if (asignacionServicioRefs) db.asignacionServicio,
               ],
               addJoins: <
                 T extends TableManagerState<
@@ -85855,6 +88936,28 @@ class $$ServicioLineaComercialTableTableManager
                           ),
                       typedResults: items,
                     ),
+                  if (asignacionServicioRefs)
+                    await $_getPrefetchedData<
+                      ServicioLineaComercialData,
+                      $ServicioLineaComercialTable,
+                      AsignacionServicioData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ServicioLineaComercialTableReferences
+                          ._asignacionServicioRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioLineaComercialTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).asignacionServicioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.lineaComercialId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -85878,6 +88981,7 @@ typedef $$ServicioLineaComercialTableProcessedTableManager =
       PrefetchHooks Function({
         bool servicioId,
         bool servicioLineaComercialVigenciaRefs,
+        bool asignacionServicioRefs,
       })
     >;
 typedef $$ServicioLineaComercialVigenciaTableCreateCompanionBuilder =
@@ -85896,6 +89000,8 @@ typedef $$ServicioLineaComercialVigenciaTableCreateCompanionBuilder =
       required DateTime fechaInicioVigencia,
       Value<DateTime?> fechaFinVigencia,
       Value<String?> observaciones,
+      Value<int?> sueldoMensualReferenciaPersonal,
+      Value<int?> bonoMensualReferenciaPersonal,
       Value<int> rowid,
     });
 typedef $$ServicioLineaComercialVigenciaTableUpdateCompanionBuilder =
@@ -85914,6 +89020,8 @@ typedef $$ServicioLineaComercialVigenciaTableUpdateCompanionBuilder =
       Value<DateTime> fechaInicioVigencia,
       Value<DateTime?> fechaFinVigencia,
       Value<String?> observaciones,
+      Value<int?> sueldoMensualReferenciaPersonal,
+      Value<int?> bonoMensualReferenciaPersonal,
       Value<int> rowid,
     });
 
@@ -85993,6 +89101,37 @@ final class $$ServicioLineaComercialVigenciaTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ServicioLineaComercialVigenciaHorarioTable,
+    List<ServicioLineaComercialVigenciaHorarioData>
+  >
+  _servicioLineaComercialVigenciaHorarioRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.servicioLineaComercialVigenciaHorario,
+        aliasName: $_aliasNameGenerator(
+          db.servicioLineaComercialVigencia.id,
+          db.servicioLineaComercialVigenciaHorario.lineaComercialVigenciaId,
+        ),
+      );
+
+  $$ServicioLineaComercialVigenciaHorarioTableProcessedTableManager
+  get servicioLineaComercialVigenciaHorarioRefs {
+    final manager = $$ServicioLineaComercialVigenciaHorarioTableTableManager(
+      $_db,
+      $_db.servicioLineaComercialVigenciaHorario,
+    ).filter(
+      (f) =>
+          f.lineaComercialVigenciaId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _servicioLineaComercialVigenciaHorarioRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 
@@ -86092,6 +89231,16 @@ class $$ServicioLineaComercialVigenciaTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get sueldoMensualReferenciaPersonal => $composableBuilder(
+    column: $table.sueldoMensualReferenciaPersonal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bonoMensualReferenciaPersonal => $composableBuilder(
+    column: $table.bonoMensualReferenciaPersonal,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$ServicioLineaComercialTableFilterComposer get lineaComercialId {
     final $$ServicioLineaComercialTableFilterComposer composer =
         $composerBuilder(
@@ -86160,6 +89309,35 @@ class $$ServicioLineaComercialVigenciaTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> servicioLineaComercialVigenciaHorarioRefs(
+    Expression<bool> Function(
+      $$ServicioLineaComercialVigenciaHorarioTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$ServicioLineaComercialVigenciaHorarioTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.servicioLineaComercialVigenciaHorario,
+          getReferencedColumn: (t) => t.lineaComercialVigenciaId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialVigenciaHorarioTableFilterComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercialVigenciaHorario,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
   }
 
   Expression<bool> documentoPorEmitirLineaRefs(
@@ -86250,6 +89428,17 @@ class $$ServicioLineaComercialVigenciaTableOrderingComposer
 
   ColumnOrderings<String> get observaciones => $composableBuilder(
     column: $table.observaciones,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sueldoMensualReferenciaPersonal =>
+      $composableBuilder(
+        column: $table.sueldoMensualReferenciaPersonal,
+        builder: (column) => ColumnOrderings(column),
+      );
+
+  ColumnOrderings<int> get bonoMensualReferenciaPersonal => $composableBuilder(
+    column: $table.bonoMensualReferenciaPersonal,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -86382,6 +89571,17 @@ class $$ServicioLineaComercialVigenciaTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get sueldoMensualReferenciaPersonal =>
+      $composableBuilder(
+        column: $table.sueldoMensualReferenciaPersonal,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<int> get bonoMensualReferenciaPersonal => $composableBuilder(
+    column: $table.bonoMensualReferenciaPersonal,
+    builder: (column) => column,
+  );
+
   $$ServicioLineaComercialTableAnnotationComposer get lineaComercialId {
     final $$ServicioLineaComercialTableAnnotationComposer composer =
         $composerBuilder(
@@ -86453,6 +89653,35 @@ class $$ServicioLineaComercialVigenciaTableAnnotationComposer
     return composer;
   }
 
+  Expression<T> servicioLineaComercialVigenciaHorarioRefs<T extends Object>(
+    Expression<T> Function(
+      $$ServicioLineaComercialVigenciaHorarioTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$ServicioLineaComercialVigenciaHorarioTableAnnotationComposer
+    composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.servicioLineaComercialVigenciaHorario,
+      getReferencedColumn: (t) => t.lineaComercialVigenciaId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioLineaComercialVigenciaHorarioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicioLineaComercialVigenciaHorario,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> documentoPorEmitirLineaRefs<T extends Object>(
     Expression<T> Function($$DocumentoPorEmitirLineaTableAnnotationComposer a)
     f,
@@ -86501,6 +89730,7 @@ class $$ServicioLineaComercialVigenciaTableTableManager
             bool lineaComercialId,
             bool puestoId,
             bool modalidadTurnoId,
+            bool servicioLineaComercialVigenciaHorarioRefs,
             bool documentoPorEmitirLineaRefs,
           })
         > {
@@ -86542,6 +89772,10 @@ class $$ServicioLineaComercialVigenciaTableTableManager
                 Value<DateTime> fechaInicioVigencia = const Value.absent(),
                 Value<DateTime?> fechaFinVigencia = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<int?> sueldoMensualReferenciaPersonal =
+                    const Value.absent(),
+                Value<int?> bonoMensualReferenciaPersonal =
+                    const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ServicioLineaComercialVigenciaCompanion(
                 id: id,
@@ -86558,6 +89792,9 @@ class $$ServicioLineaComercialVigenciaTableTableManager
                 fechaInicioVigencia: fechaInicioVigencia,
                 fechaFinVigencia: fechaFinVigencia,
                 observaciones: observaciones,
+                sueldoMensualReferenciaPersonal:
+                    sueldoMensualReferenciaPersonal,
+                bonoMensualReferenciaPersonal: bonoMensualReferenciaPersonal,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -86576,6 +89813,10 @@ class $$ServicioLineaComercialVigenciaTableTableManager
                 required DateTime fechaInicioVigencia,
                 Value<DateTime?> fechaFinVigencia = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
+                Value<int?> sueldoMensualReferenciaPersonal =
+                    const Value.absent(),
+                Value<int?> bonoMensualReferenciaPersonal =
+                    const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ServicioLineaComercialVigenciaCompanion.insert(
                 id: id,
@@ -86592,6 +89833,9 @@ class $$ServicioLineaComercialVigenciaTableTableManager
                 fechaInicioVigencia: fechaInicioVigencia,
                 fechaFinVigencia: fechaFinVigencia,
                 observaciones: observaciones,
+                sueldoMensualReferenciaPersonal:
+                    sueldoMensualReferenciaPersonal,
+                bonoMensualReferenciaPersonal: bonoMensualReferenciaPersonal,
                 rowid: rowid,
               ),
           withReferenceMapper:
@@ -86612,11 +89856,14 @@ class $$ServicioLineaComercialVigenciaTableTableManager
             lineaComercialId = false,
             puestoId = false,
             modalidadTurnoId = false,
+            servicioLineaComercialVigenciaHorarioRefs = false,
             documentoPorEmitirLineaRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
+                if (servicioLineaComercialVigenciaHorarioRefs)
+                  db.servicioLineaComercialVigenciaHorario,
                 if (documentoPorEmitirLineaRefs) db.documentoPorEmitirLinea,
               ],
               addJoins: <
@@ -86684,6 +89931,31 @@ class $$ServicioLineaComercialVigenciaTableTableManager
               },
               getPrefetchedDataCallback: (items) async {
                 return [
+                  if (servicioLineaComercialVigenciaHorarioRefs)
+                    await $_getPrefetchedData<
+                      ServicioLineaComercialVigenciaData,
+                      $ServicioLineaComercialVigenciaTable,
+                      ServicioLineaComercialVigenciaHorarioData
+                    >(
+                      currentTable: table,
+                      referencedTable:
+                          $$ServicioLineaComercialVigenciaTableReferences
+                              ._servicioLineaComercialVigenciaHorarioRefsTable(
+                                db,
+                              ),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$ServicioLineaComercialVigenciaTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).servicioLineaComercialVigenciaHorarioRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.lineaComercialVigenciaId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
                   if (documentoPorEmitirLineaRefs)
                     await $_getPrefetchedData<
                       ServicioLineaComercialVigenciaData,
@@ -86734,8 +90006,415 @@ typedef $$ServicioLineaComercialVigenciaTableProcessedTableManager =
         bool lineaComercialId,
         bool puestoId,
         bool modalidadTurnoId,
+        bool servicioLineaComercialVigenciaHorarioRefs,
         bool documentoPorEmitirLineaRefs,
       })
+    >;
+typedef $$ServicioLineaComercialVigenciaHorarioTableCreateCompanionBuilder =
+    ServicioLineaComercialVigenciaHorarioCompanion Function({
+      Value<int> id,
+      required String lineaComercialVigenciaId,
+      required int diaSemana,
+      required int horaInicio,
+      required int horaFin,
+      Value<bool> cruzaMedianoche,
+      Value<bool> activo,
+    });
+typedef $$ServicioLineaComercialVigenciaHorarioTableUpdateCompanionBuilder =
+    ServicioLineaComercialVigenciaHorarioCompanion Function({
+      Value<int> id,
+      Value<String> lineaComercialVigenciaId,
+      Value<int> diaSemana,
+      Value<int> horaInicio,
+      Value<int> horaFin,
+      Value<bool> cruzaMedianoche,
+      Value<bool> activo,
+    });
+
+final class $$ServicioLineaComercialVigenciaHorarioTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ServicioLineaComercialVigenciaHorarioTable,
+          ServicioLineaComercialVigenciaHorarioData
+        > {
+  $$ServicioLineaComercialVigenciaHorarioTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ServicioLineaComercialVigenciaTable _lineaComercialVigenciaIdTable(
+    _$AppDatabase db,
+  ) => db.servicioLineaComercialVigencia.createAlias(
+    $_aliasNameGenerator(
+      db.servicioLineaComercialVigenciaHorario.lineaComercialVigenciaId,
+      db.servicioLineaComercialVigencia.id,
+    ),
+  );
+
+  $$ServicioLineaComercialVigenciaTableProcessedTableManager
+  get lineaComercialVigenciaId {
+    final $_column = $_itemColumn<String>('linea_comercial_vigencia_id')!;
+
+    final manager = $$ServicioLineaComercialVigenciaTableTableManager(
+      $_db,
+      $_db.servicioLineaComercialVigencia,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _lineaComercialVigenciaIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ServicioLineaComercialVigenciaHorarioTableFilterComposer
+    extends
+        Composer<_$AppDatabase, $ServicioLineaComercialVigenciaHorarioTable> {
+  $$ServicioLineaComercialVigenciaHorarioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diaSemana => $composableBuilder(
+    column: $table.diaSemana,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get horaInicio => $composableBuilder(
+    column: $table.horaInicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get horaFin => $composableBuilder(
+    column: $table.horaFin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get cruzaMedianoche => $composableBuilder(
+    column: $table.cruzaMedianoche,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get activo => $composableBuilder(
+    column: $table.activo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ServicioLineaComercialVigenciaTableFilterComposer
+  get lineaComercialVigenciaId {
+    final $$ServicioLineaComercialVigenciaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lineaComercialVigenciaId,
+          referencedTable: $db.servicioLineaComercialVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialVigenciaTableFilterComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercialVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ServicioLineaComercialVigenciaHorarioTableOrderingComposer
+    extends
+        Composer<_$AppDatabase, $ServicioLineaComercialVigenciaHorarioTable> {
+  $$ServicioLineaComercialVigenciaHorarioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diaSemana => $composableBuilder(
+    column: $table.diaSemana,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get horaInicio => $composableBuilder(
+    column: $table.horaInicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get horaFin => $composableBuilder(
+    column: $table.horaFin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get cruzaMedianoche => $composableBuilder(
+    column: $table.cruzaMedianoche,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get activo => $composableBuilder(
+    column: $table.activo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ServicioLineaComercialVigenciaTableOrderingComposer
+  get lineaComercialVigenciaId {
+    final $$ServicioLineaComercialVigenciaTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lineaComercialVigenciaId,
+          referencedTable: $db.servicioLineaComercialVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialVigenciaTableOrderingComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercialVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ServicioLineaComercialVigenciaHorarioTableAnnotationComposer
+    extends
+        Composer<_$AppDatabase, $ServicioLineaComercialVigenciaHorarioTable> {
+  $$ServicioLineaComercialVigenciaHorarioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get diaSemana =>
+      $composableBuilder(column: $table.diaSemana, builder: (column) => column);
+
+  GeneratedColumn<int> get horaInicio => $composableBuilder(
+    column: $table.horaInicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get horaFin =>
+      $composableBuilder(column: $table.horaFin, builder: (column) => column);
+
+  GeneratedColumn<bool> get cruzaMedianoche => $composableBuilder(
+    column: $table.cruzaMedianoche,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get activo =>
+      $composableBuilder(column: $table.activo, builder: (column) => column);
+
+  $$ServicioLineaComercialVigenciaTableAnnotationComposer
+  get lineaComercialVigenciaId {
+    final $$ServicioLineaComercialVigenciaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lineaComercialVigenciaId,
+          referencedTable: $db.servicioLineaComercialVigencia,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialVigenciaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercialVigencia,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ServicioLineaComercialVigenciaHorarioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ServicioLineaComercialVigenciaHorarioTable,
+          ServicioLineaComercialVigenciaHorarioData,
+          $$ServicioLineaComercialVigenciaHorarioTableFilterComposer,
+          $$ServicioLineaComercialVigenciaHorarioTableOrderingComposer,
+          $$ServicioLineaComercialVigenciaHorarioTableAnnotationComposer,
+          $$ServicioLineaComercialVigenciaHorarioTableCreateCompanionBuilder,
+          $$ServicioLineaComercialVigenciaHorarioTableUpdateCompanionBuilder,
+          (
+            ServicioLineaComercialVigenciaHorarioData,
+            $$ServicioLineaComercialVigenciaHorarioTableReferences,
+          ),
+          ServicioLineaComercialVigenciaHorarioData,
+          PrefetchHooks Function({bool lineaComercialVigenciaId})
+        > {
+  $$ServicioLineaComercialVigenciaHorarioTableTableManager(
+    _$AppDatabase db,
+    $ServicioLineaComercialVigenciaHorarioTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ServicioLineaComercialVigenciaHorarioTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () =>
+                  $$ServicioLineaComercialVigenciaHorarioTableOrderingComposer(
+                    $db: db,
+                    $table: table,
+                  ),
+          createComputedFieldComposer:
+              () =>
+                  $$ServicioLineaComercialVigenciaHorarioTableAnnotationComposer(
+                    $db: db,
+                    $table: table,
+                  ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> lineaComercialVigenciaId = const Value.absent(),
+                Value<int> diaSemana = const Value.absent(),
+                Value<int> horaInicio = const Value.absent(),
+                Value<int> horaFin = const Value.absent(),
+                Value<bool> cruzaMedianoche = const Value.absent(),
+                Value<bool> activo = const Value.absent(),
+              }) => ServicioLineaComercialVigenciaHorarioCompanion(
+                id: id,
+                lineaComercialVigenciaId: lineaComercialVigenciaId,
+                diaSemana: diaSemana,
+                horaInicio: horaInicio,
+                horaFin: horaFin,
+                cruzaMedianoche: cruzaMedianoche,
+                activo: activo,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String lineaComercialVigenciaId,
+                required int diaSemana,
+                required int horaInicio,
+                required int horaFin,
+                Value<bool> cruzaMedianoche = const Value.absent(),
+                Value<bool> activo = const Value.absent(),
+              }) => ServicioLineaComercialVigenciaHorarioCompanion.insert(
+                id: id,
+                lineaComercialVigenciaId: lineaComercialVigenciaId,
+                diaSemana: diaSemana,
+                horaInicio: horaInicio,
+                horaFin: horaFin,
+                cruzaMedianoche: cruzaMedianoche,
+                activo: activo,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$ServicioLineaComercialVigenciaHorarioTableReferences(
+                            db,
+                            table,
+                            e,
+                          ),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({lineaComercialVigenciaId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (lineaComercialVigenciaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.lineaComercialVigenciaId,
+                            referencedTable:
+                                $$ServicioLineaComercialVigenciaHorarioTableReferences
+                                    ._lineaComercialVigenciaIdTable(db),
+                            referencedColumn:
+                                $$ServicioLineaComercialVigenciaHorarioTableReferences
+                                    ._lineaComercialVigenciaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ServicioLineaComercialVigenciaHorarioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ServicioLineaComercialVigenciaHorarioTable,
+      ServicioLineaComercialVigenciaHorarioData,
+      $$ServicioLineaComercialVigenciaHorarioTableFilterComposer,
+      $$ServicioLineaComercialVigenciaHorarioTableOrderingComposer,
+      $$ServicioLineaComercialVigenciaHorarioTableAnnotationComposer,
+      $$ServicioLineaComercialVigenciaHorarioTableCreateCompanionBuilder,
+      $$ServicioLineaComercialVigenciaHorarioTableUpdateCompanionBuilder,
+      (
+        ServicioLineaComercialVigenciaHorarioData,
+        $$ServicioLineaComercialVigenciaHorarioTableReferences,
+      ),
+      ServicioLineaComercialVigenciaHorarioData,
+      PrefetchHooks Function({bool lineaComercialVigenciaId})
     >;
 typedef $$ConfiguracionCobroTableCreateCompanionBuilder =
     ConfiguracionCobroCompanion Function({
@@ -87215,6 +90894,7 @@ typedef $$ConfiguracionCobroVigenciaTableCreateCompanionBuilder =
       required String metodo,
       Value<bool> requiereComplemento,
       Value<String?> entidadFiscalId,
+      Value<String?> clientePortalId,
       Value<String?> portalNombre,
       Value<String?> portalUrl,
       Value<String?> portalUsuario,
@@ -87240,6 +90920,7 @@ typedef $$ConfiguracionCobroVigenciaTableUpdateCompanionBuilder =
       Value<String> metodo,
       Value<bool> requiereComplemento,
       Value<String?> entidadFiscalId,
+      Value<String?> clientePortalId,
       Value<String?> portalNombre,
       Value<String?> portalUrl,
       Value<String?> portalUsuario,
@@ -87334,6 +91015,28 @@ final class $$ConfiguracionCobroVigenciaTableReferences
     );
   }
 
+  static $ClientePortalTable _clientePortalIdTable(_$AppDatabase db) =>
+      db.clientePortal.createAlias(
+        $_aliasNameGenerator(
+          db.configuracionCobroVigencia.clientePortalId,
+          db.clientePortal.id,
+        ),
+      );
+
+  $$ClientePortalTableProcessedTableManager? get clientePortalId {
+    final $_column = $_itemColumn<String>('cliente_portal_id');
+    if ($_column == null) return null;
+    final manager = $$ClientePortalTableTableManager(
+      $_db,
+      $_db.clientePortal,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_clientePortalIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
   static MultiTypedResultKey<
     $ConfiguracionCobroCorreoTable,
     List<ConfiguracionCobroCorreoData>
@@ -87367,23 +91070,23 @@ final class $$ConfiguracionCobroVigenciaTableReferences
   }
 
   static MultiTypedResultKey<
-    $ConfiguracionCobroReglaEventoTable,
-    List<ConfiguracionCobroReglaEventoData>
+    $ConfiguracionCobroEtapaTable,
+    List<ConfiguracionCobroEtapaData>
   >
-  _configuracionCobroReglaEventoRefsTable(_$AppDatabase db) =>
+  _configuracionCobroEtapaRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
-        db.configuracionCobroReglaEvento,
+        db.configuracionCobroEtapa,
         aliasName: $_aliasNameGenerator(
           db.configuracionCobroVigencia.id,
-          db.configuracionCobroReglaEvento.configuracionCobroVigenciaId,
+          db.configuracionCobroEtapa.configuracionCobroVigenciaId,
         ),
       );
 
-  $$ConfiguracionCobroReglaEventoTableProcessedTableManager
-  get configuracionCobroReglaEventoRefs {
-    final manager = $$ConfiguracionCobroReglaEventoTableTableManager(
+  $$ConfiguracionCobroEtapaTableProcessedTableManager
+  get configuracionCobroEtapaRefs {
+    final manager = $$ConfiguracionCobroEtapaTableTableManager(
       $_db,
-      $_db.configuracionCobroReglaEvento,
+      $_db.configuracionCobroEtapa,
     ).filter(
       (f) => f.configuracionCobroVigenciaId.id.sqlEquals(
         $_itemColumn<String>('id')!,
@@ -87391,7 +91094,7 @@ final class $$ConfiguracionCobroVigenciaTableReferences
     );
 
     final cache = $_typedResult.readTableOrNull(
-      _configuracionCobroReglaEventoRefsTable($_db),
+      _configuracionCobroEtapaRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -87599,6 +91302,29 @@ class $$ConfiguracionCobroVigenciaTableFilterComposer
     return composer;
   }
 
+  $$ClientePortalTableFilterComposer get clientePortalId {
+    final $$ClientePortalTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clientePortalId,
+      referencedTable: $db.clientePortal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientePortalTableFilterComposer(
+            $db: $db,
+            $table: $db.clientePortal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<bool> configuracionCobroCorreoRefs(
     Expression<bool> Function($$ConfiguracionCobroCorreoTableFilterComposer f)
     f,
@@ -87626,26 +91352,23 @@ class $$ConfiguracionCobroVigenciaTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> configuracionCobroReglaEventoRefs(
-    Expression<bool> Function(
-      $$ConfiguracionCobroReglaEventoTableFilterComposer f,
-    )
-    f,
+  Expression<bool> configuracionCobroEtapaRefs(
+    Expression<bool> Function($$ConfiguracionCobroEtapaTableFilterComposer f) f,
   ) {
-    final $$ConfiguracionCobroReglaEventoTableFilterComposer composer =
+    final $$ConfiguracionCobroEtapaTableFilterComposer composer =
         $composerBuilder(
           composer: this,
           getCurrentColumn: (t) => t.id,
-          referencedTable: $db.configuracionCobroReglaEvento,
+          referencedTable: $db.configuracionCobroEtapa,
           getReferencedColumn: (t) => t.configuracionCobroVigenciaId,
           builder:
               (
                 joinBuilder, {
                 $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-              }) => $$ConfiguracionCobroReglaEventoTableFilterComposer(
+              }) => $$ConfiguracionCobroEtapaTableFilterComposer(
                 $db: $db,
-                $table: $db.configuracionCobroReglaEvento,
+                $table: $db.configuracionCobroEtapa,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -87853,6 +91576,29 @@ class $$ConfiguracionCobroVigenciaTableOrderingComposer
     );
     return composer;
   }
+
+  $$ClientePortalTableOrderingComposer get clientePortalId {
+    final $$ClientePortalTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clientePortalId,
+      referencedTable: $db.clientePortal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientePortalTableOrderingComposer(
+            $db: $db,
+            $table: $db.clientePortal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ConfiguracionCobroVigenciaTableAnnotationComposer
@@ -88015,6 +91761,29 @@ class $$ConfiguracionCobroVigenciaTableAnnotationComposer
     return composer;
   }
 
+  $$ClientePortalTableAnnotationComposer get clientePortalId {
+    final $$ClientePortalTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clientePortalId,
+      referencedTable: $db.clientePortal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientePortalTableAnnotationComposer(
+            $db: $db,
+            $table: $db.clientePortal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> configuracionCobroCorreoRefs<T extends Object>(
     Expression<T> Function($$ConfiguracionCobroCorreoTableAnnotationComposer a)
     f,
@@ -88042,26 +91811,24 @@ class $$ConfiguracionCobroVigenciaTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> configuracionCobroReglaEventoRefs<T extends Object>(
-    Expression<T> Function(
-      $$ConfiguracionCobroReglaEventoTableAnnotationComposer a,
-    )
+  Expression<T> configuracionCobroEtapaRefs<T extends Object>(
+    Expression<T> Function($$ConfiguracionCobroEtapaTableAnnotationComposer a)
     f,
   ) {
-    final $$ConfiguracionCobroReglaEventoTableAnnotationComposer composer =
+    final $$ConfiguracionCobroEtapaTableAnnotationComposer composer =
         $composerBuilder(
           composer: this,
           getCurrentColumn: (t) => t.id,
-          referencedTable: $db.configuracionCobroReglaEvento,
+          referencedTable: $db.configuracionCobroEtapa,
           getReferencedColumn: (t) => t.configuracionCobroVigenciaId,
           builder:
               (
                 joinBuilder, {
                 $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-              }) => $$ConfiguracionCobroReglaEventoTableAnnotationComposer(
+              }) => $$ConfiguracionCobroEtapaTableAnnotationComposer(
                 $db: $db,
-                $table: $db.configuracionCobroReglaEvento,
+                $table: $db.configuracionCobroEtapa,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -88121,8 +91888,9 @@ class $$ConfiguracionCobroVigenciaTableTableManager
             bool configuracionCobroId,
             bool frecuenciaId,
             bool entidadFiscalId,
+            bool clientePortalId,
             bool configuracionCobroCorreoRefs,
-            bool configuracionCobroReglaEventoRefs,
+            bool configuracionCobroEtapaRefs,
             bool documentoPorEmitirConfiguracionRefs,
           })
         > {
@@ -88162,6 +91930,7 @@ class $$ConfiguracionCobroVigenciaTableTableManager
                 Value<String> metodo = const Value.absent(),
                 Value<bool> requiereComplemento = const Value.absent(),
                 Value<String?> entidadFiscalId = const Value.absent(),
+                Value<String?> clientePortalId = const Value.absent(),
                 Value<String?> portalNombre = const Value.absent(),
                 Value<String?> portalUrl = const Value.absent(),
                 Value<String?> portalUsuario = const Value.absent(),
@@ -88185,6 +91954,7 @@ class $$ConfiguracionCobroVigenciaTableTableManager
                 metodo: metodo,
                 requiereComplemento: requiereComplemento,
                 entidadFiscalId: entidadFiscalId,
+                clientePortalId: clientePortalId,
                 portalNombre: portalNombre,
                 portalUrl: portalUrl,
                 portalUsuario: portalUsuario,
@@ -88210,6 +91980,7 @@ class $$ConfiguracionCobroVigenciaTableTableManager
                 required String metodo,
                 Value<bool> requiereComplemento = const Value.absent(),
                 Value<String?> entidadFiscalId = const Value.absent(),
+                Value<String?> clientePortalId = const Value.absent(),
                 Value<String?> portalNombre = const Value.absent(),
                 Value<String?> portalUrl = const Value.absent(),
                 Value<String?> portalUsuario = const Value.absent(),
@@ -88233,6 +92004,7 @@ class $$ConfiguracionCobroVigenciaTableTableManager
                 metodo: metodo,
                 requiereComplemento: requiereComplemento,
                 entidadFiscalId: entidadFiscalId,
+                clientePortalId: clientePortalId,
                 portalNombre: portalNombre,
                 portalUrl: portalUrl,
                 portalUsuario: portalUsuario,
@@ -88262,16 +92034,16 @@ class $$ConfiguracionCobroVigenciaTableTableManager
             configuracionCobroId = false,
             frecuenciaId = false,
             entidadFiscalId = false,
+            clientePortalId = false,
             configuracionCobroCorreoRefs = false,
-            configuracionCobroReglaEventoRefs = false,
+            configuracionCobroEtapaRefs = false,
             documentoPorEmitirConfiguracionRefs = false,
           }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (configuracionCobroCorreoRefs) db.configuracionCobroCorreo,
-                if (configuracionCobroReglaEventoRefs)
-                  db.configuracionCobroReglaEvento,
+                if (configuracionCobroEtapaRefs) db.configuracionCobroEtapa,
                 if (documentoPorEmitirConfiguracionRefs)
                   db.documentoPorEmitirConfiguracion,
               ],
@@ -88335,6 +92107,21 @@ class $$ConfiguracionCobroVigenciaTableTableManager
                           )
                           as T;
                 }
+                if (clientePortalId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.clientePortalId,
+                            referencedTable:
+                                $$ConfiguracionCobroVigenciaTableReferences
+                                    ._clientePortalIdTable(db),
+                            referencedColumn:
+                                $$ConfiguracionCobroVigenciaTableReferences
+                                    ._clientePortalIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -88363,23 +92150,23 @@ class $$ConfiguracionCobroVigenciaTableTableManager
                           ),
                       typedResults: items,
                     ),
-                  if (configuracionCobroReglaEventoRefs)
+                  if (configuracionCobroEtapaRefs)
                     await $_getPrefetchedData<
                       ConfiguracionCobroVigenciaData,
                       $ConfiguracionCobroVigenciaTable,
-                      ConfiguracionCobroReglaEventoData
+                      ConfiguracionCobroEtapaData
                     >(
                       currentTable: table,
                       referencedTable:
                           $$ConfiguracionCobroVigenciaTableReferences
-                              ._configuracionCobroReglaEventoRefsTable(db),
+                              ._configuracionCobroEtapaRefsTable(db),
                       managerFromTypedResult:
                           (p0) =>
                               $$ConfiguracionCobroVigenciaTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).configuracionCobroReglaEventoRefs,
+                              ).configuracionCobroEtapaRefs,
                       referencedItemsForCurrentItem:
                           (item, referencedItems) => referencedItems.where(
                             (e) => e.configuracionCobroVigenciaId == item.id,
@@ -88436,8 +92223,9 @@ typedef $$ConfiguracionCobroVigenciaTableProcessedTableManager =
         bool configuracionCobroId,
         bool frecuenciaId,
         bool entidadFiscalId,
+        bool clientePortalId,
         bool configuracionCobroCorreoRefs,
-        bool configuracionCobroReglaEventoRefs,
+        bool configuracionCobroEtapaRefs,
         bool documentoPorEmitirConfiguracionRefs,
       })
     >;
@@ -88760,41 +92548,49 @@ typedef $$ConfiguracionCobroCorreoTableProcessedTableManager =
       ConfiguracionCobroCorreoData,
       PrefetchHooks Function({bool configuracionCobroVigenciaId})
     >;
-typedef $$ConfiguracionCobroReglaEventoTableCreateCompanionBuilder =
-    ConfiguracionCobroReglaEventoCompanion Function({
-      Value<int> id,
+typedef $$ConfiguracionCobroEtapaTableCreateCompanionBuilder =
+    ConfiguracionCobroEtapaCompanion Function({
+      required String id,
       required String configuracionCobroVigenciaId,
-      required String tipoEvento,
-      required String tipoRegla,
+      Value<String?> tipoSistema,
+      Value<String?> nombre,
+      required int orden,
+      Value<String?> tipoRegla,
       Value<String?> mesRelativo,
       Value<int?> diaDelMes,
       Value<String?> ordinalSemana,
       Value<String?> diaSemana,
-      Value<int?> offsetDiasHabiles,
-      Value<String?> eventoReferencia,
+      Value<int?> offsetDias,
+      Value<String?> etapaReferenciaId,
+      Value<bool> referenciaCierrePeriodo,
+      Value<int> rowid,
     });
-typedef $$ConfiguracionCobroReglaEventoTableUpdateCompanionBuilder =
-    ConfiguracionCobroReglaEventoCompanion Function({
-      Value<int> id,
+typedef $$ConfiguracionCobroEtapaTableUpdateCompanionBuilder =
+    ConfiguracionCobroEtapaCompanion Function({
+      Value<String> id,
       Value<String> configuracionCobroVigenciaId,
-      Value<String> tipoEvento,
-      Value<String> tipoRegla,
+      Value<String?> tipoSistema,
+      Value<String?> nombre,
+      Value<int> orden,
+      Value<String?> tipoRegla,
       Value<String?> mesRelativo,
       Value<int?> diaDelMes,
       Value<String?> ordinalSemana,
       Value<String?> diaSemana,
-      Value<int?> offsetDiasHabiles,
-      Value<String?> eventoReferencia,
+      Value<int?> offsetDias,
+      Value<String?> etapaReferenciaId,
+      Value<bool> referenciaCierrePeriodo,
+      Value<int> rowid,
     });
 
-final class $$ConfiguracionCobroReglaEventoTableReferences
+final class $$ConfiguracionCobroEtapaTableReferences
     extends
         BaseReferences<
           _$AppDatabase,
-          $ConfiguracionCobroReglaEventoTable,
-          ConfiguracionCobroReglaEventoData
+          $ConfiguracionCobroEtapaTable,
+          ConfiguracionCobroEtapaData
         > {
-  $$ConfiguracionCobroReglaEventoTableReferences(
+  $$ConfiguracionCobroEtapaTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
@@ -88804,7 +92600,7 @@ final class $$ConfiguracionCobroReglaEventoTableReferences
     _$AppDatabase db,
   ) => db.configuracionCobroVigencia.createAlias(
     $_aliasNameGenerator(
-      db.configuracionCobroReglaEvento.configuracionCobroVigenciaId,
+      db.configuracionCobroEtapa.configuracionCobroVigenciaId,
       db.configuracionCobroVigencia.id,
     ),
   );
@@ -88825,24 +92621,57 @@ final class $$ConfiguracionCobroReglaEventoTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static $ConfiguracionCobroEtapaTable _etapaReferenciaIdTable(
+    _$AppDatabase db,
+  ) => db.configuracionCobroEtapa.createAlias(
+    $_aliasNameGenerator(
+      db.configuracionCobroEtapa.etapaReferenciaId,
+      db.configuracionCobroEtapa.id,
+    ),
+  );
+
+  $$ConfiguracionCobroEtapaTableProcessedTableManager? get etapaReferenciaId {
+    final $_column = $_itemColumn<String>('etapa_referencia_id');
+    if ($_column == null) return null;
+    final manager = $$ConfiguracionCobroEtapaTableTableManager(
+      $_db,
+      $_db.configuracionCobroEtapa,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_etapaReferenciaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 }
 
-class $$ConfiguracionCobroReglaEventoTableFilterComposer
-    extends Composer<_$AppDatabase, $ConfiguracionCobroReglaEventoTable> {
-  $$ConfiguracionCobroReglaEventoTableFilterComposer({
+class $$ConfiguracionCobroEtapaTableFilterComposer
+    extends Composer<_$AppDatabase, $ConfiguracionCobroEtapaTable> {
+  $$ConfiguracionCobroEtapaTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tipoEvento => $composableBuilder(
-    column: $table.tipoEvento,
+  ColumnFilters<String> get tipoSistema => $composableBuilder(
+    column: $table.tipoSistema,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -88871,13 +92700,13 @@ class $$ConfiguracionCobroReglaEventoTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get offsetDiasHabiles => $composableBuilder(
-    column: $table.offsetDiasHabiles,
+  ColumnFilters<int> get offsetDias => $composableBuilder(
+    column: $table.offsetDias,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get eventoReferencia => $composableBuilder(
-    column: $table.eventoReferencia,
+  ColumnFilters<bool> get referenciaCierrePeriodo => $composableBuilder(
+    column: $table.referenciaCierrePeriodo,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -88905,24 +92734,58 @@ class $$ConfiguracionCobroReglaEventoTableFilterComposer
         );
     return composer;
   }
+
+  $$ConfiguracionCobroEtapaTableFilterComposer get etapaReferenciaId {
+    final $$ConfiguracionCobroEtapaTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.etapaReferenciaId,
+          referencedTable: $db.configuracionCobroEtapa,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroEtapaTableFilterComposer(
+                $db: $db,
+                $table: $db.configuracionCobroEtapa,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
 }
 
-class $$ConfiguracionCobroReglaEventoTableOrderingComposer
-    extends Composer<_$AppDatabase, $ConfiguracionCobroReglaEventoTable> {
-  $$ConfiguracionCobroReglaEventoTableOrderingComposer({
+class $$ConfiguracionCobroEtapaTableOrderingComposer
+    extends Composer<_$AppDatabase, $ConfiguracionCobroEtapaTable> {
+  $$ConfiguracionCobroEtapaTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tipoEvento => $composableBuilder(
-    column: $table.tipoEvento,
+  ColumnOrderings<String> get tipoSistema => $composableBuilder(
+    column: $table.tipoSistema,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -88951,13 +92814,13 @@ class $$ConfiguracionCobroReglaEventoTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get offsetDiasHabiles => $composableBuilder(
-    column: $table.offsetDiasHabiles,
+  ColumnOrderings<int> get offsetDias => $composableBuilder(
+    column: $table.offsetDias,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get eventoReferencia => $composableBuilder(
-    column: $table.eventoReferencia,
+  ColumnOrderings<bool> get referenciaCierrePeriodo => $composableBuilder(
+    column: $table.referenciaCierrePeriodo,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -88985,24 +92848,54 @@ class $$ConfiguracionCobroReglaEventoTableOrderingComposer
         );
     return composer;
   }
+
+  $$ConfiguracionCobroEtapaTableOrderingComposer get etapaReferenciaId {
+    final $$ConfiguracionCobroEtapaTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.etapaReferenciaId,
+          referencedTable: $db.configuracionCobroEtapa,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroEtapaTableOrderingComposer(
+                $db: $db,
+                $table: $db.configuracionCobroEtapa,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
 }
 
-class $$ConfiguracionCobroReglaEventoTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ConfiguracionCobroReglaEventoTable> {
-  $$ConfiguracionCobroReglaEventoTableAnnotationComposer({
+class $$ConfiguracionCobroEtapaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ConfiguracionCobroEtapaTable> {
+  $$ConfiguracionCobroEtapaTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get tipoEvento => $composableBuilder(
-    column: $table.tipoEvento,
+  GeneratedColumn<String> get tipoSistema => $composableBuilder(
+    column: $table.tipoSistema,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
 
   GeneratedColumn<String> get tipoRegla =>
       $composableBuilder(column: $table.tipoRegla, builder: (column) => column);
@@ -89023,13 +92916,13 @@ class $$ConfiguracionCobroReglaEventoTableAnnotationComposer
   GeneratedColumn<String> get diaSemana =>
       $composableBuilder(column: $table.diaSemana, builder: (column) => column);
 
-  GeneratedColumn<int> get offsetDiasHabiles => $composableBuilder(
-    column: $table.offsetDiasHabiles,
+  GeneratedColumn<int> get offsetDias => $composableBuilder(
+    column: $table.offsetDias,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get eventoReferencia => $composableBuilder(
-    column: $table.eventoReferencia,
+  GeneratedColumn<bool> get referenciaCierrePeriodo => $composableBuilder(
+    column: $table.referenciaCierrePeriodo,
     builder: (column) => column,
   );
 
@@ -89057,96 +92950,139 @@ class $$ConfiguracionCobroReglaEventoTableAnnotationComposer
         );
     return composer;
   }
+
+  $$ConfiguracionCobroEtapaTableAnnotationComposer get etapaReferenciaId {
+    final $$ConfiguracionCobroEtapaTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.etapaReferenciaId,
+          referencedTable: $db.configuracionCobroEtapa,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConfiguracionCobroEtapaTableAnnotationComposer(
+                $db: $db,
+                $table: $db.configuracionCobroEtapa,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
 }
 
-class $$ConfiguracionCobroReglaEventoTableTableManager
+class $$ConfiguracionCobroEtapaTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $ConfiguracionCobroReglaEventoTable,
-          ConfiguracionCobroReglaEventoData,
-          $$ConfiguracionCobroReglaEventoTableFilterComposer,
-          $$ConfiguracionCobroReglaEventoTableOrderingComposer,
-          $$ConfiguracionCobroReglaEventoTableAnnotationComposer,
-          $$ConfiguracionCobroReglaEventoTableCreateCompanionBuilder,
-          $$ConfiguracionCobroReglaEventoTableUpdateCompanionBuilder,
+          $ConfiguracionCobroEtapaTable,
+          ConfiguracionCobroEtapaData,
+          $$ConfiguracionCobroEtapaTableFilterComposer,
+          $$ConfiguracionCobroEtapaTableOrderingComposer,
+          $$ConfiguracionCobroEtapaTableAnnotationComposer,
+          $$ConfiguracionCobroEtapaTableCreateCompanionBuilder,
+          $$ConfiguracionCobroEtapaTableUpdateCompanionBuilder,
           (
-            ConfiguracionCobroReglaEventoData,
-            $$ConfiguracionCobroReglaEventoTableReferences,
+            ConfiguracionCobroEtapaData,
+            $$ConfiguracionCobroEtapaTableReferences,
           ),
-          ConfiguracionCobroReglaEventoData,
-          PrefetchHooks Function({bool configuracionCobroVigenciaId})
+          ConfiguracionCobroEtapaData,
+          PrefetchHooks Function({
+            bool configuracionCobroVigenciaId,
+            bool etapaReferenciaId,
+          })
         > {
-  $$ConfiguracionCobroReglaEventoTableTableManager(
+  $$ConfiguracionCobroEtapaTableTableManager(
     _$AppDatabase db,
-    $ConfiguracionCobroReglaEventoTable table,
+    $ConfiguracionCobroEtapaTable table,
   ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer:
-              () => $$ConfiguracionCobroReglaEventoTableFilterComposer(
+              () => $$ConfiguracionCobroEtapaTableFilterComposer(
                 $db: db,
                 $table: table,
               ),
           createOrderingComposer:
-              () => $$ConfiguracionCobroReglaEventoTableOrderingComposer(
+              () => $$ConfiguracionCobroEtapaTableOrderingComposer(
                 $db: db,
                 $table: table,
               ),
           createComputedFieldComposer:
-              () => $$ConfiguracionCobroReglaEventoTableAnnotationComposer(
+              () => $$ConfiguracionCobroEtapaTableAnnotationComposer(
                 $db: db,
                 $table: table,
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> configuracionCobroVigenciaId =
                     const Value.absent(),
-                Value<String> tipoEvento = const Value.absent(),
-                Value<String> tipoRegla = const Value.absent(),
+                Value<String?> tipoSistema = const Value.absent(),
+                Value<String?> nombre = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<String?> tipoRegla = const Value.absent(),
                 Value<String?> mesRelativo = const Value.absent(),
                 Value<int?> diaDelMes = const Value.absent(),
                 Value<String?> ordinalSemana = const Value.absent(),
                 Value<String?> diaSemana = const Value.absent(),
-                Value<int?> offsetDiasHabiles = const Value.absent(),
-                Value<String?> eventoReferencia = const Value.absent(),
-              }) => ConfiguracionCobroReglaEventoCompanion(
+                Value<int?> offsetDias = const Value.absent(),
+                Value<String?> etapaReferenciaId = const Value.absent(),
+                Value<bool> referenciaCierrePeriodo = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConfiguracionCobroEtapaCompanion(
                 id: id,
                 configuracionCobroVigenciaId: configuracionCobroVigenciaId,
-                tipoEvento: tipoEvento,
+                tipoSistema: tipoSistema,
+                nombre: nombre,
+                orden: orden,
                 tipoRegla: tipoRegla,
                 mesRelativo: mesRelativo,
                 diaDelMes: diaDelMes,
                 ordinalSemana: ordinalSemana,
                 diaSemana: diaSemana,
-                offsetDiasHabiles: offsetDiasHabiles,
-                eventoReferencia: eventoReferencia,
+                offsetDias: offsetDias,
+                etapaReferenciaId: etapaReferenciaId,
+                referenciaCierrePeriodo: referenciaCierrePeriodo,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                required String id,
                 required String configuracionCobroVigenciaId,
-                required String tipoEvento,
-                required String tipoRegla,
+                Value<String?> tipoSistema = const Value.absent(),
+                Value<String?> nombre = const Value.absent(),
+                required int orden,
+                Value<String?> tipoRegla = const Value.absent(),
                 Value<String?> mesRelativo = const Value.absent(),
                 Value<int?> diaDelMes = const Value.absent(),
                 Value<String?> ordinalSemana = const Value.absent(),
                 Value<String?> diaSemana = const Value.absent(),
-                Value<int?> offsetDiasHabiles = const Value.absent(),
-                Value<String?> eventoReferencia = const Value.absent(),
-              }) => ConfiguracionCobroReglaEventoCompanion.insert(
+                Value<int?> offsetDias = const Value.absent(),
+                Value<String?> etapaReferenciaId = const Value.absent(),
+                Value<bool> referenciaCierrePeriodo = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConfiguracionCobroEtapaCompanion.insert(
                 id: id,
                 configuracionCobroVigenciaId: configuracionCobroVigenciaId,
-                tipoEvento: tipoEvento,
+                tipoSistema: tipoSistema,
+                nombre: nombre,
+                orden: orden,
                 tipoRegla: tipoRegla,
                 mesRelativo: mesRelativo,
                 diaDelMes: diaDelMes,
                 ordinalSemana: ordinalSemana,
                 diaSemana: diaSemana,
-                offsetDiasHabiles: offsetDiasHabiles,
-                eventoReferencia: eventoReferencia,
+                offsetDias: offsetDias,
+                etapaReferenciaId: etapaReferenciaId,
+                referenciaCierrePeriodo: referenciaCierrePeriodo,
+                rowid: rowid,
               ),
           withReferenceMapper:
               (p0) =>
@@ -89154,7 +93090,7 @@ class $$ConfiguracionCobroReglaEventoTableTableManager
                       .map(
                         (e) => (
                           e.readTable(table),
-                          $$ConfiguracionCobroReglaEventoTableReferences(
+                          $$ConfiguracionCobroEtapaTableReferences(
                             db,
                             table,
                             e,
@@ -89162,7 +93098,10 @@ class $$ConfiguracionCobroReglaEventoTableTableManager
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: ({configuracionCobroVigenciaId = false}) {
+          prefetchHooksCallback: ({
+            configuracionCobroVigenciaId = false,
+            etapaReferenciaId = false,
+          }) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -89187,11 +93126,26 @@ class $$ConfiguracionCobroReglaEventoTableTableManager
                             currentTable: table,
                             currentColumn: table.configuracionCobroVigenciaId,
                             referencedTable:
-                                $$ConfiguracionCobroReglaEventoTableReferences
+                                $$ConfiguracionCobroEtapaTableReferences
                                     ._configuracionCobroVigenciaIdTable(db),
                             referencedColumn:
-                                $$ConfiguracionCobroReglaEventoTableReferences
+                                $$ConfiguracionCobroEtapaTableReferences
                                     ._configuracionCobroVigenciaIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (etapaReferenciaId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.etapaReferenciaId,
+                            referencedTable:
+                                $$ConfiguracionCobroEtapaTableReferences
+                                    ._etapaReferenciaIdTable(db),
+                            referencedColumn:
+                                $$ConfiguracionCobroEtapaTableReferences
+                                    ._etapaReferenciaIdTable(db)
                                     .id,
                           )
                           as T;
@@ -89208,22 +93162,22 @@ class $$ConfiguracionCobroReglaEventoTableTableManager
       );
 }
 
-typedef $$ConfiguracionCobroReglaEventoTableProcessedTableManager =
+typedef $$ConfiguracionCobroEtapaTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $ConfiguracionCobroReglaEventoTable,
-      ConfiguracionCobroReglaEventoData,
-      $$ConfiguracionCobroReglaEventoTableFilterComposer,
-      $$ConfiguracionCobroReglaEventoTableOrderingComposer,
-      $$ConfiguracionCobroReglaEventoTableAnnotationComposer,
-      $$ConfiguracionCobroReglaEventoTableCreateCompanionBuilder,
-      $$ConfiguracionCobroReglaEventoTableUpdateCompanionBuilder,
-      (
-        ConfiguracionCobroReglaEventoData,
-        $$ConfiguracionCobroReglaEventoTableReferences,
-      ),
-      ConfiguracionCobroReglaEventoData,
-      PrefetchHooks Function({bool configuracionCobroVigenciaId})
+      $ConfiguracionCobroEtapaTable,
+      ConfiguracionCobroEtapaData,
+      $$ConfiguracionCobroEtapaTableFilterComposer,
+      $$ConfiguracionCobroEtapaTableOrderingComposer,
+      $$ConfiguracionCobroEtapaTableAnnotationComposer,
+      $$ConfiguracionCobroEtapaTableCreateCompanionBuilder,
+      $$ConfiguracionCobroEtapaTableUpdateCompanionBuilder,
+      (ConfiguracionCobroEtapaData, $$ConfiguracionCobroEtapaTableReferences),
+      ConfiguracionCobroEtapaData,
+      PrefetchHooks Function({
+        bool configuracionCobroVigenciaId,
+        bool etapaReferenciaId,
+      })
     >;
 typedef $$DocumentoPorEmitirTableCreateCompanionBuilder =
     DocumentoPorEmitirCompanion Function({
@@ -89234,6 +93188,7 @@ typedef $$DocumentoPorEmitirTableCreateCompanionBuilder =
       required String codigo,
       required String clienteId,
       Value<String?> entidadFiscalId,
+      Value<String?> clientePortalId,
       required String tipoDocumento,
       required String agrupacion,
       required String metodo,
@@ -89252,8 +93207,6 @@ typedef $$DocumentoPorEmitirTableCreateCompanionBuilder =
       Value<String?> motivoEstatus,
       Value<String?> observaciones,
       Value<String?> folioDocumento,
-      Value<String?> serieFiscal,
-      Value<String?> folioFiscal,
       Value<String?> uuid,
       Value<DateTime?> fechaEmisionReal,
       Value<int?> importeEmitido,
@@ -89271,6 +93224,7 @@ typedef $$DocumentoPorEmitirTableUpdateCompanionBuilder =
       Value<String> codigo,
       Value<String> clienteId,
       Value<String?> entidadFiscalId,
+      Value<String?> clientePortalId,
       Value<String> tipoDocumento,
       Value<String> agrupacion,
       Value<String> metodo,
@@ -89289,8 +93243,6 @@ typedef $$DocumentoPorEmitirTableUpdateCompanionBuilder =
       Value<String?> motivoEstatus,
       Value<String?> observaciones,
       Value<String?> folioDocumento,
-      Value<String?> serieFiscal,
-      Value<String?> folioFiscal,
       Value<String?> uuid,
       Value<DateTime?> fechaEmisionReal,
       Value<int?> importeEmitido,
@@ -89354,6 +93306,28 @@ final class $$DocumentoPorEmitirTableReferences
     );
   }
 
+  static $ClientePortalTable _clientePortalIdTable(_$AppDatabase db) =>
+      db.clientePortal.createAlias(
+        $_aliasNameGenerator(
+          db.documentoPorEmitir.clientePortalId,
+          db.clientePortal.id,
+        ),
+      );
+
+  $$ClientePortalTableProcessedTableManager? get clientePortalId {
+    final $_column = $_itemColumn<String>('cliente_portal_id');
+    if ($_column == null) return null;
+    final manager = $$ClientePortalTableTableManager(
+      $_db,
+      $_db.clientePortal,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_clientePortalIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
   static MultiTypedResultKey<
     $DocumentoPorEmitirServicioTable,
     List<DocumentoPorEmitirServicioData>
@@ -89408,6 +93382,36 @@ final class $$DocumentoPorEmitirTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _documentoPorEmitirConfiguracionRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $DocumentoPorEmitirHitoTable,
+    List<DocumentoPorEmitirHitoData>
+  >
+  _documentoPorEmitirHitoRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.documentoPorEmitirHito,
+        aliasName: $_aliasNameGenerator(
+          db.documentoPorEmitir.id,
+          db.documentoPorEmitirHito.documentoPorEmitirId,
+        ),
+      );
+
+  $$DocumentoPorEmitirHitoTableProcessedTableManager
+  get documentoPorEmitirHitoRefs {
+    final manager = $$DocumentoPorEmitirHitoTableTableManager(
+      $_db,
+      $_db.documentoPorEmitirHito,
+    ).filter(
+      (f) => f.documentoPorEmitirId.id.sqlEquals($_itemColumn<String>('id')!),
+    );
+
+    final cache = $_typedResult.readTableOrNull(
+      _documentoPorEmitirHitoRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -89715,16 +93719,6 @@ class $$DocumentoPorEmitirTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get serieFiscal => $composableBuilder(
-    column: $table.serieFiscal,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get folioFiscal => $composableBuilder(
-    column: $table.folioFiscal,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get uuid => $composableBuilder(
     column: $table.uuid,
     builder: (column) => ColumnFilters(column),
@@ -89801,6 +93795,29 @@ class $$DocumentoPorEmitirTableFilterComposer
     return composer;
   }
 
+  $$ClientePortalTableFilterComposer get clientePortalId {
+    final $$ClientePortalTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clientePortalId,
+      referencedTable: $db.clientePortal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientePortalTableFilterComposer(
+            $db: $db,
+            $table: $db.clientePortal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<bool> documentoPorEmitirServicioRefs(
     Expression<bool> Function($$DocumentoPorEmitirServicioTableFilterComposer f)
     f,
@@ -89848,6 +93865,32 @@ class $$DocumentoPorEmitirTableFilterComposer
               }) => $$DocumentoPorEmitirConfiguracionTableFilterComposer(
                 $db: $db,
                 $table: $db.documentoPorEmitirConfiguracion,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> documentoPorEmitirHitoRefs(
+    Expression<bool> Function($$DocumentoPorEmitirHitoTableFilterComposer f) f,
+  ) {
+    final $$DocumentoPorEmitirHitoTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirHito,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirHitoTableFilterComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirHito,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -90147,16 +94190,6 @@ class $$DocumentoPorEmitirTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get serieFiscal => $composableBuilder(
-    column: $table.serieFiscal,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get folioFiscal => $composableBuilder(
-    column: $table.folioFiscal,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get uuid => $composableBuilder(
     column: $table.uuid,
     builder: (column) => ColumnOrderings(column),
@@ -90224,6 +94257,29 @@ class $$DocumentoPorEmitirTableOrderingComposer
           }) => $$EntidadFiscalTableOrderingComposer(
             $db: $db,
             $table: $db.entidadFiscal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ClientePortalTableOrderingComposer get clientePortalId {
+    final $$ClientePortalTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clientePortalId,
+      referencedTable: $db.clientePortal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientePortalTableOrderingComposer(
+            $db: $db,
+            $table: $db.clientePortal,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -90348,16 +94404,6 @@ class $$DocumentoPorEmitirTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get serieFiscal => $composableBuilder(
-    column: $table.serieFiscal,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get folioFiscal => $composableBuilder(
-    column: $table.folioFiscal,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<String> get uuid =>
       $composableBuilder(column: $table.uuid, builder: (column) => column);
 
@@ -90432,6 +94478,29 @@ class $$DocumentoPorEmitirTableAnnotationComposer
     return composer;
   }
 
+  $$ClientePortalTableAnnotationComposer get clientePortalId {
+    final $$ClientePortalTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clientePortalId,
+      referencedTable: $db.clientePortal,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ClientePortalTableAnnotationComposer(
+            $db: $db,
+            $table: $db.clientePortal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> documentoPorEmitirServicioRefs<T extends Object>(
     Expression<T> Function(
       $$DocumentoPorEmitirServicioTableAnnotationComposer a,
@@ -90481,6 +94550,32 @@ class $$DocumentoPorEmitirTableAnnotationComposer
               }) => $$DocumentoPorEmitirConfiguracionTableAnnotationComposer(
                 $db: $db,
                 $table: $db.documentoPorEmitirConfiguracion,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> documentoPorEmitirHitoRefs<T extends Object>(
+    Expression<T> Function($$DocumentoPorEmitirHitoTableAnnotationComposer a) f,
+  ) {
+    final $$DocumentoPorEmitirHitoTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.documentoPorEmitirHito,
+          getReferencedColumn: (t) => t.documentoPorEmitirId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirHitoTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitirHito,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -90671,8 +94766,10 @@ class $$DocumentoPorEmitirTableTableManager
           PrefetchHooks Function({
             bool clienteId,
             bool entidadFiscalId,
+            bool clientePortalId,
             bool documentoPorEmitirServicioRefs,
             bool documentoPorEmitirConfiguracionRefs,
+            bool documentoPorEmitirHitoRefs,
             bool documentoPorEmitirLineaRefs,
             bool documentoPorEmitirCorreoRefs,
             bool documentoPorEmitirCorreoEnvioRefs,
@@ -90712,6 +94809,7 @@ class $$DocumentoPorEmitirTableTableManager
                 Value<String> codigo = const Value.absent(),
                 Value<String> clienteId = const Value.absent(),
                 Value<String?> entidadFiscalId = const Value.absent(),
+                Value<String?> clientePortalId = const Value.absent(),
                 Value<String> tipoDocumento = const Value.absent(),
                 Value<String> agrupacion = const Value.absent(),
                 Value<String> metodo = const Value.absent(),
@@ -90732,8 +94830,6 @@ class $$DocumentoPorEmitirTableTableManager
                 Value<String?> motivoEstatus = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
                 Value<String?> folioDocumento = const Value.absent(),
-                Value<String?> serieFiscal = const Value.absent(),
-                Value<String?> folioFiscal = const Value.absent(),
                 Value<String?> uuid = const Value.absent(),
                 Value<DateTime?> fechaEmisionReal = const Value.absent(),
                 Value<int?> importeEmitido = const Value.absent(),
@@ -90749,6 +94845,7 @@ class $$DocumentoPorEmitirTableTableManager
                 codigo: codigo,
                 clienteId: clienteId,
                 entidadFiscalId: entidadFiscalId,
+                clientePortalId: clientePortalId,
                 tipoDocumento: tipoDocumento,
                 agrupacion: agrupacion,
                 metodo: metodo,
@@ -90767,8 +94864,6 @@ class $$DocumentoPorEmitirTableTableManager
                 motivoEstatus: motivoEstatus,
                 observaciones: observaciones,
                 folioDocumento: folioDocumento,
-                serieFiscal: serieFiscal,
-                folioFiscal: folioFiscal,
                 uuid: uuid,
                 fechaEmisionReal: fechaEmisionReal,
                 importeEmitido: importeEmitido,
@@ -90786,6 +94881,7 @@ class $$DocumentoPorEmitirTableTableManager
                 required String codigo,
                 required String clienteId,
                 Value<String?> entidadFiscalId = const Value.absent(),
+                Value<String?> clientePortalId = const Value.absent(),
                 required String tipoDocumento,
                 required String agrupacion,
                 required String metodo,
@@ -90806,8 +94902,6 @@ class $$DocumentoPorEmitirTableTableManager
                 Value<String?> motivoEstatus = const Value.absent(),
                 Value<String?> observaciones = const Value.absent(),
                 Value<String?> folioDocumento = const Value.absent(),
-                Value<String?> serieFiscal = const Value.absent(),
-                Value<String?> folioFiscal = const Value.absent(),
                 Value<String?> uuid = const Value.absent(),
                 Value<DateTime?> fechaEmisionReal = const Value.absent(),
                 Value<int?> importeEmitido = const Value.absent(),
@@ -90823,6 +94917,7 @@ class $$DocumentoPorEmitirTableTableManager
                 codigo: codigo,
                 clienteId: clienteId,
                 entidadFiscalId: entidadFiscalId,
+                clientePortalId: clientePortalId,
                 tipoDocumento: tipoDocumento,
                 agrupacion: agrupacion,
                 metodo: metodo,
@@ -90841,8 +94936,6 @@ class $$DocumentoPorEmitirTableTableManager
                 motivoEstatus: motivoEstatus,
                 observaciones: observaciones,
                 folioDocumento: folioDocumento,
-                serieFiscal: serieFiscal,
-                folioFiscal: folioFiscal,
                 uuid: uuid,
                 fechaEmisionReal: fechaEmisionReal,
                 importeEmitido: importeEmitido,
@@ -90864,8 +94957,10 @@ class $$DocumentoPorEmitirTableTableManager
           prefetchHooksCallback: ({
             clienteId = false,
             entidadFiscalId = false,
+            clientePortalId = false,
             documentoPorEmitirServicioRefs = false,
             documentoPorEmitirConfiguracionRefs = false,
+            documentoPorEmitirHitoRefs = false,
             documentoPorEmitirLineaRefs = false,
             documentoPorEmitirCorreoRefs = false,
             documentoPorEmitirCorreoEnvioRefs = false,
@@ -90880,6 +94975,7 @@ class $$DocumentoPorEmitirTableTableManager
                   db.documentoPorEmitirServicio,
                 if (documentoPorEmitirConfiguracionRefs)
                   db.documentoPorEmitirConfiguracion,
+                if (documentoPorEmitirHitoRefs) db.documentoPorEmitirHito,
                 if (documentoPorEmitirLineaRefs) db.documentoPorEmitirLinea,
                 if (documentoPorEmitirCorreoRefs) db.documentoPorEmitirCorreo,
                 if (documentoPorEmitirCorreoEnvioRefs)
@@ -90932,6 +95028,20 @@ class $$DocumentoPorEmitirTableTableManager
                           )
                           as T;
                 }
+                if (clientePortalId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.clientePortalId,
+                            referencedTable: $$DocumentoPorEmitirTableReferences
+                                ._clientePortalIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirTableReferences
+                                    ._clientePortalIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -90975,6 +95085,28 @@ class $$DocumentoPorEmitirTableTableManager
                                 table,
                                 p0,
                               ).documentoPorEmitirConfiguracionRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.documentoPorEmitirId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (documentoPorEmitirHitoRefs)
+                    await $_getPrefetchedData<
+                      DocumentoPorEmitirData,
+                      $DocumentoPorEmitirTable,
+                      DocumentoPorEmitirHitoData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$DocumentoPorEmitirTableReferences
+                          ._documentoPorEmitirHitoRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$DocumentoPorEmitirTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).documentoPorEmitirHitoRefs,
                       referencedItemsForCurrentItem:
                           (item, referencedItems) => referencedItems.where(
                             (e) => e.documentoPorEmitirId == item.id,
@@ -91136,8 +95268,10 @@ typedef $$DocumentoPorEmitirTableProcessedTableManager =
       PrefetchHooks Function({
         bool clienteId,
         bool entidadFiscalId,
+        bool clientePortalId,
         bool documentoPorEmitirServicioRefs,
         bool documentoPorEmitirConfiguracionRefs,
+        bool documentoPorEmitirHitoRefs,
         bool documentoPorEmitirLineaRefs,
         bool documentoPorEmitirCorreoRefs,
         bool documentoPorEmitirCorreoEnvioRefs,
@@ -92171,6 +96305,487 @@ typedef $$DocumentoPorEmitirConfiguracionTableProcessedTableManager =
         bool servicioId,
         bool configuracionCobroVigenciaId,
       })
+    >;
+typedef $$DocumentoPorEmitirHitoTableCreateCompanionBuilder =
+    DocumentoPorEmitirHitoCompanion Function({
+      Value<int> id,
+      required String documentoPorEmitirId,
+      required String servicioId,
+      Value<String?> tipoSistema,
+      Value<String?> nombre,
+      required int orden,
+      required DateTime fechaProgramada,
+    });
+typedef $$DocumentoPorEmitirHitoTableUpdateCompanionBuilder =
+    DocumentoPorEmitirHitoCompanion Function({
+      Value<int> id,
+      Value<String> documentoPorEmitirId,
+      Value<String> servicioId,
+      Value<String?> tipoSistema,
+      Value<String?> nombre,
+      Value<int> orden,
+      Value<DateTime> fechaProgramada,
+    });
+
+final class $$DocumentoPorEmitirHitoTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentoPorEmitirHitoTable,
+          DocumentoPorEmitirHitoData
+        > {
+  $$DocumentoPorEmitirHitoTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $DocumentoPorEmitirTable _documentoPorEmitirIdTable(
+    _$AppDatabase db,
+  ) => db.documentoPorEmitir.createAlias(
+    $_aliasNameGenerator(
+      db.documentoPorEmitirHito.documentoPorEmitirId,
+      db.documentoPorEmitir.id,
+    ),
+  );
+
+  $$DocumentoPorEmitirTableProcessedTableManager get documentoPorEmitirId {
+    final $_column = $_itemColumn<String>('documento_por_emitir_id')!;
+
+    final manager = $$DocumentoPorEmitirTableTableManager(
+      $_db,
+      $_db.documentoPorEmitir,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _documentoPorEmitirIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicio.createAlias(
+        $_aliasNameGenerator(
+          db.documentoPorEmitirHito.servicioId,
+          db.servicio.id,
+        ),
+      );
+
+  $$ServicioTableProcessedTableManager get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id')!;
+
+    final manager = $$ServicioTableTableManager(
+      $_db,
+      $_db.servicio,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DocumentoPorEmitirHitoTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirHitoTable> {
+  $$DocumentoPorEmitirHitoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoSistema => $composableBuilder(
+    column: $table.tipoSistema,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fechaProgramada => $composableBuilder(
+    column: $table.fechaProgramada,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$DocumentoPorEmitirTableFilterComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableFilterComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableFilterComposer get servicioId {
+    final $$ServicioTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableFilterComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirHitoTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirHitoTable> {
+  $$DocumentoPorEmitirHitoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoSistema => $composableBuilder(
+    column: $table.tipoSistema,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fechaProgramada => $composableBuilder(
+    column: $table.fechaProgramada,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$DocumentoPorEmitirTableOrderingComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.documentoPorEmitirId,
+      referencedTable: $db.documentoPorEmitir,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DocumentoPorEmitirTableOrderingComposer(
+            $db: $db,
+            $table: $db.documentoPorEmitir,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ServicioTableOrderingComposer get servicioId {
+    final $$ServicioTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableOrderingComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirHitoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentoPorEmitirHitoTable> {
+  $$DocumentoPorEmitirHitoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoSistema => $composableBuilder(
+    column: $table.tipoSistema,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaProgramada => $composableBuilder(
+    column: $table.fechaProgramada,
+    builder: (column) => column,
+  );
+
+  $$DocumentoPorEmitirTableAnnotationComposer get documentoPorEmitirId {
+    final $$DocumentoPorEmitirTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.documentoPorEmitirId,
+          referencedTable: $db.documentoPorEmitir,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$DocumentoPorEmitirTableAnnotationComposer(
+                $db: $db,
+                $table: $db.documentoPorEmitir,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ServicioTableAnnotationComposer get servicioId {
+    final $$ServicioTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.servicioId,
+      referencedTable: $db.servicio,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServicioTableAnnotationComposer(
+            $db: $db,
+            $table: $db.servicio,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DocumentoPorEmitirHitoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentoPorEmitirHitoTable,
+          DocumentoPorEmitirHitoData,
+          $$DocumentoPorEmitirHitoTableFilterComposer,
+          $$DocumentoPorEmitirHitoTableOrderingComposer,
+          $$DocumentoPorEmitirHitoTableAnnotationComposer,
+          $$DocumentoPorEmitirHitoTableCreateCompanionBuilder,
+          $$DocumentoPorEmitirHitoTableUpdateCompanionBuilder,
+          (DocumentoPorEmitirHitoData, $$DocumentoPorEmitirHitoTableReferences),
+          DocumentoPorEmitirHitoData,
+          PrefetchHooks Function({bool documentoPorEmitirId, bool servicioId})
+        > {
+  $$DocumentoPorEmitirHitoTableTableManager(
+    _$AppDatabase db,
+    $DocumentoPorEmitirHitoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DocumentoPorEmitirHitoTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$DocumentoPorEmitirHitoTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$DocumentoPorEmitirHitoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> documentoPorEmitirId = const Value.absent(),
+                Value<String> servicioId = const Value.absent(),
+                Value<String?> tipoSistema = const Value.absent(),
+                Value<String?> nombre = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<DateTime> fechaProgramada = const Value.absent(),
+              }) => DocumentoPorEmitirHitoCompanion(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                servicioId: servicioId,
+                tipoSistema: tipoSistema,
+                nombre: nombre,
+                orden: orden,
+                fechaProgramada: fechaProgramada,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String documentoPorEmitirId,
+                required String servicioId,
+                Value<String?> tipoSistema = const Value.absent(),
+                Value<String?> nombre = const Value.absent(),
+                required int orden,
+                required DateTime fechaProgramada,
+              }) => DocumentoPorEmitirHitoCompanion.insert(
+                id: id,
+                documentoPorEmitirId: documentoPorEmitirId,
+                servicioId: servicioId,
+                tipoSistema: tipoSistema,
+                nombre: nombre,
+                orden: orden,
+                fechaProgramada: fechaProgramada,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$DocumentoPorEmitirHitoTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({
+            documentoPorEmitirId = false,
+            servicioId = false,
+          }) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (documentoPorEmitirId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.documentoPorEmitirId,
+                            referencedTable:
+                                $$DocumentoPorEmitirHitoTableReferences
+                                    ._documentoPorEmitirIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirHitoTableReferences
+                                    ._documentoPorEmitirIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+                if (servicioId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.servicioId,
+                            referencedTable:
+                                $$DocumentoPorEmitirHitoTableReferences
+                                    ._servicioIdTable(db),
+                            referencedColumn:
+                                $$DocumentoPorEmitirHitoTableReferences
+                                    ._servicioIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DocumentoPorEmitirHitoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentoPorEmitirHitoTable,
+      DocumentoPorEmitirHitoData,
+      $$DocumentoPorEmitirHitoTableFilterComposer,
+      $$DocumentoPorEmitirHitoTableOrderingComposer,
+      $$DocumentoPorEmitirHitoTableAnnotationComposer,
+      $$DocumentoPorEmitirHitoTableCreateCompanionBuilder,
+      $$DocumentoPorEmitirHitoTableUpdateCompanionBuilder,
+      (DocumentoPorEmitirHitoData, $$DocumentoPorEmitirHitoTableReferences),
+      DocumentoPorEmitirHitoData,
+      PrefetchHooks Function({bool documentoPorEmitirId, bool servicioId})
     >;
 typedef $$DocumentoPorEmitirLineaTableCreateCompanionBuilder =
     DocumentoPorEmitirLineaCompanion Function({
@@ -96939,8 +101554,6 @@ typedef $$CuentaPorCobrarTableCreateCompanionBuilder =
       required String metodo,
       Value<bool> requiereComplemento,
       Value<String?> folioDocumento,
-      Value<String?> serieFiscal,
-      Value<String?> folioFiscal,
       Value<String?> uuid,
       required DateTime fechaEmisionReal,
       required int importeEmitido,
@@ -96964,8 +101577,6 @@ typedef $$CuentaPorCobrarTableUpdateCompanionBuilder =
       Value<String> metodo,
       Value<bool> requiereComplemento,
       Value<String?> folioDocumento,
-      Value<String?> serieFiscal,
-      Value<String?> folioFiscal,
       Value<String?> uuid,
       Value<DateTime> fechaEmisionReal,
       Value<int> importeEmitido,
@@ -97121,16 +101732,6 @@ class $$CuentaPorCobrarTableFilterComposer
 
   ColumnFilters<String> get folioDocumento => $composableBuilder(
     column: $table.folioDocumento,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get serieFiscal => $composableBuilder(
-    column: $table.serieFiscal,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get folioFiscal => $composableBuilder(
-    column: $table.folioFiscal,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -97308,16 +101909,6 @@ class $$CuentaPorCobrarTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get serieFiscal => $composableBuilder(
-    column: $table.serieFiscal,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get folioFiscal => $composableBuilder(
-    column: $table.folioFiscal,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get uuid => $composableBuilder(
     column: $table.uuid,
     builder: (column) => ColumnOrderings(column),
@@ -97428,16 +102019,6 @@ class $$CuentaPorCobrarTableAnnotationComposer
 
   GeneratedColumn<String> get folioDocumento => $composableBuilder(
     column: $table.folioDocumento,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get serieFiscal => $composableBuilder(
-    column: $table.serieFiscal,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get folioFiscal => $composableBuilder(
-    column: $table.folioFiscal,
     builder: (column) => column,
   );
 
@@ -97607,8 +102188,6 @@ class $$CuentaPorCobrarTableTableManager
                 Value<String> metodo = const Value.absent(),
                 Value<bool> requiereComplemento = const Value.absent(),
                 Value<String?> folioDocumento = const Value.absent(),
-                Value<String?> serieFiscal = const Value.absent(),
-                Value<String?> folioFiscal = const Value.absent(),
                 Value<String?> uuid = const Value.absent(),
                 Value<DateTime> fechaEmisionReal = const Value.absent(),
                 Value<int> importeEmitido = const Value.absent(),
@@ -97630,8 +102209,6 @@ class $$CuentaPorCobrarTableTableManager
                 metodo: metodo,
                 requiereComplemento: requiereComplemento,
                 folioDocumento: folioDocumento,
-                serieFiscal: serieFiscal,
-                folioFiscal: folioFiscal,
                 uuid: uuid,
                 fechaEmisionReal: fechaEmisionReal,
                 importeEmitido: importeEmitido,
@@ -97655,8 +102232,6 @@ class $$CuentaPorCobrarTableTableManager
                 required String metodo,
                 Value<bool> requiereComplemento = const Value.absent(),
                 Value<String?> folioDocumento = const Value.absent(),
-                Value<String?> serieFiscal = const Value.absent(),
-                Value<String?> folioFiscal = const Value.absent(),
                 Value<String?> uuid = const Value.absent(),
                 required DateTime fechaEmisionReal,
                 required int importeEmitido,
@@ -97678,8 +102253,6 @@ class $$CuentaPorCobrarTableTableManager
                 metodo: metodo,
                 requiereComplemento: requiereComplemento,
                 folioDocumento: folioDocumento,
-                serieFiscal: serieFiscal,
-                folioFiscal: folioFiscal,
                 uuid: uuid,
                 fechaEmisionReal: fechaEmisionReal,
                 importeEmitido: importeEmitido,
@@ -105594,6 +110167,7 @@ typedef $$EmpleadoTableCreateCompanionBuilder =
       Value<String?> telefonoEmergencia,
       Value<String?> parentescoEmergencia,
       Value<String?> bancoId,
+      Value<String?> bancoOtroDescripcion,
       Value<String?> numeroCuentaTarjeta,
       Value<String?> clabe,
       required DateTime fechaIngreso,
@@ -105654,6 +110228,7 @@ typedef $$EmpleadoTableUpdateCompanionBuilder =
       Value<String?> telefonoEmergencia,
       Value<String?> parentescoEmergencia,
       Value<String?> bancoId,
+      Value<String?> bancoOtroDescripcion,
       Value<String?> numeroCuentaTarjeta,
       Value<String?> clabe,
       Value<DateTime> fechaIngreso,
@@ -106154,6 +110729,11 @@ class $$EmpleadoTableFilterComposer
 
   ColumnFilters<String> get parentescoEmergencia => $composableBuilder(
     column: $table.parentescoEmergencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bancoOtroDescripcion => $composableBuilder(
+    column: $table.bancoOtroDescripcion,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -106791,6 +111371,11 @@ class $$EmpleadoTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get bancoOtroDescripcion => $composableBuilder(
+    column: $table.bancoOtroDescripcion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get numeroCuentaTarjeta => $composableBuilder(
     column: $table.numeroCuentaTarjeta,
     builder: (column) => ColumnOrderings(column),
@@ -107154,6 +111739,11 @@ class $$EmpleadoTableAnnotationComposer
 
   GeneratedColumn<String> get parentescoEmergencia => $composableBuilder(
     column: $table.parentescoEmergencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bancoOtroDescripcion => $composableBuilder(
+    column: $table.bancoOtroDescripcion,
     builder: (column) => column,
   );
 
@@ -107746,6 +112336,7 @@ class $$EmpleadoTableTableManager
                 Value<String?> telefonoEmergencia = const Value.absent(),
                 Value<String?> parentescoEmergencia = const Value.absent(),
                 Value<String?> bancoId = const Value.absent(),
+                Value<String?> bancoOtroDescripcion = const Value.absent(),
                 Value<String?> numeroCuentaTarjeta = const Value.absent(),
                 Value<String?> clabe = const Value.absent(),
                 Value<DateTime> fechaIngreso = const Value.absent(),
@@ -107808,6 +112399,7 @@ class $$EmpleadoTableTableManager
                 telefonoEmergencia: telefonoEmergencia,
                 parentescoEmergencia: parentescoEmergencia,
                 bancoId: bancoId,
+                bancoOtroDescripcion: bancoOtroDescripcion,
                 numeroCuentaTarjeta: numeroCuentaTarjeta,
                 clabe: clabe,
                 fechaIngreso: fechaIngreso,
@@ -107869,6 +112461,7 @@ class $$EmpleadoTableTableManager
                 Value<String?> telefonoEmergencia = const Value.absent(),
                 Value<String?> parentescoEmergencia = const Value.absent(),
                 Value<String?> bancoId = const Value.absent(),
+                Value<String?> bancoOtroDescripcion = const Value.absent(),
                 Value<String?> numeroCuentaTarjeta = const Value.absent(),
                 Value<String?> clabe = const Value.absent(),
                 required DateTime fechaIngreso,
@@ -107931,6 +112524,7 @@ class $$EmpleadoTableTableManager
                 telefonoEmergencia: telefonoEmergencia,
                 parentescoEmergencia: parentescoEmergencia,
                 bancoId: bancoId,
+                bancoOtroDescripcion: bancoOtroDescripcion,
                 numeroCuentaTarjeta: numeroCuentaTarjeta,
                 clabe: clabe,
                 fechaIngreso: fechaIngreso,
@@ -109252,6 +113846,7 @@ typedef $$AsignacionServicioTableCreateCompanionBuilder =
       required String empleadoId,
       required String servicioId,
       Value<String?> turnoId,
+      Value<String?> lineaComercialId,
       required DateTime fechaInicio,
       Value<DateTime?> fechaTermino,
       Value<String?> motivoTermino,
@@ -109268,6 +113863,7 @@ typedef $$AsignacionServicioTableUpdateCompanionBuilder =
       Value<String> empleadoId,
       Value<String> servicioId,
       Value<String?> turnoId,
+      Value<String?> lineaComercialId,
       Value<DateTime> fechaInicio,
       Value<DateTime?> fechaTermino,
       Value<String?> motivoTermino,
@@ -109343,6 +113939,29 @@ final class $$AsignacionServicioTableReferences
       $_db.tipoModalidadTurno,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_turnoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ServicioLineaComercialTable _lineaComercialIdTable(
+    _$AppDatabase db,
+  ) => db.servicioLineaComercial.createAlias(
+    $_aliasNameGenerator(
+      db.asignacionServicio.lineaComercialId,
+      db.servicioLineaComercial.id,
+    ),
+  );
+
+  $$ServicioLineaComercialTableProcessedTableManager? get lineaComercialId {
+    final $_column = $_itemColumn<String>('linea_comercial_id');
+    if ($_column == null) return null;
+    final manager = $$ServicioLineaComercialTableTableManager(
+      $_db,
+      $_db.servicioLineaComercial,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_lineaComercialIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -109503,6 +114122,30 @@ class $$AsignacionServicioTableFilterComposer
     return composer;
   }
 
+  $$ServicioLineaComercialTableFilterComposer get lineaComercialId {
+    final $$ServicioLineaComercialTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lineaComercialId,
+          referencedTable: $db.servicioLineaComercial,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialTableFilterComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercial,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
   Expression<bool> asignacionServicioSueldoVigenciaRefs(
     Expression<bool> Function(
       $$AsignacionServicioSueldoVigenciaTableFilterComposer f,
@@ -109655,6 +114298,30 @@ class $$AsignacionServicioTableOrderingComposer
     );
     return composer;
   }
+
+  $$ServicioLineaComercialTableOrderingComposer get lineaComercialId {
+    final $$ServicioLineaComercialTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lineaComercialId,
+          referencedTable: $db.servicioLineaComercial,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialTableOrderingComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercial,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
 }
 
 class $$AsignacionServicioTableAnnotationComposer
@@ -109775,6 +114442,30 @@ class $$AsignacionServicioTableAnnotationComposer
     return composer;
   }
 
+  $$ServicioLineaComercialTableAnnotationComposer get lineaComercialId {
+    final $$ServicioLineaComercialTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lineaComercialId,
+          referencedTable: $db.servicioLineaComercial,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ServicioLineaComercialTableAnnotationComposer(
+                $db: $db,
+                $table: $db.servicioLineaComercial,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
   Expression<T> asignacionServicioSueldoVigenciaRefs<T extends Object>(
     Expression<T> Function(
       $$AsignacionServicioSueldoVigenciaTableAnnotationComposer a,
@@ -109822,6 +114513,7 @@ class $$AsignacionServicioTableTableManager
             bool empleadoId,
             bool servicioId,
             bool turnoId,
+            bool lineaComercialId,
             bool asignacionServicioSueldoVigenciaRefs,
           })
         > {
@@ -109856,6 +114548,7 @@ class $$AsignacionServicioTableTableManager
                 Value<String> empleadoId = const Value.absent(),
                 Value<String> servicioId = const Value.absent(),
                 Value<String?> turnoId = const Value.absent(),
+                Value<String?> lineaComercialId = const Value.absent(),
                 Value<DateTime> fechaInicio = const Value.absent(),
                 Value<DateTime?> fechaTermino = const Value.absent(),
                 Value<String?> motivoTermino = const Value.absent(),
@@ -109870,6 +114563,7 @@ class $$AsignacionServicioTableTableManager
                 empleadoId: empleadoId,
                 servicioId: servicioId,
                 turnoId: turnoId,
+                lineaComercialId: lineaComercialId,
                 fechaInicio: fechaInicio,
                 fechaTermino: fechaTermino,
                 motivoTermino: motivoTermino,
@@ -109886,6 +114580,7 @@ class $$AsignacionServicioTableTableManager
                 required String empleadoId,
                 required String servicioId,
                 Value<String?> turnoId = const Value.absent(),
+                Value<String?> lineaComercialId = const Value.absent(),
                 required DateTime fechaInicio,
                 Value<DateTime?> fechaTermino = const Value.absent(),
                 Value<String?> motivoTermino = const Value.absent(),
@@ -109900,6 +114595,7 @@ class $$AsignacionServicioTableTableManager
                 empleadoId: empleadoId,
                 servicioId: servicioId,
                 turnoId: turnoId,
+                lineaComercialId: lineaComercialId,
                 fechaInicio: fechaInicio,
                 fechaTermino: fechaTermino,
                 motivoTermino: motivoTermino,
@@ -109921,6 +114617,7 @@ class $$AsignacionServicioTableTableManager
             empleadoId = false,
             servicioId = false,
             turnoId = false,
+            lineaComercialId = false,
             asignacionServicioSueldoVigenciaRefs = false,
           }) {
             return PrefetchHooks(
@@ -109986,6 +114683,20 @@ class $$AsignacionServicioTableTableManager
                           )
                           as T;
                 }
+                if (lineaComercialId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.lineaComercialId,
+                            referencedTable: $$AsignacionServicioTableReferences
+                                ._lineaComercialIdTable(db),
+                            referencedColumn:
+                                $$AsignacionServicioTableReferences
+                                    ._lineaComercialIdTable(db)
+                                    .id,
+                          )
+                          as T;
+                }
 
                 return state;
               },
@@ -110037,6 +114748,7 @@ typedef $$AsignacionServicioTableProcessedTableManager =
         bool empleadoId,
         bool servicioId,
         bool turnoId,
+        bool lineaComercialId,
         bool asignacionServicioSueldoVigenciaRefs,
       })
     >;
@@ -142131,6 +146843,8 @@ class $AppDatabaseManager {
       $$UbicacionTableTableManager(_db, _db.ubicacion);
   $$PuestoTableTableManager get puesto =>
       $$PuestoTableTableManager(_db, _db.puesto);
+  $$ClientePortalTableTableManager get clientePortal =>
+      $$ClientePortalTableTableManager(_db, _db.clientePortal);
   $$ServicioLineaComercialTableTableManager get servicioLineaComercial =>
       $$ServicioLineaComercialTableTableManager(
         _db,
@@ -142141,6 +146855,12 @@ class $AppDatabaseManager {
       $$ServicioLineaComercialVigenciaTableTableManager(
         _db,
         _db.servicioLineaComercialVigencia,
+      );
+  $$ServicioLineaComercialVigenciaHorarioTableTableManager
+  get servicioLineaComercialVigenciaHorario =>
+      $$ServicioLineaComercialVigenciaHorarioTableTableManager(
+        _db,
+        _db.servicioLineaComercialVigenciaHorario,
       );
   $$ConfiguracionCobroTableTableManager get configuracionCobro =>
       $$ConfiguracionCobroTableTableManager(_db, _db.configuracionCobro);
@@ -142155,11 +146875,10 @@ class $AppDatabaseManager {
         _db,
         _db.configuracionCobroCorreo,
       );
-  $$ConfiguracionCobroReglaEventoTableTableManager
-  get configuracionCobroReglaEvento =>
-      $$ConfiguracionCobroReglaEventoTableTableManager(
+  $$ConfiguracionCobroEtapaTableTableManager get configuracionCobroEtapa =>
+      $$ConfiguracionCobroEtapaTableTableManager(
         _db,
-        _db.configuracionCobroReglaEvento,
+        _db.configuracionCobroEtapa,
       );
   $$DocumentoPorEmitirTableTableManager get documentoPorEmitir =>
       $$DocumentoPorEmitirTableTableManager(_db, _db.documentoPorEmitir);
@@ -142174,6 +146893,11 @@ class $AppDatabaseManager {
       $$DocumentoPorEmitirConfiguracionTableTableManager(
         _db,
         _db.documentoPorEmitirConfiguracion,
+      );
+  $$DocumentoPorEmitirHitoTableTableManager get documentoPorEmitirHito =>
+      $$DocumentoPorEmitirHitoTableTableManager(
+        _db,
+        _db.documentoPorEmitirHito,
       );
   $$DocumentoPorEmitirLineaTableTableManager get documentoPorEmitirLinea =>
       $$DocumentoPorEmitirLineaTableTableManager(

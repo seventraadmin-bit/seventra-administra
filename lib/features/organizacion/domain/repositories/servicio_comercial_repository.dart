@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../usecases/eliminar_linea_comercial_fisicamente_usecase.dart';
 import '../usecases/linea_comercial_con_vigencia.dart';
 import '../usecases/linea_comercial_validator.dart';
 
@@ -82,4 +83,33 @@ abstract interface class ServicioComercialRepository {
     String? descripcion,
     String? observaciones,
   });
+
+  /// `true` si al menos un `DocumentoPorEmitirLinea` referencia esta
+  /// vigencia — la señal real de "ya tiene historia" (Etapa 15). Una
+  /// vigencia recién creada, que nunca pasó por generación de Agenda,
+  /// siempre devuelve `false`.
+  Future<bool> tieneDocumentosGenerados(String vigenciaId);
+
+  /// Corrige, in-place, las condiciones comerciales de una vigencia —
+  /// única excepción del modelo que muta en vez de cerrar+insertar (ver
+  /// `CorregirLineaComercialUseCase`, que ya garantizó que es segura:
+  /// única vigencia de su línea, sin `DocumentoPorEmitirLinea`).
+  Future<ServicioLineaComercialVigenciaData> corregirVigencia({
+    required String vigenciaId,
+    required LineaComercialValidada datos,
+  });
+
+  /// Eliminación física extraordinaria (Etapa 15) — ver el doc comment
+  /// de la implementación para las condiciones exactas.
+  Future<EliminarLineaComercialFisicamenteResultado> eliminarFisicamente({
+    required String lineaComercialId,
+    required String motivo,
+    String? actorUsuarioId,
+  });
+
+  /// Horario personalizado (Etapa 15) de una vigencia — vacío si esa
+  /// vigencia no tiene `modalidadTurnoId` = Personalizado, o si nunca
+  /// se capturó. Usado para precargar Corregir/Nueva vigencia con el
+  /// horario real de la vigencia en cuestión.
+  Future<List<ServicioLineaComercialVigenciaHorarioData>> obtenerHorario(String vigenciaId);
 }

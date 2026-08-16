@@ -47,6 +47,7 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
   String _categoriaNombre = '';
   ExistenciaArticulo? _existencia;
   List<ArticuloVarianteData> _variantes = const [];
+  Map<String, ExistenciaArticulo> _existenciaPorVariante = const {};
   List<ArticuloUnidadData> _unidades = const [];
   List<MovimientoInventarioData> _movimientos = const [];
   Map<String, OrigenCompra> _origenesPorMovimiento = const {};
@@ -86,6 +87,16 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
           ? await _notifier.calcularExistenciaUnidades(articulo.id)
           : await _notifier.calcularExistencia(articuloId: articulo.id);
       final variantes = articulo.manejaVariante ? await _notifier.listarVariantes(articulo.id) : const <ArticuloVarianteData>[];
+      // Derivado de los mismos movimientos que ya usa `calcularExistencia`
+      // general — una llamada por variante (fuente de verdad única,
+      // nunca un contador duplicado), reutilizando el mismo cálculo ya
+      // corregido para el resumen global. El total general siempre
+      // coincide con la suma de las variantes: cada movimiento de un
+      // artículo con variante trae `varianteId` no nulo, así que ambos
+      // cálculos particionan exactamente el mismo conjunto de filas.
+      final existenciaPorVariante = <String, ExistenciaArticulo>{
+        for (final v in variantes) v.id: await _notifier.calcularExistencia(articuloId: articulo.id, varianteId: v.id),
+      };
       final unidades = articulo.manejaSerie ? await _notifier.listarUnidades(articulo.id) : const <ArticuloUnidadData>[];
       final movimientos = await _notifier.listarMovimientos(articulo.id);
       final origenesPorMovimiento =
@@ -98,6 +109,7 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
         _categoriaNombre = categoriaNombre ?? '';
         _existencia = existencia;
         _variantes = variantes;
+        _existenciaPorVariante = existenciaPorVariante;
         _unidades = unidades;
         _movimientos = movimientos;
         _origenesPorMovimiento = origenesPorMovimiento;
@@ -317,6 +329,7 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                       children: [
                         _ExistenciaDato(label: l10n.articuloExpedienteCampoTotal, valor: existencia.total),
                         _ExistenciaDato(label: l10n.articuloExpedienteCampoDisponible, valor: existencia.disponible),
+                        _ExistenciaDato(label: l10n.articuloExpedienteCampoAsignado, valor: existencia.asignado),
                         _ExistenciaDato(label: l10n.articuloExpedienteCampoDanado, valor: existencia.danado),
                         _ExistenciaDato(label: l10n.articuloExpedienteCampoPerdido, valor: existencia.perdido),
                       ],
@@ -343,12 +356,63 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                       const SizedBox(height: AppSpacing.sm),
                       if (_variantes.isEmpty)
                         Text(l10n.articuloExpedienteVariantesVacio, style: AppTypography.body)
-                      else
-                        Wrap(
-                          spacing: AppSpacing.xs,
-                          runSpacing: AppSpacing.xs,
-                          children: [for (final v in _variantes) RisegStatusBadge(label: v.valor, tone: RisegStatusTone.neutral)],
+                      else ...[
+                        // Vistazo rápido — reemplaza los chips CH/EXG/G/M/XXG
+                        // que antes solo informaban qué tallas existen, sin
+                        // decir nada de su inventario.
+                        Text(
+                          _variantes
+                              .map(
+                                (v) => l10n.articuloExpedienteExistenciaVarianteResumen(
+                                  v.valor,
+                                  _existenciaPorVariante[v.id]?.disponible ?? 0,
+                                ),
+                              )
+                              .join(' · '),
+                          style: AppTypography.body,
                         ),
+                        const SizedBox(height: AppSpacing.md),
+                        RisegTableBase<ArticuloVarianteData>(
+                          rows: _variantes,
+                          emptyState: const RisegEmptyState(title: '', message: ''),
+                          columns: [
+                            RisegColumn<ArticuloVarianteData>(
+                              label: l10n.articuloExpedienteColumnaTalla,
+                              cellBuilder: (v) => Text(v.valor),
+                            ),
+                            RisegColumn<ArticuloVarianteData>(
+                              label: l10n.articuloExpedienteCampoTotal,
+                              width: 90,
+                              alignment: TextAlign.right,
+                              cellBuilder: (v) => Text('${_existenciaPorVariante[v.id]?.total ?? 0}'),
+                            ),
+                            RisegColumn<ArticuloVarianteData>(
+                              label: l10n.articuloExpedienteCampoDisponible,
+                              width: 90,
+                              alignment: TextAlign.right,
+                              cellBuilder: (v) => Text('${_existenciaPorVariante[v.id]?.disponible ?? 0}'),
+                            ),
+                            RisegColumn<ArticuloVarianteData>(
+                              label: l10n.articuloExpedienteCampoAsignado,
+                              width: 90,
+                              alignment: TextAlign.right,
+                              cellBuilder: (v) => Text('${_existenciaPorVariante[v.id]?.asignado ?? 0}'),
+                            ),
+                            RisegColumn<ArticuloVarianteData>(
+                              label: l10n.articuloExpedienteCampoDanado,
+                              width: 90,
+                              alignment: TextAlign.right,
+                              cellBuilder: (v) => Text('${_existenciaPorVariante[v.id]?.danado ?? 0}'),
+                            ),
+                            RisegColumn<ArticuloVarianteData>(
+                              label: l10n.articuloExpedienteCampoPerdido,
+                              width: 90,
+                              alignment: TextAlign.right,
+                              cellBuilder: (v) => Text('${_existenciaPorVariante[v.id]?.perdido ?? 0}'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

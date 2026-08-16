@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/organizacion/domain/shared/horario_input.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expediente_input.dart';
 
 /// Controles de "Datos generales" — `tipoSucursalId` no es un

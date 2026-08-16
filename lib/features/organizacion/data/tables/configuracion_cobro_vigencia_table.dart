@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../../core/database/tables/catalogos_tables.dart';
+import 'cliente_portal_table.dart';
 import 'configuracion_cobro_table.dart';
 import 'entidad_fiscal_table.dart';
 
@@ -54,12 +55,24 @@ class ConfiguracionCobroVigencia extends Table with AuditColumns {
   TextColumn get entidadFiscalId =>
       text().nullable().references(EntidadFiscal, #id, onDelete: KeyAction.restrict)();
 
-  // --- Portal del cliente (Etapa 4H.1) — estructura completa, no solo
-  // texto libre. `portalContrasena` se guarda en texto plano: RIESGO
-  // ACEPTADO Y DOCUMENTADO para esta etapa (confirmado explícitamente
-  // por Marlon) — no existe todavía infraestructura de cifrado en el
-  // proyecto. Debe cifrarse antes de que cualquier credencial real de
-  // producción se capture aquí.
+  /// Qué portal del Cliente usa esta vigencia (Etapa 15) — referencia,
+  /// nunca una copia (mismo patrón que `entidadFiscalId`): si el portal
+  /// se edita después, esta vigencia sigue apuntando a la misma fila y
+  /// ve el valor actual. `null` si el Cliente no tiene ningún portal
+  /// configurado, o si esta vigencia simplemente no usa ninguno.
+  TextColumn get clientePortalId =>
+      text().nullable().references(ClientePortal, #id, onDelete: KeyAction.restrict)();
+
+  // --- LEGACY (Etapa 4H.1, retirado en la Etapa 15) — portal del
+  // cliente capturado directamente aquí, duplicado en cada vigencia.
+  // Reemplazado por `clientePortalId` → `ClientePortal`. Estas 5
+  // columnas se conservan en la base de datos por compatibilidad con
+  // vigencias históricas ya capturadas (la migración a `schemaVersion`
+  // 52 las copia a `ClientePortal`, cifrando `portalContrasena` en el
+  // proceso, pero nunca las borra ni las vuelve a escribir) — ningún
+  // flujo nuevo las lee ni las escribe. Candidatas a eliminarse en una
+  // futura etapa de limpieza, una vez confirmado que ninguna pantalla
+  // ni reporte las consulta más.
   TextColumn get portalNombre => text().nullable()();
 
   TextColumn get portalUrl => text().nullable()();

@@ -1,3 +1,4 @@
+import '../../../../core/database/seed/seed_ids.dart';
 import 'calcular_edad.dart';
 
 /// Validaciones de formato puras del expediente del Empleado (Etapa
@@ -81,6 +82,16 @@ class EmpleadoValidator {
     if (!tieneAlgo) return true;
     if (bancoId == null) return false;
     return (tarjeta?.isNotEmpty ?? false) || (clabeLimpia?.isNotEmpty ?? false);
+  }
+
+  /// Cuando `bancoId` apunta a la fila catálogo `'OTRO'` (Etapa 15), es
+  /// obligatorio capturar cuál banco es en realidad — de lo contrario
+  /// "Otro" queda como un banco definitivo sin especificar, que es
+  /// exactamente el hueco que esta regla cierra. Para cualquier otro
+  /// banco (o sin banco capturado), el campo es irrelevante.
+  bool bancoOtroDescripcionValida({String? bancoId, String? bancoOtroDescripcion}) {
+    if (bancoId != SeedIds.bancoOtro) return true;
+    return (bancoOtroDescripcion?.trim().isNotEmpty ?? false);
   }
 
   /// Condición laboral administrativa (Etapa 6A) — solo relevante para

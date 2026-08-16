@@ -11,6 +11,7 @@ import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repos
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/documento_por_emitir_repository_impl.dart';
+import 'package:riseg_one/features/organizacion/data/repositories/cliente_portal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/entidad_fiscal_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
@@ -19,7 +20,7 @@ import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
-import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_regla_evento_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/corregir_datos_emision_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
@@ -46,18 +47,19 @@ void main() {
     final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     final catalogoRepo = CatalogoRepositoryImpl(db);
     final entidadFiscalRepo = EntidadFiscalRepositoryImpl(db);
+    final clientePortalRepo = ClientePortalRepositoryImpl(db);
     final comercialRepo = ServicioComercialRepositoryImpl(db);
     final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
     final configuracionCobroValidator =
-        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo);
+        ConfiguracionCobroValidator(servicioRepo, entidadFiscalRepo, catalogoRepo, comercialRepo, clientePortalRepo);
     final crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     final crearConfiguracionCobro = CrearConfiguracionCobroUseCase(
       configuracionCobroRepo,
       servicioRepo,
       configuracionCobroValidator,
-      const ConfiguracionCobroReglaEventoValidator(),
+      const ConfiguracionCobroEtapaValidator(),
     );
 
     final cliente = await clienteRepo.crear(ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Morgan'));
@@ -127,14 +129,12 @@ void main() {
   tearDown(() => db.close());
 
   group('RegistrarEmisionDocumentoPorEmitirUseCase — casos reales obligatorios', () {
-    test('CFDI emitido con serie, folio fiscal y UUID', () async {
+    test('CFDI emitido con folio y UUID/folio fiscal', () async {
       final documentoId = await crearDocumentoDePrueba(tipoDocumento: TipoDocumentoCobro.cfdi);
 
       final resultado = await registrarEmision.ejecutar(
         documentoPorEmitirId: documentoId,
         folioDocumento: 'A-001',
-        serieFiscal: 'A',
-        folioFiscal: '001',
         uuid: '11111111-1111-1111-1111-111111111111',
         fechaEmisionReal: DateTime(2026, 1, 5),
         importeEmitido: 500000,
@@ -145,10 +145,22 @@ void main() {
       final documento = (resultado as RegistrarEmisionDocumentoPorEmitirExitoso).documento;
       expect(documento.estatus, 'emitido');
       expect(documento.folioDocumento, 'A-001');
-      expect(documento.serieFiscal, 'A');
-      expect(documento.folioFiscal, '001');
       expect(documento.uuid, '11111111-1111-1111-1111-111111111111');
       expect(documento.importeEmitido, 500000);
+    });
+
+    test('un UUID/folio fiscal con formato inválido se rechaza (Etapa 15, corrección CFDI real)', () async {
+      final documentoId = await crearDocumentoDePrueba(tipoDocumento: TipoDocumentoCobro.cfdi);
+
+      final resultado = await registrarEmision.ejecutar(
+        documentoPorEmitirId: documentoId,
+        folioDocumento: 'A-001',
+        uuid: '00001000000709181459', // número de serie del CSD, no un UUID — el error real reportado
+        fechaEmisionReal: DateTime(2026, 1, 5),
+        importeEmitido: 500000,
+      );
+
+      expect(resultado, isA<RegistrarEmisionDocumentoPorEmitirUuidFormatoInvalido>());
     });
 
     test('Recibo emitido solo con folio — UUID/XML nunca se piden', () async {
@@ -164,11 +176,10 @@ void main() {
       expect(resultado, isA<RegistrarEmisionDocumentoPorEmitirExitoso>());
       final documento = (resultado as RegistrarEmisionDocumentoPorEmitirExitoso).documento;
       expect(documento.folioDocumento, 'REC-001');
-      expect(documento.serieFiscal, isNull);
       expect(documento.uuid, isNull);
     });
 
-    test('un recibo rechaza serie/folio fiscal/UUID si se intentan capturar', () async {
+    test('un recibo rechaza UUID/folio fiscal si se intenta capturar', () async {
       final documentoId = await crearDocumentoDePrueba();
 
       final resultado = await registrarEmision.ejecutar(

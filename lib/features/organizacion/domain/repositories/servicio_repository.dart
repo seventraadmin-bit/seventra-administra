@@ -2,6 +2,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 
 import '../shared/direccion_input.dart';
+import '../usecases/eliminar_servicio_fisicamente_usecase.dart';
 
 /// Fila de Servicio ya acompañada del nombre de su Cliente y de su Tipo
 /// de Servicio — lo que necesita el listado sin que la UI tenga que
@@ -89,11 +90,12 @@ abstract interface class ServicioRepository {
   /// recorte/`vacío→null` (ver `GuardarResponsableInternoUseCase`).
   Future<ServicioData> guardarResponsableInterno({required String servicioId, required String? texto});
 
-  /// Sueldo/bono mensual de referencia (Etapa 6B) — escritura cruda, sin
-  /// validaciones de negocio (ver `GuardarSueldoReferenciaServicioUseCase`).
-  Future<ServicioData> guardarSueldoReferencia({
+  /// Eliminación física extraordinaria (Etapa 15, mismo patrón que la
+  /// Etapa 11D) — ver el doc comment de la implementación para las
+  /// condiciones exactas.
+  Future<EliminarServicioFisicamenteResultado> eliminarFisicamente({
     required String servicioId,
-    required int? sueldoMensualReferenciaPersonal,
-    required int? bonoMensualReferenciaPersonal,
+    required String motivo,
+    String? actorUsuarioId,
   });
 }

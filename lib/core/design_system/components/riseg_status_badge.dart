@@ -48,7 +48,15 @@ class RisegStatusBadge extends StatelessWidget {
               Icon(icon, size: AppSizes.iconSm, color: fg),
               const SizedBox(width: AppSpacing.xxs),
             ],
-            Text(label, style: AppTypography.label.copyWith(color: fg)),
+            // `Flexible` + `ellipsis` — sin esto, una columna de tabla
+            // angosta (ej. 130px en `RisegTableBase`) con una etiqueta
+            // larga ("Registrado") producía "BOTTOM OVERFLOWED" (Etapa
+            // 15, hallazgo real en Egresos). Sin efecto visual cuando
+            // hay espacio suficiente: `mainAxisSize.min` sigue
+            // ajustándose al contenido.
+            Flexible(
+              child: Text(label, style: AppTypography.label.copyWith(color: fg), overflow: TextOverflow.ellipsis),
+            ),
           ],
         ),
       ),

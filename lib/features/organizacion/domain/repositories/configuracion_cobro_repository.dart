@@ -1,7 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
 import '../usecases/configuracion_cobro_con_vigencia.dart';
-import '../usecases/configuracion_cobro_regla_evento_validator.dart';
+import '../usecases/configuracion_cobro_etapa_validator.dart';
 import '../usecases/configuracion_cobro_validator.dart';
 
 /// Configuración de cobro de un Servicio (Etapa 4H.1, ciclo de
@@ -11,11 +11,11 @@ import '../usecases/configuracion_cobro_validator.dart';
 /// (Configuración de cobro), aunque ambos se validen cruzadamente.
 abstract interface class ConfiguracionCobroRepository {
   /// Crea la configuración y su primera vigencia (con sus correos y
-  /// reglas de evento, si los hay) en una sola transacción.
+  /// etapas, si las hay) en una sola transacción.
   Future<({ConfiguracionCobroData configuracion, ConfiguracionCobroVigenciaData vigencia})> crearConfiguracion({
     required String servicioId,
     required ConfiguracionCobroValidada datos,
-    required List<ReglaEventoValidada> reglas,
+    required List<EtapaCobroValidada> etapas,
   });
 
   /// La Configuración de cobro del Servicio, ya resuelta contra la fecha
@@ -41,18 +41,18 @@ abstract interface class ConfiguracionCobroRepository {
   /// su propia foto de correos, igual que sus reglas de evento.
   Future<List<String>> listarCorreos(String vigenciaId);
 
-  /// Reglas de evento de una vigencia específica (Etapa 4H.2).
-  Future<List<ConfiguracionCobroReglaEventoData>> listarReglas(String vigenciaId);
+  /// Etapas del flujo de cobro de una vigencia específica (Etapa 15).
+  Future<List<ConfiguracionCobroEtapaData>> listarEtapas(String vigenciaId);
 
   /// Registra una nueva vigencia — mismo algoritmo único de
   /// predecesora/sucesora que `ServicioComercialRepository.cambiarVigencia`
   /// (Etapa 4G.2), aplicado aquí: trunca la predecesora, acota contra la
-  /// sucesora si existe, todo en una transacción. Asume `datos`/`reglas`
+  /// sucesora si existe, todo en una transacción. Asume `datos`/`etapas`
   /// ya validados.
   Future<ConfiguracionCobroVigenciaData> cambiarVigencia({
     required String configuracionCobroId,
     required ConfiguracionCobroValidada datos,
-    required List<ReglaEventoValidada> reglas,
+    required List<EtapaCobroValidada> etapas,
   });
 
   /// Cierra sin reemplazo la vigencia vigente actual.
@@ -88,4 +88,20 @@ abstract interface class ConfiguracionCobroRepository {
   /// para enumerar candidatos sin que el caso de uso conozca el detalle
   /// de cómo se relacionan Servicio/Cliente.
   Future<List<ConfiguracionCobroData>> listarConfiguraciones({String? clienteId, String? servicioId});
+
+  /// `true` si al menos un `DocumentoPorEmitirConfiguracion` referencia
+  /// esta vigencia — la señal real de "ya tiene historia" (Etapa 15,
+  /// mismo criterio que `ServicioComercialRepository.tieneDocumentosGenerados`).
+  Future<bool> tieneDocumentosGenerados(String vigenciaId);
+
+  /// Corrige, in-place, las condiciones de una vigencia (incluidas sus
+  /// correos y etapas) — única excepción del modelo que muta en vez de
+  /// cerrar+insertar (ver `CorregirConfiguracionCobroUseCase`, que ya
+  /// garantizó que es segura: única vigencia de su configuración, sin
+  /// `DocumentoPorEmitirConfiguracion`).
+  Future<ConfiguracionCobroVigenciaData> corregirVigencia({
+    required String vigenciaId,
+    required ConfiguracionCobroValidada datos,
+    required List<EtapaCobroValidada> etapas,
+  });
 }

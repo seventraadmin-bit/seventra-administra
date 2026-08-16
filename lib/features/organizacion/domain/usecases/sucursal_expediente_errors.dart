@@ -1,10 +1,6 @@
 import 'package:riseg_one/core/validation/direccion_validator.dart';
 
-/// Día de la semana para errores de Horario. `index` coincide con
-/// `HorarioDetalle.diaSemana` (0 = lunes ... 6 = domingo).
-enum DiaSemana { lunes, martes, miercoles, jueves, viernes, sabado, domingo }
-
-enum CodigoErrorHorario { horaInicioRequerida, horaFinRequerida, horasIguales }
+import '../shared/horario_input.dart' show CodigoErrorHorario, DiaSemana;
 
 /// Errores estructurados de [GuardarExpedienteSucursalUseCase] — una
 /// jerarquía sellada en vez de un único enum plano, porque las tres
