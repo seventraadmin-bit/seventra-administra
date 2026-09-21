@@ -18,8 +18,22 @@ class ComplementoPagoRepositoryImpl implements ComplementoPagoRepository {
   }
 
   @override
-  Future<ComplementoPagoData?> obtenerPorPagoId(String pagoId) {
-    return (_db.select(_db.complementoPago)..where((t) => t.pagoId.equals(pagoId))).getSingleOrNull();
+  Future<ComplementoPagoData?> obtenerVigentePorPagoId(String pagoId) {
+    // `getSingleOrNull` es seguro AQUÍ y sólo aquí: el índice único
+    // parcial `complemento_pago_vigente_por_pago` garantiza a lo más
+    // una fila `registrado` por Pago. Sobre el histórico completo
+    // lanzaría en cuanto hubiera un sustituto.
+    return (_db.select(_db.complementoPago)
+          ..where((t) => t.pagoId.equals(pagoId) & t.estatus.equals(EstatusComplementoPago.registrado.name)))
+        .getSingleOrNull();
+  }
+
+  @override
+  Future<List<ComplementoPagoData>> listarPorPagoId(String pagoId) {
+    return (_db.select(_db.complementoPago)
+          ..where((t) => t.pagoId.equals(pagoId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
   }
 
   @override

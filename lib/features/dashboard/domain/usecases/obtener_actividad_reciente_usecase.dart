@@ -4,6 +4,8 @@ import 'package:riseg_one/features/finanzas/domain/repositories/pago_repository.
 import 'package:riseg_one/features/inventario/domain/repositories/articulo_repository.dart';
 import 'package:riseg_one/features/inventario/domain/repositories/inventario_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/cliente_repository.dart';
+import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
+import 'package:riseg_one/features/personal/domain/repositories/vacante_operativa_repository.dart';
 import 'package:riseg_one/features/telefonia/domain/repositories/linea_telefonica_repository.dart';
 import 'package:riseg_one/features/telefonia/domain/repositories/recarga_linea_telefonica_repository.dart';
 
@@ -38,6 +40,22 @@ class RecargaReciente {
   final DestinoHistoricoRecarga? destino;
 }
 
+/// Un evento de vacante (apertura o cobertura) dentro del periodo —
+/// Parte N: "vacante abierta"/"vacante cubierta" como eventos de
+/// negocio de la Actividad reciente. Sin nombre de puesto (requeriría
+/// una segunda consulta por línea comercial solo para 5 filas
+/// truncadas) — el nombre del Servicio ya identifica el evento sin
+/// ambigüedad para este propósito.
+class VacanteReciente {
+  const VacanteReciente({required this.servicioNombre, required this.abierta, required this.fecha});
+
+  final String servicioNombre;
+
+  /// `true` = evento de apertura, `false` = evento de cobertura.
+  final bool abierta;
+  final DateTime fecha;
+}
+
 /// Actividad reciente del Dashboard (Etapa 13) — listas cortas (5
 /// filas), nunca un log de auditoría. Cada campo `null` cuando el
 /// llamador no incluyó esa sección (sin autorización).
@@ -54,12 +72,14 @@ class ActividadRecienteDashboard {
     this.pagosRecientes,
     this.movimientosRecientes,
     this.recargasRecientes,
+    this.vacantesRecientes,
   });
 
   final List<CompraData>? comprasRecientes;
   final List<PagoReciente>? pagosRecientes;
   final List<MovimientoReciente>? movimientosRecientes;
   final List<RecargaReciente>? recargasRecientes;
+  final List<VacanteReciente>? vacantesRecientes;
 }
 
 /// Compone 6 repositorios ya existentes, cada uno gateado por su
@@ -80,6 +100,8 @@ class ObtenerActividadRecienteUseCase {
     this._articuloRepository,
     this._recargaRepository,
     this._lineaTelefonicaRepository,
+    this._vacanteOperativaRepository,
+    this._servicioRepository,
   );
 
   final CompraRepository _compraRepository;
@@ -89,22 +111,27 @@ class ObtenerActividadRecienteUseCase {
   final ArticuloRepository _articuloRepository;
   final RecargaLineaTelefonicaRepository _recargaRepository;
   final LineaTelefonicaRepository _lineaTelefonicaRepository;
+  final VacanteOperativaRepository _vacanteOperativaRepository;
+  final ServicioRepository _servicioRepository;
 
   Future<ActividadRecienteDashboard> ejecutar({
     required bool incluirCompras,
     required bool incluirPagos,
     required bool incluirInventario,
     required bool incluirTelefonia,
+    required bool incluirComercial,
     DateTime? rangoInicio,
     DateTime? rangoFin,
   }) async {
     final comprasRecientes = incluirCompras
-        ? (await _compraRepository.listar(estatus: 'registrada')).take(_tamanoLista).toList()
+        ? (await _compraRepository.listar(estatus: 'registrada', desde: rangoInicio, hasta: rangoFin)).take(_tamanoLista).toList()
         : null;
 
     List<PagoReciente>? pagosRecientes;
     if (incluirPagos) {
-      final pagos = (await _pagoRepository.listar(estatus: 'registrado')).take(_tamanoLista).toList();
+      final pagos = (await _pagoRepository.listar(estatus: 'registrado', rangoInicio: rangoInicio, rangoFin: rangoFin))
+          .take(_tamanoLista)
+          .toList();
       final clientes = await _clienteRepository.listarActivos();
       final nombrePorCliente = {for (final c in clientes) c.id: c.nombreComercial};
       pagosRecientes = [
@@ -114,7 +141,8 @@ class ObtenerActividadRecienteUseCase {
 
     List<MovimientoReciente>? movimientosRecientes;
     if (incluirInventario) {
-      final movimientos = (await _inventarioRepository.listarMovimientos()).take(_tamanoLista).toList();
+      final movimientos =
+          (await _inventarioRepository.listarMovimientos(desde: rangoInicio, hasta: rangoFin)).take(_tamanoLista).toList();
       final articulos = await _articuloRepository.listar(soloActivos: false);
       final nombrePorArticulo = {for (final a in articulos) a.id: a.nombre};
       movimientosRecientes = [
@@ -140,11 +168,33 @@ class ObtenerActividadRecienteUseCase {
       ];
     }
 
+    List<VacanteReciente>? vacantesRecientes;
+    if (incluirComercial && rangoInicio != null && rangoFin != null) {
+      final vacantes = await _vacanteOperativaRepository.listarRecientes(rangoInicio: rangoInicio, rangoFin: rangoFin);
+      final servicios = await _servicioRepository.listar();
+      final nombrePorServicio = {for (final s in servicios) s.servicio.id: s.servicio.nombre};
+
+      final eventos = <VacanteReciente>[];
+      for (final v in vacantes) {
+        final nombre = nombrePorServicio[v.servicioId] ?? '—';
+        if (!v.fechaApertura.isBefore(rangoInicio) && !v.fechaApertura.isAfter(rangoFin)) {
+          eventos.add(VacanteReciente(servicioNombre: nombre, abierta: true, fecha: v.fechaApertura));
+        }
+        final fechaCobertura = v.fechaCobertura;
+        if (fechaCobertura != null && !fechaCobertura.isBefore(rangoInicio) && !fechaCobertura.isAfter(rangoFin)) {
+          eventos.add(VacanteReciente(servicioNombre: nombre, abierta: false, fecha: fechaCobertura));
+        }
+      }
+      eventos.sort((a, b) => b.fecha.compareTo(a.fecha));
+      vacantesRecientes = eventos.take(_tamanoLista).toList();
+    }
+
     return ActividadRecienteDashboard(
       comprasRecientes: comprasRecientes,
       pagosRecientes: pagosRecientes,
       movimientosRecientes: movimientosRecientes,
       recargasRecientes: recargasRecientes,
+      vacantesRecientes: vacantesRecientes,
     );
   }
 }

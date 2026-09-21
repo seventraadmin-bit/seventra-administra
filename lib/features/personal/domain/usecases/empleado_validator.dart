@@ -1,4 +1,5 @@
 import '../../../../core/database/seed/seed_ids.dart';
+import '../../../../core/validation/codigo_postal_fiscal_validator.dart';
 import 'calcular_edad.dart';
 
 /// Validaciones de formato puras del expediente del Empleado (Etapa
@@ -13,8 +14,6 @@ class EmpleadoValidator {
   static final _curpPattern = RegExp(r'^[A-Za-z0-9]{18}$');
   static final _rfcPattern = RegExp(r'^[A-Za-z0-9]{12,13}$');
   static final _nssPattern = RegExp(r'^[0-9]{11}$');
-  static final _codigoPostalPattern = RegExp(r'^[0-9]{5}$');
-
   bool curpValido(String curp) => _curpPattern.hasMatch(curp.trim());
 
   bool rfcValido(String rfc) => _rfcPattern.hasMatch(rfc.trim());
@@ -22,7 +21,7 @@ class EmpleadoValidator {
   bool nssValido(String nss) => _nssPattern.hasMatch(nss.trim());
 
   /// Formato únicamente — mismo criterio que `curpValido`/`rfcValido`.
-  bool codigoPostalFiscalValido(String codigoPostal) => _codigoPostalPattern.hasMatch(codigoPostal.trim());
+  bool codigoPostalFiscalValido(String codigoPostal) => CodigoPostalFiscalValidator.esFormatoValido(codigoPostal);
 
   /// Rechaza fechas de nacimiento futuras y edades irreales (< 15 años)
   /// — regla mínima de sanidad, no una regla laboral completa.

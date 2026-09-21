@@ -219,25 +219,34 @@ class _GestionarCategoriaArticuloDialogState extends ConsumerState<GestionarCate
                                     ],
                                   ),
                                 ),
-                                IconButton(
-                                  tooltip: l10n.categoriaArticuloBotonEditar,
-                                  icon: const Icon(Icons.edit_outlined, size: 18),
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: () => _iniciarEdicion(c.id, c.nombre, c.aplicacionEspecializada),
+                                // Etapa 18: mismo patrón de menú ⋯ que
+                                // Categorías financieras — antes eran 3
+                                // IconButton permanentes por fila.
+                                RisegActionsMenu(
+                                  menuKey: Key('categoria_articulo_menu_acciones_${c.id}'),
+                                  actions: [
+                                    RisegMenuAction(
+                                      key: Key('categoria_articulo_accion_editar_${c.id}'),
+                                      label: l10n.categoriaArticuloBotonEditar,
+                                      icon: Icons.edit_outlined,
+                                      onTap: () => _iniciarEdicion(c.id, c.nombre, c.aplicacionEspecializada),
+                                    ),
+                                    RisegMenuAction(
+                                      key: Key('categoria_articulo_accion_archivar_${c.id}'),
+                                      label: l10n.articuloBotonArchivar,
+                                      icon: Icons.archive_outlined,
+                                      onTap: () => _archivar(c.id),
+                                    ),
+                                    if (esMaestro)
+                                      RisegMenuAction(
+                                        key: Key('categoria_articulo_accion_eliminar_${c.id}'),
+                                        label: l10n.eliminacionFisicaAccionMenu,
+                                        icon: Icons.delete_forever_outlined,
+                                        destructive: true,
+                                        onTap: () => _eliminarFisicamente(c.id),
+                                      ),
+                                  ],
                                 ),
-                                IconButton(
-                                  tooltip: l10n.articuloBotonArchivar,
-                                  icon: const Icon(Icons.archive_outlined, size: 18),
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: () => _archivar(c.id),
-                                ),
-                                if (esMaestro)
-                                  IconButton(
-                                    tooltip: l10n.eliminacionFisicaAccionMenu,
-                                    icon: const Icon(Icons.delete_forever_outlined, size: 18),
-                                    visualDensity: VisualDensity.compact,
-                                    onPressed: () => _eliminarFisicamente(c.id),
-                                  ),
                               ],
                             ),
                           ),

@@ -12,14 +12,20 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:riseg_one/features/finanzas/data/repositories/cuenta_financiera_repository_impl.dart';
+import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
+import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/descuentos_personal/data/repositories/descuento_programado_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/repositories/nomina_repository_impl.dart';
+import 'package:riseg_one/features/tiempos_extra/data/repositories/tiempo_extra_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/repositories/pago_nomina_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/tables/nomina_table.dart';
 import 'package:riseg_one/features/nomina/domain/repositories/pago_nomina_repository.dart';
@@ -39,6 +45,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
+import 'package:riseg_one/features/personal/domain/usecases/obtener_plantilla_personal_usecase.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
@@ -97,21 +104,25 @@ void main() {
       servicioRepo,
       ServicioComercialRepositoryImpl(db),
     );
-    registrarBaja = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator);
+    registrarBaja = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator, AsignacionRepositoryImpl(db), AsignacionVehiculoRepositoryImpl(db));
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, empleadoValidator);
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);
 
     final egresoRepo = EgresoRepositoryImpl(db);
-    nominaRepo = NominaRepositoryImpl(db);
+    nominaRepo = NominaRepositoryImpl(db, AsignacionRepositoryImpl(db), DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db)), TiempoExtraRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db), EmpleadoRepositoryImpl(db, AsignacionServicioRepositoryImpl(db)), ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db))), PagoNominaRepositoryImpl(db, EgresoRepositoryImpl(db), DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db))));
     final resolverSueldo = ResolverSueldoEmpleadoNomina(empleadoRepo, asignacionRepo, servicioRepo, catalogoRepo);
     generarNomina = GenerarNominaUseCase(nominaRepo, empleadoRepo, puestoRepo, catalogoRepo, resolverSueldo, generarCodigo);
     final evaluarRevision = EvaluarRenglonesRequierenRevisionUseCase(nominaRepo, empleadoRepo, resolverSueldo);
     cerrarNomina = CerrarNominaUseCase(nominaRepo, evaluarRevision);
-    pagoNominaRepo = PagoNominaRepositoryImpl(db, egresoRepo);
-    registrarPagoNomina = RegistrarPagoNominaUseCase(pagoNominaRepo, nominaRepo, generarCodigo);
+    pagoNominaRepo = PagoNominaRepositoryImpl(db, egresoRepo, DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db)));
+    registrarPagoNomina = RegistrarPagoNominaUseCase(pagoNominaRepo, nominaRepo, generarCodigo, CuentaFinancieraRepositoryImpl(db));
 
-    obtenerResumenPersonal = ObtenerResumenPersonalUseCase(empleadoRepo, asignacionRepo);
+    obtenerResumenPersonal = ObtenerResumenPersonalUseCase(
+      empleadoRepo,
+      asignacionRepo,
+      ObtenerPlantillaPersonalUseCase(empleadoRepo, asignacionRepo, puestoRepo),
+    );
     obtenerResumenNomina = ObtenerResumenNominaUseCase(nominaRepo, pagoNominaRepo);
   });
 
@@ -127,6 +138,7 @@ void main() {
     DateTime? fechaIngreso,
     int sueldoMensualAdministrativo = 1500000,
     String? servicioId,
+    String? sucursalId,
   }) async {
     empleadoContador++;
     final n = empleadoContador.toString().padLeft(2, '0');
@@ -143,6 +155,7 @@ void main() {
       aniosExperienciaSeguridad: 3,
       sueldoMensualAdministrativo: servicioId == null ? sueldoMensualAdministrativo : null,
       servicioId: servicioId,
+      sucursalId: sucursalId,
       sueldoMensualAsignacion: servicioId == null ? null : 1500000,
       bonoMensualAsignacion: servicioId == null ? null : 0,
     );
@@ -181,7 +194,7 @@ void main() {
             codigoPostal: '50000',
           ),
         );
-    final activado = (await cambiarEstatusServicio.ejecutar(servicioId: creado.servicio.id, nuevo: EstatusServicio.activo))
+    final activado = (await cambiarEstatusServicio.ejecutar(servicioId: creado.servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba'))
         as CambiarEstatusServicioExitoso;
     return activado.servicio;
   }
@@ -202,11 +215,26 @@ void main() {
   });
 
   group('Administrativo vs. operativo — sin bandera nueva', () {
-    test('se deriva de AsignacionServicio activa, nunca de una columna en Empleado', () async {
+    // Etapa "Plantilla operativa vs. administrativa": la regla se
+    // corrigió. Antes bastaba NO tener Servicio para contar como
+    // administrativo, sin mirar nunca `sucursalId` — un empleado sin
+    // ningún destino se volvía administrativo en silencio, y el
+    // Dashboard al mismo empleado lo llamaba "sin asignar". Ahora
+    // administrativo = adscrito a una SUCURSAL, y ambas pantallas
+    // consumen la misma fuente de verdad.
+    test('Servicio = operativo y Sucursal = administrativo, derivados de la estructura y nunca de una columna en Empleado',
+        () async {
       final servicio = await crearServicioActivoDePrueba();
+      final sucursal = await db.into(db.sucursal).insertReturning(
+        SucursalCompanion.insert(
+          codigo: 'SUC-000001',
+          nombre: 'Toluca',
+          tipoSucursalId: SeedIds.tipoSucursalOficinaAdministrativa,
+        ),
+      );
 
       await crearEmpleadoDePrueba(servicioId: servicio.id);
-      await crearEmpleadoDePrueba();
+      await crearEmpleadoDePrueba(sucursalId: sucursal.id);
 
       final resumen = await obtenerResumenPersonal.ejecutar();
 
@@ -214,6 +242,16 @@ void main() {
       expect(resumen.totalOperativos, 1);
       expect(resumen.totalAdministrativos, 1);
       expect(resumen.personalPorServicio[servicio.id], 1);
+    });
+
+    test('un empleado sin Servicio y sin Sucursal ya NO se cuenta como administrativo', () async {
+      await crearEmpleadoDePrueba();
+
+      final resumen = await obtenerResumenPersonal.ejecutar();
+
+      expect(resumen.totalActivos, 1);
+      expect(resumen.totalAdministrativos, 0, reason: 'sin destino no es administrativo');
+      expect(resumen.totalOperativos, 0);
     });
   });
 
@@ -283,6 +321,7 @@ void main() {
         nominaId: generado.nomina.id,
         fechaPago: DateTime(2026, 2, 5),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: renglon.id, monto: renglon.totalAPagar)],
       );
 
@@ -309,6 +348,7 @@ void main() {
         nominaId: generado.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: renglon.id, monto: mitad)],
       );
 
@@ -359,4 +399,25 @@ void main() {
       expect(resumen.totalPendienteGlobal, 0);
     });
   });
+}
+
+/// La cuenta de origen de los pagos de Nómina en esta prueba.
+///
+/// Reutiliza la primera que el archivo ya haya creado; sólo inventa una
+/// si no hay ninguna. Desde la Etapa de integridad financiera, un pago
+/// de Nómina con monto > 0 exige cuenta: sin ella el Egreso nacería sin
+/// origen y ningún saldo bajaría.
+Future<String> _cuentaDePrueba(AppDatabase db) async {
+  final existentes = await db.select(db.cuentaFinanciera).get();
+  if (existentes.isNotEmpty) return existentes.first.id;
+  final cuenta = await db.into(db.cuentaFinanciera).insertReturning(
+        CuentaFinancieraCompanion.insert(
+          codigo: 'CF-NOMINA-PRUEBA',
+          nombre: 'Cuenta de prueba',
+          tipo: 'banco',
+          saldoInicial: 100000000, // fondeada: la v91 rechaza salidas sin saldo
+          fechaSaldoInicial: DateTime(2020, 1, 1),
+        ),
+      );
+  return cuenta.id;
 }

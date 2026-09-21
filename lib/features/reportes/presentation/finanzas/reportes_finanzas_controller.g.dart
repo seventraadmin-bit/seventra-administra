@@ -7,15 +7,20 @@ part of 'reportes_finanzas_controller.dart';
 // **************************************************************************
 
 String _$reportesFinanzasControllerHash() =>
-    r'f298e5910967baa67962b075517a8d2836071338';
+    r'33d34d13e2aa77ea2d33feb8249487b059e6c896';
 
-/// Controlador de la pestaña Finanzas de Reportes (Etapa 12A).
+/// Controlador de la pestaña Finanzas de Reportes.
 ///
 /// Guardia de permiso real (no solo la pestaña oculta en
 /// `ReportesShellScreen`): si la sesión no tiene `finanzas.ver`, esta
 /// función retorna sin ejecutar ninguna consulta — `state` se queda en
 /// ceros/listas vacías y `sinAutorizacion == true` para que la pantalla
 /// muestre un estado explícito, nunca datos parciales.
+///
+/// Dos universos temporales distintos conviven aquí y la pantalla los
+/// distingue siempre: el **periodo** (operativo, pagos, movimientos de
+/// deuda) y la **fecha de hoy** (cartera, saldos de deuda). Cambiar el
+/// rango recalcula el primero; los segundos no dependen de él.
 ///
 /// Copied from [ReportesFinanzasController].
 @ProviderFor(ReportesFinanzasController)

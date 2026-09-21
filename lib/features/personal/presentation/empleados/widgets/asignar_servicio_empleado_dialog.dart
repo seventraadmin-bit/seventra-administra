@@ -9,7 +9,6 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
 import 'package:riseg_one/features/personal/domain/usecases/asignar_empleado_servicio_usecase.dart';
-import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../personal_providers.dart';
@@ -175,7 +174,7 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
         return null;
       }
 
-      final resultado = await ref.read(asignarEmpleadoServicioUseCaseProvider).ejecutar(
+      final resultado = await ref.read(asignarEmpleadoServicioAutorizadoProvider)(
             empleadoId: empleado.id,
             servicioId: servicioId!,
             fechaInicio: fecha!,
@@ -184,7 +183,6 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
             observaciones: observacionesController.text,
             sueldoMensual: centavosDesdeTexto(sueldoController.text),
             bonoMensual: centavosDesdeTexto(bonoController.text),
-            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           );
 
       if (!context.mounted) return null;
@@ -208,6 +206,9 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
         case AsignarEmpleadoServicioBonoInvalido():
           errorBono = l10n.empleadoErrorBonoAcordadoInvalido;
           return null;
+        case AsignarEmpleadoServicioAdscritoASucursal():
+          RisegFeedback.showError(context, l10n.empleadoErrorAdscritoASucursal);
+          return false;
         case AsignarEmpleadoServicioServicioNoExiste():
         case AsignarEmpleadoServicioServicioNoActivo():
           errorServicio = l10n.empleadoErrorServicioNoActivo;
@@ -225,19 +226,12 @@ Future<bool> mostrarDialogoAsignarServicioEmpleado(BuildContext context, WidgetR
     },
   );
 
-  // Deferred: el diálogo sigue montado unos instantes durante su
-  // animación de salida — liberar los controllers de inmediato puede
-  // reproducir el crash "A TextEditingController was used after being
-  // disposed" (mismo criterio que `crear_empleado_dialog.dart`, Etapa
-  // 5D.1), y este diálogo ahora también intercambia condicionalmente
-  // los campos de sueldo/bono acordado según la línea comercial
-  // elegida.
-  unawaited(
-    Future.delayed(const Duration(milliseconds: 300), () {
-      observacionesController.dispose();
-      sueldoController.dispose();
-      bonoController.dispose();
-    }),
-  );
+  // Liberar aquí es seguro: `RisegDialog.showForm` no devuelve
+  // hasta que la ruta del diálogo terminó de cerrarse (ver su
+  // documentación). Antes sí hacía falta aplazarlo 300 ms, y ese
+  // aplazamiento dejaba un Timer vivo después de desmontar el árbol.
+  observacionesController.dispose();
+  sueldoController.dispose();
+  bonoController.dispose();
   return resultado ?? false;
 }

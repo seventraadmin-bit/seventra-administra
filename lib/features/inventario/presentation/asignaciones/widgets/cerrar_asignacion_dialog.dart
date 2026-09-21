@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/cerrar_asignacion_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/obtener_empleados_responsables_servicio_usecase.dart'
     show EmpleadoOpcion;
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
+import 'package:riseg_one/features/inventario/presentation/articulos/articulos_controller.dart';
 
 String motivoCierreLabel(AppLocalizations l10n, MotivoCierreAsignacion motivo) {
   return switch (motivo) {
@@ -141,6 +143,12 @@ Future<bool> mostrarDialogoCerrarAsignacion(
       if (!context.mounted) return false;
       switch (resultado) {
         case CerrarAsignacionExitoso():
+          // Mismo hallazgo que en `asignar_articulo_dialog.dart` — el
+          // listado general de Inventario nunca se enteraba de un
+          // cierre (devolución/daño/pérdida) porque este diálogo nunca
+          // invalidaba `articulosControllerProvider`/`dashboardControllerProvider`.
+          ref.invalidate(articulosControllerProvider);
+          ref.invalidate(dashboardControllerProvider);
           RisegFeedback.showSuccess(context, l10n.cerrarAsignacionExito);
           return true;
         case CerrarAsignacionObservacionesRequeridas():
@@ -163,8 +171,12 @@ Future<bool> mostrarDialogoCerrarAsignacion(
     },
   );
 
-  observacionesCtrl.dispose();
-  importeCtrl.dispose();
+  // Mismo hallazgo real que en `asignar_articulo_dialog.dart` — nunca
+  // disponer controladores en el mismo frame en que se cierra la ruta.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    observacionesCtrl.dispose();
+    importeCtrl.dispose();
+  });
 
   return resultado ?? false;
 }

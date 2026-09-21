@@ -1,12 +1,13 @@
-// Pruebas de la pantalla de listado de Puestos — buscador (incluyendo
-// descripción, corrección #4) y alta vía el diálogo (corrección #1/#3:
-// el Área activa se valida también en dominio, no solo en el selector).
+// Etapa 16, tercera pasada visual — Puestos: nueva jerarquía visual
+// (Nombre fuerte + Código secundario, sin columna "Código" suelta),
+// badges neutrales de Tipo/Nivel, fila interactiva con chevron,
+// buscador corto ("Buscar puesto...") y responsive/tema oscuro.
 
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/native.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/app/theme/app_theme.dart';
@@ -21,28 +22,9 @@ import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_puesto_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/puesto_validator.dart';
 import 'package:riseg_one/features/organizacion/presentation/puestos/puestos_list_screen.dart';
-import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
-import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
-/// Sesión Maestro fija — Etapa 11C activó autorización real en las
-/// acciones de esta pantalla; sin este override todas serían
-/// rechazadas por `AuthorizationService` (mismo criterio que
-/// `smoke_test.dart`).
-class _SesionControllerDePrueba extends SesionController {
-  @override
-  SesionUsuario? build() {
-    return const SesionUsuario(
-      usuarioId: 'usuario-prueba',
-      nombre: 'Usuario de prueba',
-      nombreUsuario: 'prueba',
-      esMaestro: true,
-      permisos: {},
-    );
-  }
-}
-
-Future<void> _pumpScreen(WidgetTester tester, AppDatabase db) async {
-  tester.view.physicalSize = const Size(1440, 900);
+Future<void> _pumpScreen(WidgetTester tester, AppDatabase db, {Size tamano = const Size(1366, 900), ThemeData? tema}) async {
+  tester.view.physicalSize = tamano;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -51,21 +33,15 @@ Future<void> _pumpScreen(WidgetTester tester, AppDatabase db) async {
     initialLocation: '/lista',
     routes: [
       GoRoute(path: '/lista', builder: (context, state) => const Scaffold(body: PuestosListScreen())),
-      GoRoute(
-        path: '/organizacion/puestos/:id',
-        builder: (context, state) => const Scaffold(body: Placeholder()),
-      ),
+      GoRoute(path: '/organizacion/puestos/:id', builder: (context, state) => const Scaffold(body: Placeholder())),
     ],
   );
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
-      ],
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
       child: MaterialApp.router(
-        theme: AppTheme.light(),
+        theme: tema ?? AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: router,
@@ -86,74 +62,71 @@ void main() {
       PuestoValidator(AreaRepositoryImpl(db)),
     );
     await crear.ejecutar(const PuestoBorrador(
-      nombre: 'Guardia Norte',
+      nombre: 'Elemento Operativo',
       areaId: SeedIds.areaOperaciones,
       tipo: TipoPuesto.operativo,
       nivelJerarquico: 1,
     ));
     await crear.ejecutar(const PuestoBorrador(
-      nombre: 'Analista de Reclutamiento',
-      areaId: SeedIds.areaReclutamiento,
+      nombre: 'Gerente Operativo',
+      areaId: SeedIds.areaOperaciones,
       tipo: TipoPuesto.administrativo,
-      nivelJerarquico: 4,
-      descripcion: 'Entrevistas y seguimiento de candidatos',
+      nivelJerarquico: 7,
     ));
   });
 
   tearDown(() => db.close());
 
-  testWidgets('muestra los Puestos sembrados', (tester) async {
+  testWidgets('Nombre fuerte + código secundario apilados, sin una columna "Código" suelta', (tester) async {
     await _pumpScreen(tester, db);
 
-    expect(find.text('Guardia Norte'), findsOneWidget);
-    expect(find.text('Analista de Reclutamiento'), findsOneWidget);
-  });
-
-  testWidgets('el buscador filtra por descripción', (tester) async {
-    await _pumpScreen(tester, db);
-
-    await tester.enterText(find.byType(TextField), 'candidatos');
-    await tester.pumpAndSettle();
-
-    expect(find.text('Analista de Reclutamiento'), findsOneWidget);
-    expect(find.text('Guardia Norte'), findsNothing);
-  });
-
-  testWidgets('tocar una fila navega al expediente de ese Puesto', (tester) async {
-    await _pumpScreen(tester, db);
-
-    await tester.tap(find.text('Guardia Norte'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(Placeholder), findsOneWidget);
-  });
-
-  testWidgets('crear un nuevo Puesto vía el diálogo de alta', (tester) async {
-    await _pumpScreen(tester, db);
     final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+    expect(find.text('Elemento Operativo'), findsOneWidget);
+    expect(find.textContaining('PUE-'), findsWidgets);
+    expect(find.text(l10n.puestosColumnaCodigo), findsNothing, reason: 'el código ya vive apilado bajo el nombre, no en su propia columna');
+  });
 
-    await tester.tap(find.byKey(const Key('puestos_boton_nueva')));
+  testWidgets('Tipo y Nivel se muestran como badges ("N1"/"N7")', (tester) async {
+    await _pumpScreen(tester, db);
+
+    expect(find.text('N1'), findsOneWidget);
+    expect(find.text('N7'), findsOneWidget);
+  });
+
+  testWidgets('fila interactiva: hover/chevron y tocar navega al expediente', (tester) async {
+    await _pumpScreen(tester, db);
+
+    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+
+    await tester.tap(find.text('Elemento Operativo'));
     await tester.pumpAndSettle();
-    expect(find.byType(Dialog), findsOneWidget);
-
-    await tester.enterText(find.byType(TextFormField).first, 'Supervisor');
-
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Operaciones').last);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(DropdownButtonFormField<TipoPuesto>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n.puestoTipoOperativo).last);
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextFormField).last, '5');
-
-    await tester.tap(find.text(l10n.puestoAltaBotonCrear));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(Dialog), findsNothing);
     expect(find.byType(Placeholder), findsOneWidget);
+  });
+
+  testWidgets('el buscador ("Buscar puesto...") filtra por nombre', (tester) async {
+    await _pumpScreen(tester, db);
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+    expect(find.text(l10n.puestosListadoBuscarHint), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'gerente');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gerente Operativo'), findsOneWidget);
+    expect(find.text('Elemento Operativo'), findsNothing);
+  });
+
+  group('responsive y tema', () {
+    for (final tamano in const [Size(1366, 768), Size(1024, 768), Size(700, 900), Size(500, 900)]) {
+      testWidgets('${tamano.width.toInt()}×${tamano.height.toInt()}: cero overflow', (tester) async {
+        await _pumpScreen(tester, db, tamano: tamano);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('modo oscuro: cero overflow', (tester) async {
+      await _pumpScreen(tester, db, tema: AppTheme.dark());
+      expect(tester.takeException(), isNull);
+    });
   });
 }

@@ -5,10 +5,20 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:go_router/go_router.dart';
+
+import 'package:riseg_one/app/shell/shell_permissions.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/permissions/modulos_permiso.dart';
+import 'package:riseg_one/features/finanzas/presentation/deudas_credito/deudas_credito_list_screen.dart'
+    show formatoCentavosDeuda;
 
 import '../../domain/usecases/buscar_auditoria_usecase.dart';
+import 'package:riseg_one/features/servicios_eventuales/presentation/widgets/servicio_eventual_labels.dart'
+    show servicioEventualEventoLabel;
+import '../../domain/usecases/destino_auditoria.dart';
+import '../../usuarios_providers.dart' show permissionServiceProvider;
+import '../sesion_controller.dart';
 import '../widgets/permiso_labels.dart';
 import 'auditoria_controller.dart';
 
@@ -20,6 +30,57 @@ final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
 /// detalle bajo demanda (nunca JSON crudo en la tabla principal).
 class AuditoriaScreen extends ConsumerWidget {
   const AuditoriaScreen({super.key});
+
+  /// Etiqueta de módulo que también entiende los códigos que existen
+  /// solo en Auditoría (`tiempoExtra`, `boveda`) y que por eso no están
+  /// en `modulosPermiso` — ver `modulosSoloAuditoria`.
+  String _moduloLabel(AppLocalizations l10n, String codigo) {
+    return switch (codigo) {
+      'tiempoExtra' => l10n.auditoriaModuloTiempoExtra,
+      'boveda' => l10n.auditoriaModuloBoveda,
+      _ => moduloPermisoLabel(l10n, codigo),
+    };
+  }
+
+  /// ¿Puede este usuario ABRIR el origen? Se resuelve con el mismo
+  /// mecanismo del router — nunca con `auditoria.ver`, que solo abre
+  /// esta pantalla. Ver un evento y poder entrar a donde ocurrió son
+  /// facultades distintas, y esta función es la que impide que la
+  /// primera se convierta en atajo de la segunda.
+  bool _puedeNavegar(WidgetRef ref, DestinoAuditoria destino) {
+    if (destino.exigeMaestro) {
+      return ref.read(sesionControllerProvider)?.esMaestro ?? false;
+    }
+    final permisos = permisosQueAbrenRuta(destino.ruta);
+    if (permisos.isEmpty) return true;
+    final servicio = ref.read(permissionServiceProvider);
+    return permisos.any(servicio.hasCode);
+  }
+
+  /// Origen funcional de un cargo/ajuste de tarjeta, para que la acción
+  /// diga de dónde vino el dinero sin confundirse con el evento de
+  /// negocio del módulo que lo originó.
+  String _origenCargoLabel(AppLocalizations l10n, String origen) {
+    return switch (origen) {
+      'compra' => l10n.moduleCompras,
+      'tiempoExtra' => l10n.auditoriaModuloTiempoExtra,
+      'tiempoExtraCosto' => l10n.auditoriaOrigenCargoTiempoExtraCosto,
+      'egreso' => l10n.permisoModuloEgresos,
+      'vehiculo' => l10n.moduleVehiculos,
+      'positivo' => l10n.auditoriaAjusteTarjetaPositivo,
+      'negativo' => l10n.auditoriaAjusteTarjetaNegativo,
+      _ => origen,
+    };
+  }
+
+  /// Un valor de cambio, formateado como moneda cuando la proyección lo
+  /// marcó como importe en centavos (`CambioAuditoria.esImporte`).
+  String _valorCambio(String? valor, bool esImporte) {
+    if (valor == null) return '—';
+    if (!esImporte) return valor;
+    final centavos = int.tryParse(valor);
+    return centavos == null ? valor : formatoCentavosDeuda(centavos);
+  }
 
   String _accionLabel(String accion) {
     // Las eliminaciones físicas codifican el tipo de entidad en la
@@ -33,7 +94,52 @@ class AuditoriaScreen extends ConsumerWidget {
     return accion;
   }
 
-  void _verDetalle(BuildContext context, AppLocalizations l10n, EventoAuditoria evento, String? nombreUsuario) {
+  /// Igual que [_accionLabel] pero con acceso a l10n — necesario para
+  /// las acciones de Deudas, que codifican su origen funcional.
+  /// [modulo] acota las traducciones que sólo valen dentro de un
+  /// dominio: `corregido`, `creado` o `cancelado` son nombres que
+  /// varios módulos comparten, y traducirlos sin saber de cuál vienen
+  /// pondría la etiqueta de uno en los eventos de otro. `null` cuando
+  /// no hay contexto (el filtro, que lista acciones de todos).
+  String _accionLabelCompleta(AppLocalizations l10n, String accion, {String? modulo}) {
+    if (modulo == 'serviciosEventuales') {
+      final eventual = servicioEventualEventoLabel(l10n, accion);
+      if (eventual != accion) return eventual;
+    }
+    if (accion.startsWith('cargoTarjeta:')) {
+      final origen = accion.substring('cargoTarjeta:'.length);
+      return l10n.auditoriaAccionCargoTarjetaPor(_origenCargoLabel(l10n, origen));
+    }
+    if (accion.startsWith('ajusteTarjeta:')) {
+      final origen = accion.substring('ajusteTarjeta:'.length);
+      return l10n.auditoriaAccionAjusteTarjetaPor(_origenCargoLabel(l10n, origen));
+    }
+    // Por qué se cerró una asignación de línea: baja de la línea o baja
+    // del empleado son hechos distintos y deben leerse distinto.
+    if (accion.startsWith('asignacionCerrada:')) {
+      final motivo = accion.substring('asignacionCerrada:'.length);
+      return l10n.auditoriaAccionAsignacionCerradaPor(
+        switch (motivo) {
+          'bajaLinea' => l10n.auditoriaMotivoCierreBajaLinea,
+          'bajaEmpleado' => l10n.auditoriaMotivoCierreBajaEmpleado,
+          'cambioResponsable' => l10n.auditoriaMotivoCierreCambioResponsable,
+          'liberacion' => l10n.auditoriaMotivoCierreLiberacion,
+          _ => motivo,
+        },
+      );
+    }
+    if (accion == 'correccionPago:positivo') return l10n.auditoriaAccionCorreccionPagoPositivo;
+    if (accion == 'correccionPago:negativo') return l10n.auditoriaAccionCorreccionPagoNegativo;
+    return _accionLabel(accion);
+  }
+
+  void _verDetalle(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    EventoAuditoria evento,
+    String? nombreUsuario,
+  ) {
     Map<String, dynamic>? detalle;
     if (evento.detalleJson != null) {
       try {
@@ -42,6 +148,8 @@ class AuditoriaScreen extends ConsumerWidget {
         detalle = null;
       }
     }
+
+    final destino = destinoDeEvento(evento);
 
     showDialog<void>(
       context: context,
@@ -60,12 +168,40 @@ class AuditoriaScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text('${l10n.auditoriaColumnaModulo}: ${moduloPermisoLabel(l10n, evento.modulo)}'),
                 const SizedBox(height: AppSpacing.xs),
-                Text('${l10n.auditoriaColumnaAccion}: ${_accionLabel(evento.accion)}'),
+                Text('${l10n.auditoriaColumnaAccion}: ${_accionLabelCompleta(l10n, evento.accion, modulo: evento.modulo)}'),
+                const SizedBox(height: AppSpacing.xs),
+                Text('${l10n.auditoriaColumnaEntidad}: ${evento.entidadEtiqueta ?? evento.registroId}'),
                 const SizedBox(height: AppSpacing.xs),
                 Text('${l10n.auditoriaColumnaRegistro}: ${evento.registroId}'),
+                // Importe: solo cuando el origen realmente mueve dinero.
+                if (evento.importe != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text('${l10n.auditoriaDetalleImporte}: ${formatoCentavosDeuda(evento.importe!)}'),
+                ],
+                // Motivo: el bloque se OMITE cuando no hay uno. Nunca un
+                // "Sin motivo" inventado — una creación o una revelación
+                // de credencial simplemente no llevan motivo, y decir lo
+                // contrario sería afirmar un dato que nadie capturó.
                 if (evento.motivo != null && evento.motivo!.trim().isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text('${l10n.auditoriaColumnaMotivo}: ${evento.motivo}'),
+                ],
+                // Cambios: mismo estándar de presentación para los tres
+                // formatos de origen (ver `CambioAuditoria`), sin
+                // aplanar sus diferencias reales.
+                if (evento.cambios.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Text(l10n.auditoriaDetalleSeccionCambios, style: AppTypography.label),
+                  const SizedBox(height: AppSpacing.xs),
+                  for (final cambio in evento.cambios)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                      child: Text(
+                        '${cambio.campo}: ${_valorCambio(cambio.antes, cambio.esImporte)} → '
+                        '${_valorCambio(cambio.despues, cambio.esImporte)}',
+                        style: AppTypography.caption,
+                      ),
+                    ),
                 ],
                 if (detalle != null && detalle.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.md),
@@ -83,6 +219,17 @@ class AuditoriaScreen extends ConsumerWidget {
           ),
         ),
         actions: [
+          // "Ver origen" solo aparece si el usuario REALMENTE puede
+          // entrar a esa ruta con sus propios permisos de módulo.
+          if (destino != null && _puedeNavegar(ref, destino))
+            TextButton(
+              key: const Key('auditoria_ver_origen'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                context.push(destino.ruta);
+              },
+              child: Text(l10n.auditoriaDetalleBotonVerOrigen),
+            ),
           TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: Text(l10n.vehiculoDocumentoHistorialBotonCerrar)),
         ],
       ),
@@ -129,7 +276,12 @@ class AuditoriaScreen extends ConsumerWidget {
                       label: l10n.auditoriaFiltroModulo,
                       value: state.modulo,
                       items: [
-                        for (final m in modulosPermiso) RisegSelectItem(value: m.codigo, label: moduloPermisoLabel(l10n, m.codigo)),
+                        // Unión del catálogo de permisos + los códigos
+                        // que solo existen en Auditoría: así Tiempo
+                        // Extra y Bóveda se pueden filtrar sin inventar
+                        // permisos `tiempoExtra.ver`/`boveda.ver`.
+                        for (final codigo in [...modulosPermiso.map((m) => m.codigo), ...modulosSoloAuditoria])
+                          RisegSelectItem(value: codigo, label: _moduloLabel(l10n, codigo)),
                       ],
                       onChanged: (valor) => notifier.aplicarFiltros(modulo: valor, limpiarModulo: valor == null),
                     ),
@@ -140,7 +292,8 @@ class AuditoriaScreen extends ConsumerWidget {
                       label: l10n.auditoriaFiltroAccion,
                       value: state.accion,
                       items: [
-                        for (final a in state.accionesDisponibles) RisegSelectItem(value: a, label: _accionLabel(a)),
+                        for (final a in state.accionesDisponibles)
+                          RisegSelectItem(value: a, label: _accionLabelCompleta(l10n, a)),
                       ],
                       onChanged: (valor) => notifier.aplicarFiltros(accion: valor, limpiarAccion: valor == null),
                     ),
@@ -176,7 +329,7 @@ class AuditoriaScreen extends ConsumerWidget {
               loading: state.cargando,
               rows: state.eventos,
               emptyState: RisegEmptyState(title: l10n.auditoriaVacioTitulo, message: ''),
-              onRowTap: (evento) => _verDetalle(context, l10n, evento, state.nombreUsuario(evento.actorUsuarioId)),
+              onRowTap: (evento) => _verDetalle(context, ref, l10n, evento, state.nombreUsuario(evento.actorUsuarioId)),
               columns: [
                 RisegColumn<EventoAuditoria>(
                   label: l10n.auditoriaColumnaFecha,
@@ -190,11 +343,19 @@ class AuditoriaScreen extends ConsumerWidget {
                 RisegColumn<EventoAuditoria>(
                   label: l10n.auditoriaColumnaModulo,
                   width: 140,
-                  cellBuilder: (e) => Text(moduloPermisoLabel(l10n, e.modulo)),
+                  cellBuilder: (e) => Text(_moduloLabel(l10n, e.modulo), overflow: TextOverflow.ellipsis),
                 ),
                 RisegColumn<EventoAuditoria>(
                   label: l10n.auditoriaColumnaAccion,
-                  cellBuilder: (e) => Text(_accionLabel(e.accion), overflow: TextOverflow.ellipsis),
+                  cellBuilder: (e) =>
+                      Text(_accionLabelCompleta(l10n, e.accion, modulo: e.modulo), overflow: TextOverflow.ellipsis),
+                ),
+                // Entidad: el nombre legible de lo afectado (folio,
+                // código, nombre de credencial). Cae al id crudo solo
+                // cuando el origen no tiene etiqueta natural.
+                RisegColumn<EventoAuditoria>(
+                  label: l10n.auditoriaColumnaEntidad,
+                  cellBuilder: (e) => Text(e.entidadEtiqueta ?? e.registroId, overflow: TextOverflow.ellipsis),
                 ),
                 RisegColumn<EventoAuditoria>(
                   label: l10n.auditoriaColumnaMotivo,

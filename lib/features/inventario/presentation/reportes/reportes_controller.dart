@@ -4,7 +4,9 @@ import 'package:riseg_one/core/database/app_database.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import '../../../personal/personal_providers.dart';
+import '../../../usuarios/usuarios_providers.dart';
 import '../../domain/usecases/buscar_inventario_usecase.dart';
+import '../../domain/usecases/existencia_articulo.dart';
 import '../../inventario_providers.dart';
 import 'reportes_state.dart';
 
@@ -42,23 +44,23 @@ class ReportesController extends _$ReportesController {
       final categoriasPorId = {for (final c in categorias) c.id: c.nombre};
       final articulosPorId = {for (final a in articulos) a.id: a};
 
-      // Existencias actuales (+ costo promedio cuando aplica).
-      final existencias = <ExistenciaResumen>[];
-      for (final articulo in articulos) {
-        final existencia = articulo.manejaSerie
-            ? await inventarioRepo.calcularExistenciaUnidades(articulo.id)
-            : await inventarioRepo.calcularExistencia(articuloId: articulo.id);
-        final costoPromedio =
-            articulo.manejaVariante ? null : await inventarioRepo.calcularCostoPromedio(articuloId: articulo.id);
-        existencias.add(
+      // Existencias actuales (+ costo promedio cuando aplica), en dos
+      // lecturas en lote — nunca dos consultas por artículo.
+      final existenciaPorArticulo = await inventarioRepo.calcularExistenciaPorArticulos(articulos);
+      final costoPorArticulo = await inventarioRepo.calcularCostoPromedioPorArticulo(
+        [for (final a in articulos) if (!a.manejaVariante) a.id],
+      );
+      final existencias = [
+        for (final articulo in articulos)
           ExistenciaResumen(
             articulo: articulo,
             categoriaNombre: categoriasPorId[articulo.categoriaId] ?? '',
-            existencia: existencia,
-            costoPromedio: costoPromedio,
+            existencia: existenciaPorArticulo[articulo.id] ?? const ExistenciaArticulo(disponible: 0),
+            // Un artículo con variante no tiene costo a nivel de
+            // artículo: su valuación vive por talla, igual que antes.
+            costoPromedio: articulo.manejaVariante ? null : costoPorArticulo[articulo.id],
           ),
-        );
-      }
+      ];
 
       // Mapas de resolución — una sola consulta masiva por dominio,
       // nunca N+1 por fila de reporte.
@@ -80,6 +82,8 @@ class ReportesController extends _$ReportesController {
       };
       final servicios = await servicioRepo.listar();
       final serviciosPorId = {for (final s in servicios) s.servicio.id: s.servicio.nombre};
+      final usuarioRepo = ref.read(usuarioRepositoryProvider);
+      final usuariosPorId = {for (final u in await usuarioRepo.listar()) u.id: u.nombre};
 
       String detalleArticulo(AsignacionData a) {
         final articulo = articulosPorId[a.articuloId];
@@ -93,6 +97,23 @@ class ReportesController extends _$ReportesController {
           return talla == null ? nombre : '${a.cantidad} × $nombre ($talla)';
         }
         return '${a.cantidad} × $nombre';
+      }
+
+      // Mismo criterio que `detalleArticulo`, sobre los campos de
+      // `MovimientoInventarioData` (misma forma: articuloId +
+      // varianteId/unidadId nulos mutuamente excluyentes).
+      String detalleArticuloMovimiento(MovimientoInventarioData m) {
+        final articulo = articulosPorId[m.articuloId];
+        final nombre = articulo?.nombre ?? m.articuloId;
+        if (m.unidadId != null) {
+          final unidad = unidadesPorId[m.unidadId];
+          return unidad == null ? nombre : '$nombre · ${unidad.codigo}';
+        }
+        if (m.varianteId != null) {
+          final talla = variantesPorArticulo[m.articuloId]?[m.varianteId];
+          return talla == null ? nombre : '$nombre ($talla)';
+        }
+        return nombre;
       }
 
       String destino(AsignacionData a) {
@@ -109,11 +130,14 @@ class ReportesController extends _$ReportesController {
           .map((a) => AsignacionResumenReporte(asignacion: a, articuloDetalle: detalleArticulo(a), destino: destino(a)))
           .toList();
 
+      // Etapa 18: una sola consulta para TODAS las Asignaciones
+      // referenciadas por los descuentos pendientes — antes era un
+      // `obtenerPorId` por descuento dentro del loop (N+1 real).
       final descuentosData = await asignacionRepo.listarTodosDescuentosPendientes();
-      final asignacionesPorDescuentoId = <String, AsignacionData?>{};
-      for (final d in descuentosData) {
-        asignacionesPorDescuentoId[d.asignacionId] ??= await asignacionRepo.obtenerPorId(d.asignacionId);
-      }
+      final asignacionIdsDescuentos = {for (final d in descuentosData) d.asignacionId}.toList();
+      final asignacionesPorDescuentoId = {
+        for (final a in await asignacionRepo.listarPorIds(asignacionIdsDescuentos)) a.id: a,
+      };
       final descuentosPendientes = descuentosData
           .map(
             (d) => DescuentoResumenReporte(
@@ -136,7 +160,8 @@ class ReportesController extends _$ReportesController {
           .map(
             (m) => MovimientoResumenReporte(
               movimiento: m,
-              articuloNombre: articulosPorId[m.articuloId]?.nombre ?? m.articuloId,
+              articuloDetalle: detalleArticuloMovimiento(m),
+              actorNombre: m.actorUsuarioId == null ? null : usuariosPorId[m.actorUsuarioId],
             ),
           )
           .toList();
@@ -167,5 +192,21 @@ class ReportesController extends _$ReportesController {
 
   void limpiarBusqueda() {
     state = state.copyWith(consultaBusqueda: '', resultadoBusqueda: ResultadoBusquedaInventario.vacia);
+  }
+
+  /// Filtros del Historial (Etapa 18) — en memoria sobre
+  /// `movimientosRecientes` ya cargado, ver el doc comment de
+  /// `ReportesState.movimientosVisibles`.
+  void filtrarMovimientos({String? tipo, String? articuloId, bool limpiarTipo = false, bool limpiarArticulo = false}) {
+    state = state.copyWith(
+      movimientoTipoFiltro: tipo,
+      movimientoArticuloFiltro: articuloId,
+      limpiarMovimientoTipoFiltro: limpiarTipo,
+      limpiarMovimientoArticuloFiltro: limpiarArticulo,
+    );
+  }
+
+  void limpiarFiltrosMovimientos() {
+    state = state.copyWith(limpiarMovimientoTipoFiltro: true, limpiarMovimientoArticuloFiltro: true);
   }
 }

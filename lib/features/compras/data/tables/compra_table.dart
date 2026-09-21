@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
+import '../../../finanzas/data/tables/deuda_table.dart';
 import '../../../finanzas/data/tables/egreso_table.dart';
 import '../../../usuarios/data/tables/usuario_table.dart';
 
@@ -14,8 +15,7 @@ enum TipoEventoCompra { registrada, corregida, cancelada, comprobanteAdjuntado }
 /// maneja crédito con proveedores, así que registrar una `Compra` aquí
 /// es registrar un hecho ya consumado, nunca una orden pendiente. Sus
 /// `CompraPartida` (ver esa tabla) determinan si generó entrada(s) de
-/// Inventario, un gasto directo, o ambos — pero siempre genera
-/// exactamente un `Egreso` por el total combinado.
+/// Inventario, un gasto directo, o ambos.
 ///
 /// `egresoId` referencia a `Egreso` (tabla ya existente desde 4K.1) —
 /// deliberadamente en esta dirección (mismo criterio que
@@ -23,6 +23,17 @@ enum TipoEventoCompra { registrada, corregida, cancelada, comprobanteAdjuntado }
 /// restricción `UNIQUE` a una tabla ya existente vía `ALTER TABLE`, así
 /// que la FK nace en la tabla nueva y `Egreso` no sufre ningún cambio
 /// de esquema.
+///
+/// **Etapa 19B**: cuando `formaPago == tarjeta`, la Compra ya NO genera
+/// `Egreso` (`egresoId` queda `null`) — en su lugar puebla `deudaId` y
+/// genera un `MovimientoDeuda` de tipo `cargoCompra`. El gasto
+/// operativo se reconoce una sola vez, en el momento de la compra, vía
+/// `ResumenFinancieroState.egresosOperativos`; el pago posterior de la
+/// tarjeta (`DeudaRepository.registrarPago`) sigue generando su propio
+/// Egreso real (la salida de caja), pero queda excluido de
+/// `egresosOperativos` — así nunca se cuenta dos veces. `egresoId` y
+/// `deudaId` son mutuamente excluyentes: toda Compra puebla exactamente
+/// uno de los dos, nunca ambos ni ninguno.
 ///
 /// Sin columna `total`: se deriva siempre como
 /// `SUM(cantidad × costo_unitario)` sobre `CompraPartida` — nunca se
@@ -59,9 +70,37 @@ class Compra extends Table with AuditColumns {
 
   TextColumn get estatus => text().withDefault(const Constant('registrada'))();
 
+  // --- LEGACY (Etapa 10, retirado en la Etapa 15 al estructurar el
+  // motivo de cancelación) — texto libre capturado directamente aquí.
+  // Reemplazado por `motivoCancelacionCodigo`/`motivoCancelacionDetalle`/
+  // `motivoCancelacionObservaciones`. Se conserva en BD por
+  // compatibilidad con Compras ya canceladas antes de este cambio —
+  // ningún flujo nuevo la lee ni la escribe (la UI cae de vuelta a
+  // esta columna solo cuando `motivoCancelacionCodigo` es nulo, para no
+  // perder el texto de cancelaciones históricas).
   TextColumn get motivoCancelacion => text().nullable()();
 
+  /// Nombre estable del enum `MotivoCancelacionCompra` (Etapa 15) —
+  /// nunca la etiqueta traducida que ve el usuario, para que un cambio
+  /// de texto en la UI no reescriba el histórico ni rompa reportes.
+  TextColumn get motivoCancelacionCodigo => text().nullable()();
+
+  /// Obligatorio cuando `motivoCancelacionCodigo == 'otro'` — validado
+  /// en `CancelarCompraUseCase`, no aquí.
+  TextColumn get motivoCancelacionDetalle => text().nullable()();
+
+  /// Siempre opcional, sin importar el motivo elegido.
+  TextColumn get motivoCancelacionObservaciones => text().nullable()();
+
   TextColumn get egresoId => text().nullable().unique().references(Egreso, #id, onDelete: KeyAction.restrict)();
+
+  /// Etapa 19B — poblado únicamente cuando `formaPago == tarjeta`.
+  /// `restrict`: no se puede borrar la tarjeta mientras exista una
+  /// Compra financiada por ella (misma dirección que `egresoId`, por la
+  /// misma razón: `Deuda` no puede agregar `UNIQUE` a una relación
+  /// 1-a-muchos vía `ALTER TABLE`, y aquí ni siquiera aplica — una
+  /// tarjeta financia muchas Compras).
+  TextColumn get deudaId => text().nullable().references(Deuda, #id, onDelete: KeyAction.restrict)();
 }
 
 /// Historial administrativo de una `Compra` (Etapa 10) — tabla de solo

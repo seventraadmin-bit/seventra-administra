@@ -152,20 +152,30 @@ void main() {
       final cliente = await crearClienteDePrueba();
       final servicio = await crearServicioDePrueba(cliente.id);
       final entidad = await crearEntidadFiscalDePrueba(cliente.id);
-      await cambiarCicloVidaEntidadFiscal.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado);
+      await cambiarCicloVidaEntidadFiscal.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
 
       final resultado = await asignarEntidadFiscal.ejecutar(servicioId: servicio.id, entidadFiscalId: entidad.id);
 
       expect(resultado, isA<AsignarEntidadFiscalAServicioNoDisponible>());
     });
 
-    test('quitar la asignación siempre funciona, incluso sin validaciones', () async {
+    test('quitar la asignación no valida pertenencia ni estado, pero exige motivo', () async {
       final cliente = await crearClienteDePrueba();
       final servicio = await crearServicioDePrueba(cliente.id);
       final entidad = await crearEntidadFiscalDePrueba(cliente.id);
       await asignarEntidadFiscal.ejecutar(servicioId: servicio.id, entidadFiscalId: entidad.id);
 
-      final resultado = await asignarEntidadFiscal.ejecutar(servicioId: servicio.id, entidadFiscalId: null);
+      // Retirar una Entidad fiscal vigente cambia a quién se le factura.
+      expect(
+        await asignarEntidadFiscal.ejecutar(servicioId: servicio.id, entidadFiscalId: null),
+        isA<AsignarEntidadFiscalAServicioMotivoRequerido>(),
+      );
+
+      final resultado = await asignarEntidadFiscal.ejecutar(
+        servicioId: servicio.id,
+        entidadFiscalId: null,
+        motivo: 'Motivo de prueba',
+      );
 
       expect(resultado, isA<AsignarEntidadFiscalAServicioExitoso>());
       expect((resultado as AsignarEntidadFiscalAServicioExitoso).servicio.entidadFiscalId, isNull);
@@ -177,7 +187,7 @@ void main() {
       final entidad = await crearEntidadFiscalDePrueba(cliente.id);
       await asignarEntidadFiscal.ejecutar(servicioId: servicio.id, entidadFiscalId: entidad.id);
 
-      await cambiarCicloVidaEntidadFiscal.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado);
+      await cambiarCicloVidaEntidadFiscal.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
 
       final expediente = (await obtenerExpediente.ejecutar(servicio.id)).when(
         ok: (d) => d,
@@ -355,12 +365,12 @@ void main() {
       final cliente = await crearClienteDePrueba();
       final servicio = await crearServicioDePrueba(cliente.id);
 
-      final bloqueado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo);
+      final bloqueado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
       expect(bloqueado, isA<CambiarEstatusServicioFaltaDireccionOperativa>());
 
       await guardarDireccionOperativa.ejecutar(servicioId: servicio.id, domicilio: _direccionCompleta);
 
-      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo);
+      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
       expect(resultado, isA<CambiarEstatusServicioExitoso>());
     });
   });

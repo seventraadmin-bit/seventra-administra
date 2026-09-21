@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
+import 'package:riseg_one/core/error/diagnostico_error_inesperado.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 
 import '../repositories/configuracion_cobro_repository.dart';
@@ -58,6 +59,8 @@ class CambiarVigenciaConfiguracionCobroUseCase {
     required String configuracionCobroId,
     required ConfiguracionCobroBorrador borrador,
     List<EtapaCobroBorrador> etapas = const [],
+    String? observacion,
+    String? actorUsuarioId,
   }) async {
     final configuracion = await _repository.obtenerConfiguracionPorId(configuracionCobroId);
     if (configuracion == null) {
@@ -87,10 +90,18 @@ class CambiarVigenciaConfiguracionCobroUseCase {
         configuracionCobroId: configuracionCobroId,
         datos: validacion.resultado!,
         etapas: validacionEtapas.resultado,
+        observacion: observacion,
+        actorUsuarioId: actorUsuarioId,
       );
       return CambiarVigenciaConfiguracionCobroExitoso(vigencia);
-    } catch (e) {
-      return CambiarVigenciaConfiguracionCobroErrorInesperado(e.toString());
+    } catch (e, s) {
+      // Deja rastro real en desarrollo: el bug de MORGAN ATLACOMULCO era
+      // un `UNIQUE constraint failed: configuracion_cobro_etapa.id` que
+      // la UI mostraba como "No se pudo registrar la nueva vigencia",
+      // sin decir nunca qué había fallado.
+      return CambiarVigenciaConfiguracionCobroErrorInesperado(
+        diagnosticoErrorInesperado(e, s, contexto: 'CambiarVigenciaConfiguracionCobroUseCase'),
+      );
     }
   }
 }

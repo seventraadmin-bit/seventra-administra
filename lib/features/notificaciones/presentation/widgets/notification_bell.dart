@@ -81,7 +81,7 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
               IconButton(
                 key: const Key('top_bar_notifications'),
                 tooltip: l10n.shellNotificationsTooltip,
-                icon: const Icon(Icons.notifications_outlined),
+                icon: Icon(Icons.notifications_outlined, color: colors.shellForeground),
                 onPressed: _alternar,
               ),
               if (total > 0)

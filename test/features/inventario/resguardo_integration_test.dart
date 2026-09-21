@@ -13,6 +13,7 @@ import 'package:riseg_one/features/inventario/data/pdf/resguardo_pdf_renderer.da
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/categoria_articulo_repository_impl.dart';
+import 'package:riseg_one/features/inventario/data/repositories/entrega_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/adjuntar_resguardo_firmado_usecase.dart';
@@ -88,6 +89,8 @@ void main() {
       attachmentRepo,
       storage,
       ResguardoPdfRenderer(),
+      asignacionServicioRepo,
+      EntregaRepositoryImpl(db),
     );
     adjuntarFirmado = AdjuntarResguardoFirmadoUseCase(asignacionRepo, storage);
   });

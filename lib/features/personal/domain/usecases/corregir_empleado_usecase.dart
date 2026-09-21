@@ -3,6 +3,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
+import '../repositories/asignacion_servicio_repository.dart';
 import '../repositories/empleado_repository.dart';
 import 'empleado_validator.dart';
 
@@ -37,6 +38,14 @@ class CorregirEmpleadoDatosBancariosInvalidos extends CorregirEmpleadoResultado 
 /// sin capturar cuál banco es en realidad.
 class CorregirEmpleadoBancoOtroDescripcionRequerida extends CorregirEmpleadoResultado {}
 
+/// Se intentó adscribir a una Sucursal a un empleado que tiene una
+/// asignación de Servicio vigente (Etapa "Plantilla operativa vs.
+/// administrativa"). Servicio y Sucursal son destinos mutuamente
+/// excluyentes — la regla ya se aplicaba al ALTA
+/// (`CrearEmpleadoAdscripcionAmbigua`), pero la corrección era un hueco
+/// por el que sí se podía producir la inconsistencia.
+class CorregirEmpleadoAdscripcionAmbigua extends CorregirEmpleadoResultado {}
+
 class CorregirEmpleadoSueldoAdministrativoInvalido extends CorregirEmpleadoResultado {}
 
 class CorregirEmpleadoBonoAdministrativoInvalido extends CorregirEmpleadoResultado {}
@@ -59,10 +68,11 @@ String? _vacioANull(String? valor) {
 /// solo flujo — todos son "editar un dato administrativo", mismo
 /// criterio que `CorregirPagoUseCase`.
 class CorregirEmpleadoUseCase {
-  CorregirEmpleadoUseCase(this._repository, this._validator);
+  CorregirEmpleadoUseCase(this._repository, this._validator, this._asignacionServicioRepository);
 
   final EmpleadoRepository _repository;
   final EmpleadoValidator _validator;
+  final AsignacionServicioRepository _asignacionServicioRepository;
 
   Future<CorregirEmpleadoResultado> ejecutar({
     required String empleadoId,
@@ -115,6 +125,14 @@ class CorregirEmpleadoUseCase {
   }) async {
     final actual = await _repository.obtenerPorId(empleadoId);
     if (actual == null) return CorregirEmpleadoNoExiste();
+
+    // Regla Servicio vs. Sucursal: adscribir a una Sucursal a quien ya
+    // tiene Servicio vigente crearía la inconsistencia que la
+    // clasificación de plantilla nunca debe tener que desempatar.
+    if (sucursalId != null && !limpiarSucursal) {
+      final asignacionVigente = await _asignacionServicioRepository.obtenerActivaPorEmpleado(empleadoId);
+      if (asignacionVigente != null) return CorregirEmpleadoAdscripcionAmbigua();
+    }
 
     if (curp != null && !_validator.curpValido(curp)) return CorregirEmpleadoCurpInvalido();
     if (rfc != null && !_validator.rfcValido(rfc)) return CorregirEmpleadoRfcInvalido();

@@ -9,6 +9,11 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/resolver_nombres_contraparte_usecase.dart';
+import 'package:riseg_one/features/servicios_eventuales/data/repositories/servicio_eventual_repository_impl.dart';
+import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/cuenta_por_cobrar_repository_impl.dart';
@@ -18,7 +23,6 @@ import 'package:riseg_one/features/finanzas/domain/repositories/pago_repository.
 import 'package:riseg_one/features/finanzas/domain/usecases/cuenta_por_cobrar_antiguedad.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/documento_por_emitir_repository_impl.dart';
-import 'package:riseg_one/features/organizacion/domain/repositories/cliente_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/documento_por_emitir_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_emitir_requiere_accion.dart';
 import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
@@ -33,6 +37,9 @@ import 'package:riseg_one/features/notificaciones/domain/usecases/obtener_notifi
 import 'package:riseg_one/features/notificaciones/domain/usecases/obtener_notificaciones_pagos_usecase.dart';
 import 'package:riseg_one/features/notificaciones/domain/usecases/obtener_notificaciones_usecase.dart';
 import 'package:riseg_one/features/notificaciones/domain/usecases/obtener_notificaciones_vehiculos_usecase.dart';
+import 'package:riseg_one/features/notificaciones/domain/usecases/obtener_notificaciones_complementos_usecase.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/obtener_complementos_pendientes_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/complemento_pago_repository_impl.dart';
 
 class _DocumentoRepoVacio implements DocumentoPorEmitirRepository {
   var llamado = false;
@@ -54,6 +61,47 @@ class _DocumentoRepoVacio implements DocumentoPorEmitirRepository {
 }
 
 class _CuentaRepoVacio implements CuentaPorCobrarRepository {
+
+  @override
+  Future<CuentaPorCobrarData> crearDeServicioEventual({
+    required String servicioEventualId,
+    String? clienteId,
+    required String tipoDocumento,
+    required String metodo,
+    required bool requiereComplemento,
+    required DateTime fechaEmisionReal,
+    required int importeEmitido,
+    DateTime? fechaVencimiento,
+    String? observaciones,
+    String? actorUsuarioId,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CuentaPorCobrarData?> obtenerPorServicioEventualId(String servicioEventualId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CuentaPorCobrarData> sincronizarConDocumentoFiscal({
+    required String cuentaPorCobrarId,
+    String? folioDocumento,
+    String? uuid,
+    required DateTime fechaEmisionReal,
+    required String metodo,
+    required bool requiereComplemento,
+    String? actorUsuarioId,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CuentaPorCobrarData> corregirImporte({
+    required String cuentaPorCobrarId,
+    required int importeEmitido,
+    required String motivo,
+    String? actorUsuarioId,
+  }) =>
+      throw UnimplementedError();
+
   var llamado = false;
   @override
   Future<List<CuentaPorCobrarData>> listar({
@@ -63,6 +111,7 @@ class _CuentaRepoVacio implements CuentaPorCobrarRepository {
     String? tipoDocumento,
     String? estatus,
     String? documentoPorEmitirId,
+    String? servicioEventualId,
   }) async {
     llamado = true;
     return const [];
@@ -83,6 +132,23 @@ class _PagoRepoVacio implements PagoRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
+
+/// El resolutor de nombres de contraparte, armado sobre la BD real de
+/// la prueba — Cliente o Servicio Eventual (schemaVersion 88).
+ResolverNombresContraparteUseCase resolverNombresDePrueba(AppDatabase db) {
+  return ResolverNombresContraparteUseCase(
+    ClienteRepositoryImpl(db),
+    ServicioEventualRepositoryImpl(
+      db,
+      EgresoRepositoryImpl(db),
+      DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)),
+      CodigoSecuenciaService(db),
+      CuentaPorCobrarRepositoryImpl(db),
+      PagoRepositoryImpl(db),
+    ),
+  );
+}
+
 
 void main() {
   group('documentoPorEmitirRequiereAccion (función extraída)', () {
@@ -302,14 +368,12 @@ void main() {
   group('ObtenerNotificacionesCxcUseCase — próxima y vencida son mutuamente excluyentes', () {
     late AppDatabase db;
     late CuentaPorCobrarRepository cuentaRepo;
-    late ClienteRepository clienteRepo;
     late ObtenerNotificacionesCxcUseCase obtenerNotificaciones;
 
     setUp(() {
       db = AppDatabase(NativeDatabase.memory());
       cuentaRepo = CuentaPorCobrarRepositoryImpl(db);
-      clienteRepo = ClienteRepositoryImpl(db);
-      obtenerNotificaciones = ObtenerNotificacionesCxcUseCase(cuentaRepo, clienteRepo);
+      obtenerNotificaciones = ObtenerNotificacionesCxcUseCase(cuentaRepo, resolverNombresDePrueba(db));
       addTearDown(db.close);
     });
 
@@ -339,8 +403,8 @@ void main() {
       final cliente = (await db.select(db.documentoPorEmitir).get()).first;
       await db.into(db.cuentaPorCobrar).insert(
             CuentaPorCobrarCompanion.insert(
-              documentoPorEmitirId: documentoId,
-              clienteId: cliente.clienteId,
+              documentoPorEmitirId: Value(documentoId),
+              clienteId: Value(cliente.clienteId),
               tipoDocumento: 'cfdi',
               metodo: 'pue',
               fechaEmisionReal: DateTime(2026, 1, 1),
@@ -391,7 +455,7 @@ void main() {
 
     setUp(() {
       db = AppDatabase(NativeDatabase.memory());
-      obtenerNotificaciones = ObtenerNotificacionesPagosUseCase(PagoRepositoryImpl(db), ClienteRepositoryImpl(db));
+      obtenerNotificaciones = ObtenerNotificacionesPagosUseCase(PagoRepositoryImpl(db), resolverNombresDePrueba(db));
       addTearDown(db.close);
     });
 
@@ -400,7 +464,7 @@ void main() {
             ClienteCompanion.insert(codigo: 'CLI-001', nombreComercial: 'Residencial Gama'),
           );
       await db.into(db.pago).insert(
-            PagoCompanion.insert(folioPago: 'PAG-001', clienteId: cliente.id, montoTotal: 100000, fechaPago: fechaPago, formaPago: 'transferencia'),
+            PagoCompanion.insert(folioPago: 'PAG-001', clienteId: Value(cliente.id), montoTotal: 100000, fechaPago: fechaPago, formaPago: 'transferencia'),
           );
       return cliente.id;
     }
@@ -441,8 +505,12 @@ void main() {
       final useCase = ObtenerNotificacionesUseCase(
         ObtenerNotificacionesVehiculosUseCase(obtenerAlertas),
         ObtenerNotificacionesDocumentosPorEmitirUseCase(documentoRepo, clienteRepo),
-        ObtenerNotificacionesCxcUseCase(cuentaRepo, clienteRepo),
-        ObtenerNotificacionesPagosUseCase(pagoRepo, clienteRepo),
+        ObtenerNotificacionesCxcUseCase(cuentaRepo, resolverNombresDePrueba(db)),
+        ObtenerNotificacionesPagosUseCase(pagoRepo, resolverNombresDePrueba(db)),
+        ObtenerNotificacionesComplementosUseCase(
+          ObtenerComplementosPendientesUseCase(pagoRepo, cuentaRepo, ComplementoPagoRepositoryImpl(db)),
+          resolverNombresDePrueba(db),
+        ),
       );
 
       final resultado = await useCase.ejecutar(incluirVehiculos: false, incluirComercial: false, incluirFinanzas: false);

@@ -12,7 +12,10 @@ import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_ingreso_use
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 
 import '../../../finanzas_providers.dart';
+import '../../cuentas_financieras/cuentas_financieras_controller.dart';
 import '../../pagos/pagos_list_screen.dart' show formaPagoLabel, formatoCentavosPago;
+import '../../planeacion/planeacion_financiera_controller.dart';
+import '../../resumen/resumen_financiero_controller.dart';
 import '../ingresos_controller.dart';
 import '../ingresos_list_screen.dart' show ingresoEstatusLabel, ingresoEstatusTono;
 import 'corregir_ingreso_dialog.dart';
@@ -105,27 +108,48 @@ class _IngresoDetalleDialogState extends ConsumerState<IngresoDetalleDialog> {
 
   Future<void> _corregir() async {
     final actualizo = await mostrarDialogoCorregirIngreso(context, ref, _ingreso!);
-    if (actualizo) await _cargar();
+    if (actualizo) {
+      await _cargar();
+      ref.invalidate(ingresosControllerProvider);
+      ref.invalidate(cuentasFinancierasControllerProvider);
+      ref.invalidate(resumenFinancieroControllerProvider);
+      ref.invalidate(planeacionFinancieraControllerProvider);
+    }
   }
 
   Future<void> _cancelar() async {
     final l10n = AppLocalizations.of(context)!;
     final motivoController = TextEditingController();
+    String? errorMotivo;
     final confirmado = await RisegDialog.showForm<bool>(
       context: context,
       title: l10n.cancelarIngresoConfirmacionTitulo,
       confirmLabel: l10n.cancelarIngresoConfirmacionConfirmar,
       cancelLabel: l10n.cancelarIngresoConfirmacionCancelar,
-      contentBuilder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.cancelarIngresoConfirmacionMensaje, style: AppTypography.body),
-          const SizedBox(height: AppSpacing.md),
-          RisegTextField(label: l10n.corregirIngresoCampoMotivo, controller: motivoController, autofocus: true),
-        ],
+      contentBuilder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.cancelarIngresoConfirmacionMensaje, style: AppTypography.body),
+            const SizedBox(height: AppSpacing.md),
+            RisegTextField(
+              label: l10n.corregirIngresoCampoMotivo,
+              controller: motivoController,
+              autofocus: true,
+              errorText: errorMotivo,
+              onChanged: (_) => setState(() => errorMotivo = null),
+            ),
+          ],
+        ),
       ),
-      onConfirm: () async => true,
+      onConfirm: () async {
+        if (motivoController.text.trim().isEmpty) {
+          errorMotivo = l10n.corregirIngresoErrorMotivoRequerido;
+          return null;
+        }
+        return true;
+      },
     );
     // Diferido con `addPostFrameCallback` — mismo hallazgo real de
     // `egreso_detalle_dialog.dart` (Etapa 15): el diálogo de
@@ -150,9 +174,14 @@ class _IngresoDetalleDialogState extends ConsumerState<IngresoDetalleDialog> {
       case CancelarIngresoExitoso():
         RisegFeedback.showSuccess(context, l10n.cancelarIngresoExito);
         await _cargar();
+        ref.invalidate(ingresosControllerProvider);
+        ref.invalidate(cuentasFinancierasControllerProvider);
+        ref.invalidate(resumenFinancieroControllerProvider);
+        ref.invalidate(planeacionFinancieraControllerProvider);
       case CancelarIngresoNoExiste():
       case CancelarIngresoYaCancelado():
       case CancelarIngresoPagoAutomatico():
+      case CancelarIngresoMotivoRequerido():
       case CancelarIngresoErrorInesperado():
         RisegFeedback.showError(context, l10n.cancelarIngresoErrorInesperado);
     }
@@ -271,7 +300,13 @@ class _IngresoDetalleDialogState extends ConsumerState<IngresoDetalleDialog> {
                             style: AppTypography.caption.copyWith(color: colors.textMuted),
                           ),
                           const SizedBox(width: AppSpacing.xs),
-                          Text(_eventoLabel(l10n, evento.tipoEvento), style: AppTypography.label),
+                          Expanded(
+                            child: Text(
+                              _eventoLabel(l10n, evento.tipoEvento),
+                              style: AppTypography.label,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                       if (evento.observacion != null && evento.observacion!.trim().isNotEmpty)
@@ -280,16 +315,26 @@ class _IngresoDetalleDialogState extends ConsumerState<IngresoDetalleDialog> {
                   ),
                 ),
             const SizedBox(height: AppSpacing.lg),
-            if (!cancelado)
+            if (!cancelado) ...[
+              // Etapa 6 (hallazgo real de auditoría): un Ingreso
+              // automático (`pagoId != null`) ya no se corrige aquí
+              // directamente — `CorregirIngresoUseCase` lo rechaza
+              // (`CorregirIngresoPagoAutomatico`) para nunca
+              // desincronizarlo en silencio de su Pago de origen;
+              // corregirlo pasa por "Corregir Pago" (mismo criterio ya
+              // establecido para el botón "Cancelar").
+              if (automatico)
+                Text(l10n.ingresoDetalleAvisoAutomaticoSoloDesdePago, style: AppTypography.caption.copyWith(color: colors.textMuted)),
               Wrap(
                 spacing: AppSpacing.xs,
                 runSpacing: AppSpacing.xs,
                 children: [
-                  RisegButton(
-                    label: l10n.ingresoDetalleBotonCorregir,
-                    variant: RisegButtonVariant.secondary,
-                    onPressed: _corregir,
-                  ),
+                  if (!automatico)
+                    RisegButton(
+                      label: l10n.ingresoDetalleBotonCorregir,
+                      variant: RisegButtonVariant.secondary,
+                      onPressed: _corregir,
+                    ),
                   if (!automatico)
                     RisegButton(
                       label: l10n.ingresoDetalleBotonCancelar,
@@ -299,6 +344,7 @@ class _IngresoDetalleDialogState extends ConsumerState<IngresoDetalleDialog> {
                     ),
                 ],
               ),
+            ],
           ],
         ),
       );
@@ -317,9 +363,12 @@ class _IngresoDetalleDialogState extends ConsumerState<IngresoDetalleDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      l10n.ingresoDetalleDialogoTitulo,
-                      style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                    Expanded(
+                      child: Text(
+                        l10n.ingresoDetalleDialogoTitulo,
+                        style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop()),
                   ],

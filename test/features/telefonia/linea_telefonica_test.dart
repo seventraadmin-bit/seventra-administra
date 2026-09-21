@@ -5,7 +5,6 @@ import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
-import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/asignacion_linea_telefonica_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_equipo_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_repository_impl.dart';
@@ -34,12 +33,7 @@ void main() {
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     final asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
-    final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(
-      db,
-      asignacionLineaRepo,
-      AsignacionRepositoryImpl(db),
-      InventarioRepositoryImpl(db),
-    );
+    final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, AsignacionRepositoryImpl(db));
     lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
@@ -105,11 +99,11 @@ void main() {
     test('corrige metadatos y permite limpiar campos opcionales', () async {
       final linea = await crearLineaDePrueba(numero: '7221234567');
 
-      final resultado = await corregirLinea.ejecutar(lineaTelefonicaId: linea.id, iccid: '8952140061234567890');
+      final resultado = await corregirLinea.ejecutar(lineaTelefonicaId: linea.id, iccid: '8952140061234567890', motivo: 'Alta de SIM');
       expect(resultado, isA<CorregirLineaTelefonicaExitoso>());
       expect((resultado as CorregirLineaTelefonicaExitoso).linea.iccid, '8952140061234567890');
 
-      final limpiado = await corregirLinea.ejecutar(lineaTelefonicaId: linea.id, limpiarIccid: true);
+      final limpiado = await corregirLinea.ejecutar(lineaTelefonicaId: linea.id, limpiarIccid: true, motivo: 'La SIM no tiene ICCID legible');
       expect((limpiado as CorregirLineaTelefonicaExitoso).linea.iccid, isNull);
     });
 
@@ -117,10 +111,10 @@ void main() {
       await crearLineaDePrueba(numero: '7221111111');
       final linea2 = await crearLineaDePrueba(numero: '7222222222');
 
-      final duplicado = await corregirLinea.ejecutar(lineaTelefonicaId: linea2.id, numero: '7221111111');
+      final duplicado = await corregirLinea.ejecutar(lineaTelefonicaId: linea2.id, numero: '7221111111', motivo: 'Corrección de número');
       expect(duplicado, isA<CorregirLineaTelefonicaNumeroDuplicado>());
 
-      final propio = await corregirLinea.ejecutar(lineaTelefonicaId: linea2.id, numero: '7222222222');
+      final propio = await corregirLinea.ejecutar(lineaTelefonicaId: linea2.id, numero: '7222222222', motivo: 'Corrección de número');
       expect(propio, isA<CorregirLineaTelefonicaExitoso>());
     });
   });

@@ -18,6 +18,9 @@ class GuardarServicioErroresValidacion extends GuardarServicioResultado {
   final List<ErrorCampoServicio> errores;
 }
 
+/// Corregir un Servicio exige explicar por qué.
+class GuardarServicioMotivoRequerido extends GuardarServicioResultado {}
+
 class GuardarServicioErrorInesperado extends GuardarServicioResultado {
   GuardarServicioErrorInesperado(this.mensaje);
   final String mensaje;

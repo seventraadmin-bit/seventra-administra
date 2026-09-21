@@ -27,6 +27,8 @@ class RisegCard extends StatefulWidget {
     this.variant = RisegCardVariant.standard,
     this.onTap,
     this.padding,
+    this.borderColor,
+    this.borderWidth,
     super.key,
   });
 
@@ -36,6 +38,14 @@ class RisegCard extends StatefulWidget {
   /// Solo tiene efecto cuando `variant == interactive`.
   final VoidCallback? onTap;
   final EdgeInsetsGeometry? padding;
+
+  /// Sobrescribe el borde por defecto (`colors.borderSubtle`) — Etapa 15
+  /// v1.1, KPIs principales del Dashboard con borde por tono semántico.
+  /// `null` conserva el comportamiento actual en el resto del proyecto
+  /// (40+ usos ya existentes). En `variant: interactive` solo afecta el
+  /// borde en reposo — foco/hover conservan su propio color.
+  final Color? borderColor;
+  final double? borderWidth;
 
   @override
   State<RisegCard> createState() => _RisegCardState();
@@ -71,7 +81,7 @@ class _RisegCardState extends State<RisegCard> {
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: AppRadius.lgRadius,
-          border: Border.all(color: colors.borderSubtle),
+          border: Border.all(color: widget.borderColor ?? colors.borderSubtle, width: widget.borderWidth ?? 1.0),
         ),
         child: widget.child,
       );
@@ -84,8 +94,8 @@ class _RisegCardState extends State<RisegCard> {
     // Enter/Espacio al enfocarse por teclado, no solo con mouse; se
     // desactivan sus propios overlays porque el color ya lo controla el
     // `Container` de abajo según `_hovered`/`_focused`.
-    final borderColor = _focused ? colors.focusRing : colors.borderSubtle;
-    final borderWidth = _focused ? 2.0 : 1.0;
+    final borderColor = _focused ? colors.focusRing : (widget.borderColor ?? colors.borderSubtle);
+    final borderWidth = _focused ? 2.0 : (widget.borderWidth ?? 1.0);
     final backgroundColor = _hovered ? colors.surfaceSunken : colors.surface;
 
     return Semantics(

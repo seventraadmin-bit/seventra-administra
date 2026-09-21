@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
+import 'package:riseg_one/features/finanzas/domain/usecases/calcular_fecha_tarjeta_usecase.dart';
+import 'package:riseg_one/features/finanzas/finanzas_providers.dart';
+import 'package:riseg_one/features/finanzas/presentation/deudas_credito/deudas_credito_list_screen.dart' show formatoCentavosDeuda;
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formaPagoLabel;
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
@@ -139,6 +142,18 @@ class _CorregirCompraScreenState extends ConsumerState<CorregirCompraScreen> {
   final _observacionesCtrl = TextEditingController();
   final _motivoCtrl = TextEditingController();
 
+  // Etapa 3 (corrección financiera Cuenta↔TDC): origen financiero real,
+  // sin bloqueo artificial — mismo par de selectores condicionales que
+  // `RegistrarCompraScreen` (Etapa 10/19B), precargados con el origen
+  // vigente de la Compra.
+  List<DeudaData> _tarjetas = const [];
+  List<CuentaFinancieraData> _cuentasFinancieras = const [];
+  String? _deudaIdSeleccionada;
+  String? _cuentaFinancieraIdSeleccionada;
+  String? _deudaIdAnterior;
+  String? _cuentaFinancieraIdAnterior;
+  String _origenActualLabel = '—';
+
   List<ArticuloData> _articulos = const [];
   final List<_PartidaExistenteState> _existentes = [];
   final List<_PartidaNuevaState> _nuevas = [];
@@ -169,6 +184,7 @@ class _CorregirCompraScreenState extends ConsumerState<CorregirCompraScreen> {
     final notifier = ref.read(comprasControllerProvider.notifier);
     final compra = await notifier.obtenerCompra(widget.compraId);
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     if (compra == null) {
       setState(() {
         _compra = null;
@@ -181,6 +197,27 @@ class _CorregirCompraScreenState extends ConsumerState<CorregirCompraScreen> {
     final articuloRepo = ref.read(articuloRepositoryProvider);
     final articulos = await articuloRepo.listar();
     final articulosPorId = {for (final a in articulos) a.id: a};
+
+    final tarjetas = await ref.read(deudaRepositoryProvider).listarTarjetasActivas();
+    final cuentas = await ref.read(cuentaFinancieraRepositoryProvider).listar(soloActivas: true);
+
+    String? cuentaFinancieraIdAnterior;
+    String origenActualLabel = l10n.compraCampoSinOrigenFinanciero;
+    if (compra.deudaId != null) {
+      final tarjeta = await ref.read(deudaRepositoryProvider).obtenerPorId(compra.deudaId!);
+      origenActualLabel = tarjeta == null
+          ? l10n.compraCampoTarjeta
+          : l10n.compraTarjetaOpcionEtiquetaSimple(tarjeta.nombre, tarjeta.tarjetaUltimosDigitos ?? '----');
+    } else if (compra.egresoId != null) {
+      final egreso = await ref.read(egresoRepositoryProvider).obtenerPorId(compra.egresoId!);
+      cuentaFinancieraIdAnterior = egreso?.cuentaFinancieraId;
+      if (cuentaFinancieraIdAnterior != null) {
+        final cuenta = await ref.read(cuentaFinancieraRepositoryProvider).obtenerPorId(cuentaFinancieraIdAnterior);
+        origenActualLabel = cuenta?.nombre ?? l10n.movimientoCampoCuentaFinanciera;
+      } else {
+        origenActualLabel = l10n.egresoCampoSinAsignar;
+      }
+    }
 
     final existentes = <_PartidaExistenteState>[];
     for (final p in partidas) {
@@ -211,6 +248,13 @@ class _CorregirCompraScreenState extends ConsumerState<CorregirCompraScreen> {
       _formaPagoOtroCtrl.text = compra.formaPagoOtroDescripcion ?? '';
       _observacionesCtrl.text = compra.observaciones ?? '';
       _articulos = articulos;
+      _tarjetas = tarjetas;
+      _cuentasFinancieras = cuentas;
+      _deudaIdSeleccionada = compra.deudaId;
+      _deudaIdAnterior = compra.deudaId;
+      _cuentaFinancieraIdSeleccionada = cuentaFinancieraIdAnterior;
+      _cuentaFinancieraIdAnterior = cuentaFinancieraIdAnterior;
+      _origenActualLabel = origenActualLabel;
       _existentes
         ..clear()
         ..addAll(existentes);
@@ -460,6 +504,11 @@ class _CorregirCompraScreenState extends ConsumerState<CorregirCompraScreen> {
       }
     }
 
+    final esTarjeta = _formaPago == FormaPago.tarjeta.name;
+    final nuevaDeudaId = esTarjeta && _deudaIdSeleccionada != _deudaIdAnterior ? _deudaIdSeleccionada : null;
+    final nuevaCuentaFinancieraId =
+        !esTarjeta && _cuentaFinancieraIdSeleccionada != _cuentaFinancieraIdAnterior ? _cuentaFinancieraIdSeleccionada : null;
+
     final resultado = await ref.read(comprasControllerProvider.notifier).corregirCompra(
           compraId: widget.compraId,
           fecha: _fecha,
@@ -469,6 +518,8 @@ class _CorregirCompraScreenState extends ConsumerState<CorregirCompraScreen> {
           observaciones: _observacionesCtrl.text,
           cambiosPartidas: cambios,
           motivo: _motivoCtrl.text.trim(),
+          nuevaCuentaFinancieraId: nuevaCuentaFinancieraId,
+          nuevaDeudaId: nuevaDeudaId,
         );
     if (!mounted) return;
 
@@ -481,12 +532,22 @@ class _CorregirCompraScreenState extends ConsumerState<CorregirCompraScreen> {
         _errorGeneral = l10n.compraCorregirNoExiste;
       case CorregirCompraCancelada():
         _errorGeneral = l10n.compraCorregirCancelada;
+      case CorregirCompraOrigenAmbiguo():
+        _errorGeneral = l10n.compraCorregirOrigenAmbiguo;
+      case CorregirCompraTarjetaInvalida():
+        _errorGeneral = l10n.compraErrorTarjetaInvalida;
+      case CorregirCompraTarjetaExcedeLimite(:final disponible):
+        _errorGeneral = l10n.compraErrorTarjetaExcedeLimite(formatoCosto(disponible));
+      case CorregirCompraTarjetaSinLimiteConfigurado():
+        _errorGeneral = l10n.compraErrorTarjetaSinLimiteConfigurado;
       case CorregirCompraPartidaInvalida(:final indice, :final motivo):
         _errorGeneral = l10n.compraCorregirPartidaInvalida(indice + 1, motivo);
       case CorregirCompraTieneDependencias(:final detalle):
         _errorGeneral = l10n.compraCorregirDependenciaBloqueada(detalle);
       case CorregirCompraErrorInesperado():
         _errorGeneral = l10n.compraErrorInesperado;
+      case CorregirCompraMotivoRequerido():
+        _errorGeneral = l10n.compraCorregirErrorMotivoRequerido;
     }
     setState(() => _guardando = false);
   }
@@ -727,25 +788,68 @@ class _CorregirCompraScreenState extends ConsumerState<CorregirCompraScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 RisegCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: RisegFormSection(
+                    title: l10n.compraInformacionSeccionTitulo,
+                    grid: true,
                     children: [
                       RisegDateField(label: l10n.compraCampoFecha, value: _fecha, onChanged: (valor) => setState(() => _fecha = valor)),
-                      const SizedBox(height: AppSpacing.md),
                       RisegTextField(label: l10n.compraCampoProveedor, controller: _proveedorCtrl),
-                      const SizedBox(height: AppSpacing.md),
+                      RisegTextField(label: l10n.compraCampoObservaciones, controller: _observacionesCtrl),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                // Etapa 3 (corrección financiera Cuenta↔TDC): mismo par
+                // de selectores condicionales que `RegistrarCompraScreen`
+                // — sin bloqueo artificial. El caption muestra el origen
+                // vigente para que la corrección sea explícita, nunca
+                // implícita en el texto de la forma de pago.
+                RisegCard(
+                  child: RisegFormSection(
+                    title: l10n.compraCorregirSeccionOrigen,
+                    description: l10n.compraCorregirOrigenActual(_origenActualLabel),
+                    grid: true,
+                    children: [
                       RisegSelect<String>(
                         label: l10n.compraCampoFormaPago,
                         value: _formaPago,
-                        items: [for (final f in FormaPago.values) RisegSelectItem(value: f.name, label: formaPagoLabel(l10n, f.name))],
+                        items: [
+                          for (final f in FormaPago.values) RisegSelectItem(value: f.name, label: formaPagoLabel(l10n, f.name)),
+                        ],
                         onChanged: (valor) => setState(() => _formaPago = valor ?? _formaPago),
                       ),
-                      if (_formaPago == FormaPago.otro.name) ...[
-                        const SizedBox(height: AppSpacing.md),
+                      if (_formaPago == FormaPago.otro.name)
                         RisegTextField(label: l10n.compraCampoFormaPagoOtroDescripcion, controller: _formaPagoOtroCtrl),
-                      ],
-                      const SizedBox(height: AppSpacing.md),
-                      RisegTextField(label: l10n.compraCampoObservaciones, controller: _observacionesCtrl),
+                      if (_formaPago == FormaPago.tarjeta.name)
+                        RisegSelect<String?>(
+                          label: l10n.compraCampoTarjeta,
+                          value: _deudaIdSeleccionada,
+                          items: [
+                            for (final t in _tarjetas)
+                              RisegSelectItem(
+                                value: t.id,
+                                label: l10n.compraTarjetaOpcionEtiqueta(
+                                  t.nombre,
+                                  t.tarjetaUltimosDigitos ?? '----',
+                                  () {
+                                    final disponible = creditoDisponibleTarjeta(limiteCredito: t.tarjetaLimiteCredito, saldoActual: t.saldoActual);
+                                    return disponible == null ? l10n.deudaTarjetaSinDato : formatoCentavosDeuda(disponible);
+                                  }(),
+                                ),
+                              ),
+                          ],
+                          onChanged: (valor) => setState(() => _deudaIdSeleccionada = valor),
+                        ),
+                      if (_formaPago != FormaPago.tarjeta.name)
+                        RisegSelect<String?>(
+                          label: l10n.movimientoCampoCuentaFinanciera,
+                          value: _cuentaFinancieraIdSeleccionada,
+                          items: [
+                            RisegSelectItem(value: null, label: l10n.egresoCampoSinAsignar),
+                            for (final c in _cuentasFinancieras) RisegSelectItem(value: c.id, label: c.nombre),
+                          ],
+                          onChanged: (valor) => setState(() => _cuentaFinancieraIdSeleccionada = valor),
+                        ),
                     ],
                   ),
                 ),

@@ -18,7 +18,11 @@ import 'package:riseg_one/features/compras/data/tables/compra_partida_table.dart
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart' show PartidaCompraInput;
 import 'package:riseg_one/features/compras/domain/usecases/correccion_partida_compra.dart';
 import 'package:riseg_one/features/compras/presentation/compras_controller.dart';
+import 'package:riseg_one/features/finanzas/data/tables/deuda_table.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
+import 'package:riseg_one/features/finanzas/domain/usecases/registrar_deuda_usecase.dart';
+import 'package:riseg_one/features/finanzas/finanzas_providers.dart';
+import 'package:riseg_one/features/finanzas/presentation/deudas_credito/deudas_credito_controller.dart';
 import 'package:riseg_one/features/finanzas/presentation/egresos/egresos_controller.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/crear_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/crear_categoria_articulo_usecase.dart';
@@ -115,6 +119,42 @@ void main() {
 
       expect(container.read(egresosControllerProvider).egresos.single.monto, 8 * 35000, reason: 'Finanzas ve el nuevo monto sin recargar manualmente');
       expect(container.read(articulosControllerProvider).articulos.single.existencia.total, 8, reason: 'Inventario ve la nueva existencia sin recargar manualmente');
+    },
+  );
+
+  test(
+    'Etapa 3: corregir SOLO el origen financiero (sin cambiosPartidas) también invalida Deudas y crédito / '
+    'Cuentas financieras de inmediato — antes de esta etapa esta invalidación nunca se disparaba sin partidas',
+    () async {
+      final tarjeta = (await container.read(registrarDeudaUseCaseProvider).ejecutar(
+        nombre: 'Konfío',
+        tipo: TipoDeuda.tarjetaCredito.name,
+        saldoInicial: 0,
+        tarjetaLimiteCredito: 4000000,
+      ) as RegistrarDeudaExitoso)
+          .deuda;
+
+      container.listen(deudasCreditoControllerProvider, (_, _) {});
+      while (container.read(deudasCreditoControllerProvider).cargando) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      final tarjetaAntes = container.read(deudasCreditoControllerProvider).deudas.singleWhere((d) => d.id == tarjeta.id);
+      expect(tarjetaAntes.saldoActual, 0);
+
+      final resultado = await container.read(comprasControllerProvider.notifier).corregirCompra(
+            compraId: compraId,
+            nuevaDeudaId: tarjeta.id,
+            motivo: 'En realidad se pagó con tarjeta',
+          );
+      expect(resultado.runtimeType.toString(), 'CorregirCompraExitosa');
+
+      await Future<void>.delayed(Duration.zero);
+      while (container.read(deudasCreditoControllerProvider).cargando) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      final tarjetaDespues = container.read(deudasCreditoControllerProvider).deudas.singleWhere((d) => d.id == tarjeta.id);
+      expect(tarjetaDespues.saldoActual, 5 * 33000, reason: 'Deudas y crédito ve el nuevo cargo sin recargar manualmente');
     },
   );
 }

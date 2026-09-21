@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/attachment_table.dart';
 import '../../../../core/database/tables/audit_columns.dart';
+import '../../../usuarios/data/tables/usuario_table.dart';
 
 /// Catálogo simple, no administrable — mismo criterio que
 /// `Articulo.unidadMedida` (texto validado en dominio en vez de tabla
@@ -122,4 +123,58 @@ class VehiculoAttachment extends Table {
 
   @override
   Set<Column> get primaryKey => {attachmentId};
+}
+
+/// Tipos de evento del historial de un Vehículo (schemaVersion 80) —
+/// mismo criterio append-only que `TiempoExtraEvento`/`CompraEvento`.
+///
+/// Cubre el expediente Y sus subentidades: un mantenimiento corregido o
+/// anulado, un documento corregido, una lectura de kilometraje — todo
+/// deja rastro en el historial del Vehículo, que es la unidad que el
+/// usuario consulta. No se crea una tabla de eventos por subentidad
+/// (sería historial fragmentado de un mismo activo).
+enum TipoEventoVehiculo {
+  creado,
+  corregido,
+  estatusCambiado,
+  dadoDeBaja,
+  mantenimientoRegistrado,
+  mantenimientoCorregido,
+  mantenimientoCancelado,
+  documentoRegistrado,
+  documentoCorregido,
+  kilometrajeRegistrado,
+  asignacionRegistrada,
+  asignacionRetirada,
+}
+
+/// Historial append-only del Vehículo (schemaVersion 80) — cierra el
+/// gap P0 de la auditoría de la v79: hasta esta etapa `CorregirVehiculo`
+/// podía cambiar placas, VIN, número de motor y costo de adquisición
+/// sin motivo, sin actor y sin dejar rastro. Era la única excepción del
+/// proyecto.
+///
+/// Mismo shape exacto que `TiempoExtraEvento`, para que la auditoría
+/// central lo agregue sin ningún caso especial.
+class VehiculoEvento extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get vehiculoId => text().references(Vehiculo, #id, onDelete: KeyAction.cascade)();
+
+  DateTimeColumn get fechaHora => dateTime()();
+
+  TextColumn get tipoEvento => text()();
+
+  TextColumn get observacion => text().nullable()();
+
+  TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
+
+  TextColumn get estadoAnterior => text().nullable()();
+
+  TextColumn get estadoNuevo => text().nullable()();
+
+  /// Diferencias campo a campo de una corrección (`DiffEvento`) — mismo
+  /// formato que el resto del proyecto: solo los campos REALMENTE
+  /// modificados, nunca el registro completo.
+  TextColumn get datosRelevantes => text().nullable()();
 }

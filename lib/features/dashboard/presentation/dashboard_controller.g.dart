@@ -7,17 +7,25 @@ part of 'dashboard_controller.dart';
 // **************************************************************************
 
 String _$dashboardControllerHash() =>
-    r'19c1473b685b7828d8299f38de4c769b2fd12ffe';
+    r'5fa2f7517b40433797bb920d2d01aa48d222d90b';
 
-/// Controlador del Dashboard (Etapa 13) — pantalla inicial dinámica
-/// por permisos. Cada bloque verifica su propio `hasCode('xxx.ver')`
-/// **antes** de invocar el use case correspondiente; si falta el
-/// permiso, ese use case nunca se ejecuta (mismo patrón que cada
-/// controller de Reportes, nunca "se consulta y se oculta después").
+/// Controlador del Dashboard (Etapa 13, rediseño gerencial Etapa 15) —
+/// pantalla inicial dinámica por permisos. Cada bloque verifica su
+/// propio `hasCode('xxx.ver')` **antes** de invocar el use case
+/// correspondiente; si falta el permiso, ese use case nunca se ejecuta
+/// (mismo patrón que cada controller de Reportes, nunca "se consulta y
+/// se oculta después").
 ///
 /// Reutiliza directamente los 6 use cases de Reportes 12A–12D
 /// (`obtenerResumenGeneralUseCaseProvider` y análogos) — nunca
-/// redefine una consulta que Reportes ya resuelve.
+/// redefine una consulta que Reportes ya resuelve. Los nuevos bloques
+/// (cobertura, cobranza, próxima Nómina, personal operativo) componen
+/// repositorios/use cases ya existentes — ver el doc comment de cada
+/// uno en `domain/usecases/`.
+///
+/// [PeriodoDashboard] es la única fuente de verdad del rango
+/// seleccionado (Parte B) — `cambiarPeriodo` es la única forma de
+/// modificarlo, siempre desde la cabecera.
 ///
 /// Copied from [DashboardController].
 @ProviderFor(DashboardController)

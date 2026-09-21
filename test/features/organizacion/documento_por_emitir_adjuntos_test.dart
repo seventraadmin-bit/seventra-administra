@@ -117,9 +117,10 @@ void main() {
     documentoRepo = DocumentoPorEmitirRepositoryImpl(db, attachmentRepo, CuentaPorCobrarRepositoryImpl(db));
     final comercialRepo = ServicioComercialRepositoryImpl(db);
     final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
+    final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
-    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigo);
+    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigo);
 
     tempDir = Directory.systemTemp.createTempSync('riseg_adjuntos_test_');
     final storage = AttachmentStorage(tempDir.path);

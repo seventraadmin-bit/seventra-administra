@@ -17,6 +17,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/compras/data/repositories/compra_repository_impl.dart';
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/ingreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
@@ -49,8 +50,9 @@ void main() {
       final articuloRepo = ArticuloRepositoryImpl(db);
       final inventarioRepo = InventarioRepositoryImpl(db);
       final egresoRepo = EgresoRepositoryImpl(db);
-      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
-      registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
+      final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
+      registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
     });
 
     Future<RegistrarCompraResultado> registrarCompraDePrueba({String? actorUsuarioId}) {

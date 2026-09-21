@@ -1,3 +1,4 @@
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/finanzas/data/tables/ingreso_table.dart';
 
@@ -20,12 +21,16 @@ class CancelarIngresoYaCancelado extends CancelarIngresoResultado {}
 /// contable, una inconsistencia que este caso de uso previene.
 class CancelarIngresoPagoAutomatico extends CancelarIngresoResultado {}
 
+class CancelarIngresoMotivoRequerido extends CancelarIngresoResultado {}
+
 class CancelarIngresoErrorInesperado extends CancelarIngresoResultado {
   CancelarIngresoErrorInesperado(this.mensaje);
   final String mensaje;
 }
 
-/// Cancela un Ingreso manual (Etapa 4K.1). Requiere `motivo`.
+/// Cancela un Ingreso manual (Etapa 4K.1). Requiere `motivo` no vacío,
+/// validado aquí en dominio (etapa "Ingresos y Egresos": antes solo se
+/// exigía como parámetro, nunca se validaba su contenido).
 class CancelarIngresoUseCase {
   CancelarIngresoUseCase(this._repository);
 
@@ -45,6 +50,9 @@ class CancelarIngresoUseCase {
     }
     if (ingreso.pagoId != null) {
       return CancelarIngresoPagoAutomatico();
+    }
+    if (!motivoEsValido(motivo)) {
+      return CancelarIngresoMotivoRequerido();
     }
 
     try {

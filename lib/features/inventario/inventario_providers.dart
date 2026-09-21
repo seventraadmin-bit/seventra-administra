@@ -11,11 +11,13 @@ import 'data/pdf/resguardo_pdf_renderer.dart';
 import 'data/repositories/articulo_repository_impl.dart';
 import 'data/repositories/asignacion_repository_impl.dart';
 import 'data/repositories/categoria_articulo_repository_impl.dart';
+import 'data/repositories/entrega_repository_impl.dart';
 import 'data/repositories/inventario_repository_impl.dart';
 import 'data/tables/asignacion_table.dart' show MotivoCierreAsignacion;
 import 'domain/repositories/articulo_repository.dart';
 import 'domain/repositories/asignacion_repository.dart';
 import 'domain/repositories/categoria_articulo_repository.dart';
+import 'domain/repositories/entrega_repository.dart';
 import 'domain/repositories/inventario_repository.dart';
 import 'domain/usecases/actualizar_categoria_articulo_usecase.dart';
 import 'domain/usecases/adjuntar_comprobante_movimiento_usecase.dart';
@@ -35,17 +37,20 @@ import 'domain/usecases/crear_categoria_articulo_usecase.dart';
 import 'domain/usecases/crear_variante_articulo_usecase.dart';
 import 'domain/usecases/eliminar_articulo_fisicamente_usecase.dart';
 import 'domain/usecases/eliminar_categoria_articulo_fisicamente_usecase.dart';
+import 'domain/usecases/entregar_equipo_usecase.dart';
 import 'domain/usecases/generar_documento_resguardo_usecase.dart';
 import 'domain/usecases/obtener_empleados_responsables_servicio_usecase.dart';
 import 'domain/usecases/obtener_opciones_responsable_asignacion_usecase.dart';
 import 'domain/usecases/obtener_origen_compra_usecase.dart';
 import 'domain/usecases/registrar_ajuste_usecase.dart';
 import 'domain/usecases/registrar_baja_unidad_usecase.dart';
+import 'domain/usecases/registrar_retorno_unidad_usecase.dart';
 import 'domain/usecases/registrar_baja_usecase.dart';
 import 'domain/usecases/registrar_entrada_unidad_usecase.dart';
 import 'domain/usecases/registrar_entrada_usecase.dart';
 import 'domain/usecases/regularizar_articulo_serializado_usecase.dart';
 import 'domain/usecases/reemplazar_asignacion_usecase.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_de_unidad_coordinador.dart';
 
 /// Providers del dominio Inventario (Etapa 7A) — nace aquí, separado
 /// de `organizacion`/`personal`/`finanzas`/`nomina` (mismo criterio
@@ -121,7 +126,10 @@ final registrarBajaUseCaseProvider = Provider<RegistrarBajaUseCase>((ref) {
 });
 
 final registrarBajaUnidadUseCaseProvider = Provider<RegistrarBajaUnidadUseCase>((ref) {
-  return RegistrarBajaUnidadUseCase(ref.watch(inventarioRepositoryProvider));
+  return RegistrarBajaUnidadUseCase(
+    ref.watch(inventarioRepositoryProvider),
+    LineaTelefonicaDeUnidadCoordinador.desde(ref.watch(appDatabaseProvider)),
+  );
 });
 
 final registrarAjusteUseCaseProvider = Provider<RegistrarAjusteUseCase>((ref) {
@@ -142,6 +150,21 @@ final crearAsignacionUseCaseProvider = Provider<CrearAsignacionUseCase>((ref) {
     ref.watch(asignacionRepositoryProvider),
     ref.watch(articuloRepositoryProvider),
     ref.watch(inventarioRepositoryProvider),
+  );
+});
+
+/// Solo lectura — la escritura de `Entrega` vive dentro de
+/// `AsignacionRepository.crearEntrega` (ver su doc comment).
+final entregaRepositoryProvider = Provider<EntregaRepository>((ref) {
+  return EntregaRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final entregarEquipoUseCaseProvider = Provider<EntregarEquipoUseCase>((ref) {
+  return EntregarEquipoUseCase(
+    ref.watch(asignacionRepositoryProvider),
+    ref.watch(articuloRepositoryProvider),
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(generarCodigoUseCaseProvider),
   );
 });
 
@@ -206,6 +229,8 @@ final generarDocumentoResguardoUseCaseProvider = Provider<GenerarDocumentoResgua
     ref.watch(attachmentRepositoryProvider),
     ref.watch(attachmentStorageProvider),
     ref.watch(resguardoPdfRendererProvider),
+    ref.watch(asignacionServicioRepositoryProvider),
+    ref.watch(entregaRepositoryProvider),
   );
 });
 
@@ -277,6 +302,45 @@ final crearAsignacionAutorizadoProvider = Provider<CrearAsignacionAutorizado>((r
   };
 });
 
+/// "Entregar equipo" — misma capacidad que `crearAsignacionAutorizadoProvider`
+/// a otra granularidad (varios renglones en un solo acto), nunca un
+/// permiso nuevo.
+typedef EntregarEquipoAutorizado = Future<EntregarEquipoResultado> Function({
+  required List<AsignacionLineaInput> lineas,
+  String? empleadoId,
+  String? servicioId,
+  required DateTime fechaEntrega,
+  required String condicionEntrega,
+  String? observaciones,
+});
+
+final entregarEquipoAutorizadoProvider = Provider<EntregarEquipoAutorizado>((ref) {
+  return ({
+    required List<AsignacionLineaInput> lineas,
+    String? empleadoId,
+    String? servicioId,
+    required DateTime fechaEntrega,
+    required String condicionEntrega,
+    String? observaciones,
+  }) {
+    final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'inventario.crear',
+      () => ref.read(entregarEquipoUseCaseProvider).ejecutar(
+            lineas: lineas,
+            empleadoId: empleadoId,
+            servicioId: servicioId,
+            fechaEntrega: fechaEntrega,
+            condicionEntrega: condicionEntrega,
+            observaciones: observaciones,
+            actorUsuarioId: actorUsuarioId,
+          ),
+      EntregarEquipoErrorInesperado.new,
+    );
+  };
+});
+
 typedef CerrarAsignacionAutorizado = Future<CerrarAsignacionResultado> Function({
   required String asignacionId,
   required MotivoCierreAsignacion motivo,
@@ -302,7 +366,7 @@ final cerrarAsignacionAutorizadoProvider = Provider<CerrarAsignacionAutorizado>(
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'inventario.modificar',
+      'inventario.corregir',
       () => ref.read(cerrarAsignacionUseCaseProvider).ejecutar(
             asignacionId: asignacionId,
             motivo: motivo,
@@ -338,7 +402,7 @@ final cambiarResponsableAsignacionAutorizadoProvider = Provider<CambiarResponsab
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'inventario.modificar',
+      'inventario.corregir',
       () => ref.read(cambiarResponsableAsignacionUseCaseProvider).ejecutar(
             asignacionId: asignacionId,
             nuevoEmpleadoId: nuevoEmpleadoId,
@@ -379,7 +443,7 @@ final corregirIdentidadUnidadAutorizadoProvider = Provider<CorregirIdentidadUnid
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'inventario.modificar',
+      'inventario.corregir',
       () => ref.read(corregirIdentidadUnidadUseCaseProvider).ejecutar(
             unidadId: unidadId,
             motivo: motivo,
@@ -432,7 +496,7 @@ final reemplazarAsignacionAutorizadoProvider = Provider<ReemplazarAsignacionAuto
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'inventario.modificar',
+      'inventario.corregir',
       () => ref.read(reemplazarAsignacionUseCaseProvider).ejecutar(
             asignacionId: asignacionId,
             motivo: motivo,
@@ -471,7 +535,7 @@ final adjuntarResguardoFirmadoAutorizadoProvider = Provider<AdjuntarResguardoFir
   }) {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'inventario.modificar',
+      'inventario.corregir',
       () => ref.read(adjuntarResguardoFirmadoUseCaseProvider).ejecutar(
             asignacionIds: asignacionIds,
             sourceFilePath: sourceFilePath,
@@ -566,4 +630,11 @@ final regularizarArticuloSerializadoAutorizadoProvider = Provider<RegularizarArt
       RegularizarArticuloSerializadoErrorInesperado.new,
     );
   };
+});
+
+/// Regresar una unidad de lavandería o reparación (ajuste de cierre de
+/// la conciliación de bajas) — la contraparte de que un destino
+/// intermedio ya no aparezca como disponible.
+final registrarRetornoUnidadUseCaseProvider = Provider<RegistrarRetornoUnidadUseCase>((ref) {
+  return RegistrarRetornoUnidadUseCase(ref.watch(inventarioRepositoryProvider));
 });

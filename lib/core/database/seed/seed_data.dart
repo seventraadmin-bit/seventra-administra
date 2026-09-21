@@ -46,6 +46,53 @@ Future<void> _seedCodigoSecuencia(AppDatabase db) async {
     ('vehiculo', 'VEH', 6),
     ('linea_telefonica', 'TEL', 6),
     ('compra', 'COM', 6),
+    // Etapa 15 — Descuentos Programados al Personal: préstamo y botas
+    // tienen su propio prefijo/contador (mismo criterio que
+    // `migrar_descuentos_personal_v57.dart`, que siembra estas mismas
+    // 2 filas para bases de datos EXISTENTES vía migración — aquí
+    // cubre las bases de datos NUEVAS, creadas directo en `onCreate`).
+    ('descuentoProgramadoPrestamo', 'PRE', 6),
+    ('descuentoProgramadoBotas', 'DES', 6),
+    // Obligaciones nacidas de la conciliación de una baja
+    // (schemaVersion 83) — prefijo propio para que no se lean como
+    // préstamos.
+    ('descuentoProgramadoResguardo', 'RES', 6),
+    // "Entrega múltiple de Inventario a Personal": mismo criterio — la
+    // migración a schemaVersion 60 (`migrar_entrega_inventario_v60.dart`)
+    // siembra esta misma fila para bases de datos EXISTENTES; aquí
+    // cubre las bases de datos NUEVAS, creadas directo en `onCreate`.
+    ('entrega', 'ENT', 6),
+    // Etapa 19 ("Deudas y crédito empresarial"): mismo criterio — la
+    // migración a schemaVersion 61 (`migrar_deudas_credito_v61.dart`)
+    // siembra esta misma fila para bases de datos EXISTENTES; aquí
+    // cubre las bases de datos NUEVAS, creadas directo en `onCreate`.
+    ('deuda', 'DEU', 6),
+    // Etapa 19C ("Posición de caja, flujo real y proyección de
+    // compromisos"): mismo criterio — la migración a schemaVersion 63
+    // (`migrar_cuenta_financiera_v63.dart`) siembra esta misma fila
+    // para bases de datos EXISTENTES; aquí cubre las bases de datos
+    // NUEVAS, creadas directo en `onCreate`.
+    ('cuenta_financiera', 'CTA', 4),
+    // Etapa "Tiempos Extra" (cobertura operativa por ausencia): mismo
+    // criterio — la migración a schemaVersion 65
+    // (`migrar_tiempos_extra_v65.dart`) siembra esta misma fila para
+    // bases de datos EXISTENTES; aquí cubre las bases de datos NUEVAS,
+    // creadas directo en `onCreate`.
+    ('tiempoExtra', 'TEX', 6),
+    // Servicios Eventuales (schemaVersion 87): mismo criterio — la
+    // migración `migrar_servicios_eventuales_v87.dart` siembra esta
+    // misma fila para bases de datos EXISTENTES; aquí cubre las NUEVAS,
+    // creadas directo en `onCreate`. Sin las dos, el folio EVT existe
+    // en unas bases y no en otras — el mismo hueco de "siembra dual"
+    // que ya nos mordió en Entrega de Inventario.
+    ('servicioEventual', 'EVT', 6),
+    // Transferencias entre cuentas propias (schemaVersion 91): misma
+    // siembra dual — la migración
+    // `migrar_origen_financiero_multicuenta_v91.dart` siembra esta
+    // fila para bases EXISTENTES y aquí quedan cubiertas las NUEVAS.
+    // Prefijo propio: una transferencia no es un Egreso ni un
+    // Ingreso y no debe leerse como tal en ningún listado.
+    ('transferenciaCuenta', 'TRF', 6),
   ];
 
   for (final (entityType, prefijo, digitos) in config) {
@@ -162,6 +209,9 @@ Future<void> seedTipoModalidadTurno(AppDatabase db) async {
     (SeedIds.modalidadTurnoDiurno, 'DIURNO', 'Diurno'),
     (SeedIds.modalidadTurnoMixto, 'MIXTO', 'Mixto'),
     (SeedIds.modalidadTurnoPersonalizado, 'PERSONALIZADO', 'Personalizado'),
+    // Etapa Tiempos Extra — pedido explícito de Marlon, único valor de
+    // su lista que no existía todavía.
+    (SeedIds.modalidadTurno12x24, '12X24', '12×24'),
   ];
 
   for (final (id, codigo, nombre) in filas) {

@@ -1,6 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
 import '../repositories/servicio_comercial_repository.dart';
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'linea_comercial_errors.dart';
 import 'linea_comercial_validator.dart';
 
@@ -22,6 +23,9 @@ class CorregirLineaComercialNoExiste extends CorregirLineaComercialResultado {}
 /// un simple error de captura, así que la corrección in-place se
 /// rechaza siempre; el único camino seguro es "Nueva vigencia".
 class CorregirLineaComercialTieneHistoria extends CorregirLineaComercialResultado {}
+
+/// Corregir condiciones económicas exige explicar por qué.
+class CorregirLineaComercialMotivoRequerido extends CorregirLineaComercialResultado {}
 
 class CorregirLineaComercialErroresValidacion extends CorregirLineaComercialResultado {
   CorregirLineaComercialErroresValidacion(this.errores);
@@ -50,10 +54,16 @@ class CorregirLineaComercialUseCase {
   final ServicioComercialRepository _repository;
   final LineaComercialValidator _validator;
 
+  /// [motivo] obligatorio: corregir precio, elementos, turno o IVA de
+  /// una vigencia existente cambia lo que se cobra, y tiene que poder
+  /// explicarse después.
   Future<CorregirLineaComercialResultado> ejecutar({
     required String lineaComercialId,
     required LineaComercialBorrador borrador,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return CorregirLineaComercialMotivoRequerido();
     final linea = await _repository.obtenerLinea(lineaComercialId);
     if (linea == null) return CorregirLineaComercialNoExiste();
 
@@ -66,7 +76,12 @@ class CorregirLineaComercialUseCase {
     final validacion = await _validator.validar(servicioId: linea.servicioId, borrador: borrador);
     if (validacion.resultado == null) return CorregirLineaComercialErroresValidacion(validacion.errores);
 
-    final vigencia = await _repository.corregirVigencia(vigenciaId: historial.single.id, datos: validacion.resultado!);
+    final vigencia = await _repository.corregirVigencia(
+      vigenciaId: historial.single.id,
+      datos: validacion.resultado!,
+      motivo: motivo.trim(),
+      actorUsuarioId: actorUsuarioId,
+    );
     return CorregirLineaComercialExitoso(vigencia);
   }
 }

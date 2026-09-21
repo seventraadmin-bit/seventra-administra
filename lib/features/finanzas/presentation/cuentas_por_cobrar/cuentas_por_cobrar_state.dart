@@ -1,4 +1,5 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/resolver_nombres_contraparte_usecase.dart';
 
 /// Estado del listado de Cuentas por cobrar (Etapa 4J.1) — mismo shape
 /// que `AgendaState`, con filtros propios. Sin rango de fechas: a
@@ -13,6 +14,7 @@ class CuentasPorCobrarState {
     this.clienteId,
     this.estatus,
     this.soloVencidas = false,
+    this.nombres = const NombresContraparte.vacio(),
   });
 
   final bool cargando;
@@ -22,6 +24,11 @@ class CuentasPorCobrarState {
   final String? estatus;
   final bool soloVencidas;
 
+  /// Nombres ya resueltos de las contrapartes de [cuentas] — Clientes y
+  /// solicitantes eventuales. Se resuelven en el controlador, en lote,
+  /// para que la tabla nunca dispare una consulta por renglón.
+  final NombresContraparte nombres;
+
   CuentasPorCobrarState copyWith({
     bool? cargando,
     List<CuentaPorCobrarData>? cuentas,
@@ -29,6 +36,7 @@ class CuentasPorCobrarState {
     String? clienteId,
     String? estatus,
     bool? soloVencidas,
+    NombresContraparte? nombres,
     bool limpiarClienteId = false,
     bool limpiarEstatus = false,
   }) {
@@ -39,6 +47,7 @@ class CuentasPorCobrarState {
       clienteId: limpiarClienteId ? null : (clienteId ?? this.clienteId),
       estatus: limpiarEstatus ? null : (estatus ?? this.estatus),
       soloVencidas: soloVencidas ?? this.soloVencidas,
+      nombres: nombres ?? this.nombres,
     );
   }
 }

@@ -16,6 +16,11 @@ import 'domain/repositories/vehiculo_documento_repository.dart';
 import 'domain/repositories/vehiculo_kilometraje_repository.dart';
 import 'domain/repositories/vehiculo_mantenimiento_repository.dart';
 import 'domain/repositories/vehiculo_repository.dart';
+import '../finanzas/finanzas_providers.dart' show deudaRepositoryProvider;
+import '../finanzas/domain/origen_financiero_gasto.dart';
+import 'domain/usecases/cancelar_mantenimiento_vehiculo_usecase.dart';
+import 'domain/usecases/corregir_documento_vehiculo_usecase.dart';
+import 'domain/usecases/corregir_mantenimiento_vehiculo_usecase.dart';
 import 'domain/usecases/actualizar_fotografia_vehiculo_usecase.dart';
 import 'domain/usecases/adjuntar_archivo_documento_vehiculo_usecase.dart';
 import 'domain/usecases/adjuntar_comprobante_mantenimiento_vehiculo_usecase.dart';
@@ -130,6 +135,13 @@ final registrarDocumentoVehiculoUseCaseProvider = Provider<RegistrarDocumentoVeh
   );
 });
 
+final corregirDocumentoVehiculoUseCaseProvider = Provider<CorregirDocumentoVehiculoUseCase>((ref) {
+  return CorregirDocumentoVehiculoUseCase(
+    ref.watch(vehiculoDocumentoRepositoryProvider),
+    ref.watch(vehiculoRepositoryProvider),
+  );
+});
+
 final adjuntarArchivoDocumentoVehiculoUseCaseProvider = Provider<AdjuntarArchivoDocumentoVehiculoUseCase>((ref) {
   return AdjuntarArchivoDocumentoVehiculoUseCase(
     ref.watch(vehiculoDocumentoRepositoryProvider),
@@ -147,6 +159,25 @@ final registrarMantenimientoVehiculoUseCaseProvider = Provider<RegistrarMantenim
     ref.watch(vehiculoMantenimientoRepositoryProvider),
     ref.watch(vehiculoRepositoryProvider),
     ref.watch(vehiculoKilometrajeRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
+  );
+});
+
+/// Ciclo completo del gasto de un mantenimiento (schemaVersion 80) —
+/// corrección de cualquier transición de origen financiero y anulación
+/// con reversión exacta.
+final corregirMantenimientoVehiculoUseCaseProvider = Provider<CorregirMantenimientoVehiculoUseCase>((ref) {
+  return CorregirMantenimientoVehiculoUseCase(
+    ref.watch(vehiculoMantenimientoRepositoryProvider),
+    ref.watch(vehiculoRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
+  );
+});
+
+final cancelarMantenimientoVehiculoUseCaseProvider = Provider<CancelarMantenimientoVehiculoUseCase>((ref) {
+  return CancelarMantenimientoVehiculoUseCase(
+    ref.watch(vehiculoMantenimientoRepositoryProvider),
+    ref.watch(vehiculoRepositoryProvider),
   );
 });
 
@@ -204,7 +235,7 @@ final registrarDocumentoVehiculoAutorizadoProvider = Provider<RegistrarDocumento
   }) {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'vehiculos.crear',
+      'vehiculos.operar',
       () => ref.read(registrarDocumentoVehiculoUseCaseProvider).ejecutar(
             vehiculoId: vehiculoId,
             tipo: tipo,
@@ -230,6 +261,7 @@ typedef RegistrarMantenimientoVehiculoAutorizado = Future<RegistrarMantenimiento
   DateTime? proximoMantenimientoFecha,
   int? proximoMantenimientoKilometraje,
   String? observaciones,
+  OrigenFinancieroGasto? origen,
 });
 
 final registrarMantenimientoVehiculoAutorizadoProvider = Provider<RegistrarMantenimientoVehiculoAutorizado>((ref) {
@@ -244,11 +276,14 @@ final registrarMantenimientoVehiculoAutorizadoProvider = Provider<RegistrarMante
     DateTime? proximoMantenimientoFecha,
     int? proximoMantenimientoKilometraje,
     String? observaciones,
+    OrigenFinancieroGasto? origen,
   }) {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'vehiculos.crear',
+      'vehiculos.operar',
       () => ref.read(registrarMantenimientoVehiculoUseCaseProvider).ejecutar(
+            origen: origen,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
             vehiculoId: vehiculoId,
             fecha: fecha,
             kilometraje: kilometraje,
@@ -261,6 +296,69 @@ final registrarMantenimientoVehiculoAutorizadoProvider = Provider<RegistrarMante
             observaciones: observaciones,
           ),
       RegistrarMantenimientoVehiculoErrorInesperado.new,
+    );
+  };
+});
+
+// Etapa 0 (auditoría de consistencia transversal — corrección de un
+// hueco real de autorización): `registrar_documento_vehiculo_dialog.dart`/
+// `registrar_mantenimiento_vehiculo_dialog.dart` adjuntaban el archivo
+// llamando al caso de uso crudo, sin ningún `autorizarUseCase`. Mismo
+// permiso que registrar el Documento/Mantenimiento al que pertenecen.
+typedef AdjuntarArchivoDocumentoVehiculoAutorizado = Future<AdjuntarArchivoDocumentoVehiculoResultado> Function({
+  required String vehiculoDocumentoId,
+  required String sourceFilePath,
+  required String originalFileName,
+  required String mimeType,
+});
+
+final adjuntarArchivoDocumentoVehiculoAutorizadoProvider = Provider<AdjuntarArchivoDocumentoVehiculoAutorizado>((ref) {
+  return ({
+    required String vehiculoDocumentoId,
+    required String sourceFilePath,
+    required String originalFileName,
+    required String mimeType,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.operar',
+      () => ref.read(adjuntarArchivoDocumentoVehiculoUseCaseProvider).ejecutar(
+            vehiculoDocumentoId: vehiculoDocumentoId,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      AdjuntarArchivoDocumentoVehiculoErrorInesperado.new,
+    );
+  };
+});
+
+typedef AdjuntarComprobanteMantenimientoVehiculoAutorizado = Future<AdjuntarComprobanteMantenimientoVehiculoResultado>
+    Function({
+  required String vehiculoMantenimientoId,
+  required String sourceFilePath,
+  required String originalFileName,
+  required String mimeType,
+});
+
+final adjuntarComprobanteMantenimientoVehiculoAutorizadoProvider =
+    Provider<AdjuntarComprobanteMantenimientoVehiculoAutorizado>((ref) {
+  return ({
+    required String vehiculoMantenimientoId,
+    required String sourceFilePath,
+    required String originalFileName,
+    required String mimeType,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.operar',
+      () => ref.read(adjuntarComprobanteMantenimientoVehiculoUseCaseProvider).ejecutar(
+            vehiculoMantenimientoId: vehiculoMantenimientoId,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      AdjuntarComprobanteMantenimientoVehiculoErrorInesperado.new,
     );
   };
 });
@@ -291,6 +389,164 @@ final eliminarVehiculoFisicamenteAutorizadoProvider = Provider<EliminarVehiculoF
             actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           ),
       EliminarVehiculoFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+/// Corregir un gasto de mantenimiento (schemaVersion 80).
+///
+/// Se gatea con `vehiculos.operar`, el mismo código que registrar el
+/// mantenimiento: son operaciones sobre un registro operativo del
+/// vehículo, no sobre el expediente (`vehiculos.modificar`). Una
+/// corrección AJUSTA el importe (y su origen), nunca lo devuelve — por
+/// eso vive con la operación ordinaria y no con la anulación.
+typedef CorregirMantenimientoVehiculoAutorizado = Future<CorregirMantenimientoVehiculoResultado> Function({
+  required String vehiculoMantenimientoId,
+  DateTime? fecha,
+  String? tipo,
+  String? descripcion,
+  String? tallerProveedor,
+  int? costo,
+  bool limpiarCosto,
+  DateTime? proximoMantenimientoFecha,
+  int? proximoMantenimientoKilometraje,
+  String? observaciones,
+  OrigenFinancieroGasto? origen,
+  required String motivo,
+});
+
+final corregirMantenimientoVehiculoAutorizadoProvider =
+    Provider<CorregirMantenimientoVehiculoAutorizado>((ref) {
+  return ({
+    required String vehiculoMantenimientoId,
+    DateTime? fecha,
+    String? tipo,
+    String? descripcion,
+    String? tallerProveedor,
+    int? costo,
+    bool limpiarCosto = false,
+    DateTime? proximoMantenimientoFecha,
+    int? proximoMantenimientoKilometraje,
+    String? observaciones,
+    OrigenFinancieroGasto? origen,
+    required String motivo,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.operar',
+      () => ref.read(corregirMantenimientoVehiculoUseCaseProvider).ejecutar(
+            vehiculoMantenimientoId: vehiculoMantenimientoId,
+            fecha: fecha,
+            tipo: tipo,
+            descripcion: descripcion,
+            tallerProveedor: tallerProveedor,
+            costo: costo,
+            limpiarCosto: limpiarCosto,
+            proximoMantenimientoFecha: proximoMantenimientoFecha,
+            proximoMantenimientoKilometraje: proximoMantenimientoKilometraje,
+            observaciones: observaciones,
+            origen: origen,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      CorregirMantenimientoVehiculoErrorInesperado.new,
+    );
+  };
+});
+
+typedef CancelarMantenimientoVehiculoAutorizado = Future<CancelarMantenimientoVehiculoResultado> Function({
+  required String vehiculoMantenimientoId,
+  required String motivo,
+});
+
+/// Anular un mantenimiento exige `vehiculos.cancelar`, **nunca**
+/// `vehiculos.operar` (decisión de Marlon, schemaVersion 80).
+///
+/// Es la única acción de Vehículos que revierte dinero real: cancela el
+/// `Egreso` de una `CuentaFinanciera`, o libera el cargo de una TDC con
+/// un ajuste negativo. Quien captura la operación no necesariamente
+/// puede revertirla — mismo criterio ya vigente en `compras.cancelar`,
+/// `tiempoExtra.cancelar` y `nomina.cancelarPago`.
+///
+/// El código es exclusivo: `vehiculos.operar` **no** abre esta puerta, y
+/// `vehiculos.cancelar` por sí solo no concede registrar ni corregir
+/// nada, ni ningún acceso a Finanzas. El Maestro pasa siempre, por
+/// `SessionPermissionService`, sin filas de `PermisoUsuario`.
+///
+/// La compuerta REAL está aquí, no en la UI: el menú del expediente
+/// oculta "Anular" a quien no tenga el código, pero llamar este
+/// provider directo (o desde una prueba con `ProviderContainer`) exige
+/// exactamente lo mismo.
+final cancelarMantenimientoVehiculoAutorizadoProvider =
+    Provider<CancelarMantenimientoVehiculoAutorizado>((ref) {
+  return ({required String vehiculoMantenimientoId, required String motivo}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.cancelar',
+      () => ref.read(cancelarMantenimientoVehiculoUseCaseProvider).ejecutar(
+            vehiculoMantenimientoId: vehiculoMantenimientoId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      CancelarMantenimientoVehiculoErrorInesperado.new,
+    );
+  };
+});
+
+typedef CorregirDocumentoVehiculoAutorizado = Future<CorregirDocumentoVehiculoResultado> Function({
+  required String vehiculoDocumentoId,
+  String? tipo,
+  String? tipoOtroDescripcion,
+  String? numeroFolio,
+  bool limpiarNumeroFolio,
+  DateTime? fechaEmision,
+  bool limpiarFechaEmision,
+  DateTime? fechaVencimiento,
+  bool limpiarFechaVencimiento,
+  String? observaciones,
+  bool limpiarObservaciones,
+  required String motivo,
+});
+
+/// Gateado con `vehiculos.operar`, igual que registrar/renovar un
+/// documento: quien puede crear la vigencia es quien puede arreglar su
+/// captura. No se inventa un permiso nuevo aquí — si Marlon quiere
+/// separar "corregir" de "registrar", esa granularidad es una decisión
+/// de producto que se reporta, no que se toma sola.
+final corregirDocumentoVehiculoAutorizadoProvider = Provider<CorregirDocumentoVehiculoAutorizado>((ref) {
+  return ({
+    required String vehiculoDocumentoId,
+    String? tipo,
+    String? tipoOtroDescripcion,
+    String? numeroFolio,
+    bool limpiarNumeroFolio = false,
+    DateTime? fechaEmision,
+    bool limpiarFechaEmision = false,
+    DateTime? fechaVencimiento,
+    bool limpiarFechaVencimiento = false,
+    String? observaciones,
+    bool limpiarObservaciones = false,
+    required String motivo,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'vehiculos.operar',
+      () => ref.read(corregirDocumentoVehiculoUseCaseProvider).ejecutar(
+            vehiculoDocumentoId: vehiculoDocumentoId,
+            tipo: tipo,
+            tipoOtroDescripcion: tipoOtroDescripcion,
+            numeroFolio: numeroFolio,
+            limpiarNumeroFolio: limpiarNumeroFolio,
+            fechaEmision: fechaEmision,
+            limpiarFechaEmision: limpiarFechaEmision,
+            fechaVencimiento: fechaVencimiento,
+            limpiarFechaVencimiento: limpiarFechaVencimiento,
+            observaciones: observaciones,
+            limpiarObservaciones: limpiarObservaciones,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      CorregirDocumentoVehiculoErrorInesperado.new,
     );
   };
 });

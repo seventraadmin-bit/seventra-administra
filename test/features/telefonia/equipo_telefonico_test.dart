@@ -9,6 +9,7 @@ import 'package:riseg_one/features/compras/data/repositories/compra_repository_i
 import 'package:riseg_one/features/compras/data/tables/compra_partida_table.dart' show DestinoCompraPartida;
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -41,6 +42,9 @@ import 'package:riseg_one/features/telefonia/domain/usecases/registrar_recarga_l
 import 'package:riseg_one/features/telefonia/domain/usecases/revelar_credencial_equipo_telefonico_usecase.dart';
 import 'package:riseg_one/features/usuarios/data/repositories/auditoria_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/buscar_auditoria_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/tables/cuenta_financiera_table.dart';
+import 'package:drift/drift.dart' show Value;
+import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_de_unidad_coordinador.dart';
 
 /// Implementación en memoria de `AlmacenClaveCifrado` — la real
 /// (`AlmacenClaveSeguraWindows`) usa canales de plataforma que no
@@ -62,6 +66,8 @@ class _AlmacenClaveCifradoEnMemoria implements AlmacenClaveCifrado {
 /// `LineaTelefonicaEquipo`/`Asignacion` (Telefonía/Inventario, ya
 /// existían). Solo lo genuinamente nuevo (`EquipoTelefonicoCredencial`/
 /// `EquipoTelefonicoEvento`, cifrado reversible) tiene tabla propia.
+const _cuentaRecargaDePrueba = 'cuenta-recarga-de-prueba';
+
 void main() {
   late AppDatabase db;
 
@@ -97,16 +103,28 @@ void main() {
 
   late BuscarAuditoriaUseCase buscarAuditoria;
 
-  setUp(() {
+  setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // Cuenta REAL para las recargas: el dominio exige saber de dónde
+    // salió el dinero de una recarga nueva.
+    await db.into(db.cuentaFinanciera).insert(
+          CuentaFinancieraCompanion.insert(
+            id: const Value(_cuentaRecargaDePrueba),
+            codigo: 'CTA-REC',
+            nombre: 'BBVA Empresarial',
+            tipo: TipoCuentaFinanciera.banco.name,
+            saldoInicial: 100000000,
+            fechaSaldoInicial: DateTime(2026, 1, 1),
+          ),
+        );
 
     articuloRepo = ArticuloRepositoryImpl(db);
     inventarioRepo = InventarioRepositoryImpl(db);
     asignacionRepo = AsignacionRepositoryImpl(db);
     asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
-    equipoLineaRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, asignacionRepo, inventarioRepo);
+    equipoLineaRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, asignacionRepo);
     lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoLineaRepo);
-    recargaRepo = RecargaLineaTelefonicaRepositoryImpl(db);
+    recargaRepo = RecargaLineaTelefonicaRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db));
     equipoRepo = EquipoTelefonicoRepositoryImpl(db);
 
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
@@ -115,14 +133,14 @@ void main() {
     crearCategoria = CrearCategoriaArticuloUseCase(categoriaRepo);
     crearArticulo = CrearArticuloUseCase(articuloRepo, categoriaRepo, generarCodigo);
     registrarEntradaUnidad = RegistrarEntradaUnidadUseCase(inventarioRepo, articuloRepo, generarCodigo);
-    registrarBajaUnidad = RegistrarBajaUnidadUseCase(inventarioRepo);
+    registrarBajaUnidad = RegistrarBajaUnidadUseCase(inventarioRepo, LineaTelefonicaDeUnidadCoordinador.desde(db));
     crearAsignacion = CrearAsignacionUseCase(asignacionRepo, articuloRepo, inventarioRepo);
     cerrarAsignacion = CerrarAsignacionUseCase(asignacionRepo);
     crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, generarCodigo);
     darDeBajaLinea = DarDeBajaLineaTelefonicaUseCase(lineaRepo);
-    asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo);
-    cambiarEquipo = CambiarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo);
-    registrarRecarga = RegistrarRecargaLineaTelefonicaUseCase(recargaRepo, lineaRepo);
+    asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo, asignacionLineaRepo);
+    cambiarEquipo = CambiarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo, asignacionLineaRepo);
+    registrarRecarga = RegistrarRecargaLineaTelefonicaUseCase(recargaRepo, lineaRepo, DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)));
 
     final cipher = CredentialCipher(almacen: _AlmacenClaveCifradoEnMemoria());
 
@@ -134,8 +152,9 @@ void main() {
         ObtenerHistoriaEquipoTelefonicoUseCase(inventarioRepo, asignacionRepo, equipoLineaRepo, lineaRepo, recargaRepo, equipoRepo);
 
     final egresoRepo = EgresoRepositoryImpl(db);
-    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
+    final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
 
     buscarAuditoria = BuscarAuditoriaUseCase(AuditoriaRepositoryImpl(db));
   });
@@ -362,7 +381,13 @@ void main() {
       await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 1));
 
       final recarga =
-          (await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 2, 1), importe: 20000))
+          (await registrarRecarga.ejecutar(
+              lineaTelefonicaId: linea.id,
+              fecha: DateTime(2026, 2, 1),
+              importe: 20000,
+              formaPago: FormaPago.efectivo.name,
+        cuentaFinancieraId: _cuentaRecargaDePrueba,
+            ))
               as RegistrarRecargaLineaTelefonicaExitoso;
 
       expect(recarga.recarga.lineaTelefonicaId, linea.id);
@@ -381,11 +406,11 @@ void main() {
       await configurarEquipo.ejecutar(unidadId: unidadMoto.id, imei: '351222222222222');
 
       await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidadPoco.id, fechaInicio: DateTime(2026, 1, 1));
-      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 2, 1), importe: 15000);
-      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 3, 1), importe: 10000);
+      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 2, 1), importe: 15000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
+      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 3, 1), importe: 10000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
 
       await cambiarEquipo.ejecutar(lineaTelefonicaId: linea.id, nuevaUnidadId: unidadMoto.id, fecha: DateTime(2026, 6, 1));
-      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 7, 1), importe: 20000);
+      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 7, 1), importe: 20000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
 
       final historiaPoco = await obtenerHistoria.ejecutar(unidadPoco.id);
       expect(historiaPoco.periodosLinea, hasLength(1));
@@ -419,7 +444,7 @@ void main() {
       final unidad = await crearUnidadDePrueba(articulo.id);
       await configurarEquipo.ejecutar(unidadId: unidad.id, imei: '351234567890123');
       await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 1));
-      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 2, 1), importe: 15000);
+      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 2, 1), importe: 15000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
 
       await registrarBajaUnidad.ejecutar(unidadId: unidad.id, observaciones: 'Equipo destruido');
 

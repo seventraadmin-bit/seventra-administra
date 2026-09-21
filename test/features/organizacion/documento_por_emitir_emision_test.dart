@@ -116,9 +116,10 @@ void main() {
     documentoRepo = DocumentoPorEmitirRepositoryImpl(db, AttachmentRepository(db), CuentaPorCobrarRepositoryImpl(db));
     final comercialRepo = ServicioComercialRepositoryImpl(db);
     final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
+    final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
-    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigo);
+    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigo);
     registrarEmision = RegistrarEmisionDocumentoPorEmitirUseCase(documentoRepo);
     corregirDatosEmision = CorregirDatosEmisionDocumentoPorEmitirUseCase(documentoRepo);
     registrarEnvio = RegistrarEnvioDocumentoPorEmitirUseCase(documentoRepo);

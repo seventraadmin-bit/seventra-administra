@@ -7,10 +7,12 @@ part of 'servicios_list_controller.dart';
 // **************************************************************************
 
 String _$serviciosListControllerHash() =>
-    r'09f56644d86f5ff09f7a111cd3890c168acac33c';
+    r'd9179d02537974049a55de2de760f0459b3f83b3';
 
 /// Controlador del listado de Servicios — mismo shape que
-/// `ClientesListController`.
+/// `ClientesListController`, más Personal asignado y Modalidad de
+/// turno por Servicio (Etapa 16), ambos agregados en memoria sobre
+/// listados completos ya cargados en una sola consulta cada uno.
 ///
 /// Copied from [ServiciosListController].
 @ProviderFor(ServiciosListController)

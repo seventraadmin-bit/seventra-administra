@@ -1,3 +1,4 @@
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 
@@ -24,6 +25,11 @@ class AsignarEntidadFiscalAServicioNoPerteneceAlCliente extends AsignarEntidadFi
 /// `ServicioExpedienteData.entidadFiscalArchivada`).
 class AsignarEntidadFiscalAServicioNoDisponible extends AsignarEntidadFiscalAServicioResultado {}
 
+/// Cambiar o retirar una Entidad fiscal YA asignada puede mover a quién
+/// se le factura: exige explicar por qué. La PRIMERA asignación no —
+/// es parte de la configuración inicial normal del Servicio.
+class AsignarEntidadFiscalAServicioMotivoRequerido extends AsignarEntidadFiscalAServicioResultado {}
+
 class AsignarEntidadFiscalAServicioErrorInesperado extends AsignarEntidadFiscalAServicioResultado {
   AsignarEntidadFiscalAServicioErrorInesperado(this.mensaje);
   final String mensaje;
@@ -42,25 +48,41 @@ class AsignarEntidadFiscalAServicioUseCase {
   final ServicioRepository _servicioRepository;
   final EntidadFiscalRepository _entidadFiscalRepository;
 
+  /// [motivo] sólo es obligatorio cuando ya había una Entidad fiscal
+  /// asignada y ésta cambia o se retira — ver
+  /// [exigeMotivoAsignacionEntidadFiscal].
   Future<AsignarEntidadFiscalAServicioResultado> ejecutar({
     required String servicioId,
     required String? entidadFiscalId,
+    String? motivo,
+    String? actorUsuarioId,
   }) async {
+    final servicioActual = await _servicioRepository.obtenerPorId(servicioId);
+    if (servicioActual == null) {
+      return AsignarEntidadFiscalAServicioErrorInesperado('Servicio no encontrado: $servicioId');
+    }
+
+    final exigeMotivo = exigeMotivoAsignacionEntidadFiscal(
+      anterior: servicioActual.entidadFiscalId,
+      nueva: entidadFiscalId,
+    );
+    if (exigeMotivo && !motivoEsValido(motivo)) {
+      return AsignarEntidadFiscalAServicioMotivoRequerido();
+    }
+    final motivoNormalizado = exigeMotivo ? motivo!.trim() : null;
+
     if (entidadFiscalId == null) {
       try {
         final servicio = await _servicioRepository.asignarEntidadFiscal(
           servicioId: servicioId,
           entidadFiscalId: null,
+          motivo: motivoNormalizado,
+          actorUsuarioId: actorUsuarioId,
         );
         return AsignarEntidadFiscalAServicioExitoso(servicio);
       } catch (e) {
         return AsignarEntidadFiscalAServicioErrorInesperado(e.toString());
       }
-    }
-
-    final servicioActual = await _servicioRepository.obtenerPorId(servicioId);
-    if (servicioActual == null) {
-      return AsignarEntidadFiscalAServicioErrorInesperado('Servicio no encontrado: $servicioId');
     }
 
     final entidad = await _entidadFiscalRepository.obtenerPorId(entidadFiscalId);
@@ -75,10 +97,23 @@ class AsignarEntidadFiscalAServicioUseCase {
       final servicio = await _servicioRepository.asignarEntidadFiscal(
         servicioId: servicioId,
         entidadFiscalId: entidadFiscalId,
+        motivo: motivoNormalizado,
+        actorUsuarioId: actorUsuarioId,
       );
       return AsignarEntidadFiscalAServicioExitoso(servicio);
     } catch (e) {
       return AsignarEntidadFiscalAServicioErrorInesperado(e.toString());
     }
   }
+}
+
+/// Única definición de cuándo asignar una Entidad fiscal exige
+/// motivo: sólo si YA había una y el destino es distinto (cambio
+/// A→B o retiro A→null). La primera asignación (null→A) y un
+/// reasignar el mismo valor no lo exigen. La pantalla consulta esta
+/// función para saber si abrir el diálogo de motivo; el caso de uso
+/// la vuelve a aplicar como guardia real.
+bool exigeMotivoAsignacionEntidadFiscal({required String? anterior, required String? nueva}) {
+  if (anterior == null) return false;
+  return anterior != nueva;
 }

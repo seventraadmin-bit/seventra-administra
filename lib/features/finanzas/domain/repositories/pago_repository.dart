@@ -24,6 +24,15 @@ abstract interface class PagoRepository {
 
   Future<List<AplicacionPagoData>> listarAplicacionesPorCuenta(String cuentaPorCobrarId);
 
+  /// TODAS las `AplicacionPago` con `estatus == aplicada` (universo
+  /// pequeño esperado, mismo criterio que `CuentaPorCobrarRepository
+  /// .listar()`/`ComplementoPagoRepository.listar()`) — una sola
+  /// consulta para resolver "¿este Pago tiene Complemento pendiente?"
+  /// sobre el listado completo, nunca una consulta por fila
+  /// (`listarAplicacionesPorPago` es la variante N+1 que este método
+  /// evita).
+  Future<List<AplicacionPagoData>> listarTodasLasAplicacionesActivas();
+
   /// Historial administrativo del Pago en sí (registrado/corregido/
   /// cancelado/comprobanteAdjuntado) — el efecto de cada aplicación
   /// sobre una Cuenta específica vive en
@@ -36,13 +45,15 @@ abstract interface class PagoRepository {
   /// (Resolución 8 de Marlon), no una excepción.
   Future<PagoData> crear({
     required String folioPago,
-    required String clienteId,
+    String? clienteId,
+    String? servicioEventualId,
     required int montoTotal,
     required DateTime fechaPago,
     required String formaPago,
     String? referencia,
     String? bancoOrigen,
     String? cuentaBancariaDestino,
+    String? cuentaFinancieraId,
     String? observaciones,
     String? actorUsuarioId,
   });
@@ -70,7 +81,8 @@ abstract interface class PagoRepository {
   /// sobrepago rechazado nunca deje un Pago huérfano sin aplicaciones.
   Future<({PagoData pago, AplicacionPagoData aplicacion})> crearAplicado({
     required String folioPago,
-    required String clienteId,
+    String? clienteId,
+    String? servicioEventualId,
     required int montoTotal,
     required DateTime fechaPago,
     required String formaPago,
@@ -78,14 +90,39 @@ abstract interface class PagoRepository {
     String? referencia,
     String? bancoOrigen,
     String? cuentaBancariaDestino,
+    String? cuentaFinancieraId,
     String? observaciones,
     String? actorUsuarioId,
   });
 
-  /// Corrige metadatos administrativos del Pago — nunca `montoTotal`
-  /// (Resolución de Marlon: un monto incorrecto se cancela y se vuelve
-  /// a capturar, nunca se edita). Registra el evento `corregido` con
-  /// los valores anterior/nuevo.
+  /// Corrige un Pago — metadatos administrativos, y (Etapa 6, reversa
+  /// explícita de la resolución anterior de Marlon) también
+  /// `montoTotal`/`cuentaFinancieraId`/la distribución completa de
+  /// `AplicacionPago`. El llamador (`CorregirPagoUseCase`) ya validó
+  /// cada condición antes de llamar aquí (motivo, Complemento vigente,
+  /// sobrepago, mismo Cliente) — este método solo ejecuta.
+  ///
+  /// [nuevaDistribucion] es el reemplazo COMPLETO de las aplicaciones
+  /// activas de este Pago (nunca un delta): si se provee (incluso como
+  /// lista vacía), primero se cancelan todas las `AplicacionPago`
+  /// activas actuales (reutilizando [cancelarAplicacion] internamente)
+  /// y luego se aplican las nuevas (reutilizando [aplicar]) — nunca se
+  /// reduce/edita una aplicación existente in-place. `null` dejar las
+  /// aplicaciones vigentes intactas (el monto total pudo cambiar sin
+  /// tocar la distribución, dejando `pendientePorAplicar` distinto).
+  ///
+  /// [cuentaFinancieraId]/[limpiarCuentaFinancieraId]: `Pago` no tiene
+  /// columna propia (la cuenta financiera vive únicamente en el
+  /// `Ingreso` automático ligado) — cuando se provee, actualiza
+  /// directamente `Ingreso.cuentaFinancieraId` en la misma transacción.
+  ///
+  /// Sincroniza el `Ingreso` automático ligado (monto/fecha/forma de
+  /// pago/cuenta caja/cuenta financiera) — nunca lo deja desincronizado
+  /// del Pago que le dio origen (hallazgo real de auditoría, Etapa 6).
+  /// Registra `PagoEvento.corregido` (solo campos que cambiaron, más un
+  /// resumen de la distribución si cambió — el detalle completo por
+  /// Cuenta ya vive en `CuentaPorCobrarEvento`, vía `aplicar`/
+  /// `cancelarAplicacion`, nunca duplicado aquí).
   Future<PagoData> corregir({
     required String pagoId,
     DateTime? fechaPago,
@@ -93,7 +130,11 @@ abstract interface class PagoRepository {
     String? referencia,
     String? bancoOrigen,
     String? cuentaBancariaDestino,
+    String? cuentaFinancieraId,
+    bool limpiarCuentaFinancieraId = false,
     String? observaciones,
+    int? montoTotal,
+    List<({String cuentaPorCobrarId, int monto})>? nuevaDistribucion,
     required String motivo,
     String? actorUsuarioId,
   });

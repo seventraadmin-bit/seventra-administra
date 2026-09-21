@@ -1,35 +1,55 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'package:riseg_one/features/finanzas/domain/usecases/cuenta_por_cobrar_antiguedad.dart';
 import 'package:riseg_one/features/finanzas/finanzas_providers.dart';
+import 'package:riseg_one/features/reportes/domain/analitica/obtener_analisis_cobranza_usecase.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../reportes_permisos.dart';
 import '../../reportes_providers.dart';
+import '../reportes_rango_controller.dart';
 import 'reportes_finanzas_state.dart';
 
 part 'reportes_finanzas_controller.g.dart';
 
-/// Controlador de la pestaña Finanzas de Reportes (Etapa 12A).
+/// Controlador de la pestaña Finanzas de Reportes.
 ///
 /// Guardia de permiso real (no solo la pestaña oculta en
 /// `ReportesShellScreen`): si la sesión no tiene `finanzas.ver`, esta
 /// función retorna sin ejecutar ninguna consulta — `state` se queda en
 /// ceros/listas vacías y `sinAutorizacion == true` para que la pantalla
 /// muestre un estado explícito, nunca datos parciales.
+///
+/// Dos universos temporales distintos conviven aquí y la pantalla los
+/// distingue siempre: el **periodo** (operativo, pagos, movimientos de
+/// deuda) y la **fecha de hoy** (cartera, saldos de deuda). Cambiar el
+/// rango recalcula el primero; los segundos no dependen de él.
 @riverpod
 class ReportesFinanzasController extends _$ReportesFinanzasController {
   @override
   ReportesFinanzasState build() {
-    final hoy = DateTime.now();
-    final inicioMes = DateTime(hoy.year, hoy.month, 1);
-    Future.microtask(_cargar);
-    return ReportesFinanzasState(rangoInicio: inicioMes, rangoFin: hoy);
+    final seleccion = ref.watch(reportesRangoControllerProvider);
+    Future.microtask(() => _cargar(seleccion));
+    return ReportesFinanzasState(seleccion: seleccion);
   }
 
   bool get sinAutorizacion => !tienePermisoSeccionReportes(ref.read(permissionServiceProvider), 'finanzas.ver');
 
-  Future<void> _cargar() async {
+  void cambiarSeccion(SeccionFinanzas seccion) => state = state.copyWith(seccion: seccion);
+
+  /// Cambiar un filtro de cartera sólo recarga la cartera: el periodo,
+  /// los pagos y la deuda no dependen de él.
+  Future<void> cambiarFiltroCobranza(FiltroCobranza filtro) async {
+    state = state.copyWith(filtroCobranza: filtro);
+    if (sinAutorizacion) return;
+    try {
+      final cobranza = await ref.read(obtenerAnalisisCobranzaUseCaseProvider).ejecutar(filtro: filtro);
+      state = state.copyWith(cobranza: cobranza, errorCarga: null);
+    } catch (e) {
+      state = state.copyWith(errorCarga: e.toString());
+    }
+  }
+
+  Future<void> _cargar(SeleccionRangoReportes seleccion) async {
     state = state.copyWith(cargando: true, errorCarga: null);
 
     if (sinAutorizacion) {
@@ -38,53 +58,46 @@ class ReportesFinanzasController extends _$ReportesFinanzasController {
     }
 
     try {
-      final rangoInicio = state.rangoInicio;
-      final rangoFin = state.rangoFin;
+      final rango = seleccion.rango;
+      final rangoInicio = rango.inicio;
+      final rangoFin = rango.fin;
 
-      final resumenFinanciero =
-          await ref.read(obtenerResumenFinancieroUseCaseProvider).ejecutar(rangoInicio: rangoInicio, rangoFin: rangoFin);
+      // Fuente única: el mismo caso de uso que alimenta la pestaña
+      // General. Ingresos, gasto operativo, serie y composición salen de
+      // aquí — nunca de una segunda aritmética local.
+      final analisis = await ref.read(obtenerAnalisisOperativoUseCaseProvider).ejecutar(rango: rango);
+      final analisisAnterior = await ref
+          .read(obtenerAnalisisOperativoUseCaseProvider)
+          .ejecutar(rango: rango.anterior, granularidad: analisis.granularidad);
 
-      final pagos = await ref.read(pagoRepositoryProvider).listar(
-            estatus: 'registrado',
-            rangoInicio: rangoInicio,
-            rangoFin: rangoFin,
-          );
-      final totalPagosRecibidos = pagos.fold<int>(0, (s, p) => s + p.montoTotal);
+      // Cartera: foto de hoy, acotada sólo por sus propios filtros.
+      final cobranza =
+          await ref.read(obtenerAnalisisCobranzaUseCaseProvider).ejecutar(filtro: state.filtroCobranza);
 
-      final cuentasPorCobrar = await ref.read(cuentaPorCobrarRepositoryProvider).listar();
-      final cuentasNoPagadas = cuentasPorCobrar.where((c) => c.estatus != 'pagada');
-      final hoy = DateTime.now();
-      final cuentasPorRango = <RangoAntiguedadCuentaPorCobrar, int>{};
-      final montoPorRango = <RangoAntiguedadCuentaPorCobrar, int>{};
-      for (final cuenta in cuentasNoPagadas) {
-        final rango = calcularRangoAntiguedad(cuenta, hoy);
-        cuentasPorRango[rango] = (cuentasPorRango[rango] ?? 0) + 1;
-        montoPorRango[rango] = (montoPorRango[rango] ?? 0) + cuenta.saldoPendiente;
-      }
+      // Pagos y movimientos de deuda: del periodo.
+      final pagos = await ref.read(obtenerAnalisisPagosUseCaseProvider).ejecutar(rango: rango);
+      final deuda = await ref.read(obtenerAnalisisDeudaUseCaseProvider).ejecutar(rango: rango);
 
       final categorias = await ref.read(categoriaFinancieraRepositoryProvider).listar();
       final nombrePorCategoria = {for (final c in categorias) c.id: c.nombre};
-      String nombreCategoria(String? id) =>
-          id == null ? '' : (nombrePorCategoria[id] ?? id);
+      String nombreCategoria(String? id) => id == null ? '' : (nombrePorCategoria[id] ?? id);
 
-      final ingresosPorCategoria = await ref
-          .read(ingresoRepositoryProvider)
-          .totalPorCategoria(rangoInicio: rangoInicio, rangoFin: rangoFin);
-      final egresosPorCategoria = await ref
-          .read(egresoRepositoryProvider)
-          .totalPorCategoria(rangoInicio: rangoInicio, rangoFin: rangoFin);
+      final ingresosPorCategoria =
+          await ref.read(ingresoRepositoryProvider).totalPorCategoria(rangoInicio: rangoInicio, rangoFin: rangoFin);
+      final egresosPorCategoria =
+          await ref.read(egresoRepositoryProvider).totalPorCategoria(rangoInicio: rangoInicio, rangoFin: rangoFin);
 
-      final egresosPorOrigen =
-          await ref.read(clasificarEgresosPorOrigenUseCaseProvider).ejecutar(rangoInicio: rangoInicio, rangoFin: rangoFin);
+      final egresosPorOrigen = await ref
+          .read(clasificarEgresosPorOrigenUseCaseProvider)
+          .ejecutar(rangoInicio: rangoInicio, rangoFin: rangoFin);
 
       state = state.copyWith(
         cargando: false,
-        totalIngresos: resumenFinanciero.totalIngresos,
-        totalEgresos: resumenFinanciero.totalEgresos,
-        resultadoOperativo: resumenFinanciero.resultadoOperativo,
-        totalPagosRecibidos: totalPagosRecibidos,
-        cuentasPorCobrarPorRango: cuentasPorRango,
-        montoPorCobrarPorRango: montoPorRango,
+        analisis: analisis,
+        analisisAnterior: analisisAnterior,
+        cobranza: cobranza,
+        pagos: pagos,
+        deuda: deuda,
         ingresosPorCategoria: [
           for (final entrada in ingresosPorCategoria.entries)
             TotalPorCategoria(
@@ -111,8 +124,5 @@ class ReportesFinanzasController extends _$ReportesFinanzasController {
 
   static const _sinCategoria = '—';
 
-  Future<void> cambiarRango({DateTime? rangoInicio, DateTime? rangoFin}) async {
-    state = state.copyWith(rangoInicio: rangoInicio, rangoFin: rangoFin);
-    await _cargar();
-  }
+  Future<void> recargar() => _cargar(state.seleccion);
 }

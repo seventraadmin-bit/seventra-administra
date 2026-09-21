@@ -42,6 +42,7 @@ class RegistrarPagoUseCase {
     String? referencia,
     String? bancoOrigen,
     String? cuentaBancariaDestino,
+    String? cuentaFinancieraId,
     String? observaciones,
     String? actorUsuarioId,
   }) async {
@@ -66,6 +67,7 @@ class RegistrarPagoUseCase {
         referencia: referencia,
         bancoOrigen: bancoOrigen,
         cuentaBancariaDestino: cuentaBancariaDestino,
+        cuentaFinancieraId: cuentaFinancieraId,
         observaciones: observaciones,
         actorUsuarioId: actorUsuarioId,
       );

@@ -5,7 +5,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/attachment_table.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/finanzas/presentation/cuentas_por_cobrar/cuentas_por_cobrar_controller.dart';
+import 'package:riseg_one/features/finanzas/presentation/planeacion/planeacion_financiera_controller.dart';
+import 'package:riseg_one/features/finanzas/presentation/resumen/resumen_financiero_controller.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
@@ -92,7 +95,7 @@ class AgendaController extends _$AgendaController {
     // autorizado", mismo criterio que `ArchivarContactoUseCase`.
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.crear',
+      'agendaComercial.crear',
       () => ref.read(generarAgendaUseCaseProvider).ejecutar(
             rangoInicio: state.rangoInicio,
             rangoFin: state.rangoFin,
@@ -119,7 +122,7 @@ class AgendaController extends _$AgendaController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.crear',
+      'agendaComercial.crear',
       () => ref.read(crearDocumentoManualUseCaseProvider).ejecutar(
             clienteId: clienteId,
             servicioIds: servicioIds,
@@ -144,7 +147,7 @@ class AgendaController extends _$AgendaController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'agendaComercial.corregir',
       () => ref.read(cambiarEstatusDocumentoPorEmitirUseCaseProvider).ejecutar(
             documentoPorEmitirId: documentoPorEmitirId,
             nuevo: nuevo,
@@ -164,6 +167,16 @@ class AgendaController extends _$AgendaController {
       // limita a este caso — nunca una recarga global.
       if (nuevo == EstatusDocumentoPorEmitir.procesadoAceptado) {
         ref.invalidate(cuentasPorCobrarControllerProvider);
+        // Etapa 19C/19D: la CxC nueva también cambia "Por cobrar"/
+        // "Próximos compromisos" del Resumen financiero y el
+        // calendario de Planeación — mismos providers ajenos, mismo
+        // criterio.
+        ref.invalidate(resumenFinancieroControllerProvider);
+        ref.invalidate(planeacionFinancieraControllerProvider);
+        // Etapa 20 (hueco real encontrado): el Dashboard lee la misma
+        // CuentaPorCobrar para Cobranza/"Requiere atención" — sin esto
+        // quedaba stale hasta un cambio de pestaña ajeno.
+        ref.invalidate(dashboardControllerProvider);
       }
     }
     return resultado;
@@ -176,7 +189,7 @@ class AgendaController extends _$AgendaController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'agendaComercial.corregir',
       () => ref.read(actualizarAjusteManualDocumentoPorEmitirUseCaseProvider).ejecutar(
             documentoPorEmitirId: documentoPorEmitirId,
             ajusteManual: ajusteManual,
@@ -204,7 +217,7 @@ class AgendaController extends _$AgendaController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'agendaComercial.corregir',
       () => ref.read(registrarEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
             documentoPorEmitirId: documentoPorEmitirId,
             folioDocumento: folioDocumento,
@@ -232,7 +245,7 @@ class AgendaController extends _$AgendaController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'agendaComercial.corregir',
       () => ref.read(corregirDatosEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
             documentoPorEmitirId: documentoPorEmitirId,
             motivo: motivo,
@@ -258,7 +271,7 @@ class AgendaController extends _$AgendaController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'agendaComercial.corregir',
       () => ref.read(registrarEnvioDocumentoPorEmitirUseCaseProvider).ejecutar(
             documentoPorEmitirId: documentoPorEmitirId,
             fechaEnvio: fechaEnvio,
@@ -295,7 +308,7 @@ class AgendaController extends _$AgendaController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'agendaComercial.corregir',
       () => ref.read(adjuntarArchivoDocumentoPorEmitirUseCaseProvider).ejecutar(
             documentoPorEmitirId: documentoPorEmitirId,
             categoria: categoria,
@@ -322,7 +335,7 @@ class AgendaController extends _$AgendaController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'agendaComercial.corregir',
       () => ref.read(reemplazarArchivoDocumentoPorEmitirUseCaseProvider).ejecutar(
             documentoPorEmitirId: documentoPorEmitirId,
             attachmentAnteriorId: attachmentAnteriorId,

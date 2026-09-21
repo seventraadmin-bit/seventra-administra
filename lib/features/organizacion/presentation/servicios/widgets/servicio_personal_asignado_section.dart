@@ -41,7 +41,10 @@ class ServicioPersonalAsignadoSection extends StatelessWidget {
             RisegFieldGrid(
               children: [
                 for (final p in personalVigente)
-                  Text('${p.empleado.nombres} ${p.empleado.apellidoPaterno} — ${l10n.servicioPersonalAsignadoDesde(_formatoFecha.format(p.asignacion.fechaInicio))}'),
+                  Text(
+                    '${p.empleado.nombres} ${p.empleado.apellidoPaterno} — ${l10n.servicioPersonalAsignadoDesde(_formatoFecha.format(p.asignacion.fechaInicio))}'
+                    '${p.asignacion.lineaComercialId == null ? ' · ${l10n.servicioPersonalAsignadoSinPerfil}' : ''}',
+                  ),
               ],
             ),
           if (historialCerrado.isNotEmpty) ...[

@@ -7,7 +7,7 @@ part of 'reportes_controller.dart';
 // **************************************************************************
 
 String _$reportesControllerHash() =>
-    r'821de487c4eaef37924c33699021c74e63cb2fe0';
+    r'716afae429e991afc8c55e8706c589837971746e';
 
 /// Controlador de Reportes (Etapa 7D) — cada sección es una consulta
 /// derivada de los repositorios ya existentes, recalculada al cargar;

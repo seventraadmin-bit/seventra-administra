@@ -20,12 +20,25 @@ abstract interface class UsuarioRepository {
 
   Future<List<UsuarioEventoData>> listarEventos(String usuarioId);
 
+  /// Alta ATÓMICA de una cuenta (Etapa "Usuarios, permisos y UX de
+  /// seguridad"): la fila `Usuario`, sus [permisosIniciales] y el evento
+  /// de auditoría se escriben en UNA sola transacción, o no se escribe
+  /// nada. Antes eran dos operaciones separadas —crear la cuenta y
+  /// después, desde otro diálogo, guardarle permisos— con una ventana
+  /// real en la que quedaba una cuenta sin ningún permiso.
+  ///
+  /// [permisosIniciales] se ignora cuando `esMaestro` es `true`: el
+  /// Maestro nunca tiene filas en `PermisoUsuario` (su acceso se
+  /// recalcula en vivo desde el catálogo).
   Future<UsuarioData> crear({
     required String nombre,
     required String nombreUsuario,
     required String passwordHash,
     String? puestoId,
+    String? empleadoId,
     bool esMaestro = false,
+    bool debeCambiarPassword = false,
+    Set<String> permisosIniciales = const {},
     String? actorUsuarioId,
   });
 
@@ -39,10 +52,15 @@ abstract interface class UsuarioRepository {
     String? motivo,
   });
 
+  /// [exigirCambio] deja la cuenta obligada a cambiar la contraseña en
+  /// su siguiente acceso. Es `true` cuando alguien MÁS la fija (un
+  /// reseteo administrativo: la conoce otra persona) y `false` cuando la
+  /// cambia el propio titular.
   Future<UsuarioData> cambiarContrasena({
     required String usuarioId,
     required String passwordHash,
     String? actorUsuarioId,
+    bool exigirCambio = false,
   });
 
   Future<UsuarioData> activar({required String usuarioId, String? actorUsuarioId});

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/finanzas/data/tables/ingreso_table.dart';
 import 'package:uuid/uuid.dart';
@@ -63,6 +64,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
     String? sucursalId,
     String? areaId,
     String? cuentaCaja,
+    String? cuentaFinancieraId,
     required String formaPago,
     required String concepto,
     String? observaciones,
@@ -80,6 +82,7 @@ class IngresoRepositoryImpl implements IngresoRepository {
               sucursalId: Value(sucursalId),
               areaId: Value(areaId),
               cuentaCaja: Value(cuentaCaja),
+              cuentaFinancieraId: Value(cuentaFinancieraId),
               formaPago: formaPago,
               concepto: concepto,
               observaciones: Value(observaciones),
@@ -102,12 +105,15 @@ class IngresoRepositoryImpl implements IngresoRepository {
   @override
   Future<IngresoData> corregir({
     required String ingresoId,
+    int? monto,
     DateTime? fecha,
     String? categoriaFinancieraId,
     String? servicioId,
     String? sucursalId,
     String? areaId,
     String? cuentaCaja,
+    String? cuentaFinancieraId,
+    bool limpiarCuentaFinancieraId = false,
     String? formaPago,
     String? concepto,
     String? observaciones,
@@ -119,12 +125,15 @@ class IngresoRepositoryImpl implements IngresoRepository {
 
       await (_db.update(_db.ingreso)..where((t) => t.id.equals(ingresoId))).write(
         IngresoCompanion(
+          monto: monto == null ? const Value.absent() : Value(monto),
           fecha: fecha == null ? const Value.absent() : Value(fecha),
           categoriaFinancieraId: categoriaFinancieraId == null ? const Value.absent() : Value(categoriaFinancieraId),
           servicioId: servicioId == null ? const Value.absent() : Value(servicioId),
           sucursalId: sucursalId == null ? const Value.absent() : Value(sucursalId),
           areaId: areaId == null ? const Value.absent() : Value(areaId),
           cuentaCaja: cuentaCaja == null ? const Value.absent() : Value(cuentaCaja),
+          cuentaFinancieraId:
+              limpiarCuentaFinancieraId ? const Value(null) : (cuentaFinancieraId == null ? const Value.absent() : Value(cuentaFinancieraId)),
           formaPago: formaPago == null ? const Value.absent() : Value(formaPago),
           concepto: concepto == null ? const Value.absent() : Value(concepto),
           observaciones: observaciones == null ? const Value.absent() : Value(observaciones),
@@ -132,17 +141,28 @@ class IngresoRepositoryImpl implements IngresoRepository {
         ),
       );
 
+      final diff = DiffEvento();
+      if (monto != null) diff.anotar('monto', anterior.monto, monto);
+      if (fecha != null) diff.anotar('fecha', anterior.fecha, fecha);
+      if (categoriaFinancieraId != null) diff.anotar('categoriaFinancieraId', anterior.categoriaFinancieraId, categoriaFinancieraId);
+      if (servicioId != null) diff.anotar('servicioId', anterior.servicioId, servicioId);
+      if (sucursalId != null) diff.anotar('sucursalId', anterior.sucursalId, sucursalId);
+      if (areaId != null) diff.anotar('areaId', anterior.areaId, areaId);
+      if (cuentaCaja != null) diff.anotar('cuentaCaja', anterior.cuentaCaja, cuentaCaja);
+      if (limpiarCuentaFinancieraId || cuentaFinancieraId != null) {
+        diff.anotar('cuentaFinancieraId', anterior.cuentaFinancieraId, limpiarCuentaFinancieraId ? null : cuentaFinancieraId);
+      }
+      if (formaPago != null) diff.anotar('formaPago', anterior.formaPago, formaPago);
+      if (concepto != null) diff.anotar('concepto', anterior.concepto, concepto);
+      if (observaciones != null) diff.anotar('observaciones', anterior.observaciones, observaciones);
+
       await _registrarEvento(
         ingresoId: ingresoId,
         tipoEvento: TipoEventoIngreso.corregido,
-        estadoAnterior: anterior.estatus,
-        estadoNuevo: anterior.estatus,
+        estadoAnterior: diff.estadoAnteriorJson,
+        estadoNuevo: diff.estadoNuevoJson,
         observacion: motivo,
         actorUsuarioId: actorUsuarioId,
-        datosRelevantes: {
-          'fechaAnterior': anterior.fecha.toIso8601String(),
-          'conceptoAnterior': anterior.concepto,
-        },
       );
 
       return (_db.select(_db.ingreso)..where((t) => t.id.equals(ingresoId))).getSingle();

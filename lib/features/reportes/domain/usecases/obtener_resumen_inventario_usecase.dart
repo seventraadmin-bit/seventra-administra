@@ -1,6 +1,7 @@
 import 'package:riseg_one/features/inventario/domain/repositories/articulo_repository.dart';
 import 'package:riseg_one/features/inventario/domain/repositories/asignacion_repository.dart';
 import 'package:riseg_one/features/inventario/domain/repositories/inventario_repository.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/existencia_articulo.dart';
 
 /// Resumen de Inventario para el bloque "Operación" de Reportes (Etapa
 /// 12C) — un resumen compacto que reutiliza exactamente las mismas
@@ -17,6 +18,7 @@ class ResumenInventarioReportes {
     required this.movimientosEnPeriodo,
     required this.valorAproximado,
     required this.articulosConValorExcluido,
+    this.unidadesPorEstatus = const {},
   });
 
   /// Snapshot — suma de existencia (disponible+asignado+dañado+perdido)
@@ -39,6 +41,17 @@ class ResumenInventarioReportes {
   /// salvedad.
   final int valorAproximado;
   final int articulosConValorExcluido;
+
+  /// Snapshot de unidades serializadas por estatus — incluye los
+  /// estados físicos intermedios (`enLavanderia`, `enReparacion`,
+  /// `pendienteDesecho`) que existen desde que recuperar un bien dejó
+  /// de significar automáticamente que está disponible. Sin esto,
+  /// Reportes mostraría como "en existencia" prendas que en realidad
+  /// están en la tintorería.
+  ///
+  /// Llave: nombre del `EstatusArticuloUnidad`. Los estatus sin
+  /// unidades no aparecen.
+  final Map<String, int> unidadesPorEstatus;
 }
 
 class ObtenerResumenInventarioUseCase {
@@ -51,21 +64,30 @@ class ObtenerResumenInventarioUseCase {
   Future<ResumenInventarioReportes> ejecutar({DateTime? rangoInicio, DateTime? rangoFin}) async {
     final articulos = await _articuloRepository.listar(soloActivos: false);
 
+    // Dos lecturas en lote en vez de dos consultas POR ARTÍCULO: el
+    // número de consultas ya no depende de cuántos artículos haya.
+    // Las cifras son idénticas — ambas rutas pliegan con las mismas
+    // funciones de dominio.
+    final existencias = await _inventarioRepository.calcularExistenciaPorArticulos(articulos);
+    final costos = await _inventarioRepository.calcularCostoPromedioPorArticulo(
+      // Los artículos con variante nunca se valúan a nivel de artículo
+      // (su costo vive por talla): se excluyen antes de preguntar.
+      [for (final a in articulos) if (!a.manejaVariante) a.id],
+    );
+
     var existenciaTotal = 0;
     var valorAproximado = 0;
     var articulosConValorExcluido = 0;
 
     for (final articulo in articulos) {
-      final existencia = articulo.manejaSerie
-          ? await _inventarioRepository.calcularExistenciaUnidades(articulo.id)
-          : await _inventarioRepository.calcularExistencia(articuloId: articulo.id);
+      final existencia = existencias[articulo.id] ?? const ExistenciaArticulo(disponible: 0);
       existenciaTotal += existencia.total;
 
       if (articulo.manejaVariante) {
         articulosConValorExcluido++;
         continue;
       }
-      final costoPromedio = await _inventarioRepository.calcularCostoPromedio(articuloId: articulo.id);
+      final costoPromedio = costos[articulo.id];
       if (costoPromedio == null) {
         articulosConValorExcluido++;
         continue;
@@ -77,6 +99,8 @@ class ObtenerResumenInventarioUseCase {
     final danadosPerdidos = await _asignacionRepository.listarDanadasPerdidas();
     final descuentosPendientes = await _asignacionRepository.listarTodosDescuentosPendientes();
     final movimientosEnPeriodo = await _inventarioRepository.totalMovimientosEnRango(desde: rangoInicio, hasta: rangoFin);
+    // Una sola consulta agregada, nunca una por artículo.
+    final unidadesPorEstatus = await _inventarioRepository.contarUnidadesPorEstatus();
 
     return ResumenInventarioReportes(
       existenciaTotal: existenciaTotal,
@@ -86,6 +110,7 @@ class ObtenerResumenInventarioUseCase {
       movimientosEnPeriodo: movimientosEnPeriodo,
       valorAproximado: valorAproximado,
       articulosConValorExcluido: articulosConValorExcluido,
+      unidadesPorEstatus: unidadesPorEstatus,
     );
   }
 }

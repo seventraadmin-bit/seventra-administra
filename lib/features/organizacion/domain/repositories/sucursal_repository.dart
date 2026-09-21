@@ -25,6 +25,12 @@ abstract interface class SucursalRepository {
 
   Future<List<SucursalData>> listarActivas();
 
+  /// Incluye las archivadas. Un listado de personal tiene que poder
+  /// nombrar la Sucursal a la que alguien sigue adscrito aunque esa
+  /// Sucursal se haya archivado después: mostrar un guion ahí parecería
+  /// que la persona no tiene destino. Sólo lectura.
+  Future<List<SucursalData>> listarTodas();
+
   /// Cambia únicamente `estadoOperativo` — una transición de negocio
   /// explícita (acción de botón con confirmación en la UI), no un campo
   /// más del formulario de edición.
@@ -34,6 +40,13 @@ abstract interface class SucursalRepository {
   /// Sucursal, si existe y sigue activa. Una fila archivada equivale a
   /// "sin dirección".
   Future<DireccionData?> obtenerDireccionPrincipal(String sucursalId);
+
+  /// Versión en lote de [obtenerDireccionPrincipal] (Etapa 16, tercera
+  /// pasada visual) — una sola consulta `WHERE sucursal_id IN (...)`
+  /// para resolver "municipio, estado" de todas las Sucursales del
+  /// listado de una vez, nunca una consulta por tarjeta. `ids` vacío
+  /// devuelve `{}` sin tocar la base de datos.
+  Future<Map<String, DireccionData>> listarDireccionesPrincipales(List<String> sucursalIds);
 
   /// Los 7 renglones de [HorarioDetalleData] (uno por día, lunes a
   /// domingo) del `Horario` activo de esta Sucursal, o `null` si no se ha

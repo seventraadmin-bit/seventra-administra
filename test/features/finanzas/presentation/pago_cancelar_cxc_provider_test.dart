@@ -85,8 +85,8 @@ void main() {
         );
     final cuenta = await db.into(db.cuentaPorCobrar).insertReturning(
           CuentaPorCobrarCompanion.insert(
-            documentoPorEmitirId: documento.id,
-            clienteId: cliente.id,
+            documentoPorEmitirId: Value(documento.id),
+            clienteId: Value(cliente.id),
             tipoDocumento: 'reciboDePago',
             metodo: 'noAplica',
             fechaEmisionReal: DateTime(2026, 1, 5),

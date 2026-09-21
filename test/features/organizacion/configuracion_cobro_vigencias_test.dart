@@ -262,6 +262,7 @@ void main() {
       final resultado = await cerrarConfiguracionCobro.ejecutar(
         configuracionCobroId: configuracionCobroId,
         fechaEfectiva: hoy,
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CerrarConfiguracionCobroExitoso>());
@@ -298,6 +299,7 @@ void main() {
       final resultado = await cerrarConfiguracionCobro.ejecutar(
         configuracionCobroId: configuracionCobroId,
         fechaEfectiva: hoy,
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CerrarConfiguracionCobroTieneVigenciaProgramada>());
@@ -307,7 +309,7 @@ void main() {
       final cliente = await crearClienteDePrueba();
       final servicio = await crearServicioDePrueba(cliente.id);
       final configuracionCobroId = await crearConfiguracionCobroDePrueba(servicio.id);
-      await cerrarConfiguracionCobro.ejecutar(configuracionCobroId: configuracionCobroId, fechaEfectiva: hoy);
+      await cerrarConfiguracionCobro.ejecutar(configuracionCobroId: configuracionCobroId, fechaEfectiva: hoy, motivo: 'Motivo de prueba');
 
       // El cierre de arriba solo se refleja "sin condición vigente" a
       // partir del día siguiente (fechaFinVigencia es inclusiva).
@@ -316,6 +318,7 @@ void main() {
       final resultado = await cerrarManana.ejecutar(
         configuracionCobroId: configuracionCobroId,
         fechaEfectiva: manana,
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CerrarConfiguracionCobroSinCondicionVigente>());
@@ -341,7 +344,7 @@ void main() {
       );
       final programadaId = (creada as CambiarVigenciaConfiguracionCobroExitoso).vigencia.id;
 
-      final resultado = await cancelarProgramada.ejecutar(vigenciaId: programadaId);
+      final resultado = await cancelarProgramada.ejecutar(vigenciaId: programadaId, motivo: 'Motivo de prueba');
       expect(resultado, isA<CancelarVigenciaProgramadaConfiguracionCobroExitoso>());
 
       final configuracion = await configuracionCobroRepo.obtenerConfiguracion(servicio.id);
@@ -356,7 +359,7 @@ void main() {
       await crearConfiguracionCobroDePrueba(servicio.id);
       final configuracion = await configuracionCobroRepo.obtenerConfiguracion(servicio.id);
 
-      final resultado = await cancelarProgramada.ejecutar(vigenciaId: configuracion!.vigenciaActual!.id);
+      final resultado = await cancelarProgramada.ejecutar(vigenciaId: configuracion!.vigenciaActual!.id, motivo: 'Motivo de prueba');
 
       expect(resultado, isA<CancelarVigenciaProgramadaConfiguracionCobroNoEsProgramada>());
     });
@@ -388,7 +391,7 @@ void main() {
       final cliente = await crearClienteDePrueba();
       final servicio = await crearServicioDePrueba(cliente.id);
       final configuracionCobroId = await crearConfiguracionCobroDePrueba(servicio.id);
-      await cerrarConfiguracionCobro.ejecutar(configuracionCobroId: configuracionCobroId, fechaEfectiva: DateTime(2026, 2, 1));
+      await cerrarConfiguracionCobro.ejecutar(configuracionCobroId: configuracionCobroId, fechaEfectiva: DateTime(2026, 2, 1), motivo: 'Motivo de prueba');
 
       final historial = await obtenerHistorial.ejecutar(configuracionCobroId);
       final historica = historial.single;
@@ -446,7 +449,7 @@ void main() {
         ),
       );
       final aCancelarId = (creadaParaCancelar as CambiarVigenciaConfiguracionCobroExitoso).vigencia.id;
-      await cancelarProgramada.ejecutar(vigenciaId: aCancelarId);
+      await cancelarProgramada.ejecutar(vigenciaId: aCancelarId, motivo: 'Motivo de prueba');
 
       final historial = await obtenerHistorial.ejecutar(configuracionCobroId);
       final estados = historial.map((h) => h.estado).toSet();

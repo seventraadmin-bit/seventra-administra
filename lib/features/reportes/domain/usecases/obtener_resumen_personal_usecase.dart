@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/personal/domain/usecases/obtener_plantilla_personal_usecase.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/repositories/asignacion_servicio_repository.dart';
 import 'package:riseg_one/features/personal/domain/repositories/empleado_repository.dart';
@@ -86,10 +87,15 @@ class ResumenPersonalReportes {
 /// completo de múltiples reingresos dentro de una sola consulta de
 /// rango — aceptado deliberadamente dado el tamaño real de RISEG.
 class ObtenerResumenPersonalUseCase {
-  ObtenerResumenPersonalUseCase(this._empleadoRepository, this._asignacionServicioRepository);
+  ObtenerResumenPersonalUseCase(
+    this._empleadoRepository,
+    this._asignacionServicioRepository,
+    this._obtenerPlantillaPersonal,
+  );
 
   final EmpleadoRepository _empleadoRepository;
   final AsignacionServicioRepository _asignacionServicioRepository;
+  final ObtenerPlantillaPersonalUseCase _obtenerPlantillaPersonal;
 
   static const _diasVentanaAniversario = 30;
 
@@ -105,17 +111,24 @@ class ObtenerResumenPersonalUseCase {
 
     final servicioIdPorEmpleado = {for (final a in asignacionesActivas) a.empleadoId: a.servicioId};
 
-    var administrativos = 0;
+    // BUG REAL corregido (Etapa "Plantilla operativa vs.
+    // administrativa"): antes se contaba como ADMINISTRATIVO a todo el
+    // que no tuviera Servicio, sin mirar nunca `sucursalId`. Un
+    // empleado sin ningún destino se volvía administrativo en silencio,
+    // y el conteo no coincidía con el del Dashboard, que al mismo
+    // empleado lo llamaba "sin asignar". Ahora ambos consumen la misma
+    // fuente de verdad y no puede haber dos respuestas.
+    final plantilla = await _obtenerPlantillaPersonal.ejecutar();
+    final administrativos = plantilla.administrativa.activos;
+    final operativos = plantilla.operativa.activos;
+
     final personalPorServicio = <String, int>{};
     for (final empleado in activos) {
       final servicioId = servicioIdPorEmpleado[empleado.id];
-      if (servicioId == null) {
-        administrativos++;
-      } else {
+      if (servicioId != null) {
         personalPorServicio[servicioId] = (personalPorServicio[servicioId] ?? 0) + 1;
       }
     }
-    final operativos = activos.length - administrativos;
 
     final enRango = _enRango(rangoInicio, rangoFin);
 

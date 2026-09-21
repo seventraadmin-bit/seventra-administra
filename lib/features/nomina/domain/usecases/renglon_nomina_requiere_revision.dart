@@ -14,5 +14,14 @@ bool renglonNominaTieneMovimientosManuales(NominaEmpleadoData renglon) {
       renglon.otrosDescuentos != 0 ||
       (renglon.observaciones != null && renglon.observaciones!.trim().isNotEmpty) ||
       renglon.bonoModificadoManualmente ||
-      renglon.distribucionModificadaManualmente;
+      renglon.distribucionModificadaManualmente ||
+      // No son "manuales", pero sí dejan una fila que `eliminarRenglon`
+      // (`DELETE FROM nomina_empleado`) no podría borrar de todas
+      // formas: `DescuentoInventario.nominaEmpleadoId`/
+      // `DescuentoProgramadoCuota.nominaEmpleadoId` son `restrict` — un
+      // renglón con algo aplicado/reservado debe conservarse (con
+      // `diasPagables == 0` como señal de revisión) en vez de intentar
+      // un `DELETE` que fallaría por la FK (Etapa 15).
+      renglon.descuentosInventario != 0 ||
+      renglon.descuentosProgramados != 0;
 }

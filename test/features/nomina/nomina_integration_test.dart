@@ -2,17 +2,23 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
+import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/descuentos_personal/data/repositories/descuento_programado_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/repositories/nomina_repository_impl.dart';
+import 'package:riseg_one/features/nomina/data/repositories/pago_nomina_repository_impl.dart';
+import 'package:riseg_one/features/tiempos_extra/data/repositories/tiempo_extra_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/tables/nomina_table.dart';
-import 'package:riseg_one/features/nomina/domain/usecases/actualizar_distribucion_nomina_usecase.dart';
-import 'package:riseg_one/features/nomina/domain/usecases/actualizar_movimientos_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/actualizar_nomina_desde_personal_usecase.dart';
+import 'package:riseg_one/features/nomina/domain/usecases/actualizar_renglon_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/calcular_periodo_nomina.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/cerrar_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/evaluar_renglones_requieren_revision_usecase.dart';
@@ -59,8 +65,7 @@ void main() {
 
   late GenerarNominaUseCase generarNomina;
   late ActualizarNominaDesdePersonalUseCase actualizarDesdePersonal;
-  late ActualizarMovimientosNominaUseCase actualizarMovimientos;
-  late ActualizarDistribucionNominaUseCase actualizarDistribucion;
+  late ActualizarRenglonNominaUseCase actualizarRenglon;
   late CerrarNominaUseCase cerrarNomina;
   late NominaRepositoryImpl nominaRepo;
 
@@ -83,19 +88,18 @@ void main() {
     crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, empleadoValidator, servicioRepo, comercialRepo);
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);
-    registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator);
+    registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator, AsignacionRepositoryImpl(db), AsignacionVehiculoRepositoryImpl(db));
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, empleadoValidator);
     asignarEmpleadoServicio =
         AsignarEmpleadoServicioUseCase(empleadoRepo, asignacionRepo, servicioRepo, comercialRepo, asignacionValidator);
     cambiarServicioEmpleado =
         CambiarServicioEmpleadoUseCase(empleadoRepo, asignacionRepo, servicioRepo, comercialRepo, asignacionValidator);
 
-    nominaRepo = NominaRepositoryImpl(db);
+    nominaRepo = NominaRepositoryImpl(db, AsignacionRepositoryImpl(db), DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db)), TiempoExtraRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db), EmpleadoRepositoryImpl(db, AsignacionServicioRepositoryImpl(db)), ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db))), PagoNominaRepositoryImpl(db, EgresoRepositoryImpl(db), DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db))));
     final resolverSueldo = ResolverSueldoEmpleadoNomina(empleadoRepo, asignacionRepo, servicioRepo, catalogoRepo);
     generarNomina = GenerarNominaUseCase(nominaRepo, empleadoRepo, puestoRepo, catalogoRepo, resolverSueldo, generarCodigo);
     actualizarDesdePersonal = ActualizarNominaDesdePersonalUseCase(nominaRepo, empleadoRepo, puestoRepo, catalogoRepo, resolverSueldo);
-    actualizarMovimientos = ActualizarMovimientosNominaUseCase(nominaRepo);
-    actualizarDistribucion = ActualizarDistribucionNominaUseCase(nominaRepo);
+    actualizarRenglon = ActualizarRenglonNominaUseCase(nominaRepo);
     final evaluarRenglonesRequierenRevision = EvaluarRenglonesRequierenRevisionUseCase(nominaRepo, empleadoRepo, resolverSueldo);
     cerrarNomina = CerrarNominaUseCase(nominaRepo, evaluarRenglonesRequierenRevision);
   });
@@ -192,7 +196,7 @@ void main() {
             codigoPostal: '50000',
           ),
         );
-    final activado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo);
+    final activado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
     return (activado as CambiarEstatusServicioExitoso).servicio;
   }
 
@@ -375,7 +379,7 @@ void main() {
     });
   });
 
-  group('ActualizarMovimientosNominaUseCase', () {
+  group('ActualizarRenglonNominaUseCase — movimientos', () {
     test('faltas descuentan del total sin afectar diasPagables (independientes, nunca lo reducen)', () async {
       await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1), sueldoMensualAdministrativo: 1500000);
       final generado = (await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
@@ -383,10 +387,10 @@ void main() {
       final totalOriginal = renglon.totalAPagar;
       final diasOriginales = renglon.diasPagables;
 
-      final resultado = await actualizarMovimientos.ejecutar(nominaEmpleadoId: renglon.id, faltas: 2);
+      final resultado = await actualizarRenglon.ejecutar(nominaEmpleadoId: renglon.id, faltas: 2);
 
-      expect(resultado, isA<ActualizarMovimientosNominaExitoso>());
-      final actualizado = (resultado as ActualizarMovimientosNominaExitoso).renglon;
+      expect(resultado, isA<ActualizarRenglonNominaExitoso>());
+      final actualizado = (resultado as ActualizarRenglonNominaExitoso).renglon;
       expect(actualizado.diasPagables, diasOriginales, reason: 'una falta nunca reduce los días pagables');
       expect(actualizado.descuentoPorFaltas, 2 * actualizado.pagoPorDia);
       expect(actualizado.totalAPagar, totalOriginal - actualizado.descuentoPorFaltas);
@@ -397,29 +401,28 @@ void main() {
       final generado = (await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
       final renglon = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
 
-      final resultado = await actualizarMovimientos.ejecutar(nominaEmpleadoId: renglon.id, bono: 30000);
+      final resultado = await actualizarRenglon.ejecutar(nominaEmpleadoId: renglon.id, bono: 30000);
 
-      final actualizado = (resultado as ActualizarMovimientosNominaExitoso).renglon;
+      final actualizado = (resultado as ActualizarRenglonNominaExitoso).renglon;
       expect(actualizado.bono, 30000);
       expect(actualizado.bonoModificadoManualmente, isTrue);
     });
   });
 
-  group('ActualizarDistribucionNominaUseCase', () {
+  group('ActualizarRenglonNominaUseCase — distribución', () {
     test('acepta una distribución Fiscal/No fiscal que sí balancea y limpia distribucionPendienteRevision', () async {
       await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1), sueldoMensualAdministrativo: 1500000);
       final generado = (await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
       final renglon = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
 
       final mitad = renglon.totalAPagar ~/ 2;
-      final resultado = await actualizarDistribucion.ejecutar(
+      final resultado = await actualizarRenglon.ejecutar(
         nominaEmpleadoId: renglon.id,
-        montoFiscal: mitad,
-        montoNoFiscal: renglon.totalAPagar - mitad,
+        distribucionManual: (montoFiscal: mitad, montoNoFiscal: renglon.totalAPagar - mitad),
       );
 
-      expect(resultado, isA<ActualizarDistribucionNominaExitoso>());
-      final actualizado = (resultado as ActualizarDistribucionNominaExitoso).renglon;
+      expect(resultado, isA<ActualizarRenglonNominaExitoso>());
+      final actualizado = (resultado as ActualizarRenglonNominaExitoso).renglon;
       expect(actualizado.distribucionModificadaManualmente, isTrue);
       expect(actualizado.distribucionPendienteRevision, isFalse);
     });
@@ -429,8 +432,11 @@ void main() {
       final generado = (await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
       final renglon = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
 
-      final resultado = await actualizarDistribucion.ejecutar(nominaEmpleadoId: renglon.id, montoFiscal: 1, montoNoFiscal: 1);
-      expect(resultado, isA<ActualizarDistribucionNominaNoBalancea>());
+      final resultado = await actualizarRenglon.ejecutar(
+        nominaEmpleadoId: renglon.id,
+        distribucionManual: (montoFiscal: 1, montoNoFiscal: 1),
+      );
+      expect(resultado, isA<ActualizarRenglonNominaNoBalancea>());
     });
   });
 
@@ -443,7 +449,7 @@ void main() {
 
       final generado = (await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
       final renglonOriginal = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
-      await actualizarMovimientos.ejecutar(nominaEmpleadoId: renglonOriginal.id, prestamo: 50000, faltas: 1, observaciones: 'nota de prueba');
+      await actualizarRenglon.ejecutar(nominaEmpleadoId: renglonOriginal.id, prestamo: 50000, faltas: 1, observaciones: 'nota de prueba');
 
       // Un día antes del periodo, para que todo el periodo quede limpiamente
       // del lado de Servicio B (cambiar justo el día 1 dejaría ese día
@@ -497,7 +503,7 @@ void main() {
         final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1), sueldoMensualAdministrativo: 1500000);
         final generado = (await generarNomina.ejecutar(anio: 2026, mes: 2, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
         final renglonOriginal = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
-        await actualizarMovimientos.ejecutar(nominaEmpleadoId: renglonOriginal.id, prestamo: 20000);
+        await actualizarRenglon.ejecutar(nominaEmpleadoId: renglonOriginal.id, prestamo: 20000);
 
         await registrarBajaLaboral.ejecutar(empleadoId: empleado.id, fechaBaja: DateTime(2026, 1, 20), motivo: MotivoBajaEmpleado.renuncia);
 
@@ -544,10 +550,9 @@ void main() {
       final generado = (await generarNomina.ejecutar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
       final renglonOriginal = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
       // Distribución capturada a mano contra el total original.
-      await actualizarDistribucion.ejecutar(
+      await actualizarRenglon.ejecutar(
         nominaEmpleadoId: renglonOriginal.id,
-        montoFiscal: renglonOriginal.totalAPagar,
-        montoNoFiscal: 0,
+        distribucionManual: (montoFiscal: renglonOriginal.totalAPagar, montoNoFiscal: 0),
       );
 
       // El total cambia (nuevo Servicio con sueldo distinto) sin que el
@@ -578,7 +583,7 @@ void main() {
         final empleado = await crearEmpleadoDePrueba(fechaIngreso: DateTime(2025, 1, 1), sueldoMensualAdministrativo: 1500000);
         final generado = (await generarNomina.ejecutar(anio: 2026, mes: 2, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
         final renglonOriginal = (await nominaRepo.listarEmpleados(generado.nomina.id)).single;
-        await actualizarMovimientos.ejecutar(nominaEmpleadoId: renglonOriginal.id, prestamo: 20000);
+        await actualizarRenglon.ejecutar(nominaEmpleadoId: renglonOriginal.id, prestamo: 20000);
 
         await registrarBajaLaboral.ejecutar(empleadoId: empleado.id, fechaBaja: DateTime(2026, 1, 20), motivo: MotivoBajaEmpleado.renuncia);
         await actualizarDesdePersonal.ejecutar(nominaId: generado.nomina.id);

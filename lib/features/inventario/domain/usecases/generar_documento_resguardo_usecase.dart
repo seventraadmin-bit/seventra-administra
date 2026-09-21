@@ -7,11 +7,13 @@ import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/empresa_repository.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/servicio_repository.dart';
+import 'package:riseg_one/features/personal/domain/repositories/asignacion_servicio_repository.dart';
 import 'package:riseg_one/features/personal/domain/repositories/empleado_repository.dart';
 
 import '../../data/pdf/resguardo_pdf_renderer.dart';
 import '../repositories/articulo_repository.dart';
 import '../repositories/asignacion_repository.dart';
+import '../repositories/entrega_repository.dart';
 import '../repositories/inventario_repository.dart';
 import 'resguardo_data.dart';
 
@@ -53,6 +55,8 @@ class GenerarDocumentoResguardoUseCase {
     this._attachmentRepository,
     this._attachmentStorage,
     this._renderer,
+    this._asignacionServicioRepository,
+    this._entregaRepository,
   );
 
   final AsignacionRepository _asignacionRepository;
@@ -64,6 +68,8 @@ class GenerarDocumentoResguardoUseCase {
   final AttachmentRepository _attachmentRepository;
   final AttachmentStorage _attachmentStorage;
   final ResguardoPdfRenderer _renderer;
+  final AsignacionServicioRepository _asignacionServicioRepository;
+  final EntregaRepository _entregaRepository;
 
   Future<GenerarDocumentoResguardoResultado> ejecutar({required List<String> asignacionIds}) async {
     if (asignacionIds.isEmpty) return GenerarDocumentoResguardoSinAsignaciones();
@@ -84,6 +90,7 @@ class GenerarDocumentoResguardoUseCase {
     try {
       String? empleadoNombre;
       String? servicioNombre;
+      String? servicioActualNombre;
       if (mismoEmpleado) {
         final empleado = await _empleadoRepository.obtenerPorId(empleadoIds.single!);
         empleadoNombre = empleado == null
@@ -92,6 +99,11 @@ class GenerarDocumentoResguardoUseCase {
                 .whereType<String>()
                 .where((p) => p.trim().isNotEmpty)
                 .join(' ');
+        final asignacionServicioVigente = await _asignacionServicioRepository.obtenerActivaPorEmpleado(empleadoIds.single!);
+        if (asignacionServicioVigente != null) {
+          final servicioActual = await _servicioRepository.obtenerPorId(asignacionServicioVigente.servicioId);
+          servicioActualNombre = servicioActual?.nombre;
+        }
       } else {
         final servicio = await _servicioRepository.obtenerPorId(servicioIds.single!);
         servicioNombre = servicio?.nombre;
@@ -102,12 +114,23 @@ class GenerarDocumentoResguardoUseCase {
         items.add(await _construirItem(asignacion));
       }
 
+      // Folio de la Entrega (Etapa "Entrega múltiple de Inventario") —
+      // solo cuando TODAS las Asignaciones vienen del mismo acto de
+      // entrega; mixto o legacy (`entregaId == null`) nunca tiene folio.
+      final entregaIds = asignaciones.map((a) => a.entregaId).toSet();
+      String? folio;
+      if (entregaIds.length == 1 && entregaIds.single != null) {
+        folio = (await _entregaRepository.obtenerPorId(entregaIds.single!))?.folio;
+      }
+
       final empresa = await _empresaRepository.obtenerActiva();
       final logoBytes = await _leerBytesAttachment(empresa.logoAttachmentId);
 
       final data = ResguardoData(
         empleadoNombre: empleadoNombre,
         servicioNombre: servicioNombre,
+        servicioActualNombre: servicioActualNombre,
+        folio: folio,
         fechaGeneracion: DateTime.now(),
         items: items,
       );

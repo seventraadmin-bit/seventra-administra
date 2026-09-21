@@ -63,7 +63,10 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
     required String nombreUsuario,
     required String passwordHash,
     String? puestoId,
+    String? empleadoId,
     bool esMaestro = false,
+    bool debeCambiarPassword = false,
+    Set<String> permisosIniciales = const {},
     String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
@@ -73,15 +76,36 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
               nombreUsuario: nombreUsuario,
               passwordHash: passwordHash,
               puestoId: Value(puestoId),
+              empleadoId: Value(empleadoId),
               esMaestro: Value(esMaestro),
+              debeCambiarPassword: Value(debeCambiarPassword),
             ),
           );
+
+      // Un Maestro nunca tiene filas de permiso: su acceso se recalcula
+      // en vivo desde el catálogo, así que escribirle filas sería a la
+      // vez inútil y una segunda fuente de verdad.
+      if (!esMaestro) {
+        for (final codigo in permisosIniciales) {
+          await _db.into(_db.permisoUsuario).insert(
+                PermisoUsuarioCompanion.insert(usuarioId: usuario.id, codigo: codigo),
+              );
+        }
+      }
 
       await _registrarEventoInterno(
         usuarioId: usuario.id,
         tipoEvento: TipoEventoUsuario.creado,
         actorUsuarioId: actorUsuarioId,
-        datosRelevantes: {'nombreUsuario': nombreUsuario, 'esMaestro': esMaestro},
+        // NUNCA la contraseña, ni siquiera la temporal — solo el hecho
+        // de que la cuenta nace con cambio obligatorio.
+        datosRelevantes: {
+          'nombreUsuario': nombreUsuario,
+          'esMaestro': esMaestro,
+          if (empleadoId != null) 'empleadoId': empleadoId,
+          'debeCambiarPassword': debeCambiarPassword,
+          'permisosIniciales': esMaestro ? 0 : permisosIniciales.length,
+        },
       );
 
       return usuario;
@@ -133,10 +157,20 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
     required String usuarioId,
     required String passwordHash,
     String? actorUsuarioId,
+    bool exigirCambio = false,
   }) {
     return _db.transaction(() async {
       await (_db.update(_db.usuario)..where((t) => t.id.equals(usuarioId))).write(
-        UsuarioCompanion(passwordHash: Value(passwordHash), updatedAt: Value(DateTime.now())),
+        // Etapa "Usuarios, permisos y UX de seguridad": quién fijó la
+        // contraseña decide si sigue habiendo obligación de cambiarla.
+        // El titular cambiándola la apaga; un reseteo administrativo la
+        // vuelve a encender, porque la contraseña vigente la conoce
+        // alguien más y no puede quedarse así.
+        UsuarioCompanion(
+          passwordHash: Value(passwordHash),
+          debeCambiarPassword: Value(exigirCambio),
+          updatedAt: Value(DateTime.now()),
+        ),
       );
 
       // Invalida "Recuérdame en este equipo" (Etapa 15) en la misma

@@ -85,8 +85,8 @@ void main() {
     // CxC sin pagos aplicados — elegible para eliminación física.
     await db.into(db.cuentaPorCobrar).insert(
           CuentaPorCobrarCompanion.insert(
-            documentoPorEmitirId: documentoId,
-            clienteId: clienteId,
+            documentoPorEmitirId: Value(documentoId),
+            clienteId: Value(clienteId),
             tipoDocumento: 'reciboDePago',
             metodo: 'noAplica',
             fechaEmisionReal: DateTime(2026, 1, 5),

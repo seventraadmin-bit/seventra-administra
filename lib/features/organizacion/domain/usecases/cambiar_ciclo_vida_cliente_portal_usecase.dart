@@ -1,3 +1,4 @@
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 
@@ -11,6 +12,9 @@ class CambiarCicloVidaClientePortalExitoso extends CambiarCicloVidaClientePortal
   CambiarCicloVidaClientePortalExitoso(this.portal);
   final ClientePortalData portal;
 }
+
+/// Archivar o reactivar un portal exige explicar por qué.
+class CambiarCicloVidaClientePortalMotivoRequerido extends CambiarCicloVidaClientePortalResultado {}
 
 class CambiarCicloVidaClientePortalErrorInesperado extends CambiarCicloVidaClientePortalResultado {
   CambiarCicloVidaClientePortalErrorInesperado(this.mensaje);
@@ -34,9 +38,17 @@ class CambiarCicloVidaClientePortalUseCase {
   Future<CambiarCicloVidaClientePortalResultado> ejecutar({
     required String clientePortalId,
     required CicloVidaRegistro nuevo,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return CambiarCicloVidaClientePortalMotivoRequerido();
     try {
-      final actualizado = await _repository.cambiarCicloVida(id: clientePortalId, nuevo: nuevo);
+      final actualizado = await _repository.cambiarCicloVida(
+        id: clientePortalId,
+        nuevo: nuevo,
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
+      );
       return CambiarCicloVidaClientePortalExitoso(actualizado);
     } catch (e) {
       return CambiarCicloVidaClientePortalErrorInesperado(e.toString());

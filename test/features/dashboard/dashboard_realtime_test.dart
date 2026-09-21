@@ -16,12 +16,14 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/presentation/egresos/egresos_controller.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
@@ -61,6 +63,12 @@ void main() {
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         sesionControllerProvider.overrideWith(_SesionMaestroDePrueba.new),
+        // Etapa 20: el Dashboard ahora también lee
+        // `documentoPorEmitirRepositoryProvider` (alerta de documentos
+        // por emitir) — depende de `attachmentStorageProvider`, que a
+        // su vez requiere `path_provider` (no disponible bajo `flutter
+        // test`). Mismo criterio ya usado en las pruebas de Agenda.
+        attachmentStorageProvider.overrideWithValue(AttachmentStorage('.')),
       ],
     );
     addTearDown(container.dispose);
@@ -80,7 +88,7 @@ void main() {
     'sin cambiar de pestaña ni recargar manualmente',
     () async {
       await esperarCargaDashboard();
-      expect(container.read(dashboardControllerProvider).resumenGeneral?.totalEgresos, 0);
+      expect(container.read(dashboardControllerProvider).resumenGeneral?.gastoOperativo, 0);
 
       final resultado = await container.read(egresosControllerProvider.notifier).registrar(
             monto: 150000,
@@ -95,7 +103,7 @@ void main() {
       // `dashboardControllerProvider`.
       await esperarCargaDashboard();
 
-      expect(container.read(dashboardControllerProvider).resumenGeneral?.totalEgresos, 150000);
+      expect(container.read(dashboardControllerProvider).resumenGeneral?.gastoOperativo, 150000);
     },
   );
 
@@ -112,7 +120,7 @@ void main() {
           );
       final egresoId = (registrado as RegistrarEgresoExitoso).egreso.id;
       await esperarCargaDashboard();
-      expect(container.read(dashboardControllerProvider).resumenGeneral?.totalEgresos, 150000);
+      expect(container.read(dashboardControllerProvider).resumenGeneral?.gastoOperativo, 150000);
 
       final cancelado = await container.read(egresosControllerProvider.notifier).cancelar(
             egresoId: egresoId,
@@ -121,7 +129,7 @@ void main() {
       expect(cancelado, isA<CancelarEgresoExitoso>());
 
       await esperarCargaDashboard();
-      expect(container.read(dashboardControllerProvider).resumenGeneral?.totalEgresos, 0);
+      expect(container.read(dashboardControllerProvider).resumenGeneral?.gastoOperativo, 0);
     },
   );
 }

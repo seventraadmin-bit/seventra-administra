@@ -73,7 +73,7 @@ Future<bool> mostrarDialogoAdjuntarDocumentoEmpleado(BuildContext context, Widge
   if (archivo?.path == null) return false;
   if (!context.mounted) return false;
 
-  final resultado = await ref.read(adjuntarDocumentoEmpleadoUseCaseProvider).ejecutar(
+  final resultado = await ref.read(adjuntarDocumentoEmpleadoAutorizadoProvider)(
         empleadoId: empleadoId,
         categoria: categoria,
         sourceFilePath: archivo!.path!,

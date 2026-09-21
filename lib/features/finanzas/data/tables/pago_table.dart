@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../organizacion/data/tables/cliente_table.dart';
+import '../../../servicios_eventuales/data/tables/servicio_eventual_table.dart';
 import '../../../usuarios/data/tables/usuario_table.dart';
 import 'cuenta_por_cobrar_table.dart';
 
@@ -41,7 +42,19 @@ class Pago extends Table with AuditColumns {
   /// usar el UUID interno).
   TextColumn get folioPago => text().unique()();
 
-  TextColumn get clienteId => text().references(Cliente, #id, onDelete: KeyAction.restrict)();
+  /// **Nullable desde schemaVersion 87** — un pago de un Servicio
+  /// Eventual cuyo solicitante no es Cliente permanente no tiene
+  /// ninguno. La regla "un Pago sólo se aplica a Cuentas de la misma
+  /// contraparte" sigue viva, resuelta por `ContraparteCobro`.
+  TextColumn get clienteId => text().nullable().references(Cliente, #id, onDelete: KeyAction.restrict)();
+
+  /// **Origen**, no contraparte (schemaVersion 87). Poblado en todo pago
+  /// que nace de un Servicio Eventual, incluso cuando el solicitante ES
+  /// un Cliente real: ahí conviven los dos campos sin poder
+  /// contradecirse, porque `clienteId` no se captura aparte — se deriva
+  /// de la Cuenta por cobrar, que a su vez lo deriva del eventual.
+  TextColumn get servicioEventualId =>
+      text().nullable().references(ServicioEventual, #id, onDelete: KeyAction.restrict)();
 
   IntColumn get montoTotal => integer()();
 
@@ -76,6 +89,9 @@ class Pago extends Table with AuditColumns {
   List<String> get customConstraints => [
         'CHECK (monto_total > 0)',
         'CHECK (monto_aplicado >= 0 AND monto_aplicado <= monto_total)',
+        // Todo Pago tiene contraparte: un Cliente real, o el eventual
+        // que lo originó.
+        'CHECK (cliente_id IS NOT NULL OR servicio_eventual_id IS NOT NULL)',
       ];
 }
 

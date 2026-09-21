@@ -5,25 +5,43 @@ import 'package:riseg_one/core/database/app_database.dart';
 /// advertencia de divergencia (punto 5 de 9B) sin que la pantalla de
 /// Telefonía importe el repositorio de Inventario directamente.
 class CustodiaInventarioLineaTelefonica {
-  const CustodiaInventarioLineaTelefonica({this.empleadoId, this.servicioId});
+  const CustodiaInventarioLineaTelefonica({
+    this.empleadoId,
+    this.servicioId,
+    this.pendienteRecuperacionDesde,
+  });
+
   final String? empleadoId;
   final String? servicioId;
+
+  /// Marca REAL de Inventario (v82/v83): alguien declaró en la
+  /// conciliación de baja que el bien sigue en manos de la persona que
+  /// se fue. No es una bandera de confianza ni un texto — se pone
+  /// únicamente por decisión documentada.
+  ///
+  /// Cambia el SIGNIFICADO de que la línea esté sin asignar: no es un
+  /// dato corrupto, son dos ciclos de vida distintos avanzando a su
+  /// ritmo.
+  final DateTime? pendienteRecuperacionDesde;
 }
 
 /// Qué teléfono físico de Inventario trae la SIM de una línea, en el
 /// tiempo (Etapa 9B) — ver el doc comment de `LineaTelefonicaEquipo`.
 ///
-/// **Decisión de consistencia con Inventario** (memoria del proyecto,
-/// confirmada dos veces con Marlon): esta interfaz sí escribe en
-/// Inventario cuando corresponde — nunca duplica la custodia (esa sigue
-/// viviendo únicamente en `Inventario.Asignacion`), pero compone con el
-/// `AsignacionRepository` real de Inventario (mismo patrón que
-/// `PagoNominaRepositoryImpl` componiendo `EgresoRepository` de
-/// Finanzas) para que, cuando la línea tiene un destino
-/// (empleado/Servicio), el equipo asociado quede con la misma custodia
-/// en Inventario. Cada método recibe `sincronizarInventario` — la UI
-/// (punto 7 de 9B) siempre deja explícito si el usuario quiere mover
-/// también el equipo, nunca lo asume.
+/// **Nunca escribe en Inventario** (Rebanada 2). Hasta aquí esta
+/// interfaz sí lo hacía: cada método llevaba `sincronizarInventario` y
+/// componía `AsignacionRepository.crear`/`cerrar` para mover la
+/// custodia del aparato al destino de la línea. Se retiró — le daba a
+/// Telefonía autoridad sobre la custodia física y escribía por debajo
+/// de los casos de uso de Inventario, sin sus validaciones ni sus
+/// permisos. Asociar, cambiar o retirar un equipo es hoy
+/// exclusivamente una operación telefónica.
+///
+/// La coherencia se mantiene por el otro lado: los casos de uso de
+/// Telefonía rechazan antes de persistir lo que dejaría la línea en
+/// contradicción con la custodia, y cuando Inventario mueve la
+/// custodia la asignación de la línea la sigue
+/// (`LineaTelefonicaDeUnidad`).
 abstract interface class LineaTelefonicaEquipoRepository {
   Future<LineaTelefonicaEquipoData?> obtenerActualPorLinea(String lineaTelefonicaId);
 
@@ -43,69 +61,64 @@ abstract interface class LineaTelefonicaEquipoRepository {
 
   /// Historial completo de líneas que ha tenido una unidad, orden
   /// descendente por `fechaInicio` (Etapa 9D) — el reverso de
-  /// [listarPorLinea]: "qué líneas trajo este teléfono a lo largo de su
-  /// vida" para el expediente del Equipo.
+  /// [listarPorLinea].
   Future<List<LineaTelefonicaEquipoData>> listarPorUnidad(String unidadId);
 
   /// La custodia real de [unidadId] en Inventario en este momento
-  /// (`null` si no tiene ninguna asignación activa) — solo lectura,
-  /// usada por la UI de Telefonía para la advertencia de divergencia.
+  /// (`null` si no tiene ninguna asignación activa) — SOLO LECTURA.
   Future<CustodiaInventarioLineaTelefonica?> obtenerCustodiaInventarioActual(String unidadId);
 
+  /// La custodia real de varias unidades en UNA consulta — para
+  /// listados que muestran coherencia sin resolver fila por fila. Las
+  /// unidades sin custodia activa simplemente no aparecen en el mapa.
+  Future<Map<String, CustodiaInventarioLineaTelefonica>> obtenerCustodiasInventarioActuales(
+    Iterable<String> unidadIds,
+  );
+
   /// Asocia una unidad a la línea (primera vez, o después de un
-  /// retiro). Si [sincronizarInventario] y la línea tiene una
-  /// asignación vigente, compone `AsignacionRepository.crear` de
-  /// Inventario para mover la custodia de la unidad a ese mismo
-  /// destino — sin validar aquí "unidad disponible"/"unidad es
-  /// teléfono" (vive en `AsociarEquipoLineaTelefonicaUseCase`).
+  /// retiro). No valida "unidad disponible"/"unidad es teléfono"/
+  /// coherencia con la custodia: eso vive en
+  /// `AsociarEquipoLineaTelefonicaUseCase`.
+  ///
+  /// `alinearLineaCon…`: si vienen poblados y la línea no tiene
+  /// asignación vigente, se le crea una a ese destino en la MISMA
+  /// transacción — es la línea siguiendo a la custodia que el aparato
+  /// ya tiene en Inventario (§7). Jamás escribe en Inventario.
   Future<LineaTelefonicaEquipoData> asociar({
     required String lineaTelefonicaId,
     required String unidadId,
     required DateTime fechaInicio,
     String? observaciones,
-    bool sincronizarInventario = true,
+    String? alinearLineaConEmpleadoId,
+    String? alinearLineaConServicioId,
     String? actorUsuarioId,
   });
 
-  /// Cierra el equipo vigente de la línea, sin reemplazo. Si
-  /// [sincronizarInventario], compone el cierre de la custodia en
-  /// Inventario — **solo si** la asignación activa de la unidad en
-  /// Inventario todavía coincide con el destino de la línea (guardia de
-  /// divergencia: nunca pisa una reasignación hecha directo en
-  /// Inventario).
+  /// Cierra el equipo vigente de la línea, sin reemplazo. **No toca la
+  /// custodia en Inventario**: retirar un equipo de una línea no
+  /// devuelve físicamente el aparato, sólo lo desvincula.
   Future<void> retirar({
     required String lineaTelefonicaId,
     required DateTime fechaFin,
-    bool sincronizarInventario = true,
     String? actorUsuarioId,
   });
 
-  /// Cierra el equipo vigente (con la misma guardia de divergencia que
-  /// [retirar]) y asocia uno nuevo (con la misma composición que
-  /// [asociar]) — una sola operación.
+  /// Cierra el equipo vigente y asocia uno nuevo — una sola operación,
+  /// ninguna de las dos toca la custodia. `alinearLineaCon…` funciona
+  /// igual que en [asociar].
   Future<LineaTelefonicaEquipoData> cambiar({
     required String lineaTelefonicaId,
     required String nuevaUnidadId,
     required DateTime fecha,
     String? observaciones,
-    bool sincronizarInventario = true,
+    String? alinearLineaConEmpleadoId,
+    String? alinearLineaConServicioId,
     String? actorUsuarioId,
   });
 
-  /// Cierra el equipo vigente de la línea (si existe) liberando siempre
-  /// la custodia en Inventario cuando coincide — llamado desde
-  /// `LineaTelefonicaRepositoryImpl.darDeBaja` (la línea ya no opera,
-  /// el teléfono físico queda disponible para reutilizarse). No-op si
-  /// no hay equipo vigente.
+  /// Cierra el equipo vigente de la línea (si existe) — llamado desde
+  /// `LineaTelefonicaRepositoryImpl.darDeBaja`. La línea ya no opera,
+  /// pero el aparato sigue donde Inventario diga. No-op si no hay
+  /// equipo vigente.
   Future<void> cerrarPorBajaLinea({required String lineaTelefonicaId, required DateTime fecha});
-
-  /// Sincroniza la custodia en Inventario del equipo actual (si lo hay)
-  /// con la asignación vigente actual de la línea (si la hay) — usado
-  /// cuando cambia el destino de la **línea** (Asignar/Cambiar/Retirar
-  /// asignación, punto 7 de 9B) y el usuario pidió explícitamente mover
-  /// también el equipo. El equipo asociado en sí no cambia — no abre ni
-  /// cierra ninguna fila de `LineaTelefonicaEquipo`, solo mueve la
-  /// custodia real en Inventario para que coincida con el nuevo destino
-  /// de la línea (o la libera, si la línea se quedó sin destino).
-  Future<void> sincronizarConAsignacionVigente({required String lineaTelefonicaId, required DateTime fecha});
 }

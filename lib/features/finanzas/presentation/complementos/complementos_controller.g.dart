@@ -7,7 +7,7 @@ part of 'complementos_controller.dart';
 // **************************************************************************
 
 String _$complementosControllerHash() =>
-    r'8620edb4afa127d0fb633538cd0b99cee710038f';
+    r'bf2bf11657ba05c00ada3ea725cd1282d0bc9e1d';
 
 /// Controlador del listado de Complementos de pago (Etapa 4J.3) —
 /// mismo diseño que `PagosController`.

@@ -62,7 +62,7 @@ void main() {
     inventarioAsignacionRepo = AsignacionRepositoryImpl(db);
     inventarioRepo = InventarioRepositoryImpl(db);
     articuloRepo = ArticuloRepositoryImpl(db);
-    equipoRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, inventarioAsignacionRepo, inventarioRepo);
+    equipoRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, inventarioAsignacionRepo);
     lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoRepo);
 
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
@@ -71,10 +71,10 @@ void main() {
     crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, generarCodigo);
     darDeBaja = DarDeBajaLineaTelefonicaUseCase(lineaRepo);
     asignarLinea = AsignarLineaTelefonicaUseCase(lineaRepo, asignacionLineaRepo, equipoRepo);
-    cambiarAsignacion = CambiarAsignacionLineaTelefonicaUseCase(asignacionLineaRepo, equipoRepo);
-    retirarAsignacion = RetirarAsignacionLineaTelefonicaUseCase(asignacionLineaRepo, equipoRepo);
-    asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoRepo, inventarioRepo);
-    cambiarEquipo = CambiarEquipoLineaTelefonicaUseCase(lineaRepo, equipoRepo, inventarioRepo);
+    cambiarAsignacion = CambiarAsignacionLineaTelefonicaUseCase(asignacionLineaRepo, equipoRepo, lineaRepo);
+    retirarAsignacion = RetirarAsignacionLineaTelefonicaUseCase(asignacionLineaRepo, equipoRepo, lineaRepo);
+    asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoRepo, inventarioRepo, asignacionLineaRepo);
+    cambiarEquipo = CambiarEquipoLineaTelefonicaUseCase(lineaRepo, equipoRepo, inventarioRepo, asignacionLineaRepo);
     retirarEquipo = RetirarEquipoLineaTelefonicaUseCase(equipoRepo);
 
     crearCategoria = CrearCategoriaArticuloUseCase(categoriaRepo);
@@ -365,20 +365,43 @@ void main() {
       expect(resultado, isA<AsociarEquipoLineaTelefonicaUnidadNoEsTelefono>());
     });
 
-    test('rechaza una unidad no disponible', () async {
+    test('rechaza una unidad que ya trae otra línea — un teléfono, una SIM', () async {
       final linea = await crearLineaDePrueba();
       final otraLinea = await crearLineaDePrueba(numero: '7229999999');
-      final otroEmpleado = await crearEmpleadoDePrueba();
       final articulo = await crearArticuloTelefonoDePrueba();
       final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
-      // El equipo queda "asignado" en Inventario solo cuando la línea
-      // dueña tiene, a su vez, una asignación vigente — la sincronización
-      // se dispara ahí, no al asociar el equipo por sí solo.
-      await asignarLinea.ejecutar(lineaTelefonicaId: otraLinea.id, empleadoId: otroEmpleado.id, fechaInicio: DateTime(2026, 1, 1));
       await asociarEquipo.ejecutar(lineaTelefonicaId: otraLinea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 1));
 
       final resultado = await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 5));
+      expect(resultado, isA<AsociarEquipoLineaTelefonicaUnidadYaTraeOtraLinea>());
+    });
+
+    test('rechaza una unidad que no puede traer una SIM (dada de baja)', () async {
+      final linea = await crearLineaDePrueba();
+      final articulo = await crearArticuloTelefonoDePrueba();
+      final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
+      await inventarioRepo.registrarBajaUnidad(unidadId: unidad.id, observaciones: 'Robada');
+
+      final resultado = await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 5));
       expect(resultado, isA<AsociarEquipoLineaTelefonicaUnidadNoDisponible>());
+    });
+
+    test('una unidad YA entregada en Inventario sí es asociable — es el orden correcto', () async {
+      final linea = await crearLineaDePrueba();
+      final servicio = await crearServicioDePrueba();
+      final articulo = await crearArticuloTelefonoDePrueba();
+      final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
+      await inventarioAsignacionRepo.crear(
+        articuloId: articulo.id,
+        unidadId: unidad.id,
+        cantidad: 1,
+        servicioId: servicio.id,
+        fechaEntrega: DateTime(2026, 1, 1),
+      );
+      await asignarLinea.ejecutar(lineaTelefonicaId: linea.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 1));
+
+      final resultado = await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 5));
+      expect(resultado, isA<AsociarEquipoLineaTelefonicaExitoso>(), reason: '$resultado');
     });
 
     test('rechaza si la línea ya tiene un equipo vigente', () async {
@@ -458,179 +481,230 @@ void main() {
     });
   });
 
-  group('Consistencia con Inventario (punto 5 de 9B — el más importante)', () {
-    test('asignar la línea sincroniza la custodia real en Inventario cuando moverEquipoAsociado=true', () async {
+  group('Inventario manda: Telefonía nunca mueve la custodia (Rebanada 2)', () {
+    /// Entrega el aparato por el camino de Inventario — el único que
+    /// puede crear custodia.
+    Future<void> entregarEnInventario(String articuloId, String unidadId, {String? empleadoId, String? servicioId}) async {
+      await inventarioAsignacionRepo.crear(
+        articuloId: articuloId,
+        unidadId: unidadId,
+        cantidad: 1,
+        empleadoId: empleadoId,
+        servicioId: servicioId,
+        fechaEntrega: DateTime(2026, 1, 1),
+      );
+    }
+
+    test('§8 — asignar la línea cuando su equipo NO tiene custodia se rechaza, y nada se persiste', () async {
       final linea = await crearLineaDePrueba();
       final empleado = await crearEmpleadoDePrueba();
       final articulo = await crearArticuloTelefonoDePrueba();
       final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
       await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 1));
 
-      await asignarLinea.ejecutar(
+      final resultado = await asignarLinea.ejecutar(
         lineaTelefonicaId: linea.id,
         empleadoId: empleado.id,
         fechaInicio: DateTime(2026, 1, 5),
       );
+
+      expect(resultado, isA<AsignarLineaTelefonicaIncoherenteConEquipo>());
+      expect(await asignacionLineaRepo.obtenerActivaPorLinea(linea.id), isNull);
+      expect(await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id), isNull,
+          reason: 'Telefonía jamás crea custodia');
+    });
+
+    test('§9 — asignar la línea al MISMO destino que la custodia sí se permite, y no toca Inventario', () async {
+      final linea = await crearLineaDePrueba();
+      final empleado = await crearEmpleadoDePrueba();
+      final articulo = await crearArticuloTelefonoDePrueba();
+      final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
+      await entregarEnInventario(articulo.id, unidad.id, empleadoId: empleado.id);
+      await asociarEquipo.ejecutar(
+        lineaTelefonicaId: linea.id,
+        unidadId: unidad.id,
+        fechaInicio: DateTime(2026, 1, 2),
+        alinearLineaConCustodia: true,
+      );
+      // La asociación ya alineó la línea; se retira para probar el alta.
+      final yaCreada = await asignacionLineaRepo.obtenerActivaPorLinea(linea.id);
+      expect(yaCreada, isNotNull, reason: '§7: asociar con custodia alinea la línea');
+      expect(yaCreada!.empleadoId, empleado.id);
 
       final custodia = await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id);
-      expect(custodia, isNotNull, reason: 'Inventario sigue siendo la única fuente de custodia — Telefonía compone su caso de uso real');
-      expect(custodia!.empleadoId, empleado.id);
-
-      final unidadActualizada = await inventarioRepo.obtenerUnidadPorId(unidad.id);
-      expect(unidadActualizada!.estatus, EstatusArticuloUnidad.asignado.name);
+      expect(custodia!.empleadoId, empleado.id, reason: 'la custodia es la misma de antes, intacta');
     });
 
-    test('asignar la línea con moverEquipoAsociado=false no toca Inventario ("no automatismos sorprendentes")', () async {
-      final linea = await crearLineaDePrueba();
-      final empleado = await crearEmpleadoDePrueba();
-      final articulo = await crearArticuloTelefonoDePrueba();
-      final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
-      await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 1));
-
-      await asignarLinea.ejecutar(
-        lineaTelefonicaId: linea.id,
-        empleadoId: empleado.id,
-        fechaInicio: DateTime(2026, 1, 5),
-        moverEquipoAsociado: false,
-      );
-
-      expect(await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id), isNull);
-    });
-
-    test('cambio de asignación Empleado→Servicio mueve la custodia: cierra la anterior en Inventario y abre la nueva', () async {
+    test('§11 — cambiar la asignación dejando el equipo en manos del anterior se rechaza', () async {
       final linea = await crearLineaDePrueba();
       final empleado = await crearEmpleadoDePrueba();
       final servicio = await crearServicioDePrueba();
       final articulo = await crearArticuloTelefonoDePrueba();
       final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
-      await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 1));
-      final asignacionEmpleado = ((await asignarLinea.ejecutar(
+      await entregarEnInventario(articulo.id, unidad.id, empleadoId: empleado.id);
+      await asociarEquipo.ejecutar(
         lineaTelefonicaId: linea.id,
-        empleadoId: empleado.id,
-        fechaInicio: DateTime(2026, 1, 5),
-      )) as AsignarLineaTelefonicaExitoso)
-          .asignacion;
-      final custodiaOriginalId = (await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id))!.id;
+        unidadId: unidad.id,
+        fechaInicio: DateTime(2026, 1, 2),
+        alinearLineaConCustodia: true,
+      );
+      final vigente = (await asignacionLineaRepo.obtenerActivaPorLinea(linea.id))!;
 
-      await cambiarAsignacion.ejecutar(
-        asignacionLineaTelefonicaActualId: asignacionEmpleado.id,
+      final resultado = await cambiarAsignacion.ejecutar(
+        asignacionLineaTelefonicaActualId: vigente.id,
         fecha: DateTime(2026, 3, 1),
         nuevoServicioId: servicio.id,
       );
 
-      final custodiaNueva = await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id);
-      expect(custodiaNueva, isNotNull);
-      expect(custodiaNueva!.servicioId, servicio.id);
-      expect(custodiaNueva.empleadoId, isNull);
-
-      final custodiaOriginalCerrada = await inventarioAsignacionRepo.obtenerPorId(custodiaOriginalId);
-      expect(custodiaOriginalCerrada!.estatus, 'devuelta');
+      expect(resultado, isA<CambiarAsignacionLineaTelefonicaIncoherenteConEquipo>());
+      final sigue = await asignacionLineaRepo.obtenerActivaPorLinea(linea.id);
+      expect(sigue!.id, vigente.id, reason: 'el rechazo ocurre ANTES de persistir');
+      expect(sigue.empleadoId, empleado.id);
     });
 
-    test('retirar la asignación libera la custodia en Inventario, la unidad vuelve a disponible', () async {
+    test('§12 — retirar la asignación con el equipo todavía custodiado se rechaza (el caso MILOYILE)', () async {
       final linea = await crearLineaDePrueba();
-      final empleado = await crearEmpleadoDePrueba();
+      final servicio = await crearServicioDePrueba();
       final articulo = await crearArticuloTelefonoDePrueba();
       final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
-      await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 1));
-      final asignacion = ((await asignarLinea.ejecutar(
+      await entregarEnInventario(articulo.id, unidad.id, servicioId: servicio.id);
+      await asociarEquipo.ejecutar(
         lineaTelefonicaId: linea.id,
-        empleadoId: empleado.id,
-        fechaInicio: DateTime(2026, 1, 5),
-      )) as AsignarLineaTelefonicaExitoso)
-          .asignacion;
+        unidadId: unidad.id,
+        fechaInicio: DateTime(2026, 1, 2),
+        alinearLineaConCustodia: true,
+      );
+      final vigente = (await asignacionLineaRepo.obtenerActivaPorLinea(linea.id))!;
 
-      await retirarAsignacion.ejecutar(asignacionLineaTelefonicaId: asignacion.id, fechaTermino: DateTime(2026, 2, 1));
+      final resultado = await retirarAsignacion.ejecutar(
+        asignacionLineaTelefonicaId: vigente.id,
+        fechaTermino: DateTime(2026, 2, 1),
+      );
 
-      expect(await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id), isNull);
-      final unidadActualizada = await inventarioRepo.obtenerUnidadPorId(unidad.id);
-      expect(unidadActualizada!.estatus, EstatusArticuloUnidad.disponible.name);
+      expect(resultado, isA<RetirarAsignacionLineaTelefonicaEquipoCustodiado>());
+      expect((await asignacionLineaRepo.obtenerActivaPorLinea(linea.id))!.id, vigente.id);
     });
 
-    test('guardia de divergencia: si Inventario reasigna la unidad directamente, retirar el equipo no la pisa', () async {
-      // La guardia de divergencia vive en las operaciones de EQUIPO
-      // (retirar/cambiar), que capturan el destino esperado de la línea
-      // sin haberlo modificado ellas mismas — a diferencia de
-      // `sincronizarConAsignacionVigente` (usada por Asignar/Cambiar/
-      // Retirar ASIGNACIÓN), que documentadamente sí mueve la custodia
-      // al nuevo destino de la línea (o la libera si éste quedó nulo),
-      // porque ahí el usuario pidió explícitamente "mover equipo
-      // asociado" para ese cambio de destino.
+    test('§19 — retirar el equipo NO devuelve el aparato: la custodia sigue igual', () async {
       final linea = await crearLineaDePrueba();
-      final empleado1 = await crearEmpleadoDePrueba(numeroEmpleado: 1);
-      final empleado2 = await crearEmpleadoDePrueba(numeroEmpleado: 2);
+      final servicio = await crearServicioDePrueba();
       final articulo = await crearArticuloTelefonoDePrueba();
       final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
-      await asignarLinea.ejecutar(lineaTelefonicaId: linea.id, empleadoId: empleado1.id, fechaInicio: DateTime(2026, 1, 5));
-      await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 5));
-      // La asignación de la línea sigue vigente con empleado1 — nunca se
-      // toca en este escenario.
-
-      // Alguien reasigna la unidad directamente en Inventario, sin
-      // pasar por Telefonía — simula "entregaron físicamente el
-      // teléfono equivocado" (escenario real que el punto 5 describe).
-      final custodiaOriginal = (await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id))!;
-      await inventarioAsignacionRepo.cerrar(
-        asignacionId: custodiaOriginal.id,
-        motivo: 'otro',
-        fechaCierre: DateTime(2026, 1, 20),
-        observacionesCierre: 'Reasignado manualmente desde Inventario.',
-      );
-      await inventarioAsignacionRepo.crear(
-        articuloId: articulo.id,
+      await entregarEnInventario(articulo.id, unidad.id, servicioId: servicio.id);
+      await asociarEquipo.ejecutar(
+        lineaTelefonicaId: linea.id,
         unidadId: unidad.id,
-        cantidad: 1,
-        empleadoId: empleado2.id,
-        fechaEntrega: DateTime(2026, 1, 20),
+        fechaInicio: DateTime(2026, 1, 2),
+        alinearLineaConCustodia: true,
       );
 
       await retirarEquipo.ejecutar(lineaTelefonicaId: linea.id, fechaFin: DateTime(2026, 2, 1));
 
-      final custodiaTrasRetiro = await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id);
-      expect(custodiaTrasRetiro, isNotNull, reason: 'la reasignación manual hecha en Inventario nunca se pisa desde Telefonía');
-      expect(custodiaTrasRetiro!.empleadoId, empleado2.id);
-      expect(await equipoRepo.obtenerActualPorLinea(linea.id), isNull, reason: 'la línea sí queda sin equipo — solo la custodia divergente se protege');
+      expect(await equipoRepo.obtenerActualPorLinea(linea.id), isNull, reason: 'la línea sí queda sin equipo');
+      final custodia = await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id);
+      expect(custodia, isNotNull, reason: 'desvincular la SIM no devuelve físicamente el teléfono');
+      expect(custodia!.servicioId, servicio.id);
+      expect((await inventarioRepo.obtenerUnidadPorId(unidad.id))!.estatus, EstatusArticuloUnidad.asignado.name);
     });
 
-    test('cambiar de equipo mueve la custodia del equipo viejo al nuevo, ambos coherentes con el destino de la línea', () async {
+    test('§19 — cambiar de equipo conserva el historial y no mueve ninguna custodia', () async {
       final linea = await crearLineaDePrueba();
       final servicio = await crearServicioDePrueba();
       final articulo = await crearArticuloTelefonoDePrueba();
       final unidadVieja = await crearUnidadTelefonoDePrueba(articulo.id, numeroSerie: 'SN-TEL-A');
       final unidadNueva = await crearUnidadTelefonoDePrueba(articulo.id, numeroSerie: 'SN-TEL-B');
-      await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidadVieja.id, fechaInicio: DateTime(2026, 1, 1));
-      await asignarLinea.ejecutar(lineaTelefonicaId: linea.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 5));
+      await entregarEnInventario(articulo.id, unidadVieja.id, servicioId: servicio.id);
+      await entregarEnInventario(articulo.id, unidadNueva.id, servicioId: servicio.id);
+      await asociarEquipo.ejecutar(
+        lineaTelefonicaId: linea.id,
+        unidadId: unidadVieja.id,
+        fechaInicio: DateTime(2026, 1, 2),
+        alinearLineaConCustodia: true,
+      );
 
-      await cambiarEquipo.ejecutar(lineaTelefonicaId: linea.id, nuevaUnidadId: unidadNueva.id, fecha: DateTime(2026, 3, 1));
+      final resultado = await cambiarEquipo.ejecutar(
+        lineaTelefonicaId: linea.id,
+        nuevaUnidadId: unidadNueva.id,
+        fecha: DateTime(2026, 3, 1),
+      );
+      expect(resultado, isA<CambiarEquipoLineaTelefonicaExitoso>(), reason: '$resultado');
 
-      expect(await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidadVieja.id), isNull);
-      final custodiaNueva = await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidadNueva.id);
-      expect(custodiaNueva, isNotNull);
-      expect(custodiaNueva!.servicioId, servicio.id);
+      expect((await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidadVieja.id))!.servicioId, servicio.id,
+          reason: 'el teléfono viejo sigue donde Inventario lo dejó');
+      expect((await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidadNueva.id))!.servicioId, servicio.id);
+
+      final historial = await equipoRepo.listarPorLinea(linea.id);
+      expect(historial, hasLength(2), reason: 'se cierra un periodo y se abre otro, nunca se reescribe');
+      expect(historial.where((e) => e.fechaFin == null), hasLength(1));
     });
 
-    test('baja de línea cierra asignación y equipo, libera la custodia, pero no da de baja el teléfono físico', () async {
+    test('§10 — asociar un equipo cuya custodia es de OTRO destino se rechaza', () async {
       final linea = await crearLineaDePrueba();
-      final empleado = await crearEmpleadoDePrueba();
+      final servicioA = await crearServicioDePrueba();
+      final servicioB = await crearServicioDePrueba(codigo: 'SER-000002');
       final articulo = await crearArticuloTelefonoDePrueba();
       final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
-      await asociarEquipo.ejecutar(lineaTelefonicaId: linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 1));
-      await asignarLinea.ejecutar(lineaTelefonicaId: linea.id, empleadoId: empleado.id, fechaInicio: DateTime(2026, 1, 5));
+      await entregarEnInventario(articulo.id, unidad.id, servicioId: servicioB.id);
+      await asignarLinea.ejecutar(lineaTelefonicaId: linea.id, servicioId: servicioA.id, fechaInicio: DateTime(2026, 1, 1));
+
+      final resultado = await asociarEquipo.ejecutar(
+        lineaTelefonicaId: linea.id,
+        unidadId: unidad.id,
+        fechaInicio: DateTime(2026, 1, 5),
+      );
+
+      expect(resultado, isA<AsociarEquipoLineaTelefonicaDestinosDistintos>());
+      expect(await equipoRepo.obtenerActualPorLinea(linea.id), isNull);
+    });
+
+    test('§7 — asociar sin confirmar la alineación no persiste nada; confirmando, alinea SÓLO la línea', () async {
+      final linea = await crearLineaDePrueba();
+      final servicio = await crearServicioDePrueba();
+      final articulo = await crearArticuloTelefonoDePrueba();
+      final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
+      await entregarEnInventario(articulo.id, unidad.id, servicioId: servicio.id);
+
+      final sinConfirmar = await asociarEquipo.ejecutar(
+        lineaTelefonicaId: linea.id,
+        unidadId: unidad.id,
+        fechaInicio: DateTime(2026, 1, 5),
+      );
+      expect(sinConfirmar, isA<AsociarEquipoLineaTelefonicaRequiereAlinearLinea>());
+      expect(await equipoRepo.obtenerActualPorLinea(linea.id), isNull);
+      expect(await asignacionLineaRepo.obtenerActivaPorLinea(linea.id), isNull);
+
+      final custodiaAntes = (await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id))!;
+      final confirmando = await asociarEquipo.ejecutar(
+        lineaTelefonicaId: linea.id,
+        unidadId: unidad.id,
+        fechaInicio: DateTime(2026, 1, 5),
+        alinearLineaConCustodia: true,
+      );
+      expect(confirmando, isA<AsociarEquipoLineaTelefonicaExitoso>(), reason: '$confirmando');
+      expect((await asignacionLineaRepo.obtenerActivaPorLinea(linea.id))!.servicioId, servicio.id);
+      expect((await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id))!.id, custodiaAntes.id,
+          reason: 'la MISMA fila de custodia: Inventario no se tocó');
+    });
+
+    test('baja de línea cierra asignación y equipo, y NO devuelve el teléfono a Inventario', () async {
+      final linea = await crearLineaDePrueba();
+      final servicio = await crearServicioDePrueba();
+      final articulo = await crearArticuloTelefonoDePrueba();
+      final unidad = await crearUnidadTelefonoDePrueba(articulo.id);
+      await entregarEnInventario(articulo.id, unidad.id, servicioId: servicio.id);
+      await asociarEquipo.ejecutar(
+        lineaTelefonicaId: linea.id,
+        unidadId: unidad.id,
+        fechaInicio: DateTime(2026, 1, 2),
+        alinearLineaConCustodia: true,
+      );
 
       await darDeBaja.ejecutar(lineaTelefonicaId: linea.id, fechaBaja: DateTime(2026, 3, 1), motivoBaja: MotivoBajaLineaTelefonica.cancelacion);
 
-      final asignacionCerrada = await asignacionLineaRepo.obtenerActivaPorLinea(linea.id);
-      expect(asignacionCerrada, isNull);
-      final equipoCerrado = await equipoRepo.obtenerActualPorLinea(linea.id);
-      expect(equipoCerrado, isNull);
-
-      expect(await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id), isNull, reason: 'la custodia se libera');
-      final unidadActualizada = await inventarioRepo.obtenerUnidadPorId(unidad.id);
-      expect(
-        unidadActualizada!.estatus,
-        EstatusArticuloUnidad.disponible.name,
-        reason: 'la baja de la línea nunca da de baja el teléfono físico — sigue siendo un activo de Inventario, ahora disponible',
-      );
+      expect(await asignacionLineaRepo.obtenerActivaPorLinea(linea.id), isNull);
+      expect(await equipoRepo.obtenerActualPorLinea(linea.id), isNull);
+      expect((await inventarioAsignacionRepo.obtenerActivaPorUnidad(unidad.id))!.servicioId, servicio.id,
+          reason: 'que se cancele la SIM no recupera el aparato — eso lo decide Inventario');
     });
 
     test('baja de línea sin asignación ni equipo vigentes no falla (no-op)', () async {
@@ -639,7 +713,7 @@ void main() {
       expect(resultado, isA<DarDeBajaLineaTelefonicaExitoso>());
     });
 
-    test('obtenerCustodiaInventarioActual refleja la custodia real reportada por Inventario, sin duplicar datos', () async {
+    test('obtenerCustodiaInventarioActual refleja la custodia real de Inventario, sin duplicar datos', () async {
       final linea = await crearLineaDePrueba();
       final servicio = await crearServicioDePrueba();
       final articulo = await crearArticuloTelefonoDePrueba();
@@ -648,7 +722,7 @@ void main() {
 
       expect(await equipoRepo.obtenerCustodiaInventarioActual(unidad.id), isNull);
 
-      await asignarLinea.ejecutar(lineaTelefonicaId: linea.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 5));
+      await entregarEnInventario(articulo.id, unidad.id, servicioId: servicio.id);
 
       final custodia = await equipoRepo.obtenerCustodiaInventarioActual(unidad.id);
       expect(custodia!.servicioId, servicio.id);

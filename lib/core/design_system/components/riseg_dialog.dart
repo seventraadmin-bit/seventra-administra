@@ -17,6 +17,45 @@ import 'riseg_button.dart';
 /// Deliberadamente sin API de "constructor de formularios": `showForm`
 /// solo aloja el widget que el llamador construya.
 abstract final class RisegDialog {
+  /// Muestra el diálogo que arma [builder] y **no devuelve hasta que la ruta
+  /// terminó de cerrarse por completo**, no sólo hasta que se hizo pop.
+  ///
+  /// La diferencia importa por un fallo real: `showDialog` completa su
+  /// `Future` en cuanto se hace pop, pero la ruta sigue animando la
+  /// salida y sus campos todavía se reconstruyen durante esos
+  /// milisegundos. Prácticamente todos los diálogos de la app liberan
+  /// sus `TextEditingController` justo después de este `await`, así que
+  /// los liberaban **debajo de widgets vivos**: cada `TextFormField`
+  /// lanzaba "A TextEditingController was used after being disposed" al
+  /// reconstruirse, la actualización quedaba a medias y el árbol moría
+  /// con `'_dependents.isEmpty': is not true` — la pantalla roja al
+  /// guardar un Complemento de pago.
+  ///
+  /// Se arregla aquí, en la infraestructura compartida, y no en cada
+  /// llamador: el contrato "cuando esto devuelve, el diálogo ya no
+  /// existe" es justo lo que los ~34 llamadores ya suponían.
+  static Future<T?> _mostrarHastaCerrarDeltodo<T>(
+    BuildContext context,
+    WidgetBuilder builder,
+  ) async {
+    final navigator = Navigator.of(context);
+    final ruta = DialogRoute<T>(
+      context: context,
+      builder: builder,
+      // Mismos valores que usa `showDialog` internamente, para que
+      // cambiar de mecanismo no cambie ni la barrera ni los temas
+      // heredados que la ruta ve.
+      barrierColor: Colors.black54,
+      themes: InheritedTheme.capture(from: context, to: navigator.context),
+    );
+    final resultado = await navigator.push<T>(ruta);
+    // `push` ya resolvió con el valor del pop; `completed` espera a que
+    // la ruta se descarte de verdad.
+    await ruta.completed;
+    return resultado;
+  }
+
+
   /// Confirmación simple de dos acciones. Si [onConfirm] no se da, la
   /// acción primaria cierra el diálogo de inmediato con `true`. Si se da
   /// (ej. una llamada a un repositorio), el diálogo se queda abierto,
@@ -31,9 +70,9 @@ abstract final class RisegDialog {
     bool destructive = false,
     Future<void> Function()? onConfirm,
   }) {
-    return showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => _RisegConfirmationDialog(
+    return _mostrarHastaCerrarDeltodo<bool>(
+      context,
+      (dialogContext) => _RisegConfirmationDialog(
         title: title,
         message: message,
         confirmLabel: confirmLabel,
@@ -51,9 +90,9 @@ abstract final class RisegDialog {
     required String message,
     required String dismissLabel,
   }) {
-    return showDialog<void>(
-      context: context,
-      builder: (dialogContext) => _RisegInfoDialog(title: title, message: message, dismissLabel: dismissLabel),
+    return _mostrarHastaCerrarDeltodo<void>(
+      context,
+      (dialogContext) => _RisegInfoDialog(title: title, message: message, dismissLabel: dismissLabel),
     );
   }
 
@@ -72,9 +111,9 @@ abstract final class RisegDialog {
     required String cancelLabel,
     Future<T?> Function()? onConfirm,
   }) {
-    return showDialog<T>(
-      context: context,
-      builder: (dialogContext) => _RisegFormDialog<T>(
+    return _mostrarHastaCerrarDeltodo<T>(
+      context,
+      (dialogContext) => _RisegFormDialog<T>(
         title: title,
         contentBuilder: contentBuilder,
         confirmLabel: confirmLabel,

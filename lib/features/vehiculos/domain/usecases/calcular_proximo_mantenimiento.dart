@@ -1,5 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../../data/tables/vehiculo_mantenimiento_table.dart';
+
 /// Estado derivado del próximo mantenimiento programado (Etapa 8D) —
 /// nunca notificaciones automáticas (instrucción explícita de Marlon:
 /// "solo alertas derivadas"), solo una clasificación calculada en el
@@ -43,6 +45,10 @@ ProximoMantenimientoVehiculo? calcularProximoMantenimiento(
 }) {
   VehiculoMantenimientoData? conProximo;
   for (final registro in historialOrdenadoDesc) {
+    // Un registro anulado (schemaVersion 80) no programa nada: si el
+    // servicio nunca ocurrió, el "próximo" que dejó agendado tampoco
+    // vale. Al saltarlo, el cálculo vuelve a la fila válida anterior.
+    if (registro.estatus == EstatusMantenimientoVehiculo.cancelado.name) continue;
     if (registro.proximoMantenimientoFecha != null || registro.proximoMantenimientoKilometraje != null) {
       conProximo = registro;
       break;

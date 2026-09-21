@@ -59,4 +59,53 @@ abstract final class AppColors {
   static const warningTextDark = Color(0xFFE0AE5C);
   static const errorBgDark = Color(0xFF33201F);
   static const errorTextDark = Color(0xFFE2918F);
+
+  // Identidad del App Shell (Etapa 16) — mismos valores en ambos temas,
+  // ver el doc comment de `AppColorScheme` para la justificación.
+  // --- Paleta categórica de gráficas ---
+  //
+  // Existe porque los tokens semánticos NO sirven para distinguir
+  // categorías: `accent` (#2E6DA0) e `info` (#1E5C96) son prácticamente
+  // el mismo azul, y usarlos juntos dejaba "Renuncia" e "Inasistencias"
+  // pintadas igual en una composición 50/50.
+  //
+  // Criterios: azul corporativo primero (es la identidad), después
+  // matices sobrios y bien separados entre sí. **El rojo no está en la
+  // rotación**: queda reservado para riesgo/desfavorable, y usarlo como
+  // "categoría 5" haría que un dato neutro se leyera como alarma. El
+  // verde va deliberadamente tarde en el orden, para que una
+  // composición de dos categorías (motivos de baja, por ejemplo) no
+  // pinte una de ellas de verde "aprobatorio".
+  static const categoricaLight = <Color>[
+    Color(0xFF2E6DA0), // azul corporativo
+    Color(0xFFB07A1E), // ámbar
+    Color(0xFF2E7D82), // teal
+    Color(0xFF6B6156), // gris cálido
+    Color(0xFF7A5C8A), // ciruela
+    Color(0xFF2F7A52), // verde
+    Color(0xFF4F473F), // carbón
+    Color(0xFF8C4A3F), // terracota — 8a categoría (Telefonía)
+    Color(0xFF6E7B2E), // oliva — 9a categoría (Servicios Eventuales)
+  ];
+
+  /// Mismos matices, aclarados para leerse sobre el lienzo oscuro.
+  static const categoricaDark = <Color>[
+    Color(0xFF7FB3E0), // azul corporativo
+    Color(0xFFE0AE5C), // ámbar
+    Color(0xFF7CC4C9), // teal
+    Color(0xFFA8A29A), // gris cálido
+    Color(0xFFBFA0CC), // ciruela
+    Color(0xFF86C79E), // verde
+    Color(0xFFCFC7BC), // arena
+    Color(0xFFD79A8E), // terracota clara — 8a categoría (Telefonía)
+    Color(0xFFBCC77A), // oliva clara — 9a categoría (Servicios Eventuales)
+  ];
+
+  static const shellForeground = Color(0xFFFFFFFF);
+  static const shellForegroundMuted = Color(0xFFD7E4EF); // blanco-azulado, contraste fijo
+  static const shellOverlaySubtle = Color(0x1FFFFFFF); // blanco @ ~12%
+  static const shellOverlayStrong = Color(0x33FFFFFF); // blanco @ ~20%
+  static const shellSearchBg = Color(0x24FFFFFF); // blanco @ ~14%
+  static const shellSearchBorder = Color(0x47FFFFFF); // blanco @ ~28%
+  static const shellFocusRing = Color(0xFFFFFFFF);
 }

@@ -42,6 +42,7 @@ class CrearLineaComercialUseCase {
   Future<CrearLineaComercialResultado> ejecutar({
     required String servicioId,
     required LineaComercialBorrador borrador,
+    String? actorUsuarioId,
   }) async {
     final servicio = await _servicioRepository.obtenerPorId(servicioId);
     if (servicio != null && EstatusServicio.values.byName(servicio.estatus) == EstatusServicio.terminado) {
@@ -54,7 +55,11 @@ class CrearLineaComercialUseCase {
     }
 
     try {
-      final creado = await _repository.crearLinea(servicioId: servicioId, datos: validacion.resultado!);
+      final creado = await _repository.crearLinea(
+        servicioId: servicioId,
+        datos: validacion.resultado!,
+        actorUsuarioId: actorUsuarioId,
+      );
       return CrearLineaComercialExitoso(creado.linea, creado.vigencia);
     } catch (e) {
       return CrearLineaComercialErrorInesperado(e.toString());

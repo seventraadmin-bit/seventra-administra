@@ -11,8 +11,10 @@ import 'empresa_expediente_form_controllers.dart';
 import 'empresa_expediente_state.dart';
 import 'widgets/datos_generales_section.dart';
 import 'widgets/direccion_fiscal_section.dart';
-import 'widgets/logotipo_section.dart';
+import 'widgets/ficha_corporativa_header.dart';
 import 'widgets/medios_contacto_section.dart';
+import 'widgets/resumen_empresa_consulta.dart';
+import 'widgets/tarjeta_fiscal_dialog.dart';
 
 /// Pantalla de expediente de Empresa — consulta ↔ edición con
 /// guardado transaccional. `/organizacion` apunta directo aquí mientras
@@ -65,6 +67,11 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
       destructive: true,
     );
     if (confirmado == true) notifier.cancelarEdicion();
+  }
+
+  Future<void> _abrirTarjetaFiscal(EmpresaExpedienteData datos) async {
+    final quiereEditar = await mostrarDialogoTarjetaFiscal(context, datos);
+    if (quiereEditar && mounted) _iniciarEdicion(datos);
   }
 
   Future<void> _guardar() async {
@@ -122,17 +129,36 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
     final esEdicion = state.modo == EmpresaExpedienteModo.edicion;
     final habilitado = !state.guardando;
 
-    final logotipo = const RisegCard(child: LogotipoSection());
-    final mediosContacto = RisegCard(
-      child: MediosContactoSection(
-        modo: state.modo,
-        contacto: datos.medioContacto,
-        controllers: _medioContacto,
-        habilitado: habilitado,
-        errores: state.erroresGuardado,
-        onCampoModificado: notifier.marcarCambiosSinGuardar,
-      ),
-    );
+    // Etapa 16, tercera pasada visual — el logo ya vive en
+    // `FichaCorporativaHeader` (arriba, en ambos modos): la extinta
+    // tarjeta "Logotipo institucional" desaparece por completo, nunca
+    // duplicada. Las acciones (Tarjeta fiscal/Editar) también se mudan
+    // ahí, solo en consulta — en edición, Guardar/Cancelar siguen en
+    // `RisegSectionHeader`, sin cambios de comportamiento.
+    final accionesFicha = esEdicion
+        ? null
+        : Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: [
+              Tooltip(
+                message: l10n.empresaTarjetaFiscalTooltip,
+                child: RisegButton(
+                  key: const Key('empresa_expediente_boton_tarjeta_fiscal'),
+                  label: l10n.empresaExpedienteBotonTarjetaFiscal,
+                  icon: Icons.description_outlined,
+                  variant: RisegButtonVariant.secondary,
+                  onPressed: () => _abrirTarjetaFiscal(datos),
+                ),
+              ),
+              RisegButton(
+                key: const Key('empresa_expediente_boton_editar'),
+                label: l10n.empresaExpedienteBotonEditar,
+                icon: Icons.edit_outlined,
+                onPressed: () => _iniciarEdicion(datos),
+              ),
+            ],
+          );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -144,6 +170,7 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
             children: [
               RisegSectionHeader(
                 title: l10n.empresaExpedienteTitulo,
+                description: esEdicion ? null : l10n.empresaExpedienteSubtitulo,
                 primaryAction: esEdicion
                     ? RisegButton(
                         key: const Key('empresa_expediente_boton_guardar'),
@@ -151,11 +178,7 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
                         loading: state.guardando,
                         onPressed: _guardar,
                       )
-                    : RisegButton(
-                        key: const Key('empresa_expediente_boton_editar'),
-                        label: l10n.empresaExpedienteBotonEditar,
-                        onPressed: () => _iniciarEdicion(datos),
-                      ),
+                    : null,
                 secondaryAction: esEdicion
                     ? RisegButton(
                         key: const Key('empresa_expediente_boton_cancelar'),
@@ -166,57 +189,44 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
                     : null,
               ),
               const SizedBox(height: AppSpacing.xl),
-              RisegCard(
-                child: DatosGeneralesSection(
-                  modo: state.modo,
-                  empresa: datos.empresa,
-                  controllers: _datosGenerales,
-                  habilitado: habilitado,
-                  errores: state.erroresGuardado,
-                  onCampoModificado: notifier.marcarCambiosSinGuardar,
-                ),
-              ),
+              FichaCorporativaHeader(empresa: datos.empresa, acciones: accionesFicha),
               const SizedBox(height: AppSpacing.xl),
-              // Logotipo es una tarjeta pequeña y de solo lectura — se
-              // coloca junto a Medios de contacto (también breve) en
-              // vez de dejarla sola ocupando el ancho completo con
-              // espacio vacío a la derecha.
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < AppBreakpoints.medium) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [logotipo, const SizedBox(height: AppSpacing.xl), mediosContacto],
-                    );
-                  }
-                  // Sin `IntrinsicHeight`: `RisegFieldGrid` (dentro de
-                  // `mediosContacto`) usa su propio `LayoutBuilder`, y
-                  // Flutter no permite calcular dimensiones intrínsecas
-                  // a través de un `LayoutBuilder` — produce un error
-                  // real de layout, no solo una advertencia. Sin altura
-                  // forzada, cada tarjeta simplemente toma su propia
-                  // altura natural.
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(flex: 2, child: logotipo),
-                      const SizedBox(width: AppSpacing.xl),
-                      Expanded(flex: 3, child: mediosContacto),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              RisegCard(
-                child: DireccionFiscalSection(
-                  modo: state.modo,
-                  direccion: datos.direccionFiscal,
-                  controllers: _direccionFiscal,
-                  habilitado: habilitado,
-                  errores: state.erroresGuardado,
-                  onCampoModificado: notifier.marcarCambiosSinGuardar,
+              if (!esEdicion)
+                ResumenEmpresaConsulta(empresa: datos.empresa, direccion: datos.direccionFiscal, contacto: datos.medioContacto)
+              else ...[
+                RisegCard(
+                  child: DatosGeneralesSection(
+                    modo: state.modo,
+                    empresa: datos.empresa,
+                    controllers: _datosGenerales,
+                    habilitado: habilitado,
+                    errores: state.erroresGuardado,
+                    onCampoModificado: notifier.marcarCambiosSinGuardar,
+                  ),
                 ),
-              ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: MediosContactoSection(
+                    modo: state.modo,
+                    contacto: datos.medioContacto,
+                    controllers: _medioContacto,
+                    habilitado: habilitado,
+                    errores: state.erroresGuardado,
+                    onCampoModificado: notifier.marcarCambiosSinGuardar,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                RisegCard(
+                  child: DireccionFiscalSection(
+                    modo: state.modo,
+                    direccion: datos.direccionFiscal,
+                    controllers: _direccionFiscal,
+                    habilitado: habilitado,
+                    errores: state.erroresGuardado,
+                    onCampoModificado: notifier.marcarCambiosSinGuardar,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

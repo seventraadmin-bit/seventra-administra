@@ -38,6 +38,9 @@ class PuestoRepositoryImpl implements PuestoRepository {
   }
 
   @override
+  Future<List<PuestoData>> listarTodos() => _db.select(_db.puesto).get();
+
+  @override
   Future<PuestoData> cambiarCicloVida({required String id, required CicloVidaRegistro nuevo}) async {
     await (_db.update(_db.puesto)..where((t) => t.id.equals(id))).write(
       PuestoCompanion(cicloVidaRegistro: Value(nuevo.name), updatedAt: Value(DateTime.now())),

@@ -16,10 +16,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:riseg_one/app/app.dart';
 import 'package:riseg_one/app/router/app_router.dart';
+import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart' show attachmentStorageProvider;
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
@@ -82,6 +84,11 @@ Future<void> _pumpAppEnPestana(
         appDatabaseProvider.overrideWithValue(db),
         contarUsuariosProvider.overrideWith((ref) async => 1),
         sesionControllerProvider.overrideWith(sesion),
+        // Etapa B: la pestaña Finanzas ahora resuelve Servicio y
+        // Entidad fiscal de cada CxC vía `DocumentoPorEmitirRepository`,
+        // que arrastra `attachmentStorageProvider` (sin `path_provider`
+        // bajo `flutter test`).
+        attachmentStorageProvider.overrideWithValue(AttachmentStorage('.')),
       ],
       child: RisegOneApp(router: createAppRouter()),
     ),
@@ -121,6 +128,11 @@ Future<void> _pumpAppEnRuta(
         appDatabaseProvider.overrideWithValue(db),
         contarUsuariosProvider.overrideWith((ref) async => 1),
         sesionControllerProvider.overrideWith(sesion),
+        // Etapa B: la pestaña Finanzas ahora resuelve Servicio y
+        // Entidad fiscal de cada CxC vía `DocumentoPorEmitirRepository`,
+        // que arrastra `attachmentStorageProvider` (sin `path_provider`
+        // bajo `flutter test`).
+        attachmentStorageProvider.overrideWithValue(AttachmentStorage('.')),
       ],
       child: RisegOneApp(router: createAppRouter()),
     ),

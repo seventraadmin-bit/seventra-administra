@@ -48,7 +48,18 @@ class RisegActionsMenu extends StatelessWidget {
       key: menuKey,
       tooltip: tooltip,
       icon: const Icon(Icons.more_vert),
-      onSelected: (accion) => accion(),
+      // Diferida al siguiente frame — bug real encontrado en
+      // producción (Agenda > Mirabilia > Eliminar físicamente):
+      // `showMenu()` (el mecanismo interno de `PopupMenuButton`)
+      // completa su Future y dispara `onSelected` ANTES de que la
+      // transición de cierre del propio menú termine. Si la acción
+      // abre otro overlay de inmediato (`showDialog`, como cualquier
+      // "Eliminar físicamente"), los dos overlays cerrándose/abriendo
+      // en el mismo frame corrompen el árbol de Elements y Flutter
+      // lanza "InheritedElement: '_dependents.isEmpty': is not true".
+      // Esperar un frame deja que el menú termine de desmontarse
+      // primero — imperceptible para quien usa la app.
+      onSelected: (accion) => WidgetsBinding.instance.addPostFrameCallback((_) => accion()),
       itemBuilder: (_) => [
         for (final accion in actions)
           PopupMenuItem<VoidCallback>(

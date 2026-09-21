@@ -28,6 +28,7 @@ Future<bool> mostrarDialogoGestionarLineaTelefonica(
   final operadorOtroNombreCtrl = TextEditingController(text: linea?.operadorOtroNombre ?? '');
   final iccidCtrl = TextEditingController(text: linea?.iccid ?? '');
   final observacionesCtrl = TextEditingController(text: linea?.observaciones ?? '');
+  final motivoCtrl = TextEditingController();
   OperadorTelefonico operador = linea == null
       ? OperadorTelefonico.telcel
       : OperadorTelefonico.values.byName(linea.operador);
@@ -50,7 +51,16 @@ Future<bool> mostrarDialogoGestionarLineaTelefonica(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              RisegTextField(label: l10n.lineaTelefonicaCampoNumero, controller: numeroCtrl, autofocus: true),
+              RisegTextField(
+                label: l10n.lineaTelefonicaCampoNumero,
+                controller: numeroCtrl,
+                autofocus: true,
+                // El número es opcional por una razón real —SIM en
+                // trámite o portabilidad— y se completa después desde
+                // este mismo diálogo. Decirlo evita que parezca un dato
+                // que se puede omitir para siempre.
+                helperText: l10n.lineaTelefonicaCampoNumeroAyuda,
+              ),
               const SizedBox(height: AppSpacing.md),
               RisegSelect<OperadorTelefonico>(
                 label: l10n.lineaTelefonicaCampoOperador,
@@ -84,6 +94,17 @@ Future<bool> mostrarDialogoGestionarLineaTelefonica(
               ),
               const SizedBox(height: AppSpacing.md),
               RisegTextField(label: l10n.lineaTelefonicaCampoObservaciones, controller: observacionesCtrl),
+              // Corregir la identidad de una línea (número, ICCID,
+              // operador) exige explicar por qué — solo al editar: un
+              // alta no corrige nada.
+              if (esEdicion) ...[
+                const SizedBox(height: AppSpacing.md),
+                RisegTextField(
+                  key: const Key('linea_telefonica_campo_motivo'),
+                  label: l10n.lineaTelefonicaCampoMotivoCorreccion,
+                  controller: motivoCtrl,
+                ),
+              ],
               if (errorGeneral != null) ...[
                 const SizedBox(height: AppSpacing.xs),
                 Text(errorGeneral!, style: AppTypography.caption.copyWith(color: Theme.of(dialogContext).colorScheme.error)),
@@ -113,12 +134,16 @@ Future<bool> mostrarDialogoGestionarLineaTelefonica(
           limpiarIccid: iccid == null,
           limpiarFechaActivacion: fechaActivacion == null,
           limpiarObservaciones: observaciones == null,
+          motivo: motivoCtrl.text,
         );
         if (!context.mounted) return false;
         switch (resultadoCorregir) {
           case CorregirLineaTelefonicaExitoso():
             RisegFeedback.showSuccess(context, l10n.lineaTelefonicaGuardadaExito);
             return true;
+          case CorregirLineaTelefonicaMotivoRequerido():
+            errorGeneral = l10n.lineaTelefonicaErrorMotivoRequerido;
+            return null;
           case CorregirLineaTelefonicaNumeroDuplicado():
             errorGeneral = l10n.lineaTelefonicaErrorNumeroDuplicado;
             return null;
@@ -164,6 +189,7 @@ Future<bool> mostrarDialogoGestionarLineaTelefonica(
     operadorOtroNombreCtrl.dispose();
     iccidCtrl.dispose();
     observacionesCtrl.dispose();
+    motivoCtrl.dispose();
   });
 
   return resultado ?? false;

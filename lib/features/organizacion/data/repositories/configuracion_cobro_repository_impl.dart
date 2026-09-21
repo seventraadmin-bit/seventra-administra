@@ -1,8 +1,14 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/utils/clock.dart';
+import 'package:uuid/uuid.dart';
 
+import '../tables/comercial_evento_table.dart';
+import 'comercial_evento_writer.dart';
 import '../../domain/repositories/configuracion_cobro_repository.dart';
 import '../../domain/usecases/configuracion_cobro_con_vigencia.dart';
 import '../../domain/usecases/configuracion_cobro_etapa_validator.dart';
@@ -14,6 +20,32 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
   final AppDatabase _db;
   final Clock _clock;
 
+  /// BUG REAL (MORGAN ATLACOMULCO): "Nueva vigencia" fallaba siempre con
+  /// `UNIQUE constraint failed: configuracion_cobro_etapa.id`.
+  ///
+  /// `EtapaCobroBorrador.id` es una **clave de correlación dentro del
+  /// lote** — existe para que `etapaReferenciaId` pueda apuntar a una
+  /// etapa hermana antes de que ninguna fila exista. NO es la clave
+  /// primaria de la fila, aunque hasta ahora se insertaba tal cual.
+  ///
+  /// El formulario de Nueva vigencia se precarga con las etapas de la
+  /// vigencia vigente (`EtapaEditState.desdeExistente` conserva su `id`
+  /// real, y debe conservarlo: es lo que mantiene válidas las
+  /// referencias entre etapas mientras se edita). Al guardar, esos
+  /// mismos ids llegaban aquí y se intentaban insertar como filas
+  /// NUEVAS de una vigencia NUEVA — colisión de llave primaria contra
+  /// las filas de la vigencia anterior, que siguen existiendo porque el
+  /// histórico no se toca. La transacción revertía todo, así que la
+  /// vigencia anterior quedaba intacta y la nueva no se creaba:
+  /// exactamente el síntoma reportado.
+  ///
+  /// La identidad de la fila la asigna la capa de persistencia, aquí:
+  /// se reasigna un id nuevo a cada etapa y se remapea
+  /// `etapaReferenciaId` por el mismo diccionario, de modo que el grafo
+  /// de referencias del lote se conserva idéntico. Corregirlo aquí (y no
+  /// en el formulario) deja bien a TODOS los llamadores — alta,
+  /// corrección y nueva vigencia — y no vuelve a romperse si mañana otro
+  /// llamador reusa ids.
   Future<void> _insertarCorreosYEtapas({
     required String vigenciaId,
     required List<String> correos,
@@ -30,10 +62,14 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
             ConfiguracionCobroCorreoCompanion.insert(configuracionCobroVigenciaId: vigenciaId, correo: correo),
           );
     }
+
+    final idPersistido = {for (final etapa in etapas) etapa.id: const Uuid().v4()};
+
     for (final etapa in etapas) {
+      final referencia = etapa.etapaReferenciaId;
       await _db.into(_db.configuracionCobroEtapa).insert(
             ConfiguracionCobroEtapaCompanion.insert(
-              id: etapa.id,
+              id: idPersistido[etapa.id]!,
               configuracionCobroVigenciaId: vigenciaId,
               tipoSistema: Value(etapa.tipoSistema?.name),
               nombre: Value(etapa.nombre),
@@ -44,18 +80,83 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
               ordinalSemana: Value(etapa.ordinalSemana?.name),
               diaSemana: Value(etapa.diaSemana?.name),
               offsetDias: Value(etapa.offsetDias),
-              etapaReferenciaId: Value(etapa.etapaReferenciaId),
+              // Una referencia siempre apunta a una etapa del MISMO lote
+              // (lo garantiza `ConfiguracionCobroEtapaValidator`), así
+              // que el diccionario siempre la resuelve. El `??` deja la
+              // referencia original solo por defensa: nunca debería
+              // usarse, y si se usara la FK diferida la rechazaría en
+              // vez de escribir un vínculo silenciosamente roto.
+              etapaReferenciaId: Value(referencia == null ? null : idPersistido[referencia] ?? referencia),
               referenciaCierrePeriodo: Value(etapa.referenciaCierrePeriodo),
             ),
           );
     }
   }
 
+  /// Las reglas de cobro de una vigencia, tal como quedan.
+  ///
+  /// Se usa como snapshot en los hechos que ABREN reglas (alta y nueva
+  /// vigencia): ahí no hay un "antes" que comparar; lo que hay que
+  /// poder responder después es qué empezó a aplicar y desde cuándo se
+  /// factura o se espera cobrar.
+  Map<String, dynamic> _reglasDe(ConfiguracionCobroVigenciaData v) => {
+        'vigenciaId': v.id,
+        'tipoDocumento': v.tipoDocumento,
+        'frecuenciaId': v.frecuenciaId,
+        'diaInicioPeriodo': v.diaInicioPeriodo,
+        'agrupacion': v.agrupacion,
+        'metodo': v.metodo,
+        'requiereComplemento': v.requiereComplemento,
+        'entidadFiscalId': v.entidadFiscalId,
+        'fechaInicioVigencia': v.fechaInicioVigencia.toIso8601String(),
+        'fechaFinVigencia': v.fechaFinVigencia?.toIso8601String(),
+      };
+
+  /// Resumen de las etapas — qué determina CUÁNDO se factura y cuándo
+  /// se espera el pago. Se guarda la forma de cada regla y su
+  /// referencia ya remapeada, nunca el id del borrador.
+  Future<List<Map<String, dynamic>>> _resumenEtapas(String vigenciaId) async {
+    final etapas = await listarEtapas(vigenciaId);
+    return [
+      for (final e in etapas)
+        {
+          'etapaId': e.id,
+          'tipoSistema': e.tipoSistema,
+          'nombre': e.nombre,
+          'orden': e.orden,
+          'tipoRegla': e.tipoRegla,
+          'mesRelativo': e.mesRelativo,
+          'diaDelMes': e.diaDelMes,
+          'ordinalSemana': e.ordinalSemana,
+          'diaSemana': e.diaSemana,
+          'offsetDias': e.offsetDias,
+          'etapaReferenciaId': e.etapaReferenciaId,
+          'referenciaCierrePeriodo': e.referenciaCierrePeriodo,
+        },
+    ];
+  }
+
+  DiffEvento _diffReglas(ConfiguracionCobroVigenciaData antes, ConfiguracionCobroVigenciaData despues) =>
+      DiffEvento()
+        ..anotar('tipoDocumento', antes.tipoDocumento, despues.tipoDocumento)
+        ..anotar('frecuenciaId', antes.frecuenciaId, despues.frecuenciaId)
+        ..anotar('diaInicioPeriodo', antes.diaInicioPeriodo, despues.diaInicioPeriodo)
+        ..anotar('agrupacion', antes.agrupacion, despues.agrupacion)
+        ..anotar('metodo', antes.metodo, despues.metodo)
+        ..anotar('requiereComplemento', antes.requiereComplemento, despues.requiereComplemento)
+        ..anotar('entidadFiscalId', antes.entidadFiscalId, despues.entidadFiscalId)
+        ..anotar('clientePortalId', antes.clientePortalId, despues.clientePortalId)
+        ..anotar('cuentaBancaria', antes.cuentaBancaria, despues.cuentaBancaria)
+        ..anotar('observaciones', antes.observaciones, despues.observaciones)
+        ..anotar('fechaInicioVigencia', antes.fechaInicioVigencia, despues.fechaInicioVigencia)
+        ..anotar('fechaFinVigencia', antes.fechaFinVigencia, despues.fechaFinVigencia);
+
   @override
   Future<({ConfiguracionCobroData configuracion, ConfiguracionCobroVigenciaData vigencia})> crearConfiguracion({
     required String servicioId,
     required ConfiguracionCobroValidada datos,
     required List<EtapaCobroValidada> etapas,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final configuracion = await _db.into(_db.configuracionCobro).insertReturning(
@@ -80,6 +181,17 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
           );
 
       await _insertarCorreosYEtapas(vigenciaId: vigencia.id, correos: datos.correos, etapas: etapas);
+
+      // Alta: sin motivo — no hay nada que enmendar. Se guarda qué reglas
+      // de facturación y cobro empiezan a aplicar, con sus etapas ya
+      // persistidas (ids reales, nunca los del borrador).
+      await registrarEventoConfiguracionCobro(
+        _db,
+        configuracionCobroId: configuracion.id,
+        tipoEvento: TipoEventoConfiguracionCobro.creada,
+        actorUsuarioId: actorUsuarioId,
+        datosRelevantes: {..._reglasDe(vigencia), 'etapas': await _resumenEtapas(vigencia.id)},
+      );
 
       return (configuracion: configuracion, vigencia: vigencia);
     });
@@ -194,6 +306,8 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
     required String configuracionCobroId,
     required ConfiguracionCobroValidada datos,
     required List<EtapaCobroValidada> etapas,
+    String? observacion,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final existentes = await _vigenciasActivas(configuracionCobroId);
@@ -257,6 +371,22 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
 
       await _insertarCorreosYEtapas(vigenciaId: nueva.id, correos: datos.correos, etapas: etapas);
 
+      // Abrir una vigencia NUEVA de cobro es un hecho de negocio: la
+      // anterior queda histórica, intacta. Nunca se registra como
+      // corrección.
+      await registrarEventoConfiguracionCobro(
+        _db,
+        configuracionCobroId: configuracionCobroId,
+        tipoEvento: TipoEventoConfiguracionCobro.vigenciaAbierta,
+        observacion: observacion,
+        actorUsuarioId: actorUsuarioId,
+        datosRelevantes: {
+          if (predecesora != null) 'vigenciaAnteriorId': predecesora.id,
+          ..._reglasDe(nueva),
+          'etapas': await _resumenEtapas(nueva.id),
+        },
+      );
+
       return nueva;
     });
   }
@@ -265,18 +395,38 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
   Future<ConfiguracionCobroVigenciaData> cerrarVigencia({
     required String vigenciaId,
     required DateTime fechaEfectiva,
-  }) async {
-    await (_db.update(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).write(
-      ConfiguracionCobroVigenciaCompanion(
-        fechaFinVigencia: Value(fechaEfectiva),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
-    return (_db.select(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).getSingle();
+    String? motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final antes =
+          await (_db.select(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).getSingle();
+      await (_db.update(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).write(
+        ConfiguracionCobroVigenciaCompanion(
+          fechaFinVigencia: Value(fechaEfectiva),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      final cerrada =
+          await (_db.select(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).getSingle();
+
+      final diff = DiffEvento()..anotar('fechaFinVigencia', antes.fechaFinVigencia, cerrada.fechaFinVigencia);
+      await registrarEventoConfiguracionCobro(
+        _db,
+        configuracionCobroId: cerrada.configuracionCobroId,
+        tipoEvento: TipoEventoConfiguracionCobro.cerrada,
+        estadoAnterior: diff.estadoAnteriorJson,
+        estadoNuevo: diff.estadoNuevoJson,
+        observacion: motivo,
+        actorUsuarioId: actorUsuarioId,
+        datosRelevantes: {'vigenciaId': vigenciaId},
+      );
+      return cerrada;
+    });
   }
 
   @override
-  Future<void> cancelarVigenciaProgramada(String vigenciaId) {
+  Future<void> cancelarVigenciaProgramada(String vigenciaId, {String? motivo, String? actorUsuarioId}) {
     return _db.transaction(() async {
       final cancelada =
           await (_db.select(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).getSingle();
@@ -308,6 +458,21 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
           cicloVidaRegistro: Value(CicloVidaRegistro.archivado.name),
           updatedAt: Value(DateTime.now()),
         ),
+      );
+
+      // La vigencia cancelada NO se borra: queda archivada y sigue en
+      // el historial. El evento deja claro cuál fue y qué reglas de
+      // cobro se habían programado.
+      await registrarEventoConfiguracionCobro(
+        _db,
+        configuracionCobroId: cancelada.configuracionCobroId,
+        tipoEvento: TipoEventoConfiguracionCobro.vigenciaCancelada,
+        observacion: motivo,
+        actorUsuarioId: actorUsuarioId,
+        datosRelevantes: {
+          if (predecesora != null) 'vigenciaRestauradaId': predecesora.id,
+          ..._reglasDe(cancelada),
+        },
       );
     });
   }
@@ -381,8 +546,13 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
     required String vigenciaId,
     required ConfiguracionCobroValidada datos,
     required List<EtapaCobroValidada> etapas,
+    String? motivo,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
+      final antesCorreccion =
+          await (_db.select(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).getSingle();
+      final etapasAntes = await _resumenEtapas(vigenciaId);
       await (_db.update(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).write(
         ConfiguracionCobroVigenciaCompanion(
           tipoDocumento: Value(datos.tipoDocumento.name),
@@ -418,8 +588,32 @@ class ConfiguracionCobroRepositoryImpl implements ConfiguracionCobroRepository {
       await (_db.delete(_db.configuracionCobroEtapa)..where((t) => t.configuracionCobroVigenciaId.equals(vigenciaId)))
           .go();
       await _insertarCorreosYEtapas(vigenciaId: vigenciaId, correos: datos.correos, etapas: etapas);
+      final despuesCorreccion =
+          await (_db.select(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).getSingle();
+      final etapasDespues = await _resumenEtapas(vigenciaId);
 
-      return (_db.select(_db.configuracionCobroVigencia)..where((t) => t.id.equals(vigenciaId))).getSingle();
+      // Corrección de una vigencia EXISTENTE. Las etapas se comparan
+      // como conjunto: se reemplazan enteras, así que el diff campo a
+      // campo no las describiría.
+      final diff = _diffReglas(antesCorreccion, despuesCorreccion);
+      final etapasCambiaron = jsonEncode(etapasAntes) != jsonEncode(etapasDespues);
+      if (diff.hayCambios || etapasCambiaron) {
+        await registrarEventoConfiguracionCobro(
+          _db,
+          configuracionCobroId: despuesCorreccion.configuracionCobroId,
+          tipoEvento: TipoEventoConfiguracionCobro.corregida,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+          datosRelevantes: {
+            'vigenciaId': vigenciaId,
+            if (etapasCambiaron) 'etapasAntes': etapasAntes,
+            if (etapasCambiaron) 'etapasDespues': etapasDespues,
+          },
+        );
+      }
+      return despuesCorreccion;
     });
   }
 }

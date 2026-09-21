@@ -1,3 +1,4 @@
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 
@@ -11,6 +12,10 @@ class CambiarEstatusClienteExitoso extends CambiarEstatusClienteResultado {
   CambiarEstatusClienteExitoso(this.cliente);
   final ClienteData cliente;
 }
+
+/// El motivo es obligatorio: un Cliente suspendido o terminado sin
+/// explicación deja una decisión comercial sin dueño.
+class CambiarEstatusClienteMotivoRequerido extends CambiarEstatusClienteResultado {}
 
 class CambiarEstatusClienteErrorInesperado extends CambiarEstatusClienteResultado {
   CambiarEstatusClienteErrorInesperado(this.mensaje);
@@ -29,9 +34,17 @@ class CambiarEstatusClienteUseCase {
   Future<CambiarEstatusClienteResultado> ejecutar({
     required String clienteId,
     required EstatusCliente nuevo,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return CambiarEstatusClienteMotivoRequerido();
     try {
-      final actualizado = await _repository.cambiarEstatus(id: clienteId, nuevo: nuevo);
+      final actualizado = await _repository.cambiarEstatus(
+        id: clienteId,
+        nuevo: nuevo,
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
+      );
       return CambiarEstatusClienteExitoso(actualizado);
     } catch (e) {
       return CambiarEstatusClienteErrorInesperado(e.toString());

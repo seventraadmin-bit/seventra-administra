@@ -16,6 +16,16 @@ abstract interface class DocumentoPorEmitirRepository {
   /// único de la tabla es la protección real contra concurrencia).
   Future<DocumentoPorEmitirData?> obtenerPorGenerationKey(String generationKey);
 
+  /// Documentos que representan el MISMO hecho comercial que
+  /// [claveComercial] —mismo cliente, entidad fiscal, servicios,
+  /// periodo, tipo y agrupación— sin importar qué vigencia de la
+  /// configuración de cobro los originó.
+  ///
+  /// La generación lo consulta para no volver a pedir un periodo que
+  /// ya está materializado cuando una vigencia retroactiva cambia la
+  /// `generationKey`. Ver `claveComercialDeGenerationKey`.
+  Future<List<DocumentoPorEmitirData>> listarPorClaveComercial(String claveComercial);
+
   Future<DocumentoPorEmitirData?> obtenerPorId(String documentoPorEmitirId);
 
   /// Inserta el documento y sus tablas hijas, y el primer evento de
@@ -32,6 +42,18 @@ abstract interface class DocumentoPorEmitirRepository {
   /// Hitos planeados del documento (Etapa 15), ordenados por `orden` —
   /// ver el doc comment de `DocumentoPorEmitirDetalle.hitos`.
   Future<List<DocumentoPorEmitirHitoData>> listarHitos(String documentoPorEmitirId);
+
+  /// Servicios cubiertos por cada documento de [ids], en UNA consulta.
+  ///
+  /// La relación es N:M real (un mismo documento puede facturar varios
+  /// Servicios), asi que la llave apunta a una lista y no a un id
+  /// suelto. Existe para que Reportes resuelva el Servicio de cientos
+  /// de Cuentas por cobrar sin consultar documento por documento.
+  Future<Map<String, List<String>>> listarServicioIdsPorDocumento(Iterable<String> ids);
+
+  /// Documentos por id, en una sola consulta — resuelve la Entidad
+  /// fiscal (y el resto del snapshot) de un lote de Cuentas por cobrar.
+  Future<Map<String, DocumentoPorEmitirData>> listarPorIds(Iterable<String> ids);
 
   Future<List<DocumentoPorEmitirData>> listar({
     DateTime? rangoInicio,

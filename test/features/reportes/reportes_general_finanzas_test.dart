@@ -8,6 +8,10 @@
 // de `ResumenGeneralReportes` es `null` cuando no se incluye (nunca un
 // `0` indistinguible de un cero real autorizado).
 
+import 'package:riseg_one/features/finanzas/data/repositories/cuenta_financiera_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/pago_repository_impl.dart';
+import 'package:riseg_one/features/servicios_eventuales/data/repositories/servicio_eventual_repository_impl.dart';
+import 'package:riseg_one/features/vehiculos/data/repositories/vehiculo_mantenimiento_repository_impl.dart';
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -21,17 +25,20 @@ import 'package:riseg_one/features/compras/data/repositories/compra_repository_i
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/categoria_financiera_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/ingreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/domain/repositories/egreso_repository.dart';
 import 'package:riseg_one/features/finanzas/domain/repositories/ingreso_repository.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/crear_categoria_financiera_usecase.dart';
-import 'package:riseg_one/features/finanzas/domain/usecases/obtener_resumen_financiero_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_ingreso_manual_usecase.dart';
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
+import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/descuentos_personal/data/repositories/descuento_programado_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/repositories/nomina_repository_impl.dart';
+import 'package:riseg_one/features/tiempos_extra/data/repositories/tiempo_extra_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/repositories/pago_nomina_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/tables/nomina_table.dart';
 import 'package:riseg_one/features/nomina/domain/repositories/pago_nomina_repository.dart';
@@ -51,8 +58,12 @@ import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/repositories/empleado_repository.dart';
 import 'package:riseg_one/features/personal/domain/usecases/crear_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/empleado_validator.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/cuenta_por_cobrar_repository_impl.dart';
+import 'package:riseg_one/features/reportes/domain/analitica/comparacion_periodo.dart';
+import 'package:riseg_one/features/reportes/domain/analitica/obtener_analisis_operativo_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/clasificar_egresos_por_origen_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_general_usecase.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/recarga_linea_telefonica_repository_impl.dart';
 
 void main() {
   late AppDatabase db;
@@ -77,8 +88,6 @@ void main() {
   late PagoNominaRepository pagoNominaRepo;
   late RegistrarPagoNominaUseCase registrarPagoNomina;
 
-  late ObtenerResumenFinancieroUseCase resumenFinanciero;
-
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     tempDir = Directory.systemTemp.createTempSync('riseg_reportes_test_');
@@ -88,13 +97,14 @@ void main() {
     categoriaRepo = CategoriaFinancieraRepositoryImpl(db);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     registrarIngreso = RegistrarIngresoManualUseCase(ingresoRepo, generarCodigo);
-    registrarEgreso = RegistrarEgresoUseCase(egresoRepo, generarCodigo);
     crearCategoria = CrearCategoriaFinancieraUseCase(categoriaRepo);
 
     final articuloRepo = ArticuloRepositoryImpl(db);
     final inventarioRepo = InventarioRepositoryImpl(db);
-    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
+    final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
+    registrarEgreso = RegistrarEgresoUseCase(egresoRepo, generarCodigo, deudaRepo);
 
     final asignacionRepo = AsignacionServicioRepositoryImpl(db);
     empleadoRepo = EmpleadoRepositoryImpl(db, asignacionRepo);
@@ -111,15 +121,14 @@ void main() {
       ServicioComercialRepositoryImpl(db),
     );
 
-    nominaRepo = NominaRepositoryImpl(db);
+    nominaRepo = NominaRepositoryImpl(db, AsignacionRepositoryImpl(db), DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db)), TiempoExtraRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db), EmpleadoRepositoryImpl(db, AsignacionServicioRepositoryImpl(db)), ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db))), PagoNominaRepositoryImpl(db, EgresoRepositoryImpl(db), DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db))));
     final resolverSueldo = ResolverSueldoEmpleadoNomina(empleadoRepo, asignacionRepo, servicioRepo, catalogoRepo);
     generarNomina = GenerarNominaUseCase(nominaRepo, empleadoRepo, puestoRepo, catalogoRepo, resolverSueldo, generarCodigo);
     final evaluarRevision = EvaluarRenglonesRequierenRevisionUseCase(nominaRepo, empleadoRepo, resolverSueldo);
     cerrarNomina = CerrarNominaUseCase(nominaRepo, evaluarRevision);
-    pagoNominaRepo = PagoNominaRepositoryImpl(db, egresoRepo);
-    registrarPagoNomina = RegistrarPagoNominaUseCase(pagoNominaRepo, nominaRepo, generarCodigo);
+    pagoNominaRepo = PagoNominaRepositoryImpl(db, egresoRepo, DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db)));
+    registrarPagoNomina = RegistrarPagoNominaUseCase(pagoNominaRepo, nominaRepo, generarCodigo, CuentaFinancieraRepositoryImpl(db));
 
-    resumenFinanciero = ObtenerResumenFinancieroUseCase(ingresoRepo, egresoRepo);
   });
 
   tearDown(() {
@@ -161,6 +170,7 @@ void main() {
       nominaId: generado.nomina.id,
       fechaPago: fechaPago ?? DateTime(2026, 1, 20),
       formaPago: 'transferencia',
+      cuentaFinancieraId: await _cuentaDePrueba(db),
       aplicaciones: [(nominaEmpleadoId: renglon.id, monto: renglon.totalAPagar)],
     );
     return (resultado as RegistrarPagoNominaExitoso).pagoNomina;
@@ -273,7 +283,17 @@ void main() {
     late ClasificarEgresosPorOrigenUseCase clasificar;
 
     setUp(() {
-      clasificar = ClasificarEgresosPorOrigenUseCase(egresoRepo, compraRepo, pagoNominaRepo);
+      clasificar = ClasificarEgresosPorOrigenUseCase(
+        egresoRepo,
+        compraRepo,
+        pagoNominaRepo,
+        TiempoExtraRepositoryImpl(db, egresoRepo, DeudaRepositoryImpl(db, egresoRepo), CodigoSecuenciaService(db), empleadoRepo, servicioRepo),
+        RecargaLineaTelefonicaRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db)),
+        DeudaRepositoryImpl(db, egresoRepo),
+        DescuentoProgramadoRepositoryImpl(db, egresoRepo, CodigoSecuenciaService(db)),
+        VehiculoMantenimientoRepositoryImpl(db),
+        ServicioEventualRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db), CuentaPorCobrarRepositoryImpl(db), PagoRepositoryImpl(db)),
+      );
     });
 
     test('clasifica correctamente Compra, Nómina y manual, y la suma coincide con totalEgresos', () async {
@@ -312,13 +332,36 @@ void main() {
     late ObtenerResumenGeneralUseCase obtenerResumen;
 
     setUp(() {
-      obtenerResumen = ObtenerResumenGeneralUseCase(resumenFinanciero, compraRepo, pagoNominaRepo, empleadoRepo, servicioRepo);
+      // El resumen General ya no compone `ObtenerResumenFinancieroUseCase`:
+      // consume la capa analítica, que es la fuente única del gasto
+      // operativo y del resultado (ver `ObtenerAnalisisOperativoUseCase`).
+      obtenerResumen = ObtenerResumenGeneralUseCase(
+        ObtenerAnalisisOperativoUseCase(
+          ingresoRepo,
+          DeudaRepositoryImpl(db, egresoRepo),
+          ClasificarEgresosPorOrigenUseCase(
+            egresoRepo,
+            compraRepo,
+            pagoNominaRepo,
+            TiempoExtraRepositoryImpl(db, egresoRepo, DeudaRepositoryImpl(db, egresoRepo), CodigoSecuenciaService(db), empleadoRepo, servicioRepo),
+            RecargaLineaTelefonicaRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db)),
+            DeudaRepositoryImpl(db, egresoRepo),
+            DescuentoProgramadoRepositoryImpl(db, egresoRepo, CodigoSecuenciaService(db)),
+            VehiculoMantenimientoRepositoryImpl(db),
+            ServicioEventualRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db), CuentaPorCobrarRepositoryImpl(db), PagoRepositoryImpl(db)),
+          ),
+        ),
+        compraRepo,
+        pagoNominaRepo,
+        empleadoRepo,
+        servicioRepo,
+        CuentaPorCobrarRepositoryImpl(db),
+      );
     });
 
     test('con todas las secciones excluidas, cada campo es null (no cero)', () async {
       final resumen = await obtenerResumen.ejecutar(
-        rangoInicio: DateTime(2026, 1, 1),
-        rangoFin: DateTime(2026, 1, 31),
+        rango: RangoPeriodo(inicio: DateTime(2026, 1, 1), fin: DateTime(2026, 1, 31)),
         incluirFinanzas: false,
         incluirCompras: false,
         incluirNomina: false,
@@ -327,7 +370,7 @@ void main() {
       );
 
       expect(resumen.totalIngresos, isNull);
-      expect(resumen.totalEgresos, isNull);
+      expect(resumen.gastoOperativo, isNull);
       expect(resumen.resultadoOperativo, isNull);
       expect(resumen.totalComprasPeriodo, isNull);
       expect(resumen.totalNominaPagadaPeriodo, isNull);
@@ -337,8 +380,7 @@ void main() {
 
     test('con todas las secciones incluidas mas sin datos, cada campo es un cero real (no null)', () async {
       final resumen = await obtenerResumen.ejecutar(
-        rangoInicio: DateTime(2026, 1, 1),
-        rangoFin: DateTime(2026, 1, 31),
+        rango: RangoPeriodo(inicio: DateTime(2026, 1, 1), fin: DateTime(2026, 1, 31)),
         incluirFinanzas: true,
         incluirCompras: true,
         incluirNomina: true,
@@ -347,7 +389,7 @@ void main() {
       );
 
       expect(resumen.totalIngresos, 0);
-      expect(resumen.totalEgresos, 0);
+      expect(resumen.gastoOperativo, 0);
       expect(resumen.resultadoOperativo, 0);
       expect(resumen.totalComprasPeriodo, 0);
       expect(resumen.totalNominaPagadaPeriodo, 0);
@@ -361,8 +403,7 @@ void main() {
       final pagoNomina = await pagoNominaDePrueba(fechaPago: DateTime(2026, 1, 20));
 
       final resumen = await obtenerResumen.ejecutar(
-        rangoInicio: DateTime(2026, 1, 1),
-        rangoFin: DateTime(2026, 1, 31),
+        rango: RangoPeriodo(inicio: DateTime(2026, 1, 1), fin: DateTime(2026, 1, 31)),
         incluirFinanzas: true,
         incluirCompras: true,
         incluirNomina: true,
@@ -374,10 +415,31 @@ void main() {
       // uno generó exactamente un Egreso automático) — el resultado
       // operativo debe reflejar exactamente Ingresos - Egresos, sin
       // restar Compras/Nómina una segunda vez.
-      expect(resumen.totalEgresos, greaterThanOrEqualTo(compra.egresoId == null ? 0 : 20000));
-      expect(resumen.resultadoOperativo, resumen.totalIngresos! - resumen.totalEgresos!);
+      expect(resumen.gastoOperativo, greaterThanOrEqualTo(compra.egresoId == null ? 0 : 20000));
+      expect(resumen.resultadoOperativo, resumen.totalIngresos! - resumen.gastoOperativo!);
       expect(resumen.totalComprasPeriodo, 20000, reason: 'indicador informativo aparte');
       expect(resumen.totalNominaPagadaPeriodo, pagoNomina.montoTotal, reason: 'indicador informativo aparte');
     });
   });
+}
+
+/// La cuenta de origen de los pagos de Nómina en esta prueba.
+///
+/// Reutiliza la primera que el archivo ya haya creado; sólo inventa una
+/// si no hay ninguna. Desde la Etapa de integridad financiera, un pago
+/// de Nómina con monto > 0 exige cuenta: sin ella el Egreso nacería sin
+/// origen y ningún saldo bajaría.
+Future<String> _cuentaDePrueba(AppDatabase db) async {
+  final existentes = await db.select(db.cuentaFinanciera).get();
+  if (existentes.isNotEmpty) return existentes.first.id;
+  final cuenta = await db.into(db.cuentaFinanciera).insertReturning(
+        CuentaFinancieraCompanion.insert(
+          codigo: 'CF-NOMINA-PRUEBA',
+          nombre: 'Cuenta de prueba',
+          tipo: 'banco',
+          saldoInicial: 100000000, // fondeada: la v91 rechaza salidas sin saldo
+          fechaSaldoInicial: DateTime(2020, 1, 1),
+        ),
+      );
+  return cuenta.id;
 }

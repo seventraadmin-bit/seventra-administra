@@ -410,6 +410,9 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
         case CorregirEmpleadoBancoOtroDescripcionRequerida():
           errorBancoOtroDescripcion = l10n.empleadoErrorBancoOtroDescripcionRequerido;
           return false;
+        case CorregirEmpleadoAdscripcionAmbigua():
+          RisegFeedback.showError(context, l10n.empleadoErrorAdscripcionAmbigua);
+          return false;
         case CorregirEmpleadoSueldoAdministrativoInvalido():
           errorSueldoAdministrativo = l10n.empleadoErrorSueldoAdministrativoInvalido;
           return false;
@@ -426,47 +429,40 @@ Future<bool> mostrarDialogoCorregirEmpleado(BuildContext context, WidgetRef ref,
     },
   );
 
-  // Diferido por el mismo motivo que `crear_empleado_dialog.dart`: la
-  // animación de salida del diálogo sigue montada unos instantes
-  // después de que `RisegDialog.showForm` resuelve — liberar los
-  // controllers de inmediato arriesga el mismo "TextEditingController
-  // was used after being disposed" ya corregido ahí. Este diálogo es
-  // igual de grande (mismos campos + datos bancarios/condición
-  // administrativa nuevos), mismo riesgo.
-  unawaited(
-    Future.delayed(const Duration(milliseconds: 300), () {
-      for (final c in [
-        nombresController,
-        apellidoPaternoController,
-        apellidoMaternoController,
-        curpController,
-        rfcController,
-        codigoPostalFiscalController,
-        nssController,
-        nacionalidadController,
-        telefonoController,
-        correoController,
-        contactoEmergenciaNombreController,
-        telefonoEmergenciaController,
-        parentescoEmergenciaController,
-        bancoOtroDescripcionController,
-        numeroCuentaTarjetaController,
-        clabeController,
-        sueldoMensualAdministrativoController,
-        bonoMensualAdministrativoController,
-        observacionesController,
-        observacionesEscolaridadController,
-        aniosExperienciaController,
-        mesesExperienciaController,
-        ultimoPuestoController,
-        resumenExperienciaController,
-        observacionesExperienciaController,
-        motivoController,
-      ]) {
-        c.dispose();
-      }
-    }),
-  );
+  // Liberar aquí es seguro: `RisegDialog.showForm` no devuelve
+  // hasta que la ruta del diálogo terminó de cerrarse (ver su
+  // documentación). Antes sí hacía falta aplazarlo 300 ms, y ese
+  // aplazamiento dejaba un Timer vivo después de desmontar el árbol.
+  for (final c in [
+    nombresController,
+    apellidoPaternoController,
+    apellidoMaternoController,
+    curpController,
+    rfcController,
+    codigoPostalFiscalController,
+    nssController,
+    nacionalidadController,
+    telefonoController,
+    correoController,
+    contactoEmergenciaNombreController,
+    telefonoEmergenciaController,
+    parentescoEmergenciaController,
+    bancoOtroDescripcionController,
+    numeroCuentaTarjetaController,
+    clabeController,
+    sueldoMensualAdministrativoController,
+    bonoMensualAdministrativoController,
+    observacionesController,
+    observacionesEscolaridadController,
+    aniosExperienciaController,
+    mesesExperienciaController,
+    ultimoPuestoController,
+    resumenExperienciaController,
+    observacionesExperienciaController,
+    motivoController,
+  ]) {
+    c.dispose();
+  }
 
   return resultado ?? false;
 }

@@ -1,6 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import '../repositories/entidad_fiscal_repository.dart';
 
 /// Resultado de [CambiarCicloVidaEntidadFiscalUseCase] — su propio tipo
@@ -11,6 +12,9 @@ class CambiarCicloVidaEntidadFiscalExitoso extends CambiarCicloVidaEntidadFiscal
   CambiarCicloVidaEntidadFiscalExitoso(this.entidadFiscal);
   final EntidadFiscalData entidadFiscal;
 }
+
+/// Archivar o reactivar una Entidad fiscal exige explicar por qué.
+class CambiarCicloVidaEntidadFiscalMotivoRequerido extends CambiarCicloVidaEntidadFiscalResultado {}
 
 class CambiarCicloVidaEntidadFiscalErrorInesperado extends CambiarCicloVidaEntidadFiscalResultado {
   CambiarCicloVidaEntidadFiscalErrorInesperado(this.mensaje);
@@ -35,9 +39,17 @@ class CambiarCicloVidaEntidadFiscalUseCase {
   Future<CambiarCicloVidaEntidadFiscalResultado> ejecutar({
     required String entidadFiscalId,
     required CicloVidaRegistro nuevo,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return CambiarCicloVidaEntidadFiscalMotivoRequerido();
     try {
-      final actualizada = await _repository.cambiarCicloVida(id: entidadFiscalId, nuevo: nuevo);
+      final actualizada = await _repository.cambiarCicloVida(
+        id: entidadFiscalId,
+        nuevo: nuevo,
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
+      );
       return CambiarCicloVidaEntidadFiscalExitoso(actualizada);
     } catch (e) {
       return CambiarCicloVidaEntidadFiscalErrorInesperado(e.toString());

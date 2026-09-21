@@ -1,8 +1,11 @@
 import 'package:drift/drift.dart';
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
 
+import '../tables/comercial_evento_table.dart';
+import 'comercial_evento_writer.dart';
 import '../../domain/repositories/entidad_fiscal_repository.dart';
 import '../../domain/shared/direccion_input.dart';
 
@@ -12,8 +15,25 @@ class EntidadFiscalRepositoryImpl implements EntidadFiscalRepository {
   final AppDatabase _db;
 
   @override
-  Future<EntidadFiscalData> crear(EntidadFiscalCompanion datos) {
-    return _db.into(_db.entidadFiscal).insertReturning(datos);
+  Future<EntidadFiscalData> crear(EntidadFiscalCompanion datos, {String? actorUsuarioId}) {
+    // Un alta no lleva motivo —no hay nada que justificar todavía—
+    // pero sí deja constancia de quién la dio de alta y cuándo.
+    return _db.transaction(() async {
+      final creada = await _db.into(_db.entidadFiscal).insertReturning(datos);
+      await registrarEventoCliente(
+        _db,
+        clienteId: creada.clienteId,
+        tipoEvento: TipoEventoCliente.entidadFiscalCreada,
+        actorUsuarioId: actorUsuarioId,
+        datosRelevantes: {
+          'entidadFiscalId': creada.id,
+          'codigo': creada.codigo,
+          'razonSocial': creada.razonSocial,
+          'rfc': creada.rfc,
+        },
+      );
+      return creada;
+    });
   }
 
   @override
@@ -34,19 +54,80 @@ class EntidadFiscalRepositoryImpl implements EntidadFiscalRepository {
   }
 
   @override
-  Future<EntidadFiscalData> actualizar({required String id, required EntidadFiscalCompanion cambios}) async {
-    await (_db.update(_db.entidadFiscal)..where((t) => t.id.equals(id))).write(
-      cambios.copyWith(updatedAt: Value(DateTime.now())),
-    );
-    return (_db.select(_db.entidadFiscal)..where((t) => t.id.equals(id))).getSingle();
+  Future<Map<String, EntidadFiscalData>> listarPorIds(Iterable<String> ids) async {
+    final unicos = ids.toSet();
+    if (unicos.isEmpty) return {};
+    final filas = await (_db.select(_db.entidadFiscal)..where((t) => t.id.isIn(unicos))).get();
+    return {for (final f in filas) f.id: f};
   }
 
   @override
-  Future<EntidadFiscalData> cambiarCicloVida({required String id, required CicloVidaRegistro nuevo}) async {
-    await (_db.update(_db.entidadFiscal)..where((t) => t.id.equals(id))).write(
-      EntidadFiscalCompanion(cicloVidaRegistro: Value(nuevo.name), updatedAt: Value(DateTime.now())),
-    );
-    return (_db.select(_db.entidadFiscal)..where((t) => t.id.equals(id))).getSingle();
+  Future<EntidadFiscalData> actualizar({
+    required String id,
+    required EntidadFiscalCompanion cambios,
+    String? motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.entidadFiscal)..where((t) => t.id.equals(id))).getSingle();
+      await (_db.update(_db.entidadFiscal)..where((t) => t.id.equals(id))).write(
+        cambios.copyWith(updatedAt: Value(DateTime.now())),
+      );
+      final actualizada = await (_db.select(_db.entidadFiscal)..where((t) => t.id.equals(id))).getSingle();
+
+      // RFC y razón social son los datos fiscales del Cliente: son
+      // exactamente los que hay que poder reconstruir después.
+      final diff = DiffEvento()
+        ..anotar('razonSocial', anterior.razonSocial, actualizada.razonSocial)
+        ..anotar('rfc', anterior.rfc, actualizada.rfc);
+      if (diff.hayCambios) {
+        await registrarEventoCliente(
+          _db,
+          clienteId: actualizada.clienteId,
+          tipoEvento: TipoEventoCliente.entidadFiscalCorregida,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+          // El sub-registro concreto: la bitácora cuelga del Cliente,
+          // pero el evento sabe de cuál de sus entidades fiscales habla.
+          datosRelevantes: {'entidadFiscalId': id, 'codigo': actualizada.codigo},
+        );
+      }
+      return actualizada;
+    });
+  }
+
+  @override
+  Future<EntidadFiscalData> cambiarCicloVida({
+    required String id,
+    required CicloVidaRegistro nuevo,
+    String? motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.entidadFiscal)..where((t) => t.id.equals(id))).getSingle();
+      await (_db.update(_db.entidadFiscal)..where((t) => t.id.equals(id))).write(
+        EntidadFiscalCompanion(cicloVidaRegistro: Value(nuevo.name), updatedAt: Value(DateTime.now())),
+      );
+      final actualizada = await (_db.select(_db.entidadFiscal)..where((t) => t.id.equals(id))).getSingle();
+
+      final diff = DiffEvento()
+        ..anotar('cicloVidaRegistro', anterior.cicloVidaRegistro, actualizada.cicloVidaRegistro);
+      if (diff.hayCambios) {
+        await registrarEventoCliente(
+          _db,
+          clienteId: actualizada.clienteId,
+          tipoEvento: TipoEventoCliente.entidadFiscalCicloVidaCambiado,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+          datosRelevantes: {'entidadFiscalId': id, 'codigo': actualizada.codigo},
+        );
+      }
+      return actualizada;
+    });
   }
 
   @override

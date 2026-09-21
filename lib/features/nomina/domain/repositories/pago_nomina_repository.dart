@@ -1,4 +1,5 @@
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/finanzas/domain/fuente_egreso.dart';
 
 /// Pagos de Nómina y su aplicación a renglones de `NominaEmpleado`
 /// (Etapa 6D, mismo modelo N:M aprobado en 4J.2 para
@@ -14,6 +15,13 @@ import 'package:riseg_one/core/database/app_database.dart';
 /// proyecto.
 abstract interface class PagoNominaRepository {
   Future<PagoNominaData?> obtenerPorId(String id);
+
+  /// Resuelve el `PagoNomina` que generó un `Egreso` puntual (vía
+  /// `PagoNomina.egresoId`, la única FK real) — `null` si ese Egreso no
+  /// vino de ningún Pago de Nómina. Usado por el bloqueo de corrección/
+  /// cancelación directa de Egreso (Etapa "Ingresos y Egresos") y por
+  /// la navegación "Ver origen" desde su expediente.
+  Future<PagoNominaData?> obtenerPorEgresoId(String egresoId);
 
   Future<AplicacionPagoNominaData?> obtenerAplicacionPorId(String id);
 
@@ -55,6 +63,25 @@ abstract interface class PagoNominaRepository {
   /// suma de nuevo a un Resultado operativo.
   Future<int> totalPagadoEnRango({DateTime? rangoInicio, DateTime? rangoFin});
 
+  /// Recalcula `NominaEmpleado.estatusPago` a partir de su saldo
+  /// pendiente actual, sin crear ninguna `AplicacionPagoNomina` — para
+  /// cuando `totalAPagar` cambia (regenerar/editar un renglón) fuera de
+  /// un pago real. Necesario porque un renglón cuyo `totalAPagar`
+  /// recalculado da `0` nunca pasa por [crear] (no hay nada que pagar),
+  /// así que su `estatusPago` se quedaría atorado en el default
+  /// `pendiente` para siempre. No hace nada si el estatus no cambió —
+  /// devuelve `false`, sin ninguna escritura (idempotente: puede
+  /// llamarse cualquier número de veces sobre el mismo renglón sin
+  /// efecto adicional después de la primera). Si cambia (devuelve
+  /// `true`), aplica exactamente el mismo efecto secundario sobre
+  /// `Nomina.estatus` y sobre `DescuentoProgramadoCuota` (`reservada`
+  /// ⇄ `aplicada`) que [crear]/[cancelar] — mismo criterio, un único
+  /// punto de cruce. Usado también por
+  /// `ReconciliarEstatusPagoNominaUseCase` (Etapa 15, reparación de
+  /// datos históricos anteriores a este método) para reconciliar
+  /// renglones ya existentes sin duplicar esta fórmula.
+  Future<bool> sincronizarEstatusPago({required String nominaEmpleadoId, String? actorUsuarioId});
+
   /// Crea el `PagoNomina`, una `AplicacionPagoNomina` por cada entrada
   /// de [aplicaciones], el `Egreso` automático ligado (folio generado
   /// internamente, mismo criterio que el `Ingreso` automático de
@@ -70,6 +97,10 @@ abstract interface class PagoNominaRepository {
     required String formaPago,
     String? referencia,
     String? cuentaBancariaOrigen,
+    String? cuentaFinancieraId,
+    /// Reparto explícito entre varias cuentas para el Egreso del pago:
+    /// un solo PagoNomina y un solo Egreso, repartido entre N cuentas.
+    List<FuenteEgreso>? fuentes,
     String? observaciones,
     required List<({String nominaEmpleadoId, int monto})> aplicaciones,
     String? actorUsuarioId,
@@ -78,12 +109,22 @@ abstract interface class PagoNominaRepository {
   /// Corrige metadatos administrativos del `PagoNomina` — nunca montos
   /// (mismo límite que `PagoRepository.corregir`: un monto incorrecto
   /// se cancela y se vuelve a registrar).
+  /// Etapa 4 (hallazgo real de auditoría): si el `Egreso` vinculado
+  /// existe, propaga [fechaPago]/[formaPago]/[cuentaBancariaOrigen]/
+  /// [cuentaFinancieraId] a él en la MISMA transacción — antes, esta
+  /// corrección nunca tocaba el `Egreso`, dejándolo divergente para
+  /// siempre. [cuentaFinancieraId] es la única forma de corregir la
+  /// Cuenta financiera de un pago ya registrado (antes, imposible).
+  /// `montoTotal`/empleados NUNCA son editables aquí — mismo criterio
+  /// que `CorregirEgresoUseCase`/`CorregirCompraUseCase`: un monto mal
+  /// capturado se cancela y se vuelve a registrar, nunca se edita.
   Future<PagoNominaData> corregir({
     required String pagoNominaId,
     DateTime? fechaPago,
     String? formaPago,
     String? referencia,
     String? cuentaBancariaOrigen,
+    String? cuentaFinancieraId,
     String? observaciones,
     required String motivo,
     String? actorUsuarioId,

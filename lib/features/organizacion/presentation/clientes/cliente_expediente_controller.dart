@@ -1,9 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/archivar_contacto_usecase.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_ciclo_vida_cliente_portal_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_ciclo_vida_entidad_fiscal_usecase.dart';
@@ -19,6 +19,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/guardar_domicili
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_fiscal_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_expediente_cliente_usecase.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../organizacion_providers.dart';
 import 'cliente_expediente_state.dart';
@@ -87,15 +88,22 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     );
   }
 
-  Future<bool> guardar(ClienteExpedienteInput input) async {
+  /// [motivo] es obligatorio y viaja a la bitácora junto con el usuario
+  /// de la sesión.
+  Future<bool> guardar(ClienteExpedienteInput input, {required String motivo}) async {
     if (state.guardando || state.datos == null) return false;
 
     state = state.copyWith(guardando: true, erroresGuardado: const [], errorGuardadoGeneral: false);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(guardarExpedienteClienteUseCaseProvider).ejecutar(clienteId: clienteId, input: input),
+      'clientes.corregir',
+      () => ref.read(guardarExpedienteClienteUseCaseProvider).ejecutar(
+            clienteId: clienteId,
+            input: input,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       GuardarExpedienteClienteErrorInesperado.new,
     );
 
@@ -126,21 +134,30 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
       case GuardarExpedienteClienteErroresValidacion(errores: final errores):
         state = state.copyWith(guardando: false, erroresGuardado: errores, errorGuardadoGeneral: false);
         return false;
+      case GuardarExpedienteClienteMotivoRequerido():
       case GuardarExpedienteClienteErrorInesperado():
         state = state.copyWith(guardando: false, erroresGuardado: const [], errorGuardadoGeneral: true);
         return false;
     }
   }
 
-  Future<bool> cambiarEstatus(EstatusCliente nuevo) async {
+  /// [motivo] es obligatorio: un Cliente suspendido o terminado sin
+  /// explicación deja una decisión comercial sin dueño. Junto con el
+  /// usuario de la sesión, alimenta la bitácora del Cliente.
+  Future<bool> cambiarEstatus(EstatusCliente nuevo, {required String motivo}) async {
     final datosActuales = state.datos;
     if (state.cambiandoEstatus || datosActuales == null) return false;
 
     state = state.copyWith(cambiandoEstatus: true);
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(cambiarEstatusClienteUseCaseProvider).ejecutar(clienteId: clienteId, nuevo: nuevo),
+      'clientes.corregir',
+      () => ref.read(cambiarEstatusClienteUseCaseProvider).ejecutar(
+            clienteId: clienteId,
+            nuevo: nuevo,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CambiarEstatusClienteErrorInesperado.new,
     );
 
@@ -160,6 +177,7 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
         // solo con un cambio de estatus hecho desde el expediente.
         ref.invalidate(clientesListControllerProvider);
         return true;
+      case CambiarEstatusClienteMotivoRequerido():
       case CambiarEstatusClienteErrorInesperado():
         state = state.copyWith(cambiandoEstatus: false);
         return false;
@@ -169,8 +187,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
   Future<GuardarContactoResultado> agregarContacto(ContactoBorrador borrador) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(agregarContactoUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador),
+      'clientes.corregir',
+      () => ref.read(agregarContactoUseCaseProvider).ejecutar(
+            clienteId: clienteId,
+            borrador: borrador,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       GuardarContactoErrorInesperado.new,
     );
     if (resultado is GuardarContactoExitoso) {
@@ -179,11 +201,22 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     return resultado;
   }
 
-  Future<GuardarContactoResultado> actualizarContacto(String contactoId, ContactoBorrador borrador) async {
+  /// [motivo] obligatorio. Teléfono y correo llegan enmascarados a la
+  /// bitácora.
+  Future<GuardarContactoResultado> actualizarContacto(
+    String contactoId,
+    ContactoBorrador borrador, {
+    required String motivo,
+  }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(actualizarContactoUseCaseProvider).ejecutar(id: contactoId, borrador: borrador),
+      'clientes.corregir',
+      () => ref.read(actualizarContactoUseCaseProvider).ejecutar(
+            id: contactoId,
+            borrador: borrador,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       GuardarContactoErrorInesperado.new,
     );
     if (resultado is GuardarContactoExitoso) {
@@ -192,18 +225,21 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     return resultado;
   }
 
-  /// Devuelve `true` si el archivado tuvo éxito — `ArchivarContactoUseCase`
-  /// no tiene un tipo sellado propio (archivar un Contacto nunca falla por
-  /// reglas de negocio), así que la frontera de autorización usa `null`
-  /// como su propio "no autorizado" en vez de introducir un tipo nuevo.
-  Future<bool> archivarContacto(String contactoId) async {
+  /// Devuelve `true` si el archivado tuvo éxito. La frontera de
+  /// autorización usa `null` como su propio "no autorizado"; el caso de
+  /// uso distingue aparte el motivo faltante.
+  Future<bool> archivarContacto(String contactoId, {required String motivo}) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.archivar',
-      () => ref.read(archivarContactoUseCaseProvider).ejecutar(contactoId).then<ContactoData?>((v) => v),
+      'clientes.archivar',
+      () => ref.read(archivarContactoUseCaseProvider).ejecutar(
+            contactoId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ).then<ArchivarContactoResultado?>((v) => v),
       (mensaje) => null,
     );
-    final exito = resultado != null;
+    final exito = resultado is ArchivarContactoExitoso;
     if (exito) await _recargarExpediente();
     return exito;
   }
@@ -214,8 +250,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(crearEntidadFiscalUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador),
+      'clientes.corregir',
+      () => ref.read(crearEntidadFiscalUseCaseProvider).ejecutar(
+            clienteId: clienteId,
+            borrador: borrador,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       GuardarEntidadFiscalErrorInesperado.new,
     );
     if (resultado is GuardarEntidadFiscalExitoso) {
@@ -225,17 +265,25 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     return resultado;
   }
 
+  /// [motivo] obligatorio: corregir RFC o razón social es un cambio
+  /// fiscal, y tiene que poder explicarse después.
   Future<GuardarEntidadFiscalResultado?> actualizarEntidadFiscal(
     String entidadFiscalId,
-    EntidadFiscalBorrador borrador,
-  ) async {
+    EntidadFiscalBorrador borrador, {
+    required String motivo,
+  }) async {
     if (state.operandoEntidadFiscal) return null;
     state = state.copyWith(operandoEntidadFiscal: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(actualizarEntidadFiscalUseCaseProvider).ejecutar(id: entidadFiscalId, borrador: borrador),
+      'clientes.corregir',
+      () => ref.read(actualizarEntidadFiscalUseCaseProvider).ejecutar(
+            id: entidadFiscalId,
+            borrador: borrador,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       GuardarEntidadFiscalErrorInesperado.new,
     );
     if (resultado is GuardarEntidadFiscalExitoso) {
@@ -245,14 +293,23 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     return resultado;
   }
 
-  Future<bool> cambiarCicloVidaEntidadFiscal(String entidadFiscalId, CicloVidaRegistro nuevo) async {
+  Future<bool> cambiarCicloVidaEntidadFiscal(
+    String entidadFiscalId,
+    CicloVidaRegistro nuevo, {
+    required String motivo,
+  }) async {
     if (state.operandoEntidadFiscal) return false;
     state = state.copyWith(operandoEntidadFiscal: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.archivar',
-      () => ref.read(cambiarCicloVidaEntidadFiscalUseCaseProvider).ejecutar(entidadFiscalId: entidadFiscalId, nuevo: nuevo),
+      'clientes.archivar',
+      () => ref.read(cambiarCicloVidaEntidadFiscalUseCaseProvider).ejecutar(
+            entidadFiscalId: entidadFiscalId,
+            nuevo: nuevo,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CambiarCicloVidaEntidadFiscalErrorInesperado.new,
     );
     final exito = resultado is CambiarCicloVidaEntidadFiscalExitoso;
@@ -272,7 +329,7 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'clientes.corregir',
       () => ref.read(guardarDomicilioFiscalUseCaseProvider).ejecutar(entidadFiscalId: entidadFiscalId, domicilio: domicilio),
       GuardarDomicilioFiscalErrorInesperado.new,
     );
@@ -289,8 +346,12 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(crearClientePortalUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador),
+      'clientes.corregir',
+      () => ref.read(crearClientePortalUseCaseProvider).ejecutar(
+            clienteId: clienteId,
+            borrador: borrador,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       GuardarClientePortalErrorInesperado.new,
     );
     if (resultado is GuardarClientePortalExitoso) {
@@ -302,15 +363,21 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
 
   Future<GuardarClientePortalResultado?> actualizarClientePortal(
     String clientePortalId,
-    ClientePortalBorrador borrador,
-  ) async {
+    ClientePortalBorrador borrador, {
+    required String motivo,
+  }) async {
     if (state.operandoClientePortal) return null;
     state = state.copyWith(operandoClientePortal: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(actualizarClientePortalUseCaseProvider).ejecutar(id: clientePortalId, borrador: borrador),
+      'clientes.corregir',
+      () => ref.read(actualizarClientePortalUseCaseProvider).ejecutar(
+            id: clientePortalId,
+            borrador: borrador,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       GuardarClientePortalErrorInesperado.new,
     );
     if (resultado is GuardarClientePortalExitoso) {
@@ -320,14 +387,23 @@ class ClienteExpedienteController extends _$ClienteExpedienteController {
     return resultado;
   }
 
-  Future<bool> cambiarCicloVidaClientePortal(String clientePortalId, CicloVidaRegistro nuevo) async {
+  Future<bool> cambiarCicloVidaClientePortal(
+    String clientePortalId,
+    CicloVidaRegistro nuevo, {
+    required String motivo,
+  }) async {
     if (state.operandoClientePortal) return false;
     state = state.copyWith(operandoClientePortal: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.archivar',
-      () => ref.read(cambiarCicloVidaClientePortalUseCaseProvider).ejecutar(clientePortalId: clientePortalId, nuevo: nuevo),
+      'clientes.archivar',
+      () => ref.read(cambiarCicloVidaClientePortalUseCaseProvider).ejecutar(
+            clientePortalId: clientePortalId,
+            nuevo: nuevo,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CambiarCicloVidaClientePortalErrorInesperado.new,
     );
     final exito = resultado is CambiarCicloVidaClientePortalExitoso;

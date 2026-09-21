@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
@@ -8,6 +9,8 @@ import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart'
 import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart';
 import 'package:riseg_one/features/personal/domain/repositories/asignacion_servicio_repository.dart';
 
+import '../tables/comercial_evento_table.dart';
+import 'comercial_evento_writer.dart';
 import '../../domain/repositories/servicio_repository.dart';
 import '../../domain/shared/direccion_input.dart';
 import '../../domain/usecases/eliminar_servicio_fisicamente_usecase.dart';
@@ -77,9 +80,20 @@ class ServicioRepositoryImpl implements ServicioRepository {
 
   @override
   Future<List<ServicioListItem>> listar() async {
+    // `leftOuterJoin` a Direccion (Etapa 16, evolución visual) — un
+    // Servicio puede no tener ninguna Dirección operativa capturada
+    // todavía (0 o 1, real 1:1 vía el `.unique()` de `servicioId`), así
+    // que nunca puede ser un `innerJoin`. Una sola consulta, sin N+1:
+    // el municipio/estado ya viven en `Direccion`, nunca duplicados.
     final query = _db.select(_db.servicio).join([
       innerJoin(_db.cliente, _db.cliente.id.equalsExp(_db.servicio.clienteId)),
       innerJoin(_db.tipoServicio, _db.tipoServicio.id.equalsExp(_db.servicio.tipoServicioId)),
+      leftOuterJoin(
+        _db.direccion,
+        _db.direccion.servicioId.equalsExp(_db.servicio.id) &
+            _db.direccion.tipoDireccion.equals(TipoDireccion.operativa.name) &
+            _db.direccion.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name),
+      ),
     ]);
 
     final filas = await query.get();
@@ -89,16 +103,52 @@ class ServicioRepositoryImpl implements ServicioRepository {
           servicio: fila.readTable(_db.servicio),
           clienteNombre: fila.readTable(_db.cliente).nombreComercial,
           tipoServicioNombre: fila.readTable(_db.tipoServicio).nombre,
+          clienteLogoAttachmentId: fila.readTable(_db.cliente).logoAttachmentId,
+          municipioAlcaldia: fila.readTableOrNull(_db.direccion)?.municipioAlcaldia,
+          estado: fila.readTableOrNull(_db.direccion)?.estado,
         ),
     ];
   }
 
   @override
-  Future<ServicioData> actualizar({required String id, required ServicioCompanion cambios}) async {
-    await (_db.update(_db.servicio)..where((t) => t.id.equals(id))).write(
-      cambios.copyWith(updatedAt: Value(DateTime.now())),
-    );
-    return (_db.select(_db.servicio)..where((t) => t.id.equals(id))).getSingle();
+  Future<ServicioData> actualizar({
+    required String id,
+    required ServicioCompanion cambios,
+    String? motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.servicio)..where((t) => t.id.equals(id))).getSingle();
+      await (_db.update(_db.servicio)..where((t) => t.id.equals(id))).write(
+        cambios.copyWith(updatedAt: Value(DateTime.now())),
+      );
+      final actualizado = await (_db.select(_db.servicio)..where((t) => t.id.equals(id))).getSingle();
+
+      // Sólo los datos del Servicio EN SÍ. Precio, elementos, turno e
+      // IVA no viven aquí: viven en su vigencia comercial, y su cambio
+      // se registra allá — nunca se duplica el mismo hecho en dos
+      // bitácoras.
+      final diff = DiffEvento()
+        ..anotar('nombre', anterior.nombre, actualizado.nombre)
+        ..anotar('clienteId', anterior.clienteId, actualizado.clienteId)
+        ..anotar('tipoServicioId', anterior.tipoServicioId, actualizado.tipoServicioId)
+        ..anotar('fechaInicio', anterior.fechaInicio, actualizado.fechaInicio)
+        ..anotar('fechaTermino', anterior.fechaTermino, actualizado.fechaTermino)
+        ..anotar('entidadFiscalId', anterior.entidadFiscalId, actualizado.entidadFiscalId)
+        ..anotar('observaciones', anterior.observaciones, actualizado.observaciones);
+      if (diff.hayCambios) {
+        await registrarEventoServicio(
+          _db,
+          servicioId: id,
+          tipoEvento: TipoEventoServicio.corregido,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
+      return actualizado;
+    });
   }
 
   @override
@@ -106,8 +156,11 @@ class ServicioRepositoryImpl implements ServicioRepository {
     required String id,
     required EstatusServicio nuevo,
     DateTime? fechaTermino,
+    String? motivo,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
+      final anterior = await (_db.select(_db.servicio)..where((t) => t.id.equals(id))).getSingle();
       await (_db.update(_db.servicio)..where((t) => t.id.equals(id))).write(
         ServicioCompanion(
           estatus: Value(nuevo.name),
@@ -116,6 +169,23 @@ class ServicioRepositoryImpl implements ServicioRepository {
         ),
       );
       final actualizado = await (_db.select(_db.servicio)..where((t) => t.id.equals(id))).getSingle();
+
+      // Suspender o terminar un Servicio afecta directamente a la
+      // cobranza: queda registrado con autor y motivo.
+      final diff = DiffEvento()
+        ..anotar('estatus', anterior.estatus, actualizado.estatus)
+        ..anotar('fechaTermino', anterior.fechaTermino, actualizado.fechaTermino);
+      if (diff.hayCambios) {
+        await registrarEventoServicio(
+          _db,
+          servicioId: id,
+          tipoEvento: TipoEventoServicio.estatusCambiado,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
 
       // Un Servicio suspendido conserva sus asignaciones vigentes (una
       // suspensión puede ser temporal, Resolución explícita de Marlon)
@@ -222,35 +292,120 @@ class ServicioRepositoryImpl implements ServicioRepository {
   }
 
   @override
-  Future<ServicioData> asignarEntidadFiscal({required String servicioId, required String? entidadFiscalId}) async {
-    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
-      ServicioCompanion(entidadFiscalId: Value(entidadFiscalId), updatedAt: Value(DateTime.now())),
-    );
-    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+  Future<ServicioData> asignarEntidadFiscal({
+    required String servicioId,
+    required String? entidadFiscalId,
+    String? motivo,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final antes = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+      await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
+        ServicioCompanion(entidadFiscalId: Value(entidadFiscalId), updatedAt: Value(DateTime.now())),
+      );
+      final despues = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+
+      final diff = DiffEvento()..anotar('entidadFiscalId', antes.entidadFiscalId, despues.entidadFiscalId);
+      if (diff.hayCambios) {
+        // Un solo evento: el mismo hecho de vinculación carga actor,
+        // diff y —cuando la regla lo exige— el motivo. Nunca se emite
+        // un segundo evento sólo para justificar el cambio.
+        await registrarEventoServicio(
+          _db,
+          servicioId: servicioId,
+          tipoEvento: TipoEventoServicio.entidadFiscalAsignada,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
+      return despues;
+    });
   }
 
   @override
-  Future<ServicioData> asignarResponsableCliente({required String servicioId, required String? contactoId}) async {
-    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
-      ServicioCompanion(responsableClienteContactoId: Value(contactoId), updatedAt: Value(DateTime.now())),
-    );
-    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+  Future<ServicioData> asignarResponsableCliente({
+    required String servicioId,
+    required String? contactoId,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final antes = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+      await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
+        ServicioCompanion(responsableClienteContactoId: Value(contactoId), updatedAt: Value(DateTime.now())),
+      );
+      final despues = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+
+      final diff = DiffEvento()..anotar('responsableClienteContactoId', antes.responsableClienteContactoId, despues.responsableClienteContactoId);
+      if (diff.hayCambios) {
+        await registrarEventoServicio(
+          _db,
+          servicioId: servicioId,
+          tipoEvento: TipoEventoServicio.responsableClienteAsignado,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
+      return despues;
+    });
   }
 
   @override
-  Future<ServicioData> asignarSucursalAdministrativa({required String servicioId, required String? sucursalId}) async {
-    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
-      ServicioCompanion(sucursalAdministrativaId: Value(sucursalId), updatedAt: Value(DateTime.now())),
-    );
-    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+  Future<ServicioData> asignarSucursalAdministrativa({
+    required String servicioId,
+    required String? sucursalId,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final antes = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+      await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
+        ServicioCompanion(sucursalAdministrativaId: Value(sucursalId), updatedAt: Value(DateTime.now())),
+      );
+      final despues = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+
+      final diff = DiffEvento()..anotar('sucursalAdministrativaId', antes.sucursalAdministrativaId, despues.sucursalAdministrativaId);
+      if (diff.hayCambios) {
+        await registrarEventoServicio(
+          _db,
+          servicioId: servicioId,
+          tipoEvento: TipoEventoServicio.sucursalAdministrativaAsignada,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
+      return despues;
+    });
   }
 
   @override
-  Future<ServicioData> guardarResponsableInterno({required String servicioId, required String? texto}) async {
-    await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
-      ServicioCompanion(responsableInterno: Value(texto), updatedAt: Value(DateTime.now())),
-    );
-    return (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+  Future<ServicioData> guardarResponsableInterno({
+    required String servicioId,
+    required String? texto,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final antes = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+      await (_db.update(_db.servicio)..where((t) => t.id.equals(servicioId))).write(
+        ServicioCompanion(responsableInterno: Value(texto), updatedAt: Value(DateTime.now())),
+      );
+      final despues = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingle();
+
+      final diff = DiffEvento()..anotar('responsableInterno', antes.responsableInterno, despues.responsableInterno);
+      if (diff.hayCambios) {
+        await registrarEventoServicio(
+          _db,
+          servicioId: servicioId,
+          tipoEvento: TipoEventoServicio.responsableInternoActualizado,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
+      return despues;
+    });
   }
 
   /// Eliminación física extraordinaria (Etapa 15, mismo patrón que la

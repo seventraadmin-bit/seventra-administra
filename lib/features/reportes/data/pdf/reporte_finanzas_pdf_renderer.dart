@@ -4,6 +4,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../domain/export/reporte_export_context.dart';
+import '../../domain/analitica/obtener_analisis_cobranza_usecase.dart';
+import '../../domain/analitica/obtener_analisis_deuda_usecase.dart';
+import '../../domain/analitica/obtener_analisis_pagos_usecase.dart';
 import '../../domain/usecases/clasificar_egresos_por_origen_usecase.dart';
 import '../../presentation/finanzas/reportes_finanzas_state.dart';
 import 'reporte_pdf_encabezado.dart';
@@ -39,12 +42,24 @@ class ReporteFinanzasPdfRenderer {
         build: (context) => [
           construirSeccionReporte('Resumen financiero', [
             construirFilaReporte('Ingresos', formatearMonedaReporte(state.totalIngresos)),
-            construirFilaReporte('Egresos', formatearMonedaReporte(state.totalEgresos)),
+            construirFilaReporte('Gasto operativo', formatearMonedaReporte(state.gastoOperativo)),
+            construirFilaReporte('Salidas de efectivo', formatearMonedaReporte(state.salidasDeEfectivo)),
+            construirFilaReporte('Cargado a tarjetas', formatearMonedaReporte(state.cargosDeTarjeta)),
             construirFilaReporte('Resultado operativo', formatearMonedaReporte(state.resultadoOperativo), destacado: true),
             construirFilaReporte('Pagos recibidos', formatearMonedaReporte(state.totalPagosRecibidos)),
           ]),
           if (state.egresosPorOrigen != null) construirSeccionReporte('Egresos por origen', _filasOrigen(state.egresosPorOrigen!)),
-          construirSeccionReporte('Cuentas por cobrar - antigüedad (a la fecha de hoy)', _filasAging(state)),
+          // Resumen ejecutivo, no un Excel impreso: KPI, antigüedad,
+          // concentración, pagos y deuda — cada bloque en una línea por
+          // concepto, nunca el detalle fila por fila (para eso está el
+          // XLSX de cada sección).
+          if (state.cobranza case final cobranza?) construirSeccionReporte('Cartera (a la fecha de hoy)', _filasCartera(cobranza)),
+          construirSeccionReporte('Antigüedad de la cartera (a la fecha de hoy)', _filasAging(state)),
+          if (state.cobranza case final cobranza?)
+            if (cobranza.concentracion.isNotEmpty)
+              construirSeccionReporte('Concentración por cliente', _filasConcentracion(cobranza)),
+          if (state.pagos case final pagos?) construirSeccionReporte('Pagos del periodo', _filasPagos(pagos)),
+          if (state.deuda case final deuda?) construirSeccionReporte('Deuda y crédito', _filasDeuda(deuda)),
           if (state.ingresosPorCategoria.isNotEmpty)
             construirSeccionReporte('Ingresos por categoría', _filasCategoria(state.ingresosPorCategoria)),
           if (state.egresosPorCategoria.isNotEmpty)
@@ -76,6 +91,63 @@ class ReporteFinanzasPdfRenderer {
     }
     if (filas.isEmpty) filas.add(construirFilaReporte('Cuentas por cobrar', 'Sin cuentas pendientes'));
     return filas;
+  }
+
+  List<pw.Widget> _filasCartera(AnalisisCobranza cobranza) {
+    final porcentaje = cobranza.porcentajeVencido;
+    final atraso = cobranza.diasAtrasoPromedio;
+    return [
+      construirFilaReporte('Saldo por cobrar', formatearMonedaReporte(cobranza.saldoPendiente), destacado: true),
+      construirFilaReporte('Saldo vencido', formatearMonedaReporte(cobranza.saldoVencido)),
+      // Sin saldo no hay porcentaje ni promedio: se dice, no se
+      // imprime un 0 que afirmaría lo contrario.
+      construirFilaReporte('Porcentaje vencido', porcentaje == null ? 'Sin base' : '${(porcentaje * 100).toStringAsFixed(1)} %'),
+      construirFilaReporte('Cuentas con saldo', '${cobranza.cuentasConSaldo}'),
+      construirFilaReporte('Clientes con saldo', '${cobranza.clientesConSaldo}'),
+      construirFilaReporte('Atraso promedio', atraso == null ? 'Sin cartera vencida' : '${atraso.toStringAsFixed(0)} días'),
+    ];
+  }
+
+  List<pw.Widget> _filasConcentracion(AnalisisCobranza cobranza) {
+    return [
+      for (final cliente in cobranza.concentracion)
+        construirFilaReporte(
+          cliente.esOtros ? 'Otros clientes' : cliente.nombre,
+          formatearMonedaReporte(cliente.saldo),
+        ),
+    ];
+  }
+
+  List<pw.Widget> _filasPagos(AnalisisPagos pagos) {
+    return [
+      construirFilaReporte('Pagos recibidos', '${pagos.pagosRecibidos}'),
+      construirFilaReporte('Importe recibido', formatearMonedaReporte(pagos.importeRecibido), destacado: true),
+      construirFilaReporte('Importe aplicado', formatearMonedaReporte(pagos.importeAplicado)),
+      construirFilaReporte('Por aplicar', formatearMonedaReporte(pagos.importePorAplicar)),
+      construirFilaReporte('Clientes que pagaron', '${pagos.clientesQuePagaron}'),
+      construirFilaReporte('Complementos pendientes', '${pagos.complementosPendientes}'),
+      construirFilaReporte('Complementos registrados', '${pagos.complementosRegistrados}'),
+    ];
+  }
+
+  List<pw.Widget> _filasDeuda(AnalisisDeuda deuda) {
+    final utilizacion = deuda.utilizacionGlobal;
+    return [
+      construirFilaReporte('Deuda total (a la fecha)', formatearMonedaReporte(deuda.saldoTotal), destacado: true),
+      construirFilaReporte('Saldo en tarjetas', formatearMonedaReporte(deuda.saldoTarjetas)),
+      construirFilaReporte('Otras deudas', formatearMonedaReporte(deuda.saldoOtrasDeudas)),
+      construirFilaReporte(
+        'Crédito disponible',
+        deuda.hayTarjetas ? formatearMonedaReporte(deuda.creditoDisponible) : 'Sin tarjetas activas',
+      ),
+      construirFilaReporte(
+        'Utilización de crédito',
+        utilizacion == null ? 'Sin límite capturado' : '${(utilizacion * 100).toStringAsFixed(0)} %',
+      ),
+      construirFilaReporte('Cargos del periodo', formatearMonedaReporte(deuda.cargosDelPeriodo)),
+      construirFilaReporte('Pagos del periodo', formatearMonedaReporte(deuda.pagosDelPeriodo)),
+      construirFilaReporte('Ajustes y reversiones', formatearMonedaReporte(deuda.ajustesDelPeriodo)),
+    ];
   }
 
   List<pw.Widget> _filasCategoria(List<TotalPorCategoria> categorias) {

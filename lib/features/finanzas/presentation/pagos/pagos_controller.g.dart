@@ -6,7 +6,7 @@ part of 'pagos_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$pagosControllerHash() => r'c675f4efc5738fdfc861944da8487d8744a90250';
+String _$pagosControllerHash() => r'c9c1fa3f85c36e7107dbf4bcc13b5f2875908799';
 
 /// Controlador del listado de Pagos (Etapa 4J.2) — mismo diseño que
 /// `CuentasPorCobrarController`.

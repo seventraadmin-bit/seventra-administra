@@ -1,3 +1,7 @@
+import 'package:riseg_one/features/servicios_eventuales/data/repositories/servicio_eventual_repository_impl.dart';
+import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
+import 'package:riseg_one/features/vehiculos/data/repositories/vehiculo_mantenimiento_repository_impl.dart';
+import 'package:riseg_one/features/vehiculos/data/repositories/vehiculo_repository_impl.dart';
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -10,11 +14,17 @@ import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
+import 'package:riseg_one/features/compras/data/repositories/compra_repository_impl.dart';
+import 'package:riseg_one/features/descuentos_personal/data/repositories/descuento_programado_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/categoria_financiera_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/complemento_pago_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/cuenta_por_cobrar_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/ingreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/pago_repository_impl.dart';
+import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
+import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_comprobante_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_comprobante_ingreso_usecase.dart';
@@ -25,11 +35,13 @@ import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_pago_usecas
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_ingreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/crear_categoria_financiera_usecase.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/obtener_origen_automatico_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/obtener_resumen_financiero_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_egreso_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_ingreso_manual_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_pago_aplicado_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_pago_usecase.dart';
+import 'package:riseg_one/features/nomina/data/repositories/pago_nomina_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/configuracion_cobro_repository_impl.dart';
@@ -40,6 +52,8 @@ import 'package:riseg_one/features/organizacion/data/repositories/puesto_reposit
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_comercial_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/servicio_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
+import 'package:riseg_one/features/tiempos_extra/data/repositories/tiempo_extra_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
@@ -56,6 +70,11 @@ import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_emision_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
+import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/asignacion_linea_telefonica_repository_impl.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_equipo_repository_impl.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_repository_impl.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/recarga_linea_telefonica_repository_impl.dart';
 
 void main() {
   late AppDatabase db;
@@ -118,23 +137,49 @@ void main() {
 
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
     final documentoRepo = DocumentoPorEmitirRepositoryImpl(db, AttachmentRepository(db), cuentaRepo);
-    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigoInterno);
+    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigoInterno);
     registrarEmision = RegistrarEmisionDocumentoPorEmitirUseCase(documentoRepo);
     cambiarEstatus = CambiarEstatusDocumentoPorEmitirUseCase(documentoRepo);
 
     registrarPago = RegistrarPagoUseCase(pagoRepo, clienteRepo, generarCodigoInterno);
     registrarPagoAplicado = RegistrarPagoAplicadoUseCase(pagoRepo, cuentaRepo, generarCodigoInterno);
-    cancelarPago = CancelarPagoUseCase(pagoRepo);
+    cancelarPago = CancelarPagoUseCase(pagoRepo, ComplementoPagoRepositoryImpl(db));
 
     crearCategoria = CrearCategoriaFinancieraUseCase(categoriaRepo);
     archivarCategoria = ArchivarCategoriaFinancieraUseCase(categoriaRepo);
     registrarIngresoManual = RegistrarIngresoManualUseCase(ingresoRepo, generarCodigoInterno);
     corregirIngreso = CorregirIngresoUseCase(ingresoRepo);
     cancelarIngreso = CancelarIngresoUseCase(ingresoRepo);
-    registrarEgreso = RegistrarEgresoUseCase(egresoRepo, generarCodigoInterno);
-    corregirEgreso = CorregirEgresoUseCase(egresoRepo);
-    cancelarEgreso = CancelarEgresoUseCase(egresoRepo);
-    obtenerResumenFinanciero = ObtenerResumenFinancieroUseCase(ingresoRepo, egresoRepo);
+    final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+    final articuloRepo = ArticuloRepositoryImpl(db);
+    final inventarioRepo = InventarioRepositoryImpl(db);
+    final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
+    registrarEgreso = RegistrarEgresoUseCase(egresoRepo, generarCodigoInterno, deudaRepo);
+    final pagoNominaRepo = PagoNominaRepositoryImpl(db, egresoRepo, DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db)));
+    final tiempoExtraRepo = TiempoExtraRepositoryImpl(
+      db,
+      egresoRepo,
+      deudaRepo,
+      CodigoSecuenciaService(db),
+      EmpleadoRepositoryImpl(db, AsignacionServicioRepositoryImpl(db)),
+      servicioRepo,
+    );
+    final obtenerOrigenAutomaticoEgreso =
+        ObtenerOrigenAutomaticoEgresoUseCase(
+          compraRepo,
+          pagoNominaRepo,
+          tiempoExtraRepo,
+          deudaRepo,
+          DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db)),
+          VehiculoMantenimientoRepositoryImpl(db),
+          VehiculoRepositoryImpl(db, AsignacionVehiculoRepositoryImpl(db)),
+          RecargaLineaTelefonicaRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db)),
+          LineaTelefonicaRepositoryImpl(db, AsignacionLineaTelefonicaRepositoryImpl(db), LineaTelefonicaEquipoRepositoryImpl(db, AsignacionLineaTelefonicaRepositoryImpl(db), AsignacionRepositoryImpl(db))),
+          ServicioEventualRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db), CuentaPorCobrarRepositoryImpl(db), PagoRepositoryImpl(db)),
+        );
+    corregirEgreso = CorregirEgresoUseCase(egresoRepo, obtenerOrigenAutomaticoEgreso, deudaRepo);
+    cancelarEgreso = CancelarEgresoUseCase(egresoRepo, obtenerOrigenAutomaticoEgreso);
+    obtenerResumenFinanciero = ObtenerResumenFinancieroUseCase(ingresoRepo, egresoRepo, compraRepo);
 
     tempDir = Directory.systemTemp.createTempSync('riseg_ingreso_egreso_test_');
     adjuntarComprobanteIngreso = AdjuntarComprobanteIngresoUseCase(ingresoRepo, AttachmentStorage(tempDir.path));
@@ -271,7 +316,7 @@ void main() {
         () async {
       final cuenta = await crearCuentaDePrueba(nombreCliente: 'Miluyole Ingreso', importeEmitido: 500000);
       final registrado = await registrarPago.ejecutar(
-        clienteId: cuenta.clienteId,
+        clienteId: cuenta.clienteId!,
         montoTotal: 500000,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: FormaPago.transferencia.name,
@@ -317,6 +362,32 @@ void main() {
       final ingresoTrasIntento = await ingresoRepo.obtenerPorId(ingreso.id);
       expect(ingresoTrasIntento!.estatus, 'registrado', reason: 'el intento rechazado no debe cambiar el estatus');
     });
+
+    test(
+      'Etapa 6: tampoco se puede corregir directamente un Ingreso automático — debe corregirse vía su Pago '
+      '(mismo criterio ya establecido para cancelar)',
+      () async {
+        final cuenta = await crearCuentaDePrueba(nombreCliente: 'Tikal Ingreso Corregir Guard', importeEmitido: 100000);
+        final registrado = await registrarPagoAplicado.ejecutar(
+          cuentaPorCobrarId: cuenta.id,
+          monto: 100000,
+          fechaPago: DateTime(2026, 1, 20),
+          formaPago: FormaPago.efectivo.name,
+        );
+        final pago = (registrado as RegistrarPagoAplicadoExitoso).pago;
+        final ingreso = await ingresoRepo.obtenerPorPagoId(pago.id);
+
+        final resultado = await corregirIngreso.ejecutar(
+          ingresoId: ingreso!.id,
+          concepto: 'Intento inválido directo sobre el Ingreso',
+          motivo: 'Intento inválido',
+        );
+        expect(resultado, isA<CorregirIngresoPagoAutomatico>());
+
+        final ingresoTrasIntento = await ingresoRepo.obtenerPorId(ingreso.id);
+        expect(ingresoTrasIntento!.concepto, ingreso.concepto, reason: 'el intento rechazado no debe cambiar nada');
+      },
+    );
   });
 
   group('Ingreso manual (sin Pago, Etapa 4K.1)', () {
@@ -353,6 +424,25 @@ void main() {
         concepto: '   ',
       );
       expect(resultado, isA<RegistrarIngresoManualConceptoRequerido>());
+    });
+
+    test('IngresoRepository.corregir corrige el monto de un Ingreso manual y audita antes/después', () async {
+      final resultado = await registrarIngresoManual.ejecutar(
+        monto: 150000,
+        fecha: DateTime(2026, 2, 1),
+        formaPago: FormaPago.efectivo.name,
+        concepto: 'Venta de activo dado de baja',
+      );
+      final ingreso = (resultado as RegistrarIngresoManualExitoso).ingreso;
+
+      final corregido = await ingresoRepo.corregir(ingresoId: ingreso.id, monto: 180000, motivo: 'Se había capturado de menos');
+      expect(corregido.monto, 180000);
+
+      final eventos = await ingresoRepo.listarEventos(ingreso.id);
+      final eventoCorreccion = eventos.firstWhere((e) => e.tipoEvento == 'corregido');
+      expect(eventoCorreccion.estadoAnterior, contains('150000'));
+      expect(eventoCorreccion.estadoNuevo, contains('180000'));
+      expect(eventoCorreccion.observacion, 'Se había capturado de menos');
     });
 
     test('corrige metadatos administrativos pero nunca el monto', () async {

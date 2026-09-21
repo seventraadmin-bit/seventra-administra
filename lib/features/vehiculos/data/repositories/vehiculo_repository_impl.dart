@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+
+import '../tables/vehiculo_table.dart';
 
 import '../../domain/repositories/asignacion_vehiculo_repository.dart';
 import '../../domain/repositories/vehiculo_repository.dart';
@@ -98,8 +101,15 @@ class VehiculoRepositoryImpl implements VehiculoRepository {
     bool limpiarFechaAdquisicion = false,
     bool limpiarCostoAdquisicion = false,
     bool limpiarObservaciones = false,
+    required String motivo,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
+      // Estado ANTES — el gap P0 que cierra la schemaVersion 80: hasta
+      // esta etapa se podían cambiar placas, VIN, número de motor y
+      // costo de adquisición sin dejar rastro de quién ni por qué.
+      final antes = await (_db.select(_db.vehiculo)..where((t) => t.id.equals(vehiculoId))).getSingle();
+
       await (_db.update(_db.vehiculo)..where((t) => t.id.equals(vehiculoId))).write(
         VehiculoCompanion(
           marca: marca == null ? const Value.absent() : Value(marca),
@@ -124,8 +134,71 @@ class VehiculoRepositoryImpl implements VehiculoRepository {
           updatedAt: Value(DateTime.now()),
         ),
       );
-      return (_db.select(_db.vehiculo)..where((t) => t.id.equals(vehiculoId))).getSingle();
+
+      final despues = await (_db.select(_db.vehiculo)..where((t) => t.id.equals(vehiculoId))).getSingle();
+
+      // Solo los campos REALMENTE modificados, nunca un snapshot
+      // completo — `DiffEvento`, el mismo helper de Compra/Pagos/Nómina.
+      final diff = DiffEvento()
+        ..anotar('marca', antes.marca, despues.marca)
+        ..anotar('modelo', antes.modelo, despues.modelo)
+        ..anotar('anio', antes.anio, despues.anio)
+        ..anotar('color', antes.color, despues.color)
+        ..anotar('placas', antes.placas, despues.placas)
+        ..anotar('vin', antes.vin, despues.vin)
+        ..anotar('numeroMotor', antes.numeroMotor, despues.numeroMotor)
+        ..anotar('tipoVehiculo', antes.tipoVehiculo, despues.tipoVehiculo)
+        ..anotar('fechaAdquisicion', antes.fechaAdquisicion, despues.fechaAdquisicion)
+        ..anotar('costoAdquisicion', antes.costoAdquisicion, despues.costoAdquisicion)
+        ..anotar('observaciones', antes.observaciones, despues.observaciones);
+
+      // Una "corrección" que no cambió nada no es una corrección: no
+      // ensucia el historial con un evento vacío.
+      if (diff.hayCambios) {
+        await registrarEvento(
+          vehiculoId: vehiculoId,
+          tipoEvento: TipoEventoVehiculo.corregido,
+          observacion: motivo,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
+
+      return despues;
     });
+  }
+
+  @override
+  Future<void> registrarEvento({
+    required String vehiculoId,
+    required TipoEventoVehiculo tipoEvento,
+    String? observacion,
+    String? estadoAnterior,
+    String? estadoNuevo,
+    String? datosRelevantes,
+    String? actorUsuarioId,
+  }) async {
+    await _db.into(_db.vehiculoEvento).insert(
+          VehiculoEventoCompanion.insert(
+            vehiculoId: vehiculoId,
+            fechaHora: DateTime.now(),
+            tipoEvento: tipoEvento.name,
+            observacion: Value(observacion),
+            estadoAnterior: Value(estadoAnterior),
+            estadoNuevo: Value(estadoNuevo),
+            datosRelevantes: Value(datosRelevantes),
+            actorUsuarioId: Value(actorUsuarioId),
+          ),
+        );
+  }
+
+  @override
+  Future<List<VehiculoEventoData>> listarEventos(String vehiculoId) {
+    return (_db.select(_db.vehiculoEvento)
+          ..where((t) => t.vehiculoId.equals(vehiculoId))
+          ..orderBy([(t) => OrderingTerm.desc(t.fechaHora), (t) => OrderingTerm.desc(t.id)]))
+        .get();
   }
 
   @override

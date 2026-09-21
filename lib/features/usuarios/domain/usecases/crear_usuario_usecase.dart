@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/auth/password_hasher.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/permissions/modulos_permiso.dart';
 import 'package:riseg_one/features/organizacion/domain/repositories/puesto_repository.dart';
 
 import '../repositories/usuario_repository.dart';
@@ -48,7 +49,9 @@ class CrearUsuarioUseCase {
     required String nombreUsuario,
     required String password,
     required String puestoId,
+    String? empleadoId,
     bool esMaestro = false,
+    Set<String> permisosIniciales = const {},
     String? actorUsuarioId,
   }) async {
     final nombreLimpio = nombre.trim();
@@ -71,7 +74,13 @@ class CrearUsuarioUseCase {
         nombreUsuario: nombreUsuarioLimpio,
         passwordHash: _passwordHasher.hash(password),
         puestoId: puestoId,
+        empleadoId: empleadoId,
         esMaestro: esMaestro,
+        // Toda cuenta creada por un Maestro nace con contraseña
+        // TEMPORAL: su titular debe cambiarla antes de poder usar el
+        // sistema. El primer Maestro del bootstrap no pasa por aquí.
+        debeCambiarPassword: true,
+        permisosIniciales: esMaestro ? const {} : normalizarPermisos(permisosIniciales),
         actorUsuarioId: actorUsuarioId,
       );
       return CrearUsuarioExitoso(usuario);

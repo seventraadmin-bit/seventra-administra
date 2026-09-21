@@ -2,6 +2,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/utils/clock.dart';
 
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import '../repositories/servicio_comercial_repository.dart';
 import 'linea_comercial_con_vigencia.dart';
 
@@ -26,6 +27,9 @@ class CerrarLineaComercialFechaAnteriorInicio extends CerrarLineaComercialResult
 
 class CerrarLineaComercialLineaNoExiste extends CerrarLineaComercialResultado {}
 
+/// Cerrar una línea deja de cobrarla: exige explicar por qué.
+class CerrarLineaComercialMotivoRequerido extends CerrarLineaComercialResultado {}
+
 class CerrarLineaComercialErrorInesperado extends CerrarLineaComercialResultado {
   CerrarLineaComercialErrorInesperado(this.mensaje);
   final String mensaje;
@@ -40,10 +44,14 @@ class CerrarLineaComercialUseCase {
   final ServicioComercialRepository _repository;
   final Clock _clock;
 
+  /// [motivo] obligatorio: cerrar una línea deja de cobrarla.
   Future<CerrarLineaComercialResultado> ejecutar({
     required String lineaComercialId,
     required DateTime fechaEfectiva,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return CerrarLineaComercialMotivoRequerido();
     final linea = await _repository.obtenerLinea(lineaComercialId);
     if (linea == null) {
       return CerrarLineaComercialLineaNoExiste();
@@ -64,7 +72,12 @@ class CerrarLineaComercialUseCase {
     }
 
     try {
-      final vigencia = await _repository.cerrarVigencia(vigenciaId: vigente.id, fechaEfectiva: fechaEfectiva);
+      final vigencia = await _repository.cerrarVigencia(
+        vigenciaId: vigente.id,
+        fechaEfectiva: fechaEfectiva,
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
+      );
       return CerrarLineaComercialExitoso(vigencia);
     } catch (e) {
       return CerrarLineaComercialErrorInesperado(e.toString());

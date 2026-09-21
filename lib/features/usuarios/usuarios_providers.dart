@@ -122,7 +122,27 @@ final corregirUsuarioUseCaseProvider = Provider<CorregirUsuarioUseCase>((ref) {
   return CorregirUsuarioUseCase(ref.watch(usuarioRepositoryProvider), ref.watch(puestoRepositoryProvider));
 });
 
+/// RESETEAR la contraseña de OTRA cuenta — gateado con
+/// `usuarios.resetearPassword` en `UsuariosController.cambiarContrasena`.
 final cambiarContrasenaUsuarioUseCaseProvider = Provider<CambiarContrasenaUsuarioUseCase>((ref) {
+  return CambiarContrasenaUsuarioUseCase(ref.watch(usuarioRepositoryProvider), ref.watch(passwordHasherProvider));
+});
+
+/// Cambiar la PROPIA contraseña — provider DISTINTO a propósito, aunque
+/// comparta la clase del caso de uso (Etapa "Usuarios, permisos y UX de
+/// seguridad").
+///
+/// Son dos operaciones diferentes con autorizaciones diferentes:
+/// resetear la contraseña de otra persona exige
+/// `usuarios.resetearPassword`; cambiar la propia no exige ningún
+/// permiso, porque la autorización es la sesión misma y solo puede
+/// afectar a la cuenta autenticada. Exigir el permiso de administración
+/// dejaría a todo usuario Normal sin poder cambiar su contraseña.
+///
+/// Separarlos también evita que el auditor de providers crudos vea una
+/// vía sin autorizar hacia un provider protegido: no es la misma vía,
+/// es otra operación. Ver `cambiarMiContrasenaProvider`.
+final cambiarMiContrasenaUseCaseProvider = Provider<CambiarContrasenaUsuarioUseCase>((ref) {
   return CambiarContrasenaUsuarioUseCase(ref.watch(usuarioRepositoryProvider), ref.watch(passwordHasherProvider));
 });
 

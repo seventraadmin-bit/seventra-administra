@@ -18,13 +18,25 @@ class BreadcrumbSegment {
 /// rutas anidadas, quien lo llame simplemente pasará más segmentos
 /// (ej. "Organización" > "Clientes" > "Sportium") sin tocar este widget.
 class AppBreadcrumb extends StatelessWidget {
-  const AppBreadcrumb({required this.segments, super.key});
+  const AppBreadcrumb({required this.segments, this.activeColor, this.mutedColor, super.key});
 
   final List<BreadcrumbSegment> segments;
+
+  /// Sobrescribe el color del último segmento (la pantalla actual).
+  /// `null` conserva el color por defecto (`textTheme.titleMedium`, ya
+  /// fijo en `textPrimary`) — Etapa 16: la barra superior azul institucional
+  /// pasa aquí los tokens `shellForeground`/`shellForegroundMuted`, el
+  /// único consumidor de este override hoy.
+  final Color? activeColor;
+
+  /// Sobrescribe el color de los segmentos intermedios y del separador
+  /// `chevron_right`. `null` conserva `colorScheme.onSurfaceVariant`.
+  final Color? mutedColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorMuted = mutedColor ?? theme.colorScheme.onSurfaceVariant;
     final children = <Widget>[];
 
     for (var i = 0; i < segments.length; i++) {
@@ -37,8 +49,8 @@ class AppBreadcrumb extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         softWrap: false,
         style: isLast
-            ? theme.textTheme.titleMedium
-            : theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ? theme.textTheme.titleMedium?.copyWith(color: activeColor)
+            : theme.textTheme.titleMedium?.copyWith(color: colorMuted),
       );
 
       // Un solo nivel (el caso de hoy: ningún segmento tiene `onTap`) no
@@ -63,7 +75,7 @@ class AppBreadcrumb extends StatelessWidget {
         children.add(
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Icon(Icons.chevron_right, size: 18, color: theme.colorScheme.onSurfaceVariant),
+            child: Icon(Icons.chevron_right, size: 18, color: colorMuted),
           ),
         );
       }

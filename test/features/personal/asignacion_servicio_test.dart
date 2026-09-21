@@ -2,6 +2,8 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
@@ -72,7 +74,7 @@ void main() {
     crearEmpleado = CrearEmpleadoUseCase(empleadoRepo, generarNumero, empleadoValidator, servicioRepo, comercialRepo);
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);
-    registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator);
+    registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator, AsignacionRepositoryImpl(db), AsignacionVehiculoRepositoryImpl(db));
     asignarEmpleadoServicio =
         AsignarEmpleadoServicioUseCase(empleadoRepo, asignacionRepo, servicioRepo, comercialRepo, asignacionValidator);
     cambiarServicioEmpleado =
@@ -231,7 +233,7 @@ void main() {
             codigoPostal: '50000',
           ),
         );
-    final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo);
+    final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
     return (resultado as CambiarEstatusServicioExitoso).servicio;
   }
 
@@ -440,6 +442,7 @@ void main() {
         servicioId: servicio.id,
         nuevo: EstatusServicio.terminado,
         fechaTerminoEfectiva: DateTime(2026, 7, 1),
+        motivo: 'Motivo de prueba',
       );
       expect(resultado, isA<CambiarEstatusServicioExitoso>());
 
@@ -460,7 +463,7 @@ void main() {
       final servicio = await activarServicio(await crearServicioDePrueba());
       await asignar(empleadoId: empleadoA.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 1));
 
-      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.suspendido);
+      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.suspendido, motivo: 'Motivo de prueba');
       expect(resultado, isA<CambiarEstatusServicioExitoso>());
 
       final activa = await asignacionRepo.obtenerActivaPorEmpleado(empleadoA.id);

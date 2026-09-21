@@ -11,6 +11,7 @@ import 'package:riseg_one/features/organizacion/domain/repositories/servicio_rep
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../finanzas_providers.dart';
 import '../../pagos/pagos_list_screen.dart' show formaPagoLabel;
+import '../ingresos_controller.dart';
 import 'ingreso_monto_utils.dart';
 
 /// Diálogo "Registrar ingreso" manual (Etapa 4K.1) — dinero recibido
@@ -34,6 +35,7 @@ Future<bool> mostrarDialogoRegistrarIngreso(
   String? servicioId;
   String? sucursalId;
   String? areaId;
+  String? cuentaFinancieraId;
   String? errorMonto;
   String? errorFecha;
   String? errorConcepto;
@@ -41,6 +43,7 @@ Future<bool> mostrarDialogoRegistrarIngreso(
   final categorias = await ref.read(categoriaFinancieraRepositoryProvider).listar(tipo: TipoCategoriaFinanciera.ingreso.name);
   final sucursales = await ref.read(sucursalRepositoryProvider).listarActivas();
   final areas = await ref.read(areaRepositoryProvider).listarActivas();
+  final cuentasFinancieras = await ref.read(cuentaFinancieraRepositoryProvider).listar(soloActivas: true);
 
   if (!context.mounted) return false;
 
@@ -131,6 +134,16 @@ Future<bool> mostrarDialogoRegistrarIngreso(
             const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.ingresoCampoCuentaCaja, controller: cuentaCajaController),
             const SizedBox(height: AppSpacing.md),
+            RisegSelect<String?>(
+              label: l10n.movimientoCampoCuentaFinanciera,
+              value: cuentaFinancieraId,
+              items: [
+                RisegSelectItem(value: null, label: l10n.ingresoCampoSinAsignar),
+                for (final c in cuentasFinancieras) RisegSelectItem(value: c.id, label: c.nombre),
+              ],
+              onChanged: (valor) => setState(() => cuentaFinancieraId = valor),
+            ),
+            const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.ingresoCampoObservaciones, controller: observacionesController),
           ],
         );
@@ -150,7 +163,7 @@ Future<bool> mostrarDialogoRegistrarIngreso(
         errorConcepto = l10n.ingresoErrorConceptoRequerido;
         return false;
       }
-      final resultado = await ref.read(registrarIngresoManualUseCaseProvider).ejecutar(
+      final resultado = await ref.read(ingresosControllerProvider.notifier).registrarManual(
             monto: monto,
             fecha: fechaSeleccionada!,
             categoriaFinancieraId: categoriaId,
@@ -158,6 +171,7 @@ Future<bool> mostrarDialogoRegistrarIngreso(
             sucursalId: sucursalId,
             areaId: areaId,
             cuentaCaja: cuentaCajaController.text.trim().isEmpty ? null : cuentaCajaController.text.trim(),
+            cuentaFinancieraId: cuentaFinancieraId,
             formaPago: formaSeleccionada.name,
             concepto: conceptoController.text.trim(),
             observaciones: observacionesController.text.trim().isEmpty ? null : observacionesController.text.trim(),

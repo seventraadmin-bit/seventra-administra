@@ -35,10 +35,13 @@ import 'domain/usecases/eliminar_linea_telefonica_fisicamente_usecase.dart';
 import 'domain/usecases/obtener_equipos_disponibles_linea_telefonica_usecase.dart';
 import 'domain/usecases/obtener_historia_equipo_telefonico_usecase.dart';
 import 'domain/usecases/obtener_opciones_asignacion_linea_telefonica_usecase.dart';
+import 'domain/usecases/cancelar_recarga_linea_telefonica_usecase.dart';
+import 'domain/usecases/corregir_recarga_linea_telefonica_usecase.dart';
 import 'domain/usecases/registrar_recarga_linea_telefonica_usecase.dart';
 import 'domain/usecases/retirar_asignacion_linea_telefonica_usecase.dart';
 import 'domain/usecases/retirar_equipo_linea_telefonica_usecase.dart';
 import 'domain/usecases/revelar_credencial_equipo_telefonico_usecase.dart';
+import 'package:riseg_one/features/finanzas/finanzas_providers.dart';
 
 /// Providers del dominio Telefonía (Etapa 9A) — nace aquí, separado de
 /// Inventario/Vehículos y del resto de dominios, mismo criterio que
@@ -52,16 +55,13 @@ final asignacionLineaTelefonicaRepositoryProvider = Provider<AsignacionLineaTele
   return AsignacionLineaTelefonicaRepositoryImpl(ref.watch(appDatabaseProvider));
 });
 
-/// Compone con el `AsignacionRepository`/`InventarioRepository` reales
-/// de Inventario (Etapa 9B) — ver el doc comment de
-/// `LineaTelefonicaEquipoRepository` para la decisión completa de
-/// consistencia con Inventario.
+/// Lee la custodia real de Inventario (`AsignacionRepository`) — sólo
+/// lee: desde la Rebanada 2 Telefonía no escribe custodia.
 final lineaTelefonicaEquipoRepositoryProvider = Provider<LineaTelefonicaEquipoRepository>((ref) {
   return LineaTelefonicaEquipoRepositoryImpl(
     ref.watch(appDatabaseProvider),
     ref.watch(asignacionLineaTelefonicaRepositoryProvider),
     ref.watch(asignacionRepositoryProvider),
-    ref.watch(inventarioRepositoryProvider),
   );
 });
 
@@ -91,13 +91,36 @@ final darDeBajaLineaTelefonicaUseCaseProvider = Provider<DarDeBajaLineaTelefonic
 
 /// Recargas (Etapa 9C) — operación prepago, sin planes/contratos.
 final recargaLineaTelefonicaRepositoryProvider = Provider<RecargaLineaTelefonicaRepository>((ref) {
-  return RecargaLineaTelefonicaRepositoryImpl(ref.watch(appDatabaseProvider));
+  return RecargaLineaTelefonicaRepositoryImpl(
+    ref.watch(appDatabaseProvider),
+    ref.watch(egresoRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
+    ref.watch(codigoSecuenciaServiceProvider),
+  );
+});
+
+final corregirRecargaLineaTelefonicaUseCaseProvider =
+    Provider<CorregirRecargaLineaTelefonicaUseCase>((ref) {
+  return CorregirRecargaLineaTelefonicaUseCase(
+    ref.watch(recargaLineaTelefonicaRepositoryProvider),
+    ref.watch(lineaTelefonicaRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
+  );
+});
+
+final cancelarRecargaLineaTelefonicaUseCaseProvider =
+    Provider<CancelarRecargaLineaTelefonicaUseCase>((ref) {
+  return CancelarRecargaLineaTelefonicaUseCase(
+    ref.watch(recargaLineaTelefonicaRepositoryProvider),
+    ref.watch(lineaTelefonicaRepositoryProvider),
+  );
 });
 
 final registrarRecargaLineaTelefonicaUseCaseProvider = Provider<RegistrarRecargaLineaTelefonicaUseCase>((ref) {
   return RegistrarRecargaLineaTelefonicaUseCase(
     ref.watch(recargaLineaTelefonicaRepositoryProvider),
     ref.watch(lineaTelefonicaRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
   );
 });
 
@@ -122,6 +145,7 @@ final cambiarAsignacionLineaTelefonicaUseCaseProvider = Provider<CambiarAsignaci
   return CambiarAsignacionLineaTelefonicaUseCase(
     ref.watch(asignacionLineaTelefonicaRepositoryProvider),
     ref.watch(lineaTelefonicaEquipoRepositoryProvider),
+    ref.watch(lineaTelefonicaRepositoryProvider),
   );
 });
 
@@ -129,6 +153,7 @@ final retirarAsignacionLineaTelefonicaUseCaseProvider = Provider<RetirarAsignaci
   return RetirarAsignacionLineaTelefonicaUseCase(
     ref.watch(asignacionLineaTelefonicaRepositoryProvider),
     ref.watch(lineaTelefonicaEquipoRepositoryProvider),
+    ref.watch(lineaTelefonicaRepositoryProvider),
   );
 });
 
@@ -137,6 +162,7 @@ final asociarEquipoLineaTelefonicaUseCaseProvider = Provider<AsociarEquipoLineaT
     ref.watch(lineaTelefonicaRepositoryProvider),
     ref.watch(lineaTelefonicaEquipoRepositoryProvider),
     ref.watch(inventarioRepositoryProvider),
+    ref.watch(asignacionLineaTelefonicaRepositoryProvider),
   );
 });
 
@@ -145,6 +171,7 @@ final cambiarEquipoLineaTelefonicaUseCaseProvider = Provider<CambiarEquipoLineaT
     ref.watch(lineaTelefonicaRepositoryProvider),
     ref.watch(lineaTelefonicaEquipoRepositoryProvider),
     ref.watch(inventarioRepositoryProvider),
+    ref.watch(asignacionLineaTelefonicaRepositoryProvider),
   );
 });
 
@@ -166,7 +193,10 @@ final obtenerOpcionesAsignacionLineaTelefonicaUseCaseProvider =
 
 final obtenerEquiposDisponiblesLineaTelefonicaUseCaseProvider =
     Provider<ObtenerEquiposDisponiblesLineaTelefonicaUseCase>((ref) {
-  return ObtenerEquiposDisponiblesLineaTelefonicaUseCase(ref.watch(inventarioRepositoryProvider));
+  return ObtenerEquiposDisponiblesLineaTelefonicaUseCase(
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(lineaTelefonicaEquipoRepositoryProvider),
+  );
 });
 
 // --- Fachadas autorizadas (Etapa 11C) ---
@@ -181,7 +211,7 @@ typedef AsignarLineaTelefonicaAutorizado = Future<AsignarLineaTelefonicaResultad
   String? servicioId,
   required DateTime fechaInicio,
   String? observaciones,
-  bool moverEquipoAsociado,
+  String? motivo,
 });
 
 final asignarLineaTelefonicaAutorizadoProvider = Provider<AsignarLineaTelefonicaAutorizado>((ref) {
@@ -191,7 +221,7 @@ final asignarLineaTelefonicaAutorizadoProvider = Provider<AsignarLineaTelefonica
     String? servicioId,
     required DateTime fechaInicio,
     String? observaciones,
-    bool moverEquipoAsociado = true,
+    String? motivo,
   }) {
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
@@ -203,7 +233,7 @@ final asignarLineaTelefonicaAutorizadoProvider = Provider<AsignarLineaTelefonica
             servicioId: servicioId,
             fechaInicio: fechaInicio,
             observaciones: observaciones,
-            moverEquipoAsociado: moverEquipoAsociado,
+            motivo: motivo,
             actorUsuarioId: actorUsuarioId,
           ),
       AsignarLineaTelefonicaErrorInesperado.new,
@@ -218,7 +248,7 @@ typedef CambiarAsignacionLineaTelefonicaAutorizado = Future<CambiarAsignacionLin
   String? nuevoEmpleadoId,
   String? nuevoServicioId,
   String? observacionesNueva,
-  bool moverEquipoAsociado,
+  String? motivo,
 });
 
 final cambiarAsignacionLineaTelefonicaAutorizadoProvider = Provider<CambiarAsignacionLineaTelefonicaAutorizado>((ref) {
@@ -229,7 +259,7 @@ final cambiarAsignacionLineaTelefonicaAutorizadoProvider = Provider<CambiarAsign
     String? nuevoEmpleadoId,
     String? nuevoServicioId,
     String? observacionesNueva,
-    bool moverEquipoAsociado = true,
+    String? motivo,
   }) {
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
@@ -242,7 +272,7 @@ final cambiarAsignacionLineaTelefonicaAutorizadoProvider = Provider<CambiarAsign
             nuevoEmpleadoId: nuevoEmpleadoId,
             nuevoServicioId: nuevoServicioId,
             observacionesNueva: observacionesNueva,
-            moverEquipoAsociado: moverEquipoAsociado,
+            motivo: motivo,
             actorUsuarioId: actorUsuarioId,
           ),
       CambiarAsignacionLineaTelefonicaErrorInesperado.new,
@@ -254,7 +284,7 @@ typedef RetirarAsignacionLineaTelefonicaAutorizado = Future<RetirarAsignacionLin
   required String asignacionLineaTelefonicaId,
   required DateTime fechaTermino,
   String? observacionesTermino,
-  bool moverEquipoAsociado,
+  String? motivo,
 });
 
 final retirarAsignacionLineaTelefonicaAutorizadoProvider = Provider<RetirarAsignacionLineaTelefonicaAutorizado>((ref) {
@@ -262,7 +292,7 @@ final retirarAsignacionLineaTelefonicaAutorizadoProvider = Provider<RetirarAsign
     required String asignacionLineaTelefonicaId,
     required DateTime fechaTermino,
     String? observacionesTermino,
-    bool moverEquipoAsociado = true,
+    String? motivo,
   }) {
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
@@ -272,7 +302,7 @@ final retirarAsignacionLineaTelefonicaAutorizadoProvider = Provider<RetirarAsign
             asignacionLineaTelefonicaId: asignacionLineaTelefonicaId,
             fechaTermino: fechaTermino,
             observacionesTermino: observacionesTermino,
-            moverEquipoAsociado: moverEquipoAsociado,
+            motivo: motivo,
             actorUsuarioId: actorUsuarioId,
           ),
       RetirarAsignacionLineaTelefonicaErrorInesperado.new,
@@ -285,6 +315,7 @@ typedef AsociarEquipoLineaTelefonicaAutorizado = Future<AsociarEquipoLineaTelefo
   required String unidadId,
   required DateTime fechaInicio,
   String? observaciones,
+  bool alinearLineaConCustodia,
 });
 
 final asociarEquipoLineaTelefonicaAutorizadoProvider = Provider<AsociarEquipoLineaTelefonicaAutorizado>((ref) {
@@ -293,6 +324,7 @@ final asociarEquipoLineaTelefonicaAutorizadoProvider = Provider<AsociarEquipoLin
     required String unidadId,
     required DateTime fechaInicio,
     String? observaciones,
+    bool alinearLineaConCustodia = false,
   }) {
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
@@ -303,6 +335,7 @@ final asociarEquipoLineaTelefonicaAutorizadoProvider = Provider<AsociarEquipoLin
             unidadId: unidadId,
             fechaInicio: fechaInicio,
             observaciones: observaciones,
+            alinearLineaConCustodia: alinearLineaConCustodia,
             actorUsuarioId: actorUsuarioId,
           ),
       AsociarEquipoLineaTelefonicaErrorInesperado.new,
@@ -315,6 +348,7 @@ typedef CambiarEquipoLineaTelefonicaAutorizado = Future<CambiarEquipoLineaTelefo
   required String nuevaUnidadId,
   required DateTime fecha,
   String? observaciones,
+  bool alinearLineaConCustodia,
 });
 
 final cambiarEquipoLineaTelefonicaAutorizadoProvider = Provider<CambiarEquipoLineaTelefonicaAutorizado>((ref) {
@@ -323,6 +357,7 @@ final cambiarEquipoLineaTelefonicaAutorizadoProvider = Provider<CambiarEquipoLin
     required String nuevaUnidadId,
     required DateTime fecha,
     String? observaciones,
+    bool alinearLineaConCustodia = false,
   }) {
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
@@ -333,6 +368,7 @@ final cambiarEquipoLineaTelefonicaAutorizadoProvider = Provider<CambiarEquipoLin
             nuevaUnidadId: nuevaUnidadId,
             fecha: fecha,
             observaciones: observaciones,
+            alinearLineaConCustodia: alinearLineaConCustodia,
             actorUsuarioId: actorUsuarioId,
           ),
       CambiarEquipoLineaTelefonicaErrorInesperado.new,
@@ -368,6 +404,9 @@ typedef RegistrarRecargaLineaTelefonicaAutorizado = Future<RegistrarRecargaLinea
   required String lineaTelefonicaId,
   required DateTime fecha,
   required int importe,
+  required String formaPago,
+  String? cuentaFinancieraId,
+  String? deudaIdTarjeta,
   String? observaciones,
 });
 
@@ -376,20 +415,136 @@ final registrarRecargaLineaTelefonicaAutorizadoProvider = Provider<RegistrarReca
     required String lineaTelefonicaId,
     required DateTime fecha,
     required int importe,
+    required String formaPago,
+    String? cuentaFinancieraId,
+    String? deudaIdTarjeta,
     String? observaciones,
   }) {
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'telefonia.crear',
+      'telefonia.recargar',
       () => ref.read(registrarRecargaLineaTelefonicaUseCaseProvider).ejecutar(
             lineaTelefonicaId: lineaTelefonicaId,
             fecha: fecha,
             importe: importe,
+            formaPago: formaPago,
+            cuentaFinancieraId: cuentaFinancieraId,
+            deudaIdTarjeta: deudaIdTarjeta,
             observaciones: observaciones,
             actorUsuarioId: actorUsuarioId,
           ),
       RegistrarRecargaLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+/// Corregir y anular una recarga (schemaVersion 81).
+///
+/// Ambas van bajo `telefonia.recargar`, el MISMO código que registrarla,
+/// y no bajo uno nuevo. Auditado antes de decidirlo: a diferencia de
+/// anular un mantenimiento de Vehículo —que revierte un Egreso real de
+/// banco o libera un cargo de TDC— anular una recarga **no mueve
+/// dinero**: Telefonía no genera Egreso (decisión deliberada desde la
+/// Etapa 9C). Separar aquí un `telefonia.cancelar` daría la apariencia
+/// de un control financiero que no existe, y quien puede registrar la
+/// recarga es exactamente quien conoce si ocurrió o no.
+typedef CorregirRecargaLineaTelefonicaAutorizado = Future<CorregirRecargaLineaTelefonicaResultado> Function({
+  required String recargaLineaTelefonicaId,
+  DateTime? fecha,
+  int? importe,
+  required String formaPago,
+  String? cuentaFinancieraId,
+  String? deudaIdTarjeta,
+  String? observaciones,
+  bool limpiarObservaciones,
+  required String motivo,
+});
+
+final corregirRecargaLineaTelefonicaAutorizadoProvider =
+    Provider<CorregirRecargaLineaTelefonicaAutorizado>((ref) {
+  return ({
+    required String recargaLineaTelefonicaId,
+    DateTime? fecha,
+    int? importe,
+    required String formaPago,
+    String? cuentaFinancieraId,
+    String? deudaIdTarjeta,
+    String? observaciones,
+    bool limpiarObservaciones = false,
+    required String motivo,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.recargar',
+      () => ref.read(corregirRecargaLineaTelefonicaUseCaseProvider).ejecutar(
+            recargaLineaTelefonicaId: recargaLineaTelefonicaId,
+            fecha: fecha,
+            importe: importe,
+            formaPago: formaPago,
+            cuentaFinancieraId: cuentaFinancieraId,
+            deudaIdTarjeta: deudaIdTarjeta,
+            observaciones: observaciones,
+            limpiarObservaciones: limpiarObservaciones,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      CorregirRecargaLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+typedef CancelarRecargaLineaTelefonicaAutorizado = Future<CancelarRecargaLineaTelefonicaResultado> Function({
+  required String recargaLineaTelefonicaId,
+  required String motivo,
+});
+
+final cancelarRecargaLineaTelefonicaAutorizadoProvider =
+    Provider<CancelarRecargaLineaTelefonicaAutorizado>((ref) {
+  return ({required String recargaLineaTelefonicaId, required String motivo}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.recargar',
+      () => ref.read(cancelarRecargaLineaTelefonicaUseCaseProvider).ejecutar(
+            recargaLineaTelefonicaId: recargaLineaTelefonicaId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      CancelarRecargaLineaTelefonicaErrorInesperado.new,
+    );
+  };
+});
+
+// Etapa 0 (auditoría de consistencia transversal — corrección de un
+// hueco real de autorización): se invocaba desde el diálogo directo
+// sobre el use case crudo, sin ningún `autorizarUseCase`. Mismo código
+// que registrar la recarga.
+typedef AdjuntarComprobanteRecargaLineaTelefonicaAutorizado = Future<AdjuntarComprobanteRecargaLineaTelefonicaResultado>
+    Function({
+  required String recargaLineaTelefonicaId,
+  required String sourceFilePath,
+  required String originalFileName,
+  required String mimeType,
+});
+
+final adjuntarComprobanteRecargaLineaTelefonicaAutorizadoProvider =
+    Provider<AdjuntarComprobanteRecargaLineaTelefonicaAutorizado>((ref) {
+  return ({
+    required String recargaLineaTelefonicaId,
+    required String sourceFilePath,
+    required String originalFileName,
+    required String mimeType,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'telefonia.recargar',
+      () => ref.read(adjuntarComprobanteRecargaLineaTelefonicaUseCaseProvider).ejecutar(
+            recargaLineaTelefonicaId: recargaLineaTelefonicaId,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      AdjuntarComprobanteRecargaLineaTelefonicaErrorInesperado.new,
     );
   };
 });

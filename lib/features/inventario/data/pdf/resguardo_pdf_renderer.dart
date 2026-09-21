@@ -61,7 +61,7 @@ class ResguardoPdfRenderer {
   }
 
   pw.Widget _encabezado(ResguardoData data, Uint8List? logoBytes) {
-    final destino = data.empleadoNombre ?? data.servicioNombre ?? '—';
+    final destino = data.empleadoNombre ?? data.servicioNombre ?? '-';
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 10),
       decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: _azulInstitucional, width: 2))),
@@ -83,10 +83,22 @@ class ResguardoPdfRenderer {
                 ),
                 pw.SizedBox(height: 4),
                 pw.Text(destino, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _carbon)),
+                if (data.servicioActualNombre != null)
+                  pw.Text(data.servicioActualNombre!, style: const pw.TextStyle(fontSize: 9, color: _grisTexto)),
               ],
             ),
           ),
-          pw.Text(_formatearFecha(data.fechaGeneracion), style: const pw.TextStyle(fontSize: 9, color: _grisTexto)),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              if (data.folio != null)
+                pw.Text(
+                  'Folio: ${data.folio}',
+                  style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _azulInstitucional),
+                ),
+              pw.Text(_formatearFecha(data.fechaGeneracion), style: const pw.TextStyle(fontSize: 9, color: _grisTexto)),
+            ],
+          ),
         ],
       ),
     );
@@ -115,9 +127,9 @@ class ResguardoPdfRenderer {
           pw.TableRow(
             children: [
               _celda(item.sustituyeA == null ? item.articuloNombre : '${item.articuloNombre}\n(Sustituye a: ${item.sustituyeA})'),
-              _celda(item.varianteLabel ?? item.unidadLabel ?? '—'),
+              _celda(item.varianteLabel ?? item.unidadLabel ?? '-'),
               _celda(item.cantidad.toString()),
-              _celda(item.condicionEntrega ?? '—'),
+              _celda(item.condicionEntrega ?? '-'),
             ],
           ),
       ],

@@ -41,6 +41,7 @@ class DarDeBajaLineaTelefonicaUseCase {
     required DateTime fechaBaja,
     required MotivoBajaLineaTelefonica motivoBaja,
     String? observacionesBaja,
+    String? actorUsuarioId,
   }) async {
     final linea = await _repository.obtenerPorId(lineaTelefonicaId);
     if (linea == null) return DarDeBajaLineaTelefonicaNoExiste();
@@ -55,6 +56,7 @@ class DarDeBajaLineaTelefonicaUseCase {
         fechaBaja: fechaBaja,
         motivoBaja: motivoBaja.name,
         observacionesBaja: observacionesBaja?.trim().isEmpty ?? true ? null : observacionesBaja!.trim(),
+        actorUsuarioId: actorUsuarioId,
       );
       return DarDeBajaLineaTelefonicaExitoso(actualizada);
     } catch (e) {

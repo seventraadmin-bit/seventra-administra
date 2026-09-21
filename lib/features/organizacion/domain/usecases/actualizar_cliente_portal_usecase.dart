@@ -1,3 +1,4 @@
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
@@ -29,7 +30,10 @@ class ActualizarClientePortalUseCase {
   Future<GuardarClientePortalResultado> ejecutar({
     required String id,
     required ClientePortalBorrador borrador,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return GuardarClientePortalMotivoRequerido();
     final existente = await _repository.obtenerPorId(id);
     if (existente == null) {
       return GuardarClientePortalErrorInesperado('Portal no encontrado: $id');
@@ -58,6 +62,8 @@ class ActualizarClientePortalUseCase {
           contrasenaCifrada: contrasenaCifrada == null ? const Value.absent() : Value(contrasenaCifrada),
           observaciones: Value(validado.observaciones),
         ),
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
       );
       return GuardarClientePortalExitoso(actualizado);
     } catch (e) {

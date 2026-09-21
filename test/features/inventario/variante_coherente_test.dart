@@ -31,6 +31,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/compras/data/repositories/compra_repository_impl.dart';
 import 'package:riseg_one/features/compras/data/tables/compra_partida_table.dart' show DestinoCompraPartida;
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart' show PartidaCompraInput;
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -113,7 +114,8 @@ void main() {
       final articulo = await crearArticulo('CAMISOLA', manejaVariante: true);
       await articuloRepo.crearVariante(articuloId: articulo.id, valor: 'CH');
       final egresoRepo = EgresoRepositoryImpl(db);
-      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+      final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
 
       // Llamado directo al repositorio, como si un caller nuevo se
       // olvidara de validar `varianteId` antes — exactamente el

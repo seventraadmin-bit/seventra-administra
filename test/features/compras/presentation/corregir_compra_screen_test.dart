@@ -27,6 +27,7 @@ import 'package:riseg_one/features/compras/data/repositories/compra_repository_i
 import 'package:riseg_one/features/compras/data/tables/compra_partida_table.dart' show DestinoCompraPartida;
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -76,7 +77,8 @@ Future<CompraData> _sembrarCompraDePrueba(AppDatabase db) async {
   final articuloRepo = ArticuloRepositoryImpl(db);
   final inventarioRepo = InventarioRepositoryImpl(db);
   final egresoRepo = EgresoRepositoryImpl(db);
-  final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+  final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+  final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
   final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
   final categoria = (await CrearCategoriaArticuloUseCase(CategoriaArticuloRepositoryImpl(db)).ejecutar(nombre: 'Uniformes')
@@ -90,7 +92,7 @@ Future<CompraData> _sembrarCompraDePrueba(AppDatabase db) async {
   ) as CrearArticuloExitoso)
       .articulo;
 
-  final registrar = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
+  final registrar = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
   final resultado = await registrar.ejecutar(
     fecha: DateTime(2026, 8, 10),
     proveedor: 'Uniformes del Centro',
@@ -158,11 +160,13 @@ void main() {
       // estado interno.
       final botonesQuitar = find.text(l10n.compraCorregirBotonQuitarPartidaCompleta);
       expect(botonesQuitar, findsWidgets);
+      await tester.ensureVisible(botonesQuitar.last);
       await tester.tap(botonesQuitar.last);
       await tester.pumpAndSettle();
       expect(find.text(l10n.compraCorregirBotonDeshacerQuitar), findsOneWidget);
       expect(find.text('Bolsa/empaque'), findsNothing, reason: 'la partida marcada para quitar deja de mostrar su formulario editable');
 
+      await tester.ensureVisible(find.text(l10n.compraCorregirBotonDeshacerQuitar));
       await tester.tap(find.text(l10n.compraCorregirBotonDeshacerQuitar));
       await tester.pumpAndSettle();
       expect(find.text('Bolsa/empaque'), findsOneWidget, reason: 'deshacer restaura la partida a su estado editable normal');

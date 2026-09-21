@@ -50,9 +50,13 @@ abstract interface class AsignacionLineaTelefonicaRepository {
   /// Cierra la asignación vigente de la línea (motivo
   /// `cambioResponsable`, automático) y crea la nueva — transacción
   /// única.
+  /// [motivoTermino] por defecto es `cambioResponsable` (alguien la
+  /// cambió a mano); el coordinador de Inventario pasa el suyo para que
+  /// la bitácora distinga la consecuencia sistémica.
   Future<AsignacionLineaTelefonicaData> cambiarResponsable({
     required String asignacionLineaTelefonicaActualId,
     required DateTime fecha,
+    String? motivoTermino,
     String? observacionesTermino,
     String? nuevoEmpleadoId,
     String? nuevoServicioId,
@@ -66,4 +70,26 @@ abstract interface class AsignacionLineaTelefonicaRepository {
   /// `AsignacionVehiculoRepository.cerrarPorBajaVehiculo`). No-op si no
   /// hay asignación vigente.
   Future<void> cerrarPorBajaLinea({required String lineaTelefonicaId, required DateTime fecha});
+
+  /// Cierra TODAS las asignaciones vigentes de un Empleado (motivo
+  /// `bajaEmpleado`) — llamado desde
+  /// `EmpleadoRepositoryImpl.registrarBajaLaboral`, en la MISMA
+  /// transacción que la baja laboral. Mismo criterio exacto que
+  /// `AsignacionServicioRepository.cerrarPorBajaEmpleado` (Etapa 5D).
+  ///
+  /// **Todas**, no "la" vigente: la regla de unicidad del proyecto es
+  /// una asignación vigente por LÍNEA (índice único parcial), no por
+  /// empleado — una persona puede traer dos líneas a la vez, y las dos
+  /// deben cerrarse.
+  ///
+  /// NO toca `LineaTelefonica.estatus`: la línea queda disponible para
+  /// reasignarse, nunca dada de baja. Quien se fue es la persona.
+  ///
+  /// La resolución es por FK (`empleado_id`), jamás por nombre, número
+  /// telefónico ni número de empleado. No-op si no hay ninguna vigente.
+  Future<void> cerrarPorBajaEmpleado({
+    required String empleadoId,
+    required DateTime fecha,
+    String? actorUsuarioId,
+  });
 }

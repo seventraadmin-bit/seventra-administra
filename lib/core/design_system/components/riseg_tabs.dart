@@ -33,13 +33,35 @@ class RisegTabs extends StatefulWidget {
   State<RisegTabs> createState() => _RisegTabsState();
 }
 
-class _RisegTabsState extends State<RisegTabs> with SingleTickerProviderStateMixin {
+/// `TickerProviderStateMixin`, NO `SingleTickerProviderStateMixin`.
+///
+/// BUG REAL (Etapa "Usuarios, permisos y UX de seguridad"):
+/// `didUpdateWidget` construye un `TabController` nuevo cuando cambia el
+/// NÚMERO de pestañas, y `SingleTickerProviderStateMixin` solo admite un
+/// ticker en toda la vida del `State` — disponer el anterior no libera
+/// el lugar. El segundo `TabController` reventaba con
+/// "_RisegTabsState is a SingleTickerProviderStateMixin but multiple
+/// tickers were created".
+///
+/// No era teórico: el juego de pestañas SÍ cambia en caliente. Basta
+/// que la sesión pase de Maestro a Normal para que Configuración pierda
+/// Respaldo y Bóveda (4 → 2) — reproducido al escribir la prueba de
+/// cambio de sesión. Cualquier pantalla con pestañas filtradas por
+/// permiso tiene el mismo camino.
+class _RisegTabsState extends State<RisegTabs> with TickerProviderStateMixin {
   late TabController _controller;
+
+  /// Nunca fuera de rango: al perder pestañas, el índice seleccionado
+  /// puede apuntar a una que ya no existe (Configuración en Respaldo,
+  /// índice 2, cuando la sesión deja de ser Maestra y quedan 2). El
+  /// llamador corrige su propio estado en el frame siguiente; mientras
+  /// tanto esto evita el rango inválido de `TabController`.
+  int get _indiceValido => widget.tabs.isEmpty ? 0 : widget.selectedIndex.clamp(0, widget.tabs.length - 1);
 
   @override
   void initState() {
     super.initState();
-    _controller = TabController(length: widget.tabs.length, initialIndex: widget.selectedIndex, vsync: this);
+    _controller = TabController(length: widget.tabs.length, initialIndex: _indiceValido, vsync: this);
   }
 
   @override
@@ -47,9 +69,9 @@ class _RisegTabsState extends State<RisegTabs> with SingleTickerProviderStateMix
     super.didUpdateWidget(oldWidget);
     if (oldWidget.tabs.length != widget.tabs.length) {
       _controller.dispose();
-      _controller = TabController(length: widget.tabs.length, initialIndex: widget.selectedIndex, vsync: this);
-    } else if (_controller.index != widget.selectedIndex) {
-      _controller.index = widget.selectedIndex;
+      _controller = TabController(length: widget.tabs.length, initialIndex: _indiceValido, vsync: this);
+    } else if (_controller.index != _indiceValido) {
+      _controller.index = _indiceValido;
     }
   }
 

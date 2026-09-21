@@ -115,10 +115,14 @@ void main() {
       expect(existencia.danado, 0);
       expect(existencia.perdido, 0);
       // La invariante explícita del pedido: Total = suma de todos los
-      // estados que representan existencia física (nunca `baja`, que
-      // sale del Total por diseño — ver el doc comment de
-      // `ExistenciaArticulo.total`).
-      expect(existencia.total, existencia.disponible + existencia.asignado + existencia.danado + existencia.perdido);
+      // estados que representan existencia física, incluidos los
+      // intermedios (lavandería/reparación/pendiente de desecho). La
+      // única cubeta que sale del Total es `baja` — ver el doc comment
+      // de `ExistenciaArticulo.total`.
+      expect(
+        existencia.total,
+        existencia.disponible + existencia.asignado + existencia.danado + existencia.perdido + existencia.enProceso,
+      );
     });
 
     test('asignar una unidad más: Disponible 3→2 y Asignado 2→3', () async {
@@ -227,7 +231,10 @@ void main() {
       expect(existencia.total, 10);
       expect(existencia.disponible, 7);
       expect(existencia.asignado, 3);
-      expect(existencia.total, existencia.disponible + existencia.asignado + existencia.danado + existencia.perdido);
+      expect(
+        existencia.total,
+        existencia.disponible + existencia.asignado + existencia.danado + existencia.perdido + existencia.enProceso,
+      );
 
       final cierre = await cerrarAsignacion.ejecutar(
         asignacionId: asignacion.id,

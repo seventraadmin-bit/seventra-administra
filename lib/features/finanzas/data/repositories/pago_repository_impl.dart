@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
@@ -80,6 +81,11 @@ class PagoRepositoryImpl implements PagoRepository {
   }
 
   @override
+  Future<List<AplicacionPagoData>> listarTodasLasAplicacionesActivas() {
+    return (_db.select(_db.aplicacionPago)..where((t) => t.estatus.equals(EstatusAplicacionPago.aplicada.name))).get();
+  }
+
+  @override
   Future<List<PagoEventoData>> listarEventos(String pagoId) {
     return (_db.select(_db.pagoEvento)
           ..where((t) => t.pagoId.equals(pagoId))
@@ -90,25 +96,34 @@ class PagoRepositoryImpl implements PagoRepository {
   @override
   Future<PagoData> crear({
     required String folioPago,
-    required String clienteId,
+    String? clienteId,
+    String? servicioEventualId,
     required int montoTotal,
     required DateTime fechaPago,
     required String formaPago,
     String? referencia,
     String? bancoOrigen,
     String? cuentaBancariaDestino,
+    String? cuentaFinancieraId,
     String? observaciones,
     String? actorUsuarioId,
   }) {
     return _db.transaction(() => _crear(
           folioPago: folioPago,
           clienteId: clienteId,
+          // Se perdía en el camino: `crear` lo recibía y no lo pasaba, así
+          // que un Pago de Servicio Eventual creado por esta vía moría
+          // contra el CHECK "cliente_id IS NOT NULL OR
+          // servicio_eventual_id IS NOT NULL". `crearAplicado` sí lo
+          // reenviaba, que es por lo que la cobranza eventual funcionaba.
+          servicioEventualId: servicioEventualId,
           montoTotal: montoTotal,
           fechaPago: fechaPago,
           formaPago: formaPago,
           referencia: referencia,
           bancoOrigen: bancoOrigen,
           cuentaBancariaDestino: cuentaBancariaDestino,
+          cuentaFinancieraId: cuentaFinancieraId,
           observaciones: observaciones,
           actorUsuarioId: actorUsuarioId,
         ));
@@ -116,20 +131,23 @@ class PagoRepositoryImpl implements PagoRepository {
 
   Future<PagoData> _crear({
     required String folioPago,
-    required String clienteId,
+    String? clienteId,
+    String? servicioEventualId,
     required int montoTotal,
     required DateTime fechaPago,
     required String formaPago,
     String? referencia,
     String? bancoOrigen,
     String? cuentaBancariaDestino,
+    String? cuentaFinancieraId,
     String? observaciones,
     String? actorUsuarioId,
   }) async {
     final pago = await _db.into(_db.pago).insertReturning(
           PagoCompanion.insert(
             folioPago: folioPago,
-            clienteId: clienteId,
+            clienteId: Value(clienteId),
+            servicioEventualId: Value(servicioEventualId),
             montoTotal: montoTotal,
             fechaPago: fechaPago,
             formaPago: formaPago,
@@ -149,7 +167,7 @@ class PagoRepositoryImpl implements PagoRepository {
       datosRelevantes: {'folioPago': folioPago, 'montoTotal': montoTotal},
     );
 
-    await _crearIngresoAutomatico(pago, actorUsuarioId: actorUsuarioId);
+    await _crearIngresoAutomatico(pago, cuentaFinancieraId: cuentaFinancieraId, actorUsuarioId: actorUsuarioId);
 
     return pago;
   }
@@ -159,8 +177,10 @@ class PagoRepositoryImpl implements PagoRepository {
   /// el dinero se reconoce como ingreso cuando se recibe (criterio de
   /// caja), no cuando se aplica a una Cuenta por cobrar, así que corre
   /// aquí, no en `_aplicar`. Relación 1:1 con el Pago, mismo criterio
-  /// que `ComplementoPago`.
-  Future<void> _crearIngresoAutomatico(PagoData pago, {String? actorUsuarioId}) async {
+  /// que `ComplementoPago`. [cuentaFinancieraId] (Etapa 19C) es la
+  /// única fuente real de la cuenta — nunca se infiere de
+  /// `cuentaBancariaDestino` (texto libre, sin tocar).
+  Future<void> _crearIngresoAutomatico(PagoData pago, {String? cuentaFinancieraId, String? actorUsuarioId}) async {
     final folioIngreso = await _codigoSecuencia.siguienteCodigo('ingreso');
     final ingreso = await _db.into(_db.ingreso).insertReturning(
           IngresoCompanion.insert(
@@ -169,6 +189,7 @@ class PagoRepositoryImpl implements PagoRepository {
             monto: pago.montoTotal,
             fecha: pago.fechaPago,
             cuentaCaja: Value(pago.cuentaBancariaDestino),
+            cuentaFinancieraId: Value(cuentaFinancieraId),
             formaPago: pago.formaPago,
             concepto: 'Pago ${pago.folioPago}',
           ),
@@ -286,7 +307,8 @@ class PagoRepositoryImpl implements PagoRepository {
   @override
   Future<({PagoData pago, AplicacionPagoData aplicacion})> crearAplicado({
     required String folioPago,
-    required String clienteId,
+    String? clienteId,
+    String? servicioEventualId,
     required int montoTotal,
     required DateTime fechaPago,
     required String formaPago,
@@ -294,6 +316,7 @@ class PagoRepositoryImpl implements PagoRepository {
     String? referencia,
     String? bancoOrigen,
     String? cuentaBancariaDestino,
+    String? cuentaFinancieraId,
     String? observaciones,
     String? actorUsuarioId,
   }) {
@@ -301,12 +324,14 @@ class PagoRepositoryImpl implements PagoRepository {
       final pago = await _crear(
         folioPago: folioPago,
         clienteId: clienteId,
+        servicioEventualId: servicioEventualId,
         montoTotal: montoTotal,
         fechaPago: fechaPago,
         formaPago: formaPago,
         referencia: referencia,
         bancoOrigen: bancoOrigen,
         cuentaBancariaDestino: cuentaBancariaDestino,
+        cuentaFinancieraId: cuentaFinancieraId,
         observaciones: observaciones,
         actorUsuarioId: actorUsuarioId,
       );
@@ -333,15 +358,46 @@ class PagoRepositoryImpl implements PagoRepository {
     String? referencia,
     String? bancoOrigen,
     String? cuentaBancariaDestino,
+    String? cuentaFinancieraId,
+    bool limpiarCuentaFinancieraId = false,
     String? observaciones,
+    int? montoTotal,
+    List<({String cuentaPorCobrarId, int monto})>? nuevaDistribucion,
     required String motivo,
     String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.pago)..where((t) => t.id.equals(pagoId))).getSingle();
 
+      // Redistribución (Etapa 6): reemplazo COMPLETO, nunca un delta —
+      // cancela primero TODAS las aplicaciones activas actuales
+      // (reutilizando `_cancelarAplicacionInterna`, que ya revierte
+      // saldo/estatus de cada Cuenta y decrementa `Pago.montoAplicado`
+      // hasta 0), luego aplica la nueva lista (reutilizando `_aplicar`).
+      // Este orden — revertir todo, actualizar `montoTotal`, volver a
+      // aplicar — es el único que nunca viola el CHECK
+      // `monto_aplicado <= monto_total` a medio camino, sin importar si
+      // el nuevo total sube o baja.
+      List<({String cuentaPorCobrarId, int montoAnterior})>? distribucionAnteriorResumen;
+      if (nuevaDistribucion != null) {
+        final activas = await (_db.select(_db.aplicacionPago)
+              ..where((t) => t.pagoId.equals(pagoId) & t.estatus.equals(EstatusAplicacionPago.aplicada.name)))
+            .get();
+        distribucionAnteriorResumen = [
+          for (final a in activas) (cuentaPorCobrarId: a.cuentaPorCobrarId, montoAnterior: a.monto),
+        ];
+        for (final aplicacion in activas) {
+          await _cancelarAplicacionInterna(
+            aplicacion,
+            motivo: 'Redistribución por corrección del Pago $pagoId. Motivo: $motivo',
+            actorUsuarioId: actorUsuarioId,
+          );
+        }
+      }
+
       await (_db.update(_db.pago)..where((t) => t.id.equals(pagoId))).write(
         PagoCompanion(
+          montoTotal: montoTotal == null ? const Value.absent() : Value(montoTotal),
           fechaPago: fechaPago == null ? const Value.absent() : Value(fechaPago),
           formaPago: formaPago == null ? const Value.absent() : Value(formaPago),
           referencia: referencia == null ? const Value.absent() : Value(referencia),
@@ -352,21 +408,90 @@ class PagoRepositoryImpl implements PagoRepository {
         ),
       );
 
-      await _registrarEventoPago(
-        pagoId: pagoId,
-        tipoEvento: TipoEventoPago.corregido,
-        estadoAnterior: anterior.estatus,
-        estadoNuevo: anterior.estatus,
-        observacion: motivo,
-        actorUsuarioId: actorUsuarioId,
-        datosRelevantes: {
-          'fechaPagoAnterior': anterior.fechaPago.toIso8601String(),
-          'formaPagoAnterior': anterior.formaPago,
-          'referenciaAnterior': anterior.referencia,
-          'bancoOrigenAnterior': anterior.bancoOrigen,
-          'cuentaBancariaDestinoAnterior': anterior.cuentaBancariaDestino,
-        },
-      );
+      if (nuevaDistribucion != null) {
+        for (final item in nuevaDistribucion) {
+          await _aplicar(
+            pagoId: pagoId,
+            cuentaPorCobrarId: item.cuentaPorCobrarId,
+            monto: item.monto,
+            actorUsuarioId: actorUsuarioId,
+          );
+        }
+      }
+
+      // Sincroniza el Ingreso automático ligado — nunca lo deja
+      // desincronizado del Pago que le dio origen (hallazgo real de
+      // auditoría, Etapa 6). Igual que `_crearIngresoAutomatico`,
+      // escribe directo sobre `_db.ingreso`/`_db.ingresoEvento`.
+      final ingresoAnterior = await (_db.select(_db.ingreso)..where((t) => t.pagoId.equals(pagoId))).getSingleOrNull();
+      if (ingresoAnterior != null) {
+        final diffIngreso = DiffEvento()
+          ..anotar('monto', ingresoAnterior.monto, montoTotal ?? ingresoAnterior.monto)
+          ..anotar('fecha', ingresoAnterior.fecha, fechaPago ?? ingresoAnterior.fecha)
+          ..anotar('formaPago', ingresoAnterior.formaPago, formaPago ?? ingresoAnterior.formaPago)
+          ..anotar('cuentaCaja', ingresoAnterior.cuentaCaja, cuentaBancariaDestino ?? ingresoAnterior.cuentaCaja)
+          ..anotar(
+            'cuentaFinancieraId',
+            ingresoAnterior.cuentaFinancieraId,
+            limpiarCuentaFinancieraId ? null : (cuentaFinancieraId ?? ingresoAnterior.cuentaFinancieraId),
+          );
+        if (diffIngreso.hayCambios) {
+          await (_db.update(_db.ingreso)..where((t) => t.id.equals(ingresoAnterior.id))).write(
+            IngresoCompanion(
+              monto: montoTotal == null ? const Value.absent() : Value(montoTotal),
+              fecha: fechaPago == null ? const Value.absent() : Value(fechaPago),
+              formaPago: formaPago == null ? const Value.absent() : Value(formaPago),
+              cuentaCaja: cuentaBancariaDestino == null ? const Value.absent() : Value(cuentaBancariaDestino),
+              cuentaFinancieraId: limpiarCuentaFinancieraId
+                  ? const Value(null)
+                  : (cuentaFinancieraId == null ? const Value.absent() : Value(cuentaFinancieraId)),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+          await _db.into(_db.ingresoEvento).insert(
+                IngresoEventoCompanion.insert(
+                  ingresoId: ingresoAnterior.id,
+                  fechaHora: DateTime.now(),
+                  tipoEvento: TipoEventoIngreso.corregido.name,
+                  estadoAnterior: Value(diffIngreso.estadoAnteriorJson),
+                  estadoNuevo: Value(diffIngreso.estadoNuevoJson),
+                  observacion: Value('Sincronizado desde la corrección del Pago $pagoId. Motivo: $motivo'),
+                  actorUsuarioId: Value(actorUsuarioId),
+                ),
+              );
+        }
+      }
+
+      final diffPago = DiffEvento()
+        ..anotar('montoTotal', anterior.montoTotal, montoTotal ?? anterior.montoTotal)
+        ..anotar('fechaPago', anterior.fechaPago, fechaPago ?? anterior.fechaPago)
+        ..anotar('formaPago', anterior.formaPago, formaPago ?? anterior.formaPago)
+        ..anotar('referencia', anterior.referencia, referencia ?? anterior.referencia)
+        ..anotar('bancoOrigen', anterior.bancoOrigen, bancoOrigen ?? anterior.bancoOrigen)
+        ..anotar('cuentaBancariaDestino', anterior.cuentaBancariaDestino, cuentaBancariaDestino ?? anterior.cuentaBancariaDestino)
+        ..anotar('observaciones', anterior.observaciones, observaciones ?? anterior.observaciones);
+      if (nuevaDistribucion != null) {
+        diffPago.anotar(
+          'distribucion',
+          [
+            for (final item in distribucionAnteriorResumen!)
+              {'cuentaPorCobrarId': item.cuentaPorCobrarId, 'monto': item.montoAnterior},
+          ],
+          [
+            for (final item in nuevaDistribucion) {'cuentaPorCobrarId': item.cuentaPorCobrarId, 'monto': item.monto},
+          ],
+        );
+      }
+      if (diffPago.hayCambios) {
+        await _registrarEventoPago(
+          pagoId: pagoId,
+          tipoEvento: TipoEventoPago.corregido,
+          estadoAnterior: diffPago.estadoAnteriorJson,
+          estadoNuevo: diffPago.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
 
       return (_db.select(_db.pago)..where((t) => t.id.equals(pagoId))).getSingle();
     });
@@ -596,13 +721,28 @@ class PagoRepositoryImpl implements PagoRepository {
       );
     }
 
-    final complemento = await (_db.select(_db.complementoPago)..where((t) => t.pagoId.equals(pagoId))).getSingleOrNull();
-    if (complemento != null) {
+    // CUALQUIER Complemento en el histórico bloquea, vigente o
+    // cancelado: un CFDI que existió ante el SAT es historia real
+    // aunque después se cancelara, y borrar el Pago dejaría esa
+    // constancia apuntando a la nada.
+    //
+    // Antes esto era `getSingleOrNull()` sobre `pago_id`, que con el
+    // modelo de sustitutos (schemaVersion 79) LANZA en cuanto un Pago
+    // tiene más de un Complemento histórico — justo el caso que la
+    // etapa vuelve posible. Se lee la lista y se reporta el más
+    // reciente.
+    final complementos = await (_db.select(_db.complementoPago)
+          ..where((t) => t.pagoId.equals(pagoId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+    if (complementos.isNotEmpty) {
+      final complemento = complementos.first;
       return ResumenEliminacionPago(
         existe: true,
         detalleBloqueo:
-            'Este Pago tiene un Complemento de pago (CFDI ${complemento.folioFiscal ?? complemento.uuid}) '
-            'registrado — representa una obligación fiscal real, no puede eliminarse.',
+            'Este Pago tiene ${complementos.length == 1 ? 'un Complemento de pago' : '${complementos.length} Complementos de pago'} '
+            '(CFDI ${complemento.folioFiscal ?? complemento.uuid}) '
+            'registrado${complementos.length == 1 ? '' : 's'} — representa una obligación fiscal real, no puede eliminarse.',
       );
     }
 

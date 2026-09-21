@@ -7,12 +7,13 @@ part of 'areas_list_controller.dart';
 // **************************************************************************
 
 String _$areasListControllerHash() =>
-    r'f3ba666acced3a674f90e60ac324a2af8eb65b29';
+    r'5b30cab56bb9da505fac018a7c105fed69020735';
 
-/// Controlador del listado de Áreas — solo carga/error/recarga. Las
-/// acciones (crear, editar, activar, desactivar) se invocan directo
-/// desde la pantalla vía sus propios casos de uso y luego llaman
-/// `recargar()`, mismo patrón que `SucursalesListController`.
+/// Controlador del listado de Áreas — carga, error, búsqueda y las
+/// métricas reales de Puestos/Personal por Área. Las acciones (crear,
+/// editar, activar, desactivar) se invocan directo desde la pantalla
+/// vía sus propios casos de uso y luego llaman `recargar()`, mismo
+/// patrón que `SucursalesListController`.
 ///
 /// Copied from [AreasListController].
 @ProviderFor(AreasListController)

@@ -76,6 +76,8 @@ class _PuestosListScreenState extends ConsumerState<PuestosListScreen> {
       );
     }
 
+    final colors = context.colors;
+
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
@@ -83,17 +85,22 @@ class _PuestosListScreenState extends ConsumerState<PuestosListScreen> {
         children: [
           RisegSectionHeader(
             title: l10n.puestosListadoTitulo,
+            description: l10n.puestosListadoSubtitulo,
             primaryAction: RisegButton(
               key: const Key('puestos_boton_nueva'),
               label: l10n.puestosListadoBotonNueva,
+              icon: Icons.add,
               onPressed: () => _mostrarDialogoAlta(state.areas.where((a) => a.activo).toList()),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          RisegSearchField(
-            hint: l10n.puestosListadoBuscarHint,
-            controller: _busquedaController,
-            onChanged: notifier.actualizarBusqueda,
+          SizedBox(
+            width: 320,
+            child: RisegSearchField(
+              hint: l10n.puestosListadoBuscarHint,
+              controller: _busquedaController,
+              onChanged: notifier.actualizarBusqueda,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           Expanded(
@@ -105,24 +112,47 @@ class _PuestosListScreenState extends ConsumerState<PuestosListScreen> {
                 title: l10n.puestosListadoVacioTitulo,
                 message: l10n.puestosListadoVacioMensaje,
               ),
+              hoverColor: colors.accentSoftBg,
+              rowVerticalPadding: AppSpacing.sm + AppSpacing.xxs,
+              rowActionsBuilder: (_) => Icon(Icons.chevron_right, size: AppSizes.iconMd, color: colors.textMuted),
+              actionsWidth: 40,
               columns: [
-                RisegColumn<PuestoData>(label: l10n.puestosColumnaCodigo, width: 100, cellBuilder: (p) => Text(p.codigo)),
-                RisegColumn<PuestoData>(label: l10n.puestosColumnaNombre, cellBuilder: (p) => Text(p.nombre)),
+                // Etapa 16, tercera pasada visual: Nombre (fuerte) +
+                // Código (secundario, muted) apilados en una sola
+                // columna — elimina la columna "Código" suelta, mismo
+                // criterio ya usado en Personal/Nómina.
+                RisegColumn<PuestoData>(
+                  label: l10n.puestosColumnaPuesto,
+                  cellBuilder: (p) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(p.nombre, style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary)),
+                      const SizedBox(height: 2),
+                      Text(p.codigo, style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                    ],
+                  ),
+                ),
                 RisegColumn<PuestoData>(
                   label: l10n.puestosColumnaArea,
                   cellBuilder: (p) => Text(state.nombreArea(p.areaId) ?? ''),
                 ),
                 RisegColumn<PuestoData>(
                   label: l10n.puestosColumnaTipo,
-                  width: 140,
-                  cellBuilder: (p) => Text(
-                    p.tipo == TipoPuesto.administrativo.name ? l10n.puestoTipoAdministrativo : l10n.puestoTipoOperativo,
+                  width: 150,
+                  cellBuilder: (p) => RisegStatusBadge(
+                    label: p.tipo == TipoPuesto.administrativo.name ? l10n.puestoTipoAdministrativo : l10n.puestoTipoOperativo,
+                    tone: RisegStatusTone.neutral,
                   ),
                 ),
-                RisegColumn<PuestoData>(label: l10n.puestosColumnaNivel, width: 80, cellBuilder: (p) => Text('${p.nivelJerarquico}')),
+                RisegColumn<PuestoData>(
+                  label: l10n.puestosColumnaNivel,
+                  width: 90,
+                  cellBuilder: (p) => RisegStatusBadge(label: 'N${p.nivelJerarquico}', tone: RisegStatusTone.neutral),
+                ),
                 RisegColumn<PuestoData>(
                   label: l10n.puestosColumnaEstado,
-                  width: 140,
+                  width: 130,
                   cellBuilder: (p) => RisegStatusBadge(
                     label: p.cicloVidaRegistro == 'archivado' ? l10n.puestoEstadoArchivado : l10n.puestoEstadoActivo,
                     tone: p.cicloVidaRegistro == 'archivado' ? RisegStatusTone.neutral : RisegStatusTone.success,

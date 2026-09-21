@@ -126,8 +126,8 @@ void main() {
     documentoAntiguoId = documentoAntiguo.id;
     await db.into(db.cuentaPorCobrar).insert(
           CuentaPorCobrarCompanion.insert(
-            documentoPorEmitirId: documentoAntiguoId,
-            clienteId: clienteId,
+            documentoPorEmitirId: Value(documentoAntiguoId),
+            clienteId: Value(clienteId),
             tipoDocumento: 'reciboDePago',
             metodo: 'noAplica',
             fechaEmisionReal: DateTime(2026, 1, 5),

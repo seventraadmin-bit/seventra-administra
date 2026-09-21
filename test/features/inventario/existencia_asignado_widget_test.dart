@@ -133,6 +133,13 @@ void main() {
       expect(find.text('2'), findsWidgets, reason: 'columna Asignado del listado, valor real');
 
       // Expediente: mismo valor real en el bloque superior de Existencia.
+      // Etapa 18: el listado ganó un resumen KPI + fila de filtros
+      // arriba de la tabla — en la ventana de prueba por defecto
+      // (800×600) la fila del artículo queda fuera de la vista
+      // inicial; `ensureVisible` reemplaza el tap a ciegas que antes
+      // fallaba en silencio (advertencia de hit-test ignorada) sin
+      // hacer fallar la prueba.
+      await tester.ensureVisible(find.text('SMARTPHONE').first);
       await tester.tap(find.text('SMARTPHONE').first);
       await tester.pumpAndSettle();
 

@@ -7,7 +7,6 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/direccion_controllers.dart';
 import 'package:riseg_one/features/personal/domain/usecases/guardar_domicilio_empleado_usecase.dart';
-import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../../personal_providers.dart';
 
@@ -108,10 +107,9 @@ Future<bool> mostrarDialogoDomicilioEmpleado(
       },
     ),
     onConfirm: () async {
-      final resultado = await ref.read(guardarDomicilioEmpleadoUseCaseProvider).ejecutar(
+      final resultado = await ref.read(guardarDomicilioEmpleadoAutorizadoProvider)(
             empleadoId: empleadoId,
             domicilio: controllers.capturar(),
-            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           );
 
       if (!context.mounted) return false;

@@ -23,6 +23,10 @@ import 'package:riseg_one/features/telefonia/domain/usecases/crear_linea_telefon
 import 'package:riseg_one/features/telefonia/domain/usecases/registrar_recarga_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/retirar_asignacion_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/retirar_equipo_linea_telefonica_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
+import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/tables/cuenta_financiera_table.dart';
 
 /// Cubre el hilo de `actorUsuarioId` en Telefonía (Etapa 9D, punto 11):
 /// `AsignacionLineaTelefonica`/`LineaTelefonicaEquipo` ya recibían el
@@ -32,6 +36,8 @@ import 'package:riseg_one/features/telefonia/domain/usecases/retirar_equipo_line
 /// aceptaban, así que siempre quedaba `null`. Esta suite confirma que
 /// las 3 ahora sí persisten un actor real, y que un actor `null` (sin
 /// sesión) sigue sin romper ninguna FK.
+const _cuentaRecargaDePrueba = 'cuenta-recarga-de-prueba';
+
 void main() {
   late AppDatabase db;
 
@@ -58,6 +64,18 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // Cuenta REAL para las recargas: el dominio exige saber de dónde
+    // salió el dinero de una recarga nueva.
+    await db.into(db.cuentaFinanciera).insert(
+          CuentaFinancieraCompanion.insert(
+            id: const Value(_cuentaRecargaDePrueba),
+            codigo: 'CTA-REC',
+            nombre: 'BBVA Empresarial',
+            tipo: TipoCuentaFinanciera.banco.name,
+            saldoInicial: 100000000,
+            fechaSaldoInicial: DateTime(2026, 1, 1),
+          ),
+        );
     await db.into(db.usuario).insert(
           UsuarioCompanion.insert(id: const Value(actorId), nombre: 'Actor de prueba', nombreUsuario: actorId, passwordHash: 'x'),
         );
@@ -66,9 +84,9 @@ void main() {
     inventarioRepo = InventarioRepositoryImpl(db);
     inventarioAsignacionRepo = AsignacionRepositoryImpl(db);
     asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
-    equipoLineaRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, inventarioAsignacionRepo, inventarioRepo);
+    equipoLineaRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, inventarioAsignacionRepo);
     lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoLineaRepo);
-    recargaRepo = RecargaLineaTelefonicaRepositoryImpl(db);
+    recargaRepo = RecargaLineaTelefonicaRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db));
 
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     final categoriaRepo = CategoriaArticuloRepositoryImpl(db);
@@ -78,11 +96,11 @@ void main() {
     registrarEntradaUnidad = RegistrarEntradaUnidadUseCase(inventarioRepo, articuloRepo, generarCodigo);
     crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, generarCodigo);
     asignarLinea = AsignarLineaTelefonicaUseCase(lineaRepo, asignacionLineaRepo, equipoLineaRepo);
-    retirarAsignacion = RetirarAsignacionLineaTelefonicaUseCase(asignacionLineaRepo, equipoLineaRepo);
-    asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo);
-    cambiarEquipo = CambiarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo);
+    retirarAsignacion = RetirarAsignacionLineaTelefonicaUseCase(asignacionLineaRepo, equipoLineaRepo, lineaRepo);
+    asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo, asignacionLineaRepo);
+    cambiarEquipo = CambiarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo, asignacionLineaRepo);
     retirarEquipo = RetirarEquipoLineaTelefonicaUseCase(equipoLineaRepo);
-    registrarRecarga = RegistrarRecargaLineaTelefonicaUseCase(recargaRepo, lineaRepo);
+    registrarRecarga = RegistrarRecargaLineaTelefonicaUseCase(recargaRepo, lineaRepo, DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)));
   });
 
   tearDown(() => db.close());
@@ -241,6 +259,8 @@ void main() {
         fecha: DateTime(2026, 2, 1),
         importe: 20000,
         actorUsuarioId: actorId,
+        formaPago: FormaPago.efectivo.name,
+        cuentaFinancieraId: _cuentaRecargaDePrueba,
       );
 
       final recarga = (resultado as RegistrarRecargaLineaTelefonicaExitoso).recarga;
@@ -295,7 +315,7 @@ void main() {
     test('registrar recarga con actorUsuarioId null', () async {
       final linea = await crearLineaDePrueba();
 
-      final resultado = await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 2, 1), importe: 10000);
+      final resultado = await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 2, 1), importe: 10000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
 
       expect((resultado as RegistrarRecargaLineaTelefonicaExitoso).recarga.actorUsuarioId, isNull);
     });

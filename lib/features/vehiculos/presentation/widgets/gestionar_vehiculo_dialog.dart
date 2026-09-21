@@ -39,6 +39,10 @@ Future<bool> mostrarDialogoGestionarVehiculo(BuildContext context, WidgetRef ref
     text: vehiculo?.costoAdquisicion == null ? '' : (vehiculo!.costoAdquisicion! / 100).toStringAsFixed(2),
   );
   final observacionesCtrl = TextEditingController(text: vehiculo?.observaciones ?? '');
+  // schemaVersion 80: corregir un expediente exige motivo (placas, VIN
+  // y número de motor son identidad legal del activo). El alta no lo
+  // pide — no hay nada anterior que explicar.
+  final motivoCtrl = TextEditingController();
   String tipoVehiculo = vehiculo?.tipoVehiculo ?? TipoVehiculo.sedan.name;
   DateTime? fechaAdquisicion = vehiculo?.fechaAdquisicion;
   String? errorGeneral;
@@ -92,6 +96,14 @@ Future<bool> mostrarDialogoGestionarVehiculo(BuildContext context, WidgetRef ref
               ),
               const SizedBox(height: AppSpacing.md),
               RisegTextField(label: l10n.vehiculoCampoObservaciones, controller: observacionesCtrl),
+              if (vehiculo != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                RisegTextField(
+                  key: const Key('vehiculo_campo_motivo'),
+                  label: l10n.vehiculoCampoMotivoCorreccion,
+                  controller: motivoCtrl,
+                ),
+              ],
               if (errorGeneral != null) ...[
                 const SizedBox(height: AppSpacing.xs),
                 Text(errorGeneral!, style: AppTypography.caption.copyWith(color: Theme.of(dialogContext).colorScheme.error)),
@@ -143,6 +155,7 @@ Future<bool> mostrarDialogoGestionarVehiculo(BuildContext context, WidgetRef ref
           limpiarNumeroMotor: numeroMotorCtrl.text.trim().isEmpty,
           limpiarCostoAdquisicion: costoCtrl.text.trim().isEmpty,
           limpiarObservaciones: observacionesCtrl.text.trim().isEmpty,
+          motivo: motivoCtrl.text,
         );
         if (!context.mounted) return false;
         switch (resultado) {
@@ -153,6 +166,9 @@ Future<bool> mostrarDialogoGestionarVehiculo(BuildContext context, WidgetRef ref
           case CorregirVehiculoErrorInesperado():
             RisegFeedback.showError(context, l10n.vehiculoErrorInesperado);
             return false;
+          case CorregirVehiculoMotivoRequerido():
+            errorGeneral = l10n.vehiculoErrorMotivoRequerido;
+            return null;
           case CorregirVehiculoAnioInvalido():
             errorGeneral = l10n.vehiculoErrorAnioInvalido;
             return null;
@@ -227,6 +243,7 @@ Future<bool> mostrarDialogoGestionarVehiculo(BuildContext context, WidgetRef ref
     numeroMotorCtrl.dispose();
     costoCtrl.dispose();
     observacionesCtrl.dispose();
+  motivoCtrl.dispose();
   });
 
   return resultado ?? false;

@@ -54,6 +54,19 @@ Future<bool> mostrarDialogoRegularizarArticuloSerializado(BuildContext context, 
   }
   if (!context.mounted) return false;
 
+  // Sin elegibles no se abre un formulario con un botón "Regularizar"
+  // que no puede regularizar nada: se explica y se cierra. La razón
+  // técnica completa vive en el doc comment, no en la cara del usuario.
+  if (articulosElegibles.isEmpty) {
+    await RisegDialog.showInformational(
+      context: context,
+      title: l10n.regularizarArticuloDialogoTitulo,
+      message: l10n.regularizarArticuloSinArticulos,
+      dismissLabel: l10n.regularizarArticuloBotonEntendido,
+    );
+    return false;
+  }
+
   String? articuloSeleccionado;
   String? movimientoSeleccionadoId;
   final marcaCtrl = TextEditingController();
@@ -80,9 +93,14 @@ Future<bool> mostrarDialogoRegularizarArticuloSerializado(BuildContext context, 
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (articulosElegibles.isEmpty)
-                  Text(l10n.regularizarArticuloSinArticulos, style: AppTypography.body)
-                else ...[
+                // Ayuda secundaria: qué hace realmente esta operación.
+                // Llegar aquí ya implica que hay algo por regularizar.
+                Text(
+                  l10n.regularizarArticuloAyuda,
+                  style: AppTypography.caption.copyWith(color: dialogContext.colors.textMuted),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ...[
                   RisegSelect<String?>(
                     label: l10n.regularizarArticuloCampoArticulo,
                     value: articuloSeleccionado,

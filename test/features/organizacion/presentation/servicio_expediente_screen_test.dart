@@ -2,6 +2,7 @@
 // generales, y las acciones de estatus (Activar deshabilitado sin
 // Dirección operativa, Suspender, Terminar con fecha efectiva).
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -12,6 +13,7 @@ import 'package:riseg_one/app/theme/app_theme.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
@@ -192,6 +194,21 @@ Future<void> _pumpScreen(WidgetTester tester, AppDatabase db, String servicioId)
   await tester.pumpAndSettle();
 }
 
+
+/// Atraviesa el diálogo común de motivo: escribe uno y confirma.
+///
+/// Toda corrección, suspensión, terminación o archivo de Comercial lo
+/// pide desde la etapa de trazabilidad — el motivo es obligatorio y
+/// termina en la bitácora.
+Future<void> _responderMotivo(WidgetTester tester, String confirmarLabel) async {
+  expect(find.byKey(const Key('dialogo_motivo_campo')), findsOneWidget,
+      reason: 'la operación sensible tiene que pedir motivo');
+  await tester.enterText(find.byKey(const Key('dialogo_motivo_campo')), 'Motivo de prueba');
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(RisegButton, confirmarLabel).last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late AppDatabase db;
   late String servicioId;
@@ -199,6 +216,17 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // El actor de la bitácora es una FK real contra `Usuario`: la
+    // sesión de prueba tiene que existir, igual que en producción.
+    await db.into(db.usuario).insert(
+      UsuarioCompanion.insert(
+        id: const Value('usuario-prueba'),
+        nombre: 'Usuario de prueba',
+        nombreUsuario: 'prueba',
+        passwordHash: 'x',
+        esMaestro: const Value(true),
+      ),
+    );
     final creado = await _crearServicio(db);
     servicioId = creado.servicioId;
     clienteId = creado.clienteId;
@@ -235,6 +263,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, 'Vigilancia Sportium Renombrada');
     await tester.tap(find.byKey(const Key('servicio_expediente_boton_guardar')));
     await tester.pumpAndSettle();
+    await _responderMotivo(tester, l10n.servicioTerminarBotonConfirmar);
 
     expect(find.text('Vigilancia Sportium Renombrada'), findsWidgets);
     expect(find.text(l10n.servicioGuardadoExito), findsOneWidget);
@@ -249,6 +278,7 @@ void main() {
     expect(find.byType(Dialog), findsOneWidget);
     await tester.tap(find.text(l10n.servicioBotonSuspender).last);
     await tester.pumpAndSettle();
+    await _responderMotivo(tester, l10n.servicioBotonSuspender);
 
     expect(find.text(l10n.servicioEstatusSuspendido), findsOneWidget);
     expect(find.text(l10n.servicioCambiarEstatusExito), findsOneWidget);
@@ -272,6 +302,7 @@ void main() {
 
     await tester.tap(find.text(l10n.servicioTerminarBotonConfirmar).last);
     await tester.pumpAndSettle();
+    await _responderMotivo(tester, l10n.servicioTerminarBotonConfirmar);
 
     expect(find.text(l10n.servicioEstatusTerminado), findsOneWidget);
   });
@@ -326,6 +357,9 @@ void main() {
     expect(iconos, findsNWidgets(2), reason: 'editar + quitar, una vez asignada');
     await tester.tap(iconos.last);
     await tester.pumpAndSettle();
+
+    // Retirar la Entidad fiscal vigente exige motivo.
+    await _responderMotivo(tester, l10n.servicioVinculacionDialogoBotonGuardar);
 
     expect(find.text(l10n.servicioQuitarEntidadFiscalExito), findsOneWidget);
     expect(find.text('Sportium SA de CV'), findsNothing);
@@ -590,6 +624,9 @@ void main() {
       await tester.tap(find.text(l10n.servicioVinculacionDialogoBotonGuardar).last);
       await tester.pumpAndSettle();
 
+      // Corregir una vigencia existente exige motivo antes de persistir.
+      await _responderMotivo(tester, l10n.servicioTerminarBotonConfirmar);
+
       expect(find.text(l10n.servicioComercialCorregirExito), findsOneWidget);
       // Subtotal de la línea (5 × $15,000.00), Subtotal comercial (una
       // sola línea, mismo monto) y Elementos comerciales vigentes (5)
@@ -624,6 +661,8 @@ void main() {
 
     await tester.tap(find.text(l10n.servicioComercialCerrarLineaBotonConfirmar).last);
     await tester.pumpAndSettle();
+
+    await _responderMotivo(tester, l10n.servicioTerminarBotonConfirmar);
 
     expect(find.text(l10n.servicioComercialCerrarLineaExito), findsOneWidget);
   });
@@ -753,6 +792,8 @@ void main() {
 
     await tester.tap(find.text(l10n.servicioCobroCerrarBotonConfirmar).last);
     await tester.pumpAndSettle();
+
+    await _responderMotivo(tester, l10n.servicioVinculacionDialogoBotonGuardar);
 
     expect(find.text(l10n.servicioCobroCerrarExito), findsOneWidget);
   });

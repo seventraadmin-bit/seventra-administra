@@ -1,6 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
 import '../usecases/correccion_partida_compra.dart';
+import '../usecases/eliminar_cadena_prueba_compra_usecase.dart';
 import '../usecases/eliminar_compra_fisicamente_usecase.dart';
 
 /// Un renglón a registrar dentro de una `Compra` (Etapa 10) — la forma
@@ -52,7 +53,8 @@ abstract interface class CompraRepository {
 
   /// Filtros combinables — cada uno se aplica solo si viene no-nulo.
   /// `articuloId` filtra por Compras que tengan al menos una partida de
-  /// ese Artículo.
+  /// ese Artículo. `formaPago` (Etapa 19) es el nombre estable del enum
+  /// `FormaPago`, mismo criterio que `estatus`.
   Future<List<CompraData>> listar({
     DateTime? desde,
     DateTime? hasta,
@@ -60,6 +62,7 @@ abstract interface class CompraRepository {
     String? proveedor,
     String? articuloId,
     String? estatus,
+    String? formaPago,
   });
 
   /// Total derivado de una Compra — `SUM(cantidad × costoUnitario)`
@@ -69,6 +72,33 @@ abstract interface class CompraRepository {
   /// Mismo cálculo que [calcularTotal], resuelto para varias Compras a
   /// la vez en una sola consulta — evita N+1 en el listado.
   Future<Map<String, int>> calcularTotalesPorCompra(Iterable<String> compraIds);
+
+  /// Etapa 3 (Compras — corrección financiera Cuenta↔TDC): suma el
+  /// total de las Compras `registrada` (nunca `cancelada`) cuyo origen
+  /// financiero ACTUAL es una TDC (`deudaId != null` — la FK
+  /// autoritativa, nunca `formaPago` como proxy), en el rango de
+  /// fecha dado.
+  ///
+  /// Existe porque una Compra financiada por TDC nunca genera un
+  /// `Egreso` (solo un cargo en `MovimientoDeuda`), así que
+  /// `EgresoRepository.totalEgresos` es ciego a ella — sin esto,
+  /// "gasto operativo" caería a cero en cuanto una Compra corregida
+  /// quedara en una TDC, violando el invariante de que cambiar el
+  /// origen financiero nunca cambia el gasto económico reconocido
+  /// (ver `ObtenerResumenFinancieroUseCase`).
+  Future<int> totalCompradoPorTdcEnRango({DateTime? rangoInicio, DateTime? rangoFin});
+
+  /// Renglones `destino == inventario` de cada Compra — `articuloId` +
+  /// `cantidad`, en el orden en que se capturaron (Etapa 19.1: la
+  /// columna "Artículos comprados" del listado necesita el nombre real
+  /// y la cantidad de cada renglón, no solo un conteo). Partidas de
+  /// `gastoDirecto` se excluyen (no representan un Artículo real).
+  /// Resuelto para varias Compras a la vez en una sola consulta —
+  /// mismo criterio que [calcularTotalesPorCompra]: nunca N+1 en el
+  /// listado. El nombre del Artículo se resuelve en la capa de
+  /// presentación contra el catálogo ya cargado (`ArticuloRepository
+  /// .listar()`), nunca con una consulta adicional aquí.
+  Future<Map<String, List<({String articuloId, int cantidad})>>> listarArticulosPorCompra(Iterable<String> compraIds);
 
   /// Gasto total en Compras `registrada` dentro del rango — excluye
   /// `cancelada` (mismo criterio que `EgresoRepository.totalEgresos`
@@ -97,6 +127,17 @@ abstract interface class CompraRepository {
   /// `CancelarCompraUseCase` para el chequeo de bloqueo.
   Future<List<ArticuloUnidadData>> listarUnidadesGeneradas(String compraId);
 
+  /// Mensajes de bloqueo (uno por partida en conflicto, vacío si
+  /// ninguna) para las partidas por CANTIDAD de esta Compra (artículo
+  /// sin número de serie) cuyo artículo/variante ya tiene alguna
+  /// `Asignacion` registrada — política conservadora, mismo criterio
+  /// exacto que `obtenerResumenEliminacionFisica`/`corregir` usan para
+  /// el mismo caso. Usado por `CancelarCompraUseCase` para bloquear
+  /// proactivamente ANTES de intentar la reversión — nunca dejar que
+  /// `InventarioRepository.registrarBaja` lance
+  /// `ExistenciaInsuficienteException` a medio camino.
+  Future<List<String>> listarDetalleBloqueoCancelacionPorCantidad(String compraId);
+
   /// Las `ArticuloUnidad` que pertenecen a una `CompraPartida`
   /// puntual (vía `CompraPartidaMovimiento`, nunca por texto) — usado
   /// por la pantalla de corrección para mostrar/gestionar las unidades
@@ -112,6 +153,13 @@ abstract interface class CompraRepository {
   /// varios movimientos a la vez — evita N+1 en listados de Inventario.
   Future<Map<String, OrigenCompra>> obtenerOrigenesPorMovimientos(Iterable<String> movimientoInventarioIds);
 
+  /// Resuelve la Compra que generó un `Egreso` puntual (vía
+  /// `Compra.egresoId`, la única FK real — nunca por texto) — `null` si
+  /// ese Egreso no vino de ninguna Compra. Usado por el bloqueo de
+  /// corrección/cancelación directa de Egreso (Etapa "Ingresos y
+  /// Egresos") y por la navegación "Ver origen" desde su expediente.
+  Future<OrigenCompra?> obtenerOrigenPorEgreso(String egresoId);
+
   /// Registra la Compra completa en una sola transacción: el Egreso
   /// automático por el total combinado, cada `CompraPartida`, y — para
   /// las partidas `destino == inventario` — la entrada real en
@@ -121,6 +169,15 @@ abstract interface class CompraRepository {
   /// `CompraPartidaMovimiento`. [folioCompra] se genera antes de
   /// llamar aquí (mismo criterio que `PagoNominaRepositoryImpl.crear`
   /// recibe `folioPagoNomina` ya generado).
+  /// Etapa 19B: cuando `formaPago == tarjeta`, [deudaId] es obligatorio
+  /// (la tarjeta que financia la compra) y esta Compra **no** genera
+  /// `Egreso` — genera en su lugar un `MovimientoDeuda` tipo
+  /// `cargoCompra` (vía `DeudaRepository.registrarCargoCompra`, dentro
+  /// de la misma transacción). Para cualquier otra `formaPago`, el
+  /// comportamiento es idéntico al de siempre (Egreso automático,
+  /// `deudaId` queda `null`). Asume que el llamador ya validó el límite
+  /// de crédito disponible — ver el doc comment de
+  /// `DeudaRepository.registrarCargoCompra`.
   Future<CompraData> crear({
     required String folioCompra,
     required DateTime fecha,
@@ -129,20 +186,44 @@ abstract interface class CompraRepository {
     String? formaPagoOtroDescripcion,
     String? observaciones,
     required List<PartidaCompraInput> partidas,
+    String? deudaId,
+    String? cuentaFinancieraId,
     String? actorUsuarioId,
   });
 
-  /// Corrige campos administrativos y, opcionalmente ([cambiosPartidas],
-  /// Etapa 15, ampliación real de "Corregir datos"), las partidas de una
-  /// Compra ya registrada — artículo/variante, cantidad, costo, o
-  /// partidas completas agregadas/quitadas. Cada cambio se reconcilia
-  /// contra Inventario solo por lo que le pertenece a esa partida (vía
-  /// `CompraPartidaMovimiento`, nunca por texto), nunca toca movimientos
-  /// ajenos. Si el total de la Compra cambia, sincroniza el mismo
-  /// `Egreso` (nunca crea uno nuevo). Todo en una sola transacción — si
-  /// cualquier cambio está bloqueado (existencia ya consumida), NINGÚN
-  /// cambio se aplica. Llamar [obtenerResumenCorreccion] antes para
-  /// verificar elegibilidad y mostrar el impacto real.
+  /// Corrige campos administrativos, opcionalmente ([cambiosPartidas],
+  /// Etapa 15) las partidas, y opcionalmente (Etapa 3) el origen
+  /// financiero COMPLETO de una Compra ya registrada.
+  ///
+  /// Origen financiero — pasar exactamente uno de los dos (nunca
+  /// ambos, ya rechazado por `CorregirCompraUseCase` antes de llegar
+  /// aquí) para moverlo, o ninguno para conservar el actual:
+  /// - [nuevaCuentaFinancieraId]: mueve la Compra a esa Cuenta
+  ///   financiera. Si ya estaba en Cuenta, reutiliza el MISMO `Egreso`
+  ///   (nunca cancela+crea) — solo repunta `cuentaFinancieraId` si
+  ///   cambió, y corrige el monto si cambió. Si venía de TDC, revierte
+  ///   por completo el cargo anterior (`DeudaRepository.revertirCargoCompra`)
+  ///   y crea un `Egreso` nuevo.
+  /// - [nuevaDeudaId]: mueve la Compra a esa TDC. Si ya estaba en la
+  ///   MISMA TDC, nunca reescribe el cargo original — registra un
+  ///   ajuste auditable por la diferencia
+  ///   (`DeudaRepository.registrarAjusteCargoCompra`). Si venía de otra
+  ///   TDC, revierte el efecto neto en la TDC anterior y registra un
+  ///   cargo nuevo en la TDC destino. Si venía de Cuenta, cancela el
+  ///   `Egreso` existente y registra el cargo nuevo.
+  ///
+  /// Cada transición (Cuenta→misma Cuenta, Cuenta→otra Cuenta,
+  /// TDC→misma TDC, TDC→otra TDC, Cuenta→TDC, TDC→Cuenta) — revertir
+  /// origen anterior, aplicar origen nuevo, actualizar `Compra.egresoId`/
+  /// `deudaId`, y escribir el evento de auditoría — corre dentro de la
+  /// MISMA transacción que las partidas/campos administrativos: si
+  /// cualquier paso falla, rollback completo, nunca queda una Compra
+  /// sin origen financiero o con ambos a la vez.
+  ///
+  /// `CompraEvento.estadoAnterior`/`estadoNuevo` (Etapa 2) registran
+  /// únicamente los campos realmente modificados — nunca solo
+  /// `formaPago`, siempre también `cuentaFinancieraId`/`deudaId`/
+  /// `total` cuando aplica (nunca nombres como sustituto de IDs).
   Future<CompraData> corregir({
     required String compraId,
     DateTime? fecha,
@@ -151,6 +232,8 @@ abstract interface class CompraRepository {
     String? formaPagoOtroDescripcion,
     String? observaciones,
     List<CorreccionPartida> cambiosPartidas = const [],
+    String? nuevaCuentaFinancieraId,
+    String? nuevaDeudaId,
     required String motivo,
     String? actorUsuarioId,
   });
@@ -168,8 +251,15 @@ abstract interface class CompraRepository {
   /// vía `EgresoRepository.cancelar`, y marca la Compra `cancelada`.
   /// **No valida** si es seguro cancelar — ese chequeo vive en
   /// `CancelarCompraUseCase`, antes de llamar aquí (mismo criterio que
-  /// `DesactivarAreaUseCase`).
-  Future<CompraData> cancelar({required String compraId, required String motivo, String? actorUsuarioId});
+  /// `DesactivarAreaUseCase`). [motivo] es el nombre estable del enum
+  /// `MotivoCancelacionCompra` (Etapa 15), nunca la etiqueta traducida.
+  Future<CompraData> cancelar({
+    required String compraId,
+    required String motivo,
+    String? detalle,
+    String? observaciones,
+    String? actorUsuarioId,
+  });
 
   Future<AttachmentData> adjuntarComprobante({
     required String compraId,
@@ -186,10 +276,29 @@ abstract interface class CompraRepository {
   Future<ResumenEliminacionCompra> obtenerResumenEliminacionFisica(String compraId);
 
   /// Eliminación física extraordinaria (Etapa 15) — ver el doc comment
-  /// completo en `CompraRepositoryImpl.eliminarFisicamente`.
+  /// completo en `CompraRepositoryImpl.eliminarFisicamente`. [motivo]
+  /// es el nombre estable del enum `MotivoEliminacionFisicaCompra`,
+  /// nunca la etiqueta traducida.
   Future<EliminarCompraFisicamenteResultado> eliminarFisicamente({
     required String compraId,
     required String motivo,
+    String? detalle,
+    String? actorUsuarioId,
+  });
+
+  /// Vista previa de solo lectura para [eliminarCadenaPrueba] — ver el
+  /// doc comment de `ResumenCadenaPruebaCompra`.
+  Future<ResumenCadenaPruebaCompra> obtenerResumenCadenaPrueba(String compraId);
+
+  /// "Eliminar cadena de prueba" (Etapa 15, limpieza segura de datos de
+  /// prueba) — ver el doc comment completo en
+  /// `CompraRepositoryImpl.eliminarCadenaPrueba`. [motivo] es el
+  /// nombre estable del enum `MotivoCadenaPruebaCompra`, nunca la
+  /// etiqueta traducida.
+  Future<EliminarCadenaPruebaCompraResultado> eliminarCadenaPrueba({
+    required String compraId,
+    required String motivo,
+    String? detalle,
     String? actorUsuarioId,
   });
 }

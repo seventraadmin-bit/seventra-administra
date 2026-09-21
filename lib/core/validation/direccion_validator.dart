@@ -1,3 +1,5 @@
+import 'codigo_postal_fiscal_validator.dart';
+
 /// Dirección tal como llega de un formulario — todos los campos son
 /// cadenas sin validar (posiblemente vacías). `estaCompletamenteVacia` es
 /// la única lógica que se le permite tener, para que la regla de "vacía
@@ -92,8 +94,6 @@ ErrorCampoDireccion? errorParaCampoDireccion(List<ErrorCampoDireccion> errores, 
 /// propio enum de campos de pantalla (ver `GuardarExpedienteEmpresaUseCase`
 /// para el patrón de mapeo).
 abstract final class DireccionValidator {
-  static final _codigoPostalMexicoRegex = RegExp(r'^\d{5}$');
-
   /// `resultado` es no nulo únicamente cuando no hay errores. Una
   /// dirección completamente vacía es válida (significa "sin dirección")
   /// y devuelve `resultado: null` sin ningún error.
@@ -126,7 +126,7 @@ abstract final class DireccionValidator {
       errores.add(
         const ErrorCampoDireccion(campo: CampoDireccion.codigoPostal, codigo: CodigoErrorCampoDireccion.requerido),
       );
-    } else if (esMexico && !_codigoPostalMexicoRegex.hasMatch(cp)) {
+    } else if (esMexico && !CodigoPostalFiscalValidator.esFormatoValido(cp)) {
       // La regla de 5 dígitos depende de `país` — si se selecciona otro
       // país, esta validación de formato no aplica.
       errores.add(

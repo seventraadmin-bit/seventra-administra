@@ -21,7 +21,7 @@ class EntidadFiscalConDomicilio {
 }
 
 abstract interface class EntidadFiscalRepository {
-  Future<EntidadFiscalData> crear(EntidadFiscalCompanion datos);
+  Future<EntidadFiscalData> crear(EntidadFiscalCompanion datos, {String? actorUsuarioId});
 
   Future<EntidadFiscalData?> obtenerPorId(String id);
 
@@ -30,9 +30,26 @@ abstract interface class EntidadFiscalRepository {
   /// reactivarla.
   Future<List<EntidadFiscalConDomicilio>> listarPorCliente(String clienteId);
 
-  Future<EntidadFiscalData> actualizar({required String id, required EntidadFiscalCompanion cambios});
+  /// Entidades fiscales por id, en una sola consulta — mismo criterio
+  /// de lote que ClienteRepository.listarPorIds.
+  Future<Map<String, EntidadFiscalData>> listarPorIds(Iterable<String> ids);
 
-  Future<EntidadFiscalData> cambiarCicloVida({required String id, required CicloVidaRegistro nuevo});
+  /// / alimentan la bitácora del Cliente dueño:
+  /// RFC y razón social son datos fiscales, y corregirlos sin explicar
+  /// por qué era el hueco más grave del área.
+  Future<EntidadFiscalData> actualizar({
+    required String id,
+    required EntidadFiscalCompanion cambios,
+    String? motivo,
+    String? actorUsuarioId,
+  });
+
+  Future<EntidadFiscalData> cambiarCicloVida({
+    required String id,
+    required CicloVidaRegistro nuevo,
+    String? motivo,
+    String? actorUsuarioId,
+  });
 
   /// [rfcNormalizado] ya debe venir en mayúsculas y sin espacios — este
   /// repositorio no normaliza, eso es responsabilidad del validador.

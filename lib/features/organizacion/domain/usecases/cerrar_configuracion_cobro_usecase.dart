@@ -2,6 +2,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/utils/clock.dart';
 
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import '../repositories/configuracion_cobro_repository.dart';
 import 'configuracion_cobro_con_vigencia.dart';
 
@@ -22,6 +23,9 @@ class CerrarConfiguracionCobroFechaAnteriorInicio extends CerrarConfiguracionCob
 
 class CerrarConfiguracionCobroNoExiste extends CerrarConfiguracionCobroResultado {}
 
+/// Cerrar la configuración deja de generar cobro: exige motivo.
+class CerrarConfiguracionCobroMotivoRequerido extends CerrarConfiguracionCobroResultado {}
+
 class CerrarConfiguracionCobroErrorInesperado extends CerrarConfiguracionCobroResultado {
   CerrarConfiguracionCobroErrorInesperado(this.mensaje);
   final String mensaje;
@@ -40,7 +44,10 @@ class CerrarConfiguracionCobroUseCase {
   Future<CerrarConfiguracionCobroResultado> ejecutar({
     required String configuracionCobroId,
     required DateTime fechaEfectiva,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return CerrarConfiguracionCobroMotivoRequerido();
     final configuracion = await _repository.obtenerConfiguracionPorId(configuracionCobroId);
     if (configuracion == null) {
       return CerrarConfiguracionCobroNoExiste();
@@ -61,7 +68,12 @@ class CerrarConfiguracionCobroUseCase {
     }
 
     try {
-      final vigencia = await _repository.cerrarVigencia(vigenciaId: vigente.id, fechaEfectiva: fechaEfectiva);
+      final vigencia = await _repository.cerrarVigencia(
+        vigenciaId: vigente.id,
+        fechaEfectiva: fechaEfectiva,
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
+      );
       return CerrarConfiguracionCobroExitoso(vigencia);
     } catch (e) {
       return CerrarConfiguracionCobroErrorInesperado(e.toString());

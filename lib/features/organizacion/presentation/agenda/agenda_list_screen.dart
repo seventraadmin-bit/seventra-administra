@@ -5,15 +5,21 @@ import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
+import 'package:riseg_one/features/finanzas/presentation/cuentas_por_cobrar/cuentas_por_cobrar_controller.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_emitir_requiere_accion.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../organizacion_providers.dart';
 import 'agenda_controller.dart';
+import 'agenda_resumen_periodo.dart';
 import 'agenda_state.dart';
 import 'widgets/agenda_crear_manual_dialog.dart';
 import 'widgets/agenda_detalle_dialog.dart';
+import 'widgets/agenda_resumen_periodo_row.dart';
+import 'widgets/eliminar_documento_por_emitir_fisicamente_dialog.dart';
 
 final _formatoMes = DateFormat('MMMM yyyy', 'es_MX');
 final _formatoFecha = DateFormat('dd/MM/yyyy');
@@ -117,12 +123,28 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
     );
   }
 
+  /// Eliminación física individual directo desde la fila (pedido
+  /// explícito: la única vía antes era abrir el detalle completo). Misma
+  /// facultad exclusiva del Maestro, mismo diálogo de confirmación con
+  /// motivo y mismo use case que `AgendaDetalleDialog._eliminarFisicamente`
+  /// — nunca una segunda ruta de eliminación.
+  Future<void> _eliminarFisicamenteDesdeFila(DocumentoPorEmitirData documento) async {
+    final eliminado = await mostrarDialogoEliminarDocumentoPorEmitirFisicamente(context, ref, documento.id);
+    if (!eliminado) return;
+    ref.invalidate(agendaControllerProvider);
+    ref.invalidate(cuentasPorCobrarControllerProvider);
+    // Etapa 20 (hueco real encontrado): el Dashboard lee la misma
+    // CuentaPorCobrar para Cobranza/"Requiere atención".
+    ref.invalidate(dashboardControllerProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(agendaControllerProvider);
     final notifier = ref.read(agendaControllerProvider.notifier);
     final hoy = DateTime.now();
+    final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
     if (state.errorCarga != null && state.documentos.isEmpty) {
       return RisegEmptyState(
@@ -144,6 +166,7 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
         children: [
           RisegSectionHeader(
             title: l10n.agendaListadoTitulo,
+            description: l10n.agendaListadoSubtitulo,
             primaryAction: RisegButton(
               key: const Key('agenda_boton_generar'),
               label: l10n.agendaListadoBotonGenerar,
@@ -158,28 +181,38 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
+          AgendaResumenPeriodoRow(resumen: calcularResumenPeriodoAgenda(state.documentos, hoy)),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                tooltip: l10n.agendaListadoBotonMesAnterior,
-                onPressed: () => _cambiarMes(state, -1),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    tooltip: l10n.agendaListadoBotonMesAnterior,
+                    onPressed: () => _cambiarMes(state, -1),
+                  ),
+                  SizedBox(
+                    width: 160,
+                    child: Text(
+                      _tituloMesCapitalizado(state.rangoInicio),
+                      textAlign: TextAlign.center,
+                      style: AppTypography.label,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    tooltip: l10n.agendaListadoBotonMesSiguiente,
+                    onPressed: () => _cambiarMes(state, 1),
+                  ),
+                ],
               ),
               SizedBox(
-                width: 160,
-                child: Text(
-                  _tituloMesCapitalizado(state.rangoInicio),
-                  textAlign: TextAlign.center,
-                  style: AppTypography.label,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                tooltip: l10n.agendaListadoBotonMesSiguiente,
-                onPressed: () => _cambiarMes(state, 1),
-              ),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
+                width: 200,
                 child: RisegSelect<String?>(
                   label: l10n.agendaListadoFiltroCliente,
                   value: state.clienteId,
@@ -190,8 +223,8 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
                   onChanged: (valor) => notifier.aplicarFiltros(clienteId: valor, limpiarClienteId: valor == null),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
+              SizedBox(
+                width: 190,
                 child: RisegSelect<String?>(
                   label: l10n.agendaListadoFiltroTipoDocumento,
                   value: state.tipoDocumento,
@@ -210,8 +243,8 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
                       notifier.aplicarFiltros(tipoDocumento: valor, limpiarTipoDocumento: valor == null),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
+              SizedBox(
+                width: 190,
                 child: RisegSelect<String?>(
                   label: l10n.agendaListadoFiltroEstatus,
                   value: state.estatus,
@@ -235,20 +268,41 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
                 title: l10n.agendaListadoVacioTitulo,
                 message: l10n.agendaListadoVacioMensaje,
               ),
+              // Eliminación física individual por fila (pedido explícito)
+              // — Maestro-only, mismo criterio que el resto de la app:
+              // el ítem de menú solo se muestra si `esMaestro`, pero la
+              // protección real vive en el provider `exigirMaestro`.
+              rowActionsBuilder: esMaestro
+                  ? (d) => RisegActionsMenu(
+                        menuKey: Key('agenda_fila_menu_acciones_${d.id}'),
+                        actions: [
+                          RisegMenuAction(
+                            key: Key('agenda_fila_accion_eliminar_fisicamente_${d.id}'),
+                            label: l10n.eliminacionFisicaAccionMenu,
+                            icon: Icons.delete_forever_outlined,
+                            destructive: true,
+                            onTap: () => _eliminarFisicamenteDesdeFila(d),
+                          ),
+                        ],
+                      )
+                  : null,
               columns: [
                 RisegColumn<DocumentoPorEmitirData>(
-                  label: l10n.agendaColumnaCodigo,
-                  width: 100,
-                  cellBuilder: (d) => Text(d.codigo),
+                  label: l10n.agendaColumnaDocumento,
+                  width: 150,
+                  cellBuilder: (d) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(d.codigo, style: AppTypography.bodyStrong.copyWith(color: context.colors.textPrimary)),
+                      const SizedBox(height: 2),
+                      RisegStatusBadge(label: _tipoDocumentoLabel(l10n, d.tipoDocumento), tone: RisegStatusTone.neutral),
+                    ],
+                  ),
                 ),
                 RisegColumn<DocumentoPorEmitirData>(
                   label: l10n.agendaColumnaCliente,
                   cellBuilder: (d) => Text(_clienteNombre(d.clienteId)),
-                ),
-                RisegColumn<DocumentoPorEmitirData>(
-                  label: l10n.agendaColumnaTipoDocumento,
-                  width: 100,
-                  cellBuilder: (d) => Text(_tipoDocumentoLabel(l10n, d.tipoDocumento)),
                 ),
                 RisegColumn<DocumentoPorEmitirData>(
                   label: l10n.agendaColumnaPeriodo,
@@ -260,12 +314,19 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
                   label: l10n.agendaColumnaFechaEmision,
                   width: 150,
                   cellBuilder: (d) => Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        d.fechaEmisionProgramada == null
-                            ? l10n.agendaFechaSinCalcular
-                            : _formatoFecha.format(d.fechaEmisionProgramada!),
+                      // `Flexible` + elipsis — "Sin fecha calculable" (el
+                      // texto de respaldo cuando la vigencia no tiene
+                      // regla de Emisión, ej. Toluca 32/Tikal) es más
+                      // largo que cualquier fecha real y desbordaba la
+                      // columna fija de 150px (bug real encontrado).
+                      Flexible(
+                        child: Text(
+                          d.fechaEmisionProgramada == null
+                              ? l10n.agendaFechaSinCalcular
+                              : _formatoFecha.format(d.fechaEmisionProgramada!),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       if (documentoPorEmitirRequiereAccion(d, hoy)) ...[
                         const SizedBox(width: AppSpacing.xxs),

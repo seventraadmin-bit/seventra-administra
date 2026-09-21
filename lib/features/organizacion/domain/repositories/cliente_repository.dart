@@ -21,15 +21,44 @@ abstract interface class ClienteRepository {
 
   Future<List<ClienteData>> listarActivos();
 
-  Future<ClienteData> cambiarEstatus({required String id, required EstatusCliente nuevo});
+  /// Nombre de TODOS los Clientes referenciados por [ids], en una sola
+  /// consulta.
+  ///
+  /// Distinto de [listarActivos]: una Cuenta por cobrar de un Cliente
+  /// suspendido sigue existiendo y su nombre tiene que poder
+  /// mostrarse. Existe para que Reportes resuelva cientos de
+  /// referencias sin una consulta por fila.
+  Future<Map<String, ClienteData>> listarPorIds(Iterable<String> ids);
+
+  /// `motivo` y `actorUsuarioId` alimentan la bitácora del Cliente:
+  /// suspender o terminar a un Cliente es un hecho comercial que tiene
+  /// que poder explicarse después.
+  Future<ClienteData> cambiarEstatus({
+    required String id,
+    required EstatusCliente nuevo,
+    String? motivo,
+    String? actorUsuarioId,
+  });
 
   Future<DireccionData?> obtenerDireccionReferencia(String clienteId);
 
+  /// Versión en lote de [obtenerDireccionReferencia] (Etapa 16, pasada
+  /// visual de Comercial) — una sola consulta `WHERE cliente_id IN
+  /// (...)` para resolver la ubicación de todos los Clientes del
+  /// listado a la vez, nunca una consulta por tarjeta/fila. `ids` vacío
+  /// devuelve `{}` sin tocar la base de datos.
+  Future<Map<String, DireccionData>> listarDireccionesReferencia(List<String> clienteIds);
+
   /// Persiste datos generales + dirección de referencia en una sola
   /// transacción — mismo patrón que `SucursalRepository.guardarExpediente`.
+  /// `motivo`/`actorUsuarioId` alimentan la bitácora del Cliente: una
+  /// corrección sin autor ni explicación es justo lo que esta etapa
+  /// deja de permitir.
   Future<ClienteExpedienteRaw> guardarExpediente({
     required String clienteId,
     required ClienteCompanion datosGenerales,
+    String? motivo,
+    String? actorUsuarioId,
     required DireccionInput? direccionReferencia,
   });
 
@@ -39,11 +68,17 @@ abstract interface class ClienteRepository {
   /// tipo (lo aplica también la base de datos vía el índice único
   /// parcial, pero el repositorio nunca depende únicamente de que la
   /// escritura falle: la resuelve explícitamente).
-  Future<ContactoData> agregarContacto(ContactoCompanion datos);
+  Future<ContactoData> agregarContacto(ContactoCompanion datos, {String? actorUsuarioId});
 
-  Future<ContactoData> actualizarContacto({required String id, required ContactoCompanion cambios});
+  /// Teléfono y correo llegan a la bitácora ENMASCARADOS.
+  Future<ContactoData> actualizarContacto({
+    required String id,
+    required ContactoCompanion cambios,
+    String? motivo,
+    String? actorUsuarioId,
+  });
 
-  Future<ContactoData> archivarContacto(String id);
+  Future<ContactoData> archivarContacto(String id, {String? motivo, String? actorUsuarioId});
 
   Future<List<ContactoData>> obtenerContactos(String clienteId);
 
@@ -62,4 +97,29 @@ abstract interface class ClienteRepository {
     required String motivo,
     String? actorUsuarioId,
   });
+
+  /// Crea el `Attachment` (categoría `logo`) y su fila de unión en
+  /// `ClienteAttachment` en una sola operación — mismo patrón que
+  /// `EmpleadoRepository.adjuntarDocumento` (Etapa 16, evolución
+  /// visual). No mueve el puntero `logoAttachmentId` por sí solo — eso
+  /// lo hace [actualizarLogo] a propósito, para que el llamador pueda
+  /// archivar el logo anterior entre una llamada y la otra.
+  Future<AttachmentData> adjuntarLogo({
+    required String clienteId,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+  });
+
+  /// Mueve `Cliente.logoAttachmentId` al nuevo Attachment.
+  Future<ClienteData> actualizarLogo({required String clienteId, required String attachmentId});
+
+  /// Quita el logo vigente (`logoAttachmentId = NULL`) — el Attachment
+  /// anterior se archiva aparte (nunca se borra), mismo criterio que un
+  /// reemplazo. A diferencia de la fotografía de Empleado, el logo de
+  /// Cliente sí puede quedar vacío explícitamente (Resolución de
+  /// Marlon: "poder reemplazarse/eliminarse").
+  Future<ClienteData> eliminarLogo(String clienteId);
 }

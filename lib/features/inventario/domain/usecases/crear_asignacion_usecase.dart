@@ -3,7 +3,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import '../repositories/articulo_repository.dart';
 import '../repositories/asignacion_repository.dart';
 import '../repositories/inventario_repository.dart';
-import '../../data/tables/articulo_unidad_table.dart' show EstatusArticuloUnidad;
+import 'validar_linea_asignacion.dart';
 
 sealed class CrearAsignacionResultado {}
 
@@ -60,27 +60,32 @@ class CrearAsignacionUseCase {
     String? observaciones,
     String? actorUsuarioId,
   }) async {
-    final articulo = await _articuloRepository.obtenerPorId(articuloId);
-    if (articulo == null) return CrearAsignacionArticuloNoExiste();
-
     final unoSoloDestino = (empleadoId != null) != (servicioId != null);
     if (!unoSoloDestino) return CrearAsignacionDestinoInvalido();
 
-    if (cantidad <= 0) return CrearAsignacionCantidadInvalida();
-
-    if (articulo.manejaSerie) {
-      if (unidadId == null || cantidad != 1) return CrearAsignacionUnidadInvalida();
-      final unidad = await _inventarioRepository.obtenerUnidadPorId(unidadId);
-      if (unidad == null || unidad.articuloId != articuloId) return CrearAsignacionUnidadInvalida();
-      if (EstatusArticuloUnidad.values.byName(unidad.estatus) != EstatusArticuloUnidad.disponible) {
+    final validacion = await validarLineaAsignacion(
+      articuloRepository: _articuloRepository,
+      inventarioRepository: _inventarioRepository,
+      articuloId: articuloId,
+      varianteId: varianteId,
+      unidadId: unidadId,
+      cantidad: cantidad,
+    );
+    switch (validacion) {
+      case LineaAsignacionValida():
+        break;
+      case LineaAsignacionArticuloNoExiste():
+        return CrearAsignacionArticuloNoExiste();
+      case LineaAsignacionCantidadInvalida():
+        return CrearAsignacionCantidadInvalida();
+      case LineaAsignacionVarianteInvalida():
+        return CrearAsignacionVarianteInvalida();
+      case LineaAsignacionUnidadInvalida():
+        return CrearAsignacionUnidadInvalida();
+      case LineaAsignacionUnidadNoDisponible():
         return CrearAsignacionUnidadNoDisponible();
-      }
-    } else {
-      if (unidadId != null) return CrearAsignacionUnidadInvalida();
-      if (articulo.manejaVariante != (varianteId != null)) return CrearAsignacionVarianteInvalida();
-
-      final existencia = await _inventarioRepository.calcularExistencia(articuloId: articuloId, varianteId: varianteId);
-      if (cantidad > existencia.disponible) return CrearAsignacionSobrepasaDisponible(existencia.disponible);
+      case LineaAsignacionSobrepasaDisponible(:final disponible):
+        return CrearAsignacionSobrepasaDisponible(disponible);
     }
 
     try {

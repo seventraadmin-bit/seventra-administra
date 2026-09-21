@@ -10,6 +10,7 @@ import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/complemento_pago_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/cuenta_por_cobrar_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/pago_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart';
@@ -82,6 +83,7 @@ void main() {
     final configuracionCobroRepo = ConfiguracionCobroRepositoryImpl(db);
     cuentaRepo = CuentaPorCobrarRepositoryImpl(db);
     pagoRepo = PagoRepositoryImpl(db);
+    final complementoPagoRepo = ComplementoPagoRepositoryImpl(db);
     documentoRepo = DocumentoPorEmitirRepositoryImpl(db, AttachmentRepository(db), cuentaRepo);
 
     final servicioValidator = ServicioValidator(clienteRepo, catalogoRepo);
@@ -96,16 +98,16 @@ void main() {
         CrearConfiguracionCobroUseCase(configuracionCobroRepo, servicioRepo, configuracionCobroValidator, reglaValidator);
 
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
-    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigoInterno);
+    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigoInterno);
     registrarEmision = RegistrarEmisionDocumentoPorEmitirUseCase(documentoRepo);
     cambiarEstatus = CambiarEstatusDocumentoPorEmitirUseCase(documentoRepo);
 
     registrarPago = RegistrarPagoUseCase(pagoRepo, clienteRepo, generarCodigoInterno);
     aplicarPagoACuenta = AplicarPagoACuentaUseCase(pagoRepo, cuentaRepo);
     registrarPagoAplicado = RegistrarPagoAplicadoUseCase(pagoRepo, cuentaRepo, generarCodigoInterno);
-    corregirPago = CorregirPagoUseCase(pagoRepo);
+    corregirPago = CorregirPagoUseCase(pagoRepo, cuentaRepo, complementoPagoRepo);
     cancelarAplicacionPago = CancelarAplicacionPagoUseCase(pagoRepo);
-    cancelarPago = CancelarPagoUseCase(pagoRepo);
+    cancelarPago = CancelarPagoUseCase(pagoRepo, complementoPagoRepo);
 
     tempDir = Directory.systemTemp.createTempSync('riseg_pago_test_');
     adjuntarComprobante = AdjuntarComprobantePagoUseCase(pagoRepo, AttachmentStorage(tempDir.path));
@@ -413,7 +415,7 @@ void main() {
       final cuentaClienteB = await crearCuentaDePrueba(nombreCliente: 'Cliente B', importeEmitido: 100000);
 
       final registrado = await registrarPago.ejecutar(
-        clienteId: cuentaClienteA.clienteId,
+        clienteId: cuentaClienteA.clienteId!,
         montoTotal: 100000,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: FormaPago.efectivo.name,
@@ -457,7 +459,7 @@ void main() {
     test('rechaza sobrepago de la Cuenta aunque el Pago tenga saldo suficiente sin aplicar', () async {
       final cuenta = await crearCuentaDePrueba(nombreCliente: 'Sportium Solo', importeEmitido: 100000);
       final registrado = await registrarPago.ejecutar(
-        clienteId: cuenta.clienteId,
+        clienteId: cuenta.clienteId!,
         montoTotal: 500000,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: FormaPago.transferencia.name,
@@ -473,7 +475,7 @@ void main() {
     test('rechaza aplicar sobre un Pago cancelado', () async {
       final cuenta = await crearCuentaDePrueba(nombreCliente: 'Sportium Cancelado', importeEmitido: 100000);
       final registrado = await registrarPago.ejecutar(
-        clienteId: cuenta.clienteId,
+        clienteId: cuenta.clienteId!,
         montoTotal: 100000,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: FormaPago.efectivo.name,
@@ -619,7 +621,7 @@ void main() {
     test('cancelar un Pago sin aplicaciones no falla (Resolución 8 de Marlon)', () async {
       final cuenta = await crearCuentaDePrueba(nombreCliente: 'Tikal Sin Aplicar', importeEmitido: 100000);
       final registrado = await registrarPago.ejecutar(
-        clienteId: cuenta.clienteId,
+        clienteId: cuenta.clienteId!,
         montoTotal: 100000,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: FormaPago.efectivo.name,
@@ -649,7 +651,7 @@ void main() {
     test('rechaza cancelar un Pago ya cancelado', () async {
       final cuenta = await crearCuentaDePrueba(nombreCliente: 'Toluca Doble Cancel', importeEmitido: 100000);
       final registrado = await registrarPago.ejecutar(
-        clienteId: cuenta.clienteId,
+        clienteId: cuenta.clienteId!,
         montoTotal: 100000,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: FormaPago.efectivo.name,
@@ -666,7 +668,7 @@ void main() {
     test('adjunta un comprobante y registra el evento comprobanteAdjuntado', () async {
       final cuenta = await crearCuentaDePrueba(nombreCliente: 'Sportium Comprobante', importeEmitido: 100000);
       final registrado = await registrarPago.ejecutar(
-        clienteId: cuenta.clienteId,
+        clienteId: cuenta.clienteId!,
         montoTotal: 100000,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: FormaPago.transferencia.name,

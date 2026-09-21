@@ -6,6 +6,7 @@ import '../../../organizacion/data/tables/servicio_table.dart';
 import '../../../organizacion/data/tables/sucursal_table.dart';
 import '../../../usuarios/data/tables/usuario_table.dart';
 import 'categoria_financiera_table.dart';
+import 'cuenta_financiera_table.dart';
 import 'pago_table.dart';
 
 enum EstatusIngreso { registrado, cancelado }
@@ -47,6 +48,14 @@ class Ingreso extends Table with AuditColumns {
   /// Texto libre — mismo criterio que `Pago.cuentaBancariaDestino`, sin
   /// catálogo de Bancos todavía.
   TextColumn get cuentaCaja => text().nullable()();
+
+  /// Etapa 19C — vínculo real y determinista a la `CuentaFinanciera`
+  /// que recibió el dinero (nunca inferido de `cuentaCaja`, que sigue
+  /// siendo texto libre sin tocar). Nullable: todo Ingreso histórico
+  /// anterior a esta etapa queda "Cuenta no especificada" — nunca se
+  /// adivina ni se hace backfill heurístico.
+  TextColumn get cuentaFinancieraId =>
+      text().nullable().references(CuentaFinanciera, #id, onDelete: KeyAction.restrict)();
 
   /// Reutiliza el enum `FormaPago` de `Pago` (Etapa 4J.2) — nunca un
   /// enum paralelo para el mismo concepto.

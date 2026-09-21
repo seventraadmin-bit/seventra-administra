@@ -16,6 +16,7 @@ abstract interface class ConfiguracionCobroRepository {
     required String servicioId,
     required ConfiguracionCobroValidada datos,
     required List<EtapaCobroValidada> etapas,
+    String? actorUsuarioId,
   });
 
   /// La Configuración de cobro del Servicio, ya resuelta contra la fecha
@@ -49,22 +50,28 @@ abstract interface class ConfiguracionCobroRepository {
   /// (Etapa 4G.2), aplicado aquí: trunca la predecesora, acota contra la
   /// sucesora si existe, todo en una transacción. Asume `datos`/`etapas`
   /// ya validados.
+  /// `observacion` opcional: abrir una vigencia es un hecho de negocio,
+  /// no la enmienda de un error.
   Future<ConfiguracionCobroVigenciaData> cambiarVigencia({
     required String configuracionCobroId,
     required ConfiguracionCobroValidada datos,
     required List<EtapaCobroValidada> etapas,
+    String? observacion,
+    String? actorUsuarioId,
   });
 
   /// Cierra sin reemplazo la vigencia vigente actual.
   Future<ConfiguracionCobroVigenciaData> cerrarVigencia({
     required String vigenciaId,
     required DateTime fechaEfectiva,
+    String? motivo,
+    String? actorUsuarioId,
   });
 
   /// Cancela una vigencia programada — la marca `archivado` y repara la
   /// predecesora, restaurando su `fechaFinVigencia` original (Etapa
   /// 4G.2, Resolución F, aplicada aquí igual).
-  Future<void> cancelarVigenciaProgramada(String vigenciaId);
+  Future<void> cancelarVigenciaProgramada(String vigenciaId, {String? motivo, String? actorUsuarioId});
 
   /// Edita únicamente `observaciones` de una vigencia — nunca sus
   /// condiciones ni sus reglas de evento (Configuración de cobro no
@@ -103,5 +110,7 @@ abstract interface class ConfiguracionCobroRepository {
     required String vigenciaId,
     required ConfiguracionCobroValidada datos,
     required List<EtapaCobroValidada> etapas,
+    String? motivo,
+    String? actorUsuarioId,
   });
 }

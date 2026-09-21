@@ -65,7 +65,8 @@ class _ComplementoDetalleDialogState extends ConsumerState<ComplementoDetalleDia
       final pago = await ref.read(pagoRepositoryProvider).obtenerPorId(complemento.pagoId);
       if (pago != null) {
         folioPago = pago.folioPago;
-        final cliente = await ref.read(clienteRepositoryProvider).obtenerPorId(pago.clienteId);
+        final clienteId = pago.clienteId;
+        final cliente = clienteId == null ? null : await ref.read(clienteRepositoryProvider).obtenerPorId(clienteId);
         clienteNombre = cliente?.nombreComercial;
       }
     }

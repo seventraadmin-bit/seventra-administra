@@ -230,12 +230,7 @@ void main() {
 
     setUp(() {
       final asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
-      final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(
-        db,
-        asignacionLineaRepo,
-        AsignacionRepositoryImpl(db),
-        InventarioRepositoryImpl(db),
-      );
+      final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, AsignacionRepositoryImpl(db));
       lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoRepo);
       crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
       asignarLinea = AsignarLineaTelefonicaUseCase(lineaRepo, asignacionLineaRepo, equipoRepo);
@@ -913,7 +908,7 @@ void main() {
       await db.into(db.pago).insert(
             PagoCompanion.insert(
               folioPago: 'PAG-TEST-0001',
-              clienteId: clienteId,
+              clienteId: Value(clienteId),
               montoTotal: 100000,
               fechaPago: DateTime(2026, 1, 1),
               formaPago: 'efectivo',
@@ -1160,8 +1155,8 @@ void main() {
       final documentoId = await crearDocumentoDePrueba(codigo: 'DOC-9504', estatus: 'procesadoAceptado');
       await db.into(db.cuentaPorCobrar).insert(
             CuentaPorCobrarCompanion.insert(
-              documentoPorEmitirId: documentoId,
-              clienteId: clienteId,
+              documentoPorEmitirId: Value(documentoId),
+              clienteId: Value(clienteId),
               tipoDocumento: 'reciboDePago',
               metodo: 'noAplica',
               fechaEmisionReal: DateTime(2026, 1, 5),
@@ -1236,8 +1231,8 @@ void main() {
       final documentoId = await crearDocumentoDePrueba(codigo: 'DOC-9506', estatus: 'procesadoAceptado');
       final cuenta = await db.into(db.cuentaPorCobrar).insertReturning(
             CuentaPorCobrarCompanion.insert(
-              documentoPorEmitirId: documentoId,
-              clienteId: clienteId,
+              documentoPorEmitirId: Value(documentoId),
+              clienteId: Value(clienteId),
               tipoDocumento: 'reciboDePago',
               metodo: 'noAplica',
               fechaEmisionReal: DateTime(2026, 1, 5),
@@ -1249,7 +1244,7 @@ void main() {
       final pago = await db.into(db.pago).insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-9506-0001',
-              clienteId: clienteId,
+              clienteId: Value(clienteId),
               montoTotal: 2180000,
               fechaPago: DateTime(2026, 1, 6),
               formaPago: 'transferencia',
@@ -1280,8 +1275,8 @@ void main() {
         final documentoId = await crearDocumentoDePrueba(codigo: 'DOC-9507', estatus: 'procesadoAceptado');
         final cuenta = await db.into(db.cuentaPorCobrar).insertReturning(
               CuentaPorCobrarCompanion.insert(
-                documentoPorEmitirId: documentoId,
-                clienteId: clienteId,
+                documentoPorEmitirId: Value(documentoId),
+                clienteId: Value(clienteId),
                 tipoDocumento: 'reciboDePago',
                 metodo: 'noAplica',
                 fechaEmisionReal: DateTime(2026, 1, 5),
@@ -1296,7 +1291,7 @@ void main() {
         final pago = await db.into(db.pago).insertReturning(
               PagoCompanion.insert(
                 folioPago: 'PAG-9507-0001',
-                clienteId: clienteId,
+                clienteId: Value(clienteId),
                 montoTotal: 2180000,
                 fechaPago: DateTime(2026, 1, 6),
                 formaPago: 'transferencia',
@@ -1592,12 +1587,7 @@ void main() {
     test('8. TieneDependencias — con Línea telefónica asignada', () async {
       final empleado = await crearEmpleadoDePrueba();
       final asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
-      final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(
-        db,
-        asignacionLineaRepo,
-        AsignacionRepositoryImpl(db),
-        InventarioRepositoryImpl(db),
-      );
+      final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, AsignacionRepositoryImpl(db));
       final lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoRepo);
       final linea = await CrearLineaTelefonicaUseCase(lineaRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)))
           .ejecutar(operador: 'telcel', modalidadSim: 'fisica');

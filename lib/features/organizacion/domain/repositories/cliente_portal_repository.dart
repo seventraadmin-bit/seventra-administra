@@ -4,7 +4,7 @@ import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import '../usecases/eliminar_cliente_portal_fisicamente_usecase.dart';
 
 abstract interface class ClientePortalRepository {
-  Future<ClientePortalData> crear(ClientePortalCompanion datos);
+  Future<ClientePortalData> crear(ClientePortalCompanion datos, {String? actorUsuarioId});
 
   Future<ClientePortalData?> obtenerPorId(String id);
 
@@ -14,9 +14,19 @@ abstract interface class ClientePortalRepository {
   /// `DocumentoPorEmitir`).
   Future<List<ClientePortalData>> listarPorCliente(String clienteId);
 
-  Future<ClientePortalData> actualizar({required String id, required ClientePortalCompanion cambios});
+  Future<ClientePortalData> actualizar({
+    required String id,
+    required ClientePortalCompanion cambios,
+    String? motivo,
+    String? actorUsuarioId,
+  });
 
-  Future<ClientePortalData> cambiarCicloVida({required String id, required CicloVidaRegistro nuevo});
+  Future<ClientePortalData> cambiarCicloVida({
+    required String id,
+    required CicloVidaRegistro nuevo,
+    String? motivo,
+    String? actorUsuarioId,
+  });
 
   /// Eliminación física extraordinaria (Etapa 11D) — rechazada si el
   /// portal está referenciado por alguna `ConfiguracionCobroVigencia` o

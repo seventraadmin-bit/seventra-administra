@@ -333,6 +333,7 @@ void main() {
         servicioId: servicio.id,
         nuevo: EstatusServicio.terminado,
         fechaTerminoEfectiva: DateTime(2026, 6, 1),
+        motivo: 'Motivo de prueba',
       );
 
       final resultado = await crearLineaComercial.ejecutar(

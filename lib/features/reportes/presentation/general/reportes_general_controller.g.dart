@@ -7,15 +7,20 @@ part of 'reportes_general_controller.dart';
 // **************************************************************************
 
 String _$reportesGeneralControllerHash() =>
-    r'aeec7fe04c1a6212e11c0862a6462ce3b202aaf6';
+    r'db13059c4a23365bec704567d90cc085928b94d5';
 
-/// Controlador de la pestaña General de Reportes (Etapa 12A).
+/// Controlador de la pestaña General de Reportes.
 ///
 /// La guardia de permiso real vive **aquí** (punto de carga de datos),
 /// no solo en `ReportesShellScreen` ocultando la pestaña — cada sección
 /// del resumen solo se calcula si la sesión tiene el permiso del
 /// dominio correspondiente (ver `ObtenerResumenGeneralUseCase`, que
 /// deja cada campo en `null` cuando no se incluyó).
+///
+/// El rango se **observa** del controlador compartido: cambiarlo desde
+/// la barra de filtro reconstruye este provider una sola vez y dispara
+/// exactamente una carga, nunca una cascada de consultas por cada campo
+/// del filtro.
 ///
 /// Copied from [ReportesGeneralController].
 @ProviderFor(ReportesGeneralController)

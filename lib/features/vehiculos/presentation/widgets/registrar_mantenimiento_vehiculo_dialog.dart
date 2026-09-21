@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/finanzas/presentation/mensaje_saldo_insuficiente.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -7,6 +8,8 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_mantenimiento_table.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/adjuntar_comprobante_mantenimiento_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/registrar_mantenimiento_vehiculo_usecase.dart';
+import 'package:riseg_one/features/finanzas/finanzas_providers.dart' show cuentaFinancieraRepositoryProvider, deudaRepositoryProvider;
+import 'package:riseg_one/features/finanzas/presentation/widgets/origen_financiero_select.dart';
 
 import '../vehiculo_labels.dart';
 import '../../vehiculos_providers.dart';
@@ -27,6 +30,15 @@ int? _centavosDesdeTexto(String texto) {
 /// Devuelve `true` si tuvo éxito.
 Future<bool> mostrarDialogoRegistrarMantenimientoVehiculo(BuildContext context, WidgetRef ref, String vehiculoId) async {
   final l10n = AppLocalizations.of(context)!;
+
+  // Cuentas y tarjetas para el selector de origen — lecturas de
+  // repositorio, nunca providers autorizados: son datos auxiliares que
+  // la acción necesita, no acceso al módulo Finanzas (mismo criterio
+  // que Compras y Tiempos Extra).
+  final cuentas = await ref.read(cuentaFinancieraRepositoryProvider).listar(soloActivas: true);
+  final tarjetas = await ref.read(deudaRepositoryProvider).listarTarjetasActivas();
+  if (!context.mounted) return false;
+  ClaveOrigenFinanciero? claveOrigen;
 
   DateTime fecha = DateTime.now();
   final kilometrajeCtrl = TextEditingController();
@@ -81,10 +93,27 @@ Future<bool> mostrarDialogoRegistrarMantenimientoVehiculo(BuildContext context, 
               RisegTextField(label: l10n.vehiculoMantenimientoCampoTallerProveedor, controller: tallerCtrl),
               const SizedBox(height: AppSpacing.md),
               RisegTextField(
+                key: const Key('vehiculo_mantenimiento_campo_costo'),
                 label: l10n.vehiculoMantenimientoCampoCosto,
                 controller: costoCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                // Al capturar un costo, el origen deja de ser opcional:
+                // se muestra el selector en cuanto hay importe.
+                onChanged: (_) => setState(() {}),
               ),
+              // Todo gasto monetario pregunta de dónde salió el dinero
+              // (schemaVersion 80). Mismo selector exacto que Egresos
+              // manuales, Compras y Tiempos Extra — nunca uno propio.
+              if ((_centavosDesdeTexto(costoCtrl.text) ?? 0) > 0) ...[
+                const SizedBox(height: AppSpacing.md),
+                RisegOrigenFinancieroSelect(
+                  key: const Key('vehiculo_mantenimiento_origen'),
+                  cuentas: cuentas,
+                  tarjetas: tarjetas,
+                  value: claveOrigen,
+                  onChanged: (valor) => setState(() => claveOrigen = valor),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               RisegDateField(
                 label: l10n.vehiculoMantenimientoCampoProximoFecha,
@@ -146,7 +175,13 @@ Future<bool> mostrarDialogoRegistrarMantenimientoVehiculo(BuildContext context, 
           proximoKilometrajeCtrl.text.trim().isEmpty ? null : int.tryParse(proximoKilometrajeCtrl.text.trim());
       final costo = _centavosDesdeTexto(costoCtrl.text);
 
-      final registrado = await ref.read(registrarMantenimientoVehiculoAutorizadoProvider)(
+      // Saldo insuficiente no es un "error inesperado": lo traduce el
+      // mecanismo central y el formulario sigue abierto, con lo ya
+      // capturado, para que el usuario elija otra cuenta.
+      final registrado = await ejecutarMostrandoSaldoInsuficiente(
+        context,
+        l10n,
+        () => ref.read(registrarMantenimientoVehiculoAutorizadoProvider)(
             vehiculoId: vehiculoId,
             fecha: fecha,
             kilometraje: kilometraje,
@@ -157,12 +192,21 @@ Future<bool> mostrarDialogoRegistrarMantenimientoVehiculo(BuildContext context, 
             proximoMantenimientoFecha: proximoFecha,
             proximoMantenimientoKilometraje: proximoKilometraje,
             observaciones: observacionesCtrl.text,
-          );
+            origen: origenDesdeClave(claveOrigen),
+          ),
+      );
+      if (registrado == null) return null;
       if (!context.mounted) return false;
 
       switch (registrado) {
         case RegistrarMantenimientoVehiculoDescripcionRequerida():
           errorGeneral = l10n.vehiculoMantenimientoErrorDescripcionRequerida;
+          return null;
+        case RegistrarMantenimientoVehiculoOrigenFinancieroRequerido():
+          errorGeneral = l10n.vehiculoMantenimientoErrorOrigenRequerido;
+          return null;
+        case RegistrarMantenimientoVehiculoTarjetaInvalida(:final error, :final disponible):
+          errorGeneral = mensajeErrorOrigenTarjeta(l10n, error, disponible);
           return null;
         case RegistrarMantenimientoVehiculoProximoInvalido():
           errorGeneral = l10n.vehiculoMantenimientoErrorProximoInvalido;
@@ -176,7 +220,7 @@ Future<bool> mostrarDialogoRegistrarMantenimientoVehiculo(BuildContext context, 
           return false;
         case RegistrarMantenimientoVehiculoExitoso(:final registro):
           if (archivoPath != null) {
-            final adjuntado = await ref.read(adjuntarComprobanteMantenimientoVehiculoUseCaseProvider).ejecutar(
+            final adjuntado = await ref.read(adjuntarComprobanteMantenimientoVehiculoAutorizadoProvider)(
                   vehiculoMantenimientoId: registro.id,
                   sourceFilePath: archivoPath!,
                   originalFileName: archivoNombre!,

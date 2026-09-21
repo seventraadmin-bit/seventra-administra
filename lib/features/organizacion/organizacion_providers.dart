@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/attachments/attachment_repository.dart';
@@ -54,6 +56,8 @@ import 'domain/usecases/actualizar_puesto_usecase.dart';
 import 'domain/usecases/actualizar_servicio_usecase.dart';
 import 'domain/usecases/agregar_contacto_usecase.dart';
 import 'domain/usecases/archivar_contacto_usecase.dart';
+import 'domain/usecases/eliminar_logo_cliente_usecase.dart';
+import 'domain/usecases/registrar_logo_cliente_usecase.dart';
 import 'domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'domain/usecases/asignar_sucursal_administrativa_usecase.dart';
@@ -89,11 +93,13 @@ import 'domain/usecases/corregir_configuracion_cobro_usecase.dart';
 import 'domain/usecases/corregir_linea_comercial_usecase.dart';
 import 'domain/usecases/eliminar_area_fisicamente_usecase.dart';
 import 'data/pdf/recibo_pago_pdf_renderer.dart';
+import 'data/pdf/tarjeta_fiscal_pdf_renderer.dart';
 import 'domain/usecases/eliminar_cliente_fisicamente_usecase.dart';
 import 'domain/usecases/eliminar_cliente_portal_fisicamente_usecase.dart';
 import 'domain/usecases/eliminar_documento_por_emitir_fisicamente_usecase.dart';
 import 'domain/usecases/eliminar_linea_comercial_fisicamente_usecase.dart';
 import 'domain/usecases/generar_recibo_pago_pdf_usecase.dart';
+import 'domain/usecases/generar_tarjeta_fiscal_pdf_usecase.dart';
 import 'domain/usecases/eliminar_puesto_fisicamente_usecase.dart';
 import 'domain/usecases/eliminar_servicio_fisicamente_usecase.dart';
 import 'domain/usecases/eliminar_sucursal_fisicamente_usecase.dart';
@@ -226,6 +232,39 @@ final obtenerExpedienteEmpresaUseCaseProvider = Provider<ObtenerExpedienteEmpres
 
 final guardarExpedienteEmpresaUseCaseProvider = Provider<GuardarExpedienteEmpresaUseCase>((ref) {
   return GuardarExpedienteEmpresaUseCase(ref.watch(empresaRepositoryProvider));
+});
+
+// Etapa 16 — Tarjeta fiscal de Empresa (documento operativo para
+// facturación a proveedores, nunca un CFDI).
+final tarjetaFiscalPdfRendererProvider = Provider<TarjetaFiscalPdfRenderer>((ref) => TarjetaFiscalPdfRenderer());
+
+final generarTarjetaFiscalPdfUseCaseProvider = Provider<GenerarTarjetaFiscalPdfUseCase>((ref) {
+  return GenerarTarjetaFiscalPdfUseCase(
+    ref.watch(obtenerExpedienteEmpresaUseCaseProvider),
+    ref.watch(attachmentRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(appPathsProvider).datosFiscalesDir,
+    ref.watch(tarjetaFiscalPdfRendererProvider),
+  );
+});
+
+// Etapa 1B (cierre de seguridad): antes se llamaba al use case crudo,
+// sin ningún `autorizarUseCase` — hueco real encontrado en la
+// auditoría. Gatea con `organizacion.ver` (nunca `crear`/`modificar`):
+// es una operación de solo lectura/generación de documento sobre datos
+// de Empresa que el usuario ya puede ver en la propia ficha (RFC,
+// razón social, domicilio fiscal, contacto) — nunca escribe en BD.
+typedef GenerarTarjetaFiscalPdfAutorizado = Future<GenerarTarjetaFiscalPdfResultado> Function({Uint8List? logoFallbackBytes});
+
+final generarTarjetaFiscalPdfAutorizadoProvider = Provider<GenerarTarjetaFiscalPdfAutorizado>((ref) {
+  return ({Uint8List? logoFallbackBytes}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.ver',
+      () => ref.read(generarTarjetaFiscalPdfUseCaseProvider).ejecutar(logoFallbackBytes: logoFallbackBytes),
+      GenerarTarjetaFiscalPdfErrorInesperado.new,
+    );
+  };
 });
 
 final puestoValidatorProvider = Provider<PuestoValidator>((ref) {
@@ -361,6 +400,59 @@ final actualizarContactoUseCaseProvider = Provider<ActualizarContactoUseCase>((r
 
 final archivarContactoUseCaseProvider = Provider<ArchivarContactoUseCase>((ref) {
   return ArchivarContactoUseCase(ref.watch(clienteRepositoryProvider));
+});
+
+final registrarLogoClienteUseCaseProvider = Provider<RegistrarLogoClienteUseCase>((ref) {
+  return RegistrarLogoClienteUseCase(
+    ref.watch(clienteRepositoryProvider),
+    ref.watch(attachmentRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+  );
+});
+
+final eliminarLogoClienteUseCaseProvider = Provider<EliminarLogoClienteUseCase>((ref) {
+  return EliminarLogoClienteUseCase(ref.watch(clienteRepositoryProvider), ref.watch(attachmentRepositoryProvider));
+});
+
+// Etapa 0 (auditoría de consistencia transversal — corrección de un
+// hueco real de autorización): el logo de Cliente se registraba/quitaba
+// desde el diálogo directo sobre el use case crudo, sin ningún
+// `autorizarUseCase` en la cadena. Mismo código ya usado para el resto
+// de mutaciones de Cliente (`comercial.modificar`).
+typedef RegistrarLogoClienteAutorizado = Future<RegistrarLogoClienteResultado> Function({
+  required String clienteId,
+  required String sourceFilePath,
+  required String originalFileName,
+  required String mimeType,
+});
+
+final registrarLogoClienteAutorizadoProvider = Provider<RegistrarLogoClienteAutorizado>((ref) {
+  return ({required String clienteId, required String sourceFilePath, required String originalFileName, required String mimeType}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'clientes.corregir',
+      () => ref.read(registrarLogoClienteUseCaseProvider).ejecutar(
+            clienteId: clienteId,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      RegistrarLogoClienteErrorInesperado.new,
+    );
+  };
+});
+
+typedef EliminarLogoClienteAutorizado = Future<EliminarLogoClienteResultado> Function(String clienteId);
+
+final eliminarLogoClienteAutorizadoProvider = Provider<EliminarLogoClienteAutorizado>((ref) {
+  return (String clienteId) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'clientes.corregir',
+      () => ref.read(eliminarLogoClienteUseCaseProvider).ejecutar(clienteId),
+      EliminarLogoClienteErrorInesperado.new,
+    );
+  };
 });
 
 final entidadFiscalValidatorProvider = Provider<EntidadFiscalValidator>((ref) {
@@ -643,6 +735,7 @@ final crearDocumentoManualUseCaseProvider = Provider<CrearDocumentoManualUseCase
   return CrearDocumentoManualUseCase(
     ref.watch(documentoPorEmitirRepositoryProvider),
     ref.watch(configuracionCobroRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
     ref.watch(ensamblarDocumentoPorEmitirUseCaseProvider),
     ref.watch(generarCodigoUseCaseProvider),
   );
@@ -823,7 +916,7 @@ final crearClienteAutorizadoProvider = Provider<CrearClienteAutorizado>((ref) {
   return ({required String nombreComercial, String? observaciones}) {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.crear',
+      'clientes.crear',
       () => ref.read(crearClienteUseCaseProvider).ejecutar(nombreComercial: nombreComercial, observaciones: observaciones),
       (mensaje) => Result<ClienteData>.failure(PermissionFailure(mensaje)),
     );
@@ -839,7 +932,7 @@ final crearServicioAutorizadoProvider = Provider<CrearServicioAutorizado>((ref) 
   return ({required String clienteId, required ServicioBorrador borrador}) {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.crear',
+      'servicios.crear',
       () => ref.read(crearServicioUseCaseProvider).ejecutar(clienteId: clienteId, borrador: borrador),
       GuardarServicioErrorInesperado.new,
     );

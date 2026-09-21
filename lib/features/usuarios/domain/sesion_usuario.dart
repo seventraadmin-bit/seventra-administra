@@ -17,6 +17,7 @@ class SesionUsuario {
     required this.nombreUsuario,
     required this.esMaestro,
     required this.permisos,
+    this.debeCambiarPassword = false,
   });
 
   final String usuarioId;
@@ -24,4 +25,24 @@ class SesionUsuario {
   final String nombreUsuario;
   final bool esMaestro;
   final Set<String> permisos;
+
+  /// La cuenta arrastra una contraseña temporal (Etapa "Usuarios,
+  /// permisos y UX de seguridad"): la fijó quien la dio de alta o quien
+  /// la reseteó, así que la conoce alguien más. Mientras sea `true` el
+  /// `redirect` del router no deja llegar a ninguna pantalla de la app
+  /// salvo el cambio obligatorio — la sesión existe, pero no opera.
+  ///
+  /// Nace de `Usuario.debeCambiarPassword` en el login (o al restaurar
+  /// "Recuérdame"), y se apaga en el momento en que el titular cambia su
+  /// contraseña, sin exigir un nuevo login.
+  final bool debeCambiarPassword;
+
+  SesionUsuario copyWith({bool? debeCambiarPassword}) => SesionUsuario(
+        usuarioId: usuarioId,
+        nombre: nombre,
+        nombreUsuario: nombreUsuario,
+        esMaestro: esMaestro,
+        permisos: permisos,
+        debeCambiarPassword: debeCambiarPassword ?? this.debeCambiarPassword,
+      );
 }

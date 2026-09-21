@@ -53,12 +53,24 @@ class ResumenNominaReportes {
     required this.totalGeneradoGlobal,
     required this.totalPagadoGlobal,
     required this.totalPendienteGlobal,
+    required this.empleadosDistintosEnPeriodo,
   });
 
   final List<NominaConTotales> nominas;
   final int totalGeneradoGlobal;
   final int totalPagadoGlobal;
   final int totalPendienteGlobal;
+
+  /// Cuántas personas DISTINTAS aparecen en las nóminas del periodo,
+  /// sin importar en cuántas de ellas salieron.
+  ///
+  /// No es lo mismo que la plantilla activa de hoy y no tiene por qué
+  /// coincidir: un renglón de nómina es una foto del momento en que se
+  /// generó, y alguien que estuvo en la quincena y se dio de baja
+  /// después sigue —correctamente— en esa nómina. Se expone para que la
+  /// pantalla pueda mostrar las dos cifras juntas en vez de dejar al
+  /// usuario adivinando por qué no cuadran.
+  final int empleadosDistintosEnPeriodo;
 }
 
 /// Compone `NominaRepository.listarEnRango`/`listarRenglonesEnRango`
@@ -127,11 +139,16 @@ class ObtenerResumenNominaUseCase {
       totalPendienteGlobal += pendiente;
     }
 
+    // Por `numeroEmpleado` y no por el id del renglón: la misma persona
+    // aparece una vez por nómina del periodo y aquí se cuenta una sola.
+    final empleadosDistintos = {for (final r in renglones) r.numeroEmpleado}.length;
+
     return ResumenNominaReportes(
       nominas: nominasConTotales,
       totalGeneradoGlobal: totalGeneradoGlobal,
       totalPagadoGlobal: totalPagadoGlobal,
       totalPendienteGlobal: totalPendienteGlobal,
+      empleadosDistintosEnPeriodo: empleadosDistintos,
     );
   }
 }

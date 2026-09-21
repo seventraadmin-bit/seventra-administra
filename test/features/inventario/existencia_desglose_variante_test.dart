@@ -21,6 +21,7 @@ import 'package:riseg_one/features/compras/domain/repositories/compra_repository
 import 'package:riseg_one/features/compras/domain/usecases/cancelar_compra_usecase.dart';
 import 'package:riseg_one/features/compras/domain/usecases/eliminar_compra_fisicamente_usecase.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -52,13 +53,14 @@ void main() {
     articuloRepo = ArticuloRepositoryImpl(db);
     inventarioRepo = InventarioRepositoryImpl(db);
     final egresoRepo = EgresoRepositoryImpl(db);
-    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+    final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
     registrarEntrada = RegistrarEntradaUseCase(inventarioRepo, articuloRepo);
     registrarBaja = RegistrarBajaUseCase(inventarioRepo, articuloRepo);
     registrarAjuste = RegistrarAjusteUseCase(inventarioRepo, articuloRepo);
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
     cancelarCompra = CancelarCompraUseCase(compraRepo);
     eliminarCompraFisicamente = EliminarCompraFisicamenteUseCase(compraRepo);
 
@@ -155,11 +157,11 @@ void main() {
     expect(await disponible(ch), 1);
     expect(await disponible(g), 10, reason: 'la Compra de CH no debe tocar G');
 
-    await cancelarCompra.ejecutar(compraId: compra.id, motivo: 'Prueba');
+    await cancelarCompra.ejecutar(compraId: compra.id, motivo: MotivoCancelacionCompra.compraDePrueba);
     expect(await disponible(ch), 0);
     expect(await disponible(g), 10, reason: 'cancelar la Compra de CH no debe tocar G');
 
-    await eliminarCompraFisicamente.ejecutar(compraId: compra.id, motivo: 'Limpieza');
+    await eliminarCompraFisicamente.ejecutar(compraId: compra.id, motivo: MotivoEliminacionFisicaCompra.registroDePrueba);
     expect(await disponible(ch), 0);
     expect(await disponible(g), 10, reason: 'eliminar físicamente la Compra de CH no debe tocar G');
     expect(await disponible(exg), 0);

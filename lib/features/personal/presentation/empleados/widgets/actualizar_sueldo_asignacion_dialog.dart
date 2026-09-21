@@ -137,12 +137,11 @@ Future<bool> mostrarDialogoActualizarSueldoAsignacion(
     },
   );
 
-  // Deferred — mismo criterio que `asignar_servicio_empleado_dialog.dart`.
-  unawaited(
-    Future.delayed(const Duration(milliseconds: 300), () {
-      sueldoController.dispose();
-      bonoController.dispose();
-    }),
-  );
+  // Liberar aquí es seguro: `RisegDialog.showForm` no devuelve
+  // hasta que la ruta del diálogo terminó de cerrarse (ver su
+  // documentación). Antes sí hacía falta aplazarlo 300 ms, y ese
+  // aplazamiento dejaba un Timer vivo después de desmontar el árbol.
+  sueldoController.dispose();
+  bonoController.dispose();
   return resultado ?? false;
 }

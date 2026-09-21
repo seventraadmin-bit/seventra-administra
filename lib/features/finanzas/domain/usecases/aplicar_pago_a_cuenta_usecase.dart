@@ -4,6 +4,7 @@ import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart';
 
 import '../repositories/cuenta_por_cobrar_repository.dart';
 import '../repositories/pago_repository.dart';
+import 'package:riseg_one/features/finanzas/domain/contraparte_cobro.dart';
 
 sealed class AplicarPagoACuentaResultado {}
 
@@ -23,6 +24,10 @@ class AplicarPagoACuentaCuentaNoExiste extends AplicarPagoACuentaResultado {}
 class AplicarPagoACuentaClienteNoCoincide extends AplicarPagoACuentaResultado {}
 
 class AplicarPagoACuentaCuentaYaPagada extends AplicarPagoACuentaResultado {}
+
+/// La CxC está `cancelada` (Etapa 7) — la obligación en sí fue
+/// anulada, nunca puede resucitarse aplicándole dinero de un Pago.
+class AplicarPagoACuentaCuentaCancelada extends AplicarPagoACuentaResultado {}
 
 class AplicarPagoACuentaMontoInvalido extends AplicarPagoACuentaResultado {}
 
@@ -85,11 +90,17 @@ class AplicarPagoACuentaUseCase {
     if (cuenta == null) {
       return AplicarPagoACuentaCuentaNoExiste();
     }
-    if (cuenta.clienteId != pago.clienteId) {
+    // "Misma contraparte", no "mismo clienteId": la regla vale igual
+    // para un Cliente y para un Servicio Eventual, y se compara por
+    // tipo + id en un solo lugar del proyecto.
+    if (contraparteDeCuenta(cuenta) != contraparteDePago(pago)) {
       return AplicarPagoACuentaClienteNoCoincide();
     }
     if (EstatusCuentaPorCobrar.values.byName(cuenta.estatus) == EstatusCuentaPorCobrar.pagada) {
       return AplicarPagoACuentaCuentaYaPagada();
+    }
+    if (EstatusCuentaPorCobrar.values.byName(cuenta.estatus) == EstatusCuentaPorCobrar.cancelada) {
+      return AplicarPagoACuentaCuentaCancelada();
     }
     if (monto > cuenta.saldoPendiente) {
       return AplicarPagoACuentaSobrepagoDeLaCuenta(cuenta.saldoPendiente);

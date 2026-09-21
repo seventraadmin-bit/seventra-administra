@@ -12,13 +12,19 @@ import '../../../../organizacion/organizacion_providers.dart';
 import '../../../finanzas_providers.dart';
 import '../../pagos/pagos_list_screen.dart' show formaPagoLabel;
 import '../ingresos_controller.dart';
+import 'ingreso_monto_utils.dart';
 
-/// Diálogo para corregir metadatos administrativos de un Ingreso
-/// (Etapa 4K.1) — nunca `monto` (mismo criterio que `Pago`).
+/// Diálogo para corregir un Ingreso MANUAL (Etapa 4K.1; `monto`
+/// agregado en la etapa "Ingresos y Egresos" — antes solo metadatos).
+/// Solo se abre para un Ingreso manual — uno automático (`pagoId !=
+/// null`) nunca llega aquí (`CorregirIngresoUseCase` lo bloquearía de
+/// todas formas, pero el botón que abre este diálogo ya está oculto en
+/// `IngresoDetalleDialog` para ese caso).
 ///
 /// Devuelve `true` si la corrección tuvo éxito.
 Future<bool> mostrarDialogoCorregirIngreso(BuildContext context, WidgetRef ref, IngresoData ingreso) async {
   final l10n = AppLocalizations.of(context)!;
+  final montoController = TextEditingController(text: (ingreso.monto / 100).toStringAsFixed(2));
   DateTime fechaSeleccionada = ingreso.fecha;
   final conceptoController = TextEditingController(text: ingreso.concepto);
   final observacionesController = TextEditingController(text: ingreso.observaciones ?? '');
@@ -28,12 +34,16 @@ Future<bool> mostrarDialogoCorregirIngreso(BuildContext context, WidgetRef ref, 
   String? servicioId = ingreso.servicioId;
   String? sucursalId = ingreso.sucursalId;
   String? areaId = ingreso.areaId;
+  String? cuentaFinancieraId = ingreso.cuentaFinancieraId;
   final motivoController = TextEditingController();
+  String? errorMonto;
+  String? errorMotivo;
 
   final categorias = await ref.read(categoriaFinancieraRepositoryProvider).listar(tipo: TipoCategoriaFinanciera.ingreso.name);
   final servicios = await ref.read(servicioRepositoryProvider).listar();
   final sucursales = await ref.read(sucursalRepositoryProvider).listarActivas();
   final areas = await ref.read(areaRepositoryProvider).listarActivas();
+  final cuentasFinancieras = await ref.read(cuentaFinancieraRepositoryProvider).listar(soloActivas: true);
 
   if (!context.mounted) return false;
 
@@ -48,6 +58,14 @@ Future<bool> mostrarDialogoCorregirIngreso(BuildContext context, WidgetRef ref, 
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            RisegTextField(
+              label: l10n.ingresoCampoMonto,
+              controller: montoController,
+              keyboardType: TextInputType.number,
+              errorText: errorMonto,
+              onChanged: (_) => setState(() => errorMonto = null),
+            ),
+            const SizedBox(height: AppSpacing.md),
             RisegDateField(
               label: l10n.ingresoCampoFecha,
               value: fechaSeleccionada,
@@ -107,22 +125,50 @@ Future<bool> mostrarDialogoCorregirIngreso(BuildContext context, WidgetRef ref, 
             const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.ingresoCampoCuentaCaja, controller: cuentaCajaController),
             const SizedBox(height: AppSpacing.md),
+            RisegSelect<String?>(
+              label: l10n.movimientoCampoCuentaFinanciera,
+              value: cuentaFinancieraId,
+              items: [
+                RisegSelectItem(value: null, label: l10n.ingresoCampoSinAsignar),
+                for (final c in cuentasFinancieras) RisegSelectItem(value: c.id, label: c.nombre),
+              ],
+              onChanged: (valor) => setState(() => cuentaFinancieraId = valor),
+            ),
+            const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.ingresoCampoObservaciones, controller: observacionesController),
             const SizedBox(height: AppSpacing.md),
-            RisegTextField(label: l10n.corregirIngresoCampoMotivo, controller: motivoController),
+            RisegTextField(
+              label: l10n.corregirIngresoCampoMotivo,
+              controller: motivoController,
+              errorText: errorMotivo,
+              onChanged: (_) => setState(() => errorMotivo = null),
+            ),
           ],
         );
       },
     ),
     onConfirm: () async {
+      final monto = centavosDesdeTexto(montoController.text);
+      if (monto == null || monto <= 0) {
+        errorMonto = l10n.ingresoErrorMontoInvalido;
+        return null;
+      }
+      if (motivoController.text.trim().isEmpty) {
+        errorMotivo = l10n.corregirIngresoErrorMotivoRequerido;
+        return null;
+      }
+
       final resultado = await ref.read(ingresosControllerProvider.notifier).corregir(
             ingresoId: ingreso.id,
+            monto: monto,
             fecha: fechaSeleccionada,
             categoriaFinancieraId: categoriaId,
             servicioId: servicioId,
             sucursalId: sucursalId,
             areaId: areaId,
             cuentaCaja: cuentaCajaController.text.trim().isEmpty ? null : cuentaCajaController.text.trim(),
+            cuentaFinancieraId: cuentaFinancieraId,
+            limpiarCuentaFinancieraId: cuentaFinancieraId == null,
             formaPago: formaSeleccionada.name,
             concepto: conceptoController.text.trim(),
             observaciones: observacionesController.text.trim().isEmpty ? null : observacionesController.text.trim(),
@@ -131,16 +177,27 @@ Future<bool> mostrarDialogoCorregirIngreso(BuildContext context, WidgetRef ref, 
 
       if (!context.mounted) return false;
 
-      if (resultado is CorregirIngresoExitoso) {
-        RisegFeedback.showSuccess(context, l10n.corregirIngresoExito);
-        return true;
+      switch (resultado) {
+        case CorregirIngresoExitoso():
+          RisegFeedback.showSuccess(context, l10n.corregirIngresoExito);
+          return true;
+        case CorregirIngresoCancelado():
+          RisegFeedback.showError(context, l10n.corregirIngresoErrorCancelado);
+          return false;
+        case CorregirIngresoPagoAutomatico():
+          RisegFeedback.showError(context, l10n.corregirIngresoErrorPagoAutomatico);
+          return false;
+        case CorregirIngresoMotivoRequerido():
+          errorMotivo = l10n.corregirIngresoErrorMotivoRequerido;
+          return null;
+        case CorregirIngresoMontoInvalido():
+          errorMonto = l10n.ingresoErrorMontoInvalido;
+          return null;
+        case CorregirIngresoNoExiste():
+        case CorregirIngresoErrorInesperado():
+          RisegFeedback.showError(context, l10n.corregirIngresoErrorInesperado);
+          return false;
       }
-      if (resultado is CorregirIngresoCancelado) {
-        RisegFeedback.showError(context, l10n.corregirIngresoErrorCancelado);
-        return false;
-      }
-      RisegFeedback.showError(context, l10n.corregirIngresoErrorInesperado);
-      return false;
     },
   );
 

@@ -1,16 +1,22 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:riseg_one/features/finanzas/data/repositories/cuenta_financiera_repository_impl.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/codigos/generar_numero_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/domain/repositories/egreso_repository.dart';
+import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/descuentos_personal/data/repositories/descuento_programado_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/repositories/nomina_repository_impl.dart';
+import 'package:riseg_one/features/tiempos_extra/data/repositories/tiempo_extra_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/repositories/pago_nomina_repository_impl.dart';
 import 'package:riseg_one/features/nomina/data/tables/nomina_table.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/adjuntar_comprobante_pago_nomina_usecase.dart';
@@ -69,14 +75,14 @@ void main() {
       ServicioComercialRepositoryImpl(db),
     );
 
-    nominaRepo = NominaRepositoryImpl(db);
+    nominaRepo = NominaRepositoryImpl(db, AsignacionRepositoryImpl(db), DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db)), TiempoExtraRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db), EmpleadoRepositoryImpl(db, AsignacionServicioRepositoryImpl(db)), ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db))), PagoNominaRepositoryImpl(db, EgresoRepositoryImpl(db), DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db))));
     final resolverSueldo = ResolverSueldoEmpleadoNomina(empleadoRepo, asignacionRepo, servicioRepo, catalogoRepo);
     generarNomina = GenerarNominaUseCase(nominaRepo, empleadoRepo, puestoRepo, catalogoRepo, resolverSueldo, generarCodigo);
     final evaluarRenglonesRequierenRevision = EvaluarRenglonesRequierenRevisionUseCase(nominaRepo, empleadoRepo, resolverSueldo);
     cerrarNomina = CerrarNominaUseCase(nominaRepo, evaluarRenglonesRequierenRevision);
 
-    pagoNominaRepo = PagoNominaRepositoryImpl(db, egresoRepo);
-    registrarPagoNomina = RegistrarPagoNominaUseCase(pagoNominaRepo, nominaRepo, generarCodigo);
+    pagoNominaRepo = PagoNominaRepositoryImpl(db, egresoRepo, DescuentoProgramadoRepositoryImpl(db, EgresoRepositoryImpl(db), CodigoSecuenciaService(db)));
+    registrarPagoNomina = RegistrarPagoNominaUseCase(pagoNominaRepo, nominaRepo, generarCodigo, CuentaFinancieraRepositoryImpl(db));
     cancelarPagoNomina = CancelarPagoNominaUseCase(pagoNominaRepo);
     corregirPagoNomina = CorregirPagoNominaUseCase(pagoNominaRepo);
     adjuntarComprobantePagoNomina = AdjuntarComprobantePagoNominaUseCase(pagoNominaRepo, AttachmentStorage(tempDir.path));
@@ -120,6 +126,177 @@ void main() {
     return (nomina: nomina, renglon: renglon);
   }
 
+  group('Integridad financiera: de dónde salió el dinero', () {
+    // Un pago de Nómina mueve dinero real. Sin cuenta, el Egreso nace
+    // sin origen y NINGÚN saldo baja: el sistema afirmaría que a los
+    // empleados se les pagó con dinero que no salió de ningún lado.
+    // Ése fue el hueco real que dejó PAGN-000005 / EGR-000071.
+    test('sin cuenta financiera se rechaza, y no queda NADA a medias', () async {
+      final ctx = await nominaCerradaDePrueba();
+      final egresosAntes = (await db.select(db.egreso).get()).length;
+
+      final resultado = await registrarPagoNomina.ejecutar(
+        nominaId: ctx.nomina.id,
+        fechaPago: DateTime(2026, 1, 20),
+        formaPago: 'transferencia',
+        // El texto administrativo NO sustituye a la cuenta estructural.
+        cuentaBancariaOrigen: 'BBVA 1234567890',
+        aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
+      );
+
+      expect(resultado, isA<RegistrarPagoNominaCuentaFinancieraRequerida>());
+      expect(await db.select(db.pagoNomina).get(), isEmpty, reason: '0 PagoNomina nuevos');
+      expect((await db.select(db.egreso).get()).length, egresosAntes, reason: '0 Egresos nuevos');
+      expect(await db.select(db.aplicacionPagoNomina).get(), isEmpty);
+      final renglon = (await nominaRepo.listarEmpleados(ctx.nomina.id)).single;
+      expect(renglon.estatusPago, isNot('pagado'), reason: 'ningún empleado quedó marcado como pagado');
+    });
+
+    test('una cuenta inexistente o desactivada también se rechaza', () async {
+      final ctx = await nominaCerradaDePrueba();
+
+      expect(
+        await registrarPagoNomina.ejecutar(
+          nominaId: ctx.nomina.id,
+          fechaPago: DateTime(2026, 1, 20),
+          formaPago: 'transferencia',
+          cuentaFinancieraId: 'no-existe',
+          aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: 100000)],
+        ),
+        isA<RegistrarPagoNominaCuentaFinancieraInvalida>(),
+      );
+
+      final archivada = await db.into(db.cuentaFinanciera).insertReturning(
+            CuentaFinancieraCompanion.insert(
+              codigo: 'CF-VIEJA',
+              nombre: 'Cuenta dada de baja',
+              tipo: 'banco',
+              saldoInicial: 0,
+              fechaSaldoInicial: DateTime(2020, 1, 1),
+              cicloVidaRegistro: const Value('archivado'),
+            ),
+          );
+      expect(
+        await registrarPagoNomina.ejecutar(
+          nominaId: ctx.nomina.id,
+          fechaPago: DateTime(2026, 1, 20),
+          formaPago: 'transferencia',
+          cuentaFinancieraId: archivada.id,
+          aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: 100000)],
+        ),
+        isA<RegistrarPagoNominaCuentaFinancieraInvalida>(),
+      );
+      expect(await db.select(db.pagoNomina).get(), isEmpty);
+    });
+
+    test('con cuenta válida el saldo baja exactamente el monto pagado, una sola vez', () async {
+      final ctx = await nominaCerradaDePrueba();
+      final cuentas = CuentaFinancieraRepositoryImpl(db);
+      final bbva = await db.into(db.cuentaFinanciera).insertReturning(
+            CuentaFinancieraCompanion.insert(
+              codigo: 'CF-BBVA',
+              nombre: 'BBVA Empresarial',
+              tipo: 'banco',
+              saldoInicial: 5000000,
+              fechaSaldoInicial: DateTime(2026, 1, 1),
+            ),
+          );
+
+      // Parcial primero: la cuenta pertenece al MOVIMIENTO, no a la
+      // Nómina ni al empleado.
+      await registrarPagoNomina.ejecutar(
+        nominaId: ctx.nomina.id,
+        fechaPago: DateTime(2026, 1, 20),
+        formaPago: 'transferencia',
+        cuentaFinancieraId: bbva.id,
+        aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: 200000)],
+      );
+      expect(await cuentas.calcularSaldo(bbva.id), 5000000 - 200000);
+      expect(await pagoNominaRepo.saldoPendientePago(ctx.renglon.id), ctx.renglon.totalAPagar - 200000);
+
+      // Y el resto desde OTRA cuenta: cada lote lleva la suya.
+      final banorte = await db.into(db.cuentaFinanciera).insertReturning(
+            CuentaFinancieraCompanion.insert(
+              codigo: 'CF-BANORTE',
+              nombre: 'Banorte',
+              tipo: 'banco',
+              saldoInicial: 3000000,
+              fechaSaldoInicial: DateTime(2026, 1, 1),
+            ),
+          );
+      final resto = ctx.renglon.totalAPagar - 200000;
+      await registrarPagoNomina.ejecutar(
+        nominaId: ctx.nomina.id,
+        fechaPago: DateTime(2026, 1, 25),
+        formaPago: 'transferencia',
+        cuentaFinancieraId: banorte.id,
+        aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: resto)],
+      );
+
+      expect(await cuentas.calcularSaldo(bbva.id), 5000000 - 200000, reason: 'BBVA no vuelve a moverse');
+      expect(await cuentas.calcularSaldo(banorte.id), 3000000 - resto);
+      expect(await db.select(db.egreso).get(), hasLength(2), reason: 'un Egreso por lote, nunca por empleado');
+    });
+
+    test('cancelar el pago devuelve el dinero a la cuenta, sin segundo gasto', () async {
+      final ctx = await nominaCerradaDePrueba();
+      final cuentas = CuentaFinancieraRepositoryImpl(db);
+      final bbva = await db.into(db.cuentaFinanciera).insertReturning(
+            CuentaFinancieraCompanion.insert(
+              codigo: 'CF-BBVA',
+              nombre: 'BBVA Empresarial',
+              tipo: 'banco',
+              saldoInicial: 5000000,
+              fechaSaldoInicial: DateTime(2026, 1, 1),
+            ),
+          );
+      final pago = (await registrarPagoNomina.ejecutar(
+        nominaId: ctx.nomina.id,
+        fechaPago: DateTime(2026, 1, 20),
+        formaPago: 'transferencia',
+        cuentaFinancieraId: bbva.id,
+        aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
+      )) as RegistrarPagoNominaExitoso;
+      expect(await cuentas.calcularSaldo(bbva.id), 5000000 - ctx.renglon.totalAPagar);
+
+      await cancelarPagoNomina.ejecutar(pagoNominaId: pago.pagoNomina.id, motivo: 'Error de captura');
+
+      expect(await cuentas.calcularSaldo(bbva.id), 5000000, reason: 'el importe deja de afectar la cuenta');
+      expect(await db.select(db.egreso).get(), hasLength(1), reason: 'no se crea un segundo gasto');
+      final renglon = (await nominaRepo.listarEmpleados(ctx.nomina.id)).single;
+      expect(renglon.estatusPago, isNot('pagado'));
+    });
+
+    test('un PagoNomina legacy sin cuenta sigue siendo legible', () async {
+      // Lo que quedó en la base real: el pago y su Egreso existen, y no
+      // se tocan. La obligatoriedad rige para lo NUEVO.
+      final ctx = await nominaCerradaDePrueba();
+      final egreso = await egresoRepo.crear(
+        folioEgreso: 'EGR-LEGACY',
+        monto: 1175000,
+        fecha: DateTime(2026, 9, 20),
+        formaPago: 'transferencia',
+        concepto: 'Pago de Nómina legacy',
+      );
+      final legacy = await db.into(db.pagoNomina).insertReturning(
+            PagoNominaCompanion.insert(
+              folioPagoNomina: 'PAGN-LEGACY',
+              nominaId: ctx.nomina.id,
+              egresoId: Value(egreso.id),
+              montoTotal: 1175000,
+              fechaPago: DateTime(2026, 9, 20),
+              formaPago: 'transferencia',
+            ),
+          );
+
+      final leido = await pagoNominaRepo.obtenerPorId(legacy.id);
+      expect(leido, isNotNull);
+      expect(leido!.montoTotal, 1175000);
+      expect((await egresoRepo.obtenerPorId(egreso.id))!.cuentaFinancieraId, isNull,
+          reason: 'se conserva tal cual, sin inventarle una cuenta');
+    });
+  });
+
   group('RegistrarPagoNominaUseCase', () {
     test('registra un pago que cubre por completo un renglón: genera el Egreso automático y marca el renglón pagado', () async {
       final ctx = await nominaCerradaDePrueba();
@@ -128,6 +305,7 @@ void main() {
         nominaId: ctx.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
       );
 
@@ -161,6 +339,7 @@ void main() {
         nominaId: generado.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [
           (nominaEmpleadoId: r1.id, monto: r1.totalAPagar),
           (nominaEmpleadoId: r2.id, monto: r2.totalAPagar),
@@ -186,6 +365,7 @@ void main() {
         nominaId: ctx.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'efectivo',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: mitad)],
       );
       expect(primerPago, isA<RegistrarPagoNominaExitoso>());
@@ -202,6 +382,7 @@ void main() {
         nominaId: ctx.nomina.id,
         fechaPago: DateTime(2026, 1, 25),
         formaPago: 'efectivo',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: saldoRestante)],
       );
       expect(segundoPago, isA<RegistrarPagoNominaExitoso>());
@@ -219,6 +400,7 @@ void main() {
         nominaId: ctx.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar + 1)],
       );
 
@@ -235,6 +417,7 @@ void main() {
         nominaId: generado.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: renglon.id, monto: renglon.totalAPagar)],
       );
 
@@ -253,6 +436,7 @@ void main() {
         nominaId: ctxA.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: renglonB.id, monto: renglonB.totalAPagar)],
       );
 
@@ -263,16 +447,27 @@ void main() {
       final ctx = await nominaCerradaDePrueba();
       // Distribución Fiscal/No fiscal ya poblada en ambos lados — sigue
       // siendo un único renglón, un único total a pagar.
-      await nominaRepo.actualizarDistribucion(
+      await nominaRepo.actualizarRenglon(
         nominaEmpleadoId: ctx.renglon.id,
-        montoFiscal: ctx.renglon.totalAPagar ~/ 2,
-        montoNoFiscal: ctx.renglon.totalAPagar - ctx.renglon.totalAPagar ~/ 2,
+        prestamo: ctx.renglon.prestamo,
+        tiempoExtra: ctx.renglon.tiempoExtra,
+        bono: ctx.renglon.bono,
+        bonoModificadoManualmente: ctx.renglon.bonoModificadoManualmente,
+        faltas: ctx.renglon.faltas,
+        otrosDescuentos: ctx.renglon.otrosDescuentos,
+        observaciones: ctx.renglon.observaciones,
+        distribucionManual: (
+          montoFiscal: ctx.renglon.totalAPagar ~/ 2,
+          montoNoFiscal: ctx.renglon.totalAPagar - ctx.renglon.totalAPagar ~/ 2,
+        ),
+        tipoEvento: 'movimientoModificado',
       );
 
       final resultado = await registrarPagoNomina.ejecutar(
         nominaId: ctx.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
       );
 
@@ -290,6 +485,7 @@ void main() {
         nominaId: ctx.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
       )) as RegistrarPagoNominaExitoso;
 
@@ -312,6 +508,7 @@ void main() {
         nominaId: ctx.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
       )) as RegistrarPagoNominaExitoso;
       await cancelarPagoNomina.ejecutar(pagoNominaId: registrado.pagoNomina.id, motivo: 'primer motivo');
@@ -328,6 +525,7 @@ void main() {
         nominaId: ctx.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
       )) as RegistrarPagoNominaExitoso;
 
@@ -351,6 +549,7 @@ void main() {
         nominaId: ctx.nomina.id,
         fechaPago: DateTime(2026, 1, 20),
         formaPago: 'transferencia',
+        cuentaFinancieraId: await _cuentaDePrueba(db),
         aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
       )) as RegistrarPagoNominaExitoso;
 
@@ -367,4 +566,80 @@ void main() {
       expect(resultado, isA<AdjuntarComprobantePagoNominaExitoso>());
     });
   });
+
+  group('Política de saldo (v91) — Nómina', () {
+    Future<String> cuentaCon(int saldo) async {
+      final cuenta = await db.into(db.cuentaFinanciera).insertReturning(
+            CuentaFinancieraCompanion.insert(
+              codigo: 'CTA-ACOTADA',
+              nombre: 'Cuenta acotada',
+              tipo: 'banco',
+              saldoInicial: saldo,
+              fechaSaldoInicial: DateTime(2026, 1, 1),
+            ),
+          );
+      return cuenta.id;
+    }
+
+    test('A) con saldo suficiente: el pago se registra', () async {
+      final ctx = await nominaCerradaDePrueba();
+      final cuenta = await cuentaCon(ctx.renglon.totalAPagar);
+      final resultado = await registrarPagoNomina.ejecutar(
+        nominaId: ctx.nomina.id,
+        fechaPago: DateTime(2026, 1, 20),
+        formaPago: 'transferencia',
+        cuentaFinancieraId: cuenta,
+        aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
+      );
+      expect(resultado, isA<RegistrarPagoNominaExitoso>());
+    });
+
+    test('B y C) sin saldo: resultado tipado y CERO persistencia parcial', () async {
+      final ctx = await nominaCerradaDePrueba();
+      final cuenta = await cuentaCon(ctx.renglon.totalAPagar - 1);
+
+      final resultado = await registrarPagoNomina.ejecutar(
+        nominaId: ctx.nomina.id,
+        fechaPago: DateTime(2026, 1, 20),
+        formaPago: 'transferencia',
+        cuentaFinancieraId: cuenta,
+        aplicaciones: [(nominaEmpleadoId: ctx.renglon.id, monto: ctx.renglon.totalAPagar)],
+      );
+
+      expect(resultado, isA<RegistrarPagoNominaSaldoInsuficiente>());
+      final detalle = (resultado as RegistrarPagoNominaSaldoInsuficiente).detalle;
+      expect(detalle.disponible, ctx.renglon.totalAPagar - 1);
+      expect(detalle.requerido, ctx.renglon.totalAPagar);
+      expect(detalle.faltante, 1, reason: 'un centavo basta para rechazar');
+
+      expect(await db.select(db.pagoNomina).get(), isEmpty, reason: 'ni el PagoNomina');
+      expect(await db.select(db.egreso).get(), isEmpty, reason: 'ni el Egreso');
+      expect(await db.select(db.egresoFuente).get(), isEmpty, reason: 'ni su fuente');
+      expect(await db.select(db.aplicacionPagoNomina).get(), isEmpty, reason: 'ni una sola aplicación');
+    });
+  });
+}
+
+/// La cuenta de origen de los pagos de Nómina en esta prueba.
+///
+/// Reutiliza la primera que el archivo ya haya creado; sólo inventa una
+/// si no hay ninguna. Desde la Etapa de integridad financiera, un pago
+/// de Nómina con monto > 0 exige cuenta: sin ella el Egreso nacería sin
+/// origen y ningún saldo bajaría.
+Future<String> _cuentaDePrueba(AppDatabase db) async {
+  final existentes = await db.select(db.cuentaFinanciera).get();
+  if (existentes.isNotEmpty) return existentes.first.id;
+  final cuenta = await db.into(db.cuentaFinanciera).insertReturning(
+        CuentaFinancieraCompanion.insert(
+          codigo: 'CF-NOMINA-PRUEBA',
+          nombre: 'Cuenta de prueba',
+          tipo: 'banco',
+          // Fondeada de sobra: desde la v91 una salida sin saldo se
+          // rechaza, y estas pruebas no van de eso.
+          saldoInicial: 100000000,
+          fechaSaldoInicial: DateTime(2020, 1, 1),
+        ),
+      );
+  return cuenta.id;
+
 }

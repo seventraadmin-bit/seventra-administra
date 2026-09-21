@@ -6,7 +6,7 @@ import 'calcular_importe_proporcional_usecase.dart' show redondearCentavos;
 /// específicamente IVA 16%"). Un cambio de tasa (ej. zona fronteriza al
 /// 8%) requeriría una nueva vigencia del modelo comercial, no un
 /// parámetro aquí.
-const _tasaIvaMasIva = 0.16;
+const tasaIvaMasIva = 0.16;
 
 /// Los tres montos esperados para control comercial/cobranza —
 /// deliberadamente NUNCA para timbrar ni emitir un CFDI (eso lo hace un
@@ -56,8 +56,27 @@ TotalesEsperados calcularTotalesEsperados({
         totalEsperado: baseAjustada,
       ),
     TratamientoIva.masIva => () {
-        final iva = redondearCentavos(baseAjustada * _tasaIvaMasIva);
+        final iva = redondearCentavos(baseAjustada * tasaIvaMasIva);
         return TotalesEsperados(base: baseAjustada, ivaEsperado: iva, totalEsperado: baseAjustada + iva);
       }(),
   };
+}
+
+/// Separa un total que YA trae el IVA dentro — la operación inversa de
+/// `masIva`, con la misma tasa y el mismo redondeo.
+///
+/// **No cambia la semántica global**: `calcularTotalesEsperados` sigue
+/// devolviendo `ivaEsperado: 0` para `ivaIncluido`, y ningún consumidor
+/// existente ve una diferencia. Esta función se agregó para el
+/// requerimiento real de Servicios Eventuales (schemaVersion 89), que sí
+/// necesita mostrarle al usuario cuánto de lo que va a cobrar es IVA
+/// antes de guardar. Vive aquí, junto a la tasa, para que nadie vuelva
+/// a escribir 0.16 en otro archivo.
+///
+/// `base = total / 1.16`, e `iva = total - base` — nunca
+/// `base * 0.16` por separado: así `base + iva == total` SIEMPRE, sin
+/// que el redondeo pueda dejar un centavo huérfano.
+TotalesEsperados desglosarIvaIncluido(int totalCentavos) {
+  final base = redondearCentavos(totalCentavos / (1 + tasaIvaMasIva));
+  return TotalesEsperados(base: base, ivaEsperado: totalCentavos - base, totalEsperado: totalCentavos);
 }

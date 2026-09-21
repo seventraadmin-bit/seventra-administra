@@ -33,6 +33,34 @@ abstract interface class VehiculoDocumentoRepository {
     String? observaciones,
   });
 
+  /// Corrige un documento YA registrado (schemaVersion 80) — es lo
+  /// contrario de renovar: renovar crea una fila nueva porque el
+  /// documento cambió en la realidad; corregir arregla lo que se
+  /// capturó mal (un folio con un dígito de mas, una fecha invertida)
+  /// sobre la MISMA fila, para no inventar una vigencia que nunca
+  /// existió.
+  ///
+  /// Escritura cruda, sin validaciones ni auditoría: el motivo y el
+  /// evento en el historial del vehículo los impone
+  /// `CorregirDocumentoVehiculoUseCase`. Solo se escriben los campos
+  /// no nulos; `limpiarNumeroFolio`/`limpiarFechaEmision`/
+  /// `limpiarFechaVencimiento`/`limpiarObservaciones` existen porque
+  /// "dejarlo vacío" y "no tocarlo" son cosas distintas y `null` no
+  /// puede significar las dos.
+  Future<VehiculoDocumentoData> corregir({
+    required String vehiculoDocumentoId,
+    String? tipo,
+    String? tipoOtroDescripcion,
+    String? numeroFolio,
+    bool limpiarNumeroFolio = false,
+    DateTime? fechaEmision,
+    bool limpiarFechaEmision = false,
+    DateTime? fechaVencimiento,
+    bool limpiarFechaVencimiento = false,
+    String? observaciones,
+    bool limpiarObservaciones = false,
+  });
+
   /// Adjunta un archivo al documento — inserta `Attachment` +
   /// `VehiculoDocumentoAttachment`, una transacción. Permite varios
   /// adjuntos por documento (ver el doc comment de

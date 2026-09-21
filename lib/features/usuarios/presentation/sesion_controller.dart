@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../domain/sesion_usuario.dart';
+import '../domain/usecases/cambiar_contrasena_usuario_usecase.dart';
 import '../domain/usecases/login_usecase.dart';
 import '../usuarios_providers.dart';
 
@@ -50,10 +51,36 @@ class SesionController extends _$SesionController {
   /// `RestaurarSesionRecordadaUseCase` lo descarte por su cuenta en un
   /// arranque futuro (mismo criterio de invalidación que ya existe) —
   /// nunca un usuario que no puede cerrar sesión.
+  ///
+  /// **Limpieza de datos de la sesión anterior** (Etapa "Usuarios,
+  /// permisos y UX de seguridad"): NO enumera providers a invalidar, y es correcto que no lo haga:
+  /// este controller es el ÚNICO `keepAlive` del proyecto. Todos los
+  /// controllers de módulo son `autoDispose`, y `/login` vive fuera del
+  /// `StatefulShellRoute`, así que navegar allí desmonta el shell
+  /// entero y con él sus ramas y sus controllers. Una lista explícita
+  /// aquí se desactualizaría en cuanto naciera un módulo nuevo —
+  /// exactamente la clase de fuga que se quiere evitar.
+  ///
+  /// Lo que sí garantiza que no se vea nada ajeno es el `redirect` del
+  /// router: sin sesión manda a `/login` ANTES de construir cualquier
+  /// pantalla, y con sesión nueva vuelve a evaluar permisos por ruta.
+  /// `SesionRestauradaTest`/`autorizacion_transversal_test` fijan ese
+  /// comportamiento.
   void logout() {
     final usuarioId = state?.usuarioId;
     state = null;
     unawaited(_limpiarSesionRecordada(usuarioId));
+  }
+
+  /// El titular ya cumplió el cambio obligatorio (Etapa "Usuarios,
+  /// permisos y UX de seguridad") — se apaga el candado en la sesión
+  /// viva, sin obligar a un nuevo login. La fila de `Usuario` ya quedó
+  /// actualizada en la misma transacción del cambio; esto solo
+  /// sincroniza el estado en memoria que lee el `redirect`.
+  void marcarContrasenaActualizada() {
+    final actual = state;
+    if (actual == null || !actual.debeCambiarPassword) return;
+    state = actual.copyWith(debeCambiarPassword: false);
   }
 
   Future<void> _limpiarSesionRecordada(String? usuarioId) async {
@@ -65,3 +92,31 @@ class SesionController extends _$SesionController {
     }
   }
 }
+
+/// Cambiar la PROPIA contraseña — deliberadamente SIN `autorizarUseCase`
+/// (Etapa "Usuarios, permisos y UX de seguridad").
+///
+/// Cambiar la contraseña de la cuenta con la que uno ya inició sesión no
+/// es administrar usuarios: es autoservicio, y exigir
+/// `usuarios.resetearPassword` (la facultad de resetear la de OTRA
+/// persona) dejaría a cualquier usuario Normal sin poder cambiar la
+/// suya. La autorización aquí es la sesión misma: solo puede afectar al
+/// `usuarioId` que está autenticado, nunca a otro.
+final cambiarMiContrasenaProvider = Provider<Future<CambiarContrasenaUsuarioResultado> Function(String)>((ref) {
+  return (String password) async {
+    final sesion = ref.read(sesionControllerProvider);
+    if (sesion == null) return CambiarContrasenaUsuarioNoExiste();
+    final resultado = await ref.read(cambiarMiContrasenaUseCaseProvider).ejecutar(
+          usuarioId: sesion.usuarioId,
+          password: password,
+          // El actor es el titular: se cambió su propia contraseña.
+          actorUsuarioId: sesion.usuarioId,
+          // Nadie más la conoce: esto ES cumplir el cambio obligatorio,
+          // no crear uno nuevo.
+        );
+    if (resultado is CambiarContrasenaUsuarioExitoso) {
+      ref.read(sesionControllerProvider.notifier).marcarContrasenaActualizada();
+    }
+    return resultado;
+  };
+});

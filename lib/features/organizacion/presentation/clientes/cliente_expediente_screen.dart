@@ -23,15 +23,21 @@ import 'package:riseg_one/features/organizacion/domain/usecases/guardar_entidad_
 import 'package:riseg_one/features/organizacion/presentation/shared/direccion_controllers.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
+import '../../organizacion_providers.dart';
+import 'cliente_comercial_resumen.dart';
 import 'cliente_expediente_controller.dart';
 import 'cliente_expediente_form_controllers.dart';
 import 'cliente_expediente_state.dart';
 import 'widgets/client_portales_section.dart';
 import 'widgets/cliente_datos_generales_section.dart';
+import 'widgets/cliente_ficha_header.dart';
+import 'widgets/cliente_indicadores_comerciales.dart';
+import 'widgets/cliente_servicios_section.dart';
 import 'widgets/contactos_section.dart';
 import 'widgets/direccion_referencia_section.dart';
 import 'widgets/entidades_fiscales_section.dart';
 import 'widgets/eliminar_cliente_fisicamente_dialog.dart';
+import 'widgets/logo_cliente_dialog.dart';
 
 /// Pantalla de expediente de Cliente comercial — mismo patrón consulta/
 /// edición que Puesto/Sucursal; se apila (`push`) sobre el listado, así
@@ -90,7 +96,19 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       direccionReferencia: _direccionReferencia.capturar(),
     );
 
-    final exito = await _notifier.guardar(input);
+    // Corregir los datos comerciales de un Cliente exige explicar por
+    // qué: el motivo se pide antes de persistir nada.
+    final motivo = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.clienteGuardarMotivoTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.clienteCambiarEstatusBotonGuardar,
+      cancelarLabel: l10n.clienteCambiarEstatusBotonCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivo == null) return;
+
+    final exito = await _notifier.guardar(input, motivo: motivo);
     if (!mounted) return;
 
     final estadoActual = ref.read(clienteExpedienteControllerProvider(widget.clienteId));
@@ -110,6 +128,84 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
     if (eliminado && mounted) context.pop();
   }
 
+  /// Cabecera de identidad comercial (Etapa 16, ficha comercial) —
+  /// `FutureBuilder` propio: es un único detalle (no una lista de
+  /// muchas filas), así que la consulta de un solo Attachment aquí no
+  /// es el mismo riesgo de N+1 que en un listado.
+  Widget _seccionFicha(
+    BuildContext context,
+    AppLocalizations l10n,
+    ClienteData cliente,
+    Widget estatusBadge,
+    String? razonSocial,
+    String? rfc,
+    bool esEdicion,
+    bool esMaestro,
+    EstatusCliente estatusActual,
+    bool cambiandoEstatus,
+  ) {
+    return FutureBuilder<AttachmentData?>(
+      future: cliente.logoAttachmentId == null
+          ? Future.value(null)
+          : ref.read(attachmentRepositoryProvider).obtenerPorId(cliente.logoAttachmentId!),
+      builder: (context, snapshot) {
+        return ClienteFichaHeader(
+          cliente: cliente,
+          logoPath: snapshot.data?.path,
+          razonSocial: razonSocial,
+          rfc: rfc,
+          estatusBadge: estatusBadge,
+          acciones: esEdicion
+              ? null
+              : Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    RisegButton(
+                      key: const Key('cliente_boton_editar_logo'),
+                      label: l10n.clienteLogoBotonEditar,
+                      variant: RisegButtonVariant.ghost,
+                      size: RisegButtonSize.compact,
+                      onPressed: () async {
+                        final cambio = await mostrarDialogoLogoCliente(context, ref, cliente);
+                        if (cambio) _notifier.reintentarCarga();
+                      },
+                    ),
+                    RisegButton(
+                      key: const Key('cliente_boton_cambiar_estatus'),
+                      label: l10n.clienteBotonCambiarEstatus,
+                      variant: RisegButtonVariant.secondary,
+                      size: RisegButtonSize.compact,
+                      loading: cambiandoEstatus,
+                      onPressed: () => _mostrarDialogoCambiarEstatus(estatusActual),
+                    ),
+                    RisegButton(
+                      key: const Key('cliente_expediente_boton_editar'),
+                      label: l10n.clienteExpedienteBotonEditar,
+                      size: RisegButtonSize.compact,
+                      onPressed: () => _iniciarEdicion(cliente, ref.read(clienteExpedienteControllerProvider(widget.clienteId)).datos?.direccionReferencia),
+                    ),
+                    if (esMaestro)
+                      RisegActionsMenu(
+                        menuKey: const Key('cliente_menu_acciones'),
+                        actions: [
+                          RisegMenuAction(
+                            key: const Key('cliente_accion_eliminar_fisicamente'),
+                            label: l10n.eliminacionFisicaAccionMenu,
+                            icon: Icons.delete_forever_outlined,
+                            destructive: true,
+                            onTap: _eliminarFisicamente,
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
   Future<void> _mostrarDialogoCambiarEstatus(EstatusCliente actual) async {
     final l10n = AppLocalizations.of(context)!;
     var nuevo = actual;
@@ -123,14 +219,26 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
         estatusInicial: actual,
         onCambio: (valor) => nuevo = valor,
       ),
-      onConfirm: () async {
-        if (nuevo == actual) return true;
-        return _notifier.cambiarEstatus(nuevo);
-      },
+      onConfirm: () async => true,
     );
 
     if (!mounted || confirmado != true) return;
     if (nuevo == actual) return;
+
+    // Cambiar el estatus comercial de un Cliente es una decisión que
+    // tiene que poder explicarse después: el motivo se pide SIEMPRE,
+    // con el diálogo común de motivo, y viaja a la bitácora.
+    final motivo = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.clienteCambiarEstatusTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.clienteCambiarEstatusBotonGuardar,
+      cancelarLabel: l10n.clienteCambiarEstatusBotonCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivo == null) return;
+    await _notifier.cambiarEstatus(nuevo, motivo: motivo);
+    if (!mounted) return;
 
     final estadoActual = ref.read(clienteExpedienteControllerProvider(widget.clienteId));
     if (estadoActual.datos?.cliente.estatus == nuevo.name) {
@@ -151,7 +259,7 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       esPrincipal: contactoExistente?.esPrincipal ?? false,
     );
 
-    final resultado = await RisegDialog.showForm<GuardarContactoResultado>(
+    final confirmadoContacto = await RisegDialog.showForm<bool>(
       context: context,
       title: contactoExistente == null
           ? l10n.clienteContactoDialogoTituloAlta
@@ -162,13 +270,27 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
         contactoInicial: contactoExistente,
         onCambio: (nuevo) => borrador = nuevo,
       ),
-      onConfirm: () async {
-        if (contactoExistente == null) {
-          return _notifier.agregarContacto(borrador);
-        }
-        return _notifier.actualizarContacto(contactoExistente.id, borrador);
-      },
+      onConfirm: () async => true,
     );
+
+    if (!mounted || confirmadoContacto != true) return;
+
+    final GuardarContactoResultado resultado;
+    if (contactoExistente == null) {
+      // Alta: sin motivo, no hay nada que justificar todavía.
+      resultado = await _notifier.agregarContacto(borrador);
+    } else {
+      final motivo = await mostrarDialogoMotivo(
+        context,
+        titulo: l10n.clienteContactoMotivoTitulo,
+        etiquetaMotivo: l10n.auditoriaCampoMotivo,
+        confirmarLabel: l10n.clienteContactoDialogoBotonGuardar,
+        cancelarLabel: l10n.clienteContactoDialogoBotonCancelar,
+        errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+      );
+      if (!mounted || motivo == null) return;
+      resultado = await _notifier.actualizarContacto(contactoExistente.id, borrador, motivo: motivo);
+    }
 
     if (!mounted) return;
 
@@ -176,10 +298,9 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       case GuardarContactoExitoso():
         RisegFeedback.showSuccess(context, l10n.clienteContactoGuardadoExito);
       case GuardarContactoErroresValidacion():
+      case GuardarContactoMotivoRequerido():
       case GuardarContactoErrorInesperado():
         RisegFeedback.showError(context, l10n.clienteContactoGuardadoError);
-      case null:
-        break;
     }
   }
 
@@ -193,9 +314,19 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       cancelLabel: l10n.sucursalConfirmarCancelar,
       destructive: true,
     );
-    if (confirmado != true) return;
+    if (!mounted || confirmado != true) return;
 
-    final exito = await _notifier.archivarContacto(contacto.id);
+    final motivoArchivo = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.clienteContactoMotivoArchivoTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.sucursalConfirmarAceptar,
+      cancelarLabel: l10n.sucursalConfirmarCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivoArchivo == null) return;
+
+    final exito = await _notifier.archivarContacto(contacto.id, motivo: motivoArchivo);
     if (!mounted) return;
     if (exito) {
       RisegFeedback.showSuccess(context, l10n.clienteContactoArchivadoExito);
@@ -216,6 +347,9 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
         correo: contacto.correo,
         esPrincipal: true,
       ),
+      // Marcar principal es un cambio de rol dentro del Cliente, no una
+      // corrección de datos: el motivo lo pone la propia acción.
+      motivo: l10n.clienteContactoMotivoPrincipal,
     );
     if (!mounted) return;
     if (resultado is GuardarContactoExitoso) {
@@ -232,7 +366,7 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       rfc: entidadExistente?.rfc ?? '',
     );
 
-    final resultado = await RisegDialog.showForm<GuardarEntidadFiscalResultado>(
+    final confirmado = await RisegDialog.showForm<bool>(
       context: context,
       title: entidadExistente == null
           ? l10n.entidadFiscalDialogoTituloAlta
@@ -243,14 +377,28 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
         entidadInicial: entidadExistente,
         onCambio: (nuevo) => borrador = nuevo,
       ),
-      onConfirm: () async {
-        if (entidadExistente == null) {
-          return _notifier.agregarEntidadFiscal(borrador);
-        }
-        return _notifier.actualizarEntidadFiscal(entidadExistente.id, borrador);
-      },
+      onConfirm: () async => true,
     );
 
+    if (!mounted || confirmado != true) return;
+
+    final GuardarEntidadFiscalResultado? resultado;
+    if (entidadExistente == null) {
+      // Un alta no lleva motivo: no hay nada que justificar todavía.
+      resultado = await _notifier.agregarEntidadFiscal(borrador);
+    } else {
+      // Una corrección sí: RFC y razón social son datos fiscales.
+      final motivo = await mostrarDialogoMotivo(
+        context,
+        titulo: l10n.entidadFiscalMotivoTitulo,
+        etiquetaMotivo: l10n.auditoriaCampoMotivo,
+        confirmarLabel: l10n.entidadFiscalDialogoBotonGuardar,
+        cancelarLabel: l10n.entidadFiscalDialogoBotonCancelar,
+        errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+      );
+      if (!mounted || motivo == null) return;
+      resultado = await _notifier.actualizarEntidadFiscal(entidadExistente.id, borrador, motivo: motivo);
+    }
     if (!mounted) return;
 
     switch (resultado) {
@@ -261,6 +409,8 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
         RisegFeedback.showError(context, l10n.entidadFiscalGuardadoError);
       case GuardarEntidadFiscalArchivada():
         RisegFeedback.showError(context, l10n.entidadFiscalArchivadaNoEditable);
+      case GuardarEntidadFiscalMotivoRequerido():
+        RisegFeedback.showError(context, l10n.auditoriaErrorMotivoRequerido);
       case null:
         break;
     }
@@ -321,9 +471,23 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       cancelLabel: l10n.sucursalConfirmarCancelar,
       destructive: true,
     );
-    if (confirmado != true) return;
+    if (!mounted || confirmado != true) return;
 
-    final exito = await _notifier.cambiarCicloVidaEntidadFiscal(entidad.id, CicloVidaRegistro.archivado);
+    final motivo = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.entidadFiscalConfirmarArchivarTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.sucursalConfirmarAceptar,
+      cancelarLabel: l10n.sucursalConfirmarCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivo == null) return;
+
+    final exito = await _notifier.cambiarCicloVidaEntidadFiscal(
+      entidad.id,
+      CicloVidaRegistro.archivado,
+      motivo: motivo,
+    );
     if (!mounted) return;
     if (exito) {
       RisegFeedback.showSuccess(context, l10n.entidadFiscalCicloVidaCambiadoExito);
@@ -341,9 +505,23 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       confirmLabel: l10n.sucursalConfirmarAceptar,
       cancelLabel: l10n.sucursalConfirmarCancelar,
     );
-    if (confirmado != true) return;
+    if (!mounted || confirmado != true) return;
 
-    final exito = await _notifier.cambiarCicloVidaEntidadFiscal(entidad.id, CicloVidaRegistro.activo);
+    final motivo = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.entidadFiscalConfirmarReactivarTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.sucursalConfirmarAceptar,
+      cancelarLabel: l10n.sucursalConfirmarCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivo == null) return;
+
+    final exito = await _notifier.cambiarCicloVidaEntidadFiscal(
+      entidad.id,
+      CicloVidaRegistro.activo,
+      motivo: motivo,
+    );
     if (!mounted) return;
     if (exito) {
       RisegFeedback.showSuccess(context, l10n.entidadFiscalCicloVidaCambiadoExito);
@@ -362,7 +540,7 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       observaciones: portalExistente?.observaciones,
     );
 
-    final resultado = await RisegDialog.showForm<GuardarClientePortalResultado>(
+    final confirmadoPortal = await RisegDialog.showForm<bool>(
       context: context,
       title: portalExistente == null ? l10n.clientePortalDialogoTituloAlta : l10n.clientePortalDialogoTituloEdicion,
       confirmLabel: l10n.clientePortalDialogoBotonGuardar,
@@ -371,13 +549,27 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
         portalInicial: portalExistente,
         onCambio: (nuevo) => borrador = nuevo,
       ),
-      onConfirm: () async {
-        if (portalExistente == null) {
-          return _notifier.agregarClientePortal(borrador);
-        }
-        return _notifier.actualizarClientePortal(portalExistente.id, borrador);
-      },
+      onConfirm: () async => true,
     );
+
+    if (!mounted || confirmadoPortal != true) return;
+
+    final GuardarClientePortalResultado? resultado;
+    if (portalExistente == null) {
+      // Alta: sin motivo, no hay nada que justificar todavía.
+      resultado = await _notifier.agregarClientePortal(borrador);
+    } else {
+      final motivo = await mostrarDialogoMotivo(
+        context,
+        titulo: l10n.clientePortalMotivoTitulo,
+        etiquetaMotivo: l10n.auditoriaCampoMotivo,
+        confirmarLabel: l10n.clientePortalDialogoBotonGuardar,
+        cancelarLabel: l10n.clientePortalDialogoBotonCancelar,
+        errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+      );
+      if (!mounted || motivo == null) return;
+      resultado = await _notifier.actualizarClientePortal(portalExistente.id, borrador, motivo: motivo);
+    }
 
     if (!mounted) return;
 
@@ -385,6 +577,7 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       case GuardarClientePortalExitoso():
         RisegFeedback.showSuccess(context, l10n.clientePortalGuardadoExito);
       case GuardarClientePortalErroresValidacion():
+      case GuardarClientePortalMotivoRequerido():
       case GuardarClientePortalErrorInesperado():
         RisegFeedback.showError(context, l10n.clientePortalGuardadoError);
       case GuardarClientePortalArchivado():
@@ -404,9 +597,23 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       cancelLabel: l10n.sucursalConfirmarCancelar,
       destructive: true,
     );
-    if (confirmado != true) return;
+    if (!mounted || confirmado != true) return;
 
-    final exito = await _notifier.cambiarCicloVidaClientePortal(portal.id, CicloVidaRegistro.archivado);
+    final motivoArchivoPortal = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.clientePortalConfirmarArchivarTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.sucursalConfirmarAceptar,
+      cancelarLabel: l10n.sucursalConfirmarCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivoArchivoPortal == null) return;
+
+    final exito = await _notifier.cambiarCicloVidaClientePortal(
+      portal.id,
+      CicloVidaRegistro.archivado,
+      motivo: motivoArchivoPortal,
+    );
     if (!mounted) return;
     if (exito) {
       RisegFeedback.showSuccess(context, l10n.clientePortalCicloVidaCambiadoExito);
@@ -424,9 +631,23 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
       confirmLabel: l10n.sucursalConfirmarAceptar,
       cancelLabel: l10n.sucursalConfirmarCancelar,
     );
-    if (confirmado != true) return;
+    if (!mounted || confirmado != true) return;
 
-    final exito = await _notifier.cambiarCicloVidaClientePortal(portal.id, CicloVidaRegistro.activo);
+    final motivoReactivarPortal = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.clientePortalConfirmarReactivarTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.sucursalConfirmarAceptar,
+      cancelarLabel: l10n.sucursalConfirmarCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivoReactivarPortal == null) return;
+
+    final exito = await _notifier.cambiarCicloVidaClientePortal(
+      portal.id,
+      CicloVidaRegistro.activo,
+      motivo: motivoReactivarPortal,
+    );
     if (!mounted) return;
     if (exito) {
       RisegFeedback.showSuccess(context, l10n.clientePortalCicloVidaCambiadoExito);
@@ -473,6 +694,13 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
     final estatusActual = EstatusCliente.values.byName(cliente.estatus);
     final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
+    final entidadesActivas =
+        datos.entidadesFiscales.where((e) => e.entidadFiscal.cicloVidaRegistro == CicloVidaRegistro.activo.name).toList();
+    final razonSocialUnica = entidadesActivas.length == 1 ? entidadesActivas.first.entidadFiscal.razonSocial : null;
+    final rfcUnico = entidadesActivas.length == 1 ? entidadesActivas.first.entidadFiscal.rfc : null;
+
+    final resumenComercial = ref.watch(clienteComercialResumenProvider(widget.clienteId));
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Center(
@@ -482,7 +710,7 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               RisegSectionHeader(
-                title: l10n.clienteSeccionDatosGeneralesTitulo,
+                title: l10n.clienteExpedienteTitulo,
                 primaryAction: esEdicion
                     ? RisegButton(
                         key: const Key('cliente_expediente_boton_guardar'),
@@ -490,11 +718,7 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
                         loading: state.guardando,
                         onPressed: _guardar,
                       )
-                    : RisegButton(
-                        key: const Key('cliente_expediente_boton_editar'),
-                        label: l10n.clienteExpedienteBotonEditar,
-                        onPressed: () => _iniciarEdicion(cliente, datos.direccionReferencia),
-                      ),
+                    : null,
                 secondaryAction: esEdicion
                     ? RisegButton(
                         key: const Key('cliente_expediente_boton_cancelar'),
@@ -504,35 +728,27 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
                       )
                     : null,
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  RisegStatusBadge(label: _nombreEstatus(l10n, estatusActual), tone: _tonoEstatus(estatusActual)),
-                  RisegButton(
-                    key: const Key('cliente_boton_cambiar_estatus'),
-                    label: l10n.clienteBotonCambiarEstatus,
-                    variant: RisegButtonVariant.secondary,
-                    size: RisegButtonSize.compact,
-                    loading: state.cambiandoEstatus,
-                    onPressed: () => _mostrarDialogoCambiarEstatus(estatusActual),
-                  ),
-                  if (esMaestro && !esEdicion)
-                    RisegActionsMenu(
-                      menuKey: const Key('cliente_menu_acciones'),
-                      actions: [
-                        RisegMenuAction(
-                          key: const Key('cliente_accion_eliminar_fisicamente'),
-                          label: l10n.eliminacionFisicaAccionMenu,
-                          icon: Icons.delete_forever_outlined,
-                          destructive: true,
-                          onTap: _eliminarFisicamente,
-                        ),
-                      ],
-                    ),
-                ],
+              const SizedBox(height: AppSpacing.md),
+              _seccionFicha(
+                context,
+                l10n,
+                cliente,
+                RisegStatusBadge(label: _nombreEstatus(l10n, estatusActual), tone: _tonoEstatus(estatusActual)),
+                razonSocialUnica,
+                rfcUnico,
+                esEdicion,
+                esMaestro,
+                estatusActual,
+                state.cambiandoEstatus,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              resumenComercial.when(
+                data: (resumen) => ClienteIndicadoresComerciales(resumen: resumen),
+                loading: () => const SizedBox(
+                  height: 72,
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                ),
+                error: (_, _) => const SizedBox.shrink(),
               ),
               const SizedBox(height: AppSpacing.xl),
               RisegCard(
@@ -580,7 +796,19 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
               ),
               const SizedBox(height: AppSpacing.xl),
               RisegCard(
+                child: resumenComercial.when(
+                  data: (resumen) => ClienteServiciosSection(servicios: resumen.servicios),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+                  error: (_, _) => const ClienteServiciosSection(servicios: []),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              RisegCard(
                 child: _DatosCobranzaSection(
+                  clienteId: cliente.id,
                   contactos: datos.contactos,
                   portales: datos.portales,
                   deshabilitado: state.operandoClientePortal,
@@ -588,6 +816,7 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
                   onEditarPortal: (portal) => _mostrarDialogoClientePortal(portalExistente: portal),
                   onArchivarPortal: _archivarClientePortal,
                   onReactivarPortal: _reactivarClientePortal,
+                  documentosPendientes: resumenComercial.whenOrNull(data: (r) => r.documentosPendientes),
                 ),
               ),
             ],
@@ -665,6 +894,7 @@ class _CambiarEstatusFormState extends State<_CambiarEstatusForm> {
 /// Cliente (CRUD completo, mismo patrón que `EntidadesFiscalesSection`).
 class _DatosCobranzaSection extends StatelessWidget {
   const _DatosCobranzaSection({
+    required this.clienteId,
     required this.contactos,
     required this.portales,
     required this.deshabilitado,
@@ -672,8 +902,10 @@ class _DatosCobranzaSection extends StatelessWidget {
     required this.onEditarPortal,
     required this.onArchivarPortal,
     required this.onReactivarPortal,
+    this.documentosPendientes,
   });
 
+  final String clienteId;
   final List<ContactoData> contactos;
   final List<ClientePortalData> portales;
   final bool deshabilitado;
@@ -681,6 +913,12 @@ class _DatosCobranzaSection extends StatelessWidget {
   final ValueChanged<ClientePortalData> onEditarPortal;
   final ValueChanged<ClientePortalData> onArchivarPortal;
   final ValueChanged<ClientePortalData> onReactivarPortal;
+
+  /// Documentos por emitir de ESTE Cliente aún no resueltos
+  /// (`DocumentoPorEmitir.clienteId`) — `null` mientras
+  /// `clienteComercialResumenProvider` sigue cargando o falló; en ese
+  /// caso, se omite el renglón por completo (nunca un `0` engañoso).
+  final int? documentosPendientes;
 
   @override
   Widget build(BuildContext context) {
@@ -719,6 +957,51 @@ class _DatosCobranzaSection extends StatelessWidget {
           onEditar: onEditarPortal,
           onArchivar: onArchivarPortal,
           onReactivar: onReactivarPortal,
+        ),
+        if (documentosPendientes != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Text(l10n.clienteCobranzaDocumentosSubtitulo, style: AppTypography.label.copyWith(color: colors.textMuted)),
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.clienteCobranzaDocumentosPendientesCantidad(documentosPendientes!),
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+              ),
+              RisegButton(
+                key: const Key('cliente_boton_ver_agenda'),
+                label: l10n.clienteCobranzaBotonVerAgenda,
+                variant: RisegButtonVariant.ghost,
+                size: RisegButtonSize.compact,
+                onPressed: () => context.push('/comercial/agenda'),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        Text(l10n.clienteCobranzaFinanzasSubtitulo, style: AppTypography.label.copyWith(color: colors.textMuted)),
+        const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.xs,
+          children: [
+            RisegButton(
+              key: const Key('cliente_boton_ver_cuentas_por_cobrar'),
+              label: l10n.clienteCobranzaBotonVerCuentasPorCobrar,
+              variant: RisegButtonVariant.ghost,
+              size: RisegButtonSize.compact,
+              onPressed: () => context.push('/finanzas/cuentas-por-cobrar?clienteId=$clienteId'),
+            ),
+            RisegButton(
+              key: const Key('cliente_boton_ver_pagos'),
+              label: l10n.clienteCobranzaBotonVerPagos,
+              variant: RisegButtonVariant.ghost,
+              size: RisegButtonSize.compact,
+              onPressed: () => context.push('/finanzas/pagos?clienteId=$clienteId'),
+            ),
+          ],
         ),
       ],
     );

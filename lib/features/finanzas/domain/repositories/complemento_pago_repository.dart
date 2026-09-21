@@ -1,17 +1,28 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
 /// Complementos de pago (CFDI de Recepción de Pagos) registrados
-/// administrativamente (Etapa 4J.3) — relación **1:1 con `Pago`**
-/// (decisión definitiva de Marlon: "no quiero una relación N:M en
-/// esta etapa"). Nunca genera ni timbra nada — solo deja constancia de
-/// un complemento ya emitido externamente.
+/// administrativamente (Etapa 4J.3) — un Pago tiene **N Complementos
+/// históricos y a lo más UNO vigente** (schemaVersion 79). Nunca genera
+/// ni timbra nada: solo deja constancia de un complemento ya emitido
+/// externamente.
 abstract interface class ComplementoPagoRepository {
   Future<ComplementoPagoData?> obtenerPorId(String id);
 
-  /// `null` si ese Pago todavía no tiene Complemento registrado —
-  /// también la vía para hacer cumplir la relación 1:1 antes de
-  /// insertar (además del `UNIQUE` en base de datos).
-  Future<ComplementoPagoData?> obtenerPorPagoId(String pagoId);
+  /// El Complemento **vigente** (`estatus == 'registrado'`) de ese
+  /// Pago, o `null` si la obligación sigue pendiente — sea porque nunca
+  /// hubo uno, o porque el único que hubo se canceló.
+  ///
+  /// Es la consulta correcta para decidir "¿este Pago ya está
+  /// documentado?". El índice único parcial
+  /// `complemento_pago_vigente_por_pago` garantiza que devuelva a lo
+  /// más una fila. **Nunca** uses [listarPorPagoId] para esto: mezcla
+  /// cancelados.
+  Future<ComplementoPagoData?> obtenerVigentePorPagoId(String pagoId);
+
+  /// TODOS los Complementos de ese Pago, vigentes y cancelados, del más
+  /// reciente al más antiguo — el histórico completo. La fila cancelada
+  /// nunca se borra ni se reusa: es evidencia de un CFDI que existió.
+  Future<List<ComplementoPagoData>> listarPorPagoId(String pagoId);
 
   /// `null` si ese UUID no está registrado en ningún otro Complemento
   /// — usado para la validación de unicidad amigable (además del
@@ -30,8 +41,11 @@ abstract interface class ComplementoPagoRepository {
   Future<List<ComplementoPagoEventoData>> listarEventos(String complementoPagoId);
 
   /// Inserta el Complemento y registra el evento `registrado`. El
-  /// llamador (caso de uso) ya validó la relación 1:1, la unicidad del
-  /// UUID, el formato del UUID y `fechaTimbrado >= Pago.fechaPago`.
+  /// llamador (caso de uso) ya validó que no exista otro VIGENTE para
+  /// ese Pago, la unicidad y el formato del UUID, y
+  /// `fechaTimbrado >= Pago.fechaPago`. El índice único parcial es el
+  /// candado final: aunque un llamador se saltara la validación, la
+  /// base rechaza un segundo Complemento vigente.
   Future<ComplementoPagoData> crear({
     required String pagoId,
     required String uuid,

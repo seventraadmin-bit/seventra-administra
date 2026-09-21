@@ -406,6 +406,7 @@ void main() {
         servicioId: servicio.id,
         nuevo: EstatusServicio.terminado,
         fechaTerminoEfectiva: DateTime(2026, 6, 1),
+        motivo: 'Motivo de prueba',
       );
 
       final resultado = await crearConfiguracionCobro.ejecutar(
@@ -692,6 +693,7 @@ void main() {
           requiereComplemento: false,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CorregirConfiguracionCobroExitoso>());
@@ -736,6 +738,7 @@ void main() {
           requiereComplemento: false,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CorregirConfiguracionCobroTieneHistoria>());
@@ -783,6 +786,7 @@ void main() {
           requiereComplemento: false,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CorregirConfiguracionCobroTieneHistoria>());
@@ -800,6 +804,7 @@ void main() {
           requiereComplemento: false,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
       expect(resultado, isA<CorregirConfiguracionCobroNoExiste>());
     });

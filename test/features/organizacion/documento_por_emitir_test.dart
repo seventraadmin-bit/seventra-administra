@@ -22,8 +22,10 @@ import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart' show EstatusServicio;
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
@@ -103,6 +105,7 @@ void main() {
   late GenerarAgendaUseCase generarAgenda;
   late CrearDocumentoManualUseCase crearManual;
   late CambiarEstatusDocumentoPorEmitirUseCase cambiarEstatus;
+  late CambiarEstatusServicioUseCase cambiarEstatusServicio;
   late ActualizarAjusteManualDocumentoPorEmitirUseCase actualizarAjuste;
   late String puestoId;
 
@@ -134,8 +137,9 @@ void main() {
 
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
     generarAgenda = GenerarAgendaUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigo);
-    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigo);
+    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigo);
     cambiarEstatus = CambiarEstatusDocumentoPorEmitirUseCase(documentoRepo);
+    cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);
     actualizarAjuste = ActualizarAjusteManualDocumentoPorEmitirUseCase(documentoRepo);
 
     final puesto = await puestoRepo.crear(
@@ -203,19 +207,26 @@ void main() {
     int diaInicioPeriodo = 1,
     AgrupacionCobro agrupacion = AgrupacionCobro.porServicio,
     bool requiereComplemento = false,
+    // Sólo una configuración CFDI/PPD puede exigir Complemento (etapa
+    // "Complemento dependiente del Pago real"): el resto lo normaliza a
+    // `false` en el dominio.
+    TipoDocumentoCobro tipoDocumento = TipoDocumentoCobro.reciboDePago,
+    MetodoPagoCobro metodo = MetodoPagoCobro.noAplica,
+    String? entidadFiscalId,
     List<_ReglaLegacy> reglas = const [],
     DateTime? fechaInicioVigencia,
   }) async {
     final resultado = await crearConfiguracionCobro.ejecutar(
       servicioId: servicioId,
       borrador: ConfiguracionCobroBorrador(
-        tipoDocumento: TipoDocumentoCobro.reciboDePago,
+        tipoDocumento: tipoDocumento,
         frecuenciaId: SeedIds.frecuenciaCobroMensual,
         diaInicioPeriodo: diaInicioPeriodo,
         agrupacion: agrupacion,
-        metodo: MetodoPagoCobro.noAplica,
+        metodo: metodo,
         requiereComplemento: requiereComplemento,
         fechaInicioVigencia: fechaInicioVigencia ?? DateTime(2026, 1, 1),
+        entidadFiscalId: entidadFiscalId,
       ),
       etapas: _etapasDesdeReglas(reglas),
     );
@@ -556,13 +567,35 @@ void main() {
       await crearLineaDePrueba(servicioB.id, precioUnitario: 2000000);
       await crearConfiguracionCobroDePrueba(servicioB.id, agrupacion: AgrupacionCobro.porCliente, reglas: reglaEmisionDia1);
 
-      // Mismo Cliente y misma agrupación, pero requiereComplemento
-      // distinto — nunca se agrupa solo por compartir Cliente.
+      // Mismo Cliente y misma agrupación, pero condiciones fiscales
+      // distintas — nunca se agrupa solo por compartir Cliente.
+      //
+      // Etapa "Complemento dependiente del Pago real": antes esta
+      // configuración se diferenciaba con `requiereComplemento: true`
+      // sobre un recibo de pago (`metodo: noAplica`), combinación que
+      // el dominio ya no permite persistir — sólo PPD genera obligación
+      // de Complemento, y todo lo demás la normaliza a `false`. Se
+      // expresa ahora con una configuración PPD real (CFDI + Entidad
+      // fiscal + línea con IVA), que es la única forma legítima de que
+      // `requiereComplemento` difiera. La regla que prueba el caso no
+      // cambia: dos configuraciones con condiciones distintas no se
+      // agrupan.
       final servicioC = await crearServicioDePrueba(cliente.id, 'Servicio C');
-      await crearLineaDePrueba(servicioC.id, precioUnitario: 500000);
+      await crearLineaDePrueba(servicioC.id, precioUnitario: 500000, tratamientoIva: TratamientoIva.masIva);
+      final entidadC = await EntidadFiscalRepositoryImpl(db).crear(
+        EntidadFiscalCompanion.insert(
+          codigo: 'ENF-GRUPOX',
+          clienteId: cliente.id,
+          razonSocial: 'Grupo X SA de CV',
+          rfc: 'GRX260101AAA',
+        ),
+      );
       await crearConfiguracionCobroDePrueba(
         servicioC.id,
         agrupacion: AgrupacionCobro.porCliente,
+        tipoDocumento: TipoDocumentoCobro.cfdi,
+        metodo: MetodoPagoCobro.ppd,
+        entidadFiscalId: entidadC.id,
         requiereComplemento: true,
         reglas: reglaEmisionDia1,
       );
@@ -916,6 +949,281 @@ void main() {
         expect(hitos, hasLength(2), reason: 'nunca se inventa Validación/Procesamiento/Carga a portal');
         expect(hitos.map((h) => h.tipoSistema).toSet(), {'emision', 'pagoEsperado'});
         expect(hitos.every((h) => h.nombre == null), isTrue, reason: 'ambas son etapas de sistema, ninguna personalizada');
+      },
+    );
+  });
+
+  // Corrección Comercial/Agenda — caso real reportado: RESIDENCIAL
+  // MIRABILIA terminó el 31/08/2026 pero "Generar agenda" igual creó el
+  // periodo 01/09-30/09 ($35,000, emisión 15/09, Pendiente).
+  // `GenerarAgendaUseCase` obtenía el `Servicio` solo para su
+  // `clienteId`, sin comparar `fechaTermino`/`fechaInicio` contra el
+  // periodo candidato — ver el fix en `generar_agenda_usecase.dart`.
+  group('Corrección: vigencia temporal del Servicio en Generar agenda', () {
+    Future<String> crearConfiguracionMensualDia15(String servicioId, {int precioUnitario = 1000000}) async {
+      await crearLineaDePrueba(servicioId, precioUnitario: precioUnitario);
+      return crearConfiguracionCobroDePrueba(
+        servicioId,
+        diaInicioPeriodo: 1,
+        reglas: [
+          _ReglaLegacy(
+            tipoEvento: TipoEventoCobro.emision,
+            tipoRegla: TipoReglaEvento.diaFijoDelMes,
+            mesRelativo: MesRelativoCobro.actual,
+            diaDelMes: 15,
+          ),
+        ],
+      );
+    }
+
+    test(
+      'Mirabilia: Servicio terminado el 31/08/2026 (un día antes del inicio del periodo) — septiembre NO genera '
+      'documento (límite de fecha exacto)',
+      () async {
+        final cliente = await crearClienteDePrueba('Mirabilia');
+        final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia Mirabilia', fechaInicio: DateTime(2026, 1, 1));
+        await crearConfiguracionMensualDia15(servicio.id, precioUnitario: 3500000);
+
+        final terminado = await cambiarEstatusServicio.ejecutar(
+          servicioId: servicio.id,
+          nuevo: EstatusServicio.terminado,
+          fechaTerminoEfectiva: DateTime(2026, 8, 31),
+          motivo: 'Motivo de prueba',
+        );
+        expect(terminado, isA<CambiarEstatusServicioExitoso>());
+
+        final resultado = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 9, 1), rangoFin: DateTime(2026, 9, 30));
+
+        expect(resultado.creados, isEmpty, reason: 'un Servicio terminado el 31/08 no debe generar el periodo de septiembre');
+        expect(resultado.yaExistian, 0);
+        expect(await documentoRepo.listar(servicioId: servicio.id), isEmpty);
+      },
+    );
+
+    test('Servicio terminado varios meses antes del periodo candidato — NO genera', () async {
+      final cliente = await crearClienteDePrueba('Cliente Terminado Hace Meses');
+      final servicio = await crearServicioDePrueba(cliente.id, 'Servicio Antiguo', fechaInicio: DateTime(2026, 1, 1));
+      await crearConfiguracionMensualDia15(servicio.id);
+
+      final terminado = await cambiarEstatusServicio.ejecutar(
+        servicioId: servicio.id,
+        nuevo: EstatusServicio.terminado,
+        fechaTerminoEfectiva: DateTime(2026, 3, 31),
+        motivo: 'Motivo de prueba',
+      );
+      expect(terminado, isA<CambiarEstatusServicioExitoso>());
+
+      final resultado = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 8, 1), rangoFin: DateTime(2026, 8, 31));
+      expect(resultado.creados, isEmpty, reason: 'terminado en marzo, agosto no debe generar');
+    });
+
+    test('Servicio activo durante todo el periodo — sigue generando normalmente (control, sin regresión)', () async {
+      final cliente = await crearClienteDePrueba('Cliente Activo');
+      final servicio = await crearServicioDePrueba(cliente.id, 'Servicio Vigente', fechaInicio: DateTime(2026, 1, 1));
+      await crearConfiguracionMensualDia15(servicio.id);
+
+      final resultado = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 9, 1), rangoFin: DateTime(2026, 9, 30));
+      expect(resultado.creados, hasLength(1), reason: 'un Servicio sin terminar debe seguir generando exactamente igual que antes');
+    });
+
+    test(
+      'Servicio que inicia después del periodo candidato — NO genera (regla simétrica, Parte 6 del pedido)',
+      () async {
+        // `CrearConfiguracionCobroUseCase`/`CrearLineaComercialUseCase`
+        // ya validan que su propia vigencia no pueda empezar antes de
+        // `Servicio.fechaInicio` (confirmado al intentar construir este
+        // escenario con fechas distintas: ambos use cases lo rechazan)
+        // — la regla simétrica de la Parte 6 del pedido YA está
+        // garantizada por esos validadores en el camino real de
+        // creación; esta prueba solo la confirma end-to-end. El nuevo
+        // chequeo agregado en `GenerarAgendaUseCase` (`servicio.fechaInicio
+        // .isAfter(periodoFin)`) queda como defensa adicional, nunca
+        // alcanzable hoy por este camino, pero correcta si algún dato
+        // histórico llegara a tener fechas inconsistentes.
+        final cliente = await crearClienteDePrueba('Cliente Futuro');
+        final servicio = await crearServicioDePrueba(cliente.id, 'Servicio Futuro', fechaInicio: DateTime(2026, 12, 1));
+        await crearLineaDePrueba(servicio.id, fechaInicioVigencia: DateTime(2026, 12, 1));
+        await crearConfiguracionCobroDePrueba(
+          servicio.id,
+          diaInicioPeriodo: 1,
+          fechaInicioVigencia: DateTime(2026, 12, 1),
+          reglas: [
+            _ReglaLegacy(
+              tipoEvento: TipoEventoCobro.emision,
+              tipoRegla: TipoReglaEvento.diaFijoDelMes,
+              mesRelativo: MesRelativoCobro.actual,
+              diaDelMes: 15,
+            ),
+          ],
+        );
+
+        final resultado = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 9, 1), rangoFin: DateTime(2026, 9, 30));
+        expect(resultado.creados, isEmpty, reason: 'un Servicio que arranca en diciembre no debe generar el periodo de septiembre');
+      },
+    );
+
+    test('Terminar un Servicio no afecta documentos históricos generados durante su vigencia real', () async {
+      final cliente = await crearClienteDePrueba('Cliente Historico');
+      final servicio = await crearServicioDePrueba(cliente.id, 'Servicio Historico', fechaInicio: DateTime(2026, 1, 1));
+      await crearConfiguracionMensualDia15(servicio.id);
+
+      final resultadoAgosto = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 8, 1), rangoFin: DateTime(2026, 8, 31));
+      expect(resultadoAgosto.creados, hasLength(1), reason: 'agosto se genera mientras el Servicio todavía está vigente');
+      final documentoAgosto = resultadoAgosto.creados.single;
+
+      final terminado = await cambiarEstatusServicio.ejecutar(
+        servicioId: servicio.id,
+        nuevo: EstatusServicio.terminado,
+        fechaTerminoEfectiva: DateTime(2026, 8, 31),
+        motivo: 'Motivo de prueba',
+      );
+      expect(terminado, isA<CambiarEstatusServicioExitoso>());
+
+      final resultadoAmbos = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 8, 1), rangoFin: DateTime(2026, 9, 30));
+      expect(resultadoAmbos.creados, isEmpty, reason: 'agosto ya existía, septiembre nunca debe generarse');
+      expect(resultadoAmbos.yaExistian, 1, reason: 'el documento histórico de agosto se detecta como ya existente, nunca se duplica ni se toca');
+
+      final documentoTrasTerminar = await documentoRepo.obtenerPorId(documentoAgosto.id);
+      expect(documentoTrasTerminar, isNotNull, reason: 'terminar el Servicio nunca borra un documento histórico válido');
+      expect(
+        documentoTrasTerminar!.estatus,
+        EstatusDocumentoPorEmitir.pendiente.name,
+        reason: 'terminar el Servicio nunca cancela automáticamente un documento histórico',
+      );
+    });
+
+    test(
+      'Ejecutar Generar agenda dos veces con un Servicio terminado: septiembre nunca aparece, sin duplicar nada '
+      '(idempotencia)',
+      () async {
+        final cliente = await crearClienteDePrueba('Mirabilia');
+        final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia Mirabilia', fechaInicio: DateTime(2026, 1, 1));
+        await crearConfiguracionMensualDia15(servicio.id, precioUnitario: 3500000);
+        await cambiarEstatusServicio.ejecutar(
+          servicioId: servicio.id,
+          nuevo: EstatusServicio.terminado,
+          fechaTerminoEfectiva: DateTime(2026, 8, 31),
+          motivo: 'Motivo de prueba',
+        );
+
+        final primeraCorrida = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 9, 1), rangoFin: DateTime(2026, 9, 30));
+        final segundaCorrida = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 9, 1), rangoFin: DateTime(2026, 9, 30));
+
+        expect(primeraCorrida.creados, isEmpty);
+        expect(segundaCorrida.creados, isEmpty);
+        expect(primeraCorrida.yaExistian, 0);
+        expect(segundaCorrida.yaExistian, 0);
+        expect(
+          await documentoRepo.listar(servicioId: servicio.id),
+          isEmpty,
+          reason: 'ninguna corrida, ni repetida, debe crear el documento de septiembre para un Servicio terminado en agosto',
+        );
+      },
+    );
+
+    test(
+      'Un documento inválido (generado antes de esta corrección) cancelado manualmente no se recrea ni se '
+      'reactiva al volver a generar la agenda',
+      () async {
+        final cliente = await crearClienteDePrueba('Mirabilia');
+        final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia Mirabilia', fechaInicio: DateTime(2026, 1, 1));
+        await crearConfiguracionMensualDia15(servicio.id, precioUnitario: 3500000);
+
+        // Reproduce el estado real con el que se encontró el bug: el
+        // documento de septiembre ya se había generado ANTES de
+        // terminar el Servicio (o antes de que existiera esta
+        // corrección) — el escenario reportado en producción.
+        final resultadoPrevio = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 9, 1), rangoFin: DateTime(2026, 9, 30));
+        expect(resultadoPrevio.creados, hasLength(1));
+        final documentoIncorrecto = resultadoPrevio.creados.single;
+
+        await cambiarEstatusServicio.ejecutar(
+          servicioId: servicio.id,
+          nuevo: EstatusServicio.terminado,
+          fechaTerminoEfectiva: DateTime(2026, 8, 31),
+          motivo: 'Motivo de prueba',
+        );
+
+        // Remediación vía el flujo YA EXISTENTE (Parte 4 del pedido):
+        // cancelar manualmente desde el detalle de Agenda — nunca un
+        // borrado/cancelación automática.
+        final cancelado = await cambiarEstatus.ejecutar(
+          documentoPorEmitirId: documentoIncorrecto.id,
+          nuevo: EstatusDocumentoPorEmitir.cancelado,
+          motivo: 'Servicio terminado antes de este periodo',
+        );
+        expect(cancelado, isA<CambiarEstatusDocumentoPorEmitirExitoso>());
+
+        final resultadoTrasCancelar = await generarAgenda.ejecutar(rangoInicio: DateTime(2026, 9, 1), rangoFin: DateTime(2026, 9, 30));
+        expect(resultadoTrasCancelar.creados, isEmpty);
+        expect(
+          resultadoTrasCancelar.yaExistian,
+          0,
+          reason: 'con el Servicio ya terminado, ni siquiera se llega a construir el candidato para comparar generationKey',
+        );
+
+        final documentoTrasRegenerar = await documentoRepo.obtenerPorId(documentoIncorrecto.id);
+        expect(
+          documentoTrasRegenerar!.estatus,
+          EstatusDocumentoPorEmitir.cancelado.name,
+          reason: 'sigue cancelado — Generar agenda nunca reactiva un documento cancelado',
+        );
+      },
+    );
+
+    // Parte 8 del pedido (revisión transversal): la creación MANUAL
+    // (`CrearDocumentoManualUseCase`) tenía el mismo defecto — el
+    // diálogo `agenda_crear_manual_dialog.dart` lista TODOS los
+    // Servicios del Cliente sin filtrar por estatus/vigencia, y el use
+    // case nunca validaba el periodo capturado a mano contra la
+    // vigencia real del Servicio.
+    test('Creación manual: un periodo posterior a la terminación del Servicio se rechaza', () async {
+      final cliente = await crearClienteDePrueba('Mirabilia');
+      final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia Mirabilia', fechaInicio: DateTime(2026, 1, 1));
+      await crearConfiguracionMensualDia15(servicio.id, precioUnitario: 3500000);
+      await cambiarEstatusServicio.ejecutar(
+        servicioId: servicio.id,
+        nuevo: EstatusServicio.terminado,
+        fechaTerminoEfectiva: DateTime(2026, 8, 31),
+        motivo: 'Motivo de prueba',
+      );
+
+      final resultado = await crearManual.ejecutar(
+        clienteId: cliente.id,
+        servicioIds: [servicio.id],
+        periodoInicio: DateTime(2026, 9, 1),
+        periodoFin: DateTime(2026, 9, 30),
+      );
+
+      expect(resultado, isA<CrearDocumentoManualServicioFueraDeVigencia>());
+      expect(await documentoRepo.listar(servicioId: servicio.id), isEmpty);
+    });
+
+    test(
+      'Creación manual: un periodo HISTÓRICO real (durante el cual el Servicio estuvo vigente) sigue funcionando '
+      'tras terminarlo — no se restringe de más',
+      () async {
+        final cliente = await crearClienteDePrueba('Mirabilia');
+        final servicio = await crearServicioDePrueba(cliente.id, 'Vigilancia Mirabilia', fechaInicio: DateTime(2026, 1, 1));
+        await crearConfiguracionMensualDia15(servicio.id, precioUnitario: 3500000);
+        await cambiarEstatusServicio.ejecutar(
+          servicioId: servicio.id,
+          nuevo: EstatusServicio.terminado,
+          fechaTerminoEfectiva: DateTime(2026, 8, 31),
+          motivo: 'Motivo de prueba',
+        );
+
+        // Agosto: el Servicio SÍ estuvo vigente todo el mes (terminó el
+        // último día) — la creación manual para ese periodo histórico
+        // debe seguir funcionando exactamente igual que antes.
+        final resultado = await crearManual.ejecutar(
+          clienteId: cliente.id,
+          servicioIds: [servicio.id],
+          periodoInicio: DateTime(2026, 8, 1),
+          periodoFin: DateTime(2026, 8, 31),
+        );
+
+        expect(resultado, isA<CrearDocumentoManualExitoso>());
       },
     );
   });

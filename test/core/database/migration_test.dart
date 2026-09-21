@@ -11,7 +11,7 @@
 // reales" en este archivo es `SchemaVerifier.schemaAt(N)` + `INSERT`
 // manual de una fila representativa (ver los tests "... conserva una
 // fila real" de más abajo), nunca un `.sqlite` de esa carpeta.
-import 'package:drift/drift.dart' show OrderingTerm, Value;
+import 'package:drift/drift.dart' show Migrator, OrderingTerm, Value;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,6 +19,14 @@ import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/migrations/migrar_cuenta_por_cobrar_v14.dart';
+import 'package:riseg_one/core/database/migrations/migrar_correccion_cuenta_por_cobrar_v74.dart';
+import 'package:riseg_one/core/database/migrations/migrar_egreso_origen_tarjeta_v76.dart';
+import 'package:riseg_one/core/database/migrations/migrar_correccion_pago_deuda_v77.dart';
+import 'package:riseg_one/core/database/migrations/migrar_conciliacion_baja_v83.dart';
+import 'package:riseg_one/core/database/migrations/migrar_pendiente_recuperacion_v82.dart';
+import 'package:riseg_one/core/database/migrations/migrar_telefonia_trazabilidad_v81.dart';
+import 'package:riseg_one/core/database/migrations/migrar_vehiculos_origen_financiero_v80.dart';
+import 'package:riseg_one/core/database/migrations/migrar_permisos_granulares_v71.dart';
 import 'package:riseg_one/core/database/seed/seed_data.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/security/credential_cipher.dart';
@@ -31,6 +39,8 @@ import 'package:riseg_one/features/inventario/data/repositories/inventario_repos
 import 'package:riseg_one/features/inventario/domain/usecases/corregir_identidad_unidad_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/regularizar_articulo_serializado_usecase.dart';
 
+import 'package:riseg_one/features/tiempos_extra/data/tables/tiempo_extra_table.dart';
+import 'package:riseg_one/core/database/migrations/migrar_trazabilidad_comercial_v84.dart';
 import '../../generated_migrations/schema.dart';
 
 /// `AppDatabase.schemaVersion` actual — único lugar que hay que tocar
@@ -44,7 +54,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 52;
+const _currentSchemaVersion = 91;
 
 /// `AlmacenClaveCifrado` en memoria — la migración a `schemaVersion` 52
 /// cifra contraseñas de portal legadas con `CredentialCipher`, y el
@@ -194,7 +204,15 @@ void main() {
       expect(areas, hasLength(6));
 
       final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(codigosSecuencia, hasLength(21));
+      expect(
+        codigosSecuencia,
+        hasLength(30), // +1: folio TRF de transferencias (v91)
+        reason:
+            'incluye las 2 sembradas en 57 (descuentoProgramadoPrestamo/Botas), la de 60 (entrega), la de 61 '
+            '(deuda), la de 63 (cuenta_financiera), la de 65 (tiempoExtra), la de 83 '
+            '(descuentoProgramadoResguardo, obligaciones nacidas de una conciliación de baja) y la de 87 '
+            '(servicioEventual, folios EVT)',
+      );
 
       await db.close();
     },
@@ -756,7 +774,7 @@ void main() {
     ''');
 
     final db = AppDatabase(schemaOrigen.newConnection());
-    await verifier.migrateAndValidate(db, 5);
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
     final direcciones = await db.select(db.direccion).get();
     expect(
@@ -836,7 +854,7 @@ void main() {
     ''');
 
       final db = AppDatabase(schemaV4.newConnection());
-      await verifier.migrateAndValidate(db, 5);
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final codigoEntidadFiscal =
           await (db.select(db.codigoSecuencia)
@@ -881,7 +899,7 @@ void main() {
     () async {
       final schemaV4 = await verifier.schemaAt(4);
       final db = AppDatabase(schemaV4.newConnection());
-      await verifier.migrateAndValidate(db, 5);
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       expect(
         () => db.customStatement('''
@@ -905,7 +923,7 @@ void main() {
     () async {
       final schemaV4 = await verifier.schemaAt(4);
       final db = AppDatabase(schemaV4.newConnection());
-      await verifier.migrateAndValidate(db, 5);
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final cliente = await db
           .into(db.cliente)
@@ -948,7 +966,7 @@ void main() {
     () async {
       final schemaV4 = await verifier.schemaAt(4);
       final db = AppDatabase(schemaV4.newConnection());
-      await verifier.migrateAndValidate(db, 5);
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final cliente = await db
           .into(db.cliente)
@@ -1807,7 +1825,7 @@ void main() {
   );
 
   test(
-    'migración 1 → versión actual siembra las 7 modalidades de turno confirmadas',
+    'migración 1 → versión actual siembra las 8 modalidades de turno confirmadas',
     () async {
       final schemaV1 = await verifier.schemaAt(1);
       schemaV1.rawDatabase.execute('''
@@ -1827,6 +1845,7 @@ void main() {
         'DIURNO',
         'MIXTO',
         'PERSONALIZADO',
+        '12X24',
       });
 
       await db.close();
@@ -1873,7 +1892,7 @@ void main() {
       final lineas = await db.select(db.servicioLineaComercial).get();
       expect(lineas, isEmpty);
       final modalidades = await db.select(db.tipoModalidadTurno).get();
-      expect(modalidades, hasLength(7));
+      expect(modalidades, hasLength(8));
 
       final violacionesFk =
           await db.customSelect('PRAGMA foreign_key_check').get();
@@ -2502,68 +2521,71 @@ void main() {
     },
   );
 
-  test('acepta una etapa de cobro válida tras la migración (Etapa 15)', () async {
-    final schemaV8 = await verifier.schemaAt(8);
-    final db = AppDatabase(schemaV8.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+  test(
+    'acepta una etapa de cobro válida tras la migración (Etapa 15)',
+    () async {
+      final schemaV8 = await verifier.schemaAt(8);
+      final db = AppDatabase(schemaV8.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-    final cliente = await db
-        .into(db.cliente)
-        .insertReturning(
-          ClienteCompanion.insert(
-            codigo: 'CLI-000001',
-            nombreComercial: 'Sportium',
-          ),
-        );
-    final servicio = await db
-        .into(db.servicio)
-        .insertReturning(
-          ServicioCompanion.insert(
-            codigo: 'SER-000001',
-            clienteId: cliente.id,
-            nombre: 'Vigilancia Sportium Toluca',
-            tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
-            fechaInicio: DateTime(2026, 1, 1),
-          ),
-        );
-    final configuracion = await db
-        .into(db.configuracionCobro)
-        .insertReturning(
-          ConfiguracionCobroCompanion.insert(servicioId: servicio.id),
-        );
-    final vigencia = await db
-        .into(db.configuracionCobroVigencia)
-        .insertReturning(
-          ConfiguracionCobroVigenciaCompanion.insert(
-            configuracionCobroId: configuracion.id,
-            tipoDocumento: 'cfdi',
-            frecuenciaId: SeedIds.frecuenciaCobroMensual,
-            diaInicioPeriodo: 21,
-            agrupacion: 'porEntidadFiscal',
-            metodo: 'ppd',
-            requiereComplemento: const Value(true),
-            fechaInicioVigencia: DateTime(2026, 1, 21),
-          ),
-        );
+      final cliente = await db
+          .into(db.cliente)
+          .insertReturning(
+            ClienteCompanion.insert(
+              codigo: 'CLI-000001',
+              nombreComercial: 'Sportium',
+            ),
+          );
+      final servicio = await db
+          .into(db.servicio)
+          .insertReturning(
+            ServicioCompanion.insert(
+              codigo: 'SER-000001',
+              clienteId: cliente.id,
+              nombre: 'Vigilancia Sportium Toluca',
+              tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
+              fechaInicio: DateTime(2026, 1, 1),
+            ),
+          );
+      final configuracion = await db
+          .into(db.configuracionCobro)
+          .insertReturning(
+            ConfiguracionCobroCompanion.insert(servicioId: servicio.id),
+          );
+      final vigencia = await db
+          .into(db.configuracionCobroVigencia)
+          .insertReturning(
+            ConfiguracionCobroVigenciaCompanion.insert(
+              configuracionCobroId: configuracion.id,
+              tipoDocumento: 'cfdi',
+              frecuenciaId: SeedIds.frecuenciaCobroMensual,
+              diaInicioPeriodo: 21,
+              agrupacion: 'porEntidadFiscal',
+              metodo: 'ppd',
+              requiereComplemento: const Value(true),
+              fechaInicioVigencia: DateTime(2026, 1, 21),
+            ),
+          );
 
-    final etapa = await db
-        .into(db.configuracionCobroEtapa)
-        .insertReturning(
-          ConfiguracionCobroEtapaCompanion.insert(
-            id: 'etapa-emision-real',
-            configuracionCobroVigenciaId: vigencia.id,
-            tipoSistema: const Value('emision'),
-            orden: 0,
-            tipoRegla: const Value('diaFijoDelMes'),
-            mesRelativo: const Value('siguiente'),
-            diaDelMes: const Value(21),
-          ),
-        );
-    expect(etapa.tipoSistema, 'emision');
-    expect(etapa.diaDelMes, 21);
+      final etapa = await db
+          .into(db.configuracionCobroEtapa)
+          .insertReturning(
+            ConfiguracionCobroEtapaCompanion.insert(
+              id: 'etapa-emision-real',
+              configuracionCobroVigenciaId: vigencia.id,
+              tipoSistema: const Value('emision'),
+              orden: 0,
+              tipoRegla: const Value('diaFijoDelMes'),
+              mesRelativo: const Value('siguiente'),
+              diaDelMes: const Value(21),
+            ),
+          );
+      expect(etapa.tipoSistema, 'emision');
+      expect(etapa.diaDelMes, 21);
 
-    await db.close();
-  });
+      await db.close();
+    },
+  );
 
   test(
     'rechaza dos etapas de cobro con el mismo tipoSistema en la misma vigencia tras la migración (Etapa 15)',
@@ -3504,14 +3526,17 @@ void main() {
       final cliente = await db
           .into(db.cliente)
           .insertReturning(
-            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+            ClienteCompanion.insert(
+              codigo: 'CLI-000001',
+              nombreComercial: 'Sportium',
+            ),
           );
       final pagoA = await db
           .into(db.pago)
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000001',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 100000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'efectivo',
@@ -3522,7 +3547,7 @@ void main() {
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000002',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 100000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'efectivo',
@@ -3540,12 +3565,24 @@ void main() {
               sizeBytes: 100,
             ),
           );
-      await db.into(db.pagoAttachment).insert(PagoAttachmentCompanion.insert(attachmentId: adjunto.id, pagoId: pagoA.id));
+      await db
+          .into(db.pagoAttachment)
+          .insert(
+            PagoAttachmentCompanion.insert(
+              attachmentId: adjunto.id,
+              pagoId: pagoA.id,
+            ),
+          );
 
       expect(
         () => db
             .into(db.pagoAttachment)
-            .insert(PagoAttachmentCompanion.insert(attachmentId: adjunto.id, pagoId: pagoB.id)),
+            .insert(
+              PagoAttachmentCompanion.insert(
+                attachmentId: adjunto.id,
+                pagoId: pagoB.id,
+              ),
+            ),
         throwsA(anything),
       );
 
@@ -3864,8 +3901,8 @@ void main() {
           .into(db.cuentaPorCobrar)
           .insert(
             CuentaPorCobrarCompanion.insert(
-              documentoPorEmitirId: documento.id,
-              clienteId: cliente.id,
+              documentoPorEmitirId: Value(documento.id),
+              clienteId: Value(cliente.id),
               tipoDocumento: 'reciboDePago',
               metodo: 'noAplica',
               fechaEmisionReal: DateTime(2026, 1, 5),
@@ -3880,8 +3917,8 @@ void main() {
             .into(db.cuentaPorCobrar)
             .insert(
               CuentaPorCobrarCompanion.insert(
-                documentoPorEmitirId: documento.id,
-                clienteId: cliente.id,
+                documentoPorEmitirId: Value(documento.id),
+                clienteId: Value(cliente.id),
                 tipoDocumento: 'reciboDePago',
                 metodo: 'noAplica',
                 fechaEmisionReal: DateTime(2026, 1, 5),
@@ -4140,7 +4177,7 @@ void main() {
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000001',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 500000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'transferencia',
@@ -4162,7 +4199,12 @@ void main() {
           );
       await db
           .into(db.pagoAttachment)
-          .insert(PagoAttachmentCompanion.insert(attachmentId: adjunto.id, pagoId: pago.id));
+          .insert(
+            PagoAttachmentCompanion.insert(
+              attachmentId: adjunto.id,
+              pagoId: pago.id,
+            ),
+          );
 
       expect(adjunto.categoria, 'comprobante');
 
@@ -4211,7 +4253,7 @@ void main() {
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000001',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 500000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'transferencia',
@@ -4455,7 +4497,7 @@ void main() {
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000001',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 500000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'transferencia',
@@ -4488,7 +4530,10 @@ void main() {
       await db
           .into(db.complementoPagoAttachment)
           .insert(
-            ComplementoPagoAttachmentCompanion.insert(attachmentId: adjunto.id, complementoPagoId: complemento.id),
+            ComplementoPagoAttachmentCompanion.insert(
+              attachmentId: adjunto.id,
+              complementoPagoId: complemento.id,
+            ),
           );
 
       expect(complemento.estatus, 'registrado');
@@ -4541,7 +4586,7 @@ void main() {
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000001',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 500000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'transferencia',
@@ -4596,7 +4641,7 @@ void main() {
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000001',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 500000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'transferencia',
@@ -4607,7 +4652,7 @@ void main() {
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000002',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 500000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'transferencia',
@@ -4656,7 +4701,13 @@ void main() {
 
       expect(
         tablas,
-        containsAll(<String>['categoria_financiera', 'ingreso', 'ingreso_evento', 'egreso', 'egreso_evento']),
+        containsAll(<String>[
+          'categoria_financiera',
+          'ingreso',
+          'ingreso_evento',
+          'egreso',
+          'egreso_evento',
+        ]),
       );
 
       final sqlIngreso =
@@ -4668,7 +4719,9 @@ void main() {
               as String;
       expect(
         sqlIngreso,
-        contains('"pago_id" TEXT NULL UNIQUE REFERENCES pago (id) ON DELETE RESTRICT'),
+        contains(
+          '"pago_id" TEXT NULL UNIQUE REFERENCES pago (id) ON DELETE RESTRICT',
+        ),
       );
       expect(sqlIngreso, contains('"folio_ingreso" TEXT NOT NULL UNIQUE'));
       expect(sqlIngreso, contains('CHECK (monto > 0)'));
@@ -4756,15 +4809,26 @@ void main() {
       );
 
       final ingresos = await db.select(db.ingreso).get();
-      expect(ingresos, isEmpty, reason: 'Ingreso es tabla nueva en 4K.1, sin backfill automático del Pago existente');
+      expect(
+        ingresos,
+        isEmpty,
+        reason:
+            'Ingreso es tabla nueva en 4K.1, sin backfill automático del Pago existente',
+      );
 
       final egresos = await db.select(db.egreso).get();
       expect(egresos, isEmpty);
 
       final categorias = await db.select(db.categoriaFinanciera).get();
-      expect(categorias, isEmpty, reason: 'el catálogo de CategoriaFinanciera nace vacío (Resolución de Marlon)');
+      expect(
+        categorias,
+        isEmpty,
+        reason:
+            'el catálogo de CategoriaFinanciera nace vacío (Resolución de Marlon)',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
@@ -4814,7 +4878,8 @@ void main() {
       expect(empresaAttachments, hasLength(1));
       expect(empresaAttachments.single.attachmentId, attachments.single.id);
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(
         violacionesFk,
         isEmpty,
@@ -4844,14 +4909,17 @@ void main() {
       final cliente = await db
           .into(db.cliente)
           .insertReturning(
-            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+            ClienteCompanion.insert(
+              codigo: 'CLI-000001',
+              nombreComercial: 'Sportium',
+            ),
           );
       final pago = await db
           .into(db.pago)
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000001',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 500000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'transferencia',
@@ -4885,7 +4953,12 @@ void main() {
           );
       await db
           .into(db.ingresoAttachment)
-          .insert(IngresoAttachmentCompanion.insert(attachmentId: adjunto.id, ingresoId: ingreso.id));
+          .insert(
+            IngresoAttachmentCompanion.insert(
+              attachmentId: adjunto.id,
+              ingresoId: ingreso.id,
+            ),
+          );
 
       expect(ingreso.estatus, 'registrado');
 
@@ -4893,15 +4966,13 @@ void main() {
     },
   );
 
-  test(
-    'rechaza un Ingreso con Pago inexistente tras la migración',
-    () async {
-      final schemaV1 = await verifier.schemaAt(1);
-      final db = AppDatabase(schemaV1.newConnection());
-      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+  test('rechaza un Ingreso con Pago inexistente tras la migración', () async {
+    final schemaV1 = await verifier.schemaAt(1);
+    final db = AppDatabase(schemaV1.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      expect(
-        () => db.customStatement('''
+    expect(
+      () => db.customStatement('''
         INSERT INTO ingreso (
           id, pago_id, folio_ingreso, monto, fecha, forma_pago, concepto, estatus,
           created_at, updated_at, ciclo_vida_registro
@@ -4910,12 +4981,11 @@ void main() {
           1700000000, 1700000000, 'activo'
         );
       '''),
-        throwsA(anything),
-      );
+      throwsA(anything),
+    );
 
-      await db.close();
-    },
-  );
+    await db.close();
+  });
 
   test(
     'rechaza un segundo Ingreso para el mismo Pago tras la migración (pagoId UNIQUE)',
@@ -4927,14 +4997,17 @@ void main() {
       final cliente = await db
           .into(db.cliente)
           .insertReturning(
-            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+            ClienteCompanion.insert(
+              codigo: 'CLI-000001',
+              nombreComercial: 'Sportium',
+            ),
           );
       final pago = await db
           .into(db.pago)
           .insertReturning(
             PagoCompanion.insert(
               folioPago: 'PAG-000001',
-              clienteId: cliente.id,
+              clienteId: Value(cliente.id),
               montoTotal: 500000,
               fechaPago: DateTime(2026, 1, 20),
               formaPago: 'transferencia',
@@ -5003,7 +5076,9 @@ void main() {
 
       final sqlEmpleado =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado'",
+                  )
                   .single['sql']
               as String;
       expect(sqlEmpleado, contains('"codigo_empleado" TEXT NOT NULL UNIQUE'));
@@ -5018,11 +5093,18 @@ void main() {
 
       final sqlDireccion =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'direccion'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'direccion'",
+                  )
                   .single['sql']
               as String;
       expect(sqlDireccion, contains('"empleado_id" TEXT NULL UNIQUE'));
-      expect(sqlDireccion, contains('FOREIGN KEY (empleado_id) REFERENCES empleado (id) ON DELETE RESTRICT'));
+      expect(
+        sqlDireccion,
+        contains(
+          'FOREIGN KEY (empleado_id) REFERENCES empleado (id) ON DELETE RESTRICT',
+        ),
+      );
       expect(
         sqlDireccion,
         contains(
@@ -5034,23 +5116,44 @@ void main() {
           'CASE WHEN empleado_id IS NOT NULL THEN 1 ELSE 0 END) = 1',
         ),
       );
-      expect(sqlDireccion, contains("CHECK (empleado_id IS NULL OR tipo_direccion = 'domicilio')"));
+      expect(
+        sqlDireccion,
+        contains("CHECK (empleado_id IS NULL OR tipo_direccion = 'domicilio')"),
+      );
 
       final sqlAttachment =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'attachment'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'attachment'",
+                  )
                   .single['sql']
               as String;
-      expect(sqlAttachment, isNot(contains('empresa_id')), reason: 'Attachment ya no tiene columnas de dueño');
-      expect(sqlAttachment, isNot(contains('CHECK')), reason: 'el arco exclusivo desapareció junto con las columnas');
+      expect(
+        sqlAttachment,
+        isNot(contains('empresa_id')),
+        reason: 'Attachment ya no tiene columnas de dueño',
+      );
+      expect(
+        sqlAttachment,
+        isNot(contains('CHECK')),
+        reason: 'el arco exclusivo desapareció junto con las columnas',
+      );
 
       final sqlPagoAttachment =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pago_attachment'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pago_attachment'",
+                  )
                   .single['sql']
               as String;
-      expect(sqlPagoAttachment, contains('REFERENCES attachment (id) ON DELETE CASCADE'));
-      expect(sqlPagoAttachment, contains('REFERENCES pago (id) ON DELETE CASCADE'));
+      expect(
+        sqlPagoAttachment,
+        contains('REFERENCES attachment (id) ON DELETE CASCADE'),
+      );
+      expect(
+        sqlPagoAttachment,
+        contains('REFERENCES pago (id) ON DELETE CASCADE'),
+      );
       expect(sqlPagoAttachment, contains('PRIMARY KEY ("attachment_id")'));
 
       schema.rawDatabase.dispose();
@@ -5085,21 +5188,33 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final pagos = await db.select(db.pago).get();
-      expect(pagos, hasLength(1), reason: 'ningún Pago real debe perderse en una migración aditiva');
+      expect(
+        pagos,
+        hasLength(1),
+        reason: 'ningún Pago real debe perderse en una migración aditiva',
+      );
 
       final empleados = await db.select(db.empleado).get();
-      expect(empleados, isEmpty, reason: 'Empleado es tabla nueva en 5A, sin backfill');
+      expect(
+        empleados,
+        isEmpty,
+        reason: 'Empleado es tabla nueva en 5A, sin backfill',
+      );
 
       final direcciones = await db.select(db.direccion).get();
       for (final d in direcciones) {
         expect(d.empleadoId, isNull);
       }
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -5162,7 +5277,12 @@ void main() {
           );
       await db
           .into(db.empleadoAttachment)
-          .insert(EmpleadoAttachmentCompanion.insert(attachmentId: adjunto.id, empleadoId: empleado.id));
+          .insert(
+            EmpleadoAttachmentCompanion.insert(
+              attachmentId: adjunto.id,
+              empleadoId: empleado.id,
+            ),
+          );
 
       final documentos = await db.select(db.empleadoAttachment).get();
       expect(documentos, hasLength(1));
@@ -5180,7 +5300,9 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       expect(
-        () => db.into(db.empleado).insert(
+        () => db
+            .into(db.empleado)
+            .insert(
               EmpleadoCompanion.insert(
                 numeroEmpleado: 1,
                 nombres: 'Juan',
@@ -5227,7 +5349,9 @@ void main() {
               aniosExperienciaSeguridad: 3,
             ),
           );
-      await db.into(db.direccion).insert(
+      await db
+          .into(db.direccion)
+          .insert(
             DireccionCompanion.insert(
               empleadoId: Value(empleado.id),
               tipoDireccion: 'domicilio',
@@ -5241,7 +5365,9 @@ void main() {
           );
 
       expect(
-        () => db.into(db.direccion).insert(
+        () => db
+            .into(db.direccion)
+            .insert(
               DireccionCompanion.insert(
                 empleadoId: Value(empleado.id),
                 tipoDireccion: 'domicilio',
@@ -5274,7 +5400,11 @@ void main() {
 
       // Sin tablas nuevas — 5B solo agrega columnas a Empleado.
       expect(tablas, contains('empleado'));
-      expect(tablas, isNot(contains('empleado_evaluacion')), reason: 'sin tablas satélite, sin historial de evaluaciones');
+      expect(
+        tablas,
+        isNot(contains('empleado_evaluacion')),
+        reason: 'sin tablas satélite, sin historial de evaluaciones',
+      );
 
       final columnasNuevas = [
         'fecha_evaluacion_psicologica',
@@ -5291,11 +5421,16 @@ void main() {
         'resultado_opi',
         'observaciones_antidoping',
       ];
-      final columnasEmpleado = schema.rawDatabase.select('PRAGMA table_info(empleado)').toList();
+      final columnasEmpleado =
+          schema.rawDatabase.select('PRAGMA table_info(empleado)').toList();
       for (final nombre in columnasNuevas) {
         final columna = columnasEmpleado.firstWhere(
           (c) => c['name'] == nombre,
-          orElse: () => throw StateError('Falta la columna $nombre en empleado (19.json)'),
+          orElse:
+              () =>
+                  throw StateError(
+                    'Falta la columna $nombre en empleado (19.json)',
+                  ),
         );
         expect(columna['notnull'], 0, reason: '$nombre debe ser nullable');
       }
@@ -5330,7 +5465,11 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final empleados = await db.select(db.empleado).get();
-      expect(empleados, hasLength(1), reason: 'ningún Empleado real debe perderse en una migración aditiva');
+      expect(
+        empleados,
+        hasLength(1),
+        reason: 'ningún Empleado real debe perderse en una migración aditiva',
+      );
       final empleado = empleados.single;
       expect(empleado.numeroEmpleado, 1);
       expect(empleado.fechaEvaluacionPsicologica, isNull);
@@ -5340,11 +5479,15 @@ void main() {
       expect(empleado.resultadoAmp, isNull);
       expect(empleado.resultadoOpi, isNull);
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -5377,7 +5520,8 @@ void main() {
             ),
           );
 
-      final actualizado = await (db.update(db.empleado)..where((t) => t.id.equals(empleado.id))).writeReturning(
+      final actualizado = await (db.update(db.empleado)
+        ..where((t) => t.id.equals(empleado.id))).writeReturning(
         EmpleadoCompanion(
           fechaEvaluacionPsicologica: Value(DateTime(2026, 1, 15)),
           resumenPsicologico: const Value('Resumen'),
@@ -5413,21 +5557,37 @@ void main() {
       expect(tablas, contains('empleado'));
       expect(tablas, contains('empleado_periodo_laboral'));
 
-      final columnasEmpleado = schema.rawDatabase.select('PRAGMA table_info(empleado)').toList();
-      for (final nombre in ['fecha_baja', 'motivo_baja', 'observaciones_baja']) {
+      final columnasEmpleado =
+          schema.rawDatabase.select('PRAGMA table_info(empleado)').toList();
+      for (final nombre in [
+        'fecha_baja',
+        'motivo_baja',
+        'observaciones_baja',
+      ]) {
         final columna = columnasEmpleado.firstWhere(
           (c) => c['name'] == nombre,
-          orElse: () => throw StateError('Falta la columna $nombre en empleado (20.json)'),
+          orElse:
+              () =>
+                  throw StateError(
+                    'Falta la columna $nombre en empleado (20.json)',
+                  ),
         );
         expect(columna['notnull'], 0, reason: '$nombre debe ser nullable');
       }
 
       final sqlPeriodo =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado_periodo_laboral'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado_periodo_laboral'",
+                  )
                   .single['sql']
               as String;
-      expect(sqlPeriodo, contains('"empleado_id" TEXT NOT NULL REFERENCES empleado (id) ON DELETE CASCADE'));
+      expect(
+        sqlPeriodo,
+        contains(
+          '"empleado_id" TEXT NOT NULL REFERENCES empleado (id) ON DELETE CASCADE',
+        ),
+      );
       expect(sqlPeriodo, contains('"fecha_ingreso" INTEGER NOT NULL'));
       expect(sqlPeriodo, contains('"fecha_baja" INTEGER NOT NULL'));
       expect(sqlPeriodo, contains('"motivo_baja" TEXT NOT NULL'));
@@ -5479,25 +5639,43 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final empleados = await db.select(db.empleado).get();
-      expect(empleados, hasLength(2), reason: 'ningún Empleado real debe perderse en una migración aditiva');
+      expect(
+        empleados,
+        hasLength(2),
+        reason: 'ningún Empleado real debe perderse en una migración aditiva',
+      );
 
       final empleado = empleados.firstWhere((e) => e.id == 'empleado-real');
       expect(empleado.fechaBaja, isNull);
       expect(empleado.motivoBaja, isNull);
       expect(empleado.observacionesBaja, isNull);
 
-      final legado = empleados.firstWhere((e) => e.id == 'empleado-baja-legado');
+      final legado = empleados.firstWhere(
+        (e) => e.id == 'empleado-baja-legado',
+      );
       expect(legado.estatus, 'baja');
-      expect(legado.fechaBaja, isNull, reason: 'sin backfill — invariante de aplicación, no de BD');
+      expect(
+        legado.fechaBaja,
+        isNull,
+        reason: 'sin backfill — invariante de aplicación, no de BD',
+      );
 
       final periodos = await db.select(db.empleadoPeriodoLaboral).get();
-      expect(periodos, isEmpty, reason: 'EmpleadoPeriodoLaboral es tabla nueva en 5C, sin backfill');
+      expect(
+        periodos,
+        isEmpty,
+        reason: 'EmpleadoPeriodoLaboral es tabla nueva en 5C, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -5529,7 +5707,8 @@ void main() {
             ),
           );
 
-      await (db.update(db.empleado)..where((t) => t.id.equals(empleado.id))).write(
+      await (db.update(db.empleado)
+        ..where((t) => t.id.equals(empleado.id))).write(
         EmpleadoCompanion(
           estatus: const Value('baja'),
           fechaBaja: Value(DateTime(2026, 6, 15)),
@@ -5537,7 +5716,9 @@ void main() {
         ),
       );
 
-      await db.into(db.empleadoPeriodoLaboral).insert(
+      await db
+          .into(db.empleadoPeriodoLaboral)
+          .insert(
             EmpleadoPeriodoLaboralCompanion.insert(
               empleadoId: empleado.id,
               fechaIngreso: DateTime(2026, 1, 1),
@@ -5546,7 +5727,9 @@ void main() {
             ),
           );
 
-      final periodos = await (db.select(db.empleadoPeriodoLaboral)..where((t) => t.empleadoId.equals(empleado.id))).get();
+      final periodos =
+          await (db.select(db.empleadoPeriodoLaboral)
+            ..where((t) => t.empleadoId.equals(empleado.id))).get();
       expect(periodos, hasLength(1));
       expect(periodos.single.motivoBaja, 'renuncia');
 
@@ -5580,7 +5763,9 @@ void main() {
           );
 
       expect(
-        () => db.into(db.empleadoPeriodoLaboral).insert(
+        () => db
+            .into(db.empleadoPeriodoLaboral)
+            .insert(
               EmpleadoPeriodoLaboralCompanion.insert(
                 empleadoId: empleado.id,
                 fechaIngreso: DateTime(2026, 6, 15),
@@ -5611,19 +5796,42 @@ void main() {
 
       final columnaCp = schema.rawDatabase
           .select('PRAGMA table_info(empleado)')
-          .firstWhere((c) => c['name'] == 'codigo_postal_fiscal', orElse: () => throw StateError('Falta codigo_postal_fiscal'));
-      expect(columnaCp['notnull'], 0, reason: 'codigo_postal_fiscal debe ser nullable');
+          .firstWhere(
+            (c) => c['name'] == 'codigo_postal_fiscal',
+            orElse: () => throw StateError('Falta codigo_postal_fiscal'),
+          );
+      expect(
+        columnaCp['notnull'],
+        0,
+        reason: 'codigo_postal_fiscal debe ser nullable',
+      );
 
       final sqlAsignacion =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_servicio'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_servicio'",
+                  )
                   .single['sql']
               as String;
-      expect(sqlAsignacion, contains('"empleado_id" TEXT NOT NULL REFERENCES empleado (id)'));
-      expect(sqlAsignacion, contains('"servicio_id" TEXT NOT NULL REFERENCES servicio (id)'));
-      expect(sqlAsignacion, contains('"turno_id" TEXT NULL REFERENCES tipo_modalidad_turno (id)'));
+      expect(
+        sqlAsignacion,
+        contains('"empleado_id" TEXT NOT NULL REFERENCES empleado (id)'),
+      );
+      expect(
+        sqlAsignacion,
+        contains('"servicio_id" TEXT NOT NULL REFERENCES servicio (id)'),
+      );
+      expect(
+        sqlAsignacion,
+        contains('"turno_id" TEXT NULL REFERENCES tipo_modalidad_turno (id)'),
+      );
       expect(sqlAsignacion, contains('"fecha_termino" INTEGER NULL'));
-      expect(sqlAsignacion, contains('CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)'));
+      expect(
+        sqlAsignacion,
+        contains(
+          'CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)',
+        ),
+      );
 
       final sqlIndice =
           schema.rawDatabase
@@ -5685,20 +5893,36 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final empleados = await db.select(db.empleado).get();
-      expect(empleados, hasLength(1), reason: 'ningún Empleado real debe perderse en una migración aditiva');
+      expect(
+        empleados,
+        hasLength(1),
+        reason: 'ningún Empleado real debe perderse en una migración aditiva',
+      );
       expect(empleados.single.codigoPostalFiscal, isNull);
 
       final servicios = await db.select(db.servicio).get();
-      expect(servicios, hasLength(1), reason: 'ningún Servicio real debe perderse en una migración aditiva');
+      expect(
+        servicios,
+        hasLength(1),
+        reason: 'ningún Servicio real debe perderse en una migración aditiva',
+      );
 
       final asignaciones = await db.select(db.asignacionServicio).get();
-      expect(asignaciones, isEmpty, reason: 'AsignacionServicio es tabla nueva en 5D, sin backfill');
+      expect(
+        asignaciones,
+        isEmpty,
+        reason: 'AsignacionServicio es tabla nueva en 5D, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -5731,8 +5955,15 @@ void main() {
           );
       final cliente = await db
           .into(db.cliente)
-          .insertReturning(ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'));
-      final servicioA = await db.into(db.servicio).insertReturning(
+          .insertReturning(
+            ClienteCompanion.insert(
+              codigo: 'CLI-000001',
+              nombreComercial: 'Sportium',
+            ),
+          );
+      final servicioA = await db
+          .into(db.servicio)
+          .insertReturning(
             ServicioCompanion.insert(
               codigo: 'SER-000001',
               clienteId: cliente.id,
@@ -5741,7 +5972,9 @@ void main() {
               fechaInicio: DateTime(2026, 1, 1),
             ),
           );
-      final servicioB = await db.into(db.servicio).insertReturning(
+      final servicioB = await db
+          .into(db.servicio)
+          .insertReturning(
             ServicioCompanion.insert(
               codigo: 'SER-000002',
               clienteId: cliente.id,
@@ -5751,13 +5984,25 @@ void main() {
             ),
           );
 
-      await db.into(db.asignacionServicio).insert(
-            AsignacionServicioCompanion.insert(empleadoId: empleado.id, servicioId: servicioA.id, fechaInicio: DateTime(2026, 1, 1)),
+      await db
+          .into(db.asignacionServicio)
+          .insert(
+            AsignacionServicioCompanion.insert(
+              empleadoId: empleado.id,
+              servicioId: servicioA.id,
+              fechaInicio: DateTime(2026, 1, 1),
+            ),
           );
 
       expect(
-        () => db.into(db.asignacionServicio).insert(
-              AsignacionServicioCompanion.insert(empleadoId: empleado.id, servicioId: servicioB.id, fechaInicio: DateTime(2026, 2, 1)),
+        () => db
+            .into(db.asignacionServicio)
+            .insert(
+              AsignacionServicioCompanion.insert(
+                empleadoId: empleado.id,
+                servicioId: servicioB.id,
+                fechaInicio: DateTime(2026, 2, 1),
+              ),
             ),
         throwsA(anything),
       );
@@ -5782,13 +6027,24 @@ void main() {
 
       final sqlFicha =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'ficha_tecnica_empleado'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'ficha_tecnica_empleado'",
+                  )
                   .single['sql']
               as String;
       expect(sqlFicha, contains('"folio" TEXT NOT NULL UNIQUE'));
-      expect(sqlFicha, contains('"empleado_id" TEXT NOT NULL REFERENCES empleado (id)'));
-      expect(sqlFicha, contains('"servicio_id" TEXT NULL REFERENCES servicio (id)'));
-      expect(sqlFicha, contains('"attachment_id" TEXT NOT NULL REFERENCES attachment (id)'));
+      expect(
+        sqlFicha,
+        contains('"empleado_id" TEXT NOT NULL REFERENCES empleado (id)'),
+      );
+      expect(
+        sqlFicha,
+        contains('"servicio_id" TEXT NULL REFERENCES servicio (id)'),
+      );
+      expect(
+        sqlFicha,
+        contains('"attachment_id" TEXT NOT NULL REFERENCES attachment (id)'),
+      );
       expect(sqlFicha, contains('"campos_excluidos" TEXT NULL'));
 
       schema.rawDatabase.dispose();
@@ -5821,58 +6077,85 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final empleados = await db.select(db.empleado).get();
-      expect(empleados, hasLength(1), reason: 'ningún Empleado real debe perderse en una migración aditiva');
+      expect(
+        empleados,
+        hasLength(1),
+        reason: 'ningún Empleado real debe perderse en una migración aditiva',
+      );
 
       final codigoFichaTecnica =
-          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('ficha_tecnica'))).getSingleOrNull();
-      expect(codigoFichaTecnica, isNotNull, reason: 'runSeed debe sembrar el contador de folio de ficha_tecnica');
+          await (db.select(db.codigoSecuencia)..where(
+            (t) => t.entityType.equals('ficha_tecnica'),
+          )).getSingleOrNull();
+      expect(
+        codigoFichaTecnica,
+        isNotNull,
+        reason: 'runSeed debe sembrar el contador de folio de ficha_tecnica',
+      );
       expect(codigoFichaTecnica!.prefijo, 'FICHA');
 
       final fichas = await db.select(db.fichaTecnicaEmpleado).get();
-      expect(fichas, isEmpty, reason: 'FichaTecnicaEmpleado es tabla nueva en 5E, sin backfill');
+      expect(
+        fichas,
+        isEmpty,
+        reason: 'FichaTecnicaEmpleado es tabla nueva en 5E, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
     },
   );
 
-  test(
-    '23.json coincide con el esquema final de la Etapa 6A (numeroEmpleado + datos bancarios + '
-    'condición administrativa en Empleado, catálogo Banco)',
-    () async {
-      final schema = await verifier.schemaAt(23);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+  test('23.json coincide con el esquema final de la Etapa 6A (numeroEmpleado + datos bancarios + '
+      'condición administrativa en Empleado, catálogo Banco)', () async {
+    final schema = await verifier.schemaAt(23);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
 
-      expect(tablas, contains('banco'));
+    expect(tablas, contains('banco'));
 
-      final sqlEmpleado =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado'")
-                  .single['sql']
-              as String;
-      expect(sqlEmpleado, isNot(contains('codigo_empleado')));
-      expect(sqlEmpleado, contains('"numero_empleado" INTEGER NOT NULL UNIQUE'));
-      expect(sqlEmpleado, contains('"banco_id" TEXT NULL REFERENCES banco (id)'));
-      expect(sqlEmpleado, contains('"numero_cuenta_tarjeta" TEXT NULL'));
-      expect(sqlEmpleado, contains('"clabe" TEXT NULL'));
-      expect(sqlEmpleado, contains('CHECK (sueldo_mensual_administrativo IS NULL OR sueldo_mensual_administrativo > 0)'));
-      expect(sqlEmpleado, contains('CHECK (bono_mensual_administrativo IS NULL OR bono_mensual_administrativo >= 0)'));
+    final sqlEmpleado =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlEmpleado, isNot(contains('codigo_empleado')));
+    expect(sqlEmpleado, contains('"numero_empleado" INTEGER NOT NULL UNIQUE'));
+    expect(sqlEmpleado, contains('"banco_id" TEXT NULL REFERENCES banco (id)'));
+    expect(sqlEmpleado, contains('"numero_cuenta_tarjeta" TEXT NULL'));
+    expect(sqlEmpleado, contains('"clabe" TEXT NULL'));
+    expect(
+      sqlEmpleado,
+      contains(
+        'CHECK (sueldo_mensual_administrativo IS NULL OR sueldo_mensual_administrativo > 0)',
+      ),
+    );
+    expect(
+      sqlEmpleado,
+      contains(
+        'CHECK (bono_mensual_administrativo IS NULL OR bono_mensual_administrativo >= 0)',
+      ),
+    );
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 22 → 23 conserva Empleados reales, asigna numeroEmpleado consecutivo por orden de alta y siembra Banco',
@@ -5913,10 +6196,20 @@ void main() {
       final db = AppDatabase(schemaV22.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final empleados = await db.select(db.empleado).get()
-        ..sort((a, b) => a.numeroEmpleado.compareTo(b.numeroEmpleado));
-      expect(empleados, hasLength(2), reason: 'ningún Empleado real debe perderse en una migración estructural');
-      expect(empleados[0].id, 'empleado-1', reason: 'creado primero (created_at menor) → numeroEmpleado 1');
+      final empleados =
+          await db.select(db.empleado).get()
+            ..sort((a, b) => a.numeroEmpleado.compareTo(b.numeroEmpleado));
+      expect(
+        empleados,
+        hasLength(2),
+        reason:
+            'ningún Empleado real debe perderse en una migración estructural',
+      );
+      expect(
+        empleados[0].id,
+        'empleado-1',
+        reason: 'creado primero (created_at menor) → numeroEmpleado 1',
+      );
       expect(empleados[0].numeroEmpleado, 1);
       expect(empleados[1].id, 'empleado-2');
       expect(empleados[1].numeroEmpleado, 2);
@@ -5924,13 +6217,22 @@ void main() {
       expect(empleados[0].sueldoMensualAdministrativo, isNull);
 
       final bancos = await db.select(db.banco).get();
-      expect(bancos, isNotEmpty, reason: 'runSeed/seedBanco debe sembrar el catálogo Banco en la migración');
+      expect(
+        bancos,
+        isNotEmpty,
+        reason:
+            'runSeed/seedBanco debe sembrar el catálogo Banco en la migración',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -5959,57 +6261,80 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.empleado).insert(base.copyWith(sueldoMensualAdministrativo: const Value(0))),
+        db
+            .into(db.empleado)
+            .insert(base.copyWith(sueldoMensualAdministrativo: const Value(0))),
         throwsA(anything),
-        reason: 'sueldo_mensual_administrativo = 0 debe rechazarse (debe ser > 0)',
+        reason:
+            'sueldo_mensual_administrativo = 0 debe rechazarse (debe ser > 0)',
       );
 
-      final conBonoCero = await db.into(db.empleado).insertReturning(
+      final conBonoCero = await db
+          .into(db.empleado)
+          .insertReturning(
             base.copyWith(bonoMensualAdministrativo: const Value(0)),
           );
-      expect(conBonoCero.bonoMensualAdministrativo, 0, reason: 'bono_mensual_administrativo = 0 sí es válido');
+      expect(
+        conBonoCero.bonoMensualAdministrativo,
+        0,
+        reason: 'bono_mensual_administrativo = 0 sí es válido',
+      );
 
       await db.close();
     },
   );
 
-  test(
-    '24.json coincide con el esquema final de la Etapa 6B (sueldo/bono de referencia en Servicio, '
-    'tabla nueva AsignacionServicioSueldoVigencia)',
-    () async {
-      final schema = await verifier.schemaAt(24);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+  test('24.json coincide con el esquema final de la Etapa 6B (sueldo/bono de referencia en Servicio, '
+      'tabla nueva AsignacionServicioSueldoVigencia)', () async {
+    final schema = await verifier.schemaAt(24);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
 
-      expect(tablas, contains('asignacion_servicio_sueldo_vigencia'));
+    expect(tablas, contains('asignacion_servicio_sueldo_vigencia'));
 
-      final sqlServicio =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'servicio'")
-                  .single['sql']
-              as String;
-      expect(sqlServicio, contains('CHECK (sueldo_mensual_referencia_personal IS NULL OR sueldo_mensual_referencia_personal > 0)'));
-      expect(sqlServicio, contains('CHECK (bono_mensual_referencia_personal IS NULL OR bono_mensual_referencia_personal >= 0)'));
+    final sqlServicio =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'servicio'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlServicio,
+      contains(
+        'CHECK (sueldo_mensual_referencia_personal IS NULL OR sueldo_mensual_referencia_personal > 0)',
+      ),
+    );
+    expect(
+      sqlServicio,
+      contains(
+        'CHECK (bono_mensual_referencia_personal IS NULL OR bono_mensual_referencia_personal >= 0)',
+      ),
+    );
 
-      final sqlVigencia =
-          schema.rawDatabase
-                  .select(
-                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_servicio_sueldo_vigencia'",
-                  )
-                  .single['sql']
-              as String;
-      expect(sqlVigencia, contains('"asignacion_servicio_id" TEXT NOT NULL REFERENCES asignacion_servicio (id)'));
-      expect(sqlVigencia, contains('CHECK (sueldo_mensual > 0)'));
-      expect(sqlVigencia, contains('CHECK (bono_mensual >= 0)'));
+    final sqlVigencia =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_servicio_sueldo_vigencia'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlVigencia,
+      contains(
+        '"asignacion_servicio_id" TEXT NOT NULL REFERENCES asignacion_servicio (id)',
+      ),
+    );
+    expect(sqlVigencia, contains('CHECK (sueldo_mensual > 0)'));
+    expect(sqlVigencia, contains('CHECK (bono_mensual >= 0)'));
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 23 → 24 conserva un Servicio real (columnas nuevas en NULL) y crea AsignacionServicioSueldoVigencia vacía',
@@ -6038,19 +6363,34 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final servicios = await db.select(db.servicio).get();
-      expect(servicios, hasLength(1), reason: 'ningún Servicio real debe perderse en una migración estructural');
+      expect(
+        servicios,
+        hasLength(1),
+        reason:
+            'ningún Servicio real debe perderse en una migración estructural',
+      );
       expect(servicios.single.id, 'servicio-real');
       expect(servicios.single.sueldoMensualReferenciaPersonal, isNull);
       expect(servicios.single.bonoMensualReferenciaPersonal, isNull);
 
-      final vigenciasSueldo = await db.select(db.asignacionServicioSueldoVigencia).get();
-      expect(vigenciasSueldo, isEmpty, reason: 'AsignacionServicioSueldoVigencia es tabla nueva en 6B, sin backfill');
+      final vigenciasSueldo =
+          await db.select(db.asignacionServicioSueldoVigencia).get();
+      expect(
+        vigenciasSueldo,
+        isEmpty,
+        reason:
+            'AsignacionServicioSueldoVigencia es tabla nueva en 6B, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -6064,8 +6404,13 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final cliente = await db.into(db.cliente).insertReturning(
-            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+      final cliente = await db
+          .into(db.cliente)
+          .insertReturning(
+            ClienteCompanion.insert(
+              codigo: 'CLI-000001',
+              nombreComercial: 'Sportium',
+            ),
           );
       final baseServicio = ServicioCompanion.insert(
         codigo: 'SER-000001',
@@ -6076,20 +6421,35 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.servicio).insert(baseServicio.copyWith(sueldoMensualReferenciaPersonal: const Value(0))),
+        db
+            .into(db.servicio)
+            .insert(
+              baseServicio.copyWith(
+                sueldoMensualReferenciaPersonal: const Value(0),
+              ),
+            ),
         throwsA(anything),
-        reason: 'sueldo_mensual_referencia_personal = 0 debe rechazarse (debe ser > 0)',
+        reason:
+            'sueldo_mensual_referencia_personal = 0 debe rechazarse (debe ser > 0)',
       );
 
-      final servicio = await db.into(db.servicio).insertReturning(
+      final servicio = await db
+          .into(db.servicio)
+          .insertReturning(
             baseServicio.copyWith(
               sueldoMensualReferenciaPersonal: const Value(1500000),
               bonoMensualReferenciaPersonal: const Value(0),
             ),
           );
-      expect(servicio.bonoMensualReferenciaPersonal, 0, reason: 'bono_mensual_referencia_personal = 0 sí es válido');
+      expect(
+        servicio.bonoMensualReferenciaPersonal,
+        0,
+        reason: 'bono_mensual_referencia_personal = 0 sí es válido',
+      );
 
-      final empleado = await db.into(db.empleado).insertReturning(
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
             EmpleadoCompanion.insert(
               numeroEmpleado: 1,
               nombres: 'Juan',
@@ -6104,7 +6464,9 @@ void main() {
               aniosExperienciaSeguridad: 0,
             ),
           );
-      final asignacion = await db.into(db.asignacionServicio).insertReturning(
+      final asignacion = await db
+          .into(db.asignacionServicio)
+          .insertReturning(
             AsignacionServicioCompanion.insert(
               empleadoId: empleado.id,
               servicioId: servicio.id,
@@ -6119,68 +6481,90 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.asignacionServicioSueldoVigencia).insert(baseVigencia.copyWith(sueldoMensual: const Value(0))),
+        db
+            .into(db.asignacionServicioSueldoVigencia)
+            .insert(baseVigencia.copyWith(sueldoMensual: const Value(0))),
         throwsA(anything),
-        reason: 'sueldo_mensual = 0 debe rechazarse (debe ser > 0) en AsignacionServicioSueldoVigencia',
+        reason:
+            'sueldo_mensual = 0 debe rechazarse (debe ser > 0) en AsignacionServicioSueldoVigencia',
       );
 
-      final vigencia = await db.into(db.asignacionServicioSueldoVigencia).insertReturning(
-            baseVigencia.copyWith(bonoMensual: const Value(0)),
-          );
-      expect(vigencia.bonoMensual, 0, reason: 'bono_mensual = 0 sí es válido en AsignacionServicioSueldoVigencia');
+      final vigencia = await db
+          .into(db.asignacionServicioSueldoVigencia)
+          .insertReturning(baseVigencia.copyWith(bonoMensual: const Value(0)));
+      expect(
+        vigencia.bonoMensual,
+        0,
+        reason:
+            'bono_mensual = 0 sí es válido en AsignacionServicioSueldoVigencia',
+      );
 
       await db.close();
     },
   );
 
-  test(
-    '25.json coincide con el esquema final de la Etapa 6C (tablas nuevas Nomina, NominaEmpleado, '
-    'NominaEmpleadoTramo, NominaEvento)',
-    () async {
-      final schema = await verifier.schemaAt(25);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+  test('25.json coincide con el esquema final de la Etapa 6C (tablas nuevas Nomina, NominaEmpleado, '
+      'NominaEmpleadoTramo, NominaEvento)', () async {
+    final schema = await verifier.schemaAt(25);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
 
-      expect(tablas, containsAll(['nomina', 'nomina_empleado', 'nomina_empleado_tramo', 'nomina_evento']));
+    expect(
+      tablas,
+      containsAll([
+        'nomina',
+        'nomina_empleado',
+        'nomina_empleado_tramo',
+        'nomina_evento',
+      ]),
+    );
 
-      final sqlNomina =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'nomina'")
-                  .single['sql']
-              as String;
-      expect(sqlNomina, contains('UNIQUE (anio, mes, tipo_periodo)'));
-      expect(sqlNomina, contains('"folio" TEXT NOT NULL UNIQUE'));
-      expect(sqlNomina, contains('CHECK (mes >= 1 AND mes <= 12)'));
+    final sqlNomina =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'nomina'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlNomina, contains('UNIQUE (anio, mes, tipo_periodo)'));
+    expect(sqlNomina, contains('"folio" TEXT NOT NULL UNIQUE'));
+    expect(sqlNomina, contains('CHECK (mes >= 1 AND mes <= 12)'));
 
-      final sqlNominaEmpleado =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'nomina_empleado'")
-                  .single['sql']
-              as String;
-      expect(sqlNominaEmpleado, contains('UNIQUE (nomina_id, empleado_id)'));
-      expect(sqlNominaEmpleado, contains('CHECK (dias_pagables >= 0)'));
-      expect(sqlNominaEmpleado, contains('CHECK (sueldo_mensual_utilizado > 0)'));
-      // Deliberadamente sin CHECK monto_fiscal + monto_no_fiscal == total_a_pagar
-      // (Resolución explícita de Marlon: debe poder existir una distribución
-      // temporalmente pendiente de revisar sin que la escritura falle).
-      expect(sqlNominaEmpleado, isNot(contains('monto_fiscal + monto_no_fiscal')));
+    final sqlNominaEmpleado =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'nomina_empleado'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlNominaEmpleado, contains('UNIQUE (nomina_id, empleado_id)'));
+    expect(sqlNominaEmpleado, contains('CHECK (dias_pagables >= 0)'));
+    expect(sqlNominaEmpleado, contains('CHECK (sueldo_mensual_utilizado > 0)'));
+    // Deliberadamente sin CHECK monto_fiscal + monto_no_fiscal == total_a_pagar
+    // (Resolución explícita de Marlon: debe poder existir una distribución
+    // temporalmente pendiente de revisar sin que la escritura falle).
+    expect(
+      sqlNominaEmpleado,
+      isNot(contains('monto_fiscal + monto_no_fiscal')),
+    );
 
-      final sqlNominaEmpleadoTramo =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'nomina_empleado_tramo'")
-                  .single['sql']
-              as String;
-      expect(sqlNominaEmpleadoTramo, contains('CHECK (dias_reales > 0)'));
-      expect(sqlNominaEmpleadoTramo, contains('CHECK (sueldo_mensual > 0)'));
+    final sqlNominaEmpleadoTramo =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'nomina_empleado_tramo'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlNominaEmpleadoTramo, contains('CHECK (dias_reales > 0)'));
+    expect(sqlNominaEmpleadoTramo, contains('CHECK (sueldo_mensual > 0)'));
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 24 → 25 conserva un Empleado/Servicio real y crea las 4 tablas de Nómina vacías, sembrando '
@@ -6209,11 +6593,20 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final empleados = await db.select(db.empleado).get();
-      expect(empleados, hasLength(1), reason: 'ningún Empleado real debe perderse en una migración puramente aditiva');
+      expect(
+        empleados,
+        hasLength(1),
+        reason:
+            'ningún Empleado real debe perderse en una migración puramente aditiva',
+      );
       expect(empleados.single.id, 'empleado-real');
 
       final nominas = await db.select(db.nomina).get();
-      expect(nominas, isEmpty, reason: 'Nomina es tabla nueva en 6C, sin backfill');
+      expect(
+        nominas,
+        isEmpty,
+        reason: 'Nomina es tabla nueva en 6C, sin backfill',
+      );
       final renglones = await db.select(db.nominaEmpleado).get();
       expect(renglones, isEmpty);
       final tramos = await db.select(db.nominaEmpleadoTramo).get();
@@ -6222,15 +6615,24 @@ void main() {
       expect(eventos, isEmpty);
 
       final codigoNomina =
-          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('nomina'))).getSingleOrNull();
-      expect(codigoNomina, isNotNull, reason: 'runSeed debe sembrar el contador de folio de nomina');
+          await (db.select(db.codigoSecuencia)
+            ..where((t) => t.entityType.equals('nomina'))).getSingleOrNull();
+      expect(
+        codigoNomina,
+        isNotNull,
+        reason: 'runSeed debe sembrar el contador de folio de nomina',
+      );
       expect(codigoNomina!.prefijo, 'NOM');
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -6245,7 +6647,9 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final nomina = await db.into(db.nomina).insertReturning(
+      final nomina = await db
+          .into(db.nomina)
+          .insertReturning(
             NominaCompanion.insert(
               folio: 'NOM-000001',
               anio: 2026,
@@ -6258,7 +6662,9 @@ void main() {
           );
 
       await expectLater(
-        db.into(db.nomina).insert(
+        db
+            .into(db.nomina)
+            .insert(
               NominaCompanion.insert(
                 folio: 'NOM-000002',
                 anio: 2026,
@@ -6270,10 +6676,13 @@ void main() {
               ),
             ),
         throwsA(anything),
-        reason: 'una segunda Nómina para el mismo (anio, mes, tipo_periodo) debe rechazarse',
+        reason:
+            'una segunda Nómina para el mismo (anio, mes, tipo_periodo) debe rechazarse',
       );
 
-      final empleado = await db.into(db.empleado).insertReturning(
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
             EmpleadoCompanion.insert(
               numeroEmpleado: 1,
               nombres: 'Juan',
@@ -6306,7 +6715,9 @@ void main() {
       // Distribución temporalmente pendiente de revisar (fiscal + no fiscal
       // no suman el total) — debe poder escribirse sin fallar a nivel de
       // base de datos; el bloqueo real vive en `CerrarNominaUseCase`.
-      final renglonPendiente = await db.into(db.nominaEmpleado).insertReturning(
+      final renglonPendiente = await db
+          .into(db.nominaEmpleado)
+          .insertReturning(
             baseRenglon.copyWith(
               montoFiscal: const Value(100000),
               montoNoFiscal: const Value(0),
@@ -6316,7 +6727,9 @@ void main() {
       expect(renglonPendiente.distribucionPendienteRevision, isTrue);
 
       await expectLater(
-        db.into(db.nominaEmpleadoTramo).insert(
+        db
+            .into(db.nominaEmpleadoTramo)
+            .insert(
               NominaEmpleadoTramoCompanion.insert(
                 nominaEmpleadoId: renglonPendiente.id,
                 fechaInicio: DateTime(2026, 1, 1),
@@ -6336,56 +6749,75 @@ void main() {
     },
   );
 
-  test(
-    '26.json coincide con el esquema final de la Etapa 6D (tablas nuevas PagoNomina, AplicacionPagoNomina, '
-    'PagoNominaEvento, PagoNominaAttachment)',
-    () async {
-      final schema = await verifier.schemaAt(26);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+  test('26.json coincide con el esquema final de la Etapa 6D (tablas nuevas PagoNomina, AplicacionPagoNomina, '
+      'PagoNominaEvento, PagoNominaAttachment)', () async {
+    final schema = await verifier.schemaAt(26);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
 
-      expect(
-        tablas,
-        containsAll(['pago_nomina', 'aplicacion_pago_nomina', 'pago_nomina_evento', 'pago_nomina_attachment']),
-      );
+    expect(
+      tablas,
+      containsAll([
+        'pago_nomina',
+        'aplicacion_pago_nomina',
+        'pago_nomina_evento',
+        'pago_nomina_attachment',
+      ]),
+    );
 
-      final sqlPagoNomina =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pago_nomina'")
-                  .single['sql']
-              as String;
-      expect(sqlPagoNomina, contains('"folio_pago_nomina" TEXT NOT NULL UNIQUE'));
-      expect(sqlPagoNomina, contains('"egreso_id" TEXT NULL UNIQUE REFERENCES egreso (id)'));
-      expect(sqlPagoNomina, contains('CHECK (monto_total > 0)'));
+    final sqlPagoNomina =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pago_nomina'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlPagoNomina, contains('"folio_pago_nomina" TEXT NOT NULL UNIQUE'));
+    expect(
+      sqlPagoNomina,
+      contains('"egreso_id" TEXT NULL UNIQUE REFERENCES egreso (id)'),
+    );
+    expect(sqlPagoNomina, contains('CHECK (monto_total > 0)'));
 
-      final sqlAplicacion =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'aplicacion_pago_nomina'")
-                  .single['sql']
-              as String;
-      expect(sqlAplicacion, contains('"nomina_empleado_id" TEXT NOT NULL REFERENCES nomina_empleado (id)'));
-      expect(sqlAplicacion, contains('CHECK (monto > 0)'));
-      expect(sqlAplicacion, contains('CHECK (saldo_despues = saldo_antes - monto)'));
-      expect(sqlAplicacion, contains('CHECK (saldo_despues >= 0)'));
+    final sqlAplicacion =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'aplicacion_pago_nomina'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlAplicacion,
+      contains(
+        '"nomina_empleado_id" TEXT NOT NULL REFERENCES nomina_empleado (id)',
+      ),
+    );
+    expect(sqlAplicacion, contains('CHECK (monto > 0)'));
+    expect(
+      sqlAplicacion,
+      contains('CHECK (saldo_despues = saldo_antes - monto)'),
+    );
+    expect(sqlAplicacion, contains('CHECK (saldo_despues >= 0)'));
 
-      // Confirma la dirección deliberada de la FK: PagoNomina (tabla
-      // nueva) referencia a Egreso (tabla ya existente desde 4K.1) —
-      // Egreso mismo no gana ninguna columna nueva en esta etapa.
-      final sqlEgreso =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'egreso'")
-                  .single['sql']
-              as String;
-      expect(sqlEgreso, isNot(contains('pago_nomina')));
+    // Confirma la dirección deliberada de la FK: PagoNomina (tabla
+    // nueva) referencia a Egreso (tabla ya existente desde 4K.1) —
+    // Egreso mismo no gana ninguna columna nueva en esta etapa.
+    final sqlEgreso =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'egreso'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlEgreso, isNot(contains('pago_nomina')));
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 25 → 26 conserva una Nómina/NominaEmpleado real y crea las tablas de PagoNomina vacías, sembrando '
@@ -6412,26 +6844,45 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final nominas = await db.select(db.nomina).get();
-      expect(nominas, hasLength(1), reason: 'ninguna Nómina real debe perderse en una migración puramente aditiva');
+      expect(
+        nominas,
+        hasLength(1),
+        reason:
+            'ninguna Nómina real debe perderse en una migración puramente aditiva',
+      );
       expect(nominas.single.id, 'nomina-real');
 
       final pagos = await db.select(db.pagoNomina).get();
-      expect(pagos, isEmpty, reason: 'PagoNomina es tabla nueva en 6D, sin backfill');
+      expect(
+        pagos,
+        isEmpty,
+        reason: 'PagoNomina es tabla nueva en 6D, sin backfill',
+      );
       final aplicaciones = await db.select(db.aplicacionPagoNomina).get();
       expect(aplicaciones, isEmpty);
       final eventos = await db.select(db.pagoNominaEvento).get();
       expect(eventos, isEmpty);
 
       final codigoPagoNomina =
-          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('pago_nomina'))).getSingleOrNull();
-      expect(codigoPagoNomina, isNotNull, reason: 'runSeed debe sembrar el contador de folio de pago_nomina');
+          await (db.select(db.codigoSecuencia)..where(
+            (t) => t.entityType.equals('pago_nomina'),
+          )).getSingleOrNull();
+      expect(
+        codigoPagoNomina,
+        isNotNull,
+        reason: 'runSeed debe sembrar el contador de folio de pago_nomina',
+      );
       expect(codigoPagoNomina!.prefijo, 'PAGN');
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -6446,7 +6897,9 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final nomina = await db.into(db.nomina).insertReturning(
+      final nomina = await db
+          .into(db.nomina)
+          .insertReturning(
             NominaCompanion.insert(
               folio: 'NOM-000001',
               anio: 2026,
@@ -6458,7 +6911,9 @@ void main() {
               estatus: const Value('cerrada'),
             ),
           );
-      final empleado = await db.into(db.empleado).insertReturning(
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
             EmpleadoCompanion.insert(
               numeroEmpleado: 1,
               nombres: 'Juan',
@@ -6473,7 +6928,9 @@ void main() {
               aniosExperienciaSeguridad: 0,
             ),
           );
-      final renglon = await db.into(db.nominaEmpleado).insertReturning(
+      final renglon = await db
+          .into(db.nominaEmpleado)
+          .insertReturning(
             NominaEmpleadoCompanion.insert(
               nominaId: nomina.id,
               empleadoId: empleado.id,
@@ -6490,7 +6947,9 @@ void main() {
           );
 
       await expectLater(
-        db.into(db.pagoNomina).insert(
+        db
+            .into(db.pagoNomina)
+            .insert(
               PagoNominaCompanion.insert(
                 folioPagoNomina: 'PAGN-000001',
                 nominaId: nomina.id,
@@ -6503,7 +6962,9 @@ void main() {
         reason: 'monto_total = 0 debe rechazarse (debe ser > 0)',
       );
 
-      final pagoNomina = await db.into(db.pagoNomina).insertReturning(
+      final pagoNomina = await db
+          .into(db.pagoNomina)
+          .insertReturning(
             PagoNominaCompanion.insert(
               folioPagoNomina: 'PAGN-000001',
               nominaId: nomina.id,
@@ -6522,19 +6983,31 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.aplicacionPagoNomina).insert(baseAplicacion.copyWith(saldoDespues: const Value(1))),
+        db
+            .into(db.aplicacionPagoNomina)
+            .insert(baseAplicacion.copyWith(saldoDespues: const Value(1))),
         throwsA(anything),
-        reason: 'saldo_despues debe cuadrar exactamente con saldo_antes - monto',
+        reason:
+            'saldo_despues debe cuadrar exactamente con saldo_antes - monto',
       );
       await expectLater(
-        db.into(db.aplicacionPagoNomina).insert(
-              baseAplicacion.copyWith(monto: const Value(800000), saldoAntes: const Value(750000), saldoDespues: const Value(-50000)),
+        db
+            .into(db.aplicacionPagoNomina)
+            .insert(
+              baseAplicacion.copyWith(
+                monto: const Value(800000),
+                saldoAntes: const Value(750000),
+                saldoDespues: const Value(-50000),
+              ),
             ),
         throwsA(anything),
-        reason: 'saldo_despues nunca puede quedar negativo (nunca se sobrepaga un renglón)',
+        reason:
+            'saldo_despues nunca puede quedar negativo (nunca se sobrepaga un renglón)',
       );
 
-      final aplicacion = await db.into(db.aplicacionPagoNomina).insertReturning(baseAplicacion);
+      final aplicacion = await db
+          .into(db.aplicacionPagoNomina)
+          .insertReturning(baseAplicacion);
       expect(aplicacion.saldoDespues, 0);
 
       await db.close();
@@ -6569,27 +7042,42 @@ void main() {
 
       final sqlArticulo =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo'",
+                  )
                   .single['sql']
               as String;
       expect(sqlArticulo, contains('"folio" TEXT NOT NULL UNIQUE'));
-      expect(sqlArticulo, contains('CHECK (costo_referencia IS NULL OR costo_referencia >= 0)'));
+      expect(
+        sqlArticulo,
+        contains('CHECK (costo_referencia IS NULL OR costo_referencia >= 0)'),
+      );
 
       final sqlVariante =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo_variante'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo_variante'",
+                  )
                   .single['sql']
               as String;
       expect(sqlVariante, contains('UNIQUE (articulo_id, valor)'));
 
       final sqlMovimiento =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'movimiento_inventario'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'movimiento_inventario'",
+                  )
                   .single['sql']
               as String;
-      expect(sqlMovimiento, contains('CHECK (variante_id IS NULL OR unidad_id IS NULL)'));
+      expect(
+        sqlMovimiento,
+        contains('CHECK (variante_id IS NULL OR unidad_id IS NULL)'),
+      );
       expect(sqlMovimiento, contains('CHECK (cantidad > 0)'));
-      expect(sqlMovimiento, contains('CHECK (unidad_id IS NULL OR cantidad = 1)'));
+      expect(
+        sqlMovimiento,
+        contains('CHECK (unidad_id IS NULL OR cantidad = 1)'),
+      );
 
       schema.rawDatabase.dispose();
     },
@@ -6620,28 +7108,48 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final nominas = await db.select(db.nomina).get();
-      expect(nominas, hasLength(1), reason: 'ninguna Nómina real debe perderse en una migración puramente aditiva');
+      expect(
+        nominas,
+        hasLength(1),
+        reason:
+            'ninguna Nómina real debe perderse en una migración puramente aditiva',
+      );
 
       final articulos = await db.select(db.articulo).get();
-      expect(articulos, isEmpty, reason: 'Articulo es tabla nueva en 7A, sin backfill');
+      expect(
+        articulos,
+        isEmpty,
+        reason: 'Articulo es tabla nueva en 7A, sin backfill',
+      );
       final movimientos = await db.select(db.movimientoInventario).get();
       expect(movimientos, isEmpty);
 
       final codigoArticulo =
-          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('articulo'))).getSingleOrNull();
-      expect(codigoArticulo, isNotNull, reason: 'runSeed debe sembrar el contador de folio de articulo');
+          await (db.select(db.codigoSecuencia)
+            ..where((t) => t.entityType.equals('articulo'))).getSingleOrNull();
+      expect(
+        codigoArticulo,
+        isNotNull,
+        reason: 'runSeed debe sembrar el contador de folio de articulo',
+      );
       expect(codigoArticulo!.prefijo, 'ART');
 
       final codigoUnidad =
-          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('articulo_unidad'))).getSingleOrNull();
+          await (db.select(db.codigoSecuencia)..where(
+            (t) => t.entityType.equals('articulo_unidad'),
+          )).getSingleOrNull();
       expect(codigoUnidad, isNotNull);
       expect(codigoUnidad!.prefijo, 'UNI');
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -6656,12 +7164,14 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final categoria = await db.into(db.categoriaArticulo).insertReturning(
-            CategoriaArticuloCompanion.insert(nombre: 'Camisa'),
-          );
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Camisa'));
 
       await expectLater(
-        db.into(db.articulo).insert(
+        db
+            .into(db.articulo)
+            .insert(
               ArticuloCompanion.insert(
                 folio: 'ART-000001',
                 categoriaId: categoria.id,
@@ -6673,7 +7183,9 @@ void main() {
         reason: 'costo_referencia negativo debe rechazarse',
       );
 
-      final articulo = await db.into(db.articulo).insertReturning(
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
             ArticuloCompanion.insert(
               folio: 'ART-000001',
               categoriaId: categoria.id,
@@ -6681,16 +7193,29 @@ void main() {
               manejaVariante: const Value(true),
             ),
           );
-      final variante = await db.into(db.articuloVariante).insertReturning(
-            ArticuloVarianteCompanion.insert(articuloId: articulo.id, valor: 'M'),
+      final variante = await db
+          .into(db.articuloVariante)
+          .insertReturning(
+            ArticuloVarianteCompanion.insert(
+              articuloId: articulo.id,
+              valor: 'M',
+            ),
           );
 
-      final unidad = await db.into(db.articuloUnidad).insertReturning(
-            ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-0001'),
+      final unidad = await db
+          .into(db.articuloUnidad)
+          .insertReturning(
+            ArticuloUnidadCompanion.insert(
+              codigo: 'UNI-000001',
+              articuloId: articulo.id,
+              numeroSerie: 'SN-0001',
+            ),
           );
 
       await expectLater(
-        db.into(db.movimientoInventario).insert(
+        db
+            .into(db.movimientoInventario)
+            .insert(
               MovimientoInventarioCompanion.insert(
                 articuloId: articulo.id,
                 cantidad: 1,
@@ -6705,7 +7230,9 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.movimientoInventario).insert(
+        db
+            .into(db.movimientoInventario)
+            .insert(
               MovimientoInventarioCompanion.insert(
                 articuloId: articulo.id,
                 cantidad: 2,
@@ -6715,10 +7242,13 @@ void main() {
               ),
             ),
         throwsA(anything),
-        reason: 'un movimiento de unidad serializada siempre tiene cantidad = 1',
+        reason:
+            'un movimiento de unidad serializada siempre tiene cantidad = 1',
       );
 
-      final movimiento = await db.into(db.movimientoInventario).insertReturning(
+      final movimiento = await db
+          .into(db.movimientoInventario)
+          .insertReturning(
             MovimientoInventarioCompanion.insert(
               articuloId: articulo.id,
               cantidad: 20,
@@ -6746,11 +7276,20 @@ void main() {
               .map((row) => row['name'] as String)
               .toSet();
 
-      expect(tablas, containsAll(['asignacion', 'descuento_inventario', 'asignacion_attachment']));
+      expect(
+        tablas,
+        containsAll([
+          'asignacion',
+          'descuento_inventario',
+          'asignacion_attachment',
+        ]),
+      );
 
       final sqlAsignacion =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion'",
+                  )
                   .single['sql']
               as String;
       expect(
@@ -6760,8 +7299,14 @@ void main() {
           '(empleado_id IS NULL AND servicio_id IS NOT NULL))',
         ),
       );
-      expect(sqlAsignacion, contains('CHECK (variante_id IS NULL OR unidad_id IS NULL)'));
-      expect(sqlAsignacion, contains('CHECK (unidad_id IS NULL OR cantidad = 1)'));
+      expect(
+        sqlAsignacion,
+        contains('CHECK (variante_id IS NULL OR unidad_id IS NULL)'),
+      );
+      expect(
+        sqlAsignacion,
+        contains('CHECK (unidad_id IS NULL OR cantidad = 1)'),
+      );
       expect(
         sqlAsignacion,
         contains(
@@ -6771,12 +7316,16 @@ void main() {
       );
       expect(
         sqlAsignacion,
-        contains("CHECK (atribuible_al_empleado IS NULL OR estatus = 'danada' OR estatus = 'perdida')"),
+        contains(
+          "CHECK (atribuible_al_empleado IS NULL OR estatus = 'danada' OR estatus = 'perdida')",
+        ),
       );
 
       final sqlDescuento =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'descuento_inventario'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'descuento_inventario'",
+                  )
                   .single['sql']
               as String;
       expect(sqlDescuento, contains('CHECK (importe > 0)'));
@@ -6798,18 +7347,16 @@ void main() {
     },
   );
 
-  test(
-    'migración 27 → 28 conserva una Nómina real y crea las tablas de Asignaciones vacías, sin nuevas '
-    'entradas de CodigoSecuencia',
-    () async {
-      final schemaV27 = await verifier.schemaAt(27);
-      final raw = schemaV27.rawDatabase;
+  test('migración 27 → 28 conserva una Nómina real y crea las tablas de Asignaciones vacías, sin nuevas '
+      'entradas de CodigoSecuencia', () async {
+    final schemaV27 = await verifier.schemaAt(27);
+    final raw = schemaV27.rawDatabase;
 
-      raw.execute('''
+    raw.execute('''
       INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
       VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
     ''');
-      raw.execute('''
+    raw.execute('''
       INSERT INTO nomina (
         id, folio, anio, mes, tipo_periodo, fecha_inicio_periodo, fecha_fin_periodo, fecha_pago_ordinaria,
         estatus, created_at, updated_at, ciclo_vida_registro
@@ -6819,35 +7366,50 @@ void main() {
       );
     ''');
 
-      final db = AppDatabase(schemaV27.newConnection());
-      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+    final db = AppDatabase(schemaV27.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final nominas = await db.select(db.nomina).get();
-      expect(nominas, hasLength(1), reason: 'ninguna Nómina real debe perderse en una migración puramente aditiva');
+    final nominas = await db.select(db.nomina).get();
+    expect(
+      nominas,
+      hasLength(1),
+      reason:
+          'ninguna Nómina real debe perderse en una migración puramente aditiva',
+    );
 
-      final asignaciones = await db.select(db.asignacion).get();
-      expect(asignaciones, isEmpty, reason: 'Asignacion es tabla nueva en 7B, sin backfill');
-      final descuentos = await db.select(db.descuentoInventario).get();
-      expect(descuentos, isEmpty);
+    final asignaciones = await db.select(db.asignacion).get();
+    expect(
+      asignaciones,
+      isEmpty,
+      reason: 'Asignacion es tabla nueva en 7B, sin backfill',
+    );
+    final descuentos = await db.select(db.descuentoInventario).get();
+    expect(descuentos, isEmpty);
 
-      final codigosSecuencia = await db.select(db.codigoSecuencia).get();
-      expect(
-        codigosSecuencia,
-        hasLength(21),
-        reason: '7B no agrega ninguna entrada nueva de CodigoSecuencia (la migración corre hasta '
-            '_currentSchemaVersion, así que sí incluye las de vehiculo/linea_telefonica/compra sembradas en 8A/9A/10)',
-      );
+    final codigosSecuencia = await db.select(db.codigoSecuencia).get();
+    expect(
+      codigosSecuencia,
+      hasLength(30), // +1: folio TRF de transferencias (v91)
+      reason:
+          '7B no agrega ninguna entrada nueva de CodigoSecuencia (la migración corre hasta '
+          '_currentSchemaVersion, así que sí incluye las de vehiculo/linea_telefonica/compra sembradas en 8A/9A/10, '
+          'las 2 de descuentoProgramadoPrestamo/Botas sembradas en 57, la de entrega sembrada en 60, la de deuda '
+          'sembrada en 61, la de cuenta_financiera sembrada en 63, la de tiempoExtra sembrada en 65 y la de servicioEventual sembrada en 87)',
+    );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-      expect(violacionesFk, isEmpty);
+    final violacionesFk =
+        await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty);
 
-      final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-      expect(integridad, ['ok']);
+    final integridad =
+        await db
+            .customSelect('PRAGMA integrity_check')
+            .map((r) => r.data['integrity_check'] as String)
+            .get();
+    expect(integridad, ['ok']);
 
-      await db.close();
-    },
-  );
+    await db.close();
+  });
 
   test(
     'CHECK y protección de unidad serializada tras la migración: empleado/servicio mutuamente excluyentes, '
@@ -6858,10 +7420,12 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final categoria = await db.into(db.categoriaArticulo).insertReturning(
-            CategoriaArticuloCompanion.insert(nombre: 'Radios'),
-          );
-      final articulo = await db.into(db.articulo).insertReturning(
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Radios'));
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
             ArticuloCompanion.insert(
               folio: 'ART-000001',
               categoriaId: categoria.id,
@@ -6869,17 +7433,36 @@ void main() {
               manejaSerie: const Value(true),
             ),
           );
-      final unidad = await db.into(db.articuloUnidad).insertReturning(
-            ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-0001'),
+      final unidad = await db
+          .into(db.articuloUnidad)
+          .insertReturning(
+            ArticuloUnidadCompanion.insert(
+              codigo: 'UNI-000001',
+              articuloId: articulo.id,
+              numeroSerie: 'SN-0001',
+            ),
           );
 
-      final tipoServicio = await db.into(db.tipoServicio).insertReturning(
-            TipoServicioCompanion.insert(id: 'tipo-servicio-real', codigo: 'VIGILANCIA_FIJA', nombre: 'Vigilancia fija'),
+      final tipoServicio = await db
+          .into(db.tipoServicio)
+          .insertReturning(
+            TipoServicioCompanion.insert(
+              id: 'tipo-servicio-real',
+              codigo: 'VIGILANCIA_FIJA',
+              nombre: 'Vigilancia fija',
+            ),
           );
-      final cliente = await db.into(db.cliente).insertReturning(
-            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+      final cliente = await db
+          .into(db.cliente)
+          .insertReturning(
+            ClienteCompanion.insert(
+              codigo: 'CLI-000001',
+              nombreComercial: 'Sportium',
+            ),
           );
-      final servicio = await db.into(db.servicio).insertReturning(
+      final servicio = await db
+          .into(db.servicio)
+          .insertReturning(
             ServicioCompanion.insert(
               codigo: 'SER-000001',
               clienteId: cliente.id,
@@ -6888,7 +7471,9 @@ void main() {
               fechaInicio: DateTime(2026, 1, 1),
             ),
           );
-      final empleado = await db.into(db.empleado).insertReturning(
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
             EmpleadoCompanion.insert(
               numeroEmpleado: 1,
               nombres: 'Juan',
@@ -6913,41 +7498,64 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.asignacion).insert(
-              baseAsignacion.copyWith(unidadId: Value(unidad.id), servicioId: Value(servicio.id)),
+        db
+            .into(db.asignacion)
+            .insert(
+              baseAsignacion.copyWith(
+                unidadId: Value(unidad.id),
+                servicioId: Value(servicio.id),
+              ),
             ),
         throwsA(anything),
-        reason: 'empleado_id y servicio_id nunca pueden venir poblados a la vez',
+        reason:
+            'empleado_id y servicio_id nunca pueden venir poblados a la vez',
       );
       await expectLater(
-        db.into(db.asignacion).insert(
-              baseAsignacion.copyWith(unidadId: Value(unidad.id), empleadoId: const Value(null)),
+        db
+            .into(db.asignacion)
+            .insert(
+              baseAsignacion.copyWith(
+                unidadId: Value(unidad.id),
+                empleadoId: const Value(null),
+              ),
             ),
         throwsA(anything),
         reason: 'exactamente uno de empleado_id/servicio_id debe venir poblado',
       );
       await expectLater(
-        db.into(db.asignacion).insert(
-              baseAsignacion.copyWith(unidadId: Value(unidad.id), estatus: const Value('devuelta')),
+        db
+            .into(db.asignacion)
+            .insert(
+              baseAsignacion.copyWith(
+                unidadId: Value(unidad.id),
+                estatus: const Value('devuelta'),
+              ),
             ),
         throwsA(anything),
         reason: 'estatus != activa exige fecha_cierre poblada',
       );
       await expectLater(
-        db.into(db.asignacion).insert(
-              baseAsignacion.copyWith(unidadId: Value(unidad.id), atribuibleAlEmpleado: const Value(true)),
+        db
+            .into(db.asignacion)
+            .insert(
+              baseAsignacion.copyWith(
+                unidadId: Value(unidad.id),
+                atribuibleAlEmpleado: const Value(true),
+              ),
             ),
         throwsA(anything),
         reason: 'atribuible_al_empleado solo tiene sentido en danada/perdida',
       );
 
-      final asignacion = await db.into(db.asignacion).insertReturning(
-            baseAsignacion.copyWith(unidadId: Value(unidad.id)),
-          );
+      final asignacion = await db
+          .into(db.asignacion)
+          .insertReturning(baseAsignacion.copyWith(unidadId: Value(unidad.id)));
       expect(asignacion.estatus, 'activa');
 
       await expectLater(
-        db.into(db.asignacion).insert(
+        db
+            .into(db.asignacion)
+            .insert(
               AsignacionCompanion.insert(
                 articuloId: articulo.id,
                 cantidad: 1,
@@ -6957,11 +7565,14 @@ void main() {
               ),
             ),
         throwsA(anything),
-        reason: 'idx_asignacion_unidad_activa rechaza una segunda asignación activa sobre la misma unidad',
+        reason:
+            'idx_asignacion_unidad_activa rechaza una segunda asignación activa sobre la misma unidad',
       );
 
       await expectLater(
-        db.into(db.descuentoInventario).insert(
+        db
+            .into(db.descuentoInventario)
+            .insert(
               DescuentoInventarioCompanion.insert(
                 asignacionId: asignacion.id,
                 empleadoId: empleado.id,
@@ -6973,7 +7584,9 @@ void main() {
         reason: 'importe de un DescuentoInventario siempre debe ser positivo',
       );
 
-      final descuento = await db.into(db.descuentoInventario).insertReturning(
+      final descuento = await db
+          .into(db.descuentoInventario)
+          .insertReturning(
             DescuentoInventarioCompanion.insert(
               asignacionId: asignacion.id,
               empleadoId: empleado.id,
@@ -7002,33 +7615,38 @@ void main() {
 
       final sqlAsignacionAttachment =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_attachment'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_attachment'",
+                  )
                   .single['sql']
               as String;
       expect(sqlAsignacionAttachment, contains('asignacion_id'));
       expect(
         sqlAsignacionAttachment,
         contains('PRIMARY KEY'),
-        reason: 'la llave primaria debe seguir declarada explícitamente (ahora compuesta)',
+        reason:
+            'la llave primaria debe seguir declarada explícitamente (ahora compuesta)',
       );
 
       schema.rawDatabase.dispose();
     },
   );
 
-  test('migración 28 → 29 conserva una Asignacion real y recrea AsignacionAttachment vacía', () async {
-    final schemaV28 = await verifier.schemaAt(28);
-    final raw = schemaV28.rawDatabase;
+  test(
+    'migración 28 → 29 conserva una Asignacion real y recrea AsignacionAttachment vacía',
+    () async {
+      final schemaV28 = await verifier.schemaAt(28);
+      final raw = schemaV28.rawDatabase;
 
-    raw.execute('''
+      raw.execute('''
       INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
       VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
     ''');
-    raw.execute('''
+      raw.execute('''
       INSERT INTO categoria_articulo (id, nombre, created_at, updated_at, ciclo_vida_registro)
       VALUES ('categoria-real', 'Radios', 1700000000, 1700000000, 'activo');
     ''');
-    raw.execute('''
+      raw.execute('''
       INSERT INTO articulo (
         id, folio, categoria_id, nombre, maneja_variante, maneja_serie,
         created_at, updated_at, ciclo_vida_registro
@@ -7037,7 +7655,7 @@ void main() {
         1700000000, 1700000000, 'activo'
       );
     ''');
-    raw.execute('''
+      raw.execute('''
       INSERT INTO empleado (
         id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
         estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
@@ -7048,7 +7666,7 @@ void main() {
         1700000000, 1700000000, 'activo'
       );
     ''');
-    raw.execute('''
+      raw.execute('''
       INSERT INTO asignacion (
         id, articulo_id, cantidad, empleado_id, fecha_entrega, estatus,
         created_at, updated_at, ciclo_vida_registro
@@ -7058,24 +7676,39 @@ void main() {
       );
     ''');
 
-    final db = AppDatabase(schemaV28.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+      final db = AppDatabase(schemaV28.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-    final asignaciones = await db.select(db.asignacion).get();
-    expect(asignaciones, hasLength(1), reason: 'ninguna Asignacion real debe perderse en una migración puramente estructural');
+      final asignaciones = await db.select(db.asignacion).get();
+      expect(
+        asignaciones,
+        hasLength(1),
+        reason:
+            'ninguna Asignacion real debe perderse en una migración puramente estructural',
+      );
 
-    final asignacionAttachments = await db.select(db.asignacionAttachment).get();
-    expect(asignacionAttachments, isEmpty, reason: 'AsignacionAttachment nunca tuvo filas — se recrea vacía');
+      final asignacionAttachments =
+          await db.select(db.asignacionAttachment).get();
+      expect(
+        asignacionAttachments,
+        isEmpty,
+        reason: 'AsignacionAttachment nunca tuvo filas — se recrea vacía',
+      );
 
-    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-    expect(violacionesFk, isEmpty);
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
 
-    final integridad =
-        await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-    expect(integridad, ['ok']);
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, ['ok']);
 
-    await db.close();
-  });
+      await db.close();
+    },
+  );
 
   test(
     'llave primaria compuesta de AsignacionAttachment: un mismo Attachment puede unirse a varias Asignaciones, '
@@ -7085,13 +7718,21 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final categoria = await db.into(db.categoriaArticulo).insertReturning(
-            CategoriaArticuloCompanion.insert(nombre: 'Radios'),
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Radios'));
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              categoriaId: categoria.id,
+              nombre: 'Radio Motorola',
+            ),
           );
-      final articulo = await db.into(db.articulo).insertReturning(
-            ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Radio Motorola'),
-          );
-      final empleado = await db.into(db.empleado).insertReturning(
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
             EmpleadoCompanion.insert(
               numeroEmpleado: 1,
               nombres: 'Juan',
@@ -7106,14 +7747,30 @@ void main() {
               aniosExperienciaSeguridad: 3,
             ),
           );
-      final asignacion1 = await db.into(db.asignacion).insertReturning(
-            AsignacionCompanion.insert(articuloId: articulo.id, cantidad: 1, empleadoId: Value(empleado.id), fechaEntrega: DateTime(2026, 1, 1)),
+      final asignacion1 = await db
+          .into(db.asignacion)
+          .insertReturning(
+            AsignacionCompanion.insert(
+              articuloId: articulo.id,
+              cantidad: 1,
+              empleadoId: Value(empleado.id),
+              fechaEntrega: DateTime(2026, 1, 1),
+            ),
           );
-      final asignacion2 = await db.into(db.asignacion).insertReturning(
-            AsignacionCompanion.insert(articuloId: articulo.id, cantidad: 1, empleadoId: Value(empleado.id), fechaEntrega: DateTime(2026, 1, 1)),
+      final asignacion2 = await db
+          .into(db.asignacion)
+          .insertReturning(
+            AsignacionCompanion.insert(
+              articuloId: articulo.id,
+              cantidad: 1,
+              empleadoId: Value(empleado.id),
+              fechaEntrega: DateTime(2026, 1, 1),
+            ),
           );
 
-      final attachment = await db.into(db.attachment).insertReturning(
+      final attachment = await db
+          .into(db.attachment)
+          .insertReturning(
             AttachmentCompanion.insert(
               id: 'attachment-resguardo',
               categoria: const Value('resguardo'),
@@ -7125,22 +7782,43 @@ void main() {
             ),
           );
 
-      await db.into(db.asignacionAttachment).insert(
-            AsignacionAttachmentCompanion.insert(attachmentId: attachment.id, asignacionId: asignacion1.id),
+      await db
+          .into(db.asignacionAttachment)
+          .insert(
+            AsignacionAttachmentCompanion.insert(
+              attachmentId: attachment.id,
+              asignacionId: asignacion1.id,
+            ),
           );
-      await db.into(db.asignacionAttachment).insert(
-            AsignacionAttachmentCompanion.insert(attachmentId: attachment.id, asignacionId: asignacion2.id),
+      await db
+          .into(db.asignacionAttachment)
+          .insert(
+            AsignacionAttachmentCompanion.insert(
+              attachmentId: attachment.id,
+              asignacionId: asignacion2.id,
+            ),
           );
 
       final filas = await db.select(db.asignacionAttachment).get();
-      expect(filas, hasLength(2), reason: 'un mismo Attachment sí debe poder unirse a más de una Asignación');
+      expect(
+        filas,
+        hasLength(2),
+        reason:
+            'un mismo Attachment sí debe poder unirse a más de una Asignación',
+      );
 
       await expectLater(
-        db.into(db.asignacionAttachment).insert(
-              AsignacionAttachmentCompanion.insert(attachmentId: attachment.id, asignacionId: asignacion1.id),
+        db
+            .into(db.asignacionAttachment)
+            .insert(
+              AsignacionAttachmentCompanion.insert(
+                attachmentId: attachment.id,
+                asignacionId: asignacion1.id,
+              ),
             ),
         throwsA(anything),
-        reason: 'el mismo par (attachment_id, asignacion_id) no puede repetirse',
+        reason:
+            'el mismo par (attachment_id, asignacion_id) no puede repetirse',
       );
 
       await db.close();
@@ -7164,11 +7842,16 @@ void main() {
 
       final sqlVehiculo =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo'",
+                  )
                   .single['sql']
               as String;
       expect(sqlVehiculo, contains('"codigo" TEXT NOT NULL UNIQUE'));
-      expect(sqlVehiculo, contains('CHECK (costo_adquisicion IS NULL OR costo_adquisicion >= 0)'));
+      expect(
+        sqlVehiculo,
+        contains('CHECK (costo_adquisicion IS NULL OR costo_adquisicion >= 0)'),
+      );
       expect(
         sqlVehiculo,
         contains(
@@ -7250,23 +7933,41 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final asignaciones = await db.select(db.asignacion).get();
-      expect(asignaciones, hasLength(1), reason: 'ninguna Asignacion real debe perderse en una migración puramente aditiva');
+      expect(
+        asignaciones,
+        hasLength(1),
+        reason:
+            'ninguna Asignacion real debe perderse en una migración puramente aditiva',
+      );
 
       final vehiculos = await db.select(db.vehiculo).get();
-      expect(vehiculos, isEmpty, reason: 'Vehiculo es tabla nueva en 8A, sin backfill');
+      expect(
+        vehiculos,
+        isEmpty,
+        reason: 'Vehiculo es tabla nueva en 8A, sin backfill',
+      );
       final vehiculoAttachments = await db.select(db.vehiculoAttachment).get();
       expect(vehiculoAttachments, isEmpty);
 
       final codigoVehiculo =
-          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('vehiculo'))).getSingleOrNull();
-      expect(codigoVehiculo, isNotNull, reason: 'runSeed debe sembrar el contador de código de vehiculo');
+          await (db.select(db.codigoSecuencia)
+            ..where((t) => t.entityType.equals('vehiculo'))).getSingleOrNull();
+      expect(
+        codigoVehiculo,
+        isNotNull,
+        reason: 'runSeed debe sembrar el contador de código de vehiculo',
+      );
       expect(codigoVehiculo!.prefijo, 'VEH');
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -7289,41 +7990,73 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.vehiculo).insert(baseVehiculo.copyWith(costoAdquisicion: const Value(-100))),
+        db
+            .into(db.vehiculo)
+            .insert(baseVehiculo.copyWith(costoAdquisicion: const Value(-100))),
         throwsA(anything),
         reason: 'costo_adquisicion negativo debe rechazarse',
       );
       await expectLater(
-        db.into(db.vehiculo).insert(baseVehiculo.copyWith(estatus: const Value('baja'))),
+        db
+            .into(db.vehiculo)
+            .insert(baseVehiculo.copyWith(estatus: const Value('baja'))),
         throwsA(anything),
         reason: 'estatus = baja exige fecha_baja poblada',
       );
       await expectLater(
-        db.into(db.vehiculo).insert(baseVehiculo.copyWith(fechaBaja: Value(DateTime(2026, 1, 1)))),
+        db
+            .into(db.vehiculo)
+            .insert(
+              baseVehiculo.copyWith(fechaBaja: Value(DateTime(2026, 1, 1))),
+            ),
         throwsA(anything),
         reason: 'fecha_baja poblada exige estatus = baja',
       );
 
-      final vehiculo1 = await db.into(db.vehiculo).insertReturning(
-            baseVehiculo.copyWith(codigo: const Value('VEH-000001'), placas: const Value('ABC-123'), vin: const Value('VIN-0001')),
+      final vehiculo1 = await db
+          .into(db.vehiculo)
+          .insertReturning(
+            baseVehiculo.copyWith(
+              codigo: const Value('VEH-000001'),
+              placas: const Value('ABC-123'),
+              vin: const Value('VIN-0001'),
+            ),
           );
       expect(vehiculo1.estatus, 'disponible');
 
       // Dos vehículos sin placas/VIN capturados deben coexistir sin problema.
-      await db.into(db.vehiculo).insertReturning(
+      await db
+          .into(db.vehiculo)
+          .insertReturning(
             baseVehiculo.copyWith(codigo: const Value('VEH-000002')),
           );
-      await db.into(db.vehiculo).insertReturning(
+      await db
+          .into(db.vehiculo)
+          .insertReturning(
             baseVehiculo.copyWith(codigo: const Value('VEH-000003')),
           );
 
       await expectLater(
-        db.into(db.vehiculo).insert(baseVehiculo.copyWith(codigo: const Value('VEH-000004'), placas: const Value('ABC-123'))),
+        db
+            .into(db.vehiculo)
+            .insert(
+              baseVehiculo.copyWith(
+                codigo: const Value('VEH-000004'),
+                placas: const Value('ABC-123'),
+              ),
+            ),
         throwsA(anything),
         reason: 'idx_vehiculo_placas_unica rechaza placas duplicadas',
       );
       await expectLater(
-        db.into(db.vehiculo).insert(baseVehiculo.copyWith(codigo: const Value('VEH-000005'), vin: const Value('VIN-0001'))),
+        db
+            .into(db.vehiculo)
+            .insert(
+              baseVehiculo.copyWith(
+                codigo: const Value('VEH-000005'),
+                vin: const Value('VIN-0001'),
+              ),
+            ),
         throwsA(anything),
         reason: 'idx_vehiculo_vin_unico rechaza VIN duplicado',
       );
@@ -7332,58 +8065,67 @@ void main() {
     },
   );
 
-  test(
-    '31.json coincide con el esquema final de la Etapa 8B (tablas nuevas AsignacionVehiculo, VehiculoKilometraje '
-    '+ índice único parcial idx_asignacion_vehiculo_vigente)',
-    () async {
-      final schema = await verifier.schemaAt(31);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+  test('31.json coincide con el esquema final de la Etapa 8B (tablas nuevas AsignacionVehiculo, VehiculoKilometraje '
+      '+ índice único parcial idx_asignacion_vehiculo_vigente)', () async {
+    final schema = await verifier.schemaAt(31);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
 
-      expect(tablas, containsAll(['asignacion_vehiculo', 'vehiculo_kilometraje']));
+    expect(
+      tablas,
+      containsAll(['asignacion_vehiculo', 'vehiculo_kilometraje']),
+    );
 
-      final sqlAsignacion =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_vehiculo'")
-                  .single['sql']
-              as String;
-      expect(
-        sqlAsignacion,
-        contains(
-          'CHECK ((empleado_id IS NOT NULL AND servicio_id IS NULL) OR '
-          '(empleado_id IS NULL AND servicio_id IS NOT NULL))',
-        ),
-      );
-      expect(sqlAsignacion, contains('CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)'));
+    final sqlAsignacion =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_vehiculo'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlAsignacion,
+      contains(
+        'CHECK ((empleado_id IS NOT NULL AND servicio_id IS NULL) OR '
+        '(empleado_id IS NULL AND servicio_id IS NOT NULL))',
+      ),
+    );
+    expect(
+      sqlAsignacion,
+      contains(
+        'CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)',
+      ),
+    );
 
-      final sqlKilometraje =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo_kilometraje'")
-                  .single['sql']
-              as String;
-      expect(sqlKilometraje, contains('CHECK (kilometraje >= 0)'));
+    final sqlKilometraje =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo_kilometraje'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlKilometraje, contains('CHECK (kilometraje >= 0)'));
 
-      final sqlIndice =
-          schema.rawDatabase
-                  .select(
-                    "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_asignacion_vehiculo_vigente'",
-                  )
-                  .single['sql']
-              as String;
-      expect(
-        sqlIndice,
-        'CREATE UNIQUE INDEX idx_asignacion_vehiculo_vigente '
-        'ON asignacion_vehiculo (vehiculo_id) WHERE fecha_termino IS NULL',
-      );
+    final sqlIndice =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_asignacion_vehiculo_vigente'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlIndice,
+      'CREATE UNIQUE INDEX idx_asignacion_vehiculo_vigente '
+      'ON asignacion_vehiculo (vehiculo_id) WHERE fecha_termino IS NULL',
+    );
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 30 → 31 conserva un Vehículo real y crea las tablas de Asignaciones/Kilometraje vacías',
@@ -7407,18 +8149,31 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final vehiculos = await db.select(db.vehiculo).get();
-      expect(vehiculos, hasLength(1), reason: 'ningún Vehículo real debe perderse en una migración puramente aditiva');
+      expect(
+        vehiculos,
+        hasLength(1),
+        reason:
+            'ningún Vehículo real debe perderse en una migración puramente aditiva',
+      );
 
       final asignaciones = await db.select(db.asignacionVehiculo).get();
-      expect(asignaciones, isEmpty, reason: 'AsignacionVehiculo es tabla nueva en 8B, sin backfill');
+      expect(
+        asignaciones,
+        isEmpty,
+        reason: 'AsignacionVehiculo es tabla nueva en 8B, sin backfill',
+      );
       final lecturas = await db.select(db.vehiculoKilometraje).get();
       expect(lecturas, isEmpty);
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -7434,10 +8189,19 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final vehiculo = await db.into(db.vehiculo).insertReturning(
-            VehiculoCompanion.insert(codigo: 'VEH-000001', marca: 'BMW', modelo: '320i', tipoVehiculo: 'sedan'),
+      final vehiculo = await db
+          .into(db.vehiculo)
+          .insertReturning(
+            VehiculoCompanion.insert(
+              codigo: 'VEH-000001',
+              marca: 'BMW',
+              modelo: '320i',
+              tipoVehiculo: 'sedan',
+            ),
           );
-      final empleado = await db.into(db.empleado).insertReturning(
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
             EmpleadoCompanion.insert(
               numeroEmpleado: 1,
               nombres: 'Juan',
@@ -7452,13 +8216,26 @@ void main() {
               aniosExperienciaSeguridad: 3,
             ),
           );
-      final tipoServicio = await db.into(db.tipoServicio).insertReturning(
-            TipoServicioCompanion.insert(id: 'tipo-servicio-real', codigo: 'VIGILANCIA_FIJA', nombre: 'Vigilancia fija'),
+      final tipoServicio = await db
+          .into(db.tipoServicio)
+          .insertReturning(
+            TipoServicioCompanion.insert(
+              id: 'tipo-servicio-real',
+              codigo: 'VIGILANCIA_FIJA',
+              nombre: 'Vigilancia fija',
+            ),
           );
-      final cliente = await db.into(db.cliente).insertReturning(
-            ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+      final cliente = await db
+          .into(db.cliente)
+          .insertReturning(
+            ClienteCompanion.insert(
+              codigo: 'CLI-000001',
+              nombreComercial: 'Sportium',
+            ),
           );
-      final servicio = await db.into(db.servicio).insertReturning(
+      final servicio = await db
+          .into(db.servicio)
+          .insertReturning(
             ServicioCompanion.insert(
               codigo: 'SER-000001',
               clienteId: cliente.id,
@@ -7475,19 +8252,29 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.asignacionVehiculo).insert(
-              baseAsignacion.copyWith(empleadoId: Value(empleado.id), servicioId: Value(servicio.id)),
+        db
+            .into(db.asignacionVehiculo)
+            .insert(
+              baseAsignacion.copyWith(
+                empleadoId: Value(empleado.id),
+                servicioId: Value(servicio.id),
+              ),
             ),
         throwsA(anything),
-        reason: 'empleado_id y servicio_id nunca pueden venir poblados a la vez',
+        reason:
+            'empleado_id y servicio_id nunca pueden venir poblados a la vez',
       );
       await expectLater(
-        db.into(db.asignacionVehiculo).insert(baseAsignacion.copyWith(empleadoId: const Value(null))),
+        db
+            .into(db.asignacionVehiculo)
+            .insert(baseAsignacion.copyWith(empleadoId: const Value(null))),
         throwsA(anything),
         reason: 'exactamente uno de empleado_id/servicio_id debe venir poblado',
       );
       await expectLater(
-        db.into(db.asignacionVehiculo).insert(
+        db
+            .into(db.asignacionVehiculo)
+            .insert(
               baseAsignacion.copyWith(
                 empleadoId: Value(empleado.id),
                 fechaTermino: Value(DateTime(2025, 12, 1)),
@@ -7497,13 +8284,17 @@ void main() {
         reason: 'fecha_termino no puede ser anterior a fecha_inicio',
       );
 
-      final asignacion = await db.into(db.asignacionVehiculo).insertReturning(
+      final asignacion = await db
+          .into(db.asignacionVehiculo)
+          .insertReturning(
             baseAsignacion.copyWith(empleadoId: Value(empleado.id)),
           );
       expect(asignacion.fechaTermino, isNull);
 
       await expectLater(
-        db.into(db.asignacionVehiculo).insert(
+        db
+            .into(db.asignacionVehiculo)
+            .insert(
               AsignacionVehiculoCompanion.insert(
                 vehiculoId: vehiculo.id,
                 empleadoId: const Value(null),
@@ -7512,11 +8303,14 @@ void main() {
               ),
             ),
         throwsA(anything),
-        reason: 'idx_asignacion_vehiculo_vigente rechaza una segunda asignación vigente para el mismo Vehículo',
+        reason:
+            'idx_asignacion_vehiculo_vigente rechaza una segunda asignación vigente para el mismo Vehículo',
       );
 
       await expectLater(
-        db.into(db.vehiculoKilometraje).insert(
+        db
+            .into(db.vehiculoKilometraje)
+            .insert(
               VehiculoKilometrajeCompanion.insert(
                 vehiculoId: vehiculo.id,
                 fecha: DateTime(2026, 1, 1),
@@ -7528,7 +8322,9 @@ void main() {
         reason: 'kilometraje nunca puede ser negativo',
       );
 
-      final lectura = await db.into(db.vehiculoKilometraje).insertReturning(
+      final lectura = await db
+          .into(db.vehiculoKilometraje)
+          .insertReturning(
             VehiculoKilometrajeCompanion.insert(
               vehiculoId: vehiculo.id,
               fecha: DateTime(2026, 1, 1),
@@ -7542,36 +8338,38 @@ void main() {
     },
   );
 
-  test(
-    '32.json coincide con el esquema final de la Etapa 8C (tablas nuevas VehiculoDocumento, '
-    'VehiculoDocumentoAttachment, sin índices propios)',
-    () async {
-      final schema = await verifier.schemaAt(32);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+  test('32.json coincide con el esquema final de la Etapa 8C (tablas nuevas VehiculoDocumento, '
+      'VehiculoDocumentoAttachment, sin índices propios)', () async {
+    final schema = await verifier.schemaAt(32);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
 
-      expect(tablas, containsAll(['vehiculo_documento', 'vehiculo_documento_attachment']));
+    expect(
+      tablas,
+      containsAll(['vehiculo_documento', 'vehiculo_documento_attachment']),
+    );
 
-      final sqlDocumento =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo_documento'")
-                  .single['sql']
-              as String;
-      expect(
-        sqlDocumento,
-        contains(
-          'CHECK (fecha_vencimiento IS NULL OR fecha_emision IS NULL OR fecha_vencimiento >= fecha_emision)',
-        ),
-      );
+    final sqlDocumento =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo_documento'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlDocumento,
+      contains(
+        'CHECK (fecha_vencimiento IS NULL OR fecha_emision IS NULL OR fecha_vencimiento >= fecha_emision)',
+      ),
+    );
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 31 → 32 conserva un Vehículo real y crea la tabla VehiculoDocumento vacía',
@@ -7595,16 +8393,29 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final vehiculos = await db.select(db.vehiculo).get();
-      expect(vehiculos, hasLength(1), reason: 'ningún Vehículo real debe perderse en una migración puramente aditiva');
+      expect(
+        vehiculos,
+        hasLength(1),
+        reason:
+            'ningún Vehículo real debe perderse en una migración puramente aditiva',
+      );
 
       final documentos = await db.select(db.vehiculoDocumento).get();
-      expect(documentos, isEmpty, reason: 'VehiculoDocumento es tabla nueva en 8C, sin backfill');
+      expect(
+        documentos,
+        isEmpty,
+        reason: 'VehiculoDocumento es tabla nueva en 8C, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -7618,12 +8429,21 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final vehiculo = await db.into(db.vehiculo).insertReturning(
-            VehiculoCompanion.insert(codigo: 'VEH-000001', marca: 'BMW', modelo: '320i', tipoVehiculo: 'sedan'),
+      final vehiculo = await db
+          .into(db.vehiculo)
+          .insertReturning(
+            VehiculoCompanion.insert(
+              codigo: 'VEH-000001',
+              marca: 'BMW',
+              modelo: '320i',
+              tipoVehiculo: 'sedan',
+            ),
           );
 
       await expectLater(
-        db.into(db.vehiculoDocumento).insert(
+        db
+            .into(db.vehiculoDocumento)
+            .insert(
               VehiculoDocumentoCompanion.insert(
                 vehiculoId: vehiculo.id,
                 tipo: 'seguro',
@@ -7635,13 +8455,19 @@ void main() {
         reason: 'fecha_vencimiento no puede ser anterior a fecha_emision',
       );
 
-      final documento = await db.into(db.vehiculoDocumento).insertReturning(
+      final documento = await db
+          .into(db.vehiculoDocumento)
+          .insertReturning(
             VehiculoDocumentoCompanion.insert(
               vehiculoId: vehiculo.id,
               tipo: 'facturaCartaFactura',
             ),
           );
-      expect(documento.fechaVencimiento, isNull, reason: 'documentos sin vencimiento (ej. factura) son válidos');
+      expect(
+        documento.fechaVencimiento,
+        isNull,
+        reason: 'documentos sin vencimiento (ej. factura) son válidos',
+      );
 
       await db.close();
     },
@@ -7660,17 +8486,38 @@ void main() {
               .map((row) => row['name'] as String)
               .toSet();
 
-      expect(tablas, containsAll(['vehiculo_mantenimiento', 'vehiculo_mantenimiento_attachment']));
+      expect(
+        tablas,
+        containsAll([
+          'vehiculo_mantenimiento',
+          'vehiculo_mantenimiento_attachment',
+        ]),
+      );
 
       final sqlMantenimiento =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo_mantenimiento'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vehiculo_mantenimiento'",
+                  )
                   .single['sql']
               as String;
-      expect(sqlMantenimiento, contains('CHECK (kilometraje IS NULL OR kilometraje >= 0)'));
+      expect(
+        sqlMantenimiento,
+        contains('CHECK (kilometraje IS NULL OR kilometraje >= 0)'),
+      );
       expect(sqlMantenimiento, contains('CHECK (costo IS NULL OR costo >= 0)'));
-      expect(sqlMantenimiento, contains('CHECK (proximo_mantenimiento_kilometraje IS NULL OR proximo_mantenimiento_kilometraje >= 0)'));
-      expect(sqlMantenimiento, contains('CHECK (proximo_mantenimiento_fecha IS NULL OR proximo_mantenimiento_fecha >= fecha)'));
+      expect(
+        sqlMantenimiento,
+        contains(
+          'CHECK (proximo_mantenimiento_kilometraje IS NULL OR proximo_mantenimiento_kilometraje >= 0)',
+        ),
+      );
+      expect(
+        sqlMantenimiento,
+        contains(
+          'CHECK (proximo_mantenimiento_fecha IS NULL OR proximo_mantenimiento_fecha >= fecha)',
+        ),
+      );
 
       schema.rawDatabase.dispose();
     },
@@ -7698,16 +8545,29 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final vehiculos = await db.select(db.vehiculo).get();
-      expect(vehiculos, hasLength(1), reason: 'ningún Vehículo real debe perderse en una migración puramente aditiva');
+      expect(
+        vehiculos,
+        hasLength(1),
+        reason:
+            'ningún Vehículo real debe perderse en una migración puramente aditiva',
+      );
 
       final mantenimientos = await db.select(db.vehiculoMantenimiento).get();
-      expect(mantenimientos, isEmpty, reason: 'VehiculoMantenimiento es tabla nueva en 8D, sin backfill');
+      expect(
+        mantenimientos,
+        isEmpty,
+        reason: 'VehiculoMantenimiento es tabla nueva en 8D, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -7722,8 +8582,15 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final vehiculo = await db.into(db.vehiculo).insertReturning(
-            VehiculoCompanion.insert(codigo: 'VEH-000001', marca: 'BMW', modelo: '320i', tipoVehiculo: 'sedan'),
+      final vehiculo = await db
+          .into(db.vehiculo)
+          .insertReturning(
+            VehiculoCompanion.insert(
+              codigo: 'VEH-000001',
+              marca: 'BMW',
+              modelo: '320i',
+              tipoVehiculo: 'sedan',
+            ),
           );
       final base = VehiculoMantenimientoCompanion.insert(
         vehiculoId: vehiculo.id,
@@ -7733,30 +8600,46 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.vehiculoMantenimiento).insert(base.copyWith(kilometraje: const Value(-1))),
+        db
+            .into(db.vehiculoMantenimiento)
+            .insert(base.copyWith(kilometraje: const Value(-1))),
         throwsA(anything),
         reason: 'kilometraje nunca puede ser negativo',
       );
       await expectLater(
-        db.into(db.vehiculoMantenimiento).insert(base.copyWith(costo: const Value(-1))),
+        db
+            .into(db.vehiculoMantenimiento)
+            .insert(base.copyWith(costo: const Value(-1))),
         throwsA(anything),
         reason: 'costo nunca puede ser negativo',
       );
       await expectLater(
-        db.into(db.vehiculoMantenimiento).insert(base.copyWith(proximoMantenimientoKilometraje: const Value(-1))),
+        db
+            .into(db.vehiculoMantenimiento)
+            .insert(
+              base.copyWith(proximoMantenimientoKilometraje: const Value(-1)),
+            ),
         throwsA(anything),
         reason: 'proximo_mantenimiento_kilometraje nunca puede ser negativo',
       );
       await expectLater(
-        db.into(db.vehiculoMantenimiento).insert(
-              base.copyWith(proximoMantenimientoFecha: Value(DateTime(2026, 1, 5))),
+        db
+            .into(db.vehiculoMantenimiento)
+            .insert(
+              base.copyWith(
+                proximoMantenimientoFecha: Value(DateTime(2026, 1, 5)),
+              ),
             ),
         throwsA(anything),
         reason: 'proximo_mantenimiento_fecha no puede ser anterior a fecha',
       );
 
-      final registro = await db.into(db.vehiculoMantenimiento).insertReturning(
-            base.copyWith(proximoMantenimientoFecha: Value(DateTime(2026, 4, 10))),
+      final registro = await db
+          .into(db.vehiculoMantenimiento)
+          .insertReturning(
+            base.copyWith(
+              proximoMantenimientoFecha: Value(DateTime(2026, 4, 10)),
+            ),
           );
       expect(registro.proximoMantenimientoFecha, DateTime(2026, 4, 10));
 
@@ -7777,11 +8660,16 @@ void main() {
               .map((row) => row['name'] as String)
               .toSet();
 
-      expect(tablas, containsAll(['linea_telefonica', 'linea_telefonica_plan']));
+      expect(
+        tablas,
+        containsAll(['linea_telefonica', 'linea_telefonica_plan']),
+      );
 
       final sqlLinea =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica'",
+                  )
                   .single['sql']
               as String;
       expect(sqlLinea, contains('"codigo" TEXT NOT NULL UNIQUE'));
@@ -7808,14 +8696,23 @@ void main() {
 
       final sqlPlan =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica_plan'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica_plan'",
+                  )
                   .single['sql']
               as String;
       expect(sqlPlan, contains('CHECK (costo_mensual >= 0)'));
-      expect(sqlPlan, contains('CHECK (fecha_fin_vigencia IS NULL OR fecha_fin_vigencia >= fecha_inicio_vigencia)'));
       expect(
         sqlPlan,
-        contains('CHECK (fecha_fin_permanencia IS NULL OR fecha_fin_permanencia >= fecha_inicio_vigencia)'),
+        contains(
+          'CHECK (fecha_fin_vigencia IS NULL OR fecha_fin_vigencia >= fecha_inicio_vigencia)',
+        ),
+      );
+      expect(
+        sqlPlan,
+        contains(
+          'CHECK (fecha_fin_permanencia IS NULL OR fecha_fin_permanencia >= fecha_inicio_vigencia)',
+        ),
       );
 
       schema.rawDatabase.dispose();
@@ -7845,21 +8742,41 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final vehiculos = await db.select(db.vehiculo).get();
-      expect(vehiculos, hasLength(1), reason: 'ningún Vehículo real debe perderse en una migración puramente aditiva');
+      expect(
+        vehiculos,
+        hasLength(1),
+        reason:
+            'ningún Vehículo real debe perderse en una migración puramente aditiva',
+      );
 
       final lineas = await db.select(db.lineaTelefonica).get();
-      expect(lineas, isEmpty, reason: 'LineaTelefonica es tabla nueva en 9A, sin backfill');
+      expect(
+        lineas,
+        isEmpty,
+        reason: 'LineaTelefonica es tabla nueva en 9A, sin backfill',
+      );
 
-      final codigoLinea = await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('linea_telefonica')))
-          .getSingleOrNull();
-      expect(codigoLinea, isNotNull, reason: 'runSeed debe sembrar el contador de código de linea_telefonica');
+      final codigoLinea =
+          await (db.select(db.codigoSecuencia)..where(
+            (t) => t.entityType.equals('linea_telefonica'),
+          )).getSingleOrNull();
+      expect(
+        codigoLinea,
+        isNotNull,
+        reason:
+            'runSeed debe sembrar el contador de código de linea_telefonica',
+      );
       expect(codigoLinea!.prefijo, 'TEL');
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -7874,30 +8791,53 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final baseLinea = LineaTelefonicaCompanion.insert(codigo: 'TEL-000001', operador: 'telcel', modalidadSim: 'fisica');
+      final baseLinea = LineaTelefonicaCompanion.insert(
+        codigo: 'TEL-000001',
+        operador: 'telcel',
+        modalidadSim: 'fisica',
+      );
 
       await expectLater(
-        db.into(db.lineaTelefonica).insert(baseLinea.copyWith(estatus: const Value('baja'))),
+        db
+            .into(db.lineaTelefonica)
+            .insert(baseLinea.copyWith(estatus: const Value('baja'))),
         throwsA(anything),
         reason: 'estatus = baja exige fecha_baja poblada',
       );
       await expectLater(
-        db.into(db.lineaTelefonica).insert(baseLinea.copyWith(fechaBaja: Value(DateTime(2026, 1, 1)))),
+        db
+            .into(db.lineaTelefonica)
+            .insert(baseLinea.copyWith(fechaBaja: Value(DateTime(2026, 1, 1)))),
         throwsA(anything),
         reason: 'fecha_baja poblada exige estatus = baja',
       );
 
-      await db.into(db.lineaTelefonica).insertReturning(
+      await db
+          .into(db.lineaTelefonica)
+          .insertReturning(
             baseLinea.copyWith(numero: const Value('7221234567')),
           );
 
       // Dos líneas sin número capturado deben coexistir sin problema.
-      await db.into(db.lineaTelefonica).insertReturning(baseLinea.copyWith(codigo: const Value('TEL-000002')));
-      await db.into(db.lineaTelefonica).insertReturning(baseLinea.copyWith(codigo: const Value('TEL-000003')));
+      await db
+          .into(db.lineaTelefonica)
+          .insertReturning(
+            baseLinea.copyWith(codigo: const Value('TEL-000002')),
+          );
+      await db
+          .into(db.lineaTelefonica)
+          .insertReturning(
+            baseLinea.copyWith(codigo: const Value('TEL-000003')),
+          );
 
       await expectLater(
-        db.into(db.lineaTelefonica).insert(
-              baseLinea.copyWith(codigo: const Value('TEL-000004'), numero: const Value('7221234567')),
+        db
+            .into(db.lineaTelefonica)
+            .insert(
+              baseLinea.copyWith(
+                codigo: const Value('TEL-000004'),
+                numero: const Value('7221234567'),
+              ),
             ),
         throwsA(anything),
         reason: 'idx_linea_telefonica_numero_unico rechaza número duplicado',
@@ -7907,59 +8847,71 @@ void main() {
     },
   );
 
-  test(
-    '35.json coincide con el esquema final de la Etapa 9B (tablas nuevas AsignacionLineaTelefonica, '
-    'LineaTelefonicaEquipo + índice único parcial idx_asignacion_linea_telefonica_vigente) — '
-    'asignaciones y equipo asociado de Telefonía',
-    () async {
-      final schema = await verifier.schemaAt(35);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+  test('35.json coincide con el esquema final de la Etapa 9B (tablas nuevas AsignacionLineaTelefonica, '
+      'LineaTelefonicaEquipo + índice único parcial idx_asignacion_linea_telefonica_vigente) — '
+      'asignaciones y equipo asociado de Telefonía', () async {
+    final schema = await verifier.schemaAt(35);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
 
-      expect(tablas, containsAll(['asignacion_linea_telefonica', 'linea_telefonica_equipo']));
+    expect(
+      tablas,
+      containsAll(['asignacion_linea_telefonica', 'linea_telefonica_equipo']),
+    );
 
-      final sqlAsignacion =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_linea_telefonica'")
-                  .single['sql']
-              as String;
-      expect(
-        sqlAsignacion,
-        contains(
-          'CHECK ((empleado_id IS NOT NULL AND servicio_id IS NULL) OR '
-          '(empleado_id IS NULL AND servicio_id IS NOT NULL))',
-        ),
-      );
-      expect(sqlAsignacion, contains('CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)'));
+    final sqlAsignacion =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion_linea_telefonica'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlAsignacion,
+      contains(
+        'CHECK ((empleado_id IS NOT NULL AND servicio_id IS NULL) OR '
+        '(empleado_id IS NULL AND servicio_id IS NOT NULL))',
+      ),
+    );
+    expect(
+      sqlAsignacion,
+      contains(
+        'CHECK (fecha_termino IS NULL OR fecha_termino >= fecha_inicio)',
+      ),
+    );
 
-      final sqlIndiceVigente =
-          schema.rawDatabase
-                  .select(
-                    "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_asignacion_linea_telefonica_vigente'",
-                  )
-                  .single['sql']
-              as String;
-      expect(
-        sqlIndiceVigente,
-        'CREATE UNIQUE INDEX idx_asignacion_linea_telefonica_vigente '
-        'ON asignacion_linea_telefonica (linea_telefonica_id) WHERE fecha_termino IS NULL',
-      );
+    final sqlIndiceVigente =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_asignacion_linea_telefonica_vigente'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlIndiceVigente,
+      'CREATE UNIQUE INDEX idx_asignacion_linea_telefonica_vigente '
+      'ON asignacion_linea_telefonica (linea_telefonica_id) WHERE fecha_termino IS NULL',
+    );
 
-      final sqlEquipo =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica_equipo'")
-                  .single['sql']
-              as String;
-      expect(sqlEquipo, contains('CHECK (fecha_fin IS NULL OR fecha_fin >= fecha_inicio)'));
+    final sqlEquipo =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica_equipo'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlEquipo,
+      contains('CHECK (fecha_fin IS NULL OR fecha_fin >= fecha_inicio)'),
+    );
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 34 → 35 conserva una LineaTelefonica real y crea las tablas de asignación/equipo vacías',
@@ -7983,19 +8935,36 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final lineas = await db.select(db.lineaTelefonica).get();
-      expect(lineas, hasLength(1), reason: 'ninguna LineaTelefonica real debe perderse en una migración puramente aditiva');
+      expect(
+        lineas,
+        hasLength(1),
+        reason:
+            'ninguna LineaTelefonica real debe perderse en una migración puramente aditiva',
+      );
       expect(lineas.single.numero, '7221234567');
 
       final asignaciones = await db.select(db.asignacionLineaTelefonica).get();
-      expect(asignaciones, isEmpty, reason: 'AsignacionLineaTelefonica es tabla nueva en 9B, sin backfill');
+      expect(
+        asignaciones,
+        isEmpty,
+        reason: 'AsignacionLineaTelefonica es tabla nueva en 9B, sin backfill',
+      );
       final equipos = await db.select(db.lineaTelefonicaEquipo).get();
-      expect(equipos, isEmpty, reason: 'LineaTelefonicaEquipo es tabla nueva en 9B, sin backfill');
+      expect(
+        equipos,
+        isEmpty,
+        reason: 'LineaTelefonicaEquipo es tabla nueva en 9B, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -8010,10 +8979,18 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final linea = await db.into(db.lineaTelefonica).insertReturning(
-            LineaTelefonicaCompanion.insert(codigo: 'TEL-000001', operador: 'telcel', modalidadSim: 'fisica'),
+      final linea = await db
+          .into(db.lineaTelefonica)
+          .insertReturning(
+            LineaTelefonicaCompanion.insert(
+              codigo: 'TEL-000001',
+              operador: 'telcel',
+              modalidadSim: 'fisica',
+            ),
           );
-      final empleado = await db.into(db.empleado).insertReturning(
+      final empleado = await db
+          .into(db.empleado)
+          .insertReturning(
             EmpleadoCompanion.insert(
               numeroEmpleado: 1,
               nombres: 'Juan',
@@ -8040,26 +9017,40 @@ void main() {
         reason: 'ni empleado ni servicio poblados debe rechazarse',
       );
       await expectLater(
-        db.into(db.asignacionLineaTelefonica).insert(
-              baseAsignacion.copyWith(empleadoId: Value(empleado.id), servicioId: Value('servicio-inexistente')),
+        db
+            .into(db.asignacionLineaTelefonica)
+            .insert(
+              baseAsignacion.copyWith(
+                empleadoId: Value(empleado.id),
+                servicioId: Value('servicio-inexistente'),
+              ),
             ),
         throwsA(anything),
         reason: 'empleado y servicio poblados a la vez debe rechazarse',
       );
       await expectLater(
-        db.into(db.asignacionLineaTelefonica).insert(
-              baseAsignacion.copyWith(empleadoId: Value(empleado.id), fechaTermino: Value(DateTime(2026, 1, 1))),
+        db
+            .into(db.asignacionLineaTelefonica)
+            .insert(
+              baseAsignacion.copyWith(
+                empleadoId: Value(empleado.id),
+                fechaTermino: Value(DateTime(2026, 1, 1)),
+              ),
             ),
         throwsA(anything),
         reason: 'fecha_termino anterior a fecha_inicio debe rechazarse',
       );
 
-      final asignacion = await db.into(db.asignacionLineaTelefonica).insertReturning(
+      final asignacion = await db
+          .into(db.asignacionLineaTelefonica)
+          .insertReturning(
             baseAsignacion.copyWith(empleadoId: Value(empleado.id)),
           );
       expect(asignacion.empleadoId, empleado.id);
 
-      final empleado2 = await db.into(db.empleado).insertReturning(
+      final empleado2 = await db
+          .into(db.empleado)
+          .insertReturning(
             EmpleadoCompanion.insert(
               numeroEmpleado: 2,
               nombres: 'Ana',
@@ -8075,7 +9066,9 @@ void main() {
             ),
           );
       await expectLater(
-        db.into(db.asignacionLineaTelefonica).insert(
+        db
+            .into(db.asignacionLineaTelefonica)
+            .insert(
               AsignacionLineaTelefonicaCompanion.insert(
                 lineaTelefonicaId: linea.id,
                 fechaInicio: DateTime(2026, 2, 1),
@@ -8083,17 +9076,33 @@ void main() {
               ).copyWith(empleadoId: Value(empleado2.id)),
             ),
         throwsA(anything),
-        reason: 'idx_asignacion_linea_telefonica_vigente rechaza una segunda asignación vigente para la misma línea',
+        reason:
+            'idx_asignacion_linea_telefonica_vigente rechaza una segunda asignación vigente para la misma línea',
       );
 
-      final categoria = await db.into(db.categoriaArticulo).insertReturning(
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(
             CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'),
           );
-      final articulo = await db.into(db.articulo).insertReturning(
-            ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Smartphone', manejaSerie: const Value(true)),
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              categoriaId: categoria.id,
+              nombre: 'Smartphone',
+              manejaSerie: const Value(true),
+            ),
           );
-      final unidad = await db.into(db.articuloUnidad).insertReturning(
-            ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-0001'),
+      final unidad = await db
+          .into(db.articuloUnidad)
+          .insertReturning(
+            ArticuloUnidadCompanion.insert(
+              codigo: 'UNI-000001',
+              articuloId: articulo.id,
+              numeroSerie: 'SN-0001',
+            ),
           );
 
       final baseEquipo = LineaTelefonicaEquipoCompanion.insert(
@@ -8102,12 +9111,16 @@ void main() {
         fechaInicio: DateTime(2026, 1, 5),
       );
       await expectLater(
-        db.into(db.lineaTelefonicaEquipo).insert(baseEquipo.copyWith(fechaFin: Value(DateTime(2026, 1, 1)))),
+        db
+            .into(db.lineaTelefonicaEquipo)
+            .insert(baseEquipo.copyWith(fechaFin: Value(DateTime(2026, 1, 1)))),
         throwsA(anything),
         reason: 'fecha_fin anterior a fecha_inicio debe rechazarse',
       );
 
-      final equipo = await db.into(db.lineaTelefonicaEquipo).insertReturning(baseEquipo);
+      final equipo = await db
+          .into(db.lineaTelefonicaEquipo)
+          .insertReturning(baseEquipo);
       expect(equipo.unidadId, unidad.id);
 
       await db.close();
@@ -8127,12 +9140,24 @@ void main() {
               .map((row) => row['name'] as String)
               .toSet();
 
-      expect(tablas, containsAll(['recarga_linea_telefonica', 'recarga_linea_telefonica_attachment']));
-      expect(tablas, isNot(contains('linea_telefonica_plan')), reason: 'retirada por completo en 9C — operación prepago, sin planes');
+      expect(
+        tablas,
+        containsAll([
+          'recarga_linea_telefonica',
+          'recarga_linea_telefonica_attachment',
+        ]),
+      );
+      expect(
+        tablas,
+        isNot(contains('linea_telefonica_plan')),
+        reason: 'retirada por completo en 9C — operación prepago, sin planes',
+      );
 
       final sqlRecarga =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'recarga_linea_telefonica'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'recarga_linea_telefonica'",
+                  )
                   .single['sql']
               as String;
       expect(sqlRecarga, contains('CHECK (importe > 0)'));
@@ -8141,28 +9166,26 @@ void main() {
     },
   );
 
-  test(
-    'migración 35 → 36 retira LineaTelefonicaPlan (incluso con filas reales) y crea las tablas de Recarga vacías, '
-    'conservando la LineaTelefonica real',
-    () async {
-      final schemaV35 = await verifier.schemaAt(35);
-      final raw = schemaV35.rawDatabase;
+  test('migración 35 → 36 retira LineaTelefonicaPlan (incluso con filas reales) y crea las tablas de Recarga vacías, '
+      'conservando la LineaTelefonica real', () async {
+    final schemaV35 = await verifier.schemaAt(35);
+    final raw = schemaV35.rawDatabase;
 
-      raw.execute('''
+    raw.execute('''
       INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
       VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
     ''');
-      raw.execute('''
+    raw.execute('''
       INSERT INTO linea_telefonica (
         id, codigo, numero, operador, modalidad_sim, estatus, created_at, updated_at, ciclo_vida_registro
       ) VALUES (
         'linea-real', 'TEL-000001', '7221234567', 'telcel', 'fisica', 'activa', 1700000000, 1700000000, 'activo'
       );
     ''');
-      // Fila real en LineaTelefonicaPlan (Etapa 9A, antes de confirmarse
-      // que la operación es prepago) — debe perderse limpiamente al
-      // eliminar la tabla, sin romper la migración.
-      raw.execute('''
+    // Fila real en LineaTelefonicaPlan (Etapa 9A, antes de confirmarse
+    // que la operación es prepago) — debe perderse limpiamente al
+    // eliminar la tabla, sin romper la migración.
+    raw.execute('''
       INSERT INTO linea_telefonica_plan (
         id, linea_telefonica_id, nombre, costo_mensual, fecha_inicio_vigencia, created_at, updated_at, ciclo_vida_registro
       ) VALUES (
@@ -8170,31 +9193,51 @@ void main() {
       );
     ''');
 
-      final db = AppDatabase(schemaV35.newConnection());
-      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+    final db = AppDatabase(schemaV35.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final lineas = await db.select(db.lineaTelefonica).get();
-      expect(lineas, hasLength(1), reason: 'ninguna LineaTelefonica real debe perderse al retirar LineaTelefonicaPlan');
-      expect(lineas.single.numero, '7221234567');
+    final lineas = await db.select(db.lineaTelefonica).get();
+    expect(
+      lineas,
+      hasLength(1),
+      reason:
+          'ninguna LineaTelefonica real debe perderse al retirar LineaTelefonicaPlan',
+    );
+    expect(lineas.single.numero, '7221234567');
 
-      final tablasRestantes = await db
-          .customSelect("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica_plan'")
-          .get();
-      expect(tablasRestantes, isEmpty, reason: 'linea_telefonica_plan debe desaparecer por completo, con o sin filas reales');
+    final tablasRestantes =
+        await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'linea_telefonica_plan'",
+            )
+            .get();
+    expect(
+      tablasRestantes,
+      isEmpty,
+      reason:
+          'linea_telefonica_plan debe desaparecer por completo, con o sin filas reales',
+    );
 
-      final recargas = await db.select(db.recargaLineaTelefonica).get();
-      expect(recargas, isEmpty, reason: 'RecargaLineaTelefonica es tabla nueva en 9C, sin backfill');
+    final recargas = await db.select(db.recargaLineaTelefonica).get();
+    expect(
+      recargas,
+      isEmpty,
+      reason: 'RecargaLineaTelefonica es tabla nueva en 9C, sin backfill',
+    );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-      expect(violacionesFk, isEmpty);
+    final violacionesFk =
+        await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty);
 
-      final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-      expect(integridad, ['ok']);
+    final integridad =
+        await db
+            .customSelect('PRAGMA integrity_check')
+            .map((r) => r.data['integrity_check'] as String)
+            .get();
+    expect(integridad, ['ok']);
 
-      await db.close();
-    },
-  );
+    await db.close();
+  });
 
   test(
     'CHECK de RecargaLineaTelefonica tras la migración: importe siempre > 0',
@@ -8203,8 +9246,14 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final linea = await db.into(db.lineaTelefonica).insertReturning(
-            LineaTelefonicaCompanion.insert(codigo: 'TEL-000001', operador: 'telcel', modalidadSim: 'fisica'),
+      final linea = await db
+          .into(db.lineaTelefonica)
+          .insertReturning(
+            LineaTelefonicaCompanion.insert(
+              codigo: 'TEL-000001',
+              operador: 'telcel',
+              modalidadSim: 'fisica',
+            ),
           );
       final baseRecarga = RecargaLineaTelefonicaCompanion.insert(
         lineaTelefonicaId: linea.id,
@@ -8213,17 +9262,23 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.recargaLineaTelefonica).insert(baseRecarga.copyWith(importe: const Value(0))),
+        db
+            .into(db.recargaLineaTelefonica)
+            .insert(baseRecarga.copyWith(importe: const Value(0))),
         throwsA(anything),
         reason: 'importe = 0 debe rechazarse',
       );
       await expectLater(
-        db.into(db.recargaLineaTelefonica).insert(baseRecarga.copyWith(importe: const Value(-100))),
+        db
+            .into(db.recargaLineaTelefonica)
+            .insert(baseRecarga.copyWith(importe: const Value(-100))),
         throwsA(anything),
         reason: 'importe negativo debe rechazarse',
       );
 
-      final recarga = await db.into(db.recargaLineaTelefonica).insertReturning(baseRecarga);
+      final recarga = await db
+          .into(db.recargaLineaTelefonica)
+          .insertReturning(baseRecarga);
       expect(recarga.importe, 20000);
 
       await db.close();
@@ -8245,27 +9300,52 @@ void main() {
 
       expect(
         tablas,
-        containsAll(['compra', 'compra_partida', 'compra_partida_movimiento', 'compra_attachment', 'compra_evento']),
+        containsAll([
+          'compra',
+          'compra_partida',
+          'compra_partida_movimiento',
+          'compra_attachment',
+          'compra_evento',
+        ]),
       );
 
       final sqlCompra =
-          schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra'").single['sql']
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra'",
+                  )
+                  .single['sql']
               as String;
-      expect(sqlCompra, contains('"egreso_id" TEXT NULL UNIQUE REFERENCES egreso (id) ON DELETE RESTRICT'));
+      expect(
+        sqlCompra,
+        contains(
+          '"egreso_id" TEXT NULL UNIQUE REFERENCES egreso (id) ON DELETE RESTRICT',
+        ),
+      );
 
       final sqlPartida =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra_partida'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra_partida'",
+                  )
                   .single['sql']
               as String;
-      expect(sqlPartida, contains("CHECK (destino <> 'gastoDirecto' OR articulo_id IS NULL)"));
-      expect(sqlPartida, contains("CHECK (destino <> 'inventario' OR articulo_id IS NOT NULL)"));
+      expect(
+        sqlPartida,
+        contains("CHECK (destino <> 'gastoDirecto' OR articulo_id IS NULL)"),
+      );
+      expect(
+        sqlPartida,
+        contains("CHECK (destino <> 'inventario' OR articulo_id IS NOT NULL)"),
+      );
       expect(sqlPartida, contains('CHECK (cantidad > 0)'));
       expect(sqlPartida, contains('CHECK (costo_unitario >= 0)'));
 
       final sqlPuente =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra_partida_movimiento'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra_partida_movimiento'",
+                  )
                   .single['sql']
               as String;
       expect(sqlPuente, contains('PRIMARY KEY ("movimiento_inventario_id")'));
@@ -8297,23 +9377,41 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final vehiculos = await db.select(db.vehiculo).get();
-      expect(vehiculos, hasLength(1), reason: 'ningún Vehículo real debe perderse en una migración puramente aditiva');
+      expect(
+        vehiculos,
+        hasLength(1),
+        reason:
+            'ningún Vehículo real debe perderse en una migración puramente aditiva',
+      );
 
       final compras = await db.select(db.compra).get();
-      expect(compras, isEmpty, reason: 'Compra es tabla nueva en la Etapa 10, sin backfill');
+      expect(
+        compras,
+        isEmpty,
+        reason: 'Compra es tabla nueva en la Etapa 10, sin backfill',
+      );
       final partidas = await db.select(db.compraPartida).get();
       expect(partidas, isEmpty);
 
       final codigoCompra =
-          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('compra'))).getSingleOrNull();
-      expect(codigoCompra, isNotNull, reason: 'runSeed debe sembrar el contador de código de compra');
+          await (db.select(db.codigoSecuencia)
+            ..where((t) => t.entityType.equals('compra'))).getSingleOrNull();
+      expect(
+        codigoCompra,
+        isNotNull,
+        reason: 'runSeed debe sembrar el contador de código de compra',
+      );
       expect(codigoCompra!.prefijo, 'COM');
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -8327,13 +9425,23 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final categoria = await db.into(db.categoriaArticulo).insertReturning(
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(
             CategoriaArticuloCompanion.insert(nombre: 'Uniformes'),
           );
-      final articulo = await db.into(db.articulo).insertReturning(
-            ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Camisola CH'),
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              categoriaId: categoria.id,
+              nombre: 'Camisola CH',
+            ),
           );
-      final egreso = await db.into(db.egreso).insertReturning(
+      final egreso = await db
+          .into(db.egreso)
+          .insertReturning(
             EgresoCompanion.insert(
               folioEgreso: 'EGR-000001',
               monto: 180000,
@@ -8342,7 +9450,9 @@ void main() {
               concepto: 'Compra COM-000001',
             ),
           );
-      final compra = await db.into(db.compra).insertReturning(
+      final compra = await db
+          .into(db.compra)
+          .insertReturning(
             CompraCompanion.insert(
               folioCompra: 'COM-000001',
               fecha: DateTime(2026, 8, 10),
@@ -8360,31 +9470,48 @@ void main() {
       );
 
       await expectLater(
-        db.into(db.compraPartida).insert(basePartida.copyWith(destino: const Value('gastoDirecto'))),
+        db
+            .into(db.compraPartida)
+            .insert(basePartida.copyWith(destino: const Value('gastoDirecto'))),
         throwsA(anything),
         reason: 'destino gastoDirecto con articulo_id poblado debe rechazarse',
       );
       await expectLater(
-        db.into(db.compraPartida).insert(basePartida.copyWith(articuloId: const Value.absent(), destino: const Value('inventario'))),
+        db
+            .into(db.compraPartida)
+            .insert(
+              basePartida.copyWith(
+                articuloId: const Value.absent(),
+                destino: const Value('inventario'),
+              ),
+            ),
         throwsA(anything),
         reason: 'destino inventario sin articulo_id debe rechazarse',
       );
       await expectLater(
-        db.into(db.compraPartida).insert(basePartida.copyWith(cantidad: const Value(0))),
+        db
+            .into(db.compraPartida)
+            .insert(basePartida.copyWith(cantidad: const Value(0))),
         throwsA(anything),
         reason: 'cantidad = 0 debe rechazarse',
       );
       await expectLater(
-        db.into(db.compraPartida).insert(basePartida.copyWith(costoUnitario: const Value(-1))),
+        db
+            .into(db.compraPartida)
+            .insert(basePartida.copyWith(costoUnitario: const Value(-1))),
         throwsA(anything),
         reason: 'costo_unitario negativo debe rechazarse',
       );
 
-      final partida = await db.into(db.compraPartida).insertReturning(basePartida);
+      final partida = await db
+          .into(db.compraPartida)
+          .insertReturning(basePartida);
       expect(partida.cantidad, 10);
 
       await expectLater(
-        db.into(db.compra).insert(
+        db
+            .into(db.compra)
+            .insert(
               CompraCompanion.insert(
                 folioCompra: 'COM-000002',
                 fecha: DateTime(2026, 8, 11),
@@ -8393,59 +9520,76 @@ void main() {
               ),
             ),
         throwsA(anything),
-        reason: 'egreso_id debe ser único — un Egreso no puede pertenecer a dos Compras',
+        reason:
+            'egreso_id debe ser único — un Egreso no puede pertenecer a dos Compras',
       );
 
       await db.close();
     },
   );
 
-  test(
-    '38.json coincide con el esquema final de la Etapa 11A (tablas nuevas Usuario, UsuarioEvento) — '
-    'funda el dominio Usuarios',
-    () async {
-      final schema = await verifier.schemaAt(38);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+  test('38.json coincide con el esquema final de la Etapa 11A (tablas nuevas Usuario, UsuarioEvento) — '
+      'funda el dominio Usuarios', () async {
+    final schema = await verifier.schemaAt(38);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
 
-      expect(tablas, containsAll(['usuario', 'usuario_evento']));
+    expect(tablas, containsAll(['usuario', 'usuario_evento']));
 
-      final sqlUsuario =
-          schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuario'").single['sql']
-              as String;
-      expect(sqlUsuario, contains('"nombre_usuario" TEXT NOT NULL UNIQUE'));
-      expect(sqlUsuario, contains('"password_hash" TEXT NOT NULL'));
-      expect(sqlUsuario, contains('"puesto_id" TEXT NULL REFERENCES puesto (id) ON DELETE RESTRICT'));
-      expect(sqlUsuario, contains('"es_maestro" INTEGER NOT NULL DEFAULT 0 CHECK ("es_maestro" IN (0, 1))'));
+    final sqlUsuario =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuario'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlUsuario, contains('"nombre_usuario" TEXT NOT NULL UNIQUE'));
+    expect(sqlUsuario, contains('"password_hash" TEXT NOT NULL'));
+    expect(
+      sqlUsuario,
+      contains(
+        '"puesto_id" TEXT NULL REFERENCES puesto (id) ON DELETE RESTRICT',
+      ),
+    );
+    expect(
+      sqlUsuario,
+      contains(
+        '"es_maestro" INTEGER NOT NULL DEFAULT 0 CHECK ("es_maestro" IN (0, 1))',
+      ),
+    );
 
-      final sqlEvento =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuario_evento'")
-                  .single['sql']
-              as String;
-      expect(sqlEvento, contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'));
+    final sqlEvento =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuario_evento'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlEvento,
+      contains(
+        '"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL',
+      ),
+    );
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
-  test(
-    'migración 37 → 38 conserva una Compra real y crea las tablas de Usuarios vacías, sin backfill ni '
-    'siembra de CodigoSecuencia (Usuario no tiene folio)',
-    () async {
-      final schemaV37 = await verifier.schemaAt(37);
-      final raw = schemaV37.rawDatabase;
+  test('migración 37 → 38 conserva una Compra real y crea las tablas de Usuarios vacías, sin backfill ni '
+      'siembra de CodigoSecuencia (Usuario no tiene folio)', () async {
+    final schemaV37 = await verifier.schemaAt(37);
+    final raw = schemaV37.rawDatabase;
 
-      raw.execute('''
+    raw.execute('''
       INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
       VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
     ''');
-      raw.execute('''
+    raw.execute('''
       INSERT INTO compra (
         id, folio_compra, fecha, forma_pago, estatus, created_at, updated_at, ciclo_vida_registro
       ) VALUES (
@@ -8453,44 +9597,74 @@ void main() {
       );
     ''');
 
-      final db = AppDatabase(schemaV37.newConnection());
-      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+    final db = AppDatabase(schemaV37.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final compras = await db.select(db.compra).get();
-      expect(compras, hasLength(1), reason: 'ninguna Compra real debe perderse en una migración puramente aditiva');
+    final compras = await db.select(db.compra).get();
+    expect(
+      compras,
+      hasLength(1),
+      reason:
+          'ninguna Compra real debe perderse en una migración puramente aditiva',
+    );
 
-      final usuarios = await db.select(db.usuario).get();
-      expect(usuarios, isEmpty, reason: 'Usuario es tabla nueva en la Etapa 11A, sin backfill');
-      final eventos = await db.select(db.usuarioEvento).get();
-      expect(eventos, isEmpty);
+    final usuarios = await db.select(db.usuario).get();
+    expect(
+      usuarios,
+      isEmpty,
+      reason: 'Usuario es tabla nueva en la Etapa 11A, sin backfill',
+    );
+    final eventos = await db.select(db.usuarioEvento).get();
+    expect(eventos, isEmpty);
 
-      final codigoUsuario =
-          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('usuario'))).getSingleOrNull();
-      expect(codigoUsuario, isNull, reason: 'Usuario no tiene folio — nunca se siembra un CodigoSecuencia para él');
+    final codigoUsuario =
+        await (db.select(db.codigoSecuencia)
+          ..where((t) => t.entityType.equals('usuario'))).getSingleOrNull();
+    expect(
+      codigoUsuario,
+      isNull,
+      reason:
+          'Usuario no tiene folio — nunca se siembra un CodigoSecuencia para él',
+    );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-      expect(violacionesFk, isEmpty);
+    final violacionesFk =
+        await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(violacionesFk, isEmpty);
 
-      final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-      expect(integridad, ['ok']);
+    final integridad =
+        await db
+            .customSelect('PRAGMA integrity_check')
+            .map((r) => r.data['integrity_check'] as String)
+            .get();
+    expect(integridad, ['ok']);
 
-      await db.close();
-    },
-  );
+    await db.close();
+  });
 
   test('UNIQUE de Usuario.nombreUsuario tras la migración', () async {
     final schemaV1 = await verifier.schemaAt(1);
     final db = AppDatabase(schemaV1.newConnection());
     await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-    await db.into(db.usuario).insert(
-          UsuarioCompanion.insert(nombre: 'Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$AA==\$BB=='),
+    await db
+        .into(db.usuario)
+        .insert(
+          UsuarioCompanion.insert(
+            nombre: 'Ana',
+            nombreUsuario: 'ana',
+            passwordHash: 'pbkdf2\$1\$AA==\$BB==',
+          ),
         );
 
     await expectLater(
-      db.into(db.usuario).insert(
-            UsuarioCompanion.insert(nombre: 'Otra Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$CC==\$DD=='),
+      db
+          .into(db.usuario)
+          .insert(
+            UsuarioCompanion.insert(
+              nombre: 'Otra Ana',
+              nombreUsuario: 'ana',
+              passwordHash: 'pbkdf2\$1\$CC==\$DD==',
+            ),
           ),
       throwsA(anything),
       reason: 'nombre_usuario debe ser único',
@@ -8499,31 +9673,30 @@ void main() {
     await db.close();
   });
 
-  test(
-    '39.json coincide con el esquema final de la Etapa 11B (tabla nueva PermisoUsuario) — '
-    'permisos dinámicos por Usuario',
-    () async {
-      final schema = await verifier.schemaAt(39);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+  test('39.json coincide con el esquema final de la Etapa 11B (tabla nueva PermisoUsuario) — '
+      'permisos dinámicos por Usuario', () async {
+    final schema = await verifier.schemaAt(39);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
 
-      expect(tablas, contains('permiso_usuario'));
+    expect(tablas, contains('permiso_usuario'));
 
-      final sqlPermisoUsuario =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'permiso_usuario'")
-                  .single['sql']
-              as String;
-      expect(sqlPermisoUsuario, contains('PRIMARY KEY ("usuario_id", "codigo")'));
+    final sqlPermisoUsuario =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'permiso_usuario'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlPermisoUsuario, contains('PRIMARY KEY ("usuario_id", "codigo")'));
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 38 → 39 conserva un Usuario real y crea PermisoUsuario vacía, sin backfill '
@@ -8548,47 +9721,96 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final usuarios = await db.select(db.usuario).get();
-      expect(usuarios, hasLength(1), reason: 'ningún Usuario real debe perderse en una migración puramente aditiva');
+      expect(
+        usuarios,
+        hasLength(1),
+        reason:
+            'ningún Usuario real debe perderse en una migración puramente aditiva',
+      );
 
       final permisos = await db.select(db.permisoUsuario).get();
-      expect(permisos, isEmpty, reason: 'PermisoUsuario es tabla nueva en la Etapa 11B, sin backfill');
+      expect(
+        permisos,
+        isEmpty,
+        reason: 'PermisoUsuario es tabla nueva en la Etapa 11B, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
     },
   );
 
-  test('PermisoUsuario: llave primaria compuesta permite el mismo código en usuarios distintos '
-      'pero rechaza repetir el mismo par', () async {
-    final schemaV1 = await verifier.schemaAt(1);
-    final db = AppDatabase(schemaV1.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+  test(
+    'PermisoUsuario: llave primaria compuesta permite el mismo código en usuarios distintos '
+    'pero rechaza repetir el mismo par',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-    final u1 = await db.into(db.usuario).insertReturning(
-          UsuarioCompanion.insert(nombre: 'Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$AA==\$BB=='),
-        );
-    final u2 = await db.into(db.usuario).insertReturning(
-          UsuarioCompanion.insert(nombre: 'Beto', nombreUsuario: 'beto', passwordHash: 'pbkdf2\$1\$CC==\$DD=='),
-        );
+      final u1 = await db
+          .into(db.usuario)
+          .insertReturning(
+            UsuarioCompanion.insert(
+              nombre: 'Ana',
+              nombreUsuario: 'ana',
+              passwordHash: 'pbkdf2\$1\$AA==\$BB==',
+            ),
+          );
+      final u2 = await db
+          .into(db.usuario)
+          .insertReturning(
+            UsuarioCompanion.insert(
+              nombre: 'Beto',
+              nombreUsuario: 'beto',
+              passwordHash: 'pbkdf2\$1\$CC==\$DD==',
+            ),
+          );
 
-    await db.into(db.permisoUsuario).insert(PermisoUsuarioCompanion.insert(usuarioId: u1.id, codigo: 'personal.ver'));
-    // Mismo código, usuario distinto — permitido.
-    await db.into(db.permisoUsuario).insert(PermisoUsuarioCompanion.insert(usuarioId: u2.id, codigo: 'personal.ver'));
+      await db
+          .into(db.permisoUsuario)
+          .insert(
+            PermisoUsuarioCompanion.insert(
+              usuarioId: u1.id,
+              codigo: 'personal.ver',
+            ),
+          );
+      // Mismo código, usuario distinto — permitido.
+      await db
+          .into(db.permisoUsuario)
+          .insert(
+            PermisoUsuarioCompanion.insert(
+              usuarioId: u2.id,
+              codigo: 'personal.ver',
+            ),
+          );
 
-    await expectLater(
-      db.into(db.permisoUsuario).insert(PermisoUsuarioCompanion.insert(usuarioId: u1.id, codigo: 'personal.ver')),
-      throwsA(anything),
-      reason: 'el mismo par (usuario, código) no puede repetirse',
-    );
+      await expectLater(
+        db
+            .into(db.permisoUsuario)
+            .insert(
+              PermisoUsuarioCompanion.insert(
+                usuarioId: u1.id,
+                codigo: 'personal.ver',
+              ),
+            ),
+        throwsA(anything),
+        reason: 'el mismo par (usuario, código) no puede repetirse',
+      );
 
-    await db.close();
-  });
+      await db.close();
+    },
+  );
 
   test(
     '40.json coincide con el esquema final de la Etapa 11D (actor_usuario_id en 15 tablas + '
@@ -8607,24 +9829,41 @@ void main() {
 
       final sqlEliminacion =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'eliminacion_fisica_evento'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'eliminacion_fisica_evento'",
+                  )
                   .single['sql']
               as String;
       expect(sqlEliminacion, contains('"tipo_entidad" TEXT NOT NULL'));
       expect(sqlEliminacion, contains('"entidad_id_original" TEXT NOT NULL'));
-      expect(sqlEliminacion, contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'));
+      expect(
+        sqlEliminacion,
+        contains(
+          '"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL',
+        ),
+      );
       expect(sqlEliminacion, contains('"motivo" TEXT NOT NULL'));
       expect(sqlEliminacion, contains('"snapshot_json" TEXT NOT NULL'));
 
       // Muestra representativa de las 15 tablas — no las 15, mismo
       // criterio que el resto de la suite de migraciones.
-      for (final tabla in ['compra_evento', 'movimiento_inventario', 'recarga_linea_telefonica', 'vehiculo_documento']) {
+      for (final tabla in [
+        'compra_evento',
+        'movimiento_inventario',
+        'recarga_linea_telefonica',
+        'vehiculo_documento',
+      ]) {
         final sql =
-            schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [tabla]).single['sql']
+            schema.rawDatabase.select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+                  [tabla],
+                ).single['sql']
                 as String;
         expect(
           sql,
-          contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'),
+          contains(
+            '"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL',
+          ),
           reason: '$tabla debe tener actor_usuario_id tras la migración a 40',
         );
       }
@@ -8633,9 +9872,17 @@ void main() {
       // donde ya existía — decisión explícita de Marlon (migración
       // aditiva, sin dropColumn).
       final sqlCompraEvento =
-          schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra_evento'").single['sql']
+          schema.rawDatabase
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compra_evento'",
+                  )
+                  .single['sql']
               as String;
-      expect(sqlCompraEvento, contains('"actor" TEXT NULL'), reason: 'la columna legacy actor debe seguir existiendo físicamente');
+      expect(
+        sqlCompraEvento,
+        contains('"actor" TEXT NULL'),
+        reason: 'la columna legacy actor debe seguir existiendo físicamente',
+      );
 
       schema.rawDatabase.dispose();
     },
@@ -8671,112 +9918,176 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final compras = await db.select(db.compra).get();
-      expect(compras, hasLength(1), reason: 'ninguna Compra real debe perderse en una migración puramente aditiva');
+      expect(
+        compras,
+        hasLength(1),
+        reason:
+            'ninguna Compra real debe perderse en una migración puramente aditiva',
+      );
 
       final eventos = await db.select(db.compraEvento).get();
       expect(eventos, hasLength(1));
-      expect(eventos.single.actorUsuarioId, isNull, reason: 'histórico anterior a 11D queda con actorUsuarioId = null');
+      expect(
+        eventos.single.actorUsuarioId,
+        isNull,
+        reason: 'histórico anterior a 11D queda con actorUsuarioId = null',
+      );
 
       final eliminaciones = await db.select(db.eliminacionFisicaEvento).get();
-      expect(eliminaciones, isEmpty, reason: 'EliminacionFisicaEvento es tabla nueva en la Etapa 11D, sin backfill');
+      expect(
+        eliminaciones,
+        isEmpty,
+        reason:
+            'EliminacionFisicaEvento es tabla nueva en la Etapa 11D, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
     },
   );
 
-  test('EliminacionFisicaEvento: actor_usuario_id sobrevive con SET NULL si el Usuario se elimina', () async {
-    final schemaV1 = await verifier.schemaAt(1);
-    final db = AppDatabase(schemaV1.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
-
-    final usuario = await db.into(db.usuario).insertReturning(
-          UsuarioCompanion.insert(nombre: 'Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$AA==\$BB==', esMaestro: const Value(true)),
-        );
-
-    await db.into(db.eliminacionFisicaEvento).insert(
-          EliminacionFisicaEventoCompanion.insert(
-            tipoEntidad: 'vehiculo',
-            entidadIdOriginal: 'vehiculo-inexistente-ya-borrado',
-            fechaHora: DateTime(2026, 1, 1),
-            motivo: 'Error de captura — vehículo duplicado, nunca utilizado.',
-            snapshotJson: '{"marca":"Nissan"}',
-            actorUsuarioId: Value(usuario.id),
-          ),
-        );
-
-    await db.delete(db.usuario).delete(usuario);
-
-    final eventos = await db.select(db.eliminacionFisicaEvento).get();
-    expect(eventos, hasLength(1), reason: 'el evento sobrevive aunque el Usuario que lo generó se elimine');
-    expect(eventos.single.actorUsuarioId, isNull);
-
-    await db.close();
-  });
-
   test(
-    '41.json coincide con el esquema final de la Etapa 9D (imei2 + actor_usuario_id en '
-    'ArticuloUnidadTelefono/AsignacionLineaTelefonica/LineaTelefonicaEquipo + '
-    'EquipoTelefonicoCredencial/EquipoTelefonicoEvento) — expediente del teléfono físico',
+    'EliminacionFisicaEvento: actor_usuario_id sobrevive con SET NULL si el Usuario se elimina',
     () async {
-      final schema = await verifier.schemaAt(41);
-      final tablas =
-          schema.rawDatabase
-              .select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-              )
-              .map((row) => row['name'] as String)
-              .toSet();
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      expect(tablas, containsAll(['equipo_telefonico_credencial', 'equipo_telefonico_evento']));
+      final usuario = await db
+          .into(db.usuario)
+          .insertReturning(
+            UsuarioCompanion.insert(
+              nombre: 'Ana',
+              nombreUsuario: 'ana',
+              passwordHash: 'pbkdf2\$1\$AA==\$BB==',
+              esMaestro: const Value(true),
+            ),
+          );
 
-      final sqlCredencial =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'equipo_telefonico_credencial'")
-                  .single['sql']
-              as String;
-      expect(sqlCredencial, contains('"unidad_id" TEXT NOT NULL REFERENCES articulo_unidad (id) ON DELETE CASCADE'));
-      expect(sqlCredencial, contains('PRIMARY KEY ("unidad_id")'));
-      expect(sqlCredencial, contains('"correo" TEXT'));
-      expect(sqlCredencial, contains('"contrasena_cifrada" TEXT'));
-      expect(sqlCredencial, contains('"fecha_actualizacion_contrasena" INTEGER'));
+      await db
+          .into(db.eliminacionFisicaEvento)
+          .insert(
+            EliminacionFisicaEventoCompanion.insert(
+              tipoEntidad: 'vehiculo',
+              entidadIdOriginal: 'vehiculo-inexistente-ya-borrado',
+              fechaHora: DateTime(2026, 1, 1),
+              motivo: 'Error de captura — vehículo duplicado, nunca utilizado.',
+              snapshotJson: '{"marca":"Nissan"}',
+              actorUsuarioId: Value(usuario.id),
+            ),
+          );
 
-      final sqlEvento =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'equipo_telefonico_evento'")
-                  .single['sql']
-              as String;
-      expect(sqlEvento, contains('"unidad_id" TEXT NOT NULL REFERENCES articulo_unidad (id) ON DELETE RESTRICT'));
-      expect(sqlEvento, contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'));
-      expect(sqlEvento, contains('"tipo_evento" TEXT NOT NULL'));
+      await db.delete(db.usuario).delete(usuario);
 
-      final sqlTelefono =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo_unidad_telefono'")
-                  .single['sql']
-              as String;
-      expect(sqlTelefono, contains('"imei2" TEXT'));
+      final eventos = await db.select(db.eliminacionFisicaEvento).get();
+      expect(
+        eventos,
+        hasLength(1),
+        reason:
+            'el evento sobrevive aunque el Usuario que lo generó se elimine',
+      );
+      expect(eventos.single.actorUsuarioId, isNull);
 
-      for (final tabla in ['asignacion_linea_telefonica', 'linea_telefonica_equipo']) {
-        final sql =
-            schema.rawDatabase.select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [tabla]).single['sql']
-                as String;
-        expect(
-          sql,
-          contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'),
-          reason: '$tabla debe tener actor_usuario_id tras la migración a 41',
-        );
-      }
-
-      schema.rawDatabase.dispose();
+      await db.close();
     },
   );
+
+  test('41.json coincide con el esquema final de la Etapa 9D (imei2 + actor_usuario_id en '
+      'ArticuloUnidadTelefono/AsignacionLineaTelefonica/LineaTelefonicaEquipo + '
+      'EquipoTelefonicoCredencial/EquipoTelefonicoEvento) — expediente del teléfono físico', () async {
+    final schema = await verifier.schemaAt(41);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
+
+    expect(
+      tablas,
+      containsAll(['equipo_telefonico_credencial', 'equipo_telefonico_evento']),
+    );
+
+    final sqlCredencial =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'equipo_telefonico_credencial'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlCredencial,
+      contains(
+        '"unidad_id" TEXT NOT NULL REFERENCES articulo_unidad (id) ON DELETE CASCADE',
+      ),
+    );
+    expect(sqlCredencial, contains('PRIMARY KEY ("unidad_id")'));
+    expect(sqlCredencial, contains('"correo" TEXT'));
+    expect(sqlCredencial, contains('"contrasena_cifrada" TEXT'));
+    expect(sqlCredencial, contains('"fecha_actualizacion_contrasena" INTEGER'));
+
+    final sqlEvento =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'equipo_telefonico_evento'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlEvento,
+      contains(
+        '"unidad_id" TEXT NOT NULL REFERENCES articulo_unidad (id) ON DELETE RESTRICT',
+      ),
+    );
+    expect(
+      sqlEvento,
+      contains(
+        '"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL',
+      ),
+    );
+    expect(sqlEvento, contains('"tipo_evento" TEXT NOT NULL'));
+
+    final sqlTelefono =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo_unidad_telefono'",
+                )
+                .single['sql']
+            as String;
+    expect(sqlTelefono, contains('"imei2" TEXT'));
+
+    for (final tabla in [
+      'asignacion_linea_telefonica',
+      'linea_telefonica_equipo',
+    ]) {
+      final sql =
+          schema.rawDatabase.select(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+                [tabla],
+              ).single['sql']
+              as String;
+      expect(
+        sql,
+        contains(
+          '"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL',
+        ),
+        reason: '$tabla debe tener actor_usuario_id tras la migración a 41',
+      );
+    }
+
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 40 → 41 conserva una LineaTelefonica/AsignacionLineaTelefonica/ArticuloUnidadTelefono '
@@ -8840,96 +10151,191 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final unidades = await db.select(db.articuloUnidad).get();
-      expect(unidades, hasLength(1), reason: 'ninguna ArticuloUnidad real debe perderse en una migración puramente aditiva');
+      expect(
+        unidades,
+        hasLength(1),
+        reason:
+            'ninguna ArticuloUnidad real debe perderse en una migración puramente aditiva',
+      );
 
       final telefonos = await db.select(db.articuloUnidadTelefono).get();
       expect(telefonos, hasLength(1));
-      expect(telefonos.single.imei2, isNull, reason: 'imei2 es nuevo — no hay dato histórico que llenarlo');
-      expect(telefonos.single.imei, '123456789012345', reason: 'el IMEI 1 existente se conserva intacto');
+      expect(
+        telefonos.single.imei2,
+        isNull,
+        reason: 'imei2 es nuevo — no hay dato histórico que llenarlo',
+      );
+      expect(
+        telefonos.single.imei,
+        '123456789012345',
+        reason: 'el IMEI 1 existente se conserva intacto',
+      );
 
-      final asignacionesLinea = await db.select(db.asignacionLineaTelefonica).get();
+      final asignacionesLinea =
+          await db.select(db.asignacionLineaTelefonica).get();
       expect(asignacionesLinea, hasLength(1));
-      expect(asignacionesLinea.single.empleadoId, 'empleado-real', reason: 'la asignación real no debe perderse');
-      expect(asignacionesLinea.single.actorUsuarioId, isNull, reason: 'histórico anterior a 9D queda con actorUsuarioId = null');
+      expect(
+        asignacionesLinea.single.empleadoId,
+        'empleado-real',
+        reason: 'la asignación real no debe perderse',
+      );
+      expect(
+        asignacionesLinea.single.actorUsuarioId,
+        isNull,
+        reason: 'histórico anterior a 9D queda con actorUsuarioId = null',
+      );
 
       final credenciales = await db.select(db.equipoTelefonicoCredencial).get();
-      expect(credenciales, isEmpty, reason: 'EquipoTelefonicoCredencial es tabla nueva en la Etapa 9D, sin backfill');
+      expect(
+        credenciales,
+        isEmpty,
+        reason:
+            'EquipoTelefonicoCredencial es tabla nueva en la Etapa 9D, sin backfill',
+      );
 
       final eventos = await db.select(db.equipoTelefonicoEvento).get();
-      expect(eventos, isEmpty, reason: 'EquipoTelefonicoEvento es tabla nueva en la Etapa 9D, sin backfill');
+      expect(
+        eventos,
+        isEmpty,
+        reason:
+            'EquipoTelefonicoEvento es tabla nueva en la Etapa 9D, sin backfill',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
     },
   );
 
-  test('EquipoTelefonicoCredencial se elimina en cascada si su ArticuloUnidad se elimina', () async {
-    final schemaV1 = await verifier.schemaAt(1);
-    final db = AppDatabase(schemaV1.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+  test(
+    'EquipoTelefonicoCredencial se elimina en cascada si su ArticuloUnidad se elimina',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-    final categoria = await db
-        .into(db.categoriaArticulo)
-        .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'));
-    final articulo = await db.into(db.articulo).insertReturning(
-          ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Teléfono', manejaSerie: const Value(true)),
-        );
-    final unidad = await db.into(db.articuloUnidad).insertReturning(
-          ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-001'),
-        );
-    await db.into(db.equipoTelefonicoCredencial).insert(
-          EquipoTelefonicoCredencialCompanion.insert(unidadId: unidad.id, correo: const Value('equipo@riseg.mx')),
-        );
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'),
+          );
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              categoriaId: categoria.id,
+              nombre: 'Teléfono',
+              manejaSerie: const Value(true),
+            ),
+          );
+      final unidad = await db
+          .into(db.articuloUnidad)
+          .insertReturning(
+            ArticuloUnidadCompanion.insert(
+              codigo: 'UNI-000001',
+              articuloId: articulo.id,
+              numeroSerie: 'SN-001',
+            ),
+          );
+      await db
+          .into(db.equipoTelefonicoCredencial)
+          .insert(
+            EquipoTelefonicoCredencialCompanion.insert(
+              unidadId: unidad.id,
+              correo: const Value('equipo@riseg.mx'),
+            ),
+          );
 
-    await db.delete(db.articuloUnidad).delete(unidad);
+      await db.delete(db.articuloUnidad).delete(unidad);
 
-    final credenciales = await db.select(db.equipoTelefonicoCredencial).get();
-    expect(credenciales, isEmpty, reason: 'ON DELETE CASCADE — la credencial no debe sobrevivir sin su unidad');
+      final credenciales = await db.select(db.equipoTelefonicoCredencial).get();
+      expect(
+        credenciales,
+        isEmpty,
+        reason:
+            'ON DELETE CASCADE — la credencial no debe sobrevivir sin su unidad',
+      );
 
-    await db.close();
-  });
+      await db.close();
+    },
+  );
 
-  test('EquipoTelefonicoEvento: actor_usuario_id sobrevive con SET NULL si el Usuario se elimina', () async {
-    final schemaV1 = await verifier.schemaAt(1);
-    final db = AppDatabase(schemaV1.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+  test(
+    'EquipoTelefonicoEvento: actor_usuario_id sobrevive con SET NULL si el Usuario se elimina',
+    () async {
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-    final categoria = await db
-        .into(db.categoriaArticulo)
-        .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'));
-    final articulo = await db.into(db.articulo).insertReturning(
-          ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Teléfono', manejaSerie: const Value(true)),
-        );
-    final unidad = await db.into(db.articuloUnidad).insertReturning(
-          ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-001'),
-        );
-    final usuario = await db.into(db.usuario).insertReturning(
-          UsuarioCompanion.insert(nombre: 'Ana', nombreUsuario: 'ana', passwordHash: 'pbkdf2\$1\$AA==\$BB=='),
-        );
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'),
+          );
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              categoriaId: categoria.id,
+              nombre: 'Teléfono',
+              manejaSerie: const Value(true),
+            ),
+          );
+      final unidad = await db
+          .into(db.articuloUnidad)
+          .insertReturning(
+            ArticuloUnidadCompanion.insert(
+              codigo: 'UNI-000001',
+              articuloId: articulo.id,
+              numeroSerie: 'SN-001',
+            ),
+          );
+      final usuario = await db
+          .into(db.usuario)
+          .insertReturning(
+            UsuarioCompanion.insert(
+              nombre: 'Ana',
+              nombreUsuario: 'ana',
+              passwordHash: 'pbkdf2\$1\$AA==\$BB==',
+            ),
+          );
 
-    await db.into(db.equipoTelefonicoEvento).insert(
-          EquipoTelefonicoEventoCompanion.insert(
-            unidadId: unidad.id,
-            fechaHora: DateTime(2026, 1, 1),
-            tipoEvento: 'equipoConfigurado',
-            actorUsuarioId: Value(usuario.id),
-          ),
-        );
+      await db
+          .into(db.equipoTelefonicoEvento)
+          .insert(
+            EquipoTelefonicoEventoCompanion.insert(
+              unidadId: unidad.id,
+              fechaHora: DateTime(2026, 1, 1),
+              tipoEvento: 'equipoConfigurado',
+              actorUsuarioId: Value(usuario.id),
+            ),
+          );
 
-    await db.delete(db.usuario).delete(usuario);
+      await db.delete(db.usuario).delete(usuario);
 
-    final eventos = await db.select(db.equipoTelefonicoEvento).get();
-    expect(eventos, hasLength(1), reason: 'el evento sobrevive aunque el Usuario que lo generó se elimine');
-    expect(eventos.single.actorUsuarioId, isNull);
+      final eventos = await db.select(db.equipoTelefonicoEvento).get();
+      expect(
+        eventos,
+        hasLength(1),
+        reason:
+            'el evento sobrevive aunque el Usuario que lo generó se elimine',
+      );
+      expect(eventos.single.actorUsuarioId, isNull);
 
-    await db.close();
-  });
+      await db.close();
+    },
+  );
 
   test(
     '42.json coincide con el esquema final de la Etapa 9D (ajuste posterior: actor_usuario_id en '
@@ -8938,12 +10344,16 @@ void main() {
       final schema = await verifier.schemaAt(42);
       final sqlAsignacion =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'asignacion'",
+                  )
                   .single['sql']
               as String;
       expect(
         sqlAsignacion,
-        contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'),
+        contains(
+          '"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL',
+        ),
         reason: 'Asignacion debe tener actor_usuario_id tras la migración a 42',
       );
 
@@ -8995,120 +10405,164 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final asignaciones = await db.select(db.asignacion).get();
-      expect(asignaciones, hasLength(1), reason: 'ninguna Asignacion real debe perderse en una migración puramente aditiva');
+      expect(
+        asignaciones,
+        hasLength(1),
+        reason:
+            'ninguna Asignacion real debe perderse en una migración puramente aditiva',
+      );
       final asignacion = asignaciones.single;
       expect(asignacion.empleadoId, 'empleado-real');
       expect(asignacion.cantidad, 3);
       expect(asignacion.estatus, 'activa');
-      expect(asignacion.actorUsuarioId, isNull, reason: 'histórico anterior a este ajuste queda con actorUsuarioId = null');
+      expect(
+        asignacion.actorUsuarioId,
+        isNull,
+        reason:
+            'histórico anterior a este ajuste queda con actorUsuarioId = null',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
     },
   );
 
-  test('cambiar responsable de una Asignacion real tras la migración: misma unidad, sin MovimientoInventario '
-      'nuevo, estatus reasignada en la fila vieja', () async {
-    final schemaV1 = await verifier.schemaAt(1);
-    final db = AppDatabase(schemaV1.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
-
-    final categoria = await db
-        .into(db.categoriaArticulo)
-        .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'));
-    final articulo = await db.into(db.articulo).insertReturning(
-          ArticuloCompanion.insert(folio: 'ART-000001', categoriaId: categoria.id, nombre: 'Teléfono', manejaSerie: const Value(true)),
-        );
-    final unidad = await db.into(db.articuloUnidad).insertReturning(
-          ArticuloUnidadCompanion.insert(codigo: 'UNI-000001', articuloId: articulo.id, numeroSerie: 'SN-001'),
-        );
-    final empleadoA = await db.into(db.empleado).insertReturning(
-          EmpleadoCompanion.insert(
-            numeroEmpleado: 1,
-            nombres: 'Juan',
-            apellidoPaterno: 'Pérez',
-            sexo: 'masculino',
-            fechaNacimiento: DateTime(1990, 1, 1),
-            curp: 'PEXJ900101HDFXXX01',
-            rfc: 'PEXJ900101AB1',
-            nss: '12345678901',
-            estadoCivil: 'soltero',
-            fechaIngreso: DateTime(2026, 1, 1),
-            aniosExperienciaSeguridad: 3,
-          ),
-        );
-    final empleadoB = await db.into(db.empleado).insertReturning(
-          EmpleadoCompanion.insert(
-            numeroEmpleado: 2,
-            nombres: 'Ana',
-            apellidoPaterno: 'García',
-            sexo: 'femenino',
-            fechaNacimiento: DateTime(1990, 1, 1),
-            curp: 'GAAX900101MDFXXX02',
-            rfc: 'GAAX900101AB2',
-            nss: '12345678902',
-            estadoCivil: 'soltera',
-            fechaIngreso: DateTime(2026, 1, 1),
-            aniosExperienciaSeguridad: 3,
-          ),
-        );
-
-    final asignacionRepo = AsignacionRepositoryImpl(db);
-    final inicial = await asignacionRepo.crear(
-      articuloId: articulo.id,
-      unidadId: unidad.id,
-      cantidad: 1,
-      empleadoId: empleadoA.id,
-      fechaEntrega: DateTime(2026, 1, 10),
-    );
-    final movimientosAntes = await db.select(db.movimientoInventario).get();
-
-    final nueva = await asignacionRepo.cambiarResponsable(
-      asignacionId: inicial.id,
-      nuevoEmpleadoId: empleadoB.id,
-      fecha: DateTime(2026, 2, 1),
-    );
-
-    expect(nueva.unidadId, unidad.id);
-    expect(nueva.empleadoId, empleadoB.id);
-
-    final anterior = await asignacionRepo.obtenerPorId(inicial.id);
-    expect(anterior!.estatus, 'reasignada');
-
-    final movimientosDespues = await db.select(db.movimientoInventario).get();
-    expect(movimientosDespues.length, movimientosAntes.length, reason: 'sin MovimientoInventario nuevo');
-
-    final unidadTrasCambio = await db.select(db.articuloUnidad).getSingle();
-    expect(unidadTrasCambio.estatus, 'asignado', reason: 'nunca pasa por disponible');
-
-    await db.close();
-  });
-
   test(
-    '43.json coincide con el esquema final de la Etapa 9D (segundo ajuste posterior: '
-    'aplicacion_especializada en CategoriaArticulo)',
+    'cambiar responsable de una Asignacion real tras la migración: misma unidad, sin MovimientoInventario '
+    'nuevo, estatus reasignada en la fila vieja',
     () async {
-      final schema = await verifier.schemaAt(43);
-      final sqlCategoria =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'categoria_articulo'")
-                  .single['sql']
-              as String;
-      expect(
-        sqlCategoria,
-        contains('"aplicacion_especializada" TEXT NULL'),
-        reason: 'CategoriaArticulo debe tener aplicacion_especializada tras la migración a 43',
+      final schemaV1 = await verifier.schemaAt(1);
+      final db = AppDatabase(schemaV1.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final categoria = await db
+          .into(db.categoriaArticulo)
+          .insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'),
+          );
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              categoriaId: categoria.id,
+              nombre: 'Teléfono',
+              manejaSerie: const Value(true),
+            ),
+          );
+      final unidad = await db
+          .into(db.articuloUnidad)
+          .insertReturning(
+            ArticuloUnidadCompanion.insert(
+              codigo: 'UNI-000001',
+              articuloId: articulo.id,
+              numeroSerie: 'SN-001',
+            ),
+          );
+      final empleadoA = await db
+          .into(db.empleado)
+          .insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+      final empleadoB = await db
+          .into(db.empleado)
+          .insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 2,
+              nombres: 'Ana',
+              apellidoPaterno: 'García',
+              sexo: 'femenino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'GAAX900101MDFXXX02',
+              rfc: 'GAAX900101AB2',
+              nss: '12345678902',
+              estadoCivil: 'soltera',
+              fechaIngreso: DateTime(2026, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+
+      final asignacionRepo = AsignacionRepositoryImpl(db);
+      final inicial = await asignacionRepo.crear(
+        articuloId: articulo.id,
+        unidadId: unidad.id,
+        cantidad: 1,
+        empleadoId: empleadoA.id,
+        fechaEntrega: DateTime(2026, 1, 10),
+      );
+      final movimientosAntes = await db.select(db.movimientoInventario).get();
+
+      final nueva = await asignacionRepo.cambiarResponsable(
+        asignacionId: inicial.id,
+        nuevoEmpleadoId: empleadoB.id,
+        fecha: DateTime(2026, 2, 1),
       );
 
-      schema.rawDatabase.dispose();
+      expect(nueva.unidadId, unidad.id);
+      expect(nueva.empleadoId, empleadoB.id);
+
+      final anterior = await asignacionRepo.obtenerPorId(inicial.id);
+      expect(anterior!.estatus, 'reasignada');
+
+      final movimientosDespues = await db.select(db.movimientoInventario).get();
+      expect(
+        movimientosDespues.length,
+        movimientosAntes.length,
+        reason: 'sin MovimientoInventario nuevo',
+      );
+
+      final unidadTrasCambio = await db.select(db.articuloUnidad).getSingle();
+      expect(
+        unidadTrasCambio.estatus,
+        'asignado',
+        reason: 'nunca pasa por disponible',
+      );
+
+      await db.close();
     },
   );
+
+  test('43.json coincide con el esquema final de la Etapa 9D (segundo ajuste posterior: '
+      'aplicacion_especializada en CategoriaArticulo)', () async {
+    final schema = await verifier.schemaAt(43);
+    final sqlCategoria =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'categoria_articulo'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlCategoria,
+      contains('"aplicacion_especializada" TEXT NULL'),
+      reason:
+          'CategoriaArticulo debe tener aplicacion_especializada tras la migración a 43',
+    );
+
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 42 → 43 conserva una CategoriaArticulo real y agrega aplicacion_especializada '
@@ -9130,16 +10584,29 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final categorias = await db.select(db.categoriaArticulo).get();
-      expect(categorias, hasLength(1), reason: 'ninguna CategoriaArticulo real debe perderse en una migración puramente aditiva');
+      expect(
+        categorias,
+        hasLength(1),
+        reason:
+            'ninguna CategoriaArticulo real debe perderse en una migración puramente aditiva',
+      );
       final categoria = categorias.single;
       expect(categoria.nombre, 'Uniformes');
-      expect(categoria.aplicacionEspecializada, isNull, reason: 'histórico anterior a este ajuste queda genérico (null)');
+      expect(
+        categoria.aplicacionEspecializada,
+        isNull,
+        reason: 'histórico anterior a este ajuste queda genérico (null)',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -9156,9 +10623,20 @@ void main() {
 
       final categoria = await db
           .into(db.categoriaArticulo)
-          .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos', aplicacionEspecializada: const Value('telefonia')));
-      final articulo = await db.into(db.articulo).insertReturning(
-            ArticuloCompanion.insert(folio: 'ART-000002', categoriaId: categoria.id, nombre: 'SMARTPHONE'),
+          .insertReturning(
+            CategoriaArticuloCompanion.insert(
+              nombre: 'Teléfonos',
+              aplicacionEspecializada: const Value('telefonia'),
+            ),
+          );
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000002',
+              categoriaId: categoria.id,
+              nombre: 'SMARTPHONE',
+            ),
           );
 
       final inventarioRepo = InventarioRepositoryImpl(db);
@@ -9187,53 +10665,79 @@ void main() {
       );
 
       expect(resultado, isA<RegularizarArticuloSerializadoExitoso>());
-      final unidades = (resultado as RegularizarArticuloSerializadoExitoso).unidades;
+      final unidades =
+          (resultado as RegularizarArticuloSerializadoExitoso).unidades;
       expect(unidades, hasLength(2));
 
       final articuloActualizado = await articuloRepo.obtenerPorId(articulo.id);
       expect(articuloActualizado!.manejaSerie, isTrue);
 
       final movimientos = await db.select(db.movimientoInventario).get();
-      expect(movimientos, hasLength(2), reason: 'el movimiento original por cantidad se borra, quedan 2 nuevos de unidad');
-      expect(movimientos.every((m) => m.unidadId != null && m.cantidad == 1), isTrue);
+      expect(
+        movimientos,
+        hasLength(2),
+        reason:
+            'el movimiento original por cantidad se borra, quedan 2 nuevos de unidad',
+      );
+      expect(
+        movimientos.every((m) => m.unidadId != null && m.cantidad == 1),
+        isTrue,
+      );
 
-      final existencia = await inventarioRepo.calcularExistenciaUnidades(articulo.id);
-      expect(existencia.total, 2, reason: 'la existencia total no cambia con la regularización');
+      final existencia = await inventarioRepo.calcularExistenciaUnidades(
+        articulo.id,
+      );
+      expect(
+        existencia.total,
+        2,
+        reason: 'la existencia total no cambia con la regularización',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       await db.close();
     },
   );
 
-  test(
-    '44.json coincide con el esquema final de la Etapa 9D (tercer ajuste posterior: tabla nueva '
-    'ArticuloUnidadEvento) — corrección de identidad de unidad',
-    () async {
-      final schema = await verifier.schemaAt(44);
-      final tablas = schema.rawDatabase
-          .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
-          .map((row) => row['name'] as String)
-          .toSet();
-      expect(tablas, contains('articulo_unidad_evento'));
+  test('44.json coincide con el esquema final de la Etapa 9D (tercer ajuste posterior: tabla nueva '
+      'ArticuloUnidadEvento) — corrección de identidad de unidad', () async {
+    final schema = await verifier.schemaAt(44);
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
+    expect(tablas, contains('articulo_unidad_evento'));
 
-      final sqlEvento =
-          schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo_unidad_evento'")
-                  .single['sql']
-              as String;
-      expect(sqlEvento, contains('"unidad_id" TEXT NOT NULL REFERENCES articulo_unidad (id)'));
-      expect(sqlEvento, contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'));
-      expect(sqlEvento, contains('"tipo_evento" TEXT NOT NULL'));
-      expect(sqlEvento, contains('"campo" TEXT NOT NULL'));
-      expect(sqlEvento, contains('"valor_anterior" TEXT'));
-      expect(sqlEvento, contains('"valor_nuevo" TEXT'));
-      expect(sqlEvento, contains('"motivo" TEXT NOT NULL'));
+    final sqlEvento =
+        schema.rawDatabase
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'articulo_unidad_evento'",
+                )
+                .single['sql']
+            as String;
+    expect(
+      sqlEvento,
+      contains('"unidad_id" TEXT NOT NULL REFERENCES articulo_unidad (id)'),
+    );
+    expect(
+      sqlEvento,
+      contains(
+        '"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL',
+      ),
+    );
+    expect(sqlEvento, contains('"tipo_evento" TEXT NOT NULL'));
+    expect(sqlEvento, contains('"campo" TEXT NOT NULL'));
+    expect(sqlEvento, contains('"valor_anterior" TEXT'));
+    expect(sqlEvento, contains('"valor_nuevo" TEXT'));
+    expect(sqlEvento, contains('"motivo" TEXT NOT NULL'));
 
-      schema.rawDatabase.dispose();
-    },
-  );
+    schema.rawDatabase.dispose();
+  });
 
   test(
     'migración 43 → 44 conserva una ArticuloUnidad real y crea ArticuloUnidadEvento vacía',
@@ -9267,7 +10771,12 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final unidades = await db.select(db.articuloUnidad).get();
-      expect(unidades, hasLength(1), reason: 'ninguna ArticuloUnidad real debe perderse en una migración puramente aditiva');
+      expect(
+        unidades,
+        hasLength(1),
+        reason:
+            'ninguna ArticuloUnidad real debe perderse en una migración puramente aditiva',
+      );
       expect(unidades.single.numeroSerie, 'SN-REAL-001');
       expect(unidades.single.id, 'unidad-real');
       expect(unidades.single.codigo, 'UNI-000001');
@@ -9275,11 +10784,15 @@ void main() {
       final eventos = await db.select(db.articuloUnidadEvento).get();
       expect(eventos, isEmpty, reason: 'tabla nueva, sin backfill');
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -9289,15 +10802,23 @@ void main() {
   test('45.json coincide con el esquema de la Bóveda de Accesos del Maestro (Etapa 14D: tablas nuevas '
       'BovedaCredencial/BovedaCredencialEvento)', () async {
     final schema = await verifier.schemaAt(45);
-    final tablas = schema.rawDatabase
-        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
-        .map((row) => row['name'] as String)
-        .toSet();
-    expect(tablas, containsAll(['boveda_credencial', 'boveda_credencial_evento']));
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
+    expect(
+      tablas,
+      containsAll(['boveda_credencial', 'boveda_credencial_evento']),
+    );
 
     final sqlCredencial =
         schema.rawDatabase
-                .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'boveda_credencial'")
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'boveda_credencial'",
+                )
                 .single['sql']
             as String;
     expect(sqlCredencial, contains('"nombre" TEXT NOT NULL'));
@@ -9307,105 +10828,151 @@ void main() {
 
     final sqlEvento =
         schema.rawDatabase
-                .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'boveda_credencial_evento'")
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'boveda_credencial_evento'",
+                )
                 .single['sql']
             as String;
-    expect(sqlEvento, contains('"credencial_id" TEXT NOT NULL REFERENCES boveda_credencial (id) ON DELETE RESTRICT'));
-    expect(sqlEvento, contains('"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL'));
+    expect(
+      sqlEvento,
+      contains(
+        '"credencial_id" TEXT NOT NULL REFERENCES boveda_credencial (id) ON DELETE RESTRICT',
+      ),
+    );
+    expect(
+      sqlEvento,
+      contains(
+        '"actor_usuario_id" TEXT NULL REFERENCES usuario (id) ON DELETE SET NULL',
+      ),
+    );
     expect(sqlEvento, contains('"tipo_evento" TEXT NOT NULL'));
 
     schema.rawDatabase.dispose();
   });
 
-  test('migración 44 → 45 conserva datos existentes y crea las tablas de la Bóveda vacías', () async {
-    final schemaV44 = await verifier.schemaAt(44);
-    final raw = schemaV44.rawDatabase;
+  test(
+    'migración 44 → 45 conserva datos existentes y crea las tablas de la Bóveda vacías',
+    () async {
+      final schemaV44 = await verifier.schemaAt(44);
+      final raw = schemaV44.rawDatabase;
 
-    raw.execute('''
+      raw.execute('''
       INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
       VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
     ''');
-    raw.execute('''
+      raw.execute('''
       INSERT INTO usuario (
         id, nombre_usuario, nombre, password_hash, es_maestro, created_at, updated_at, ciclo_vida_registro
       ) VALUES ('usuario-real', 'maestro', 'Maestro Real', 'hash', 1, 1700000000, 1700000000, 'activo');
     ''');
 
-    final db = AppDatabase(schemaV44.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+      final db = AppDatabase(schemaV44.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-    final usuarios = await db.select(db.usuario).get();
-    expect(usuarios, hasLength(1), reason: 'ningún Usuario real debe perderse en una migración puramente aditiva');
-    expect(usuarios.single.id, 'usuario-real');
+      final usuarios = await db.select(db.usuario).get();
+      expect(
+        usuarios,
+        hasLength(1),
+        reason:
+            'ningún Usuario real debe perderse en una migración puramente aditiva',
+      );
+      expect(usuarios.single.id, 'usuario-real');
 
-    final credenciales = await db.select(db.bovedaCredencial).get();
-    expect(credenciales, isEmpty, reason: 'tabla nueva, sin backfill');
-    final eventos = await db.select(db.bovedaCredencialEvento).get();
-    expect(eventos, isEmpty, reason: 'tabla nueva, sin backfill');
+      final credenciales = await db.select(db.bovedaCredencial).get();
+      expect(credenciales, isEmpty, reason: 'tabla nueva, sin backfill');
+      final eventos = await db.select(db.bovedaCredencialEvento).get();
+      expect(eventos, isEmpty, reason: 'tabla nueva, sin backfill');
 
-    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-    expect(violacionesFk, isEmpty);
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
 
-    final integridad =
-        await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-    expect(integridad, ['ok']);
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, ['ok']);
 
-    await db.close();
-  });
+      await db.close();
+    },
+  );
 
   test('46.json coincide con el esquema de "Recuérdame en este equipo" (Etapa 15: tabla nueva '
       'SesionPersistente)', () async {
     final schema = await verifier.schemaAt(46);
-    final tablas = schema.rawDatabase
-        .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
-        .map((row) => row['name'] as String)
-        .toSet();
+    final tablas =
+        schema.rawDatabase
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
     expect(tablas, contains('sesion_persistente'));
 
     final sql =
         schema.rawDatabase
-                .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'sesion_persistente'")
+                .select(
+                  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'sesion_persistente'",
+                )
                 .single['sql']
             as String;
-    expect(sql, contains('"usuario_id" TEXT NOT NULL REFERENCES usuario (id) ON DELETE CASCADE'));
+    expect(
+      sql,
+      contains(
+        '"usuario_id" TEXT NOT NULL REFERENCES usuario (id) ON DELETE CASCADE',
+      ),
+    );
     expect(sql, contains('"token_hash" TEXT NOT NULL UNIQUE'));
     expect(sql, contains('"created_at" INTEGER NOT NULL'));
 
     schema.rawDatabase.dispose();
   });
 
-  test('migración 45 → 46 conserva datos existentes y crea SesionPersistente vacía', () async {
-    final schemaV45 = await verifier.schemaAt(45);
-    final raw = schemaV45.rawDatabase;
+  test(
+    'migración 45 → 46 conserva datos existentes y crea SesionPersistente vacía',
+    () async {
+      final schemaV45 = await verifier.schemaAt(45);
+      final raw = schemaV45.rawDatabase;
 
-    raw.execute('''
+      raw.execute('''
       INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
       VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
     ''');
-    raw.execute('''
+      raw.execute('''
       INSERT INTO usuario (
         id, nombre_usuario, nombre, password_hash, es_maestro, created_at, updated_at, ciclo_vida_registro
       ) VALUES ('usuario-real', 'maestro', 'Maestro Real', 'hash', 1, 1700000000, 1700000000, 'activo');
     ''');
 
-    final db = AppDatabase(schemaV45.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+      final db = AppDatabase(schemaV45.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-    final usuarios = await db.select(db.usuario).get();
-    expect(usuarios, hasLength(1), reason: 'ningún Usuario real debe perderse en una migración puramente aditiva');
+      final usuarios = await db.select(db.usuario).get();
+      expect(
+        usuarios,
+        hasLength(1),
+        reason:
+            'ningún Usuario real debe perderse en una migración puramente aditiva',
+      );
 
-    final sesiones = await db.select(db.sesionPersistente).get();
-    expect(sesiones, isEmpty, reason: 'tabla nueva, sin backfill');
+      final sesiones = await db.select(db.sesionPersistente).get();
+      expect(sesiones, isEmpty, reason: 'tabla nueva, sin backfill');
 
-    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-    expect(violacionesFk, isEmpty);
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
 
-    final integridad =
-        await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-    expect(integridad, ['ok']);
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, ['ok']);
 
-    await db.close();
-  });
+      await db.close();
+    },
+  );
 
   test(
     '47.json elimina serieFiscal/folioFiscal de DocumentoPorEmitir y CuentaPorCobrar (Etapa 15, '
@@ -9415,7 +10982,9 @@ void main() {
 
       final sqlDocumento =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'documento_por_emitir'",
+                  )
                   .single['sql']
               as String;
       expect(sqlDocumento, isNot(contains('serie_fiscal')));
@@ -9425,7 +10994,9 @@ void main() {
 
       final sqlCuenta =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'cuenta_por_cobrar'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'cuenta_por_cobrar'",
+                  )
                   .single['sql']
               as String;
       expect(sqlCuenta, isNot(contains('serie_fiscal')));
@@ -9483,26 +11054,35 @@ void main() {
       final db = AppDatabase(schemaV46.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final documento = await (db.select(db.documentoPorEmitir)
-            ..where((t) => t.id.equals('documento-miluyole')))
-          .getSingle();
+      final documento =
+          await (db.select(db.documentoPorEmitir)
+            ..where((t) => t.id.equals('documento-miluyole'))).getSingle();
       expect(
         documento.uuid,
         'FE6FC43F-B308-4F0B-B610-A079E69A64BC',
-        reason: 'uuid estaba vacío; debe heredar el valor de folioFiscal vía COALESCE',
+        reason:
+            'uuid estaba vacío; debe heredar el valor de folioFiscal vía COALESCE',
       );
-      expect(documento.folioDocumento, 'F-1523', reason: 'folioDocumento no se toca');
+      expect(
+        documento.folioDocumento,
+        'F-1523',
+        reason: 'folioDocumento no se toca',
+      );
 
-      final cuenta = await (db.select(db.cuentaPorCobrar)
-            ..where((t) => t.id.equals('cxc-miluyole')))
-          .getSingle();
+      final cuenta =
+          await (db.select(db.cuentaPorCobrar)
+            ..where((t) => t.id.equals('cxc-miluyole'))).getSingle();
       expect(cuenta.uuid, 'FE6FC43F-B308-4F0B-B610-A079E69A64BC');
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
       expect(integridad, ['ok']);
 
       await db.close();
@@ -9517,7 +11097,9 @@ void main() {
       final db = AppDatabase(schemaV1.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      await db.into(db.usuario).insert(
+      await db
+          .into(db.usuario)
+          .insert(
             UsuarioCompanion.insert(
               id: const Value('usuario-actor'),
               nombre: 'Usuario de prueba',
@@ -9528,8 +11110,12 @@ void main() {
 
       final categoria = await db
           .into(db.categoriaArticulo)
-          .insertReturning(CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'));
-      final articulo = await db.into(db.articulo).insertReturning(
+          .insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Teléfonos'),
+          );
+      final articulo = await db
+          .into(db.articulo)
+          .insertReturning(
             ArticuloCompanion.insert(
               folio: 'ART-000001',
               categoriaId: categoria.id,
@@ -9562,14 +11148,19 @@ void main() {
       expect(corregida.marca, 'Samsung');
 
       final eventos = await inventarioRepo.listarEventosUnidad(unidad.id);
-      expect(eventos, hasLength(2), reason: 'un evento por campo que cambió (numeroSerie y marca)');
+      expect(
+        eventos,
+        hasLength(2),
+        reason: 'un evento por campo que cambió (numeroSerie y marca)',
+      );
       final eventoSerie = eventos.firstWhere((e) => e.campo == 'numeroSerie');
       expect(eventoSerie.valorAnterior, 'SN-MAL-CAPTURADA');
       expect(eventoSerie.valorNuevo, 'SN-CORRECTA-001');
       expect(eventoSerie.actorUsuarioId, 'usuario-actor');
       expect(eventoSerie.motivo, 'Error de captura al dar de alta.');
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty);
 
       await db.close();
@@ -9584,7 +11175,9 @@ void main() {
 
       final sqlEmpleado =
           schema.rawDatabase
-                  .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado'")
+                  .select(
+                    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'empleado'",
+                  )
                   .single['sql']
               as String;
       expect(sqlEmpleado, contains('"banco_otro_descripcion" TEXT'));
@@ -9593,11 +11186,13 @@ void main() {
     },
   );
 
-  test('migración 47 → 48 conserva datos existentes y agrega bancoOtroDescripcion nulo por defecto', () async {
-    final schemaV47 = await verifier.schemaAt(47);
-    final raw = schemaV47.rawDatabase;
+  test(
+    'migración 47 → 48 conserva datos existentes y agrega bancoOtroDescripcion nulo por defecto',
+    () async {
+      final schemaV47 = await verifier.schemaAt(47);
+      final raw = schemaV47.rawDatabase;
 
-    raw.execute('''
+      raw.execute('''
       INSERT INTO empleado (
         id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
         estado_civil, nacionalidad, fecha_ingreso, estatus, anios_experiencia_seguridad,
@@ -9609,22 +11204,38 @@ void main() {
       );
     ''');
 
-    final db = AppDatabase(schemaV47.newConnection());
-    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+      final db = AppDatabase(schemaV47.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-    final empleado = await (db.select(db.empleado)..where((t) => t.id.equals('empleado-real-existente'))).getSingle();
-    expect(empleado.nombres, 'Juan', reason: 'ningún Empleado real debe perderse en una migración puramente aditiva');
-    expect(empleado.bancoOtroDescripcion, isNull, reason: 'columna nueva, sin backfill');
+      final empleado =
+          await (db.select(db.empleado)
+            ..where((t) => t.id.equals('empleado-real-existente'))).getSingle();
+      expect(
+        empleado.nombres,
+        'Juan',
+        reason:
+            'ningún Empleado real debe perderse en una migración puramente aditiva',
+      );
+      expect(
+        empleado.bancoOtroDescripcion,
+        isNull,
+        reason: 'columna nueva, sin backfill',
+      );
 
-    final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-    expect(violacionesFk, isEmpty);
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
 
-    final integridad =
-        await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-    expect(integridad, ['ok']);
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, ['ok']);
 
-    await db.close();
-  });
+      await db.close();
+    },
+  );
 
   test(
     'migración 48 → 49 preserva configuraciones reales de configuracion_cobro_regla_evento como '
@@ -9709,22 +11320,47 @@ void main() {
     ''');
 
       final conteoOriginal =
-          raw.select('SELECT COUNT(*) AS n FROM configuracion_cobro_regla_evento').single['n'] as int;
-      expect(conteoOriginal, 4, reason: 'fixture: 3 reglas de Miluyole + 1 de Tikal');
+          raw
+                  .select(
+                    'SELECT COUNT(*) AS n FROM configuracion_cobro_regla_evento',
+                  )
+                  .single['n']
+              as int;
+      expect(
+        conteoOriginal,
+        4,
+        reason: 'fixture: 3 reglas de Miluyole + 1 de Tikal',
+      );
 
       final db = AppDatabase(schemaV48.newConnection());
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
-      final tablaVieja = await db
-          .customSelect("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'configuracion_cobro_regla_evento'")
-          .get();
-      expect(tablaVieja, isEmpty, reason: 'la tabla vieja se retira tras copiar sus datos');
+      final tablaVieja =
+          await db
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'configuracion_cobro_regla_evento'",
+              )
+              .get();
+      expect(
+        tablaVieja,
+        isEmpty,
+        reason: 'la tabla vieja se retira tras copiar sus datos',
+      );
 
-      final etapasMiluyole = await (db.select(db.configuracionCobroEtapa)
-            ..where((t) => t.configuracionCobroVigenciaId.equals('vigencia-miluyole-real'))
-            ..orderBy([(t) => OrderingTerm(expression: t.orden)]))
-          .get();
-      expect(etapasMiluyole, hasLength(3), reason: 'ninguna regla real debe perderse');
+      final etapasMiluyole =
+          await (db.select(db.configuracionCobroEtapa)
+                ..where(
+                  (t) => t.configuracionCobroVigenciaId.equals(
+                    'vigencia-miluyole-real',
+                  ),
+                )
+                ..orderBy([(t) => OrderingTerm(expression: t.orden)]))
+              .get();
+      expect(
+        etapasMiluyole,
+        hasLength(3),
+        reason: 'ninguna regla real debe perderse',
+      );
 
       final emision = etapasMiluyole[0];
       expect(emision.tipoSistema, 'emision');
@@ -9749,7 +11385,8 @@ void main() {
       expect(
         pagoMiluyole.etapaReferenciaId,
         procesamiento.id,
-        reason: 'evento_referencia ("procesamiento", un TipoEventoCobro) se resuelve al id real de la etapa hermana',
+        reason:
+            'evento_referencia ("procesamiento", un TipoEventoCobro) se resuelve al id real de la etapa hermana',
       );
 
       // La configuración migrada sigue siendo calculable de punta a
@@ -9760,27 +11397,55 @@ void main() {
         mesInicioPeriodo: DateTime(2026, 1, 1),
         periodoFin: DateTime(2026, 1, 31),
       );
-      expect(fechaDeEtapaSistema(fechasMiluyole, TipoEventoCobro.emision), DateTime(2026, 1, 1));
-      expect(fechaDeEtapaSistema(fechasMiluyole, TipoEventoCobro.procesamiento), DateTime(2026, 1, 7));
-      expect(fechaDeEtapaSistema(fechasMiluyole, TipoEventoCobro.pagoEsperado), DateTime(2026, 1, 14));
+      expect(
+        fechaDeEtapaSistema(fechasMiluyole, TipoEventoCobro.emision),
+        DateTime(2026, 1, 1),
+      );
+      expect(
+        fechaDeEtapaSistema(fechasMiluyole, TipoEventoCobro.procesamiento),
+        DateTime(2026, 1, 7),
+      );
+      expect(
+        fechaDeEtapaSistema(fechasMiluyole, TipoEventoCobro.pagoEsperado),
+        DateTime(2026, 1, 14),
+      );
 
-      final etapasTikal = await (db.select(db.configuracionCobroEtapa)
-            ..where((t) => t.configuracionCobroVigenciaId.equals('vigencia-tikal-real')))
-          .get();
+      final etapasTikal =
+          await (db.select(db.configuracionCobroEtapa)..where(
+            (t) => t.configuracionCobroVigenciaId.equals('vigencia-tikal-real'),
+          )).get();
       expect(etapasTikal, hasLength(1));
       expect(etapasTikal.single.tipoSistema, 'pagoEsperado');
       expect(etapasTikal.single.diaDelMes, 20);
-      expect(etapasTikal.single.etapaReferenciaId, isNull, reason: 'el modelo viejo nunca tuvo referencia aquí');
+      expect(
+        etapasTikal.single.etapaReferenciaId,
+        isNull,
+        reason: 'el modelo viejo nunca tuvo referencia aquí',
+      );
 
       final totalEtapas = await db.select(db.configuracionCobroEtapa).get();
-      expect(totalEtapas, hasLength(4), reason: '3 + 1, ninguna fila extra ni faltante');
+      expect(
+        totalEtapas,
+        hasLength(4),
+        reason: '3 + 1, ninguna fila extra ni faltante',
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
 
       await db.close();
     },
@@ -9896,31 +11561,62 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final vigenciaMorgan =
-          await (db.select(db.servicioLineaComercialVigencia)..where((t) => t.id.equals('vigencia-morgan'))).getSingle();
-      expect(vigenciaMorgan.sueldoMensualReferenciaPersonal, 1200000, reason: 'caso trivial: 1 sola línea vigente, se copia');
+          await (db.select(db.servicioLineaComercialVigencia)
+            ..where((t) => t.id.equals('vigencia-morgan'))).getSingle();
+      expect(
+        vigenciaMorgan.sueldoMensualReferenciaPersonal,
+        1200000,
+        reason: 'caso trivial: 1 sola línea vigente, se copia',
+      );
       expect(vigenciaMorgan.bonoMensualReferenciaPersonal, 50000);
 
       final vigenciaDosA =
-          await (db.select(db.servicioLineaComercialVigencia)..where((t) => t.id.equals('vigencia-dos-a'))).getSingle();
+          await (db.select(db.servicioLineaComercialVigencia)
+            ..where((t) => t.id.equals('vigencia-dos-a'))).getSingle();
       final vigenciaDosB =
-          await (db.select(db.servicioLineaComercialVigencia)..where((t) => t.id.equals('vigencia-dos-b'))).getSingle();
-      expect(vigenciaDosA.sueldoMensualReferenciaPersonal, isNull, reason: '2+ líneas — nunca se adivina');
+          await (db.select(db.servicioLineaComercialVigencia)
+            ..where((t) => t.id.equals('vigencia-dos-b'))).getSingle();
+      expect(
+        vigenciaDosA.sueldoMensualReferenciaPersonal,
+        isNull,
+        reason: '2+ líneas — nunca se adivina',
+      );
       expect(vigenciaDosB.sueldoMensualReferenciaPersonal, isNull);
 
       // Las columnas globales de Servicio permanecen intactas — nunca
       // se borran, solo dejan de ser la fuente para operación nueva.
-      final servicioMorgan = await (db.select(db.servicio)..where((t) => t.id.equals('servicio-morgan'))).getSingle();
+      final servicioMorgan =
+          await (db.select(db.servicio)
+            ..where((t) => t.id.equals('servicio-morgan'))).getSingle();
       expect(servicioMorgan.sueldoMensualReferenciaPersonal, 1200000);
 
-      final columnasAsignacion = await db.customSelect("PRAGMA table_info('asignacion_servicio')").get();
-      expect(columnasAsignacion.any((fila) => fila.data['name'] == 'linea_comercial_id'), isTrue);
+      final columnasAsignacion =
+          await db
+              .customSelect("PRAGMA table_info('asignacion_servicio')")
+              .get();
+      expect(
+        columnasAsignacion.any(
+          (fila) => fila.data['name'] == 'linea_comercial_id',
+        ),
+        isTrue,
+      );
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
 
       await db.close();
     },
@@ -9984,17 +11680,26 @@ void main() {
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       final vigencia =
-          await (db.select(db.servicioLineaComercialVigencia)..where((t) => t.id.equals('vigencia-real'))).getSingle();
-      expect(vigencia.cantidadElementos, 2, reason: 'ninguna vigencia real debe perderse en una migración puramente aditiva');
+          await (db.select(db.servicioLineaComercialVigencia)
+            ..where((t) => t.id.equals('vigencia-real'))).getSingle();
+      expect(
+        vigencia.cantidadElementos,
+        2,
+        reason:
+            'ninguna vigencia real debe perderse en una migración puramente aditiva',
+      );
       expect(vigencia.precioUnitario, 1500000);
 
-      final horario = await db.select(db.servicioLineaComercialVigenciaHorario).get();
+      final horario =
+          await db.select(db.servicioLineaComercialVigenciaHorario).get();
       expect(horario, isEmpty, reason: 'tabla nueva, sin backfill');
 
       // La tabla nueva sí acepta una fila real después de migrar —
       // confirma que la FK hacia la vigencia y los CHECK de rango
       // quedaron bien formados, no solo que la tabla existe vacía.
-      await db.into(db.servicioLineaComercialVigenciaHorario).insert(
+      await db
+          .into(db.servicioLineaComercialVigenciaHorario)
+          .insert(
             ServicioLineaComercialVigenciaHorarioCompanion.insert(
               lineaComercialVigenciaId: 'vigencia-real',
               diaSemana: 0,
@@ -10003,15 +11708,26 @@ void main() {
               cruzaMedianoche: const Value(true),
             ),
           );
-      final horarioTrasInsertar = await db.select(db.servicioLineaComercialVigenciaHorario).get();
+      final horarioTrasInsertar =
+          await db.select(db.servicioLineaComercialVigenciaHorario).get();
       expect(horarioTrasInsertar, hasLength(1));
 
-      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
-      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
 
       final integridad =
-          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
-      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
 
       await db.close();
     },
@@ -10126,35 +11842,58 @@ void main() {
     ''');
 
       final almacen = _AlmacenClaveCifradoEnMemoria();
-      final db = AppDatabase(schemaV51.newConnection(), almacenClaveCifrado: almacen);
+      final db = AppDatabase(
+        schemaV51.newConnection(),
+        almacenClaveCifrado: almacen,
+      );
       await verifier.migrateAndValidate(db, _currentSchemaVersion);
 
       // Deduplicación: 2 vigencias de SPORTIUM con el mismo Cliente +
       // URL + usuario → un solo ClientePortal nuevo, nunca dos.
       final vigenciaCoyoacan =
-          await (db.select(db.configuracionCobroVigencia)..where((t) => t.id.equals('vigencia-sportium-coyoacan'))).getSingle();
+          await (db.select(db.configuracionCobroVigencia)..where(
+            (t) => t.id.equals('vigencia-sportium-coyoacan'),
+          )).getSingle();
       final vigenciaSanAngel =
-          await (db.select(db.configuracionCobroVigencia)..where((t) => t.id.equals('vigencia-sportium-sanangel'))).getSingle();
+          await (db.select(db.configuracionCobroVigencia)..where(
+            (t) => t.id.equals('vigencia-sportium-sanangel'),
+          )).getSingle();
       expect(vigenciaCoyoacan.clientePortalId, isNotNull);
-      expect(vigenciaCoyoacan.clientePortalId, vigenciaSanAngel.clientePortalId, reason: 'mismo Cliente+URL+usuario → un solo portal, deduplicado');
+      expect(
+        vigenciaCoyoacan.clientePortalId,
+        vigenciaSanAngel.clientePortalId,
+        reason: 'mismo Cliente+URL+usuario → un solo portal, deduplicado',
+      );
 
       final portalSportium =
-          await (db.select(db.clientePortal)..where((t) => t.id.equals(vigenciaCoyoacan.clientePortalId!))).getSingle();
+          await (db.select(db.clientePortal)..where(
+            (t) => t.id.equals(vigenciaCoyoacan.clientePortalId!),
+          )).getSingle();
       expect(portalSportium.clienteId, 'cliente-sportium');
       expect(portalSportium.nombre, 'Portal SIPOT');
       expect(portalSportium.url, 'https://sipot.sportium.mx');
       expect(portalSportium.usuario, 'sportium_admin');
       expect(portalSportium.observaciones, 'Acceso compartido entre clubes');
-      expect(portalSportium.tipo, TipoPortalCliente.otro.name, reason: 'el modelo legado nunca capturó tipo/propósito');
+      expect(
+        portalSportium.tipo,
+        TipoPortalCliente.otro.name,
+        reason: 'el modelo legado nunca capturó tipo/propósito',
+      );
       expect(portalSportium.cicloVidaRegistro, 'activo');
 
       // La contraseña legada quedó cifrada — nunca en texto plano —
       // pero descifra exactamente al valor original.
       expect(portalSportium.contrasenaCifrada, isNotNull);
-      expect(portalSportium.contrasenaCifrada, isNot(equals('ClaveOriginal2025!')));
+      expect(
+        portalSportium.contrasenaCifrada,
+        isNot(equals('ClaveOriginal2025!')),
+      );
       expect(portalSportium.contrasenaCifrada, startsWith('aesgcm\$1\$'));
       final cipherVerificacion = CredentialCipher(almacen: almacen);
-      expect(await cipherVerificacion.descifrar(portalSportium.contrasenaCifrada!), 'ClaveOriginal2025!');
+      expect(
+        await cipherVerificacion.descifrar(portalSportium.contrasenaCifrada!),
+        'ClaveOriginal2025!',
+      );
 
       // Las 5 columnas legacy de ambas vigencias de SPORTIUM se
       // conservan intactas — nunca se borran ni se alteran.
@@ -10166,9 +11905,12 @@ void main() {
 
       // El correo real de San Ángel no se tocó — ni se migró a otra
       // parte, ni se alteró su contenido.
-      final correosSanAngel = await (db.select(db.configuracionCobroCorreo)
-            ..where((t) => t.configuracionCobroVigenciaId.equals('vigencia-sportium-sanangel')))
-          .get();
+      final correosSanAngel =
+          await (db.select(db.configuracionCobroCorreo)..where(
+            (t) => t.configuracionCobroVigenciaId.equals(
+              'vigencia-sportium-sanangel',
+            ),
+          )).get();
       expect(correosSanAngel, hasLength(1));
       expect(correosSanAngel.single.correo, 'facturacion@sportium.mx');
 
@@ -10176,26 +11918,1239 @@ void main() {
       // SPORTIUM), sin contraseña — nunca se inventa ni se cifra un
       // vacío.
       final vigenciaMorgan =
-          await (db.select(db.configuracionCobroVigencia)..where((t) => t.id.equals('vigencia-morgan'))).getSingle();
+          await (db.select(db.configuracionCobroVigencia)
+            ..where((t) => t.id.equals('vigencia-morgan'))).getSingle();
       expect(vigenciaMorgan.clientePortalId, isNotNull);
-      expect(vigenciaMorgan.clientePortalId, isNot(equals(vigenciaCoyoacan.clientePortalId)));
+      expect(
+        vigenciaMorgan.clientePortalId,
+        isNot(equals(vigenciaCoyoacan.clientePortalId)),
+      );
       final portalMorgan =
-          await (db.select(db.clientePortal)..where((t) => t.id.equals(vigenciaMorgan.clientePortalId!))).getSingle();
+          await (db.select(db.clientePortal)..where(
+            (t) => t.id.equals(vigenciaMorgan.clientePortalId!),
+          )).getSingle();
       expect(portalMorgan.clienteId, 'cliente-morgan');
       expect(portalMorgan.nombre, 'Portal Morgan');
-      expect(portalMorgan.contrasenaCifrada, isNull, reason: 'nunca se inventa ni se cifra una contraseña que no existía');
+      expect(
+        portalMorgan.contrasenaCifrada,
+        isNull,
+        reason: 'nunca se inventa ni se cifra una contraseña que no existía',
+      );
 
       // TOLUCA 32: nunca tuvo portal — sigue sin ninguno, la migración
       // nunca inventa uno donde el modelo legado no capturó nada.
       final vigenciaToluca =
-          await (db.select(db.configuracionCobroVigencia)..where((t) => t.id.equals('vigencia-toluca'))).getSingle();
+          await (db.select(db.configuracionCobroVigencia)
+            ..where((t) => t.id.equals('vigencia-toluca'))).getSingle();
       expect(vigenciaToluca.clientePortalId, isNull);
-      final portalesToluca = await (db.select(db.clientePortal)..where((t) => t.clienteId.equals('cliente-toluca'))).get();
+      final portalesToluca =
+          await (db.select(db.clientePortal)
+            ..where((t) => t.clienteId.equals('cliente-toluca'))).get();
       expect(portalesToluca, isEmpty);
 
       // Exactamente 2 portales nuevos en total: SPORTIUM (deduplicado) + MORGAN.
       final totalPortales = await db.select(db.clientePortal).get();
       expect(totalPortales, hasLength(2));
+
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
+
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 53 → 55 conserva Nóminas/renglones/pago históricos reales: el listado carga, una Nómina '
+    'anterior y una Borrador abren, los importes no cambian, los descuentos de Inventario quedan en 0 '
+    'sin bloquear el cierre, y el pago histórico sigue vinculado',
+    () async {
+      final schemaV53 = await verifier.schemaAt(53);
+      final raw = schemaV53.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1700000000, 3,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      // Nómina histórica ya CERRADA, con un renglón y un pago real —
+      // exactamente el caso "abre una nómina anterior" / "una nómina
+      // pagada histórica sigue mostrando sus pagos".
+      raw.execute('''
+      INSERT INTO nomina (
+        id, folio, anio, mes, tipo_periodo, fecha_inicio_periodo, fecha_fin_periodo, fecha_pago_ordinaria,
+        estatus, fecha_cierre, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'nomina-cerrada-real', 'NOM-000001', 2026, 6, 'primera', 1700000000, 1701000000, 1701100000,
+        'cerrada', 1701200000, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO nomina_empleado (
+        id, nomina_id, empleado_id, numero_empleado, nombre_completo, fuente_sueldo_utilizada,
+        dias_pagables, sueldo_mensual_utilizado, sueldo_quincenal_referencia, pago_por_dia, importe_base,
+        prestamo, tiempo_extra, bono, faltas, descuento_por_faltas, otros_descuentos,
+        monto_fiscal, monto_no_fiscal, total_a_pagar,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'renglon-cerrada-real', 'nomina-cerrada-real', 'empleado-real', 1, 'Juan Pérez', 'administrativo',
+        15, 1500000, 750000, 50000, 750000,
+        0, 0, 0, 0, 0, 0,
+        750000, 0, 750000,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO pago_nomina (
+        id, folio_pago_nomina, nomina_id, monto_total, fecha_pago, forma_pago, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'pago-real', 'PAG-NOM-000001', 'nomina-cerrada-real', 750000, 1701200000, 'transferencia', 'registrado',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO aplicacion_pago_nomina (
+        id, pago_nomina_id, nomina_empleado_id, monto, saldo_antes, saldo_despues,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'aplicacion-real', 'pago-real', 'renglon-cerrada-real', 750000, 750000, 0,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      // Nómina BORRADOR real, sin pago — caso "abre una nómina
+      // borrador".
+      raw.execute('''
+      INSERT INTO nomina (
+        id, folio, anio, mes, tipo_periodo, fecha_inicio_periodo, fecha_fin_periodo, fecha_pago_ordinaria,
+        estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'nomina-borrador-real', 'NOM-000002', 2026, 7, 'primera', 1703000000, 1704000000, 1704100000,
+        'borrador', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO nomina_empleado (
+        id, nomina_id, empleado_id, numero_empleado, nombre_completo, fuente_sueldo_utilizada,
+        dias_pagables, sueldo_mensual_utilizado, sueldo_quincenal_referencia, pago_por_dia, importe_base,
+        prestamo, tiempo_extra, bono, faltas, descuento_por_faltas, otros_descuentos,
+        monto_fiscal, monto_no_fiscal, total_a_pagar,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'renglon-borrador-real', 'nomina-borrador-real', 'empleado-real', 1, 'Juan Pérez', 'administrativo',
+        15, 1500000, 750000, 50000, 750000,
+        20000, 0, 0, 0, 0, 0,
+        730000, 0, 730000,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV53.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      // "Carga el listado de nóminas históricas" — exactamente la
+      // consulta de `NominaRepositoryImpl.listar` / `NominasController`.
+      final nominas = await db.select(db.nomina).get();
+      expect(
+        nominas,
+        hasLength(2),
+        reason: 'ninguna Nómina real debe perderse en una migración aditiva',
+      );
+
+      // "Abre una nómina anterior".
+      final nominaCerrada = nominas.firstWhere(
+        (n) => n.id == 'nomina-cerrada-real',
+      );
+      expect(nominaCerrada.estatus, 'cerrada');
+      final renglonesCerrada =
+          await (db.select(db.nominaEmpleado)
+            ..where((t) => t.nominaId.equals('nomina-cerrada-real'))).get();
+      expect(
+        renglonesCerrada,
+        hasLength(1),
+        reason: '"abre una nómina anterior" — el renglón histórico se conserva',
+      );
+      final renglonCerrada = renglonesCerrada.single;
+      expect(
+        renglonCerrada.totalAPagar,
+        750000,
+        reason: 'los renglones históricos conservan sus importes',
+      );
+      expect(renglonCerrada.importeBase, 750000);
+      expect(
+        renglonCerrada.descuentosInventario,
+        0,
+        reason: 'campo nuevo con backfill 0 para un renglón anterior a v54',
+      );
+      expect(renglonCerrada.descuentosInventarioPendienteRevision, isFalse);
+
+      // "Abre una nómina borrador".
+      final nominaBorrador = nominas.firstWhere(
+        (n) => n.id == 'nomina-borrador-real',
+      );
+      expect(nominaBorrador.estatus, 'borrador');
+      final renglonesBorrador =
+          await (db.select(db.nominaEmpleado)
+            ..where((t) => t.nominaId.equals('nomina-borrador-real'))).get();
+      expect(renglonesBorrador, hasLength(1));
+      expect(renglonesBorrador.single.totalAPagar, 730000);
+
+      // "Una nómina pagada histórica sigue mostrando sus pagos".
+      final pagos =
+          await (db.select(db.pagoNomina)
+            ..where((t) => t.nominaId.equals('nomina-cerrada-real'))).get();
+      expect(pagos, hasLength(1));
+      expect(pagos.single.montoTotal, 750000);
+      final aplicaciones =
+          await (db.select(db.aplicacionPagoNomina)..where(
+            (t) => t.nominaEmpleadoId.equals('renglon-cerrada-real'),
+          )).get();
+      expect(aplicaciones, hasLength(1));
+      expect(aplicaciones.single.pagoNominaId, 'pago-real');
+
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
+
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'BUG REAL (Etapa 15): una instalación que se quedó "atascada" en schemaVersion 54 con la forma anterior de '
+    'migrarDescuentoInventarioNominaV54 (sin descuentos_inventario_pendiente_revision) se repara al migrar a 55 '
+    '— reproduce exactamente "No se pudo cargar la nómina" y confirma que deja de ocurrir sin perder historial '
+    'ni alterar ningún DescuentoInventario existente',
+    () async {
+      final schemaV53 = await verifier.schemaAt(53);
+      final raw = schemaV53.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-atascado', 2, 'Pedro', 'Gómez', 'masculino', 631152000, 'GOPJ900101HDFXXX02',
+        'GOPJ900101AB2', '12345678902', 'soltero', 1700000000, 3,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO nomina (
+        id, folio, anio, mes, tipo_periodo, fecha_inicio_periodo, fecha_fin_periodo, fecha_pago_ordinaria,
+        estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'nomina-atascada-real', 'NOM-000022', 2026, 8, 'primera', 1700000000, 1701000000, 1701100000,
+        'borrador', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO nomina_empleado (
+        id, nomina_id, empleado_id, numero_empleado, nombre_completo, fuente_sueldo_utilizada,
+        dias_pagables, sueldo_mensual_utilizado, sueldo_quincenal_referencia, pago_por_dia, importe_base,
+        prestamo, tiempo_extra, bono, faltas, descuento_por_faltas, otros_descuentos,
+        monto_fiscal, monto_no_fiscal, total_a_pagar,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'renglon-atascado-real', 'nomina-atascada-real', 'empleado-atascado', 2, 'Pedro Gómez', 'administrativo',
+        15, 1500000, 750000, 50000, 750000,
+        0, 0, 0, 0, 0, 0,
+        750000, 0, 750000,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      // Un `DescuentoInventario` real y PENDIENTE, previo a toda la
+      // integración con Nómina (Etapa 7B) — "no se altera ningún
+      // descuento existente" exige que sobreviva intacto.
+      raw.execute('''
+      INSERT INTO categoria_articulo (id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('categoria-real', 'Uniformes', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO articulo (id, folio, categoria_id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('articulo-real', 'ART-000001', 'categoria-real', 'PANTALON NEGRO COMANDO', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO asignacion (
+        id, articulo_id, cantidad, empleado_id, fecha_entrega, estatus, fecha_cierre, atribuible_al_empleado,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'asignacion-real', 'articulo-real', 1, 'empleado-atascado', 1700000000, 'perdida', 1700100000, 1,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO descuento_inventario (
+        id, asignacion_id, empleado_id, motivo, importe, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'descuento-real-preexistente', 'asignacion-real', 'empleado-atascado', 'perdida', 20000, 'pendiente',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      // Simula EXACTAMENTE el estado real reportado por Marlon: la
+      // instalación ya corrió la forma ANTERIOR de
+      // `migrarDescuentoInventarioNominaV54` (agregaba solo estas dos
+      // columnas) y guardó `user_version = 54` — la tercera columna
+      // (`descuentos_inventario_pendiente_revision`, agregada después
+      // en el mismo cambio sin subir de versión) nunca llegó a esta
+      // base de datos.
+      raw.execute(
+        'ALTER TABLE descuento_inventario ADD COLUMN nomina_empleado_id TEXT NULL REFERENCES nomina_empleado (id) ON DELETE RESTRICT;',
+      );
+      raw.execute(
+        'ALTER TABLE nomina_empleado ADD COLUMN descuentos_inventario INTEGER NOT NULL DEFAULT 0;',
+      );
+      raw.execute('PRAGMA user_version = 54;');
+
+      // Antes del fix (`migrarReparacionDescuentosInventarioV55`), abrir
+      // esta base de datos con schemaVersion 55 SIN el paso de
+      // reparación reproduce el bug real reportado: Drift genera un
+      // `SELECT` que incluye TODAS las columnas declaradas de
+      // `NominaEmpleado` (incluida `descuentos_inventario_pendiente_revision`,
+      // que ya existe en el código Dart actual mucho antes de este
+      // cambio) contra una tabla física que no la tiene —
+      // `SqliteException(1): no such column: descuentos_inventario_pendiente_revision`,
+      // capturada por `NominasController._cargar` y mostrada como "No
+      // se pudo cargar la nómina. Ocurrió un error al cargar el listado
+      // de nóminas.". El `verifier.migrateAndValidate` de abajo aplica
+      // el fix real (el paso de reparación agregado a `onUpgrade`) y
+      // confirma que dejó de ocurrir.
+      final db = AppDatabase(schemaV53.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      // La consulta exacta que usa la pantalla (`NominasController._cargar`
+      // → `NominaRepositoryImpl.listar` + `listarEmpleados`) ya no
+      // lanza ninguna excepción.
+      final nominas = await db.select(db.nomina).get();
+      expect(nominas, hasLength(1));
+      final renglones =
+          await (db.select(db.nominaEmpleado)
+            ..where((t) => t.nominaId.equals('nomina-atascada-real'))).get();
+      expect(
+        renglones,
+        hasLength(1),
+        reason: 'el renglón histórico sobrevive a la reparación',
+      );
+      final renglon = renglones.single;
+      expect(
+        renglon.totalAPagar,
+        750000,
+        reason: 'los importes no se alteran al reparar la columna faltante',
+      );
+      expect(renglon.descuentosInventario, 0);
+      expect(
+        renglon.descuentosInventarioPendienteRevision,
+        isFalse,
+        reason: 'columna reparada con su default, sin bloquear nada',
+      );
+
+      // "No se altera ningún descuento existente" — el DescuentoInventario
+      // preexistente sigue pendiente, con su importe intacto y sin
+      // vínculo a ninguna Nómina inventado por la reparación.
+      final descuento =
+          await (db.select(db.descuentoInventario)..where(
+            (t) => t.id.equals('descuento-real-preexistente'),
+          )).getSingle();
+      expect(descuento.estatus, 'pendiente');
+      expect(descuento.importe, 20000);
+      expect(
+        descuento.nominaEmpleadoId,
+        isNull,
+        reason: 'la reparación nunca inventa una aplicación que no existía',
+      );
+
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la reparación',
+      );
+
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(
+        integridad,
+        ['ok'],
+        reason: 'integrity_check debe reportar "ok" tras la reparación',
+      );
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 55 → 56 (Etapa 15, rediseño del Dashboard) conserva datos existentes y crea VacanteOperativa vacía',
+    () async {
+      final schemaV55 = await verifier.schemaAt(55);
+      final raw = schemaV55.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real-v55', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1700000000, 3,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV55.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final empleado =
+          await (db.select(db.empleado)
+            ..where((t) => t.id.equals('empleado-real-v55'))).getSingleOrNull();
+      expect(
+        empleado,
+        isNotNull,
+        reason:
+            'ningún Empleado real debe perderse en una migración puramente aditiva',
+      );
+
+      final vacantes = await db.select(db.vacanteOperativa).get();
+      expect(
+        vacantes,
+        isEmpty,
+        reason:
+            'tabla nueva, sin backfill — se mantiene hacia adelante, nunca retroactivo',
+      );
+
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
+
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test('migración 56 → 57 (Etapa 15, Descuentos Programados al Personal) conserva un préstamo manual histórico, '
+      'crea tablas nuevas vacías y siembra CodigoSecuencia', () async {
+    final schemaV56 = await verifier.schemaAt(56);
+    final raw = schemaV56.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-real-v56', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+        'PEXJ900101AB1', '12345678901', 'soltero', 1700000000, 3,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+    raw.execute('''
+      INSERT INTO nomina (
+        id, folio, anio, mes, tipo_periodo, fecha_inicio_periodo, fecha_fin_periodo, fecha_pago_ordinaria,
+        estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'nomina-real-v56', 'NOM-000001', 2026, 1, 'primera', 1735689600, 1736812800, 1737331200,
+        'cerrada', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+    // Renglón histórico con `prestamo > 0` capturado a mano — el
+    // módulo nuevo nunca debe destruir ni reinterpretar este dato
+    // (Resolución explícita de Marlon: "Puede etiquetarse en lectura
+    // como 'Préstamo manual histórico'. No migrar/inventar préstamos
+    // nuevos para registros históricos sin evidencia").
+    raw.execute('''
+      INSERT INTO nomina_empleado (
+        id, nomina_id, empleado_id, numero_empleado, nombre_completo, fuente_sueldo_utilizada,
+        dias_pagables, sueldo_mensual_utilizado, sueldo_quincenal_referencia, pago_por_dia, importe_base,
+        prestamo, tiempo_extra, bono, faltas, descuento_por_faltas, otros_descuentos,
+        descuentos_inventario, descuentos_inventario_pendiente_revision,
+        monto_fiscal, monto_no_fiscal, total_a_pagar,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'renglon-prestamo-manual-v56', 'nomina-real-v56', 'empleado-real-v56', 1, 'Juan Pérez', 'administrativo',
+        15, 1500000, 750000, 50000, 750000,
+        50000, 0, 0, 0, 0, 0,
+        0, 0,
+        700000, 0, 700000,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV56.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final renglon =
+        await (db.select(db.nominaEmpleado)..where(
+          (t) => t.id.equals('renglon-prestamo-manual-v56'),
+        )).getSingle();
+    expect(
+      renglon.prestamo,
+      50000,
+      reason:
+          'el préstamo manual histórico se conserva intacto, nunca se destruye ni se reinterpreta',
+    );
+    expect(
+      renglon.totalAPagar,
+      700000,
+      reason: 'ningún importe histórico se recalcula por la migración',
+    );
+    expect(
+      renglon.descuentosProgramados,
+      0,
+      reason: 'columna nueva, default 0 — sin backfill inventado',
+    );
+    expect(renglon.descuentosProgramadosPendienteRevision, isFalse);
+
+    final descuentos = await db.select(db.descuentoProgramadoEmpleado).get();
+    expect(
+      descuentos,
+      isEmpty,
+      reason:
+          'tabla nueva, sin backfill — se mantiene hacia adelante, nunca retroactivo',
+    );
+    final cuotas = await db.select(db.descuentoProgramadoCuota).get();
+    expect(cuotas, isEmpty);
+    final movimientos = await db.select(db.descuentoProgramadoMovimiento).get();
+    expect(movimientos, isEmpty);
+
+    final secuenciaPrestamo =
+        await (db.select(db.codigoSecuencia)..where(
+          (t) => t.entityType.equals('descuentoProgramadoPrestamo'),
+        )).getSingle();
+    expect(secuenciaPrestamo.prefijo, 'PRE');
+    expect(
+      secuenciaPrestamo.contadorActual,
+      0,
+      reason: 'sembrado sin consumir ningún folio todavía',
+    );
+    final secuenciaBotas =
+        await (db.select(db.codigoSecuencia)..where(
+          (t) => t.entityType.equals('descuentoProgramadoBotas'),
+        )).getSingle();
+    expect(secuenciaBotas.prefijo, 'DES');
+
+    final violacionesFk =
+        await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(
+      violacionesFk,
+      isEmpty,
+      reason: 'foreign_key_check debe quedar limpio tras la migración',
+    );
+
+    final integridad =
+        await db
+            .customSelect('PRAGMA integrity_check')
+            .map((r) => r.data['integrity_check'] as String)
+            .get();
+    expect(integridad, [
+      'ok',
+    ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test(
+    'migración 57 → 58 (Etapa 15, rediseño de Personal/Bajas) agrega el snapshot de baja y hace backfill real del '
+    'puesto de una baja vigente — servicio/turno quedan NULL cuando no hay AsignacionServicio que cruzar (nunca inventados)',
+    () async {
+      final schemaV57 = await verifier.schemaAt(57);
+      final raw = schemaV57.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO area (id, codigo, nombre, created_at, updated_at)
+      VALUES ('area-v57', 'ARE-TEST', 'Operaciones', 1700000000, 1700000000);
+    ''');
+      raw.execute('''
+      INSERT INTO puesto (
+        id, codigo, nombre, area_id, tipo, nivel_jerarquico, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'puesto-v57', 'PUE-TEST', 'Elemento Operativo', 'area-v57', 'operativo', 1, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+      // Empleado YA de baja (nunca reingresó) — el puesto todavía
+      // apunta al puntero vigente sin sobrescribir, así que sí debe
+      // recuperarse; nunca tuvo AsignacionServicio, así que
+      // servicio/turno deben quedar NULL, nunca inventados.
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, puesto_id, estatus, fecha_baja, motivo_baja,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-baja-v57', 1, 'Ana', 'Gómez', 'femenino', 631152000, 'GOAX900101MDFXXX01',
+        'GOAX900101AB1', '12345678902', 'soltero', 1700000000, 3, 'puesto-v57', 'baja', 1705000000, 'renuncia',
+        1700000000, 1705000000, 'activo'
+      );
+    ''');
+      // Empleado ya reingresado con un periodo archivado — servicio/
+      // turno de ESE periodo también deben quedar NULL (sin
+      // AsignacionServicio con ese motivo/fecha exactos), y puesto de
+      // un periodo YA archivado antes de esta migración es
+      // irrecuperable a propósito (ver el doc comment de la migración).
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-reingreso-v57', 2, 'Luis', 'Torres', 'masculino', 631152000, 'TOLX900101HDFXXX01',
+        'TOLX900101AB2', '12345678903', 'soltero', 1705000000, 2, 'activo',
+        1700000000, 1705000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO empleado_periodo_laboral (id, empleado_id, fecha_ingreso, fecha_baja, motivo_baja)
+      VALUES (1, 'empleado-reingreso-v57', 1690000000, 1700000000, 'finContrato');
+    ''');
+
+      final db = AppDatabase(schemaV57.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final bajaVigente =
+          await (db.select(db.empleado)
+            ..where((t) => t.id.equals('empleado-baja-v57'))).getSingle();
+      expect(
+        bajaVigente.puestoNombreBaja,
+        'Elemento Operativo',
+        reason:
+            'puesto todavía intacto — nunca reingresó, se recupera del puntero vigente',
+      );
+      expect(
+        bajaVigente.servicioNombreBaja,
+        isNull,
+        reason:
+            'sin AsignacionServicio que cruzar — nunca se inventa un Servicio',
+      );
+      expect(bajaVigente.turnoNombreBaja, isNull);
+
+      final periodo =
+          await (db.select(db.empleadoPeriodoLaboral)..where(
+            (t) => t.empleadoId.equals('empleado-reingreso-v57'),
+          )).getSingle();
+      expect(
+        periodo.puestoNombre,
+        isNull,
+        reason:
+            'puesto de un periodo ya archivado antes de esta migración es irrecuperable — nunca inventado',
+      );
+      expect(periodo.servicioNombre, isNull);
+      expect(periodo.turnoNombre, isNull);
+      expect(
+        periodo.motivoBaja,
+        'finContrato',
+        reason: 'los datos existentes del periodo archivado nunca se tocan',
+      );
+
+      final activo =
+          await (db.select(db.empleado)
+            ..where((t) => t.id.equals('empleado-reingreso-v57'))).getSingle();
+      expect(
+        activo.puestoNombreBaja,
+        isNull,
+        reason:
+            'Empleado activo — el bloque de snapshot de baja completo queda NULL',
+      );
+
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
+
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 58 → 59 (Etapa 16, evolución visual) agrega Cliente.logoAttachmentId, NULL para clientes existentes',
+    () async {
+      final schemaV58 = await verifier.schemaAt(58);
+      final raw = schemaV58.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('cliente-real-v58', 'CLI-000001', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+    ''');
+
+      final db = AppDatabase(schemaV58.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final cliente =
+          await (db.select(db.cliente)
+            ..where((t) => t.id.equals('cliente-real-v58'))).getSingle();
+      expect(
+        cliente.nombreComercial,
+        'Sportium',
+        reason:
+            'ningún Cliente real debe perderse en una migración puramente aditiva',
+      );
+      expect(
+        cliente.logoAttachmentId,
+        isNull,
+        reason:
+            'ningún Cliente existente tiene un logo que reconstruir — NULL, nunca inventado',
+      );
+
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
+
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 59 → 60 ("Entrega múltiple de Inventario") crea la tabla Entrega, agrega Asignacion.entregaId '
+    '(NULL para toda Asignacion legacy) y siembra CodigoSecuencia ENT',
+    () async {
+      final schemaV59 = await verifier.schemaAt(59);
+      final raw = schemaV59.rawDatabase;
+
+      raw.execute('''
+      INSERT INTO empleado (
+        id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+        estado_civil, fecha_ingreso, anios_experiencia_seguridad,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'empleado-v59', 1, 'Brenda', 'Cruz', 'femenino', 631152000, 'CUGB900101MDFXXX01',
+        'CUGB900101AB1', '12345678901', 'soltero', 1700000000, 3,
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO categoria_articulo (id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('categoria-v59', 'Uniformes', 1700000000, 1700000000, 'activo');
+    ''');
+      raw.execute('''
+      INSERT INTO articulo (id, folio, categoria_id, nombre, created_at, updated_at, ciclo_vida_registro)
+      VALUES ('articulo-v59', 'ART-000001', 'categoria-v59', 'CAMISOLA', 1700000000, 1700000000, 'activo');
+    ''');
+      // Asignacion legacy real, creada por el flujo individual "Asignar
+      // artículo" — nunca tuvo ni podía tener un concepto de Entrega.
+      raw.execute('''
+      INSERT INTO asignacion (
+        id, articulo_id, cantidad, empleado_id, fecha_entrega, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'asignacion-legacy-v59', 'articulo-v59', 1, 'empleado-v59', 1700000000, 'activa',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV59.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final tablas =
+          await db
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name = 'entrega'",
+              )
+              .get();
+      expect(
+        tablas,
+        hasLength(1),
+        reason: 'la tabla Entrega debe existir tras la migración',
+      );
+
+      final legacy =
+          await (db.select(db.asignacion)
+            ..where((t) => t.id.equals('asignacion-legacy-v59'))).getSingle();
+      expect(
+        legacy.entregaId,
+        isNull,
+        reason:
+            'una Asignacion legacy nunca debe quedar agrupada retroactivamente',
+      );
+      expect(
+        legacy.estatus,
+        'activa',
+        reason: 'ningún dato existente se altera — migración puramente aditiva',
+      );
+
+      final codigoEntrega =
+          await (db.select(db.codigoSecuencia)
+            ..where((t) => t.entityType.equals('entrega'))).getSingleOrNull();
+      expect(
+        codigoEntrega,
+        isNotNull,
+        reason: 'CodigoSecuencia para "entrega" debe sembrarse en la migración',
+      );
+      expect(codigoEntrega!.prefijo, 'ENT');
+      expect(codigoEntrega.digitos, 6);
+
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
+
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test('migración 60 → 61 (Etapa 19, "Deudas y crédito empresarial") crea las tablas Deuda/MovimientoDeuda, '
+      'conserva un Egreso real existente y siembra CodigoSecuencia DEU', () async {
+    final schemaV60 = await verifier.schemaAt(60);
+    final raw = schemaV60.rawDatabase;
+
+    // Egreso real preexistente — una migración puramente aditiva
+    // nunca debe tocarlo.
+    raw.execute('''
+      INSERT INTO egreso (
+        id, folio_egreso, monto, fecha, forma_pago, concepto, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'egreso-v60', 'EGR-000001', 500000, 1700000000, 'transferencia', 'Renta de oficina', 'registrado',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+    final db = AppDatabase(schemaV60.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    final tablaDeuda =
+        await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name = 'deuda'",
+            )
+            .get();
+    expect(
+      tablaDeuda,
+      hasLength(1),
+      reason: 'la tabla Deuda debe existir tras la migración',
+    );
+
+    final tablaMovimientoDeuda =
+        await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name = 'movimiento_deuda'",
+            )
+            .get();
+    expect(
+      tablaMovimientoDeuda,
+      hasLength(1),
+      reason: 'la tabla MovimientoDeuda debe existir tras la migración',
+    );
+
+    final egresoPreexistente =
+        await (db.select(db.egreso)
+          ..where((t) => t.id.equals('egreso-v60'))).getSingle();
+    expect(
+      egresoPreexistente.monto,
+      500000,
+      reason:
+          'ningún Egreso real debe perderse en una migración puramente aditiva',
+    );
+    expect(egresoPreexistente.estatus, 'registrado');
+
+    final codigoDeuda =
+        await (db.select(db.codigoSecuencia)
+          ..where((t) => t.entityType.equals('deuda'))).getSingleOrNull();
+    expect(
+      codigoDeuda,
+      isNotNull,
+      reason: 'CodigoSecuencia para "deuda" debe sembrarse en la migración',
+    );
+    expect(codigoDeuda!.prefijo, 'DEU');
+    expect(codigoDeuda.digitos, 6);
+
+    final violacionesFk =
+        await db.customSelect('PRAGMA foreign_key_check').get();
+    expect(
+      violacionesFk,
+      isEmpty,
+      reason: 'foreign_key_check debe quedar limpio tras la migración',
+    );
+
+    final integridad =
+        await db
+            .customSelect('PRAGMA integrity_check')
+            .map((r) => r.data['integrity_check'] as String)
+            .get();
+    expect(integridad, [
+      'ok',
+    ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+    await db.close();
+  });
+
+  test(
+    'migración 61 → 62 (Etapa 19B, "Compra ↔ Tarjeta de crédito ↔ Deuda") agrega '
+    'MovimientoDeuda.compraId y Compra.deudaId, ambas nullable, y conserva filas reales existentes',
+    () async {
+      final schemaV61 = await verifier.schemaAt(61);
+      final raw = schemaV61.rawDatabase;
+
+      // Compra real preexistente (pagada de contado, como toda Compra
+      // antes de esta etapa) — una migración puramente aditiva nunca
+      // debe tocarla.
+      raw.execute('''
+      INSERT INTO compra (
+        id, folio_compra, fecha, forma_pago, estatus, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'compra-v61', 'COM-000001', 1700000000, 'efectivo', 'registrada', 1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      // Deuda + MovimientoDeuda real preexistentes (tarjeta con un pago
+      // ya registrado antes de esta etapa).
+      raw.execute('''
+      INSERT INTO deuda (
+        id, folio, nombre, tipo, fecha_origen, importe_original, saldo_actual, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'deuda-v61', 'DEU-000001', 'TDC BBVA', 'tarjetaCredito', 1700000000, 5000000, 4000000, 'activa',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO movimiento_deuda (
+        deuda_id, fecha, tipo, importe, saldo_anterior, saldo_posterior
+      ) VALUES (
+        'deuda-v61', 1700000000, 'pago', 1000000, 5000000, 4000000
+      );
+    ''');
+
+      final db = AppDatabase(schemaV61.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnasMovimientoDeuda =
+          await db.customSelect("PRAGMA table_info('movimiento_deuda')").get();
+      expect(
+        columnasMovimientoDeuda.map((f) => f.data['name']),
+        contains('compra_id'),
+        reason: 'MovimientoDeuda.compraId debe existir tras la migración',
+      );
+
+      final columnasCompra =
+          await db.customSelect("PRAGMA table_info('compra')").get();
+      expect(
+        columnasCompra.map((f) => f.data['name']),
+        contains('deuda_id'),
+        reason: 'Compra.deudaId debe existir tras la migración',
+      );
+
+      final compraPreexistente =
+          await (db.select(db.compra)
+            ..where((t) => t.id.equals('compra-v61'))).getSingle();
+      expect(
+        compraPreexistente.deudaId,
+        isNull,
+        reason:
+            'una Compra pagada de contado nunca tuvo tarjeta — deudaId debe quedar null',
+      );
+      expect(
+        compraPreexistente.folioCompra,
+        'COM-000001',
+        reason:
+            'ninguna Compra real debe perderse en una migración puramente aditiva',
+      );
+
+      final movimientoPreexistente =
+          await (db.select(db.movimientoDeuda)
+            ..where((t) => t.deudaId.equals('deuda-v61'))).getSingle();
+      expect(
+        movimientoPreexistente.compraId,
+        isNull,
+        reason:
+            'un pago ya registrado antes de esta etapa nunca tuvo Compra — compraId debe quedar null',
+      );
+      expect(
+        movimientoPreexistente.importe,
+        1000000,
+        reason:
+            'ningún MovimientoDeuda real debe perderse en una migración puramente aditiva',
+      );
+
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
+
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 62 → 63 (Etapa 19C, "Posición de caja, flujo real y proyección de compromisos") crea la tabla '
+    'CuentaFinanciera, agrega Ingreso.cuentaFinancieraId/Egreso.cuentaFinancieraId y conserva filas reales existentes',
+    () async {
+      final schemaV62 = await verifier.schemaAt(62);
+      final raw = schemaV62.rawDatabase;
+
+      // Ingreso/Egreso reales preexistentes (antes de esta etapa,
+      // ninguno tenía cuenta financiera) — una migración puramente
+      // aditiva nunca debe tocarlos.
+      raw.execute('''
+      INSERT INTO ingreso (
+        id, folio_ingreso, monto, fecha, forma_pago, concepto, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'ingreso-v62', 'ING-000001', 500000, 1700000000, 'efectivo', 'Ingreso de prueba', 'registrado',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+      raw.execute('''
+      INSERT INTO egreso (
+        id, folio_egreso, monto, fecha, forma_pago, concepto, estatus,
+        created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'egreso-v62', 'EGR-000001', 300000, 1700000000, 'transferencia', 'Egreso de prueba', 'registrado',
+        1700000000, 1700000000, 'activo'
+      );
+    ''');
+
+      final db = AppDatabase(schemaV62.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final tablaCuentaFinanciera =
+          await db
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name = 'cuenta_financiera'",
+              )
+              .get();
+      expect(
+        tablaCuentaFinanciera,
+        hasLength(1),
+        reason: 'la tabla CuentaFinanciera debe existir tras la migración',
+      );
+
+      final columnasIngreso =
+          await db.customSelect("PRAGMA table_info('ingreso')").get();
+      expect(
+        columnasIngreso.map((f) => f.data['name']),
+        contains('cuenta_financiera_id'),
+        reason: 'Ingreso.cuentaFinancieraId debe existir tras la migración',
+      );
+
+      final columnasEgreso =
+          await db.customSelect("PRAGMA table_info('egreso')").get();
+      expect(
+        columnasEgreso.map((f) => f.data['name']),
+        contains('cuenta_financiera_id'),
+        reason: 'Egreso.cuentaFinancieraId debe existir tras la migración',
+      );
+
+      final ingresoPreexistente =
+          await (db.select(db.ingreso)
+            ..where((t) => t.id.equals('ingreso-v62'))).getSingle();
+      expect(
+        ingresoPreexistente.cuentaFinancieraId,
+        isNull,
+        reason:
+            'un Ingreso histórico nunca tuvo cuenta financiera — debe quedar null, nunca inferido',
+      );
+      expect(
+        ingresoPreexistente.monto,
+        500000,
+        reason:
+            'ningún Ingreso real debe perderse en una migración puramente aditiva',
+      );
+
+      final egresoPreexistente =
+          await (db.select(db.egreso)
+            ..where((t) => t.id.equals('egreso-v62'))).getSingle();
+      expect(
+        egresoPreexistente.cuentaFinancieraId,
+        isNull,
+        reason:
+            'un Egreso histórico nunca tuvo cuenta financiera — debe quedar null, nunca inferido',
+      );
+      expect(
+        egresoPreexistente.monto,
+        300000,
+        reason:
+            'ningún Egreso real debe perderse en una migración puramente aditiva',
+      );
+
+      final codigoCuentaFinanciera =
+          await (db.select(db.codigoSecuencia)..where(
+            (t) => t.entityType.equals('cuenta_financiera'),
+          )).getSingleOrNull();
+      expect(
+        codigoCuentaFinanciera,
+        isNotNull,
+        reason:
+            'CodigoSecuencia para "cuenta_financiera" debe sembrarse en la migración',
+      );
+      expect(codigoCuentaFinanciera!.prefijo, 'CTA');
+      expect(codigoCuentaFinanciera.digitos, 4);
+
+      final violacionesFk =
+          await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(
+        violacionesFk,
+        isEmpty,
+        reason: 'foreign_key_check debe quedar limpio tras la migración',
+      );
+
+      final integridad =
+          await db
+              .customSelect('PRAGMA integrity_check')
+              .map((r) => r.data['integrity_check'] as String)
+              .get();
+      expect(integridad, [
+        'ok',
+      ], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 63 → 64 (Etapa 19D, "Calendario financiero y planeación de liquidez") agrega '
+    'CuentaPorCobrar.fechaCobroReprogramada y conserva una CxC real existente',
+    () async {
+      final schemaV63 = await verifier.schemaAt(63);
+      final raw = schemaV63.rawDatabase;
+
+      raw.execute('''
+        INSERT INTO cliente (id, codigo, nombre_comercial, created_at, updated_at, ciclo_vida_registro)
+        VALUES ('cliente-v63', 'CLI-000099', 'Cliente de prueba', 1700000000, 1700000000, 'activo');
+      ''');
+      raw.execute('''
+        INSERT INTO documento_por_emitir (
+          id, codigo, cliente_id, tipo_documento, agrupacion, metodo,
+          periodo_inicio, periodo_fin, generation_key, importe_base_esperado, importe_final_esperado,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'documento-v63', 'DOC-000099', 'cliente-v63', 'cfdi', 'porServicio', 'PUE',
+          1700000000, 1701000000, 'clave-v63', 500000, 500000,
+          1700000000, 1700000000, 'activo'
+        );
+      ''');
+      raw.execute('''
+        INSERT INTO cuenta_por_cobrar (
+          id, documento_por_emitir_id, cliente_id, tipo_documento, metodo,
+          fecha_emision_real, importe_emitido, saldo_original, saldo_pendiente, fecha_vencimiento,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'cxc-v63', 'documento-v63', 'cliente-v63', 'cfdi', 'PUE',
+          1700500000, 500000, 500000, 500000, 1699000000,
+          1700000000, 1700000000, 'activo'
+        );
+      ''');
+
+      final db = AppDatabase(schemaV63.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnasCxc = await db.customSelect("PRAGMA table_info('cuenta_por_cobrar')").get();
+      expect(
+        columnasCxc.map((f) => f.data['name']),
+        contains('fecha_cobro_reprogramada'),
+        reason: 'CuentaPorCobrar.fechaCobroReprogramada debe existir tras la migración',
+      );
+
+      final cxcPreexistente = await (db.select(db.cuentaPorCobrar)..where((t) => t.id.equals('cxc-v63'))).getSingle();
+      expect(
+        cxcPreexistente.fechaCobroReprogramada,
+        isNull,
+        reason: 'una CxC histórica nunca tuvo reprogramación — debe quedar null, nunca inferida',
+      );
+      expect(
+        cxcPreexistente.saldoPendiente,
+        500000,
+        reason: 'ninguna CxC real debe perderse en una migración puramente aditiva',
+      );
+      expect(cxcPreexistente.fechaVencimiento, DateTime.fromMillisecondsSinceEpoch(1699000000 * 1000));
 
       final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
       expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
@@ -10203,6 +13158,1600 @@ void main() {
       final integridad =
           await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
       expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 64 → 65 (Etapa "Tiempos Extra") crea las tablas TiempoExtra/'
+    'TiempoExtraCostoAdicional/TiempoExtraEvento/NominaEmpleadoAusencia, siembra '
+    '12X24 y CodigoSecuencia TEX, y conserva un Empleado y un catálogo de turno reales existentes',
+    () async {
+      final schemaV64 = await verifier.schemaAt(64);
+      final raw = schemaV64.rawDatabase;
+
+      // Catálogo de turno real preexistente — la migración solo agrega
+      // 12X24 (`insertOrIgnore`), nunca debe tocar los ya sembrados.
+      raw.execute('''
+        INSERT INTO tipo_modalidad_turno (id, codigo, nombre, activo)
+        VALUES ('turno-24x24-v64', '24X24', '24×24', 1);
+      ''');
+
+      // Empleado real preexistente — una migración puramente aditiva
+      // (solo tablas nuevas) nunca debe tocarlo.
+      raw.execute('''
+        INSERT INTO empleado (
+          id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+          estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'empleado-v64', 1, 'Juan', 'Pérez', 'masculino', 631152000, 'PEXJ900101HDFXXX01',
+          'PEXJ900101AB1', '12345678901', 'soltero', 1700000000, 3, 'activo',
+          1700000000, 1700000000, 'activo'
+        );
+      ''');
+
+      final db = AppDatabase(schemaV64.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      for (final nombreTabla in [
+        'tiempo_extra',
+        'tiempo_extra_costo_adicional',
+        'tiempo_extra_evento',
+        'nomina_empleado_ausencia',
+      ]) {
+        final tabla = await db
+            .customSelect("SELECT name FROM sqlite_master WHERE type='table' AND name = '$nombreTabla'")
+            .get();
+        expect(tabla, hasLength(1), reason: 'la tabla $nombreTabla debe existir tras la migración');
+      }
+
+      final turno12x24 = await (db.select(db.tipoModalidadTurno)..where((t) => t.codigo.equals('12X24'))).getSingleOrNull();
+      expect(turno12x24, isNotNull, reason: 'el catálogo de turno 12X24 debe sembrarse en la migración');
+      expect(turno12x24!.nombre, '12×24');
+
+      final turno24x24Preexistente =
+          await (db.select(db.tipoModalidadTurno)..where((t) => t.id.equals('turno-24x24-v64'))).getSingle();
+      expect(
+        turno24x24Preexistente.codigo,
+        '24X24',
+        reason: 'un catálogo de turno real preexistente nunca debe perderse ni duplicarse',
+      );
+
+      final empleadoPreexistente = await (db.select(db.empleado)..where((t) => t.id.equals('empleado-v64'))).getSingle();
+      expect(
+        empleadoPreexistente.nombres,
+        'Juan',
+        reason: 'ningún Empleado real debe perderse en una migración puramente aditiva',
+      );
+
+      final codigoTiempoExtra =
+          await (db.select(db.codigoSecuencia)..where((t) => t.entityType.equals('tiempoExtra'))).getSingleOrNull();
+      expect(codigoTiempoExtra, isNotNull, reason: 'CodigoSecuencia para "tiempoExtra" debe sembrarse en la migración');
+      expect(codigoTiempoExtra!.prefijo, 'TEX');
+      expect(codigoTiempoExtra.digitos, 6);
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 65 → 66 ("tarjeta de crédito como línea revolvente") vuelve nullable '
+    'importeOriginal/fechaOrigen, agrega fechaSaldoInicial/tarjetaReglaFechaPago/tarjetaDiasDespuesCorte, '
+    'y backfillea ambas SIN inventar nada: una TDC real conserva su saldo/importe y hereda su regla '
+    '(implícita en tarjetaDiaPago) y su fecha de saldo inicial (real, del MovimientoDeuda altaInicial); '
+    'un préstamo real sin esos datos queda con las 3 columnas nuevas en NULL',
+    () async {
+      final schemaV65 = await verifier.schemaAt(65);
+      final raw = schemaV65.rawDatabase;
+
+      // Préstamo real preexistente — nunca tuvo campos de tarjeta ni
+      // movimiento de apertura con saldo (alta con saldoInicial == 0,
+      // caso real ya soportado desde antes de esta etapa).
+      raw.execute('''
+        INSERT INTO deuda (
+          id, folio, nombre, tipo, fecha_origen, importe_original, saldo_actual, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'deuda-prestamo-v65', 'DEU-000001', 'Préstamo refacciones', 'prestamo', 1690000000, 10000000, 10000000, 'activa',
+          1690000000, 1690000000, 'activo'
+        );
+      ''');
+
+      // Tarjeta de crédito real preexistente — ya tenía tarjetaDiaPago
+      // capturado (única regla que existía antes de esta etapa) y un
+      // MovimientoDeuda altaInicial real con su propia fecha, distinta
+      // de fechaOrigen.
+      raw.execute('''
+        INSERT INTO deuda (
+          id, folio, nombre, tipo, fecha_origen, importe_original, saldo_actual, estatus,
+          tarjeta_ultimos_digitos, tarjeta_limite_credito, tarjeta_dia_corte, tarjeta_dia_pago,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'deuda-tdc-v65', 'DEU-000002', 'Konfío empresarial', 'tarjetaCredito', 1680000000, 4000000, 3326608, 'activa',
+          '4321', 4000000, 17, 7,
+          1690000000, 1690000000, 'activo'
+        );
+      ''');
+      raw.execute('''
+        INSERT INTO movimiento_deuda (
+          deuda_id, fecha, tipo, importe, saldo_anterior, saldo_posterior, created_at
+        ) VALUES (
+          'deuda-tdc-v65', 1701000000, 'altaInicial', 3326608, 0, 3326608, 1701000000
+        );
+      ''');
+
+      final db = AppDatabase(schemaV65.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnas = await db.customSelect("PRAGMA table_info('deuda')").get();
+      final nombresColumnas = columnas.map((f) => f.data['name']).toSet();
+      for (final nueva in ['fecha_saldo_inicial', 'tarjeta_regla_fecha_pago', 'tarjeta_dias_despues_corte']) {
+        expect(nombresColumnas, contains(nueva), reason: 'Deuda.$nueva debe existir tras la migración');
+      }
+
+      final prestamo = await (db.select(db.deuda)..where((t) => t.id.equals('deuda-prestamo-v65'))).getSingle();
+      expect(prestamo.importeOriginal, 10000000, reason: 'un préstamo real nunca debe perder su importe original');
+      expect(prestamo.saldoActual, 10000000);
+      expect(prestamo.fechaOrigen, isNotNull, reason: 'un préstamo real ya tenía fechaOrigen — nunca debe perderse');
+      expect(prestamo.fechaSaldoInicial, isNull, reason: 'nunca hubo un MovimientoDeuda altaInicial que backfillar — no se inventa una fecha');
+      expect(prestamo.tarjetaReglaFechaPago, isNull, reason: 'un préstamo nunca tuvo tarjetaDiaPago — no se inventa una regla');
+
+      final tarjeta = await (db.select(db.deuda)..where((t) => t.id.equals('deuda-tdc-v65'))).getSingle();
+      expect(tarjeta.saldoActual, 3326608, reason: 'el saldo real de la tarjeta nunca debe perderse en la migración');
+      expect(tarjeta.tarjetaLimiteCredito, 4000000);
+      expect(
+        tarjeta.tarjetaReglaFechaPago,
+        'diaFijo',
+        reason: 'backfill fiel: tarjetaDiaPago ya estaba capturado, así que esa era la única regla implícita posible',
+      );
+      expect(
+        tarjeta.fechaSaldoInicial,
+        DateTime.fromMillisecondsSinceEpoch(1701000000 * 1000),
+        reason: 'debe backfillarse con la fecha REAL de su propio MovimientoDeuda altaInicial, nunca con fechaOrigen',
+      );
+      expect(tarjeta.fechaOrigen, isNot(tarjeta.fechaSaldoInicial), reason: 'ambas fechas son conceptualmente distintas y deben seguir siéndolo');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 66 → 67 ("tasa fija/variable y CAT para TDC") agrega 7 columnas nuevas a Deuda '
+    'y backfillea tarjetaTipoTasa = fija SOLO para una TDC real que ya tenía tasaInteres capturado — '
+    'un préstamo con tasaInteres capturado conserva su valor pero NUNCA recibe tarjetaTipoTasa',
+    () async {
+      final schemaV66 = await verifier.schemaAt(66);
+      final raw = schemaV66.rawDatabase;
+
+      // Préstamo real preexistente con tasaInteres ya capturado —
+      // tarjetaTipoTasa es un concepto exclusivo de tarjeta, nunca debe
+      // aparecer poblado en una fila de deuda fija.
+      raw.execute('''
+        INSERT INTO deuda (
+          id, folio, nombre, tipo, fecha_origen, importe_original, saldo_actual, tasa_interes, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'deuda-prestamo-v66', 'DEU-000003', 'Préstamo refacciones', 'prestamo', 1690000000, 10000000, 10000000, 18.5, 'activa',
+          1690000000, 1690000000, 'activo'
+        );
+      ''');
+
+      // TDC real preexistente con tasaInteres ya capturado bajo el
+      // formulario anterior — la única interpretación posible era una
+      // tasa fija (el formulario viejo no distinguía fija/variable).
+      raw.execute('''
+        INSERT INTO deuda (
+          id, folio, nombre, tipo, saldo_actual, tasa_interes, tarjeta_limite_credito, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'deuda-tdc-v66', 'DEU-000004', 'TDC BBVA', 'tarjetaCredito', 500000, 24.5, 4000000, 'activa',
+          1690000000, 1690000000, 'activo'
+        );
+      ''');
+
+      // TDC real preexistente SIN tasaInteres capturado — nunca debe
+      // inventarse un tarjetaTipoTasa a partir de la nada.
+      raw.execute('''
+        INSERT INTO deuda (
+          id, folio, nombre, tipo, saldo_actual, tarjeta_limite_credito, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'deuda-tdc-sin-tasa-v66', 'DEU-000005', 'TDC Santander', 'tarjetaCredito', 100000, 2000000, 'activa',
+          1690000000, 1690000000, 'activo'
+        );
+      ''');
+
+      final db = AppDatabase(schemaV66.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnas = await db.customSelect("PRAGMA table_info('deuda')").get();
+      final nombresColumnas = columnas.map((f) => f.data['name']).toSet();
+      for (final nueva in [
+        'tarjeta_tipo_tasa',
+        'tarjeta_tasa_referencia',
+        'tarjeta_tasa_diferencial',
+        'tarjeta_tasa_mas_iva',
+        'tarjeta_tasa_descripcion',
+        'tarjeta_cat',
+        'tarjeta_cat_incluye_iva',
+      ]) {
+        expect(nombresColumnas, contains(nueva), reason: 'Deuda.$nueva debe existir tras la migración');
+      }
+
+      final prestamo = await (db.select(db.deuda)..where((t) => t.id.equals('deuda-prestamo-v66'))).getSingle();
+      expect(prestamo.tasaInteres, 18.5, reason: 'un préstamo real nunca debe perder su tasaInteres ya capturada');
+      expect(prestamo.tarjetaTipoTasa, isNull, reason: 'tarjetaTipoTasa es exclusivo de tarjeta — un préstamo nunca lo recibe');
+
+      final tarjetaConTasa = await (db.select(db.deuda)..where((t) => t.id.equals('deuda-tdc-v66'))).getSingle();
+      expect(tarjetaConTasa.tasaInteres, 24.5, reason: 'la tasa ya capturada nunca se pierde ni se reinterpreta');
+      expect(
+        tarjetaConTasa.tarjetaTipoTasa,
+        'fija',
+        reason: 'backfill fiel: bajo el formulario anterior, tasaInteres capturado en una TDC solo podía significar una tasa fija',
+      );
+      expect(tarjetaConTasa.tarjetaTasaReferencia, isNull, reason: 'ningún dato de tasa variable se inventa');
+      expect(tarjetaConTasa.tarjetaCat, isNull, reason: 'ningún CAT se inventa — el formulario anterior nunca lo capturaba');
+
+      final tarjetaSinTasa = await (db.select(db.deuda)..where((t) => t.id.equals('deuda-tdc-sin-tasa-v66'))).getSingle();
+      expect(tarjetaSinTasa.tasaInteres, isNull);
+      expect(tarjetaSinTasa.tarjetaTipoTasa, isNull, reason: 'sin tasaInteres previo, nunca se asume "fija" — se queda no especificada');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 67 → 68 ("ciclo de TDC") agrega tarjetaVencimientoCubiertoHasta a Deuda, sin backfill — '
+    'una TDC/préstamo preexistente queda con el campo en null y su comportamiento visible no cambia',
+    () async {
+      final schemaV67 = await verifier.schemaAt(67);
+      final raw = schemaV67.rawDatabase;
+
+      raw.execute('''
+        INSERT INTO deuda (
+          id, folio, nombre, tipo, fecha_origen, importe_original, saldo_actual, tasa_interes, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'deuda-prestamo-v67', 'DEU-000006', 'Préstamo equipo', 'prestamo', 1690000000, 5000000, 5000000, 12.0, 'activa',
+          1690000000, 1690000000, 'activo'
+        );
+      ''');
+
+      raw.execute('''
+        INSERT INTO deuda (
+          id, folio, nombre, tipo, saldo_actual, tarjeta_limite_credito, tarjeta_dia_corte,
+          tarjeta_regla_fecha_pago, tarjeta_dias_despues_corte, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'deuda-tdc-v67', 'DEU-000007', 'TDC Konfío', 'tarjetaCredito', 300000, 5000000, 17,
+          'diasDespuesDeCorte', 20, 'activa',
+          1690000000, 1690000000, 'activo'
+        );
+      ''');
+
+      final db = AppDatabase(schemaV67.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnas = await db.customSelect("PRAGMA table_info('deuda')").get();
+      final nombresColumnas = columnas.map((f) => f.data['name']).toSet();
+      expect(nombresColumnas, contains('tarjeta_vencimiento_cubierto_hasta'),
+          reason: 'Deuda.tarjetaVencimientoCubiertoHasta debe existir tras la migración');
+
+      final prestamo = await (db.select(db.deuda)..where((t) => t.id.equals('deuda-prestamo-v67'))).getSingle();
+      expect(prestamo.tarjetaVencimientoCubiertoHasta, isNull, reason: 'sin backfill — nunca se inventa un ciclo cubierto');
+
+      final tarjeta = await (db.select(db.deuda)..where((t) => t.id.equals('deuda-tdc-v67'))).getSingle();
+      expect(tarjeta.tarjetaVencimientoCubiertoHasta, isNull,
+          reason: 'sin backfill — una TDC ya existente queda igual que antes hasta que alguien la concilie o pague');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 68 → 69 ("origen financiero unificado") agrega 6 columnas nuevas (movimiento_deuda ×2, '
+    'tiempo_extra ×1, tiempo_extra_costo_adicional ×3), sin backfill — un cargo de TDC ya existente '
+    'conserva su compra_id y queda con tiempo_extra_id/costo_adicional_id en null',
+    () async {
+      final schemaV68 = await verifier.schemaAt(68);
+      final raw = schemaV68.rawDatabase;
+
+      // TDC preexistente con un cargo ya vinculado a una Compra —
+      // exactamente el shape que ya validaban las pruebas de v66/v67/v68.
+      raw.execute('''
+        INSERT INTO deuda (
+          id, folio, nombre, tipo, saldo_actual, tarjeta_limite_credito, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'deuda-tdc-v68', 'DEU-000008', 'TDC Konfío', 'tarjetaCredito', 500000, 4000000, 'activa',
+          1690000000, 1690000000, 'activo'
+        );
+      ''');
+      raw.execute('''
+        INSERT INTO movimiento_deuda (
+          id, deuda_id, fecha, tipo, importe, saldo_anterior, saldo_posterior, created_at
+        ) VALUES (
+          1, 'deuda-tdc-v68', 1690000000, 'cargoCompra', 500000, 0, 500000, 1690000000
+        );
+      ''');
+
+      final db = AppDatabase(schemaV68.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnasMovimiento = await db.customSelect("PRAGMA table_info('movimiento_deuda')").get();
+      final nombresMovimiento = columnasMovimiento.map((f) => f.data['name']).toSet();
+      expect(nombresMovimiento, containsAll(['tiempo_extra_id', 'costo_adicional_id']));
+
+      final columnasTiempoExtra = await db.customSelect("PRAGMA table_info('tiempo_extra')").get();
+      expect(columnasTiempoExtra.map((f) => f.data['name']), contains('deuda_id'));
+
+      final columnasCosto = await db.customSelect("PRAGMA table_info('tiempo_extra_costo_adicional')").get();
+      final nombresCosto = columnasCosto.map((f) => f.data['name']).toSet();
+      expect(nombresCosto, containsAll(['forma_pago', 'egreso_id', 'deuda_id']));
+
+      final movimiento = await (db.select(db.movimientoDeuda)..where((t) => t.id.equals(1))).getSingle();
+      expect(movimiento.tipo, 'cargoCompra', reason: 'el movimiento histórico conserva su tipo/monto/saldo exactamente igual');
+      expect(movimiento.importe, 500000);
+      expect(movimiento.tiempoExtraId, isNull, reason: 'sin backfill — un movimiento histórico nunca se reasigna a Tiempo Extra');
+      expect(movimiento.costoAdicionalId, isNull);
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 69 → 70 (Etapa "corrección real de Tiempo Extra") agrega estadoAnterior/estadoNuevo/eliminado, '
+    'y reemplaza personal.gestionarTiemposExtra por 3 permisos separados SIN quitarle acceso a quien ya lo tenía',
+    () async {
+      final schemaV69 = await verifier.schemaAt(69);
+      final raw = schemaV69.rawDatabase;
+
+      raw.execute('''
+        INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+        VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+      ''');
+      raw.execute('''
+        INSERT INTO usuario (
+          id, nombre, nombre_usuario, password_hash, es_maestro, created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'usuario-con-permiso-viejo', 'Ana Real', 'ana.real', 'pbkdf2\$1\$AA==\$BB==', 0, 1700000000, 1700000000, 'activo'
+        );
+      ''');
+      raw.execute('''
+        INSERT INTO permiso_usuario (usuario_id, codigo)
+        VALUES ('usuario-con-permiso-viejo', 'personal.gestionarTiemposExtra');
+      ''');
+
+      final db = AppDatabase(schemaV69.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnasEvento = await db.customSelect("PRAGMA table_info('tiempo_extra_evento')").get();
+      expect(columnasEvento.map((f) => f.data['name']), containsAll(['estado_anterior', 'estado_nuevo']));
+
+      final columnasCosto = await db.customSelect("PRAGMA table_info('tiempo_extra_costo_adicional')").get();
+      expect(columnasCosto.map((f) => f.data['name']), contains('eliminado'));
+
+      final permisos = await (db.select(db.permisoUsuario)..where((t) => t.usuarioId.equals('usuario-con-permiso-viejo'))).get();
+      final codigos = permisos.map((p) => p.codigo).toSet();
+      expect(
+        codigos,
+        containsAll(['personal.gestionarTiemposExtra', 'tiempoExtra.crear', 'tiempoExtra.corregir', 'tiempoExtra.cancelar']),
+        reason: 'el código viejo se conserva (fila inerte) y los 3 nuevos se otorgan — nadie pierde acceso silenciosamente',
+      );
+      expect(codigos, isNot(contains('tiempoExtra.eliminarFisicamente')), reason: 'eliminación física nunca es un permiso otorgable');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 70 → 71 (Etapa "1 — Modelo de permisos granular") re-otorga las facultades finas a '
+    'todo usuario real que ya tenía el código amplio equivalente, sin quitarle nada y sin tocar al Maestro',
+    () async {
+      final schemaV70 = await verifier.schemaAt(70);
+      final raw = schemaV70.rawDatabase;
+
+      raw.execute('''
+        INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+        VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+      ''');
+
+      void sembrarUsuario(String id, String nombre) {
+        raw.execute('''
+          INSERT INTO usuario (
+            id, nombre, nombre_usuario, password_hash, es_maestro, created_at, updated_at, ciclo_vida_registro
+          ) VALUES (
+            '$id', '$nombre', '$id', 'pbkdf2\$1\$AA==\$BB==', 0, 1700000000, 1700000000, 'activo'
+          );
+        ''');
+      }
+
+      void otorgar(String usuarioId, String codigo) {
+        raw.execute("INSERT INTO permiso_usuario (usuario_id, codigo) VALUES ('$usuarioId', '$codigo');");
+      }
+
+      // Usuario real con acceso amplio a Finanzas (los 3 códigos que se
+      // retiran del catálogo) — cubre los 7 subdominios nuevos.
+      sembrarUsuario('usuario-finanzas', 'Contadora Real');
+      otorgar('usuario-finanzas', 'finanzas.crear');
+      otorgar('usuario-finanzas', 'finanzas.modificar');
+      otorgar('usuario-finanzas', 'finanzas.archivar');
+
+      // Usuario real con acceso amplio a Comercial.
+      sembrarUsuario('usuario-comercial', 'Ejecutiva Comercial');
+      otorgar('usuario-comercial', 'comercial.crear');
+      otorgar('usuario-comercial', 'comercial.modificar');
+      otorgar('usuario-comercial', 'comercial.archivar');
+
+      // Usuario real con `nomina.pagar`.
+      sembrarUsuario('usuario-nomina', 'Encargado de Nómina');
+      otorgar('usuario-nomina', 'nomina.pagar');
+
+      // Usuario real con `personal.gestionarDescuentos`.
+      sembrarUsuario('usuario-descuentos', 'RRHH Descuentos');
+      otorgar('usuario-descuentos', 'personal.gestionarDescuentos');
+
+      // Usuario real con `inventario.modificar`.
+      sembrarUsuario('usuario-inventario', 'Almacenista Real');
+      otorgar('usuario-inventario', 'inventario.modificar');
+
+      // Usuario real con los 5 códigos que CONSERVAN su nombre (nunca se
+      // retiran del catálogo) pero cuyo alcance se estrecha — la
+      // migración solo debe AGREGAR el código nuevo, nunca tocar el viejo.
+      sembrarUsuario('usuario-alcance-estrecho', 'Supervisor Operativo');
+      otorgar('usuario-alcance-estrecho', 'personal.modificar');
+      otorgar('usuario-alcance-estrecho', 'compras.crear');
+      otorgar('usuario-alcance-estrecho', 'compras.archivar');
+      otorgar('usuario-alcance-estrecho', 'vehiculos.crear');
+      otorgar('usuario-alcance-estrecho', 'telefonia.crear');
+
+      // Un Maestro real, SIN ninguna fila de PermisoUsuario (su acceso
+      // se recalcula en vivo) — la migración no debe tocarlo ni
+      // insertarle nada.
+      raw.execute('''
+        INSERT INTO usuario (
+          id, nombre, nombre_usuario, password_hash, es_maestro, created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'usuario-maestro', 'Maestro Real', 'maestro', 'pbkdf2\$1\$AA==\$BB==', 1, 1700000000, 1700000000, 'activo'
+        );
+      ''');
+
+      final db = AppDatabase(schemaV70.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      Future<Set<String>> codigosDe(String usuarioId) async {
+        final filas = await (db.select(db.permisoUsuario)..where((t) => t.usuarioId.equals(usuarioId))).get();
+        return filas.map((p) => p.codigo).toSet();
+      }
+
+      final finanzas = await codigosDe('usuario-finanzas');
+      expect(
+        finanzas,
+        containsAll([
+          // Códigos viejos conservados (filas inertes).
+          'finanzas.crear', 'finanzas.modificar', 'finanzas.archivar',
+          // Otorgados por `finanzas.crear`.
+          'ingresos.crear', 'egresos.crear', 'deudas.crear', 'deudas.registrarPago', 'pagos.registrar',
+          'cuentasFinancieras.crear', 'categoriasFinancieras.crear',
+          // Otorgados por `finanzas.modificar`.
+          'ingresos.corregir', 'egresos.corregir', 'deudas.corregir', 'pagos.corregir',
+          'cuentasFinancieras.corregir', 'cuentasFinancieras.cambiarEstatus', 'categoriasFinancieras.corregir',
+          'cuentaPorCobrar.corregirFecha', 'cuentaPorCobrar.reprogramarCobro',
+          // Otorgados por `finanzas.archivar`.
+          'ingresos.cancelar', 'egresos.cancelar', 'deudas.cancelar', 'pagos.cancelar', 'pagos.cancelarAplicacion',
+          'categoriasFinancieras.archivar',
+        ]),
+        reason: 'nadie pierde ninguna facultad que ya tenía bajo los 3 códigos amplios de Finanzas',
+      );
+
+      final comercial = await codigosDe('usuario-comercial');
+      expect(
+        comercial,
+        containsAll([
+          'comercial.crear', 'comercial.modificar', 'comercial.archivar',
+          'clientes.crear', 'servicios.crear', 'configuracionCobro.crear', 'agendaComercial.crear',
+          'clientes.corregir', 'servicios.corregir', 'configuracionCobro.corregir', 'agendaComercial.corregir',
+          'clientes.archivar',
+        ]),
+      );
+
+      final nomina = await codigosDe('usuario-nomina');
+      expect(
+        nomina,
+        containsAll(['nomina.pagar', 'nomina.registrarPago', 'nomina.corregirPago', 'nomina.cancelarPago']),
+      );
+
+      final descuentos = await codigosDe('usuario-descuentos');
+      expect(
+        descuentos,
+        containsAll([
+          'personal.gestionarDescuentos',
+          'descuentos.ver', 'descuentos.crear', 'descuentos.corregir', 'descuentos.cancelar',
+        ]),
+        reason: 'descuentos.ver es nuevo — antes Descuentos no tenía ningún guardia de lectura propio',
+      );
+
+      final inventario = await codigosDe('usuario-inventario');
+      expect(inventario, containsAll(['inventario.modificar', 'inventario.corregir', 'inventario.ajustarExistencia']));
+
+      final estrecho = await codigosDe('usuario-alcance-estrecho');
+      expect(
+        estrecho,
+        containsAll([
+          // Los 5 códigos viejos permanecen EXACTAMENTE (nunca se retiran
+          // del catálogo, solo se estrecha su alcance en el código).
+          'personal.modificar', 'compras.crear', 'compras.archivar', 'vehiculos.crear', 'telefonia.crear',
+          // Y cada uno gana el código nuevo que separó la facultad que
+          // antes venía incluida.
+          'personal.archivar', 'compras.corregir', 'compras.cancelar', 'vehiculos.operar', 'telefonia.recargar',
+        ]),
+        reason: 'los códigos que conservan su nombre nunca se tocan — solo se agrega el nuevo',
+      );
+
+      // Ningún usuario recibe jamás un código de eliminación física —
+      // esa facultad nunca es otorgable vía `PermisoUsuario`.
+      final todosLosCodigosOtorgados = {...finanzas, ...comercial, ...nomina, ...descuentos, ...inventario, ...estrecho};
+      expect(todosLosCodigosOtorgados.where((c) => c.toLowerCase().contains('fisicamente')), isEmpty);
+
+      final maestro = await codigosDe('usuario-maestro');
+      expect(maestro, isEmpty, reason: 'un Maestro nunca tiene filas de PermisoUsuario — la migración no lo toca');
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty);
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test('migración 70 → 71 es idempotente — correrla dos veces no duplica ninguna fila ni falla', () async {
+    final schemaV70 = await verifier.schemaAt(70);
+    final raw = schemaV70.rawDatabase;
+
+    raw.execute('''
+      INSERT INTO app_metadata (installation_id, installed_at, app_version, last_opened_at)
+      VALUES ('instalacion-real-existente', 1700000000, '1.0.0+1', 1700000000);
+    ''');
+    raw.execute('''
+      INSERT INTO usuario (
+        id, nombre, nombre_usuario, password_hash, es_maestro, created_at, updated_at, ciclo_vida_registro
+      ) VALUES (
+        'usuario-repetido', 'Usuario Repetido', 'repetido', 'pbkdf2\$1\$AA==\$BB==', 0, 1700000000, 1700000000, 'activo'
+      );
+    ''');
+    raw.execute("INSERT INTO permiso_usuario (usuario_id, codigo) VALUES ('usuario-repetido', 'nomina.pagar');");
+
+    final db = AppDatabase(schemaV70.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    // Reejecutar la migración de datos directamente sobre la BD ya
+    // migrada (simula lo que pasaría si `onUpgrade` corriera dos veces
+    // sobre el mismo rango de versiones) — nunca debe duplicar filas ni
+    // violar la llave primaria `(usuario_id, codigo)`.
+    await migrarPermisosGranularesV71(db, db.createMigrator());
+
+    final filas =
+        await (db.select(db.permisoUsuario)..where((t) => t.usuarioId.equals('usuario-repetido'))).get();
+    final codigos = filas.map((p) => p.codigo).toList();
+    expect(codigos.toSet().length, codigos.length, reason: 'ninguna fila duplicada tras correr la migración dos veces');
+    expect(
+      codigos.toSet(),
+      {'nomina.pagar', 'nomina.registrarPago', 'nomina.corregirPago', 'nomina.cancelarPago'},
+    );
+
+    await db.close();
+  });
+
+  test(
+    'migración 73 → 74 (Etapa 7, Cuentas por cobrar) re-otorga cuentaPorCobrar.corregir a todo usuario real que '
+    'ya tenía cuentaPorCobrar.corregirFecha, sin quitarle nada, y es idempotente',
+    () async {
+      final schemaV73 = await verifier.schemaAt(73);
+      final raw = schemaV73.rawDatabase;
+
+      raw.execute('''
+        INSERT INTO usuario (
+          id, nombre, nombre_usuario, password_hash, es_maestro, created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'usuario-cxc', 'Cobranza Real', 'cobranza', 'pbkdf2\$1\$AA==\$BB==', 0, 1700000000, 1700000000, 'activo'
+        );
+      ''');
+      raw.execute("INSERT INTO permiso_usuario (usuario_id, codigo) VALUES ('usuario-cxc', 'cuentaPorCobrar.corregirFecha');");
+      raw.execute("INSERT INTO permiso_usuario (usuario_id, codigo) VALUES ('usuario-cxc', 'cuentaPorCobrar.reprogramarCobro');");
+
+      final db = AppDatabase(schemaV73.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final codigos = (await (db.select(db.permisoUsuario)..where((t) => t.usuarioId.equals('usuario-cxc'))).get())
+          .map((p) => p.codigo)
+          .toSet();
+      expect(
+        codigos,
+        {'cuentaPorCobrar.corregirFecha', 'cuentaPorCobrar.reprogramarCobro', 'cuentaPorCobrar.corregir'},
+        reason: 'el código viejo se conserva inerte, reprogramarCobro no cambia, corregir se agrega',
+      );
+
+      // Idempotencia: reejecutar la migración de datos directamente no
+      // debe duplicar ninguna fila ni violar la llave primaria.
+      await migrarCorreccionCuentaPorCobrarV74(db, db.createMigrator());
+      final codigosTrasRepetir =
+          (await (db.select(db.permisoUsuario)..where((t) => t.usuarioId.equals('usuario-cxc'))).get())
+              .map((p) => p.codigo)
+              .toList();
+      expect(codigosTrasRepetir.toSet().length, codigosTrasRepetir.length, reason: 'ninguna fila duplicada');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 74 → 75 (Etapa "Cierre del ciclo financiero de Descuentos Programados") agrega '
+    'cuentaFinancieraId/egresoId nullable a descuento_programado_empleado, sin backfill sobre un préstamo histórico',
+    () async {
+      final schemaV74 = await verifier.schemaAt(74);
+
+      // Inserta vía el Companion actual (`cuentaFinancieraId`/`egresoId`
+      // ausentes → `Value.absent()` → el SQL generado no referencia esas
+      // columnas, compatibles con la tabla física en su forma v74).
+      final dbV74 = AppDatabase(schemaV74.newConnection());
+      final empleado = await dbV74.into(dbV74.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 9001,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ90010101',
+              nss: '10000000001',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2025, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+      final prestamoHistorico = await dbV74.into(dbV74.descuentoProgramadoEmpleado).insertReturning(
+            DescuentoProgramadoEmpleadoCompanion.insert(
+              folio: 'PRE-000001',
+              empleadoId: empleado.id,
+              tipo: 'prestamo',
+              fechaRegistro: DateTime(2026, 1, 1),
+              importeOriginal: 500000,
+              saldoPendiente: 300000,
+            ),
+          );
+      await dbV74.close();
+
+      final db = AppDatabase(schemaV74.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnas = await db.customSelect("PRAGMA table_info('descuento_programado_empleado')").get();
+      final nombresColumnas = columnas.map((f) => f.data['name']).toSet();
+      expect(nombresColumnas, containsAll(['cuenta_financiera_id', 'egreso_id']));
+
+      final actual = await (db.select(db.descuentoProgramadoEmpleado)..where((t) => t.id.equals(prestamoHistorico.id))).getSingle();
+      expect(actual.importeOriginal, 500000, reason: 'un préstamo histórico no se altera por esta migración');
+      expect(actual.saldoPendiente, 300000);
+      expect(actual.cuentaFinancieraId, isNull, reason: 'sin backfill — nunca se asume retroactivamente un origen financiero');
+      expect(actual.egresoId, isNull);
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 75 → 76 (Etapa "Origen financiero de Egresos manuales: Cuenta vs. TDC") agrega '
+    'egreso.deuda_id y movimiento_deuda.egreso_gasto_id, sin backfill sobre un Egreso histórico con formaPago tarjeta',
+    () async {
+      final schemaV75 = await verifier.schemaAt(75);
+
+      // El caso real que motivó la etapa, tal como está hoy en la
+      // instalación de producción: un gasto pagado con la TDC pero
+      // capturado como Egreso contra una cuenta bancaria, con
+      // `formaPago: 'tarjeta'` como única (y falsa) pista del origen.
+      final dbV75 = AppDatabase(schemaV75.newConnection());
+      final cuenta = await dbV75.into(dbV75.cuentaFinanciera).insertReturning(
+            CuentaFinancieraCompanion.insert(
+              codigo: 'CTA-0002',
+              nombre: 'Klar Empresarial',
+              tipo: 'banco',
+              saldoInicial: 1747177,
+              fechaSaldoInicial: DateTime(2026, 1, 1),
+            ),
+          );
+      final tarjeta = await dbV75.into(dbV75.deuda).insertReturning(
+            DeudaCompanion.insert(
+              folio: 'DEU-000007',
+              nombre: 'TDC Konfío Empresarial',
+              tipo: 'tarjetaCredito',
+              saldoActual: 3326608,
+              tarjetaLimiteCredito: const Value(4000000),
+            ),
+          );
+      final gasolina = await dbV75.into(dbV75.egreso).insertReturning(
+            EgresoCompanion.insert(
+              folioEgreso: 'EGR-000035',
+              monto: 135998,
+              fecha: DateTime(2026, 3, 5),
+              cuentaFinancieraId: Value(cuenta.id),
+              formaPago: 'tarjeta',
+              concepto: 'gasolina',
+            ),
+          );
+      await dbV75.close();
+
+      final db = AppDatabase(schemaV75.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnasEgreso = await db.customSelect("PRAGMA table_info('egreso')").get();
+      expect(columnasEgreso.map((f) => f.data['name']).toSet(), contains('deuda_id'));
+      final columnasMovimiento = await db.customSelect("PRAGMA table_info('movimiento_deuda')").get();
+      expect(columnasMovimiento.map((f) => f.data['name']).toSet(), contains('egreso_gasto_id'));
+
+      final actual = await (db.select(db.egreso)..where((t) => t.id.equals(gasolina.id))).getSingle();
+      expect(actual.monto, 135998, reason: 'el gasto histórico no se altera');
+      expect(actual.formaPago, 'tarjeta', reason: 'la etiqueta se conserva tal cual, nunca se reinterpreta');
+      expect(actual.cuentaFinancieraId, cuenta.id, reason: 'su efecto actual sobre Caja y bancos se respeta hasta que el usuario lo corrija');
+      expect(
+        actual.deudaId,
+        isNull,
+        reason: 'SIN backfill: nada en la fila dice CUÁL tarjeta lo financió, y adivinarla por concepto/monto/fecha '
+            'sería exactamente la heurística que este proyecto nunca aplica',
+      );
+
+      final tarjetaDespues = await (db.select(db.deuda)..where((t) => t.id.equals(tarjeta.id))).getSingle();
+      expect(tarjetaDespues.saldoActual, 3326608, reason: 'la TDC no recibe ningún cargo retroactivo');
+      expect(await db.select(db.movimientoDeuda).get(), isEmpty);
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test('migración 75 → 76 es idempotente — correrla dos veces no falla ni duplica columnas', () async {
+    final schemaV75 = await verifier.schemaAt(75);
+    final db = AppDatabase(schemaV75.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    // Segunda pasada explícita sobre la MISMA base ya migrada: cada
+    // `addColumn` está guardado por su `PRAGMA table_info`, así que
+    // repetirla es un no-op (nunca un "duplicate column name").
+    await migrarEgresoOrigenTarjetaV76(db, Migrator(db));
+
+    final columnas = await db.customSelect("PRAGMA table_info('egreso')").get();
+    expect(columnas.where((f) => f.data['name'] == 'deuda_id'), hasLength(1));
+
+    await db.close();
+  });
+
+  test(
+    'migración 76 → 77 (Etapa 9, "corrección y cancelación individual de pagos") agrega '
+    'movimiento_origen_id y tarjeta_vencimiento_cubierto_anterior, sin backfill sobre un pago histórico',
+    () async {
+      final schemaV76 = await verifier.schemaAt(76);
+
+      // Un pago histórico real (el único que existe hoy en la
+      // instalación: un préstamo, nunca una tarjeta) y un cargo de
+      // gasto con TDC — las dos relaciones que esta etapa NO debe
+      // confundir jamás: `egreso_id` (Egreso del PAGO) vs.
+      // `egreso_gasto_id` (Egreso-documento de un GASTO con tarjeta).
+      final dbV76 = AppDatabase(schemaV76.newConnection());
+      final deuda = await dbV76.into(dbV76.deuda).insertReturning(
+            DeudaCompanion.insert(
+              folio: 'DEU-000001',
+              nombre: 'SANDRA PRESTAMO PERSONAL',
+              tipo: 'prestamo',
+              saldoActual: 2700000,
+            ),
+          );
+      final egresoDelPago = await dbV76.into(dbV76.egreso).insertReturning(
+            EgresoCompanion.insert(
+              folioEgreso: 'EGR-000100',
+              monto: 300000,
+              fecha: DateTime(2026, 3, 5),
+              formaPago: 'transferencia',
+              concepto: 'Pago de deuda DEU-000001',
+            ),
+          );
+      final pagoHistorico = await dbV76.into(dbV76.movimientoDeuda).insertReturning(
+            MovimientoDeudaCompanion.insert(
+              deudaId: deuda.id,
+              fecha: DateTime(2026, 3, 5),
+              tipo: 'pago',
+              importe: 300000,
+              saldoAnterior: 3000000,
+              saldoPosterior: 2700000,
+              egresoId: Value(egresoDelPago.id),
+            ),
+          );
+      await dbV76.close();
+
+      final db = AppDatabase(schemaV76.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      final columnas = await db.customSelect("PRAGMA table_info('movimiento_deuda')").get();
+      final nombres = columnas.map((f) => f.data['name']).toSet();
+      expect(nombres, containsAll(['movimiento_origen_id', 'tarjeta_vencimiento_cubierto_anterior']));
+
+      final actual = await (db.select(db.movimientoDeuda)..where((t) => t.id.equals(pagoHistorico.id))).getSingle();
+      expect(actual.importe, 300000, reason: 'un pago histórico no se altera por esta migración');
+      expect(actual.saldoAnterior, 3000000);
+      expect(actual.saldoPosterior, 2700000);
+      expect(actual.egresoId, egresoDelPago.id, reason: 'el Egreso del PAGO se conserva en egresoId');
+      expect(actual.egresoGastoId, isNull, reason: 'nunca se confunde con el Egreso de un GASTO');
+      expect(
+        actual.movimientoOrigenId,
+        isNull,
+        reason: 'sin backfill: hasta esta etapa no existía ninguna corrección de pago, '
+            'así que ningún ajuste preexistente pertenece a un pago',
+      );
+      expect(
+        actual.tarjetaVencimientoCubiertoAnterior,
+        isNull,
+        reason: 'el ancla previa de un avance ya ocurrido no está registrada en ninguna parte; '
+            'deducirla sería inventarla',
+      );
+
+      final violacionesFk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(violacionesFk, isEmpty, reason: 'foreign_key_check debe quedar limpio tras la migración');
+
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok'], reason: 'integrity_check debe reportar "ok" tras la migración');
+
+      await db.close();
+    },
+  );
+
+  test('migración 76 → 77 es idempotente — correrla dos veces no falla ni duplica columnas', () async {
+    final schemaV76 = await verifier.schemaAt(76);
+    final db = AppDatabase(schemaV76.newConnection());
+    await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+    await migrarCorreccionPagoDeudaV77(db, Migrator(db));
+
+    final columnas = await db.customSelect("PRAGMA table_info('movimiento_deuda')").get();
+    expect(columnas.where((f) => f.data['name'] == 'movimiento_origen_id'), hasLength(1));
+
+    await db.close();
+  });
+
+  test(
+    'migración 78 → 79 (Complemento sustituto) conserva TODOS los Complementos existentes '
+    'y cambia el UNIQUE de columna por un índice único parcial',
+    () async {
+      final schemaV78 = await verifier.schemaAt(78);
+      final dbV78 = AppDatabase(schemaV78.newConnection());
+
+      // Un Pago con su Complemento, tal como existe hoy en la
+      // instalación real (1 Complemento registrado).
+      final cliente = await dbV78.into(dbV78.cliente).insertReturning(
+            ClienteCompanion.insert(codigo: 'CLI-MIG79', nombreComercial: 'MORGAN'),
+          );
+      final pago = await dbV78.into(dbV78.pago).insertReturning(
+            PagoCompanion.insert(
+              folioPago: 'PAG-MIG79',
+              clienteId: Value(cliente.id),
+              montoTotal: 10000000,
+              fechaPago: DateTime(2026, 10, 12),
+              formaPago: 'transferencia',
+            ),
+          );
+      final complemento = await dbV78.into(dbV78.complementoPago).insertReturning(
+            ComplementoPagoCompanion.insert(
+              pagoId: pago.id,
+              uuid: 'eeeeeeee-1111-2222-3333-444444444444',
+              fechaTimbrado: DateTime(2026, 10, 15),
+              montoTotal: 10000000,
+            ),
+          );
+      await dbV78.close();
+
+      // Migra con el código real del proyecto.
+      final db = AppDatabase(schemaV78.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      // 1. El Complemento sobrevivió intacto, con su mismo `id`.
+      final conservado = await (db.select(db.complementoPago)..where((t) => t.id.equals(complemento.id))).getSingle();
+      expect(conservado.uuid, 'eeeeeeee-1111-2222-3333-444444444444');
+      expect(conservado.pagoId, pago.id);
+      expect(conservado.montoTotal, 10000000);
+      expect(conservado.estatus, 'registrado');
+
+      // 2. El índice único PARCIAL existe.
+      final indice = await db
+          .customSelect(
+            "SELECT sql FROM sqlite_master WHERE type='index' AND name='complemento_pago_vigente_por_pago'",
+          )
+          .get();
+      expect(indice, hasLength(1));
+      expect(indice.single.data['sql'] as String, contains("WHERE estatus = 'registrado'"));
+
+      // 3. Ya se puede cancelar y registrar un sustituto — el gap que
+      //    motivó la migración.
+      await (db.update(db.complementoPago)..where((t) => t.id.equals(complemento.id)))
+          .write(const ComplementoPagoCompanion(estatus: Value('cancelado')));
+      await db.into(db.complementoPago).insert(
+            ComplementoPagoCompanion.insert(
+              pagoId: pago.id,
+              uuid: 'ffffffff-1111-2222-3333-444444444444',
+              fechaTimbrado: DateTime(2026, 10, 20),
+              montoTotal: 10000000,
+            ),
+          );
+      final historial = await (db.select(db.complementoPago)..where((t) => t.pagoId.equals(pago.id))).get();
+      expect(historial, hasLength(2), reason: 'el cancelado se conserva y el sustituto se agrega');
+
+      // 4. Pero DOS vigentes siguen siendo imposibles.
+      await expectLater(
+        db.into(db.complementoPago).insert(
+              ComplementoPagoCompanion.insert(
+                pagoId: pago.id,
+                uuid: '99999999-1111-2222-3333-444444444444',
+                fechaTimbrado: DateTime(2026, 10, 25),
+                montoTotal: 10000000,
+              ),
+            ),
+        throwsA(anything),
+      );
+
+      final fk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(fk, isEmpty, reason: 'recrear la tabla no puede romper ninguna FK');
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 79 → 80 (Etapa "Vehículos: ciclo de vida, gastos, origen financiero y trazabilidad") '
+    'conserva el mantenimiento histórico con costo y SIN origen financiero — cero backfill heurístico — '
+    'y crea VehiculoEvento vacía',
+    () async {
+      final schemaV79 = await verifier.schemaAt(79);
+      final dbV79 = AppDatabase(schemaV79.newConnection());
+
+      // El caso REAL de la instalación: 1 mantenimiento de $3,800 con
+      // costo capturado y ningún origen financiero, porque en la v79 el
+      // concepto todavía no existía.
+      final vehiculo = await dbV79.into(dbV79.vehiculo).insertReturning(
+            VehiculoCompanion.insert(
+              codigo: 'VEH-000001',
+              marca: 'Nissan',
+              modelo: 'NP300',
+              tipoVehiculo: 'pickup',
+              placas: const Value('ABC-123'),
+              vin: const Value('VIN-REAL-0001'),
+              costoAdquisicion: const Value(30000000),
+            ),
+          );
+      final mantenimiento = await dbV79.into(dbV79.vehiculoMantenimiento).insertReturning(
+            VehiculoMantenimientoCompanion.insert(
+              vehiculoId: vehiculo.id,
+              fecha: DateTime(2026, 3, 18),
+              tipo: 'servicioGeneral',
+              descripcion: 'Afinación mayor',
+              costo: const Value(380000),
+            ),
+          );
+      await dbV79.close();
+
+      final db = AppDatabase(schemaV79.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      // 1. La fila histórica sobrevive EXACTAMENTE como estaba: mismo
+      //    id, mismo costo, y los dos orígenes en NULL. Inventarle una
+      //    cuenta sería fabricar un hecho financiero que nadie registró.
+      final conservado =
+          await (db.select(db.vehiculoMantenimiento)..where((t) => t.id.equals(mantenimiento.id))).getSingle();
+      expect(conservado.costo, 380000);
+      expect(conservado.descripcion, 'Afinación mayor');
+      expect(conservado.egresoId, isNull, reason: 'gasto histórico sin origen especificado, NO un backfill inventado');
+      expect(conservado.deudaId, isNull);
+      expect(conservado.estatus, 'registrado', reason: 'lo histórico está registrado, que es lo que efectivamente es');
+      expect(conservado.motivoCancelacion, isNull);
+
+      // 2. Ese gasto histórico NO se convirtió en un Egreso — si lo
+      //    hiciera, el saldo de alguna cuenta cambiaría solo por migrar.
+      expect(await db.select(db.egreso).get(), isEmpty);
+      expect(await db.select(db.movimientoDeuda).get(), isEmpty);
+
+      // 3. El Vehículo tampoco se tocó: `costoAdquisicion` es valor del
+      //    activo, no un gasto del periodo.
+      final vehiculoConservado = await (db.select(db.vehiculo)..where((t) => t.id.equals(vehiculo.id))).getSingle();
+      expect(vehiculoConservado.costoAdquisicion, 30000000);
+      expect(vehiculoConservado.vin, 'VIN-REAL-0001');
+
+      // 4. El historial nace vacío — nunca eventos retroactivos
+      //    fabricados para hechos que nadie presenció.
+      expect(await db.select(db.vehiculoEvento).get(), isEmpty);
+
+      // 5. El índice único PARCIAL sobre egreso_id existe (no se pudo
+      //    declarar como UNIQUE de columna: SQLite rechaza
+      //    `ALTER TABLE … ADD COLUMN … UNIQUE`).
+      final indice = await db
+          .customSelect(
+            "SELECT sql FROM sqlite_master WHERE type='index' AND name='vehiculo_mantenimiento_egreso_unico'",
+          )
+          .get();
+      expect(indice, hasLength(1));
+      expect(indice.single.data['sql'] as String, contains('WHERE egreso_id IS NOT NULL'));
+
+      // 6. Y el cargo de TDC ya puede apuntar a su mantenimiento.
+      final movimiento = await db.customSelect("PRAGMA table_info('movimiento_deuda')").get();
+      expect(
+        movimiento.map((f) => f.data['name'] as String),
+        contains('vehiculo_mantenimiento_id'),
+      );
+
+      final fk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(fk, isEmpty);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 79 → 80 es idempotente — correrla dos veces no falla ni duplica columnas ni el índice',
+    () async {
+      final schemaV79 = await verifier.schemaAt(79);
+      final db = AppDatabase(schemaV79.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      // Segunda pasada con el mismo código real de la migración.
+      await migrarVehiculosOrigenFinancieroV80(db, db.createMigrator());
+
+      final columnas = await db.customSelect("PRAGMA table_info('vehiculo_mantenimiento')").get();
+      final nombres = columnas.map((f) => f.data['name'] as String).toList();
+      expect(nombres.where((n) => n == 'egreso_id'), hasLength(1));
+      expect(nombres.where((n) => n == 'estatus'), hasLength(1));
+
+      final indices = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name='vehiculo_mantenimiento_egreso_unico'",
+          )
+          .get();
+      expect(indices, hasLength(1));
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 80 → 81 (Etapa "Telefonía: trazabilidad y ciclo de la recarga") conserva la línea y la '
+    'recarga históricas, crea LineaTelefonicaEvento vacía y deja toda recarga previa como registrada',
+    () async {
+      final schemaV80 = await verifier.schemaAt(80);
+      final dbV80 = AppDatabase(schemaV80.newConnection());
+
+      final linea = await dbV80.into(dbV80.lineaTelefonica).insertReturning(
+            LineaTelefonicaCompanion.insert(
+              codigo: 'LIN-000004',
+              operador: 'telcel',
+              modalidadSim: 'fisica',
+              numero: const Value('5512345678'),
+              iccid: const Value('8952140061234567890'),
+            ),
+          );
+      final recarga = await dbV80.into(dbV80.recargaLineaTelefonica).insertReturning(
+            RecargaLineaTelefonicaCompanion.insert(
+              lineaTelefonicaId: linea.id,
+              fecha: DateTime(2026, 5, 20),
+              importe: 50000,
+              observaciones: const Value('Recarga de mayo'),
+            ),
+          );
+      await dbV80.close();
+
+      final db = AppDatabase(schemaV80.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      // 1. La recarga histórica sobrevive intacta y queda REGISTRADA,
+      //    que es exactamente lo que es. Cero backfill inventado.
+      final conservada =
+          await (db.select(db.recargaLineaTelefonica)..where((t) => t.id.equals(recarga.id))).getSingle();
+      expect(conservada.importe, 50000);
+      expect(conservada.observaciones, 'Recarga de mayo');
+      expect(conservada.estatus, 'registrada');
+      expect(conservada.motivoCancelacion, isNull);
+
+      // 2. La línea tampoco se toca: número e ICCID siguen tal cual en
+      //    la ENTIDAD (lo que se enmascara es el diff de auditoría, no
+      //    el dato operativo).
+      final lineaConservada = await (db.select(db.lineaTelefonica)..where((t) => t.id.equals(linea.id))).getSingle();
+      expect(lineaConservada.numero, '5512345678');
+      expect(lineaConservada.iccid, '8952140061234567890');
+
+      // 3. El historial nace vacío — nunca eventos retroactivos
+      //    fabricados para hechos que nadie presenció.
+      expect(await db.select(db.lineaTelefonicaEvento).get(), isEmpty);
+
+      // 4. Y la migración NO inventó ningún movimiento de dinero:
+      //    Telefonía sigue sin Egreso, decisión deliberada de la 9C.
+      expect(await db.select(db.egreso).get(), isEmpty);
+      expect(await db.select(db.movimientoDeuda).get(), isEmpty);
+
+      final fk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(fk, isEmpty);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 80 → 81 es idempotente — correrla dos veces no falla ni duplica columnas',
+    () async {
+      final schemaV80 = await verifier.schemaAt(80);
+      final db = AppDatabase(schemaV80.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      await migrarTelefoniaTrazabilidadV81(db, db.createMigrator());
+
+      final columnas = await db.customSelect("PRAGMA table_info('recarga_linea_telefonica')").get();
+      final nombres = columnas.map((f) => f.data['name'] as String).toList();
+      expect(nombres.where((n) => n == 'estatus'), hasLength(1));
+      expect(nombres.where((n) => n == 'motivo_cancelacion'), hasLength(1));
+
+      final tablas = await db
+          .customSelect("SELECT name FROM sqlite_master WHERE type='table' AND name='linea_telefonica_evento'")
+          .get();
+      expect(tablas, hasLength(1));
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 81 → 82 (Etapa "Baja de empleado: activos pendientes") conserva las asignaciones existentes '
+    'y NO marca retroactivamente nada como pendiente de recuperación',
+    () async {
+      final schemaV81 = await verifier.schemaAt(81);
+      final dbV81 = AppDatabase(schemaV81.newConnection());
+
+      final categoria = await dbV81.into(dbV81.categoriaArticulo).insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Equipo'),
+          );
+      final articulo = await dbV81.into(dbV81.articulo).insertReturning(
+            ArticuloCompanion.insert(
+              folio: 'ART-000001',
+              nombre: 'Radio',
+              categoriaId: categoria.id,
+              manejaSerie: const Value(true),
+            ),
+          );
+      final empleado = await dbV81.into(dbV81.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2025, 1, 1),
+              aniosExperienciaSeguridad: 3,
+            ),
+          );
+      final asignacion = await dbV81.into(dbV81.asignacion).insertReturning(
+            AsignacionCompanion.insert(
+              articuloId: articulo.id,
+              cantidad: 1,
+              empleadoId: Value(empleado.id),
+              fechaEntrega: DateTime(2026, 2, 1),
+            ),
+          );
+      final vehiculo = await dbV81.into(dbV81.vehiculo).insertReturning(
+            VehiculoCompanion.insert(
+              codigo: 'VEH-000001',
+              marca: 'Nissan',
+              modelo: 'NP300',
+              tipoVehiculo: 'pickup',
+            ),
+          );
+      final asignacionVehiculo = await dbV81.into(dbV81.asignacionVehiculo).insertReturning(
+            AsignacionVehiculoCompanion.insert(
+              vehiculoId: vehiculo.id,
+              empleadoId: Value(empleado.id),
+              fechaInicio: DateTime(2026, 2, 1),
+            ),
+          );
+      await dbV81.close();
+
+      final db = AppDatabase(schemaV81.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      // 1. Las asignaciones históricas sobreviven intactas y quedan como
+      //    asignaciones NORMALES — que es lo que son. Cero backfill:
+      //    marcar retroactivamente como pendiente algo que nadie decidió
+      //    en su momento sería inventar un hecho administrativo.
+      final conservada = await (db.select(db.asignacion)..where((t) => t.id.equals(asignacion.id))).getSingle();
+      expect(conservada.empleadoId, empleado.id);
+      expect(conservada.estatus, 'activa');
+      expect(conservada.pendienteRecuperacionDesde, isNull);
+
+      final vehiculoConservado =
+          await (db.select(db.asignacionVehiculo)..where((t) => t.id.equals(asignacionVehiculo.id))).getSingle();
+      expect(vehiculoConservado.empleadoId, empleado.id);
+      expect(vehiculoConservado.fechaTermino, isNull);
+      expect(vehiculoConservado.pendienteRecuperacionDesde, isNull);
+
+      // 2. Y la migración NO inventó ninguna devolución: cero
+      //    movimientos de inventario nuevos.
+      expect(await db.select(db.movimientoInventario).get(), isEmpty);
+
+      final fk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(fk, isEmpty);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 81 → 82 es idempotente — correrla dos veces no falla ni duplica columnas',
+    () async {
+      final schemaV81 = await verifier.schemaAt(81);
+      final db = AppDatabase(schemaV81.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      await migrarPendienteRecuperacionV82(db, db.createMigrator());
+
+      for (final tabla in ['asignacion', 'asignacion_vehiculo']) {
+        final columnas = await db.customSelect("PRAGMA table_info('$tabla')").get();
+        final nombres = columnas.map((f) => f.data['name'] as String).toList();
+        expect(nombres.where((n) => n == 'pendiente_recuperacion_desde'), hasLength(1));
+      }
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 82 → 83 (Etapa "Baja laboral con conciliación obligatoria") crea las tablas de conciliación '
+    'vacías, siembra el folio RES y NO inventa una conciliación para las bajas anteriores',
+    () async {
+      final schemaV82 = await verifier.schemaAt(82);
+      final dbV82 = AppDatabase(schemaV82.newConnection());
+
+      // Una baja YA registrada bajo el régimen de la v82: con su bien
+      // marcado como pendiente automáticamente.
+      final categoria = await dbV82.into(dbV82.categoriaArticulo).insertReturning(
+            CategoriaArticuloCompanion.insert(nombre: 'Equipo'),
+          );
+      final articulo = await dbV82.into(dbV82.articulo).insertReturning(
+            ArticuloCompanion.insert(folio: 'ART-000001', nombre: 'Radio', categoriaId: categoria.id),
+          );
+      final empleado = await dbV82.into(dbV82.empleado).insertReturning(
+            EmpleadoCompanion.insert(
+              numeroEmpleado: 1,
+              nombres: 'Juan',
+              apellidoPaterno: 'Pérez',
+              sexo: 'masculino',
+              fechaNacimiento: DateTime(1990, 1, 1),
+              curp: 'PEXJ900101HDFXXX01',
+              rfc: 'PEXJ900101AB1',
+              nss: '12345678901',
+              estadoCivil: 'soltero',
+              fechaIngreso: DateTime(2024, 1, 1),
+              aniosExperienciaSeguridad: 3,
+              estatus: const Value('baja'),
+              fechaBaja: Value(DateTime(2025, 6, 30)),
+              motivoBaja: const Value('renuncia'),
+            ),
+          );
+      final asignacion = await dbV82.into(dbV82.asignacion).insertReturning(
+            AsignacionCompanion.insert(
+              articuloId: articulo.id,
+              cantidad: 1,
+              empleadoId: Value(empleado.id),
+              fechaEntrega: DateTime(2025, 2, 1),
+              pendienteRecuperacionDesde: Value(DateTime(2025, 6, 30)),
+            ),
+          );
+      await dbV82.close();
+
+      final db = AppDatabase(schemaV82.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      // 1. Las tablas nuevas nacen VACÍAS: a una baja anterior nadie la
+      //    concilió, y fabricarle una conciliación ahora sería afirmar
+      //    decisiones que nadie tomó.
+      expect(await db.select(db.conciliacionBaja).get(), isEmpty);
+      expect(await db.select(db.conciliacionBajaRenglon).get(), isEmpty);
+
+      // 2. El pendiente de la v82 sigue intacto y sigue siendo válido.
+      final conservada = await (db.select(db.asignacion)..where((t) => t.id.equals(asignacion.id))).getSingle();
+      expect(conservada.pendienteRecuperacionDesde, DateTime(2025, 6, 30));
+      expect(conservada.estatus, 'activa');
+
+      // 3. El folio propio de las obligaciones de resguardo existe.
+      final secuencia = await (db.select(db.codigoSecuencia)
+            ..where((t) => t.entityType.equals('descuentoProgramadoResguardo')))
+          .getSingle();
+      expect(secuencia.prefijo, 'RES');
+
+      // 4. Y la migración no inventó ninguna obligación económica.
+      expect(await db.select(db.descuentoProgramadoEmpleado).get(), isEmpty);
+
+      final fk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(fk, isEmpty);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 82 → 83 es idempotente — correrla dos veces no falla ni duplica la secuencia de folio',
+    () async {
+      final schemaV82 = await verifier.schemaAt(82);
+      final db = AppDatabase(schemaV82.newConnection());
+      await verifier.migrateAndValidate(db, _currentSchemaVersion);
+
+      await migrarConciliacionBajaV83(db, db.createMigrator());
+
+      final secuencias = await (db.select(db.codigoSecuencia)
+            ..where((t) => t.entityType.equals('descuentoProgramadoResguardo')))
+          .get();
+      expect(secuencias, hasLength(1));
+
+      await db.close();
+    },
+  );
+  test(
+    'migración 83 → 84 (Etapa "Trazabilidad de Comercial") crea las tres bitácoras VACÍAS, con sus índices, '
+    'y no inventa eventos para lo que ya existía',
+    () async {
+      final schemaV83 = await verifier.schemaAt(83);
+      final dbV83 = AppDatabase(schemaV83.newConnection());
+
+      // Datos que YA existían antes de que Comercial tuviera bitácora.
+      final cliente = await dbV83.into(dbV83.cliente).insertReturning(
+        ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'Sportium'),
+      );
+      await dbV83.close();
+
+      // Abrir con la versión actual dispara el onUpgrade real.
+      final db = AppDatabase(schemaV83.newConnection());
+      await db.select(db.cliente).get();
+
+      // 1. Las tres tablas nacen VACÍAS. Nadie registró quién hizo los
+      //    cambios anteriores, y fabricar un actor o un motivo ahora
+      //    sería afirmar cosas que nunca ocurrieron.
+      expect(await db.select(db.clienteEvento).get(), isEmpty);
+      expect(await db.select(db.servicioEvento).get(), isEmpty);
+      expect(await db.select(db.configuracionCobroEvento).get(), isEmpty);
+
+      // 2. Los datos existentes quedan intactos.
+      final conservado = await (db.select(db.cliente)..where((t) => t.id.equals(cliente.id))).getSingle();
+      expect(conservado.nombreComercial, 'Sportium');
+
+      // 3. Los índices existen: es como consulta la Auditoría central
+      //    (por fecha) y el expediente de cada registro (por entidad).
+      final indices = await db.customSelect(
+        "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%evento%'",
+      ).get();
+      final nombres = indices.map((f) => f.data['name'] as String).toSet();
+      expect(nombres, containsAll(<String>[
+        'idx_cliente_evento_cliente_fecha',
+        'idx_cliente_evento_fecha',
+        'idx_servicio_evento_servicio_fecha',
+        'idx_servicio_evento_fecha',
+        'idx_configuracion_cobro_evento_config_fecha',
+        'idx_configuracion_cobro_evento_fecha',
+      ]));
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 83 → 84 es idempotente — correrla dos veces no falla ni duplica índices',
+    () async {
+      final schemaV83 = await verifier.schemaAt(83);
+      final db = AppDatabase(schemaV83.newConnection());
+      await db.select(db.cliente).get();
+
+      await migrarTrazabilidadComercialV84(db, db.createMigrator());
+      await migrarTrazabilidadComercialV84(db, db.createMigrator());
+
+      expect(await db.select(db.clienteEvento).get(), isEmpty);
+      await db.close();
+    },
+  );
+
+  /// Etapa "Tiempo Extra: origen de cobertura" (84 → 85).
+  ///
+  /// Lo que protege: que una instalación real con Tiempos Extra ya
+  /// capturados sobreviva a volver nullable \
+  /// `empleado_ausente_id`/`motivo_ausencia` y que TODO
+  /// lo histórico quede clasificado como `ausenciaEmpleado` — que es lo
+  /// que era por construcción del esquema anterior, no una inferencia.
+  ///
+  /// Se siembra con SQL crudo sobre el esquema v83 (`rawDatabase`),
+  /// nunca con las clases Dart actuales: esas ya tienen la forma nueva y
+  /// la prueba dejaría de demostrar nada.
+  test(
+    'migración 84 → 85 (Etapa "origen de cobertura") conserva los Tiempos Extra históricos '
+    'y los clasifica como ausenciaEmpleado, sin inventar vacantes',
+    () async {
+      final schemaV83 = await verifier.schemaAt(83);
+      final raw = schemaV83.rawDatabase;
+
+      raw.execute('''
+        INSERT INTO cliente (id, codigo, nombre_comercial, estatus, fecha_alta, created_at, updated_at, ciclo_vida_registro)
+        VALUES ('cliente-tex', 'CLI-000900', 'Sportium', 'activo', 1700000000, 1700000000, 1700000000, 'activo');
+      ''');
+      raw.execute('''
+        INSERT INTO tipo_servicio (id, codigo, nombre, created_at, updated_at)
+        VALUES ('tipo-servicio-tex', 'VIGILANCIA_FIJA', 'Vigilancia fija', 1700000000, 1700000000);
+      ''');
+      raw.execute('''
+        INSERT INTO servicio (
+          id, codigo, cliente_id, nombre, tipo_servicio_id, estatus, fecha_inicio,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'servicio-tex', 'SER-000900', 'cliente-tex', 'Vigilancia Satélite', 'tipo-servicio-tex',
+          'activo', 1700000000, 1700000000, 1700000000, 'activo'
+        );
+      ''');
+      raw.execute('''
+        INSERT INTO empleado (
+          id, numero_empleado, nombres, apellido_paterno, sexo, fecha_nacimiento, curp, rfc, nss,
+          estado_civil, fecha_ingreso, anios_experiencia_seguridad, estatus,
+          created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'empleado-tex', 'EMP-900', 'Juan', 'Pérez', 'masculino', 1700000000, 'CURP900', 'RFC900', 'NSS900',
+          'soltero', 1700000000, 2, 'activo',
+          1700000000, 1700000000, 'activo'
+        );
+      ''');
+      raw.execute('''
+        INSERT INTO tipo_modalidad_turno (id, codigo, nombre, created_at, updated_at)
+        VALUES ('turno-tex', '24X24', '24x24', 1700000000, 1700000000);
+      ''');
+      raw.execute('''
+        INSERT INTO tiempo_extra (
+          id, folio, fecha, servicio_id, empleado_ausente_id, motivo_ausencia,
+          nombre_externo_cubre, turno_id, monto_tiempo_extra, forma_pago,
+          estatus, created_at, updated_at, ciclo_vida_registro
+        ) VALUES (
+          'tex-historico', 'TEX-000900', 1700000000, 'servicio-tex', 'empleado-tex', 'problemasMedicos',
+          'Cobertura externa', 'turno-tex', 150000, 'efectivo',
+          'registrado', 1700000000, 1700000000, 'activo'
+        );
+      ''');
+      raw.execute('''
+        INSERT INTO tiempo_extra_costo_adicional (tiempo_extra_id, concepto, monto, eliminado)
+        VALUES ('tex-historico', 'Traslado', 25000, 0);
+      ''');
+      raw.execute('''
+        INSERT INTO tiempo_extra_evento (tiempo_extra_id, fecha_hora, tipo_evento)
+        VALUES ('tex-historico', 1700000000, 'registrado');
+      ''');
+
+      // Abrir con la versión actual dispara el onUpgrade real (83 → 85).
+      final db = AppDatabase(schemaV83.newConnection());
+      final tex = await (db.select(db.tiempoExtra)..where((t) => t.id.equals('tex-historico'))).getSingle();
+
+      // 1. Clasificado, sin inventar nada.
+      expect(tex.origenCobertura, OrigenCoberturaTiempoExtra.ausenciaEmpleado.name);
+      expect(tex.vacanteOperativaId, isNull, reason: 'no se inventan vacantes históricas');
+      expect(tex.descripcionOrigen, isNull, reason: 'no se deduce "otro" para nadie');
+
+      // 2. El id y TODO el dato real intactos.
+      expect(tex.id, 'tex-historico');
+      expect(tex.folio, 'TEX-000900');
+      expect(tex.empleadoAusenteId, 'empleado-tex');
+      expect(tex.motivoAusencia, 'problemasMedicos');
+      expect(tex.servicioId, 'servicio-tex');
+      expect(tex.turnoId, 'turno-tex');
+      expect(tex.montoTiempoExtra, 150000);
+      expect(tex.formaPago, 'efectivo');
+      expect(tex.nombreExternoCubre, 'Cobertura externa');
+      expect(tex.estatus, 'registrado');
+
+      // 3. Lo que colgaba de él sobrevive: recrear la tabla no puede
+      //    llevarse por delante sus costos ni su bitácora.
+      final costos = await (db.select(db.tiempoExtraCostoAdicional)
+            ..where((t) => t.tiempoExtraId.equals('tex-historico')))
+          .get();
+      expect(costos, hasLength(1));
+      expect(costos.single.monto, 25000);
+
+      final eventos = await (db.select(db.tiempoExtraEvento)
+            ..where((t) => t.tiempoExtraId.equals('tex-historico')))
+          .get();
+      expect(eventos, hasLength(1));
+      expect(eventos.single.tipoEvento, 'registrado');
+
+      // 4. La forma nueva quedó: la columna admite NULL de aquí en
+      //    adelante (una vacante no tiene titular ausente).
+      final columnas = await db.customSelect("PRAGMA table_info('tiempo_extra')").get();
+      final porNombre = {for (final c in columnas) c.data['name'] as String: c.data};
+      expect(porNombre.keys, containsAll(<String>['origen_cobertura', 'vacante_operativa_id', 'descripcion_origen']));
+      expect(porNombre['empleado_ausente_id']!['notnull'], 0);
+      expect(porNombre['motivo_ausencia']!['notnull'], 0);
+
+      // 5. Integridad real, no sólo conteo.
+      final fk = await db.customSelect('PRAGMA foreign_key_check').get();
+      expect(fk, isEmpty);
+      final integridad =
+          await db.customSelect('PRAGMA integrity_check').map((r) => r.data['integrity_check'] as String).get();
+      expect(integridad, ['ok']);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 84 → 85 sobre una base SIN Tiempos Extra no falla y deja la forma nueva',
+    () async {
+      final schemaV83 = await verifier.schemaAt(83);
+      final db = AppDatabase(schemaV83.newConnection());
+
+      expect(await db.select(db.tiempoExtra).get(), isEmpty);
+      final columnas = await db.customSelect("PRAGMA table_info('tiempo_extra')").get();
+      final nombres = columnas.map((c) => c.data['name'] as String).toSet();
+      expect(nombres, containsAll(<String>['origen_cobertura', 'vacante_operativa_id', 'descripcion_origen']));
 
       await db.close();
     },

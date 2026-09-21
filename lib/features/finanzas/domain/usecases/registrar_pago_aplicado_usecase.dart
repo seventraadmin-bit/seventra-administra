@@ -17,6 +17,10 @@ class RegistrarPagoAplicadoCuentaNoExiste extends RegistrarPagoAplicadoResultado
 
 class RegistrarPagoAplicadoCuentaYaPagada extends RegistrarPagoAplicadoResultado {}
 
+/// La CxC está `cancelada` (Etapa 7) — nunca se le aplica un Pago
+/// nuevo, la obligación en sí fue anulada.
+class RegistrarPagoAplicadoCuentaCancelada extends RegistrarPagoAplicadoResultado {}
+
 class RegistrarPagoAplicadoMontoInvalido extends RegistrarPagoAplicadoResultado {}
 
 /// `monto` excede el `saldoPendiente` de la Cuenta.
@@ -57,6 +61,7 @@ class RegistrarPagoAplicadoUseCase {
     String? referencia,
     String? bancoOrigen,
     String? cuentaBancariaDestino,
+    String? cuentaFinancieraId,
     String? observaciones,
     String? actorUsuarioId,
   }) async {
@@ -70,6 +75,9 @@ class RegistrarPagoAplicadoUseCase {
     if (EstatusCuentaPorCobrar.values.byName(cuenta.estatus) == EstatusCuentaPorCobrar.pagada) {
       return RegistrarPagoAplicadoCuentaYaPagada();
     }
+    if (EstatusCuentaPorCobrar.values.byName(cuenta.estatus) == EstatusCuentaPorCobrar.cancelada) {
+      return RegistrarPagoAplicadoCuentaCancelada();
+    }
     if (monto > cuenta.saldoPendiente) {
       return RegistrarPagoAplicadoSobrepago(cuenta.saldoPendiente);
     }
@@ -80,7 +88,11 @@ class RegistrarPagoAplicadoUseCase {
 
       final resultado = await _pagoRepository.crearAplicado(
         folioPago: folioPago,
+        // La contraparte del Pago NO se captura: se deriva de la
+        // Cuenta, que a su vez la derivó de su origen. Por eso los dos
+        // campos nunca pueden contradecirse.
         clienteId: cuenta.clienteId,
+        servicioEventualId: cuenta.servicioEventualId,
         montoTotal: monto,
         fechaPago: fechaPago,
         formaPago: formaPago,
@@ -88,6 +100,7 @@ class RegistrarPagoAplicadoUseCase {
         referencia: referencia,
         bancoOrigen: bancoOrigen,
         cuentaBancariaDestino: cuentaBancariaDestino,
+        cuentaFinancieraId: cuentaFinancieraId,
         observaciones: observaciones,
         actorUsuarioId: actorUsuarioId,
       );

@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/finanzas/presentation/mensaje_saldo_insuficiente.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,9 +13,26 @@ import '../../../../organizacion/organizacion_providers.dart';
 import '../../../finanzas_providers.dart';
 import '../../ingresos/widgets/ingreso_monto_utils.dart';
 import '../../pagos/pagos_list_screen.dart' show formaPagoLabel;
+import '../../widgets/origen_financiero_select.dart';
+import '../egresos_controller.dart';
 
-/// Diálogo "Registrar egreso" (Etapa 4K.1) — 100% captura manual, sin
-/// ninguna fuente automática todavía (Nómina/Compras no existen).
+/// Diálogo "Registrar egreso" (Etapa 4K.1) — captura manual directa;
+/// Nómina/Compras generan el suyo propio automáticamente por su propia
+/// vía, nunca abriendo este diálogo.
+///
+/// Etapa "Origen financiero de Egresos manuales: Cuenta vs. TDC" — el
+/// "Origen financiero" es un selector real ([RisegOrigenFinancieroSelect])
+/// con las Cuentas financieras Y las tarjetas de crédito activas, no
+/// solo cuentas. Hasta esta etapa el diálogo ofrecía únicamente cuentas
+/// por decisión de producto explícita de entonces; el caso real de una
+/// carga de gasolina pagada con TDC —que no es Compra ni cobertura de
+/// Tiempo Extra, los dos únicos flujos que sí modelaban tarjeta— la
+/// invalidó. Ver el doc comment de `RegistrarEgresoUseCase`.
+///
+/// "Forma de pago" se conserva tal cual, como etiqueta descriptiva/
+/// fiscal: NUNCA es la fuente de verdad financiera (elegir "Tarjeta"
+/// ahí no identifica cuál tarjeta y no genera ningún cargo — eso es
+/// exactamente lo que hacía el modelo anterior).
 ///
 /// Devuelve `true` si el registro tuvo éxito.
 Future<bool> mostrarDialogoRegistrarEgreso(
@@ -28,12 +46,12 @@ Future<bool> mostrarDialogoRegistrarEgreso(
   final conceptoController = TextEditingController();
   final beneficiarioController = TextEditingController();
   final observacionesController = TextEditingController();
-  final cuentaCajaController = TextEditingController();
   FormaPago formaSeleccionada = FormaPago.transferencia;
   String? categoriaId;
   String? servicioId;
   String? sucursalId;
   String? areaId;
+  ClaveOrigenFinanciero? origenFinanciero;
   String? errorMonto;
   String? errorFecha;
   String? errorConcepto;
@@ -41,6 +59,8 @@ Future<bool> mostrarDialogoRegistrarEgreso(
   final categorias = await ref.read(categoriaFinancieraRepositoryProvider).listar(tipo: TipoCategoriaFinanciera.egreso.name);
   final sucursales = await ref.read(sucursalRepositoryProvider).listarActivas();
   final areas = await ref.read(areaRepositoryProvider).listarActivas();
+  final cuentasFinancieras = await ref.read(cuentaFinancieraRepositoryProvider).listar(soloActivas: true);
+  final tarjetasActivas = await ref.read(deudaRepositoryProvider).listarTarjetasActivas();
 
   if (!context.mounted) return false;
 
@@ -131,7 +151,19 @@ Future<bool> mostrarDialogoRegistrarEgreso(
               onChanged: (valor) => setState(() => areaId = valor),
             ),
             const SizedBox(height: AppSpacing.md),
-            RisegTextField(label: l10n.egresoCampoCuentaCaja, controller: cuentaCajaController),
+            // Etapa "origen financiero unificado": el campo de texto
+            // libre `cuentaCaja` (legado, sin catálogo) deja de
+            // capturarse desde aquí — la columna se conserva en BD
+            // solo para historial, nunca se vuelve a escribir. Un solo
+            // selector dinámico y real: Origen financiero → cuenta
+            // financiera o tarjeta de crédito activa (Etapa "Origen
+            // financiero de Egresos manuales").
+            RisegOrigenFinancieroSelect(
+              cuentas: cuentasFinancieras,
+              tarjetas: tarjetasActivas,
+              value: origenFinanciero,
+              onChanged: (valor) => setState(() => origenFinanciero = valor),
+            ),
             const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.egresoCampoObservaciones, controller: observacionesController),
           ],
@@ -152,19 +184,27 @@ Future<bool> mostrarDialogoRegistrarEgreso(
         errorConcepto = l10n.egresoErrorConceptoRequerido;
         return false;
       }
-      final resultado = await ref.read(registrarEgresoUseCaseProvider).ejecutar(
+      // Saldo insuficiente no es un "error inesperado": lo traduce el
+      // mecanismo central y el formulario sigue abierto, con lo ya
+      // capturado, para que el usuario elija otra cuenta.
+      final resultado = await ejecutarMostrandoSaldoInsuficiente(
+        context,
+        l10n,
+        () => ref.read(egresosControllerProvider.notifier).registrar(
             monto: monto,
             fecha: fechaSeleccionada!,
             categoriaFinancieraId: categoriaId,
             servicioId: servicioId,
             sucursalId: sucursalId,
             areaId: areaId,
-            cuentaCaja: cuentaCajaController.text.trim().isEmpty ? null : cuentaCajaController.text.trim(),
+            origen: origenDesdeClave(origenFinanciero),
             formaPago: formaSeleccionada.name,
             beneficiario: beneficiarioController.text.trim().isEmpty ? null : beneficiarioController.text.trim(),
             concepto: conceptoController.text.trim(),
             observaciones: observacionesController.text.trim().isEmpty ? null : observacionesController.text.trim(),
-          );
+          ),
+      );
+      if (resultado == null) return null;
 
       if (!context.mounted) return false;
 
@@ -178,6 +218,9 @@ Future<bool> mostrarDialogoRegistrarEgreso(
         case RegistrarEgresoConceptoRequerido():
           RisegFeedback.showError(context, l10n.egresoErrorConceptoRequerido);
           return false;
+        case RegistrarEgresoTarjetaInvalida(:final error, :final disponible):
+          RisegFeedback.showError(context, mensajeErrorOrigenTarjeta(l10n, error, disponible));
+          return false;
         case RegistrarEgresoErrorInesperado():
           RisegFeedback.showError(context, l10n.registrarEgresoErrorInesperado);
           return false;
@@ -189,6 +232,5 @@ Future<bool> mostrarDialogoRegistrarEgreso(
   conceptoController.dispose();
   beneficiarioController.dispose();
   observacionesController.dispose();
-  cuentaCajaController.dispose();
   return resultado ?? false;
 }

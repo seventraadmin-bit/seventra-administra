@@ -1,3 +1,4 @@
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 
 import '../repositories/vehiculo_repository.dart';
@@ -18,6 +19,12 @@ class CorregirVehiculoCostoInvalido extends CorregirVehiculoResultado {}
 class CorregirVehiculoPlacasDuplicadas extends CorregirVehiculoResultado {}
 
 class CorregirVehiculoVinDuplicado extends CorregirVehiculoResultado {}
+
+/// schemaVersion 80 — toda corrección sensible exige motivo, igual que
+/// en Compra/Pagos/Nómina/Deudas. Hasta esta etapa Vehículos era la
+/// única excepción del proyecto: se podían cambiar placas, VIN y número
+/// de motor sin decir por qué ni quedar registrado quién.
+class CorregirVehiculoMotivoRequerido extends CorregirVehiculoResultado {}
 
 class CorregirVehiculoErrorInesperado extends CorregirVehiculoResultado {
   CorregirVehiculoErrorInesperado(this.mensaje);
@@ -52,7 +59,11 @@ class CorregirVehiculoUseCase {
     bool limpiarFechaAdquisicion = false,
     bool limpiarCostoAdquisicion = false,
     bool limpiarObservaciones = false,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return CorregirVehiculoMotivoRequerido();
+
     final vehiculo = await _repository.obtenerPorId(vehiculoId);
     if (vehiculo == null) return CorregirVehiculoNoExiste();
 
@@ -94,6 +105,8 @@ class CorregirVehiculoUseCase {
         limpiarFechaAdquisicion: limpiarFechaAdquisicion,
         limpiarCostoAdquisicion: limpiarCostoAdquisicion,
         limpiarObservaciones: limpiarObservaciones,
+        motivo: motivo,
+        actorUsuarioId: actorUsuarioId,
       );
       return CorregirVehiculoExitoso(actualizado);
     } catch (e) {

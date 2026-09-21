@@ -48,6 +48,16 @@ abstract interface class InventarioRepository {
 
   Future<List<ArticuloUnidadData>> listarUnidades(String articuloId, {String? estatus});
 
+  /// Cuántas unidades serializadas hay en cada estatus, en UNA sola
+  /// consulta agregada.
+  ///
+  /// Existe para que Reportes pueda mostrar los estados físicos
+  /// (`enLavanderia`, `enReparacion`, `pendienteDesecho`) sin traerse
+  /// todas las unidades a memoria ni consultar artículo por artículo.
+  /// La llave es el nombre del `EstatusArticuloUnidad`; los estatus sin
+  /// ninguna unidad simplemente no aparecen.
+  Future<Map<String, int>> contarUnidadesPorEstatus();
+
   /// Todas las unidades serializadas, sin acotar por Artículo — usado
   /// por la búsqueda contextual de Inventario (Etapa 7D) para resolver
   /// un código `UNI-######`/número de serie sin que el usuario tenga
@@ -62,7 +72,15 @@ abstract interface class InventarioRepository {
   /// existe aquí.
   Future<List<ArticuloUnidadData>> listarUnidadesTelefono({String? estatus});
 
-  Future<List<MovimientoInventarioData>> listarMovimientos({String? articuloId, String? varianteId, String? unidadId});
+  /// `desde`/`hasta` (Etapa 20, Dashboard — Actividad reciente) acotan
+  /// por `fecha`, mismo nombre/criterio que `totalMovimientosEnRango`.
+  Future<List<MovimientoInventarioData>> listarMovimientos({
+    String? articuloId,
+    String? varianteId,
+    String? unidadId,
+    DateTime? desde,
+    DateTime? hasta,
+  });
 
   /// Conteo de `MovimientoInventario` en el rango — Etapa 12C
   /// (Reportes): un `COUNT()`, nunca la lista completa (evita cargar
@@ -134,6 +152,20 @@ abstract interface class InventarioRepository {
 
   /// Baja definitiva de una unidad serializada — marca su `estatus`
   /// en `baja` y registra el movimiento correspondiente.
+  /// Mueve una unidad entre estados de UBICACIÓN — al salir de
+  /// lavandería o reparación (ver `RegistrarRetornoUnidadUseCase`).
+  ///
+  /// No emite movimiento de existencias: el bien nunca salió del
+  /// patrimonio, solo estaba en otro lado. Las reglas de qué transición
+  /// es válida viven en el caso de uso, no aquí.
+  Future<ArticuloUnidadData> actualizarEstatusUnidad({
+    required String unidadId,
+    required String estatus,
+    required DateTime fecha,
+    String? observaciones,
+    String? actorUsuarioId,
+  });
+
   Future<ArticuloUnidadData> registrarBajaUnidad({
     required String unidadId,
     required String observaciones,
@@ -160,6 +192,21 @@ abstract interface class InventarioRepository {
   /// `ArticuloUnidad.estatus`.
   Future<ExistenciaArticulo> calcularExistenciaUnidades(String articuloId);
 
+  /// Existencia de MUCHOS artículos en dos consultas fijas —una de
+  /// movimientos y una de unidades—, sin importar cuántos artículos
+  /// sean.
+  ///
+  /// Elige por artículo la misma estrategia que elegiría el llamador a
+  /// mano (`manejaSerie` → unidades, si no → movimientos) y pliega con
+  /// las mismas funciones de dominio, así que para cada artículo
+  /// devuelve exactamente lo mismo que [calcularExistencia] /
+  /// [calcularExistenciaUnidades]. Un artículo sin movimientos ni
+  /// unidades aparece en el mapa con ceros, nunca ausente.
+  ///
+  /// Existe para que los resúmenes (Inventario, Reportes, Dashboard)
+  /// dejen de consultar artículo por artículo. Sólo lectura.
+  Future<Map<String, ExistenciaArticulo>> calcularExistenciaPorArticulos(Iterable<ArticuloData> articulos);
+
   /// Costo promedio ponderado (centavos), derivado únicamente de
   /// movimientos `entrada` con `costoUnitario` capturado — nunca
   /// FIFO/LIFO, nunca guardado (Etapa 7D, mismo criterio ya
@@ -167,6 +214,26 @@ abstract interface class InventarioRepository {
   /// no hay ninguna entrada con costo capturado todavía — nunca se
   /// inventa un valor ("solo cuando puedan derivarse de forma
   /// consistente", instrucción explícita de Marlon).
+  /// Costo promedio de varios articulos a la vez, con el MISMO
+  /// criterio que [calcularCostoPromedio]: solo entradas con costo
+  /// capturado, nunca inventado.
+  ///
+  /// Un articulo sin ninguna entrada con costo NO aparece en el mapa —
+  /// no se devuelve 0, que significaria "vale cero" en vez de "no se
+  /// sabe". Quien lo consuma tiene que distinguir las dos cosas.
+  Future<Map<String, int>> calcularCostoPromedioPorArticulo(Iterable<String> articuloIds);
+
+  /// Costo promedio de varias VARIANTES en una sola consulta, con el
+  /// mismo criterio que [calcularCostoPromedio] con `varianteId`: sólo
+  /// entradas de esa variante con costo capturado.
+  ///
+  /// Es la contraparte por talla de [calcularCostoPromedioPorArticulo]:
+  /// un artículo con variantes no tiene costo a nivel de artículo, así
+  /// que quien necesite valuar un bien de talla concreta pregunta aquí.
+  /// Una variante sin costo capturado NO aparece en el mapa — nunca 0.
+  /// Sólo lectura.
+  Future<Map<String, int>> calcularCostoPromedioPorVariante(Iterable<String> varianteIds);
+
   Future<int?> calcularCostoPromedio({required String articuloId, String? varianteId});
 
   Future<AttachmentData> adjuntarComprobante({

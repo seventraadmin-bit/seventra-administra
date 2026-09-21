@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import '../repositories/servicio_repository.dart';
 import 'guardar_servicio_resultado.dart';
 import 'servicio_validator.dart';
@@ -17,10 +18,15 @@ class ActualizarServicioUseCase {
   final ServicioRepository _repository;
   final ServicioValidator _validator;
 
+  /// [motivo] obligatorio: los datos de un Servicio alimentan la
+  /// cobranza, así que una corrección tiene que poder explicarse.
   Future<GuardarServicioResultado> ejecutar({
     required String id,
     required ServicioBorrador borrador,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return GuardarServicioMotivoRequerido();
     final existente = await _repository.obtenerPorId(id);
     if (existente == null) {
       return GuardarServicioErrorInesperado('Servicio no encontrado: $id');
@@ -34,6 +40,8 @@ class ActualizarServicioUseCase {
 
     try {
       final actualizado = await _repository.actualizar(
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
         id: id,
         cambios: ServicioCompanion(
           nombre: Value(validado.nombre),

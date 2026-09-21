@@ -7,6 +7,7 @@ import '../../../usuarios/data/tables/usuario_table.dart';
 import 'articulo_table.dart';
 import 'articulo_unidad_table.dart';
 import 'articulo_variante_table.dart';
+import 'entrega_table.dart';
 
 enum EstatusAsignacion {
   activa,
@@ -118,6 +119,33 @@ class Asignacion extends Table with AuditColumns {
   /// también `crear`/`cerrar`/`reemplazar` (antes solo quedaba el actor
   /// en el `MovimientoInventario` asociado, nunca en la propia fila).
   TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
+
+  /// La Entrega (acto de entrega múltiple) que originó esta Asignacion,
+  /// si vino de "Entregar equipo" — `NULL` en toda Asignacion legacy y
+  /// en cualquiera creada por el diálogo individual "Asignar artículo"
+  /// (deliberadamente no tocado por esta etapa, ver el doc comment de
+  /// `Entrega`). Nunca se infiere por fecha/empleado — solo este
+  /// vínculo explícito agrupa.
+  TextColumn get entregaId => text().nullable().references(Entrega, #id, onDelete: KeyAction.restrict)();
+
+  /// Fecha de la baja laboral que dejó este bien PENDIENTE DE
+  /// RECUPERACIÓN (schemaVersion 82). `null` = asignación normal.
+  ///
+  /// Existe porque terminar la relación laboral y recuperar un bien
+  /// físico son dos hechos distintos, y el modelo no podía
+  /// distinguirlos: cerrar la asignación habría afirmado una
+  /// devolución que nadie presenció (en Inventario incluso emite un
+  /// `MovimientoInventario` de `entradaDevolucion` y deja la unidad
+  /// `disponible`). Por eso la asignación sigue **activa/vigente** —
+  /// que es la verdad física: el bien sigue con la persona— y lo único
+  /// que se agrega es esta marca.
+  ///
+  /// Se puebla en la MISMA transacción que la baja laboral y se limpia
+  /// al registrar la devolución real, que conserva su propia fecha.
+  /// Nunca se usa para decidir disponibilidad: eso ya lo resuelven
+  /// `ArticuloUnidad.estatus`/`Vehiculo.estatus`, que siguen intactos.
+  DateTimeColumn get pendienteRecuperacionDesde => dateTime().nullable()();
+
 
   @override
   List<String> get customConstraints => [

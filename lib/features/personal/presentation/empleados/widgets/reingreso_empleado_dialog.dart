@@ -9,7 +9,7 @@ import 'package:riseg_one/features/personal/domain/usecases/registrar_reingreso_
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../personal_providers.dart';
-import 'baja_laboral_empleado_dialog.dart' show motivoBajaEmpleadoLabel;
+import 'motivo_baja_empleado_labels.dart' show motivoBajaEmpleadoLabel;
 
 /// Diálogo "Registrar reingreso" (Etapa 5C) — recontrata a un Empleado
 /// existente, nunca crea uno nuevo. Si el historial (periodo vigente

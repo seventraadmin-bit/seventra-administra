@@ -8,6 +8,7 @@ import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show Es
 import 'package:riseg_one/features/finanzas/domain/repositories/cuenta_por_cobrar_repository.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/usecases/documento_por_emitir_generation_key.dart';
 import '../../domain/repositories/documento_por_emitir_repository.dart';
 import '../../domain/usecases/documento_por_emitir_armado.dart';
 import '../../domain/usecases/documento_por_emitir_detalle.dart';
@@ -50,6 +51,25 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
   @override
   Future<DocumentoPorEmitirData?> obtenerPorGenerationKey(String generationKey) {
     return (_db.select(_db.documentoPorEmitir)..where((t) => t.generationKey.equals(generationKey))).getSingleOrNull();
+  }
+
+  @override
+  Future<List<DocumentoPorEmitirData>> listarPorClaveComercial(String claveComercial) async {
+    // Se acota primero por cliente y periodo —las tres primeras
+    // dimensiones de la clave— y después se compara la clave comercial
+    // completa. Nunca por folio, nombre ni importe: la identidad sale
+    // de los ids que ya componen la `generationKey`.
+    final partes = claveComercial.split('|');
+    if (partes.length < 3) return const [];
+    final clienteId = partes[1];
+
+    final candidatos = await (_db.select(_db.documentoPorEmitir)
+          ..where((t) => t.clienteId.equals(clienteId)))
+        .get();
+    return [
+      for (final d in candidatos)
+        if (claveComercialDeGenerationKey(d.generationKey) == claveComercial) d,
+    ];
   }
 
   @override
@@ -195,6 +215,30 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
   }
 
   @override
+  @override
+  Future<Map<String, List<String>>> listarServicioIdsPorDocumento(Iterable<String> ids) async {
+    final unicos = ids.toSet();
+    if (unicos.isEmpty) return {};
+    final filas = await (_db.select(_db.documentoPorEmitirServicio)
+          ..where((t) => t.documentoPorEmitirId.isIn(unicos)))
+        .get();
+    final porDocumento = <String, List<String>>{};
+    for (final f in filas) {
+      porDocumento.putIfAbsent(f.documentoPorEmitirId, () => []).add(f.servicioId);
+    }
+    return porDocumento;
+  }
+
+  @override
+  Future<Map<String, DocumentoPorEmitirData>> listarPorIds(Iterable<String> ids) async {
+    final unicos = ids.toSet();
+    if (unicos.isEmpty) return {};
+    final filas = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.isIn(unicos))).get();
+    return {for (final f in filas) f.id: f};
+  }
+
+  @override
+
   Future<List<DocumentoPorEmitirData>> listar({
     DateTime? rangoInicio,
     DateTime? rangoFin,

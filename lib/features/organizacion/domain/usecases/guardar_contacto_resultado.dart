@@ -17,6 +17,9 @@ class GuardarContactoErroresValidacion extends GuardarContactoResultado {
   final List<ErrorCampoContacto> errores;
 }
 
+/// Corregir datos de contacto exige explicar por qué.
+class GuardarContactoMotivoRequerido extends GuardarContactoResultado {}
+
 class GuardarContactoErrorInesperado extends GuardarContactoResultado {
   GuardarContactoErrorInesperado(this.mensaje);
   final String mensaje;

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -15,11 +16,13 @@ import 'package:riseg_one/features/inventario/domain/usecases/corregir_articulo_
 import 'package:riseg_one/features/inventario/domain/usecases/crear_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/crear_categoria_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/crear_variante_articulo_usecase.dart';
+import 'package:riseg_one/features/inventario/domain/usecases/existencia_articulo.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_ajuste_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_baja_unidad_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_baja_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_unidad_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_usecase.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_de_unidad_coordinador.dart';
 
 void main() {
   late AppDatabase db;
@@ -56,7 +59,7 @@ void main() {
     registrarEntrada = RegistrarEntradaUseCase(inventarioRepo, articuloRepo);
     registrarEntradaUnidad = RegistrarEntradaUnidadUseCase(inventarioRepo, articuloRepo, generarCodigo);
     registrarBaja = RegistrarBajaUseCase(inventarioRepo, articuloRepo);
-    registrarBajaUnidad = RegistrarBajaUnidadUseCase(inventarioRepo);
+    registrarBajaUnidad = RegistrarBajaUnidadUseCase(inventarioRepo, LineaTelefonicaDeUnidadCoordinador.desde(db));
     registrarAjuste = RegistrarAjusteUseCase(inventarioRepo, articuloRepo);
   });
 
@@ -352,6 +355,42 @@ void main() {
       final segundoIntento = await registrarBajaUnidad.ejecutar(unidadId: unidad.id, observaciones: 'De nuevo');
       expect(segundoIntento, isA<RegistrarBajaUnidadYaDeBaja>());
     });
+
+    test(
+      'Etapa 0 (bug real corregido): rechaza dar de baja una unidad ASIGNADA — el estatus/existencia nunca cambian, '
+      'y el repositorio (no solo el caso de uso) también la bloquea',
+      () async {
+        final articulo = await crearArticuloDePrueba(nombre: 'Radio', manejaSerie: true);
+        final unidad = ((await registrarEntradaUnidad.ejecutar(
+          articuloId: articulo.id,
+          numeroSerie: 'SN-ASIGNADA',
+          fecha: DateTime(2026, 1, 1),
+        )) as RegistrarEntradaUnidadExitoso)
+            .unidad;
+        // Simula custodia activa sin depender de todo el aparato de
+        // Asignaciones (fuera del alcance de este archivo) — el punto
+        // de esta prueba es el guard sobre `ArticuloUnidad.estatus`,
+        // no el flujo de Asignación en sí.
+        await (db.update(db.articuloUnidad)..where((t) => t.id.equals(unidad.id)))
+            .write(const ArticuloUnidadCompanion(estatus: Value('asignado')));
+
+        final resultado = await registrarBajaUnidad.ejecutar(unidadId: unidad.id, observaciones: 'Intento indebido');
+        expect(resultado, isA<RegistrarBajaUnidadAsignada>());
+
+        final unidadTras = await (db.select(db.articuloUnidad)..where((t) => t.id.equals(unidad.id))).getSingle();
+        expect(unidadTras.estatus, 'asignado', reason: 'el estatus nunca cambia si la corrección se rechaza');
+        final movimientos = await db.select(db.movimientoInventario).get();
+        expect(movimientos.where((m) => m.unidadId == unidad.id), hasLength(1), reason: 'solo el movimiento de entrada original — ninguno de baja');
+
+        // El repositorio en sí también rechaza (defensa en profundidad,
+        // sin importar el llamador) — mismo criterio que
+        // `_validarNoNegativo`/`_validarVarianteCoherente`.
+        await expectLater(
+          inventarioRepo.registrarBajaUnidad(unidadId: unidad.id, observaciones: 'Directo al repositorio'),
+          throwsA(isA<UnidadAsignadaException>()),
+        );
+      },
+    );
 
     test('rechaza registrar una unidad para un Artículo que no maneja serie', () async {
       final articulo = await crearArticuloDePrueba();

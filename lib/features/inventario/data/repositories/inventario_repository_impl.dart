@@ -2,8 +2,11 @@ import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:riseg_one/features/compras/data/tables/compra_table.dart' show EstatusCompra;
+
 import '../../domain/repositories/inventario_repository.dart';
 import '../../domain/usecases/existencia_articulo.dart';
+import '../../domain/usecases/plegado_inventario.dart';
 import '../tables/articulo_unidad_table.dart' show EstatusArticuloUnidad;
 import '../tables/movimiento_inventario_table.dart' show TipoMovimientoInventario;
 
@@ -36,6 +39,18 @@ class InventarioRepositoryImpl implements InventarioRepository {
   }
 
   @override
+  Future<Map<String, int>> contarUnidadesPorEstatus() async {
+    final conteo = _db.articuloUnidad.id.count();
+    final query = _db.selectOnly(_db.articuloUnidad)
+      ..addColumns([_db.articuloUnidad.estatus, conteo])
+      ..groupBy([_db.articuloUnidad.estatus]);
+    final filas = await query.get();
+    return {
+      for (final fila in filas) fila.read(_db.articuloUnidad.estatus)!: fila.read(conteo) ?? 0,
+    };
+  }
+
+  @override
   Future<List<ArticuloUnidadData>> listarTodasUnidades() {
     return (_db.select(_db.articuloUnidad)..orderBy([(t) => OrderingTerm.asc(t.codigo)])).get();
   }
@@ -51,11 +66,19 @@ class InventarioRepositoryImpl implements InventarioRepository {
   }
 
   @override
-  Future<List<MovimientoInventarioData>> listarMovimientos({String? articuloId, String? varianteId, String? unidadId}) {
+  Future<List<MovimientoInventarioData>> listarMovimientos({
+    String? articuloId,
+    String? varianteId,
+    String? unidadId,
+    DateTime? desde,
+    DateTime? hasta,
+  }) {
     final query = _db.select(_db.movimientoInventario);
     if (articuloId != null) query.where((t) => t.articuloId.equals(articuloId));
     if (varianteId != null) query.where((t) => t.varianteId.equals(varianteId));
     if (unidadId != null) query.where((t) => t.unidadId.equals(unidadId));
+    if (desde != null) query.where((t) => t.fecha.isBiggerOrEqualValue(desde));
+    if (hasta != null) query.where((t) => t.fecha.isSmallerOrEqualValue(hasta));
     query.orderBy([(t) => OrderingTerm.desc(t.fecha)]);
     return query.get();
   }
@@ -300,6 +323,20 @@ class InventarioRepositoryImpl implements InventarioRepository {
   }
 
   @override
+  Future<ArticuloUnidadData> actualizarEstatusUnidad({
+    required String unidadId,
+    required String estatus,
+    required DateTime fecha,
+    String? observaciones,
+    String? actorUsuarioId,
+  }) async {
+    await (_db.update(_db.articuloUnidad)..where((t) => t.id.equals(unidadId))).write(
+      ArticuloUnidadCompanion(estatus: Value(estatus), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.articuloUnidad)..where((t) => t.id.equals(unidadId))).getSingle();
+  }
+
+  @override
   Future<ArticuloUnidadData> registrarBajaUnidad({
     required String unidadId,
     required String observaciones,
@@ -307,6 +344,9 @@ class InventarioRepositoryImpl implements InventarioRepository {
   }) {
     return _db.transaction(() async {
       final unidad = await (_db.select(_db.articuloUnidad)..where((t) => t.id.equals(unidadId))).getSingle();
+      if (unidad.estatus == EstatusArticuloUnidad.asignado.name) {
+        throw UnidadAsignadaException(unidadId: unidadId);
+      }
 
       await (_db.update(_db.articuloUnidad)..where((t) => t.id.equals(unidadId))).write(
         ArticuloUnidadCompanion(
@@ -368,87 +408,152 @@ class InventarioRepositoryImpl implements InventarioRepository {
     if (varianteId != null) {
       query.where((t) => t.varianteId.equals(varianteId));
     }
-    final movimientos = await query.get();
-
-    var disponible = 0;
-    var asignado = 0;
-    var danado = 0;
-    var perdido = 0;
-    for (final m in movimientos) {
-      final tipo = TipoMovimientoInventario.values.byName(m.tipoMovimiento);
-      switch (tipo) {
-        case TipoMovimientoInventario.entrada:
-        case TipoMovimientoInventario.ajusteEntrada:
-          disponible += m.cantidad;
-        case TipoMovimientoInventario.baja:
-        case TipoMovimientoInventario.ajusteSalida:
-          disponible -= m.cantidad;
-        case TipoMovimientoInventario.salidaAsignacion:
-          disponible -= m.cantidad;
-          asignado += m.cantidad;
-        case TipoMovimientoInventario.entradaDevolucion:
-          asignado -= m.cantidad;
-          disponible += m.cantidad;
-        case TipoMovimientoInventario.salidaDano:
-          asignado -= m.cantidad;
-          danado += m.cantidad;
-        case TipoMovimientoInventario.salidaPerdida:
-          asignado -= m.cantidad;
-          perdido += m.cantidad;
-      }
-    }
-
-    return ExistenciaArticulo(disponible: disponible, asignado: asignado, danado: danado, perdido: perdido);
+    // El plegado vive en el dominio (`plegarExistenciaDeMovimientos`):
+    // esta capa sólo decide QUÉ filas leer. La versión en lote lee
+    // distinto y pliega con la misma función, así que no puede
+    // divergir.
+    return plegarExistenciaDeMovimientos(await query.get());
   }
 
   @override
   Future<ExistenciaArticulo> calcularExistenciaUnidades(String articuloId) async {
     final unidades = await (_db.select(_db.articuloUnidad)..where((t) => t.articuloId.equals(articuloId))).get();
+    return plegarExistenciaDeUnidades(unidades);
+  }
 
-    var disponible = 0;
-    var asignado = 0;
-    var danado = 0;
-    var perdido = 0;
+  @override
+  Future<Map<String, ExistenciaArticulo>> calcularExistenciaPorArticulos(Iterable<ArticuloData> articulos) async {
+    final porId = {for (final a in articulos) a.id: a};
+    if (porId.isEmpty) return {};
+
+    // Dos consultas para CUALQUIER cantidad de artículos: una de
+    // movimientos (artículos por cantidad) y una de unidades
+    // (serializados). Nunca una por artículo.
+    final serializados = {for (final a in porId.values) if (a.manejaSerie) a.id};
+    final porCantidad = {for (final a in porId.values) if (!a.manejaSerie) a.id};
+
+    final movimientos = porCantidad.isEmpty
+        ? const <MovimientoInventarioData>[]
+        : await (_db.select(_db.movimientoInventario)..where((t) => t.articuloId.isIn(porCantidad))).get();
+    final unidades = serializados.isEmpty
+        ? const <ArticuloUnidadData>[]
+        : await (_db.select(_db.articuloUnidad)..where((t) => t.articuloId.isIn(serializados))).get();
+
+    final movimientosPorArticulo = <String, List<MovimientoInventarioData>>{};
+    for (final m in movimientos) {
+      movimientosPorArticulo.putIfAbsent(m.articuloId, () => []).add(m);
+    }
+    final unidadesPorArticulo = <String, List<ArticuloUnidadData>>{};
     for (final u in unidades) {
-      switch (EstatusArticuloUnidad.values.byName(u.estatus)) {
-        case EstatusArticuloUnidad.disponible:
-          disponible++;
-        case EstatusArticuloUnidad.asignado:
-          asignado++;
-        case EstatusArticuloUnidad.danado:
-          danado++;
-        case EstatusArticuloUnidad.perdido:
-          perdido++;
-        case EstatusArticuloUnidad.baja:
-          break;
-      }
+      unidadesPorArticulo.putIfAbsent(u.articuloId, () => []).add(u);
     }
 
-    return ExistenciaArticulo(disponible: disponible, asignado: asignado, danado: danado, perdido: perdido);
+    // TODOS los artículos pedidos aparecen en el mapa, aunque no tengan
+    // ni un movimiento ni una unidad: la versión individual devuelve
+    // ceros en ese caso, no ausencia, y las dos tienen que coincidir.
+    return {
+      for (final articulo in porId.values)
+        articulo.id: articulo.manejaSerie
+            ? plegarExistenciaDeUnidades(unidadesPorArticulo[articulo.id] ?? const [])
+            : plegarExistenciaDeMovimientos(movimientosPorArticulo[articulo.id] ?? const []),
+    };
+  }
+
+  /// Los movimientos cuyo ORIGEN ECONÓMICO fue cancelado.
+  ///
+  /// Única definición del criterio: la usan las tres consultas de costo
+  /// promedio (individual, por artículo y por variante), así que no
+  /// pueden divergir. Se resuelve por la cadena de FK real
+  /// `CompraPartidaMovimiento → CompraPartida → Compra.estatus`, nunca
+  /// por descripción ni por el movimiento de reversa.
+  ///
+  /// Es una subconsulta, no una consulta aparte: el filtro viaja dentro
+  /// del mismo `SELECT` y no agrega ni un viaje a la base, ni siquiera
+  /// en las versiones en lote.
+  Expression<bool> _origenCancelado(GeneratedColumn<String> movimientoId) {
+    final deComprasCanceladas = _db.selectOnly(_db.compraPartidaMovimiento).join([
+      innerJoin(
+        _db.compraPartida,
+        _db.compraPartida.id.equalsExp(_db.compraPartidaMovimiento.compraPartidaId),
+      ),
+      innerJoin(_db.compra, _db.compra.id.equalsExp(_db.compraPartida.compraId)),
+    ])
+      ..addColumns([_db.compraPartidaMovimiento.movimientoInventarioId])
+      ..where(_db.compra.estatus.equals(EstatusCompra.cancelada.name));
+    return movimientoId.isInQuery(deComprasCanceladas);
+  }
+
+  @override
+  Future<Map<String, int>> calcularCostoPromedioPorArticulo(Iterable<String> articuloIds) async {
+    final unicos = articuloIds.toSet();
+    if (unicos.isEmpty) return {};
+    // UNA consulta para todos los artículos, con el MISMO alcance que
+    // `calcularCostoPromedio(articuloId: x)`: entradas del artículo sin
+    // `varianteId`. Un artículo con variante no tiene costo promedio a
+    // nivel de artículo —hay que preguntarlo por variante— y el lote no
+    // puede inventarle uno promediando entre tallas distintas.
+    final entradas = await (_db.select(_db.movimientoInventario)
+          ..where((t) =>
+              t.articuloId.isIn(unicos) &
+              t.tipoMovimiento.equals(TipoMovimientoInventario.entrada.name) &
+              t.varianteId.isNull() &
+              _origenCancelado(t.id).not()))
+        .get();
+
+    final entradasPorArticulo = <String, List<MovimientoInventarioData>>{};
+    for (final entrada in entradas) {
+      entradasPorArticulo.putIfAbsent(entrada.articuloId, () => []).add(entrada);
+    }
+
+    // Un artículo sin costo NO aparece en el mapa — igual que la versión
+    // individual devuelve `null`, nunca 0.
+    final promedios = <String, int>{};
+    for (final articuloId in entradasPorArticulo.keys) {
+      final promedio = plegarCostoPromedio(entradasPorArticulo[articuloId]!);
+      if (promedio != null) promedios[articuloId] = promedio;
+    }
+    return promedios;
+  }
+
+  @override
+  Future<Map<String, int>> calcularCostoPromedioPorVariante(Iterable<String> varianteIds) async {
+    final unicos = varianteIds.toSet();
+    if (unicos.isEmpty) return {};
+    // UNA consulta para todas las variantes, con el MISMO alcance que
+    // `calcularCostoPromedio(articuloId: x, varianteId: y)`.
+    final entradas = await (_db.select(_db.movimientoInventario)
+          ..where((t) =>
+              t.varianteId.isIn(unicos) &
+              t.tipoMovimiento.equals(TipoMovimientoInventario.entrada.name) &
+              _origenCancelado(t.id).not()))
+        .get();
+
+    final entradasPorVariante = <String, List<MovimientoInventarioData>>{};
+    for (final entrada in entradas) {
+      entradasPorVariante.putIfAbsent(entrada.varianteId!, () => []).add(entrada);
+    }
+
+    final promedios = <String, int>{};
+    for (final varianteId in entradasPorVariante.keys) {
+      final promedio = plegarCostoPromedio(entradasPorVariante[varianteId]!);
+      if (promedio != null) promedios[varianteId] = promedio;
+    }
+    return promedios;
   }
 
   @override
   Future<int?> calcularCostoPromedio({required String articuloId, String? varianteId}) async {
     final query = _db.select(_db.movimientoInventario)
-      ..where((t) => t.articuloId.equals(articuloId) & t.tipoMovimiento.equals(TipoMovimientoInventario.entrada.name));
+      ..where((t) =>
+          t.articuloId.equals(articuloId) &
+          t.tipoMovimiento.equals(TipoMovimientoInventario.entrada.name) &
+          _origenCancelado(t.id).not());
     if (varianteId == null) {
       query.where((t) => t.varianteId.isNull());
     } else {
       query.where((t) => t.varianteId.equals(varianteId));
     }
-    final entradas = await query.get();
-
-    var cantidadTotal = 0;
-    var costoTotal = 0;
-    for (final entrada in entradas) {
-      final costo = entrada.costoUnitario;
-      if (costo == null) continue;
-      cantidadTotal += entrada.cantidad;
-      costoTotal += entrada.cantidad * costo;
-    }
-
-    if (cantidadTotal == 0) return null;
-    return (costoTotal / cantidadTotal).round();
+    return plegarCostoPromedio(await query.get());
   }
 
   @override

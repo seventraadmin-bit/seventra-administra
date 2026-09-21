@@ -9,6 +9,9 @@ import '../repositories/servicio_repository.dart';
 import 'agrupar_documentos_por_emitir.dart';
 import 'calcular_fechas_cobro_usecase.dart';
 import 'documento_por_emitir_armado.dart';
+import 'documento_por_emitir_generation_key.dart';
+import 'configuracion_cobro_con_vigencia.dart' show soloFechaCobro;
+import 'periodo_facturable.dart';
 import 'ensamblar_documento_por_emitir_usecase.dart';
 
 /// Resultado de una corrida de generación — nunca lanza, siempre
@@ -73,6 +76,28 @@ class GenerarAgendaUseCase {
       final servicio = await _servicioRepository.obtenerPorId(configuracion.servicioId);
       if (servicio == null) continue;
 
+      // Todas las vigencias vivas de la Configuración, una sola vez.
+      //
+      // La vigencia ya NO se resuelve preguntando por el día 1 del mes
+      // candidato. Ese atajo perdía un mes entero cuando la vigencia
+      // arrancaba después del día 1: un Servicio dado de alta el 05/09
+      // con ciclo 21→20 no generaba ni el tramo 05/09–20/09 ni el
+      // periodo completo siguiente 21/09–20/10. Ahora se resuelve por
+      // intersección real con el periodo candidato.
+      final vigenciasVivas = [
+        for (final v in await _configuracionCobroRepository.listarHistorial(configuracion.id))
+          if (v.cicloVidaRegistro == 'activo') v,
+      ];
+      if (vigenciasVivas.isEmpty) continue;
+
+      // Los ciclos posibles (21→20, 1→fin de mes, …). Normalmente uno
+      // solo. Si una vigencia cambió el ciclo a mitad de la vida del
+      // Servicio, cada forma de periodo se evalúa por separado y sólo
+      // sobrevive aquella cuya propia vigencia la gobierna (el
+      // `diaInicioPeriodo` coincide) — así un cambio de ciclo nunca
+      // factura el mismo mes dos veces con dos cortes distintos.
+      final ciclos = {for (final v in vigenciasVivas) v.diaInicioPeriodo};
+
       // Ventana de búsqueda de meses candidatos: 2 meses de rezago sobre
       // el inicio del rango cubre con margen `mesRelativo = siguiente` (+1
       // mes) más el desplazamiento de días/semana que una regla pueda
@@ -81,27 +106,51 @@ class GenerarAgendaUseCase {
       final limiteBusqueda = DateTime(rangoFin.year, rangoFin.month, 1);
 
       while (!mesCandidato.isAfter(limiteBusqueda)) {
-        final vigenciaAprox = await _configuracionCobroRepository.obtenerVigenciaEnFecha(
-          configuracion.id,
-          DateTime(mesCandidato.year, mesCandidato.month, 1),
-        );
-        if (vigenciaAprox == null) {
-          mesCandidato = DateTime(mesCandidato.year, mesCandidato.month + 1, 1);
-          continue;
-        }
-
+        for (final diaInicioPeriodo in ciclos) {
         final limites = calcularLimitesPeriodo(
-          diaInicioPeriodo: vigenciaAprox.diaInicioPeriodo,
+          diaInicioPeriodo: diaInicioPeriodo,
           mesInicioPeriodo: DateTime(mesCandidato.year, mesCandidato.month, 1),
         );
-        final vigencia = await _configuracionCobroRepository.obtenerVigenciaEnFecha(
-              configuracion.id,
-              limites.periodoInicio,
-            ) ??
-            vigenciaAprox;
+
+        // PERIODO FACTURABLE = intersección de tres rangos: el periodo
+        // comercial programado, la vida real del Servicio y la vigencia
+        // de la Configuración de cobro. Sin intersección no hay
+        // documento; con intersección parcial, el documento existe por
+        // el tramo realmente prestado y se prorratea sobre él.
+        //
+        // Se decide contra el periodo facturable y NUNCA contra
+        // `Servicio.estatus`: un Servicio terminado el 30/07 conserva su
+        // documento del tramo 21/07–30/07, que se emite el 21/08 con el
+        // Servicio ya cerrado (caso real DOC-000029).
+        final facturablePorServicio = calcularPeriodoFacturable(
+          periodoInicio: limites.periodoInicio,
+          periodoFin: limites.periodoFin,
+          servicioInicio: servicio.fechaInicio,
+          servicioTermino: servicio.fechaTermino,
+        );
+        if (facturablePorServicio == null) continue;
+
+        // La vigencia que gobierna es la que cubre el inicio EFECTIVO,
+        // no el nominal: un alta el 05/09 dentro del periodo 21/08–20/09
+        // se rige por la vigencia del 05/09, que no existía el 21/08.
+        final vigencia = _vigenciaEnFecha(vigenciasVivas, facturablePorServicio.inicio);
+        if (vigencia == null || vigencia.diaInicioPeriodo != diaInicioPeriodo) continue;
+
+        final facturable = intersectarRangos(
+          aInicio: facturablePorServicio.inicio,
+          aFin: facturablePorServicio.fin,
+          bInicio: vigencia.fechaInicioVigencia,
+          bFin: vigencia.fechaFinVigencia,
+        );
+        if (facturable == null) continue;
 
         if (vigencia.agrupacion != 'manual') {
           final etapas = await _configuracionCobroRepository.listarEtapas(vigencia.id);
+          // El calendario de cobro es NOMINAL: recortar el tramo
+          // facturable no adelanta la emisión. DOC-000029 cubrió
+          // 21/07–30/07 y aun así se emitió el 21/08, como cualquier
+          // periodo completo — la fecha de emisión es un acuerdo
+          // comercial, no una consecuencia de cuándo cerró el Servicio.
           final fechas = _calcularFechas.ejecutar(
             etapas: etapas,
             mesInicioPeriodo: DateTime(mesCandidato.year, mesCandidato.month, 1),
@@ -112,7 +161,7 @@ class GenerarAgendaUseCase {
           if (fechaEmision != null &&
               !fechaEmision.isBefore(rangoInicio) &&
               !fechaEmision.isAfter(rangoFin)) {
-            final clave = '${servicio.id}|${limites.periodoInicio.toIso8601String()}';
+            final clave = '${servicio.id}|${facturable.inicio.toIso8601String()}';
             if (!resueltosPorClave.containsKey(clave)) {
               resueltosPorClave[clave] = ServicioResueltoParaDocumento(
                 servicioId: servicio.id,
@@ -135,13 +184,14 @@ class GenerarAgendaUseCase {
                   tipoDocumento: vigencia.tipoDocumento,
                   metodo: vigencia.metodo,
                   requiereComplemento: vigencia.requiereComplemento,
-                  periodoInicio: limites.periodoInicio,
-                  periodoFin: limites.periodoFin,
+                  periodoInicio: facturable.inicio,
+                  periodoFin: facturable.fin,
                   configuracionCobroVigenciaId: vigencia.id,
                 ),
               );
             }
           }
+        }
         }
 
         mesCandidato = DateTime(mesCandidato.year, mesCandidato.month + 1, 1);
@@ -203,6 +253,25 @@ class GenerarAgendaUseCase {
         continue;
       }
 
+      // Idempotencia COMERCIAL, además de la técnica de arriba.
+      //
+      // Una vigencia retroactiva produce una `generationKey` distinta
+      // para periodos que ya se facturaron bajo la configuración
+      // anterior, así que la comprobación de arriba no los reconoce y
+      // la Agenda vuelve a pedir emitir un mes ya emitido (caso real:
+      // Morgan, DOC-000040 duplicando al procesado DOC-000035).
+      //
+      // Qué estatus bloquean y cuáles no lo decide
+      // `liberaElPeriodoComercial`, compartida con la creación manual.
+      final equivalentes = await _repository.listarPorClaveComercial(
+        claveComercialDeGenerationKey(armado.generationKey),
+      );
+      final vigente = equivalentes.where((d) => !liberaElPeriodoComercial(d.estatus));
+      if (vigente.isNotEmpty) {
+        yaExistian++;
+        continue;
+      }
+
       final codigoResultado = await _generarCodigo.ejecutar('documento_por_emitir');
       final codigo = codigoResultado.when(ok: (c) => c, failure: (f) => throw StateError(f.message));
       creados.add(
@@ -215,6 +284,23 @@ class GenerarAgendaUseCase {
     }
 
     return GenerarAgendaResultado(creados: creados, yaExistian: yaExistian);
+  }
+
+  /// La vigencia activa que cubre [fecha], o `null`. Misma regla que
+  /// `ConfiguracionCobroRepository.obtenerVigenciaEnFecha`, resuelta en
+  /// memoria porque el generador ya tiene la lista completa y la
+  /// consulta ocurriría una vez por mes candidato.
+  ConfiguracionCobroVigenciaData? _vigenciaEnFecha(
+    List<ConfiguracionCobroVigenciaData> vigencias,
+    DateTime fecha,
+  ) {
+    final dia = soloFechaCobro(fecha);
+    for (final v in vigencias) {
+      final inicio = soloFechaCobro(v.fechaInicioVigencia);
+      final fin = v.fechaFinVigencia == null ? null : soloFechaCobro(v.fechaFinVigencia!);
+      if (!inicio.isAfter(dia) && (fin == null || !fin.isBefore(dia))) return v;
+    }
+    return null;
   }
 
   List<List<CandidatoDocumentoPorEmitir>> _agruparPorAncla(

@@ -42,6 +42,8 @@ class RisegTableBase<T> extends StatelessWidget {
     this.loading = false,
     this.emptyState,
     this.actionsWidth = 96,
+    this.hoverColor,
+    this.rowVerticalPadding,
     super.key,
   });
 
@@ -55,6 +57,19 @@ class RisegTableBase<T> extends StatelessWidget {
   final T? selectedRow;
   final bool loading;
   final Widget? emptyState;
+
+  /// Sobrescribe el fondo de hover (`colors.surfaceSunken` por defecto).
+  /// `null` conserva el comportamiento actual en el resto del proyecto —
+  /// Etapa 15, rediseño visual de Personal/Bajas: azul RISEG extremadamente
+  /// suave (`colors.accentSoftBg`, el mismo tono que ya usa `selected`) en
+  /// vez del gris neutro, solo en esas dos tablas.
+  final Color? hoverColor;
+
+  /// Sobrescribe el padding vertical de cada fila (`AppSpacing.sm` por
+  /// defecto — `null` conserva ese valor en todas las tablas existentes).
+  /// Etapa 16, evolución visual: filas con `RisegEntityIdentity` (avatar)
+  /// necesitan un poco más de aire vertical que una fila de solo texto.
+  final double? rowVerticalPadding;
 
   /// Ancho de la columna de acciones cuando `rowActionsBuilder` no es
   /// nulo — 96px por defecto (sin cambio para ningún uso existente).
@@ -91,14 +106,20 @@ class RisegTableBase<T> extends StatelessWidget {
             ),
             Container(height: 1, color: colors.borderSubtle),
             if (loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-                child: Center(child: CircularProgressIndicator()),
+              _estadoNoTabular(
+                acotado: constraints.hasBoundedHeight,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
               )
             else if (rows.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                child: emptyState ?? const SizedBox.shrink(),
+              _estadoNoTabular(
+                acotado: constraints.hasBoundedHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                  child: emptyState ?? const SizedBox.shrink(),
+                ),
               )
             else if (constraints.hasBoundedHeight)
               // Scroll vertical PROPIO — solo válido cuando el padre da
@@ -133,6 +154,21 @@ class RisegTableBase<T> extends StatelessWidget {
     );
   }
 
+  /// Envuelve el estado de carga/vacío (Etapa 16, evolución visual —
+  /// hallazgo real: "RenderFlex overflowed" en una tabla dentro de un
+  /// `Expanded` con muy poca altura disponible, ej. Nómina en ventanas
+  /// bajas). Antes, el bloque de carga/vacío tenía un alto fijo (padding
+  /// + spinner) que nunca respetaba el espacio acotado del padre — a
+  /// diferencia de la rama "con filas", que ya usaba `Expanded` +
+  /// scroll. Mismo criterio aquí: si el padre da altura acotada, el
+  /// bloque se vuelve desplazable dentro de ese espacio en vez de
+  /// desbordar; si no la da (página con su propio scroll), se conserva
+  /// tal cual.
+  Widget _estadoNoTabular({required bool acotado, required Widget child}) {
+    if (!acotado) return child;
+    return Expanded(child: SingleChildScrollView(child: child));
+  }
+
   Widget _filas() {
     return FocusTraversalGroup(
       child: Column(
@@ -146,6 +182,8 @@ class RisegTableBase<T> extends StatelessWidget {
               actionsBuilder: rowActionsBuilder,
               onTap: onRowTap == null ? null : () => onRowTap!(row),
               selected: selectedRow != null && selectedRow == row,
+              hoverColor: hoverColor,
+              verticalPadding: rowVerticalPadding,
             ),
         ],
       ),
@@ -172,7 +210,18 @@ class RisegTableBase<T> extends StatelessWidget {
     // punto en que se activa el scroll forzado.
     final childCount = columns.length + (_actionsWidth > 0 ? 1 : 0);
     final gaps = childCount > 1 ? (childCount - 1) * AppSpacing.sm : 0.0;
-    return fixed + (flexCount * 80) + _actionsWidth + gaps;
+    // El `Padding` horizontal de `_RisegTableHeader`/`_RisegTableRow`
+    // (`AppSpacing.sm` por lado) y el borde de foco de la fila
+    // (`Border.all(width: 2)`, siempre presente aunque transparente)
+    // restan espacio real al `Row` interno una vez que `width` ya se
+    // fijó — sin esto, cualquier tabla SIN ninguna columna flexible
+    // (nada que absorba el faltante vía `Expanded`) desbordaba por
+    // exactamente esta cantidad al forzarse al ancho mínimo (Etapa 15,
+    // hallazgo real de Marlon: Pagos de Nómina, 4 columnas fijas, "RIGHT
+    // OVERFLOWED BY 28 PIXELS"). Una tabla con columnas flexibles nunca
+    // lo notaba porque `Expanded` absorbía el faltante en silencio.
+    const chromeHorizontal = AppSpacing.sm * 2 + 4;
+    return fixed + (flexCount * 80) + _actionsWidth + gaps + chromeHorizontal;
   }
 }
 
@@ -231,6 +280,8 @@ class _RisegTableRow<T> extends StatefulWidget {
     required this.actionsBuilder,
     required this.onTap,
     required this.selected,
+    this.hoverColor,
+    this.verticalPadding,
   });
 
   final T row;
@@ -239,6 +290,8 @@ class _RisegTableRow<T> extends StatefulWidget {
   final Widget Function(T row)? actionsBuilder;
   final VoidCallback? onTap;
   final bool selected;
+  final Color? hoverColor;
+  final double? verticalPadding;
 
   @override
   State<_RisegTableRow<T>> createState() => _RisegTableRowState<T>();
@@ -262,7 +315,7 @@ class _RisegTableRowState<T> extends State<_RisegTableRow<T>> {
 
     final background = widget.selected
         ? colors.accentSoftBg
-        : (_hovered ? colors.surfaceSunken : Colors.transparent);
+        : (_hovered ? (widget.hoverColor ?? colors.surfaceSunken) : Colors.transparent);
     final borderColor = _focused ? colors.focusRing : Colors.transparent;
 
     final content = Container(
@@ -270,7 +323,7 @@ class _RisegTableRowState<T> extends State<_RisegTableRow<T>> {
         color: background,
         border: Border.all(color: borderColor, width: 2),
       ),
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
+      padding: EdgeInsets.symmetric(vertical: widget.verticalPadding ?? AppSpacing.sm, horizontal: AppSpacing.sm),
       child: Row(
         spacing: AppSpacing.sm,
         children: [

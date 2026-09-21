@@ -40,6 +40,9 @@ class GuardarEntidadFiscalErroresValidacion extends GuardarEntidadFiscalResultad
 /// archivada es de solo consulta — no puede editarse hasta reactivarse.
 class GuardarEntidadFiscalArchivada extends GuardarEntidadFiscalResultado {}
 
+/// Corregir datos fiscales exige explicar por qué.
+class GuardarEntidadFiscalMotivoRequerido extends GuardarEntidadFiscalResultado {}
+
 class GuardarEntidadFiscalErrorInesperado extends GuardarEntidadFiscalResultado {
   GuardarEntidadFiscalErrorInesperado(this.mensaje);
   final String mensaje;

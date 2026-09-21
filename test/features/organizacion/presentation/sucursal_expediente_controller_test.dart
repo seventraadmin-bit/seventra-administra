@@ -14,6 +14,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/crear_sucursal_u
 import 'package:riseg_one/features/organizacion/domain/usecases/sucursal_expediente_input.dart';
 import 'package:riseg_one/features/organizacion/presentation/sucursales/sucursal_expediente_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/sucursales/sucursal_expediente_state.dart';
+import 'package:riseg_one/features/organizacion/presentation/sucursales/sucursales_list_controller.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
@@ -185,6 +186,36 @@ void main() {
     final state = container.read(sucursalExpedienteControllerProvider(sucursalId));
     expect(state.datos?.sucursal.estadoOperativo, EstadoOperativoSucursal.cerradaTemporalmente.name);
     expect(state.cambiandoEstadoOperativo, isFalse);
+  });
+
+  // Hallazgo real (mismo patrón que `ServicioExpedienteController`/
+  // `ClienteExpedienteController`): un cambio de estado operativo desde
+  // el expediente seguía viendo el estado previo en el listado hasta
+  // navegar a otra pestaña y volver.
+  test('cambiarEstadoOperativo refleja el nuevo estado en el listado sin recargar manualmente', () async {
+    await esperarCargaInicial();
+    container.listen(sucursalesListControllerProvider, (_, _) {});
+    while (container.read(sucursalesListControllerProvider).cargando) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    expect(
+      container.read(sucursalesListControllerProvider).sucursales.singleWhere((s) => s.id == sucursalId).estadoOperativo,
+      EstadoOperativoSucursal.operando.name,
+    );
+
+    final notifier = container.read(sucursalExpedienteControllerProvider(sucursalId).notifier);
+    final exito = await notifier.cambiarEstadoOperativo(EstadoOperativoSucursal.cerradaTemporalmente);
+    expect(exito, isTrue);
+
+    await Future<void>.delayed(Duration.zero);
+    while (container.read(sucursalesListControllerProvider).cargando) {
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    expect(
+      container.read(sucursalesListControllerProvider).sucursales.singleWhere((s) => s.id == sucursalId).estadoOperativo,
+      EstadoOperativoSucursal.cerradaTemporalmente.name,
+    );
   });
 
   test('reintentarCarga vuelve a intentar tras un error de carga', () async {

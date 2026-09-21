@@ -337,7 +337,18 @@ class ConfiguracionCobroValidator {
         diaInicioPeriodo: diaInicioPeriodo!,
         agrupacion: borrador.agrupacion!,
         metodo: metodo!,
-        requiereComplemento: borrador.requiereComplemento,
+        // Etapa "Complemento dependiente del Pago real": sólo PPD puede
+        // exigir Complemento. Antes la UI dejaba encender el switch con
+        // PUE y se persistía un `true` que el resto del sistema ignoraba
+        // (`cuentaRequiereComplemento` exige PPD) — una configuración
+        // que se veía como "Sí requiere" y funcionalmente era inerte.
+        //
+        // Se NORMALIZA aquí, no se rechaza con un error: el formulario
+        // ya impide capturar la combinación, así que un error nunca
+        // llegaría a verse; lo que hace falta es que la combinación sea
+        // imposible de PERSISTIR, venga de donde venga. Es la protección
+        // de dominio que pidió Marlon, no sólo el switch apagado.
+        requiereComplemento: metodo == MetodoPagoCobro.ppd && borrador.requiereComplemento,
         fechaInicioVigencia: fechaInicioVigencia!,
         correos: borrador.correos,
         entidadFiscalId: vacioANull(borrador.entidadFiscalId),

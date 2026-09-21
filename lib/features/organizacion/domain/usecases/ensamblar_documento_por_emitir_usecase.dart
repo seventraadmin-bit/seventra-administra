@@ -3,7 +3,9 @@ import '../repositories/servicio_comercial_repository.dart';
 import 'calcular_fechas_cobro_usecase.dart';
 import 'calcular_importe_proporcional_usecase.dart';
 import 'documento_por_emitir_armado.dart';
+import 'configuracion_cobro_con_vigencia.dart' show soloFechaCobro;
 import 'documento_por_emitir_generation_key.dart';
+import 'periodo_facturable.dart';
 
 /// Un Servicio ya resuelto contra un periodo — a qué vigencia de cobro
 /// corresponde y qué fechas calculó, insumo mínimo compartido por
@@ -56,14 +58,43 @@ bool _esPeriodoMensualCompleto(DateTime periodoInicio, DateTime periodoFin) {
 /// (periodo parcial capturado manualmente, o vigencia que sí corta a
 /// mitad de mes) prorratea con días calendario reales, nunca con el
 /// fijo de 30 — un periodo parcial de 15 días nunca se vuelve 30.
-int _calcularDiasAplicables(DateTime periodoInicio, DateTime periodoFin, DateTime? vigenciaFin) {
-  final sinCorteDeVigencia = vigenciaFin == null || !vigenciaFin.isBefore(periodoFin);
-  if (sinCorteDeVigencia && _esPeriodoMensualCompleto(periodoInicio, periodoFin)) {
+/// **Único motor de prorrateo del sistema.** Recibe el periodo ya
+/// efectivo del documento (la Agenda se lo entrega recortado a la vida
+/// del Servicio) y lo intersecta además con la vigencia de la línea
+/// comercial: los días facturables son los del tramo que ambos cubren.
+///
+/// Antes sólo miraba `fechaFinVigencia` y jamás el inicio, así que una
+/// línea que entraba a mitad de periodo cobraba el periodo entero. Ese
+/// era el segundo motor implícito que esta función elimina.
+///
+/// Devuelve `0` si no hay intersección — la línea no aportó nada a este
+/// periodo.
+int calcularDiasAplicables({
+  required DateTime periodoInicio,
+  required DateTime periodoFin,
+  required DateTime vigenciaInicio,
+  DateTime? vigenciaFin,
+}) {
+  final efectivo = intersectarRangos(
+    aInicio: periodoInicio,
+    aFin: periodoFin,
+    bInicio: vigenciaInicio,
+    bFin: vigenciaFin,
+  );
+  if (efectivo == null) return 0;
+
+  // El fijo de 30 sólo aplica cuando la línea cubre el periodo COMPLETO
+  // y ese periodo tiene forma de mes calendario entero. Un periodo ya
+  // recortado por el cierre del Servicio (21/07–30/07) no la tiene, así
+  // que prorratea con días naturales — exactamente los 10 días y
+  // $10,450.00 de DOC-000029 en la base real.
+  final cubreTodoElPeriodo = !efectivo.inicio.isAfter(soloFechaCobro(periodoInicio)) &&
+      !efectivo.fin.isBefore(soloFechaCobro(periodoFin));
+  if (cubreTodoElPeriodo && _esPeriodoMensualCompleto(periodoInicio, periodoFin)) {
     return 30;
   }
 
-  final finEfectivo = (vigenciaFin == null || vigenciaFin.isAfter(periodoFin)) ? periodoFin : vigenciaFin;
-  return finEfectivo.difference(periodoInicio).inDays + 1;
+  return efectivo.fin.difference(efectivo.inicio).inDays + 1;
 }
 
 DateTime? _masProxima(List<DateTime?> fechas) {
@@ -121,7 +152,12 @@ class EnsamblarDocumentoPorEmitirUseCase {
         // silenciosamente una situación real que alguien deba revisar).
         if (vigente == null) continue;
 
-        final diasAplicables = _calcularDiasAplicables(periodoInicio, periodoFin, vigente.fechaFinVigencia);
+        final diasAplicables = calcularDiasAplicables(
+          periodoInicio: periodoInicio,
+          periodoFin: periodoFin,
+          vigenciaInicio: vigente.fechaInicioVigencia,
+          vigenciaFin: vigente.fechaFinVigencia,
+        );
         final subtotal = calcularImporteProporcional(
           precioUnitarioCentavos: vigente.precioUnitario,
           diasAplicables: diasAplicables,

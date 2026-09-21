@@ -190,6 +190,7 @@ class _SidebarItem extends StatefulWidget {
 
 class _SidebarItemState extends State<_SidebarItem> {
   bool _hasFocus = false;
+  bool _hovered = false;
 
   ShellDestination get destination => widget.destination;
   bool get isActive => widget.isActive;
@@ -231,7 +232,9 @@ class _SidebarItemState extends State<_SidebarItem> {
     final content = Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
-        color: isActive ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4) : null,
+        color: isActive
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
+            : (_hovered ? colors.surfaceSunken : null),
         borderRadius: BorderRadius.circular(8),
         // Anillo de foco de teclado explícito: sin esto, Tab a través del
         // sidebar es invisible (confirmado con captura antes/después de
@@ -248,10 +251,18 @@ class _SidebarItemState extends State<_SidebarItem> {
       child: rowOrIcon,
     );
 
+    // `hoverColor`/`splashColor`/`highlightColor` transparentes — el
+    // fondo de hover ya lo pinta `content` explícitamente arriba (mismo
+    // criterio que `RisegTableBase`), para no encimar el velo propio de
+    // `InkWell` sobre el fondo azul-suave ya calculado.
     Widget child = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       onFocusChange: (hasFocus) => setState(() => _hasFocus = hasFocus),
+      onHover: (hovered) => setState(() => _hovered = hovered),
+      hoverColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
       child: content,
     );
     if (collapsed) {

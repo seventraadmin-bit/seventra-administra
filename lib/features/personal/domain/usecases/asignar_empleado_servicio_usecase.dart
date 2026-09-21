@@ -21,6 +21,13 @@ class AsignarEmpleadoServicioEmpleadoNoActivo extends AsignarEmpleadoServicioRes
 
 class AsignarEmpleadoServicioYaTieneAsignacionVigente extends AsignarEmpleadoServicioResultado {}
 
+/// El empleado está adscrito a una Sucursal (plantilla administrativa)
+/// — Etapa "Plantilla operativa vs. administrativa". Servicio y
+/// Sucursal son destinos mutuamente excluyentes: para volverlo
+/// operativo hay que quitarle primero la Sucursal, nunca acumular las
+/// dos adscripciones.
+class AsignarEmpleadoServicioAdscritoASucursal extends AsignarEmpleadoServicioResultado {}
+
 class AsignarEmpleadoServicioServicioNoExiste extends AsignarEmpleadoServicioResultado {}
 
 class AsignarEmpleadoServicioServicioNoActivo extends AsignarEmpleadoServicioResultado {}
@@ -96,6 +103,16 @@ class AsignarEmpleadoServicioUseCase {
     if (empleado == null) return AsignarEmpleadoServicioEmpleadoNoExiste();
     if (EstatusEmpleado.values.byName(empleado.estatus) != EstatusEmpleado.activo) {
       return AsignarEmpleadoServicioEmpleadoNoActivo();
+    }
+    // Regla de negocio Servicio vs. Sucursal (Etapa "Plantilla
+    // operativa vs. administrativa"): un Servicio es una operación que
+    // RISEG presta a un cliente; una Sucursal es estructura interna
+    // propia. Un elemento operativo nunca se adscribe a una Sucursal,
+    // así que tener las dos cosas a la vez no es un estado válido —
+    // antes nada lo impedía. Se bloquea en dominio, no solo ocultando
+    // controles en la UI.
+    if (empleado.sucursalId != null) {
+      return AsignarEmpleadoServicioAdscritoASucursal();
     }
 
     final servicio = await _servicioRepository.obtenerPorId(servicioId);

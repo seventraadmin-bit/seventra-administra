@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../../../core/database/tables/attachment_table.dart';
 import '../../../../core/database/tables/audit_columns.dart';
 import '../../../../core/database/tables/catalogos_tables.dart';
 
@@ -34,4 +35,13 @@ class Cliente extends Table with AuditColumns {
   DateTimeColumn get fechaAlta => dateTime().withDefault(currentDateAndTime)();
 
   TextColumn get observaciones => text().nullable()();
+
+  /// Logotipo corporativo (Etapa 16, evolución visual) — puntero directo
+  /// a `Attachment`, mismo criterio que `Empresa.logoAttachmentId`/
+  /// `Empleado.fotografiaAttachmentId`: la fila también existe en
+  /// `ClienteAttachment` (categoría `logo`), el puntero solo evita un
+  /// join en cada fila de la lista de Clientes. Nullable: el logo es
+  /// siempre opcional, con fallback de iniciales cuando no existe.
+  TextColumn get logoAttachmentId =>
+      text().nullable().references(Attachment, #id, onDelete: KeyAction.restrict)();
 }

@@ -11,6 +11,7 @@ import '../reportes_permisos.dart';
 import 'finanzas/reportes_finanzas_screen.dart';
 import 'general/reportes_general_screen.dart';
 import 'operacion/reportes_operacion_screen.dart';
+import 'patrimonio/reportes_patrimonio_screen.dart';
 import 'personal_nomina/reportes_personal_nomina_screen.dart';
 
 /// Pestaña activa dentro de Reportes (Etapa 12A/12B/12C) — General,
@@ -18,7 +19,7 @@ import 'personal_nomina/reportes_personal_nomina_screen.dart';
 /// después (mismo criterio ya usado por `FinanzasTab`/`VehiculosTab`:
 /// el enum solo lista lo que ya existe, nunca pestañas futuras a medio
 /// construir).
-enum ReportesTab { general, finanzas, personalNomina, operacion }
+enum ReportesTab { general, finanzas, personalNomina, operacion, patrimonio }
 
 /// Subnavegación de Reportes — mismo patrón `RisegTabs` que
 /// `FinanzasShellScreen`, con una diferencia estructural nueva en el
@@ -38,6 +39,7 @@ class ReportesShellScreen extends ConsumerWidget {
     ReportesTab.finanzas: '/reportes/finanzas',
     ReportesTab.personalNomina: '/reportes/personal-nomina',
     ReportesTab.operacion: '/reportes/operacion',
+    ReportesTab.patrimonio: '/reportes/patrimonio',
   };
 
   /// "Personal · Nómina" y "Operación" se muestran si la sesión puede
@@ -52,6 +54,10 @@ class ReportesShellScreen extends ConsumerWidget {
             permissionService.hasCode('inventario.ver') ||
             permissionService.hasCode('vehiculos.ver') ||
             permissionService.hasCode('telefonia.ver'),
+        // Patrimonio cruza bienes con bajas laborales: exige ver ambos
+        // lados, no sólo uno.
+        ReportesTab.patrimonio =>
+          permissionService.hasCode('personal.ver') && permissionService.hasCode('inventario.ver'),
       };
 
   @override
@@ -64,6 +70,7 @@ class ReportesShellScreen extends ConsumerWidget {
           ReportesTab.finanzas => l10n.reportesTabFinanzas,
           ReportesTab.personalNomina => l10n.reportesTabPersonalNomina,
           ReportesTab.operacion => l10n.reportesTabOperacion,
+          ReportesTab.patrimonio => l10n.reportesTabPatrimonio,
         };
 
     final filtradas = filtrarPestanasPorPermiso<ReportesTab>(
@@ -89,6 +96,7 @@ class ReportesShellScreen extends ConsumerWidget {
             ReportesTab.finanzas => const ReportesFinanzasScreen(),
             ReportesTab.personalNomina => const ReportesPersonalNominaScreen(),
             ReportesTab.operacion => const ReportesOperacionScreen(),
+            ReportesTab.patrimonio => const ReportesPatrimonioScreen(),
           },
         ),
       ],

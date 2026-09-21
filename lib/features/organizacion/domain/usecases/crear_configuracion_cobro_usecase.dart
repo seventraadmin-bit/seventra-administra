@@ -56,6 +56,7 @@ class CrearConfiguracionCobroUseCase {
     required String servicioId,
     required ConfiguracionCobroBorrador borrador,
     List<EtapaCobroBorrador> etapas = const [],
+    String? actorUsuarioId,
   }) async {
     final servicio = await _servicioRepository.obtenerPorId(servicioId);
     if (servicio != null && EstatusServicio.values.byName(servicio.estatus) == EstatusServicio.terminado) {
@@ -78,6 +79,7 @@ class CrearConfiguracionCobroUseCase {
         servicioId: servicioId,
         datos: validacion.resultado!,
         etapas: validacionEtapas.resultado,
+        actorUsuarioId: actorUsuarioId,
       );
       return CrearConfiguracionCobroExitoso(creado.configuracion, creado.vigencia);
     } catch (e) {

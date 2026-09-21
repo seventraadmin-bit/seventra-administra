@@ -4,19 +4,26 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/env.dart';
 import '../../features/compras/presentation/compra_expediente_screen.dart';
+import '../../features/descuentos_personal/presentation/descuento_programado_detalle_screen.dart';
+import '../../features/tiempos_extra/presentation/tiempo_extra_detalle_screen.dart';
 import '../../features/compras/presentation/corregir_compra_screen.dart';
 import '../../features/compras/presentation/compras_list_screen.dart';
 import '../../features/compras/presentation/registrar_compra_screen.dart';
+import '../../features/finanzas/presentation/cuentas_financieras/cuenta_financiera_expediente_screen.dart';
+import '../../features/finanzas/presentation/deudas_credito/deuda_expediente_screen.dart';
 import '../../features/finanzas/presentation/finanzas_shell_screen.dart';
 import '../../features/inventario/presentation/articulos/articulo_expediente_screen.dart';
 import '../../features/inventario/presentation/inventario_shell_screen.dart';
 import '../../features/organizacion/presentation/clientes/cliente_expediente_screen.dart';
 import '../../features/organizacion/presentation/comercial_shell_screen.dart';
+import '../../features/servicios_eventuales/presentation/servicio_eventual_expediente_screen.dart';
 import '../../features/organizacion/presentation/organizacion_shell_screen.dart';
 import '../../features/organizacion/presentation/puestos/puesto_expediente_screen.dart';
 import '../../features/organizacion/presentation/servicios/servicio_expediente_screen.dart';
+import '../../features/organizacion/presentation/areas/area_expediente_screen.dart';
 import '../../features/organizacion/presentation/sucursales/sucursal_expediente_screen.dart';
 import '../../features/nomina/presentation/nominas/nomina_detalle_screen.dart';
+import '../../features/personal/presentation/empleados/conciliar_baja_empleado_screen.dart';
 import '../../features/personal/presentation/empleados/empleado_expediente_screen.dart';
 import '../../features/personal/presentation/personal_shell_screen.dart';
 import '../../features/reportes/presentation/reportes_shell_screen.dart';
@@ -24,6 +31,7 @@ import '../../features/telefonia/presentation/equipo_telefonico_expediente_scree
 import '../../features/telefonia/presentation/linea_telefonica_expediente_screen.dart';
 import '../../features/telefonia/presentation/telefonia_shell_screen.dart';
 import '../../features/usuarios/presentation/auth/bootstrap_maestro_screen.dart';
+import '../../features/usuarios/presentation/auth/cambio_obligatorio_password_screen.dart';
 import '../../features/usuarios/presentation/auth/login_screen.dart';
 import '../../features/usuarios/presentation/configuracion_shell_screen.dart';
 import '../../features/usuarios/presentation/sesion_controller.dart';
@@ -76,14 +84,35 @@ GoRouter createAppRouter() {
       if (sesion == null) {
         return path == '/login' ? null : '/login';
       }
+      // Cambio obligatorio de contraseña (Etapa "Usuarios, permisos y UX
+      // de seguridad") — va ANTES de cualquier otra decisión de ruta,
+      // incluidos los permisos: una contraseña temporal la conoce quien
+      // la fijó, así que la sesión existe pero no opera hasta cambiarla.
+      // Se resuelve aquí, en el `redirect`, y no con un diálogo del
+      // Shell, por la misma razón que los permisos: ninguna pantalla del
+      // sistema llega siquiera a construirse.
+      if (sesion.debeCambiarPassword) {
+        return path == '/cambiar-contrasena' ? null : '/cambiar-contrasena';
+      }
+      if (path == '/cambiar-contrasena') return '/dashboard';
+
       if (path == '/login' || path == '/') return '/dashboard';
 
       // Herramienta solo de desarrollo (ni siquiera se registra fuera de
       // `Env.dev` — ver más abajo) — no tiene módulo ni permiso propio.
       if (path.startsWith('/dev/')) return null;
 
-      final permisoRequerido = permisoRequeridoParaRuta(path);
-      if (permisoRequerido != null && !container.read(permissionServiceProvider).hasCode(permisoRequerido)) {
+      // Semántica "cualquiera de estos abre la ruta" (Etapa "Usuarios,
+      // permisos y UX de seguridad"): `/configuracion` la abren tanto
+      // `usuarios.administrar` como `auditoria.ver`, y `auditoria.ver`
+      // existe justamente para ver la auditoría SIN poder administrar
+      // cuentas. El `redirect` usaba `permisoRequeridoParaRuta`, que se
+      // queda con el PRIMER código de la lista — así que el sidebar ya
+      // le mostraba Configuración a un usuario con solo `auditoria.ver`
+      // y el router se la negaba al entrar. Misma fuente que el sidebar
+      // (`app_shell_screen.dart`), ahora con la misma semántica.
+      final permisosQueAbren = permisosQueAbrenRuta(path);
+      if (permisosQueAbren.isNotEmpty && !permisosQueAbren.any(container.read(permissionServiceProvider).hasCode)) {
         // Nunca construye ni muestra contenido del módulo protegido, ni
         // brevemente — el `redirect` corre antes de que esa ruta llegue
         // a construirse.
@@ -107,6 +136,9 @@ GoRouter createAppRouter() {
       GoRoute(path: '/bootstrap-maestro', builder: (context, state) => const BootstrapMaestroScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/acceso-denegado', builder: (context, state) => const AccesoDenegadoScreen()),
+      // Fuera del `StatefulShellRoute` a propósito, igual que `/login`:
+      // sin sidebar ni barra superior, no hay a dónde ir desde aquí.
+      GoRoute(path: '/cambiar-contrasena', builder: (context, state) => const CambioObligatorioPasswordScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => AppShellScreen(navigationShell: navigationShell),
         branches: [
@@ -161,6 +193,12 @@ GoRouter createAppRouter() {
                       GoRoute(
                         path: 'areas',
                         builder: (context, state) => const OrganizacionShellScreen(tab: OrganizacionTab.areas),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) => AreaExpedienteScreen(areaId: state.pathParameters['id']!),
+                          ),
+                        ],
                       ),
                     ],
                   )
@@ -213,19 +251,36 @@ GoRouter createAppRouter() {
                         // en su propia pantalla (Etapa 4I.1).
                         builder: (context, state) => const ComercialShellScreen(tab: ComercialTab.agenda),
                       ),
+                      GoRoute(
+                        path: 'eventuales',
+                        builder: (context, state) => const ComercialShellScreen(tab: ComercialTab.eventuales),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) => ServicioEventualExpedienteScreen(
+                              servicioEventualId: state.pathParameters['id']!,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   )
                 else if (def.path == '/finanzas')
                   // Finanzas es un dominio propio, nuevo, separado de
                   // Organización/Comercial (Etapa 4J.1, Resolución B de
                   // Marlon). `/finanzas` en sí redirige a
-                  // `/finanzas/cuentas-por-cobrar` — mismo patrón que
-                  // `/comercial`.
+                  // `/finanzas/resumen` (Etapa 17: portada ejecutiva,
+                  // antes redirigía a Cuentas por cobrar) — mismo
+                  // patrón que `/comercial`.
                   GoRoute(
                     path: def.path,
                     redirect: (context, state) =>
-                        state.uri.path == '/finanzas' ? '/finanzas/cuentas-por-cobrar' : null,
+                        state.uri.path == '/finanzas' ? '/finanzas/resumen' : null,
                     routes: [
+                      GoRoute(
+                        path: 'resumen',
+                        builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.resumen),
+                      ),
                       GoRoute(
                         path: 'cuentas-por-cobrar',
                         // Sin sub-ruta `:id` — el detalle de una Cuenta
@@ -269,6 +324,48 @@ GoRouter createAppRouter() {
                         // diálogo, sin sub-ruta `:id`.
                         builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.categorias),
                       ),
+                      GoRoute(
+                        path: 'deudas-y-credito',
+                        // Con sub-ruta `:id` (Etapa 19) — a diferencia
+                        // del resto de Finanzas, el expediente de una
+                        // Deuda es una pantalla propia, no un diálogo:
+                        // la vista de tarjeta + historial + pagos +
+                        // egresos vinculados no cabe cómodo en un
+                        // `RisegDialog`, mismo criterio que Compras.
+                        builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.deudasYCredito),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) => DeudaExpedienteScreen(deudaId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'cuentas-financieras',
+                        // Con sub-ruta `:id` (Etapa 19C) — mismo
+                        // criterio exacto que `deudas-y-credito`: el
+                        // expediente (saldo + historial unificado
+                        // Ingreso/Egreso) no cabe cómodo en un
+                        // `RisegDialog`.
+                        builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.cuentasFinancieras),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                CuentaFinancieraExpedienteScreen(cuentaId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'planeacion',
+                        // Sin sub-ruta `:id` (Etapa 19D) — no es un
+                        // expediente propio, es la portada de
+                        // calendario/gráfica/resumen semanal; cada
+                        // compromiso navega a su expediente REAL
+                        // (CxC → diálogo, Nómina/Deuda → su propia
+                        // pantalla ya existente).
+                        builder: (context, state) => const FinanzasShellScreen(tab: FinanzasTab.planeacion),
+                      ),
                     ],
                   )
                 else if (def.path == '/personal')
@@ -287,12 +384,27 @@ GoRouter createAppRouter() {
                     routes: [
                       GoRoute(
                         path: 'empleados',
-                        builder: (context, state) => const PersonalShellScreen(tab: PersonalTab.empleados),
+                        // `?filtro=sinAsignar` (Etapa 20, Dashboard →
+                        // Personal "Sin asignar") — único query param
+                        // real que este Shell soporta hoy.
+                        builder: (context, state) => PersonalShellScreen(
+                          tab: PersonalTab.empleados,
+                          filtroInicialSinAsignar: state.uri.queryParameters['filtro'] == 'sinAsignar',
+                        ),
                         routes: [
                           GoRoute(
                             path: ':id',
                             builder: (context, state) =>
                                 EmpleadoExpedienteScreen(empleadoId: state.pathParameters['id']!),
+                            routes: [
+                              // La baja dejó de caber en un diálogo: ahora
+                              // concilia todo el resguardo de la persona.
+                              GoRoute(
+                                path: 'baja',
+                                builder: (context, state) =>
+                                    ConciliarBajaEmpleadoScreen(empleadoId: state.pathParameters['id']!),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -304,6 +416,28 @@ GoRouter createAppRouter() {
                             path: ':id',
                             builder: (context, state) =>
                                 NominaDetalleScreen(nominaId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'descuentos',
+                        builder: (context, state) => const PersonalShellScreen(tab: PersonalTab.descuentos),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                DescuentoProgramadoDetalleScreen(descuentoProgramadoId: state.pathParameters['id']!),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'tiempos-extra',
+                        builder: (context, state) => const PersonalShellScreen(tab: PersonalTab.tiemposExtra),
+                        routes: [
+                          GoRoute(
+                            path: ':id',
+                            builder: (context, state) =>
+                                TiempoExtraDetalleScreen(tiempoExtraId: state.pathParameters['id']!),
                           ),
                         ],
                       ),
@@ -459,6 +593,10 @@ GoRouter createAppRouter() {
                         path: 'operacion',
                         builder: (context, state) => const ReportesShellScreen(tab: ReportesTab.operacion),
                       ),
+                      GoRoute(
+                        path: 'patrimonio',
+                        builder: (context, state) => const ReportesShellScreen(tab: ReportesTab.patrimonio),
+                      ),
                     ],
                   )
                 else if (def.path == '/configuracion')
@@ -469,8 +607,23 @@ GoRouter createAppRouter() {
                   // sí redirige a `/configuracion/usuarios`.
                   GoRoute(
                     path: def.path,
-                    redirect: (context, state) =>
-                        state.uri.path == '/configuracion' ? '/configuracion/usuarios' : null,
+                    // La raíz no tiene pantalla propia: manda a la
+                    // primera pestaña que ESTA sesión puede abrir.
+                    // Redirigir siempre a Usuarios dejaba a quien solo
+                    // tiene `auditoria.ver` rebotando a
+                    // `/acceso-denegado`: veía la sección en el sidebar
+                    // y no llegaba a la única pestaña que sí le
+                    // correspondía (Etapa "Usuarios, permisos y UX de
+                    // seguridad").
+                    redirect: (context, state) {
+                      if (state.uri.path != '/configuracion') return null;
+                      final permisos = ProviderScope.containerOf(context).read(permissionServiceProvider);
+                      if (permisos.hasCode('usuarios.administrar')) return '/configuracion/usuarios';
+                      if (permisos.hasCode('auditoria.ver')) return '/configuracion/auditoria';
+                      // Sin ninguno de los dos, el `redirect` raíz ya
+                      // negó el acceso antes de llegar aquí.
+                      return '/configuracion/usuarios';
+                    },
                     routes: [
                       GoRoute(
                         path: 'usuarios',

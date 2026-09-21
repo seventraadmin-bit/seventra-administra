@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/personal/domain/usecases/registrar_estudio_socioeconomico_usecase.dart';
-import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../../personal_providers.dart';
 
@@ -93,7 +92,7 @@ Future<bool> mostrarDialogoEstudioSocioeconomicoEmpleado(
         return false;
       }
 
-      final resultado = await ref.read(registrarEstudioSocioeconomicoUseCaseProvider).ejecutar(
+      final resultado = await ref.read(registrarEstudioSocioeconomicoAutorizadoProvider)(
             empleadoId: empleado.id,
             fecha: fecha!,
             resumen: resumenController.text,
@@ -101,7 +100,6 @@ Future<bool> mostrarDialogoEstudioSocioeconomicoEmpleado(
             sourceFilePath: archivoPath,
             originalFileName: archivoNombre,
             mimeType: archivoPath == null ? null : 'application/pdf',
-            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           );
 
       if (!context.mounted) return false;

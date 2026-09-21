@@ -23,18 +23,39 @@ enum CategoriaAdjuntoComplementoPago { pdf, xml }
 /// el sistema, solo se deja constancia de uno ya emitido externamente
 /// (mismo criterio que `DocumentoPorEmitir.registrarEmision`).
 ///
-/// Relación **1:1 con `Pago`** (`pagoId` único, decisión definitiva de
-/// Marlon: "no quiero una relación N:M en esta etapa") — un Pago que
-/// liquida varias Cuentas por cobrar PPD-con-complemento se reporta en
-/// un único Complemento, ya que las Cuentas cubiertas se obtienen a
-/// través de las `AplicacionPago` de ese mismo Pago, sin necesidad de
-/// una tabla de relación adicional.
+/// Relación con `Pago`: **un Pago tiene N Complementos históricos, pero
+/// a lo más UNO vigente (`estatus == 'registrado'`) a la vez**
+/// (schemaVersion 79).
+///
+/// Hasta la v78 `pagoId` era `UNIQUE`, lo que expresaba un 1:1 estricto.
+/// Eso dejaba un callejón sin salida real: cancelar un Complemento
+/// reactiva la obligación fiscal (`complementoPendiente` vuelve a
+/// `true`) pero era imposible registrar el sustituto, porque la fila
+/// cancelada seguía ocupando el único lugar disponible. El Pago quedaba
+/// pendiente para siempre.
+///
+/// El invariante correcto no es "una fila por Pago" sino "un
+/// Complemento VIGENTE por Pago", y eso es exactamente un índice único
+/// **parcial** (`complemento_pago_vigente_por_pago`). Las filas
+/// canceladas quedan fuera del índice, así que se acumulan sin
+/// estorbar — y nunca se borran ni se reusan: son evidencia de un CFDI
+/// que existió y se canceló.
+///
+/// Un Pago que liquida varias Cuentas por cobrar PPD-con-complemento se
+/// sigue reportando en UN Complemento vigente: las Cuentas cubiertas se
+/// obtienen por las `AplicacionPago` de ese mismo Pago, sin tabla de
+/// relación adicional (sigue sin haber N:M Complemento↔CxC).
 ///
 /// `uuid`/`montoTotal` nunca son editables una vez registrados
 /// (Resolución de Marlon, igual que en `Pago`): un error se corrige
-/// cancelando y registrando un Complemento nuevo, nunca editando.
+/// cancelando y registrando un Complemento nuevo, nunca editando —
+/// justamente el ciclo que la v79 vuelve posible.
+@TableIndex.sql(
+  "CREATE UNIQUE INDEX complemento_pago_vigente_por_pago "
+  "ON complemento_pago (pago_id) WHERE estatus = 'registrado'",
+)
 class ComplementoPago extends Table with AuditColumns {
-  TextColumn get pagoId => text().unique().references(Pago, #id, onDelete: KeyAction.restrict)();
+  TextColumn get pagoId => text().references(Pago, #id, onDelete: KeyAction.restrict)();
 
   /// UUID del complemento en sí (CFDI distinto al de la factura
   /// original) — se valida formato/longitud estándar y unicidad, pero

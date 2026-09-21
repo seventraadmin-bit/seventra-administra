@@ -26,17 +26,38 @@ void main() {
       expect(reportes.accionesBase, {AccionBase.ver});
     });
 
-    test('Usuarios no tiene ninguna acción base, solo el permiso especial usuarios.administrar', () {
+    // Etapa "Usuarios, permisos y UX de seguridad": `usuarios.administrar`
+    // dejó de ser un todo-o-nada. Conserva su código (alta/edición de
+    // cuentas y gate de `/configuracion`) y se le separaron las dos
+    // facultades que ameritan decidirse aparte.
+    test('Usuarios no tiene acciones base; sus facultades sensibles están separadas', () {
       final usuarios = modulosPermiso.firstWhere((m) => m.codigo == 'usuarios');
       expect(usuarios.accionesBase, isEmpty);
-      expect(usuarios.accionesEspeciales, ['usuarios.administrar']);
+      expect(
+        usuarios.accionesEspeciales,
+        ['usuarios.administrar', 'usuarios.otorgarPermisos', 'usuarios.resetearPassword'],
+      );
+    });
+
+    test('Auditoría es un módulo propio de SOLO lectura — nunca una acción de mutación', () {
+      final auditoria = modulosPermiso.firstWhere((m) => m.codigo == 'auditoria');
+      expect(auditoria.accionesBase, {AccionBase.ver});
+      expect(auditoria.accionesEspeciales, isEmpty);
     });
 
     test('todosLosCodigosDePermiso incluye los especiales conocidos', () {
       final todos = todosLosCodigosDePermiso();
-      expect(todos, containsAll(['nomina.cerrar', 'nomina.pagar', 'personal.cambiarSueldo', 'usuarios.administrar']));
+      expect(
+        todos,
+        containsAll(['nomina.cerrar', 'nomina.registrarPago', 'personal.cambiarSueldo', 'usuarios.administrar']),
+      );
       expect(todos, contains('personal.ver'));
-      expect(todos, contains('finanzas.crear'));
+      // Etapa 1 (rediseño granular): `finanzas.crear/modificar/archivar`
+      // se dividieron en subdominios propios (Ingresos, Egresos,
+      // Deudas, ...) — `finanzas` en sí solo conserva `ver`.
+      expect(todos, contains('finanzas.ver'));
+      expect(todos, contains('ingresos.crear'));
+      expect(todos, isNot(contains('finanzas.crear')));
     });
   });
 
@@ -47,8 +68,15 @@ void main() {
     });
 
     test('modificar/archivar/eliminar también implican ver', () {
-      expect(normalizarPermisos({'inventario.modificar'}), contains('inventario.ver'));
-      expect(normalizarPermisos({'compras.archivar'}), contains('compras.ver'));
+      // Etapa 1: `inventario.modificar` se dividió en
+      // `inventario.corregir`/`inventario.ajustarExistencia` (códigos
+      // especiales, no participan de la dependencia de Ver) —
+      // `inventario.archivar` sigue siendo una acción base real.
+      expect(normalizarPermisos({'inventario.archivar'}), contains('inventario.ver'));
+      // Etapa 1: `compras.archivar` ya no es una acción base de Compras
+      // (se reemplazó por el código especial `compras.cancelar`) —
+      // `compras.crear` sigue siendo una acción base real.
+      expect(normalizarPermisos({'compras.crear'}), contains('compras.ver'));
     });
 
     test('ver solo, sin otras acciones, se queda igual', () {

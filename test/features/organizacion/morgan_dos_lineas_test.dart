@@ -170,7 +170,7 @@ void main() {
             codigoPostal: '50450',
           ),
         );
-    await CambiarEstatusServicioUseCase(servicioRepo, clienteRepo).ejecutar(servicioId: servicioId, nuevo: EstatusServicio.activo);
+    await CambiarEstatusServicioUseCase(servicioRepo, clienteRepo).ejecutar(servicioId: servicioId, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
   });
 
   tearDown(() => db.close());

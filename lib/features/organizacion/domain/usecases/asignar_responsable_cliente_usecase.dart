@@ -37,12 +37,14 @@ class AsignarResponsableClienteUseCase {
   Future<AsignarResponsableClienteResultado> ejecutar({
     required String servicioId,
     required String? contactoId,
+    String? actorUsuarioId,
   }) async {
     if (contactoId == null) {
       try {
         final servicio = await _servicioRepository.asignarResponsableCliente(
           servicioId: servicioId,
           contactoId: null,
+          actorUsuarioId: actorUsuarioId,
         );
         return AsignarResponsableClienteExitoso(servicio);
       } catch (e) {
@@ -67,6 +69,7 @@ class AsignarResponsableClienteUseCase {
       final servicio = await _servicioRepository.asignarResponsableCliente(
         servicioId: servicioId,
         contactoId: contactoId,
+        actorUsuarioId: actorUsuarioId,
       );
       return AsignarResponsableClienteExitoso(servicio);
     } catch (e) {

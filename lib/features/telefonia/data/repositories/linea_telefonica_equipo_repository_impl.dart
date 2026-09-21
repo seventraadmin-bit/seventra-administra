@@ -1,30 +1,39 @@
 import 'package:drift/drift.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
-import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart' show MotivoCierreAsignacion;
 import 'package:riseg_one/features/inventario/domain/repositories/asignacion_repository.dart';
-import 'package:riseg_one/features/inventario/domain/repositories/inventario_repository.dart';
 
 import '../../domain/repositories/asignacion_linea_telefonica_repository.dart';
 import '../../domain/repositories/linea_telefonica_equipo_repository.dart';
 
+/// Asociación Línea ↔ Equipo, en el tiempo.
+///
+/// **Sólo LEE Inventario.** Hasta la Rebanada 1 de Telefonía este
+/// repositorio también escribía: creaba y cerraba `Asignacion` de
+/// Inventario para "sincronizar" la custodia con el destino de la
+/// línea. Se retiró en la Rebanada 2 por dos razones: le daba a
+/// Telefonía autoridad sobre la custodia física del aparato —que
+/// pertenece a Inventario— y escribía por debajo de
+/// `CrearAsignacionUseCase`/`CerrarAsignacionUseCase`, sin sus
+/// validaciones ni sus permisos.
+///
+/// Hoy la dirección es la contraria: cuando Inventario mueve la
+/// custodia, la asignación de la línea la sigue (ver
+/// `LineaTelefonicaDeUnidad`). Asociar, cambiar o retirar un equipo
+/// nunca toca la custodia.
 class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoRepository {
-  LineaTelefonicaEquipoRepositoryImpl(
-    this._db,
-    this._asignacionLineaRepo,
-    this._inventarioAsignacionRepo,
-    this._inventarioRepo,
-  );
+  LineaTelefonicaEquipoRepositoryImpl(this._db, this._asignacionLineaRepo, this._inventarioAsignacionRepo);
 
   final AppDatabase _db;
+
+  /// Dependencia interna de Telefonía — la usa `asociar`/`cambiar` para
+  /// que alinear la línea con la custodia vigente del aparato ocurra en
+  /// la MISMA transacción que la asociación.
   final AsignacionLineaTelefonicaRepository _asignacionLineaRepo;
 
-  /// Repositorio de Inventario, ajeno al dominio — la composición
-  /// cruzada vive aquí, mismo criterio que
-  /// `PagoNominaRepositoryImpl` componiendo `EgresoRepository` de
-  /// Finanzas (ver el doc comment de la interfaz de este repositorio).
+  /// Sólo para consultar la custodia vigente de una unidad. Nunca para
+  /// escribirla.
   final AsignacionRepository _inventarioAsignacionRepo;
-  final InventarioRepository _inventarioRepo;
 
   Future<LineaTelefonicaEquipoData?> _buscarActualPorLinea(String lineaTelefonicaId) {
     return (_db.select(_db.lineaTelefonicaEquipo)
@@ -69,53 +78,30 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
   Future<CustodiaInventarioLineaTelefonica?> obtenerCustodiaInventarioActual(String unidadId) async {
     final activa = await _inventarioAsignacionRepo.obtenerActivaPorUnidad(unidadId);
     if (activa == null) return null;
-    return CustodiaInventarioLineaTelefonica(empleadoId: activa.empleadoId, servicioId: activa.servicioId);
-  }
-
-  /// Mueve la custodia en Inventario al destino de la línea — camino de
-  /// escritura oficial de Inventario (`AsignacionRepository.crear`),
-  /// nunca un insert directo a `_db.asignacion`.
-  Future<void> _componerAsignacionInventario({
-    required String unidadId,
-    required String? empleadoId,
-    required String? servicioId,
-    required DateTime fecha,
-    required String observaciones,
-  }) async {
-    final unidad = await _inventarioRepo.obtenerUnidadPorId(unidadId);
-    if (unidad == null) return;
-    await _inventarioAsignacionRepo.crear(
-      articuloId: unidad.articuloId,
-      unidadId: unidadId,
-      cantidad: 1,
-      empleadoId: empleadoId,
-      servicioId: servicioId,
-      fechaEntrega: fecha,
-      observaciones: observaciones,
+    return CustodiaInventarioLineaTelefonica(
+      empleadoId: activa.empleadoId,
+      servicioId: activa.servicioId,
+      pendienteRecuperacionDesde: activa.pendienteRecuperacionDesde,
     );
   }
 
-  /// Cierra la custodia en Inventario **solo si** la asignación activa
-  /// de la unidad todavía coincide con el destino esperado — guardia de
-  /// divergencia: nunca pisa una reasignación hecha directo en
-  /// Inventario.
-  Future<void> _liberarAsignacionInventarioSiCoincide({
-    required String unidadId,
-    required String? empleadoIdEsperado,
-    required String? servicioIdEsperado,
-    required DateTime fecha,
-    required String observaciones,
-  }) async {
-    final activa = await _inventarioAsignacionRepo.obtenerActivaPorUnidad(unidadId);
-    if (activa == null) return;
-    final coincide = activa.empleadoId == empleadoIdEsperado && activa.servicioId == servicioIdEsperado;
-    if (!coincide) return;
-    await _inventarioAsignacionRepo.cerrar(
-      asignacionId: activa.id,
-      motivo: MotivoCierreAsignacion.otro.name,
-      fechaCierre: fecha,
-      observacionesCierre: observaciones,
-    );
+  @override
+  Future<Map<String, CustodiaInventarioLineaTelefonica>> obtenerCustodiasInventarioActuales(
+    Iterable<String> unidadIds,
+  ) async {
+    final ids = unidadIds.toSet().toList();
+    if (ids.isEmpty) return const {};
+    // Una sola consulta para todas las unidades — un listado nunca debe
+    // resolver la custodia fila por fila.
+    final activas = await _inventarioAsignacionRepo.listarActivasPorUnidades(ids);
+    return {
+      for (final a in activas)
+        a.unidadId!: CustodiaInventarioLineaTelefonica(
+          empleadoId: a.empleadoId,
+          servicioId: a.servicioId,
+          pendienteRecuperacionDesde: a.pendienteRecuperacionDesde,
+        ),
+    };
   }
 
   @override
@@ -124,7 +110,8 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
     required String unidadId,
     required DateTime fechaInicio,
     String? observaciones,
-    bool sincronizarInventario = true,
+    String? alinearLineaConEmpleadoId,
+    String? alinearLineaConServicioId,
     String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
@@ -138,53 +125,57 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
             ),
           );
 
-      if (sincronizarInventario) {
-        final asignacionLinea = await _asignacionLineaRepo.obtenerActivaPorLinea(lineaTelefonicaId);
-        if (asignacionLinea != null) {
-          await _componerAsignacionInventario(
-            unidadId: unidadId,
-            empleadoId: asignacionLinea.empleadoId,
-            servicioId: asignacionLinea.servicioId,
-            fecha: fechaInicio,
-            observaciones: 'Asociado como equipo de una línea telefónica.',
-          );
-        }
-      }
+      await _alinearLinea(
+        lineaTelefonicaId: lineaTelefonicaId,
+        empleadoId: alinearLineaConEmpleadoId,
+        servicioId: alinearLineaConServicioId,
+        fecha: fechaInicio,
+        actorUsuarioId: actorUsuarioId,
+      );
 
       return equipo;
     });
+  }
+
+  /// La línea toma el destino que YA tiene el aparato en Inventario.
+  /// Nunca al revés: aquí no se escribe una sola fila de Inventario.
+  Future<void> _alinearLinea({
+    required String lineaTelefonicaId,
+    required String? empleadoId,
+    required String? servicioId,
+    required DateTime fecha,
+    String? actorUsuarioId,
+  }) async {
+    if (empleadoId == null && servicioId == null) return;
+    if (await _asignacionLineaRepo.obtenerActivaPorLinea(lineaTelefonicaId) != null) return;
+    await _asignacionLineaRepo.crear(
+      lineaTelefonicaId: lineaTelefonicaId,
+      empleadoId: empleadoId,
+      servicioId: servicioId,
+      fechaInicio: fecha,
+      observaciones: 'Alineada con la custodia del equipo en Inventario.',
+      actorUsuarioId: actorUsuarioId,
+    );
   }
 
   @override
   Future<void> retirar({
     required String lineaTelefonicaId,
     required DateTime fechaFin,
-    bool sincronizarInventario = true,
     String? actorUsuarioId,
-  }) {
-    return _db.transaction(() async {
-      final actual = await _buscarActualPorLinea(lineaTelefonicaId);
-      if (actual == null) return;
+  }) async {
+    final actual = await _buscarActualPorLinea(lineaTelefonicaId);
+    if (actual == null) return;
 
-      await (_db.update(_db.lineaTelefonicaEquipo)..where((t) => t.id.equals(actual.id))).write(
-        LineaTelefonicaEquipoCompanion(
-          fechaFin: Value(fechaFin),
-          updatedAt: Value(DateTime.now()),
-          actorUsuarioId: Value(actorUsuarioId),
-        ),
-      );
-
-      if (sincronizarInventario) {
-        final asignacionLinea = await _asignacionLineaRepo.obtenerActivaPorLinea(lineaTelefonicaId);
-        await _liberarAsignacionInventarioSiCoincide(
-          unidadId: actual.unidadId,
-          empleadoIdEsperado: asignacionLinea?.empleadoId,
-          servicioIdEsperado: asignacionLinea?.servicioId,
-          fecha: fechaFin,
-          observaciones: 'Liberado al retirar el equipo de una línea telefónica.',
-        );
-      }
-    });
+    // Desvinculación telefónica y nada más: el aparato sigue donde
+    // Inventario diga que está.
+    await (_db.update(_db.lineaTelefonicaEquipo)..where((t) => t.id.equals(actual.id))).write(
+      LineaTelefonicaEquipoCompanion(
+        fechaFin: Value(fechaFin),
+        updatedAt: Value(DateTime.now()),
+        actorUsuarioId: Value(actorUsuarioId),
+      ),
+    );
   }
 
   @override
@@ -193,12 +184,12 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
     required String nuevaUnidadId,
     required DateTime fecha,
     String? observaciones,
-    bool sincronizarInventario = true,
+    String? alinearLineaConEmpleadoId,
+    String? alinearLineaConServicioId,
     String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final actual = await _buscarActualPorLinea(lineaTelefonicaId);
-      final asignacionLinea = await _asignacionLineaRepo.obtenerActivaPorLinea(lineaTelefonicaId);
 
       if (actual != null) {
         await (_db.update(_db.lineaTelefonicaEquipo)..where((t) => t.id.equals(actual.id))).write(
@@ -208,15 +199,6 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
             actorUsuarioId: Value(actorUsuarioId),
           ),
         );
-        if (sincronizarInventario) {
-          await _liberarAsignacionInventarioSiCoincide(
-            unidadId: actual.unidadId,
-            empleadoIdEsperado: asignacionLinea?.empleadoId,
-            servicioIdEsperado: asignacionLinea?.servicioId,
-            fecha: fecha,
-            observaciones: 'Liberado al cambiar el equipo de una línea telefónica.',
-          );
-        }
       }
 
       final nuevo = await _db.into(_db.lineaTelefonicaEquipo).insertReturning(
@@ -229,15 +211,13 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
             ),
           );
 
-      if (sincronizarInventario && asignacionLinea != null) {
-        await _componerAsignacionInventario(
-          unidadId: nuevaUnidadId,
-          empleadoId: asignacionLinea.empleadoId,
-          servicioId: asignacionLinea.servicioId,
-          fecha: fecha,
-          observaciones: 'Asociado como equipo de una línea telefónica (reemplazo).',
-        );
-      }
+      await _alinearLinea(
+        lineaTelefonicaId: lineaTelefonicaId,
+        empleadoId: alinearLineaConEmpleadoId,
+        servicioId: alinearLineaConServicioId,
+        fecha: fecha,
+        actorUsuarioId: actorUsuarioId,
+      );
 
       return nuevo;
     });
@@ -245,40 +225,6 @@ class LineaTelefonicaEquipoRepositoryImpl implements LineaTelefonicaEquipoReposi
 
   @override
   Future<void> cerrarPorBajaLinea({required String lineaTelefonicaId, required DateTime fecha}) {
-    return retirar(lineaTelefonicaId: lineaTelefonicaId, fechaFin: fecha, sincronizarInventario: true);
-  }
-
-  @override
-  Future<void> sincronizarConAsignacionVigente({required String lineaTelefonicaId, required DateTime fecha}) {
-    return _db.transaction(() async {
-      final equipo = await _buscarActualPorLinea(lineaTelefonicaId);
-      if (equipo == null) return;
-
-      final destino = await _asignacionLineaRepo.obtenerActivaPorLinea(lineaTelefonicaId);
-      final activaInventario = await _inventarioAsignacionRepo.obtenerActivaPorUnidad(equipo.unidadId);
-
-      final coincide = activaInventario != null &&
-          activaInventario.empleadoId == destino?.empleadoId &&
-          activaInventario.servicioId == destino?.servicioId;
-
-      if (activaInventario != null && !coincide) {
-        await _inventarioAsignacionRepo.cerrar(
-          asignacionId: activaInventario.id,
-          motivo: MotivoCierreAsignacion.otro.name,
-          fechaCierre: fecha,
-          observacionesCierre: 'Reasignado por sincronización con una línea telefónica.',
-        );
-      }
-
-      if (destino != null && !coincide) {
-        await _componerAsignacionInventario(
-          unidadId: equipo.unidadId,
-          empleadoId: destino.empleadoId,
-          servicioId: destino.servicioId,
-          fecha: fecha,
-          observaciones: 'Sincronizado con la asignación de una línea telefónica.',
-        );
-      }
-    });
+    return retirar(lineaTelefonicaId: lineaTelefonicaId, fechaFin: fecha);
   }
 }

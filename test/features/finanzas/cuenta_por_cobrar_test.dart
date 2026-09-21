@@ -8,7 +8,7 @@ import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/cuenta_por_cobrar_repository_impl.dart';
-import 'package:riseg_one/features/finanzas/domain/usecases/actualizar_fecha_vencimiento_cuenta_por_cobrar_usecase.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/corregir_cuenta_por_cobrar_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cuenta_por_cobrar_antiguedad.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/catalogo_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
@@ -49,7 +49,7 @@ void main() {
   late CrearDocumentoManualUseCase crearManual;
   late RegistrarEmisionDocumentoPorEmitirUseCase registrarEmision;
   late CambiarEstatusDocumentoPorEmitirUseCase cambiarEstatus;
-  late ActualizarFechaVencimientoCuentaPorCobrarUseCase actualizarVencimiento;
+  late CorregirCuentaPorCobrarUseCase corregirCuenta;
   late String puestoId;
 
   setUp(() async {
@@ -78,10 +78,10 @@ void main() {
         CrearConfiguracionCobroUseCase(configuracionCobroRepo, servicioRepo, configuracionCobroValidator, reglaValidator);
 
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
-    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigo);
+    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigo);
     registrarEmision = RegistrarEmisionDocumentoPorEmitirUseCase(documentoRepo);
     cambiarEstatus = CambiarEstatusDocumentoPorEmitirUseCase(documentoRepo);
-    actualizarVencimiento = ActualizarFechaVencimientoCuentaPorCobrarUseCase(cuentaRepo);
+    corregirCuenta = CorregirCuentaPorCobrarUseCase(cuentaRepo);
 
     final puesto = await puestoRepo.crear(
       PuestoCompanion.insert(
@@ -316,20 +316,22 @@ void main() {
       await cambiarEstatus.ejecutar(documentoPorEmitirId: documentoId, nuevo: EstatusDocumentoPorEmitir.procesadoAceptado);
       final cuenta = await cuentaRepo.obtenerPorDocumentoPorEmitirId(documentoId);
 
-      final resultado = await actualizarVencimiento.ejecutar(
+      final resultado = await corregirCuenta.ejecutar(
         cuentaPorCobrarId: cuenta!.id,
         fechaVencimiento: DateTime(2026, 2, 15),
         motivo: 'Fecha acordada telefónicamente con el cliente',
       );
 
-      expect(resultado, isA<ActualizarFechaVencimientoCuentaPorCobrarExitoso>());
-      final actualizada = (resultado as ActualizarFechaVencimientoCuentaPorCobrarExitoso).cuenta;
+      expect(resultado, isA<CorregirCuentaPorCobrarExitoso>());
+      final actualizada = (resultado as CorregirCuentaPorCobrarExitoso).cuenta;
       expect(actualizada.fechaVencimiento, DateTime(2026, 2, 15));
 
       final eventos = await cuentaRepo.listarEventos(cuenta.id);
       expect(eventos, hasLength(2));
-      expect(eventos.last.tipoEvento, 'fechaVencimientoDefinida');
+      expect(eventos.last.tipoEvento, 'corregida');
       expect(eventos.last.observacion, 'Fecha acordada telefónicamente con el cliente');
+      expect(eventos.last.estadoAnterior, contains('fechaVencimiento'));
+      expect(eventos.last.estadoNuevo, contains('2026-02-15'));
     });
 
     test('también corrige una fecha ya definida, sin restricción de estatus', () async {
@@ -338,20 +340,52 @@ void main() {
       final cuenta = await cuentaRepo.obtenerPorDocumentoPorEmitirId(documentoId);
       expect(cuenta!.fechaVencimiento, isNotNull);
 
-      final resultado = await actualizarVencimiento.ejecutar(
+      final resultado = await corregirCuenta.ejecutar(
         cuentaPorCobrarId: cuenta.id,
         fechaVencimiento: DateTime(2026, 3, 1),
+        motivo: 'Se acordó una nueva fecha contractual',
       );
-      expect(resultado, isA<ActualizarFechaVencimientoCuentaPorCobrarExitoso>());
-      expect((resultado as ActualizarFechaVencimientoCuentaPorCobrarExitoso).cuenta.fechaVencimiento, DateTime(2026, 3, 1));
+      expect(resultado, isA<CorregirCuentaPorCobrarExitoso>());
+      expect((resultado as CorregirCuentaPorCobrarExitoso).cuenta.fechaVencimiento, DateTime(2026, 3, 1));
+    });
+
+    test('exige motivo', () async {
+      final documentoId = await crearDocumentoEmitido(nombreCliente: 'Toluca Motivo');
+      await cambiarEstatus.ejecutar(documentoPorEmitirId: documentoId, nuevo: EstatusDocumentoPorEmitir.procesadoAceptado);
+      final cuenta = await cuentaRepo.obtenerPorDocumentoPorEmitirId(documentoId);
+
+      final resultado = await corregirCuenta.ejecutar(
+        cuentaPorCobrarId: cuenta!.id,
+        fechaVencimiento: DateTime(2026, 3, 1),
+        motivo: '   ',
+      );
+      expect(resultado, isA<CorregirCuentaPorCobrarMotivoRequerido>());
     });
 
     test('una Cuenta por cobrar inexistente retorna NoExiste', () async {
-      final resultado = await actualizarVencimiento.ejecutar(
+      final resultado = await corregirCuenta.ejecutar(
         cuentaPorCobrarId: 'no-existe',
         fechaVencimiento: DateTime(2026, 3, 1),
+        motivo: 'Intento sobre cuenta inexistente',
       );
-      expect(resultado, isA<ActualizarFechaVencimientoCuentaPorCobrarNoExiste>());
+      expect(resultado, isA<CorregirCuentaPorCobrarNoExiste>());
+    });
+
+    test('corrige observaciones sin tocar el saldo pendiente ni ninguna AplicacionPago', () async {
+      final documentoId = await crearDocumentoEmitido(nombreCliente: 'Miluyole Observaciones');
+      await cambiarEstatus.ejecutar(documentoPorEmitirId: documentoId, nuevo: EstatusDocumentoPorEmitir.procesadoAceptado);
+      final cuenta = await cuentaRepo.obtenerPorDocumentoPorEmitirId(documentoId);
+
+      final resultado = await corregirCuenta.ejecutar(
+        cuentaPorCobrarId: cuenta!.id,
+        observaciones: 'Cliente pidió factura a nombre de otra razón social',
+        motivo: 'Aclaración administrativa',
+      );
+      expect(resultado, isA<CorregirCuentaPorCobrarExitoso>());
+      final actualizada = (resultado as CorregirCuentaPorCobrarExitoso).cuenta;
+      expect(actualizada.observaciones, 'Cliente pidió factura a nombre de otra razón social');
+      expect(actualizada.saldoPendiente, cuenta.saldoPendiente, reason: 'corregir observaciones nunca toca el saldo');
+      expect(actualizada.fechaVencimiento, cuenta.fechaVencimiento, reason: 'no se tocó la fecha, debe permanecer intacta');
     });
   });
 

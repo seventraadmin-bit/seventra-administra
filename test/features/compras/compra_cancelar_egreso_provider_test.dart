@@ -20,6 +20,7 @@ import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/compras/compras_providers.dart';
 import 'package:riseg_one/features/compras/data/tables/compra_partida_table.dart' show DestinoCompraPartida;
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart' show PartidaCompraInput;
+import 'package:riseg_one/features/compras/domain/usecases/cancelar_compra_usecase.dart' show MotivoCancelacionCompra;
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
 import 'package:riseg_one/features/compras/presentation/compras_controller.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
@@ -97,7 +98,7 @@ void main() {
       expect(container.read(egresosControllerProvider).egresos.single.estatus, 'registrado');
 
       final resultado =
-          await container.read(comprasControllerProvider.notifier).cancelarCompra(compraId: compraId, motivo: 'Compra duplicada');
+          await container.read(comprasControllerProvider.notifier).cancelarCompra(compraId: compraId, motivo: MotivoCancelacionCompra.compraDuplicada);
       expect(resultado.runtimeType.toString(), 'CancelarCompraExitosa');
 
       // Sin ningún `recargar()`/`invalidate` manual desde la prueba —
@@ -121,7 +122,7 @@ void main() {
     }
     final egresoDeCompraId = container.read(egresosControllerProvider).egresos.single.id;
 
-    await container.read(comprasControllerProvider.notifier).cancelarCompra(compraId: compraId, motivo: 'Compra duplicada');
+    await container.read(comprasControllerProvider.notifier).cancelarCompra(compraId: compraId, motivo: MotivoCancelacionCompra.compraDuplicada);
     await Future<void>.delayed(Duration.zero);
     while (container.read(egresosControllerProvider).cargando) {
       await Future<void>.delayed(Duration.zero);

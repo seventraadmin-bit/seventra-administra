@@ -31,10 +31,15 @@ class CambiarContrasenaUsuarioUseCase {
 
   static const _longitudMinimaContrasena = 8;
 
+  /// [exigirCambio]: `true` en un reseteo administrativo (la contraseña
+  /// resultante la conoce quien la fijó, así que la cuenta queda
+  /// obligada a cambiarla en su siguiente acceso); `false` cuando la
+  /// cambia el propio titular, que es justamente cumplir esa obligación.
   Future<CambiarContrasenaUsuarioResultado> ejecutar({
     required String usuarioId,
     required String password,
     String? actorUsuarioId,
+    bool exigirCambio = false,
   }) async {
     if (password.length < _longitudMinimaContrasena) return CambiarContrasenaUsuarioInvalida();
 
@@ -46,6 +51,7 @@ class CambiarContrasenaUsuarioUseCase {
         usuarioId: usuarioId,
         passwordHash: _passwordHasher.hash(password),
         actorUsuarioId: actorUsuarioId,
+        exigirCambio: exigirCambio,
       );
       return CambiarContrasenaUsuarioExitoso(usuario);
     } catch (e) {

@@ -10,6 +10,7 @@ import 'package:riseg_one/features/compras/domain/repositories/compra_repository
 import 'package:riseg_one/features/compras/domain/usecases/correccion_partida_compra.dart';
 import 'package:riseg_one/features/compras/domain/usecases/corregir_compra_usecase.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -43,11 +44,12 @@ void main() {
     inventarioRepo = InventarioRepositoryImpl(db);
     asignacionRepo = AsignacionRepositoryImpl(db);
     final egresoRepo = EgresoRepositoryImpl(db);
-    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+    final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
-    corregirCompra = CorregirCompraUseCase(compraRepo, articuloRepo, inventarioRepo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
+    corregirCompra = CorregirCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo);
   });
 
   tearDown(() => db.close());
@@ -119,15 +121,20 @@ void main() {
       expect(egreso.monto, 165000);
     });
 
-    test('2. corrige la forma de pago', () async {
+    test('2. corrige la forma de pago entre formas que comparten el mismo origen (Cuenta)', () async {
       final articulo = await crearArticuloDePrueba();
       final creada = await crearCompraDePrueba(
         partidas: [PartidaCompraInput(destino: DestinoCompraPartida.inventario.name, articuloId: articulo.id, cantidad: 1, costoUnitario: 10000)],
       );
       expect(creada.formaPago, FormaPago.efectivo.name);
 
-      final resultado = await corregirCompra.ejecutar(compraId: creada.id, formaPago: FormaPago.tarjeta.name, motivo: 'Forma de pago mal capturada');
-      expect((resultado as CorregirCompraExitosa).compra.formaPago, FormaPago.tarjeta.name);
+      // Etapa 0 (corrección de bug real): cambiar HACIA `tarjeta` está
+      // bloqueado sin importar la forma de pago anterior — ver el
+      // grupo "corrige la forma de pago — bloqueo de cambio de modelo
+      // financiero" más abajo. Esta prueba cubre el caso permitido:
+      // dos formas de pago que comparten el mismo origen (Cuenta).
+      final resultado = await corregirCompra.ejecutar(compraId: creada.id, formaPago: FormaPago.transferencia.name, motivo: 'Forma de pago mal capturada');
+      expect((resultado as CorregirCompraExitosa).compra.formaPago, FormaPago.transferencia.name);
     });
 
     test('3. corrige la fecha', () async {

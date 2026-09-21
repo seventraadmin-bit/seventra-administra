@@ -74,6 +74,7 @@ class LoginUseCase {
           nombreUsuario: actualizado.nombreUsuario,
           esMaestro: actualizado.esMaestro,
           permisos: permisos,
+          debeCambiarPassword: actualizado.debeCambiarPassword,
         ),
       );
     } catch (e) {

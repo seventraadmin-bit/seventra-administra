@@ -74,6 +74,25 @@ class AsignacionVehiculo extends Table with AuditColumns {
 
   TextColumn get observacionesTermino => text().nullable()();
 
+  /// Fecha de la baja laboral que dejó este bien PENDIENTE DE
+  /// RECUPERACIÓN (schemaVersion 82). `null` = asignación normal.
+  ///
+  /// Existe porque terminar la relación laboral y recuperar un bien
+  /// físico son dos hechos distintos, y el modelo no podía
+  /// distinguirlos: cerrar la asignación habría afirmado una
+  /// devolución que nadie presenció (en Inventario incluso emite un
+  /// `MovimientoInventario` de `entradaDevolucion` y deja la unidad
+  /// `disponible`). Por eso la asignación sigue **activa/vigente** —
+  /// que es la verdad física: el bien sigue con la persona— y lo único
+  /// que se agrega es esta marca.
+  ///
+  /// Se puebla en la MISMA transacción que la baja laboral y se limpia
+  /// al registrar la devolución real, que conserva su propia fecha.
+  /// Nunca se usa para decidir disponibilidad: eso ya lo resuelven
+  /// `ArticuloUnidad.estatus`/`Vehiculo.estatus`, que siguen intactos.
+  DateTimeColumn get pendienteRecuperacionDesde => dateTime().nullable()();
+
+
   @override
   List<String> get customConstraints => [
         'CHECK ((empleado_id IS NOT NULL AND servicio_id IS NULL) OR '

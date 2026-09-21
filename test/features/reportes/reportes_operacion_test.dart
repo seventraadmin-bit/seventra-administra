@@ -17,6 +17,10 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/compras/data/repositories/compra_repository_impl.dart';
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/cuenta_financiera_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/domain/origen_financiero_gasto.dart';
+import 'package:riseg_one/features/vehiculos/domain/usecases/cancelar_mantenimiento_vehiculo_usecase.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
 import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
@@ -56,6 +60,11 @@ import 'package:riseg_one/features/vehiculos/domain/usecases/crear_vehiculo_usec
 import 'package:riseg_one/features/vehiculos/domain/usecases/obtener_alertas_vehiculos_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/registrar_documento_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/registrar_mantenimiento_vehiculo_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
+import 'package:riseg_one/features/finanzas/data/tables/cuenta_financiera_table.dart';
+import 'package:drift/drift.dart' show Value;
+
+const _cuentaRecargaDePrueba = 'cuenta-recarga-de-prueba';
 
 void main() {
   late AppDatabase db;
@@ -74,8 +83,9 @@ void main() {
       final inventarioRepo = InventarioRepositoryImpl(db);
       final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
-      compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
-      registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
+      final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+      compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
+      registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
       obtenerResumen = ObtenerResumenComprasUseCase(compraRepo, articuloRepo);
 
       final categoria = (await CrearCategoriaArticuloUseCase(categoriaRepo).ejecutar(nombre: 'Uniformes')
@@ -209,8 +219,10 @@ void main() {
     late RegistrarMantenimientoVehiculoUseCase registrarMantenimiento;
     late RegistrarDocumentoVehiculoUseCase registrarDocumento;
     late ObtenerResumenVehiculosUseCase obtenerResumen;
+    // Desde la schemaVersion 80 todo gasto con costo declara su origen.
+    late String cuentaVehiculosId;
 
-    setUp(() {
+    setUp(() async {
       db = AppDatabase(NativeDatabase.memory());
       final asignacionRepo = AsignacionVehiculoRepositoryImpl(db);
       vehiculoRepo = VehiculoRepositoryImpl(db, asignacionRepo);
@@ -221,11 +233,20 @@ void main() {
 
       crearVehiculo = CrearVehiculoUseCase(vehiculoRepo, generarCodigo);
       cambiarEstatus = CambiarEstatusVehiculoUseCase(vehiculoRepo);
-      registrarMantenimiento = RegistrarMantenimientoVehiculoUseCase(mantenimientoRepo, vehiculoRepo, kilometrajeRepo);
+      registrarMantenimiento = RegistrarMantenimientoVehiculoUseCase(mantenimientoRepo, vehiculoRepo, kilometrajeRepo, DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)));
       registrarDocumento = RegistrarDocumentoVehiculoUseCase(documentoRepo, vehiculoRepo);
 
       final obtenerAlertas = ObtenerAlertasVehiculosUseCase(vehiculoRepo, documentoRepo, mantenimientoRepo, kilometrajeRepo);
       obtenerResumen = ObtenerResumenVehiculosUseCase(obtenerAlertas, mantenimientoRepo, vehiculoRepo);
+
+      cuentaVehiculosId = (await CuentaFinancieraRepositoryImpl(db).crear(
+        codigo: 'CTA-0001',
+        nombre: 'BBVA Empresarial',
+        tipo: 'banco',
+        saldoInicial: 100000000,
+        fechaSaldoInicial: DateTime(2026, 1, 1),
+      ))
+          .id;
     });
 
     tearDown(() => db.close());
@@ -251,6 +272,7 @@ void main() {
         tipo: 'preventivo',
         descripcion: 'Cambio de aceite',
         costo: 1500,
+        origen: OrigenFinancieroCuenta(cuentaVehiculosId),
       );
       await registrarMantenimiento.ejecutar(
         vehiculoId: vehiculo.id,
@@ -258,6 +280,7 @@ void main() {
         tipo: 'preventivo',
         descripcion: 'Fuera de rango',
         costo: 9000,
+        origen: OrigenFinancieroCuenta(cuentaVehiculosId),
       );
 
       final resumen = await obtenerResumen.ejecutar(
@@ -267,6 +290,43 @@ void main() {
       );
 
       expect(resumen.totalMantenimientoEnPeriodo, 1500, reason: 'el mantenimiento de agosto queda fuera del rango de julio');
+    });
+
+    test('un mantenimiento ANULADO deja de sumar en Reportes (schemaVersion 80)', () async {
+      final vehiculo = await crearVehiculoDePrueba();
+      final registrado = await registrarMantenimiento.ejecutar(
+        vehiculoId: vehiculo.id,
+        fecha: DateTime(2026, 7, 10),
+        tipo: 'preventivo',
+        descripcion: 'Se capturó en el vehículo equivocado',
+        costo: 1500,
+        origen: OrigenFinancieroCuenta(cuentaVehiculosId),
+      );
+      final registro = (registrado as RegistrarMantenimientoVehiculoExitoso).registro;
+
+      final antes = await obtenerResumen.ejecutar(
+        rangoInicio: DateTime(2026, 7, 1),
+        rangoFin: DateTime(2026, 7, 31),
+        hoy: DateTime(2026, 7, 15),
+      );
+      expect(antes.totalMantenimientoEnPeriodo, 1500);
+
+      await CancelarMantenimientoVehiculoUseCase(mantenimientoRepo, vehiculoRepo).ejecutar(
+        vehiculoMantenimientoId: registro.id,
+        motivo: 'Se capturó en el vehículo equivocado',
+      );
+
+      final despues = await obtenerResumen.ejecutar(
+        rangoInicio: DateTime(2026, 7, 1),
+        rangoFin: DateTime(2026, 7, 31),
+        hoy: DateTime(2026, 7, 15),
+      );
+      expect(
+        despues.totalMantenimientoEnPeriodo,
+        0,
+        reason: 'si Reportes lo siguiera sumando, contradiría a Finanzas — el gap de Préstamos otra vez',
+      );
+      expect(despues.detalleMantenimientos, isEmpty, reason: 'tampoco aparece en el detalle del reporte');
     });
 
     test('documento vencido: se refleja en la alerta; vehículo de baja lo excluye', () async {
@@ -289,24 +349,31 @@ void main() {
     late RegistrarRecargaLineaTelefonicaUseCase registrarRecarga;
     late ObtenerResumenTelefoniaUseCase obtenerResumen;
 
-    setUp(() {
+    setUp(() async {
       db = AppDatabase(NativeDatabase.memory());
+      // Cuenta REAL para las recargas: el dominio exige saber de dónde
+      // salió el dinero de una recarga nueva.
+      await db.into(db.cuentaFinanciera).insert(
+            CuentaFinancieraCompanion.insert(
+              id: const Value(_cuentaRecargaDePrueba),
+              codigo: 'CTA-REC',
+              nombre: 'BBVA Empresarial',
+              tipo: TipoCuentaFinanciera.banco.name,
+              saldoInicial: 100000000,
+              fechaSaldoInicial: DateTime(2026, 1, 1),
+            ),
+          );
       asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
-      final equipoLineaRepo = LineaTelefonicaEquipoRepositoryImpl(
-        db,
-        asignacionLineaRepo,
-        AsignacionRepositoryImpl(db),
-        InventarioRepositoryImpl(db),
-      );
+      final equipoLineaRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, AsignacionRepositoryImpl(db));
       lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoLineaRepo);
-      recargaRepo = RecargaLineaTelefonicaRepositoryImpl(db);
+      recargaRepo = RecargaLineaTelefonicaRepositoryImpl(db, EgresoRepositoryImpl(db), DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)), CodigoSecuenciaService(db));
       final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
       crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, generarCodigo);
       cambiarEstatus = CambiarEstatusLineaTelefonicaUseCase(lineaRepo);
       asignarLinea = AsignarLineaTelefonicaUseCase(lineaRepo, asignacionLineaRepo, equipoLineaRepo);
-      cambiarAsignacion = CambiarAsignacionLineaTelefonicaUseCase(asignacionLineaRepo, equipoLineaRepo);
-      registrarRecarga = RegistrarRecargaLineaTelefonicaUseCase(recargaRepo, lineaRepo);
+      cambiarAsignacion = CambiarAsignacionLineaTelefonicaUseCase(asignacionLineaRepo, equipoLineaRepo, lineaRepo);
+      registrarRecarga = RegistrarRecargaLineaTelefonicaUseCase(recargaRepo, lineaRepo, DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)));
 
       final asignacionServicioRepo = AsignacionServicioRepositoryImpl(db);
       obtenerResumen = ObtenerResumenTelefoniaUseCase(
@@ -351,8 +418,8 @@ void main() {
 
       await asignarLinea.ejecutar(lineaTelefonicaId: lineaEmpleado.id, empleadoId: empleado.id, fechaInicio: DateTime(2026, 1, 1));
       await asignarLinea.ejecutar(lineaTelefonicaId: lineaServicio.id, servicioId: servicio.id, fechaInicio: DateTime(2026, 1, 1));
-      await registrarRecarga.ejecutar(lineaTelefonicaId: lineaEmpleado.id, fecha: DateTime(2026, 2, 1), importe: 20000);
-      await registrarRecarga.ejecutar(lineaTelefonicaId: lineaServicio.id, fecha: DateTime(2026, 2, 2), importe: 15000);
+      await registrarRecarga.ejecutar(lineaTelefonicaId: lineaEmpleado.id, fecha: DateTime(2026, 2, 1), importe: 20000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
+      await registrarRecarga.ejecutar(lineaTelefonicaId: lineaServicio.id, fecha: DateTime(2026, 2, 2), importe: 15000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
 
       final resumen = await obtenerResumen.ejecutar(rangoInicio: DateTime(2026, 2, 1), rangoFin: DateTime(2026, 2, 28));
 
@@ -371,7 +438,7 @@ void main() {
         fechaInicio: DateTime(2026, 1, 1),
       )) as AsignarLineaTelefonicaExitoso)
           .asignacion;
-      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 2, 1), importe: 20000);
+      await registrarRecarga.ejecutar(lineaTelefonicaId: linea.id, fecha: DateTime(2026, 2, 1), importe: 20000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
 
       // Reasignación DESPUÉS de la recarga.
       await cambiarAsignacion.ejecutar(
@@ -392,8 +459,8 @@ void main() {
       final empleado = await db.into(db.empleado).insertReturning(_empleadoCompanion(1));
 
       await asignarLinea.ejecutar(lineaTelefonicaId: lineaEmpleado.id, empleadoId: empleado.id, fechaInicio: DateTime(2026, 1, 1));
-      await registrarRecarga.ejecutar(lineaTelefonicaId: lineaEmpleado.id, fecha: DateTime(2026, 2, 1), importe: 20000);
-      await registrarRecarga.ejecutar(lineaTelefonicaId: lineaSinAsignar.id, fecha: DateTime(2026, 2, 2), importe: 5000);
+      await registrarRecarga.ejecutar(lineaTelefonicaId: lineaEmpleado.id, fecha: DateTime(2026, 2, 1), importe: 20000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
+      await registrarRecarga.ejecutar(lineaTelefonicaId: lineaSinAsignar.id, fecha: DateTime(2026, 2, 2), importe: 5000, formaPago: FormaPago.efectivo.name, cuentaFinancieraId: _cuentaRecargaDePrueba);
 
       final resumen = await obtenerResumen.ejecutar(rangoInicio: DateTime(2026, 2, 1), rangoFin: DateTime(2026, 2, 28));
       final totalRango = await recargaRepo.totalPorRango(desde: DateTime(2026, 2, 1), hasta: DateTime(2026, 2, 28));

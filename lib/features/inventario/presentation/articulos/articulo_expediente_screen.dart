@@ -9,11 +9,14 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart' show OrigenCompra;
 import 'package:riseg_one/features/inventario/domain/usecases/archivar_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/existencia_articulo.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart' show servicioRepositoryProvider;
+import 'package:riseg_one/features/personal/personal_providers.dart' show empleadoRepositoryProvider;
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../asignaciones/widgets/historial_unidad_dialog.dart';
 import '../movimiento_tipo_label.dart';
-import '../../inventario_providers.dart' show inventarioRepositoryProvider, obtenerOrigenCompraUseCaseProvider;
+import '../../inventario_providers.dart'
+    show asignacionRepositoryProvider, inventarioRepositoryProvider, obtenerOrigenCompraUseCaseProvider;
 import 'articulos_controller.dart';
 import 'articulos_list_screen.dart';
 import 'widgets/corregir_identidad_unidad_dialog.dart';
@@ -51,6 +54,15 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
   List<ArticuloUnidadData> _unidades = const [];
   List<MovimientoInventarioData> _movimientos = const [];
   Map<String, OrigenCompra> _origenesPorMovimiento = const {};
+
+  /// Solo tiene sentido para artículos sin variante (mismo criterio ya
+  /// establecido en `ReportesController` — un solo número no
+  /// representaría bien costos que pueden diferir por talla). `null`
+  /// cuando ninguna entrada real capturó costo todavía; nunca 0.
+  int? _costoPromedio;
+  List<AsignacionData> _asignacionesVigentes = const [];
+  Map<String, String> _empleadosPorId = const {};
+  Map<String, String> _serviciosPorId = const {};
 
   @override
   void initState() {
@@ -102,6 +114,31 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
       final origenesPorMovimiento =
           await ref.read(obtenerOrigenCompraUseCaseProvider).obtenerParaMovimientos(movimientos.map((m) => m.id));
 
+      // Costo promedio (Etapa 18) — mismo criterio ya usado por
+      // Reportes: se suprime para artículos con variante, un solo
+      // número no representaría bien costos que pueden diferir por
+      // talla. Una sola llamada, sobre este artículo puntual — sin
+      // riesgo de N+1 (no es un loop sobre el catálogo).
+      final costoPromedio = articulo.manejaVariante
+          ? null
+          : await ref.read(inventarioRepositoryProvider).calcularCostoPromedio(articuloId: articulo.id);
+
+      // Asignaciones vigentes (Etapa 18, sección nueva) — una sola
+      // consulta acotada a este Artículo, más una resolución en bloque
+      // de nombres de Empleado/Servicio (nunca un `obtenerPorId` por
+      // fila).
+      final asignacionesVigentes = await ref.read(asignacionRepositoryProvider).listarActivasPorArticulo(articulo.id);
+      final empleadoIds = {for (final a in asignacionesVigentes) if (a.empleadoId != null) a.empleadoId!}.toList();
+      final empleados = empleadoIds.isEmpty
+          ? const <EmpleadoData>[]
+          : await ref.read(empleadoRepositoryProvider).listarPorIds(empleadoIds);
+      final empleadosPorId = <String, String>{
+        for (final e in empleados) e.id: [e.nombres, e.apellidoPaterno, e.apellidoMaterno].whereType<String>().join(' '),
+      };
+      final necesitaServicios = asignacionesVigentes.any((a) => a.servicioId != null);
+      final servicios = necesitaServicios ? await ref.read(servicioRepositoryProvider).listar() : const [];
+      final serviciosPorId = <String, String>{for (final s in servicios) s.servicio.id: s.servicio.nombre};
+
       if (!mounted) return;
       setState(() {
         _cargando = false;
@@ -113,6 +150,10 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
         _unidades = unidades;
         _movimientos = movimientos;
         _origenesPorMovimiento = origenesPorMovimiento;
+        _costoPromedio = costoPromedio;
+        _asignacionesVigentes = asignacionesVigentes;
+        _empleadosPorId = empleadosPorId;
+        _serviciosPorId = serviciosPorId;
       });
     } catch (e) {
       if (!mounted) return;
@@ -193,6 +234,30 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
     if (eliminado && mounted) context.pop();
   }
 
+  // --- Asignaciones vigentes (Etapa 18) ---
+
+  String _destinoAsignacion(AsignacionData a) {
+    if (a.empleadoId != null) return _empleadosPorId[a.empleadoId] ?? a.empleadoId!;
+    if (a.servicioId != null) return _serviciosPorId[a.servicioId] ?? a.servicioId!;
+    return '—';
+  }
+
+  String _cantidadUnidadAsignacion(AsignacionData a) {
+    if (a.unidadId != null) {
+      final unidad = _unidades.where((u) => u.id == a.unidadId).firstOrNull;
+      return unidad?.codigo ?? a.unidadId!;
+    }
+    return '${a.cantidad}';
+  }
+
+  void _irADestinoAsignacion(AsignacionData a) {
+    if (a.empleadoId != null) {
+      context.push('/personal/empleados/${a.empleadoId}');
+    } else if (a.servicioId != null) {
+      context.push('/comercial/servicios/${a.servicioId}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -236,29 +301,35 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
             children: [
               RisegSectionHeader(
                 title: articulo.nombre,
-                description: '${articulo.folio} · $_categoriaNombre',
+                description: '${articulo.folio} · $_categoriaNombre · ${articuloTipoLabelDe(l10n, articulo.manejaSerie)}',
                 primaryAction: RisegButton(
                   key: const Key('articulo_expediente_boton_editar'),
                   label: l10n.articuloExpedienteBotonEditar,
                   onPressed: _editar,
                 ),
+                // Etapa 18: Archivar/Eliminar físicamente (secundarias y
+                // destructivas, nunca la operación más frecuente) se
+                // mueven a un menú ⋯ — antes convivían como botones
+                // sueltos junto a "Editar", con "Eliminar físicamente"
+                // permanentemente rojo en la cabecera.
                 secondaryAction: activo || esMaestro
-                    ? Wrap(
-                        spacing: AppSpacing.xs,
-                        children: [
+                    ? RisegActionsMenu(
+                        menuKey: const Key('articulo_expediente_menu_acciones'),
+                        actions: [
                           if (activo)
-                            RisegButton(
+                            RisegMenuAction(
                               key: const Key('articulo_expediente_boton_archivar'),
                               label: l10n.articuloBotonArchivar,
-                              variant: RisegButtonVariant.ghost,
-                              onPressed: _archivar,
+                              icon: Icons.archive_outlined,
+                              onTap: _archivar,
                             ),
                           if (esMaestro)
-                            RisegButton(
+                            RisegMenuAction(
                               key: const Key('articulo_expediente_boton_eliminar_fisicamente'),
                               label: l10n.eliminacionFisicaAccionMenu,
-                              variant: RisegButtonVariant.danger,
-                              onPressed: _eliminarFisicamente,
+                              icon: Icons.delete_forever_outlined,
+                              destructive: true,
+                              onTap: _eliminarFisicamente,
                             ),
                         ],
                       )
@@ -327,11 +398,24 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                     const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
-                        _ExistenciaDato(label: l10n.articuloExpedienteCampoTotal, valor: existencia.total),
-                        _ExistenciaDato(label: l10n.articuloExpedienteCampoDisponible, valor: existencia.disponible),
-                        _ExistenciaDato(label: l10n.articuloExpedienteCampoAsignado, valor: existencia.asignado),
-                        _ExistenciaDato(label: l10n.articuloExpedienteCampoDanado, valor: existencia.danado),
-                        _ExistenciaDato(label: l10n.articuloExpedienteCampoPerdido, valor: existencia.perdido),
+                        _ExistenciaDato(label: l10n.articuloExpedienteCampoTotal, texto: '${existencia.total}'),
+                        _ExistenciaDato(label: l10n.articuloExpedienteCampoDisponible, texto: '${existencia.disponible}'),
+                        _ExistenciaDato(label: l10n.articuloExpedienteCampoAsignado, texto: '${existencia.asignado}'),
+                        _ExistenciaDato(label: l10n.articuloExpedienteCampoDanado, texto: '${existencia.danado}'),
+                        _ExistenciaDato(label: l10n.articuloExpedienteCampoPerdido, texto: '${existencia.perdido}'),
+                        // Sin esta celda el desglose dejaría de sumar el
+                        // Total en cuanto una unidad entre a lavandería o
+                        // reparación, y el usuario vería un hueco sin
+                        // explicación.
+                        _ExistenciaDato(label: l10n.articuloExpedienteCampoEnProceso, texto: '${existencia.enProceso}'),
+                        // Etapa 18: solo cuando existe un costo real
+                        // capturado (nunca 0 inventado) y el artículo no
+                        // maneja variante (mismo criterio que Reportes).
+                        if (_costoPromedio != null)
+                          _ExistenciaDato(
+                            label: l10n.articuloExpedienteCampoCostoPromedio,
+                            texto: formatoCosto(_costoPromedio!),
+                          ),
                       ],
                     ),
                   ],
@@ -496,6 +580,40 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(l10n.articuloExpedienteSeccionAsignaciones, style: AppTypography.heading3),
+                    const SizedBox(height: AppSpacing.sm),
+                    RisegTableBase<AsignacionData>(
+                      rows: _asignacionesVigentes,
+                      onRowTap: _irADestinoAsignacion,
+                      emptyState: RisegEmptyState(title: l10n.articuloExpedienteAsignacionesVacio, message: ''),
+                      hoverColor: context.colors.accentSoftBg,
+                      rowActionsBuilder: (_) => Icon(Icons.chevron_right, size: AppSizes.iconMd, color: context.colors.textMuted),
+                      actionsWidth: 40,
+                      columns: [
+                        RisegColumn<AsignacionData>(
+                          label: l10n.articuloExpedienteColumnaDestino,
+                          cellBuilder: (a) => Text(_destinoAsignacion(a)),
+                        ),
+                        RisegColumn<AsignacionData>(
+                          label: l10n.articuloExpedienteColumnaEntrega,
+                          width: 110,
+                          cellBuilder: (a) => Text(_formatoFecha.format(a.fechaEntrega)),
+                        ),
+                        RisegColumn<AsignacionData>(
+                          label: l10n.articuloExpedienteColumnaCantidadUnidad,
+                          width: 150,
+                          cellBuilder: (a) => Text(_cantidadUnidadAsignacion(a)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              RisegCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(l10n.articuloExpedienteSeccionMovimientos, style: AppTypography.heading3),
                     const SizedBox(height: AppSpacing.sm),
                     RisegTableBase<MovimientoInventarioData>(
@@ -593,10 +711,10 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
 }
 
 class _ExistenciaDato extends StatelessWidget {
-  const _ExistenciaDato({required this.label, required this.valor});
+  const _ExistenciaDato({required this.label, required this.texto});
 
   final String label;
-  final int valor;
+  final String texto;
 
   @override
   Widget build(BuildContext context) {
@@ -606,7 +724,7 @@ class _ExistenciaDato extends StatelessWidget {
         children: [
           Text(label, style: AppTypography.label),
           const SizedBox(height: AppSpacing.xxs),
-          Text(valor.toString(), style: AppTypography.heading2),
+          Text(texto, style: AppTypography.heading2),
         ],
       ),
     );

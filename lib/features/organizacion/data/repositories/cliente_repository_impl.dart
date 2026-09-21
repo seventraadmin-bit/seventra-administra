@@ -5,8 +5,14 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
+import 'package:uuid/uuid.dart';
+
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
+import 'package:riseg_one/core/auditoria/enmascarar_identificador.dart';
 
 import '../../domain/repositories/cliente_repository.dart';
+import '../tables/comercial_evento_table.dart';
+import 'comercial_evento_writer.dart';
 import '../../domain/shared/direccion_input.dart';
 import '../../domain/usecases/eliminar_cliente_fisicamente_usecase.dart';
 
@@ -33,11 +39,43 @@ class ClienteRepositoryImpl implements ClienteRepository {
   }
 
   @override
-  Future<ClienteData> cambiarEstatus({required String id, required EstatusCliente nuevo}) async {
-    await (_db.update(_db.cliente)..where((t) => t.id.equals(id))).write(
-      ClienteCompanion(estatus: Value(nuevo.name), updatedAt: Value(DateTime.now())),
-    );
-    return (_db.select(_db.cliente)..where((t) => t.id.equals(id))).getSingle();
+  Future<Map<String, ClienteData>> listarPorIds(Iterable<String> ids) async {
+    final unicos = ids.toSet();
+    if (unicos.isEmpty) return {};
+    final filas = await (_db.select(_db.cliente)..where((t) => t.id.isIn(unicos))).get();
+    return {for (final f in filas) f.id: f};
+  }
+
+  @override
+  Future<ClienteData> cambiarEstatus({
+    required String id,
+    required EstatusCliente nuevo,
+    String? motivo,
+    String? actorUsuarioId,
+  }) {
+    // El evento va DENTRO de la transacción del cambio: o quedan los
+    // dos, o no queda ninguno. Un estatus cambiado sin bitácora sería
+    // exactamente el hueco que esta etapa cierra.
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.cliente)..where((t) => t.id.equals(id))).getSingle();
+      await (_db.update(_db.cliente)..where((t) => t.id.equals(id))).write(
+        ClienteCompanion(estatus: Value(nuevo.name), updatedAt: Value(DateTime.now())),
+      );
+
+      final diff = DiffEvento()..anotar('estatus', anterior.estatus, nuevo.name);
+      if (diff.hayCambios) {
+        await registrarEventoCliente(
+          _db,
+          clienteId: id,
+          tipoEvento: TipoEventoCliente.estatusCambiado,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
+      return (_db.select(_db.cliente)..where((t) => t.id.equals(id))).getSingle();
+    });
   }
 
   @override
@@ -53,18 +91,53 @@ class ClienteRepositoryImpl implements ClienteRepository {
   }
 
   @override
+  Future<Map<String, DireccionData>> listarDireccionesReferencia(List<String> clienteIds) async {
+    if (clienteIds.isEmpty) return {};
+    final filas = await (_db.select(_db.direccion)
+          ..where(
+            (t) =>
+                t.clienteId.isIn(clienteIds) &
+                t.tipoDireccion.equals(TipoDireccion.referencia.name) &
+                t.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name),
+          ))
+        .get();
+    return {for (final d in filas) d.clienteId!: d};
+  }
+
+  @override
   Future<ClienteExpedienteRaw> guardarExpediente({
     required String clienteId,
     required ClienteCompanion datosGenerales,
     required DireccionInput? direccionReferencia,
+    String? motivo,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
+      final anterior = await (_db.select(_db.cliente)..where((t) => t.id.equals(clienteId))).getSingle();
       await (_db.update(_db.cliente)..where((t) => t.id.equals(clienteId))).write(
         datosGenerales.copyWith(updatedAt: Value(DateTime.now())),
       );
       final clienteActualizado = await (_db.select(_db.cliente)..where((t) => t.id.equals(clienteId))).getSingle();
 
       final direccionResultante = await _guardarDireccionReferencia(clienteId, direccionReferencia);
+
+      // Sólo los campos comerciales que de verdad cambiaron. Guardar
+      // el registro completo convertiría la bitácora en ruido.
+      final diff = DiffEvento()
+        ..anotar('nombreComercial', anterior.nombreComercial, clienteActualizado.nombreComercial)
+        ..anotar('estatus', anterior.estatus, clienteActualizado.estatus)
+        ..anotar('observaciones', anterior.observaciones, clienteActualizado.observaciones);
+      if (diff.hayCambios) {
+        await registrarEventoCliente(
+          _db,
+          clienteId: clienteId,
+          tipoEvento: TipoEventoCliente.corregido,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
 
       return ClienteExpedienteRaw(cliente: clienteActualizado, direccionReferencia: direccionResultante);
     });
@@ -142,28 +215,83 @@ class ClienteRepositoryImpl implements ClienteRepository {
   }
 
   @override
-  Future<ContactoData> agregarContacto(ContactoCompanion datos) {
+  Future<ContactoData> agregarContacto(ContactoCompanion datos, {String? actorUsuarioId}) {
     return _db.transaction(() async {
       if (datos.esPrincipal.present && datos.esPrincipal.value) {
         await _retirarPrincipalDelMismoTipo(clienteId: datos.clienteId.value, tipo: datos.tipo.value);
       }
-      return _db.into(_db.contacto).insertReturning(datos);
+      final creado = await _db.into(_db.contacto).insertReturning(datos);
+
+      // Teléfono y correo van ENMASCARADOS ya en la fuente. Un evento
+      // es append-only: lo que entra ahí no se vuelve a sacar, y la
+      // bitácora no debe convertirse en un segundo directorio de
+      // contactos consultable con `auditoria.ver`. Mismo criterio que
+      // Telefonía con ICCID/IMEI.
+      await registrarEventoCliente(
+        _db,
+        clienteId: creado.clienteId,
+        tipoEvento: TipoEventoCliente.contactoAgregado,
+        actorUsuarioId: actorUsuarioId,
+        datosRelevantes: {
+          'contactoId': creado.id,
+          'nombre': creado.nombre,
+          'puesto': creado.puesto,
+          'tipo': creado.tipo,
+          'telefono': enmascararIdentificador(creado.telefono),
+          'correo': enmascararCorreo(creado.correo),
+        },
+      );
+      return creado;
     });
   }
 
   @override
-  Future<ContactoData> actualizarContacto({required String id, required ContactoCompanion cambios}) {
+  Future<ContactoData> actualizarContacto({
+    required String id,
+    required ContactoCompanion cambios,
+    String? motivo,
+    String? actorUsuarioId,
+  }) {
     return _db.transaction(() async {
+      final antes = await (_db.select(_db.contacto)..where((t) => t.id.equals(id))).getSingle();
       if (cambios.esPrincipal.present && cambios.esPrincipal.value) {
-        final actual = await (_db.select(_db.contacto)..where((t) => t.id.equals(id))).getSingle();
-        final tipoDestino = cambios.tipo.present ? cambios.tipo.value : actual.tipo;
-        await _retirarPrincipalDelMismoTipo(clienteId: actual.clienteId, tipo: tipoDestino, exceptoId: id);
+        final tipoDestino = cambios.tipo.present ? cambios.tipo.value : antes.tipo;
+        await _retirarPrincipalDelMismoTipo(clienteId: antes.clienteId, tipo: tipoDestino, exceptoId: id);
       }
 
       await (_db.update(_db.contacto)..where((t) => t.id.equals(id))).write(
         cambios.copyWith(updatedAt: Value(DateTime.now())),
       );
-      return (_db.select(_db.contacto)..where((t) => t.id.equals(id))).getSingle();
+      final despues = await (_db.select(_db.contacto)..where((t) => t.id.equals(id))).getSingle();
+
+      // Nombre, puesto y tipo se guardan completos: identifican a la
+      // persona dentro del Cliente y no son un canal de contacto.
+      // Teléfono y correo, enmascarados — se ve QUE cambiaron, no a
+      // qué valor.
+      final diff = DiffEvento()
+        ..anotar('nombre', antes.nombre, despues.nombre)
+        ..anotar('puesto', antes.puesto, despues.puesto)
+        ..anotar('tipo', antes.tipo, despues.tipo)
+        ..anotar('esPrincipal', antes.esPrincipal, despues.esPrincipal)
+        ..anotar(
+          'telefono',
+          enmascararIdentificador(antes.telefono),
+          enmascararIdentificador(despues.telefono),
+        )
+        ..anotar('correo', enmascararCorreo(antes.correo), enmascararCorreo(despues.correo));
+      if (diff.hayCambios) {
+        await registrarEventoCliente(
+          _db,
+          clienteId: despues.clienteId,
+          tipoEvento: TipoEventoCliente.contactoCorregido,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+          datosRelevantes: {'contactoId': id},
+        );
+      }
+      return despues;
     });
   }
 
@@ -193,14 +321,33 @@ class ClienteRepositoryImpl implements ClienteRepository {
   }
 
   @override
-  Future<ContactoData> archivarContacto(String id) async {
-    await (_db.update(_db.contacto)..where((t) => t.id.equals(id))).write(
-      ContactoCompanion(
-        cicloVidaRegistro: Value(CicloVidaRegistro.archivado.name),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
-    return (_db.select(_db.contacto)..where((t) => t.id.equals(id))).getSingle();
+  Future<ContactoData> archivarContacto(String id, {String? motivo, String? actorUsuarioId}) {
+    return _db.transaction(() async {
+      final antes = await (_db.select(_db.contacto)..where((t) => t.id.equals(id))).getSingle();
+      await (_db.update(_db.contacto)..where((t) => t.id.equals(id))).write(
+        ContactoCompanion(
+          cicloVidaRegistro: Value(CicloVidaRegistro.archivado.name),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      final despues = await (_db.select(_db.contacto)..where((t) => t.id.equals(id))).getSingle();
+
+      final diff = DiffEvento()
+        ..anotar('cicloVidaRegistro', antes.cicloVidaRegistro, despues.cicloVidaRegistro);
+      if (diff.hayCambios) {
+        await registrarEventoCliente(
+          _db,
+          clienteId: despues.clienteId,
+          tipoEvento: TipoEventoCliente.contactoArchivado,
+          estadoAnterior: diff.estadoAnteriorJson,
+          estadoNuevo: diff.estadoNuevoJson,
+          observacion: motivo,
+          actorUsuarioId: actorUsuarioId,
+          datosRelevantes: {'contactoId': id, 'nombre': despues.nombre},
+        );
+      }
+      return despues;
+    });
   }
 
   @override
@@ -311,5 +458,49 @@ class ClienteRepositoryImpl implements ClienteRepository {
 
       return EliminarClienteFisicamenteExitoso();
     });
+  }
+
+  @override
+  Future<AttachmentData> adjuntarLogo({
+    required String clienteId,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+  }) {
+    return _db.transaction(() async {
+      final adjunto = await _db.into(_db.attachment).insertReturning(
+            AttachmentCompanion.insert(
+              id: const Uuid().v4(),
+              categoria: const Value('logo'),
+              originalFileName: originalFileName,
+              storedFileName: storedFileName,
+              path: path,
+              mimeType: mimeType,
+              sizeBytes: sizeBytes,
+            ),
+          );
+      await _db.into(_db.clienteAttachment).insert(
+            ClienteAttachmentCompanion.insert(attachmentId: adjunto.id, clienteId: clienteId),
+          );
+      return adjunto;
+    });
+  }
+
+  @override
+  Future<ClienteData> actualizarLogo({required String clienteId, required String attachmentId}) async {
+    await (_db.update(_db.cliente)..where((t) => t.id.equals(clienteId))).write(
+      ClienteCompanion(logoAttachmentId: Value(attachmentId), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.cliente)..where((t) => t.id.equals(clienteId))).getSingle();
+  }
+
+  @override
+  Future<ClienteData> eliminarLogo(String clienteId) async {
+    await (_db.update(_db.cliente)..where((t) => t.id.equals(clienteId))).write(
+      ClienteCompanion(logoAttachmentId: const Value(null), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.cliente)..where((t) => t.id.equals(clienteId))).getSingle();
   }
 }

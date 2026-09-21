@@ -16,6 +16,7 @@
 // exactamente los 8 escenarios pedidos por Marlon, en ancho amplio y
 // reducido.
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter/material.dart';
@@ -216,8 +217,18 @@ Future<({String servicioId, String clienteId})> _crearServicioSportiumCoyoacan(A
 void main() {
   late AppDatabase db;
 
-  setUp(() {
+  setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // El actor de la bitácora es FK real contra `Usuario`.
+    await db.into(db.usuario).insert(
+      UsuarioCompanion.insert(
+        id: const Value('usuario-prueba'),
+        nombre: 'Usuario de prueba',
+        nombreUsuario: 'prueba',
+        passwordHash: 'x',
+        esMaestro: const Value(true),
+      ),
+    );
   });
 
   tearDown(() => db.close());

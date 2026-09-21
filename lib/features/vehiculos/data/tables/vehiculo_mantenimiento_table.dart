@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/attachment_table.dart';
 import '../../../../core/database/tables/audit_columns.dart';
+import '../../../finanzas/data/tables/deuda_table.dart';
+import '../../../finanzas/data/tables/egreso_table.dart';
 import '../../../usuarios/data/tables/usuario_table.dart';
 import 'vehiculo_table.dart';
 
@@ -56,6 +58,10 @@ enum TipoMantenimientoVehiculo {
 /// Vehículo se deriva siempre de la fila más reciente que tenga alguno
 /// de los dos capturado (`calcularProximoMantenimiento`), nunca se
 /// guarda en `Vehiculo`.
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX vehiculo_mantenimiento_egreso_unico '
+  'ON vehiculo_mantenimiento (egreso_id) WHERE egreso_id IS NOT NULL',
+)
 class VehiculoMantenimiento extends Table with AuditColumns {
   TextColumn get vehiculoId => text().references(Vehiculo, #id, onDelete: KeyAction.restrict)();
 
@@ -81,14 +87,63 @@ class VehiculoMantenimiento extends Table with AuditColumns {
   /// criterio que `actorUsuarioId` en el resto del proyecto.
   TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
+  /// Origen financiero del gasto (schemaVersion 80) — mismo patrón dual
+  /// exacto que `Compra.egresoId`/`Compra.deudaId` y
+  /// `TiempoExtra.egresoId`/`TiempoExtra.deudaId`, nunca un concepto
+  /// nuevo: `OrigenFinancieroGasto` es la abstracción compartida.
+  ///
+  /// `egresoId` se puebla cuando el gasto sale de una CuentaFinanciera;
+  /// `deudaId` cuando se carga a una tarjeta de crédito. Son mutuamente
+  /// excluyentes — un gasto con TDC **nunca** genera además un Egreso
+  /// (la salida de banco ocurre después, al pagar la tarjeta).
+  ///
+  /// Ambos nulos con `costo > 0` significa **gasto histórico sin origen
+  /// especificado**: las filas anteriores a esta etapa se conservan tal
+  /// cual, sin backfill heurístico (decisión de Marlon, mismo criterio
+  /// que la etapa de Egresos v76). Los mantenimientos NUEVOS con costo
+  /// sí exigen origen — lo impone `RegistrarMantenimientoVehiculoUseCase`,
+  /// no un CHECK, porque el legacy debe seguir siendo válido.
+  /// Único cuando existe — un Egreso pertenece a un solo mantenimiento,
+  /// igual que en `Compra`/`TiempoExtra`. Se declara como índice único
+  /// PARCIAL (ver la anotación de la clase) y NO como `.unique()` de
+  /// columna, porque SQLite no admite
+  /// `ALTER TABLE … ADD COLUMN … UNIQUE` y esta columna se agrega en la
+  /// v80 sobre una tabla que ya existe (encontrado al correr las
+  /// pruebas de migración).
+  TextColumn get egresoId => text().nullable().references(Egreso, #id, onDelete: KeyAction.restrict)();
+
+  TextColumn get deudaId => text().nullable().references(Deuda, #id, onDelete: KeyAction.restrict)();
+
+  /// Anulación sin borrar (schemaVersion 80) — un error de captura
+  /// nunca obliga a destruir historial. Revierte exactamente el efecto
+  /// financiero (cancela el Egreso, o revierte el cargo de la TDC) y
+  /// deja la fila con su evidencia.
+  TextColumn get estatus => text().withDefault(const Constant('registrado'))();
+
+  TextColumn get motivoCancelacion => text().nullable()();
+
   @override
   List<String> get customConstraints => [
         'CHECK (kilometraje IS NULL OR kilometraje >= 0)',
         'CHECK (costo IS NULL OR costo >= 0)',
         'CHECK (proximo_mantenimiento_kilometraje IS NULL OR proximo_mantenimiento_kilometraje >= 0)',
         'CHECK (proximo_mantenimiento_fecha IS NULL OR proximo_mantenimiento_fecha >= fecha)',
+        // `egresoId`/`deudaId` son mutuamente excluyentes, pero eso NO
+        // se expresa como CHECK de tabla: SQLite no permite añadir uno
+        // por `ALTER TABLE`, y estas columnas se agregan en la v80 sobre
+        // una tabla existente (encontrado por las pruebas de migración —
+        // la tabla migrada quedaba con 5 constraints y la nueva con 6).
+        //
+        // Es un invariante de DOMINIO, exactamente igual que en
+        // `TiempoExtra.egresoId`/`deudaId`, que tampoco lo declara aquí:
+        // `RegistrarMantenimientoVehiculoUseCase` sólo puede producir
+        // uno de los dos, y el repositorio es el único escritor.
       ];
 }
+
+/// Estatus de un registro de mantenimiento/incidencia (schemaVersion
+/// 80) — mismo par exacto que `TiempoExtra`/`Compra`.
+enum EstatusMantenimientoVehiculo { registrado, cancelado }
 
 /// Tabla puente VehiculoMantenimiento↔Attachment (Etapa 8D) — mismo
 /// patrón exacto que `VehiculoDocumentoAttachment`: el comprobante (o la

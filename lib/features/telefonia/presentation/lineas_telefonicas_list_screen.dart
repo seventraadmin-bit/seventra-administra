@@ -84,6 +84,7 @@ class _LineasTableState extends ConsumerState<_LineasTable> {
   Map<String, RecargaLineaTelefonicaData> _ultimaRecargaPorLinea = const {};
   bool _cargandoRecargas = true;
   Map<String, String> _equipoAsociadoPorLinea = const {};
+  Map<String, String> _asignadaAPorLinea = const {};
 
   @override
   void initState() {
@@ -110,25 +111,52 @@ class _LineasTableState extends ConsumerState<_LineasTable> {
     });
   }
 
-  /// "Equipo asociado actualmente" (Etapa 9D) — marca+modelo de la
-  /// unidad de Inventario vinculada vía `LineaTelefonicaEquipo`, "—" si
-  /// no tiene. Ensamblado aquí, no leído de una tabla propia: `Equipo`
-  /// nunca duplica marca/modelo (ver el doc comment de
+  /// "Equipo asociado actualmente" (Etapa 9D) y "Línea asignada a"
+  /// (Rebanada 3) — marca+modelo de la unidad de Inventario vinculada
+  /// vía `LineaTelefonicaEquipo`, y el destino vigente de la línea.
+  /// Ensamblado aquí, no leído de una tabla propia: `Equipo` nunca
+  /// duplica marca/modelo (ver el doc comment de
   /// `ArticuloUnidadTelefono`).
+  ///
+  /// **Coste constante, no O(N).** Antes eran DOS consultas por línea
+  /// (equipo vigente + unidad): 100 líneas eran 200 viajes a la base.
+  /// Ahora son cuatro en total, pase lo que pase: equipos vigentes,
+  /// unidades de telefonía, asignaciones vigentes y los catálogos de
+  /// destino.
   Future<void> _cargarEquiposAsociados() async {
     final equipoRepo = ref.read(lineaTelefonicaEquipoRepositoryProvider);
     final inventarioRepo = ref.read(inventarioRepositoryProvider);
+    final asignacionRepo = ref.read(asignacionLineaTelefonicaRepositoryProvider);
+    final opciones = ref.read(obtenerOpcionesAsignacionLineaTelefonicaUseCaseProvider);
+
+    final equiposPorLinea = await equipoRepo.obtenerActualesPorTodasLasLineas();
+    final unidades = {for (final u in await inventarioRepo.listarUnidadesTelefono()) u.id: u};
+    final asignaciones = await asignacionRepo.obtenerActivasPorTodasLasLineas();
+    final empleados = {for (final e in await opciones.obtenerEmpleados()) e.id: e.nombre};
+    final servicios = {for (final s in await opciones.obtenerServicios()) s.id: s.nombre};
+
     final equipoAsociadoPorLinea = <String, String>{};
+    final asignadaAPorLinea = <String, String>{};
     for (final linea in widget.state.lineas) {
-      final equipoActual = await equipoRepo.obtenerActualPorLinea(linea.id);
-      if (equipoActual == null) continue;
-      final unidad = await inventarioRepo.obtenerUnidadPorId(equipoActual.unidadId);
-      if (unidad == null) continue;
-      final descripcion = [unidad.marca, unidad.modelo].whereType<String>().where((p) => p.trim().isNotEmpty).join(' ');
-      equipoAsociadoPorLinea[linea.id] = descripcion.isEmpty ? unidad.codigo : descripcion;
+      final unidad = unidades[equiposPorLinea[linea.id]?.unidadId];
+      if (unidad != null) {
+        final descripcion =
+            [unidad.marca, unidad.modelo].whereType<String>().where((p) => p.trim().isNotEmpty).join(' ');
+        equipoAsociadoPorLinea[linea.id] = descripcion.isEmpty ? unidad.codigo : descripcion;
+      }
+      final asignacion = asignaciones[linea.id];
+      if (asignacion != null) {
+        final nombre = asignacion.empleadoId != null
+            ? empleados[asignacion.empleadoId]
+            : servicios[asignacion.servicioId];
+        if (nombre != null) asignadaAPorLinea[linea.id] = nombre;
+      }
     }
     if (!mounted) return;
-    setState(() => _equipoAsociadoPorLinea = equipoAsociadoPorLinea);
+    setState(() {
+      _equipoAsociadoPorLinea = equipoAsociadoPorLinea;
+      _asignadaAPorLinea = asignadaAPorLinea;
+    });
   }
 
   @override
@@ -160,6 +188,16 @@ class _LineasTableState extends ConsumerState<_LineasTable> {
           cellBuilder: (l) => Text(operadorLineaTelefonicaLabel(l10n, l)),
         ),
         RisegColumn<LineaTelefonicaData>(
+          label: l10n.telefoniaColumnaAsignadaA,
+          width: 160,
+          cellBuilder: (l) => Text(_asignadaAPorLinea[l.id] ?? '—', overflow: TextOverflow.ellipsis),
+        ),
+        RisegColumn<LineaTelefonicaData>(
+          label: l10n.telefoniaColumnaEquipoAsociado,
+          width: 160,
+          cellBuilder: (l) => Text(_equipoAsociadoPorLinea[l.id] ?? '—', overflow: TextOverflow.ellipsis),
+        ),
+        RisegColumn<LineaTelefonicaData>(
           label: l10n.telefoniaColumnaUltimaRecarga,
           width: 160,
           cellBuilder: (l) {
@@ -167,11 +205,6 @@ class _LineasTableState extends ConsumerState<_LineasTable> {
             if (ultima == null) return const Text('—');
             return Text('${DateFormat('dd/MM/yyyy').format(ultima.fecha)} — ${formatoCosto(ultima.importe)}');
           },
-        ),
-        RisegColumn<LineaTelefonicaData>(
-          label: l10n.telefoniaColumnaEquipoAsociado,
-          width: 160,
-          cellBuilder: (l) => Text(_equipoAsociadoPorLinea[l.id] ?? '—'),
         ),
         RisegColumn<LineaTelefonicaData>(
           label: l10n.telefoniaColumnaEstatus,

@@ -55,6 +55,44 @@ import 'schema_v49.dart' as v49;
 import 'schema_v50.dart' as v50;
 import 'schema_v51.dart' as v51;
 import 'schema_v52.dart' as v52;
+import 'schema_v53.dart' as v53;
+import 'schema_v54.dart' as v54;
+import 'schema_v55.dart' as v55;
+import 'schema_v56.dart' as v56;
+import 'schema_v57.dart' as v57;
+import 'schema_v58.dart' as v58;
+import 'schema_v59.dart' as v59;
+import 'schema_v60.dart' as v60;
+import 'schema_v61.dart' as v61;
+import 'schema_v62.dart' as v62;
+import 'schema_v63.dart' as v63;
+import 'schema_v64.dart' as v64;
+import 'schema_v65.dart' as v65;
+import 'schema_v66.dart' as v66;
+import 'schema_v67.dart' as v67;
+import 'schema_v68.dart' as v68;
+import 'schema_v69.dart' as v69;
+import 'schema_v70.dart' as v70;
+import 'schema_v71.dart' as v71;
+import 'schema_v72.dart' as v72;
+import 'schema_v73.dart' as v73;
+import 'schema_v74.dart' as v74;
+import 'schema_v75.dart' as v75;
+import 'schema_v76.dart' as v76;
+import 'schema_v77.dart' as v77;
+import 'schema_v78.dart' as v78;
+import 'schema_v85.dart' as v85;
+import 'schema_v86.dart' as v86;
+import 'schema_v79.dart' as v79;
+import 'schema_v80.dart' as v80;
+import 'schema_v81.dart' as v81;
+import 'schema_v82.dart' as v82;
+import 'schema_v83.dart' as v83;
+import 'schema_v87.dart' as v87;
+import 'schema_v88.dart' as v88;
+import 'schema_v89.dart' as v89;
+import 'schema_v90.dart' as v90;
+import 'schema_v91.dart' as v91;
 
 class GeneratedHelper implements SchemaInstantiationHelper {
   @override
@@ -164,6 +202,82 @@ class GeneratedHelper implements SchemaInstantiationHelper {
         return v51.DatabaseAtV51(db);
       case 52:
         return v52.DatabaseAtV52(db);
+      case 53:
+        return v53.DatabaseAtV53(db);
+      case 54:
+        return v54.DatabaseAtV54(db);
+      case 55:
+        return v55.DatabaseAtV55(db);
+      case 56:
+        return v56.DatabaseAtV56(db);
+      case 57:
+        return v57.DatabaseAtV57(db);
+      case 58:
+        return v58.DatabaseAtV58(db);
+      case 59:
+        return v59.DatabaseAtV59(db);
+      case 60:
+        return v60.DatabaseAtV60(db);
+      case 61:
+        return v61.DatabaseAtV61(db);
+      case 62:
+        return v62.DatabaseAtV62(db);
+      case 63:
+        return v63.DatabaseAtV63(db);
+      case 64:
+        return v64.DatabaseAtV64(db);
+      case 65:
+        return v65.DatabaseAtV65(db);
+      case 66:
+        return v66.DatabaseAtV66(db);
+      case 67:
+        return v67.DatabaseAtV67(db);
+      case 68:
+        return v68.DatabaseAtV68(db);
+      case 69:
+        return v69.DatabaseAtV69(db);
+      case 70:
+        return v70.DatabaseAtV70(db);
+      case 71:
+        return v71.DatabaseAtV71(db);
+      case 72:
+        return v72.DatabaseAtV72(db);
+      case 73:
+        return v73.DatabaseAtV73(db);
+      case 74:
+        return v74.DatabaseAtV74(db);
+      case 75:
+        return v75.DatabaseAtV75(db);
+      case 76:
+        return v76.DatabaseAtV76(db);
+      case 77:
+        return v77.DatabaseAtV77(db);
+      case 78:
+        return v78.DatabaseAtV78(db);
+      case 85:
+        return v85.DatabaseAtV85(db);
+      case 86:
+        return v86.DatabaseAtV86(db);
+      case 79:
+        return v79.DatabaseAtV79(db);
+      case 80:
+        return v80.DatabaseAtV80(db);
+      case 81:
+        return v81.DatabaseAtV81(db);
+      case 82:
+        return v82.DatabaseAtV82(db);
+      case 83:
+        return v83.DatabaseAtV83(db);
+      case 87:
+        return v87.DatabaseAtV87(db);
+      case 88:
+        return v88.DatabaseAtV88(db);
+      case 89:
+        return v89.DatabaseAtV89(db);
+      case 90:
+        return v90.DatabaseAtV90(db);
+      case 91:
+        return v91.DatabaseAtV91(db);
       default:
         throw MissingSchemaException(version, versions);
     }
@@ -222,5 +336,43 @@ class GeneratedHelper implements SchemaInstantiationHelper {
     50,
     51,
     52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    85,
+    86,
+    79,
+    80,
+    81,
+    82,
+    83,
+    87,
+    88,
+    89,
+    90,
+    91,
   ];
 }

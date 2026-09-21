@@ -60,12 +60,18 @@ class ActualizarNominaDesdePersonalErrorInesperado extends ActualizarNominaDesde
 /// (`bonoModificadoManualmente == false`); si ya lo modificó, se
 /// conserva tal cual.
 ///
-/// **Fiscal/No fiscal**: si nunca se modificó a mano, se reinicia al
-/// default (Fiscal = nuevo total, No fiscal = `$0`). Si ya se modificó
-/// a mano, se conserva **siempre** — pero si el nuevo total ya no
-/// coincide con esa distribución conservada, se marca
-/// `distribucionPendienteRevision` (bloquea el cierre) en vez de
-/// ajustarla en silencio.
+/// **Fiscal/No fiscal**: resuelto por `NominaRepository.guardarRenglon`
+/// contra el `totalAPagar` FINAL (después de descuentos de Inventario
+/// incluidos, no solo percepciones/movimientos manuales) — si nunca se
+/// modificó a mano, se reinicia al default (Fiscal = nuevo total, No
+/// fiscal = `$0`); si ya se modificó a mano, se conserva **siempre**,
+/// pero si el nuevo total ya no coincide con esa distribución
+/// conservada, se marca `distribucionPendienteRevision` (bloquea el
+/// cierre) en vez de ajustarla en silencio. Este caso de uso ya no
+/// calcula esos montos — solo cuenta cuántos renglones quedaron
+/// pendientes de revisión (Etapa 15, bug real: antes se calculaba aquí
+/// mismo contra un total que todavía no incluía el descuento de
+/// Inventario, desincronizando la distribución).
 ///
 /// **Un renglón que pierde todos sus días pagables**: si nunca tuvo
 /// movimientos manuales ni distribución modificada, se elimina sin
@@ -153,7 +159,11 @@ class ActualizarNominaDesdePersonalUseCase {
           if (renglonNominaTieneMovimientosManuales(existente)) {
             conservadosSinDias++;
           } else {
-            await _nominaRepository.eliminarRenglon(existente.id);
+            await _nominaRepository.eliminarRenglon(
+              existente.id,
+              motivo: 'El empleado ya no tiene días pagables en el periodo.',
+              actorUsuarioId: actorUsuarioId,
+            );
             eliminados++;
           }
           continue;
@@ -183,32 +193,6 @@ class ActualizarNominaDesdePersonalUseCase {
         final otrosDescuentos = existente?.otrosDescuentos ?? 0;
         final observaciones = existente?.observaciones;
 
-        final pagoPorDia = (calculo.sueldoMensualUtilizado / 30).round();
-        final descuentoPorFaltas = faltas * pagoPorDia;
-        final nuevoTotal = calculo.importeBase + bono + tiempoExtra - prestamo - descuentoPorFaltas - otrosDescuentos;
-
-        final int montoFiscal;
-        final int montoNoFiscal;
-        final bool distribucionModificadaManualmente;
-        var distribucionPendienteRevision = false;
-
-        if (existente == null || !existente.distribucionModificadaManualmente) {
-          montoFiscal = nuevoTotal;
-          montoNoFiscal = 0;
-          distribucionModificadaManualmente = false;
-        } else {
-          distribucionModificadaManualmente = true;
-          if (existente.montoFiscal + existente.montoNoFiscal == nuevoTotal) {
-            montoFiscal = existente.montoFiscal;
-            montoNoFiscal = existente.montoNoFiscal;
-          } else {
-            montoFiscal = existente.montoFiscal;
-            montoNoFiscal = existente.montoNoFiscal;
-            distribucionPendienteRevision = true;
-            conDistribucionPendiente++;
-          }
-        }
-
         final fila = FilaNominaGenerada(
           empleadoId: empleado.id,
           numeroEmpleado: empleado.numeroEmpleado,
@@ -228,7 +212,7 @@ class ActualizarNominaDesdePersonalUseCase {
           tramos: calculo.tramos,
         );
 
-        await _nominaRepository.guardarRenglon(
+        final guardado = await _nominaRepository.guardarRenglon(
           nominaId: nominaId,
           datos: fila,
           prestamo: prestamo,
@@ -238,11 +222,12 @@ class ActualizarNominaDesdePersonalUseCase {
           faltas: faltas,
           otrosDescuentos: otrosDescuentos,
           observaciones: observaciones,
-          montoFiscal: montoFiscal,
-          montoNoFiscal: montoNoFiscal,
-          distribucionModificadaManualmente: distribucionModificadaManualmente,
-          distribucionPendienteRevision: distribucionPendienteRevision,
         );
+        // Fiscal/No fiscal ya se resolvieron dentro de `guardarRenglon`
+        // contra el `totalAPagar` final (después de descuentos de
+        // Inventario incluidos) — aquí solo se cuenta el resultado, ver
+        // el doc comment de `NominaRepository.guardarRenglon`.
+        if (guardado.distribucionPendienteRevision) conDistribucionPendiente++;
 
         if (existente == null) {
           nuevos++;

@@ -130,7 +130,7 @@ void main() {
         borrador: const EntidadFiscalBorrador(razonSocial: 'Sportium SA de CV', rfc: 'STO010101AB1'),
       );
       final entidad = (creada as GuardarEntidadFiscalExitoso).entidadFiscal;
-      await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado);
+      await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
 
       final resultado = await crearEntidadFiscal.ejecutar(
         clienteId: cliente2.id,
@@ -203,6 +203,7 @@ void main() {
       final resultado = await actualizarEntidadFiscal.ejecutar(
         id: entidad.id,
         borrador: const EntidadFiscalBorrador(razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1'),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<GuardarEntidadFiscalExitoso>());
@@ -222,6 +223,7 @@ void main() {
       final resultado = await actualizarEntidadFiscal.ejecutar(
         id: entidad.id,
         borrador: const EntidadFiscalBorrador(razonSocial: 'Sportium Renombrada SA de CV', rfc: 'STO010101AB1'),
+        motivo: 'Motivo de prueba',
       );
       expect(resultado, isA<GuardarEntidadFiscalExitoso>());
     });
@@ -233,11 +235,12 @@ void main() {
         borrador: const EntidadFiscalBorrador(razonSocial: 'Sportium SA de CV', rfc: 'STO010101AB1'),
       );
       final entidad = (creada as GuardarEntidadFiscalExitoso).entidadFiscal;
-      await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado);
+      await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
 
       final resultado = await actualizarEntidadFiscal.ejecutar(
         id: entidad.id,
         borrador: const EntidadFiscalBorrador(razonSocial: 'Otro nombre SA', rfc: 'STO010101AB1'),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<GuardarEntidadFiscalArchivada>());
@@ -255,10 +258,10 @@ void main() {
       );
       final entidad = (creada as GuardarEntidadFiscalExitoso).entidadFiscal;
 
-      final archivada = await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado);
+      final archivada = await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
       expect((archivada as CambiarCicloVidaEntidadFiscalExitoso).entidadFiscal.cicloVidaRegistro, 'archivado');
 
-      final reactivada = await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.activo);
+      final reactivada = await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.activo, motivo: 'Motivo de prueba');
       expect((reactivada as CambiarCicloVidaEntidadFiscalExitoso).entidadFiscal.cicloVidaRegistro, 'activo');
     });
   });
@@ -349,7 +352,7 @@ void main() {
 
     test('rechaza guardar domicilio si la Entidad fiscal está archivada', () async {
       final entidad = await crearEntidadDePrueba();
-      await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado);
+      await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
 
       final resultado = await guardarDomicilio.ejecutar(entidadFiscalId: entidad.id, domicilio: domicilioCompleto);
       expect(resultado, isA<GuardarDomicilioFiscalArchivada>());
@@ -364,7 +367,7 @@ void main() {
         borrador: const EntidadFiscalBorrador(razonSocial: 'Sportium SA de CV', rfc: 'STO010101AB1'),
       );
       final entidad = (creada as GuardarEntidadFiscalExitoso).entidadFiscal;
-      await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado);
+      await cambiarCicloVida.ejecutar(entidadFiscalId: entidad.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
 
       final entidades = await listarEntidadesFiscales.ejecutar(cliente.id);
       expect(entidades, hasLength(1));

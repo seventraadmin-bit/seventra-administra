@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart' show puestoRepositoryProvider;
+import 'package:riseg_one/features/personal/personal_providers.dart' show empleadoRepositoryProvider;
 
 import '../domain/usecases/activar_usuario_usecase.dart';
 import '../domain/usecases/cambiar_contrasena_usuario_usecase.dart';
@@ -48,13 +49,36 @@ class UsuariosController extends _$UsuariosController {
     return ref.read(usuarioRepositoryProvider).listarEventos(usuarioId);
   }
 
+  /// Empleados activos que pueden vincularse a una cuenta nueva
+  /// (Etapa "Usuarios, permisos y UX de seguridad") — se excluyen los
+  /// que YA tienen cuenta: una persona no debe terminar con dos.
+  Future<List<EmpleadoData>> empleadosVinculables() async {
+    final activos = await ref.read(empleadoRepositoryProvider).listar(estatus: 'activo');
+    final yaConCuenta = {
+      for (final u in await ref.read(usuarioRepositoryProvider).listar())
+        if (u.empleadoId != null) u.empleadoId!,
+    };
+    return activos.where((e) => !yaConCuenta.contains(e.id)).toList();
+  }
+
   Future<CrearUsuarioResultado> crear({
     required String nombre,
     required String nombreUsuario,
     required String password,
     required String puestoId,
+    String? empleadoId,
     bool esMaestro = false,
+    Set<String> permisosIniciales = const {},
   }) async {
+    // Crear una cuenta MAESTRA no es administrar usuarios: es repartir
+    // acceso total, presente y futuro. Solo un Maestro puede hacerlo
+    // (Etapa "Usuarios, permisos y UX de seguridad") — sin este candado,
+    // cualquiera con `usuarios.administrar` se fabricaba una cuenta
+    // Maestra y entraba con ella.
+    if (esMaestro && !ref.read(permissionServiceProvider).esMaestroActivo) {
+      return CrearUsuarioErrorInesperado('Crear una cuenta Maestra requiere el Usuario Maestro.');
+    }
+
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'usuarios.administrar',
@@ -63,7 +87,9 @@ class UsuariosController extends _$UsuariosController {
             nombreUsuario: nombreUsuario,
             password: password,
             puestoId: puestoId,
+            empleadoId: empleadoId,
             esMaestro: esMaestro,
+            permisosIniciales: permisosIniciales,
             actorUsuarioId: _actorUsuarioId,
           ),
       CrearUsuarioErrorInesperado.new,
@@ -79,6 +105,21 @@ class UsuariosController extends _$UsuariosController {
     required String puestoId,
     required bool esMaestro,
   }) async {
+    // ELEVAR una cuenta a Maestra exige ser Maestro — incluida la
+    // propia. `usuarios.administrar` alcanza para corregir nombre,
+    // nombre de usuario y puesto; nunca para repartir acceso total.
+    // Quitar el Maestro no necesita este candado: ya está protegido
+    // contra dejar al sistema sin ninguno
+    // (`CorregirUsuarioBloqueadaPorUltimoMaestro`), y degradar no
+    // amplía acceso.
+    final permisos = ref.read(permissionServiceProvider);
+    if (esMaestro && !permisos.esMaestroActivo) {
+      final actual = await ref.read(usuarioRepositoryProvider).obtenerPorId(usuarioId);
+      if (actual == null || !actual.esMaestro) {
+        return CorregirUsuarioErrorInesperado('Otorgar la cuenta Maestra requiere el Usuario Maestro.');
+      }
+    }
+
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'usuarios.administrar',
@@ -99,11 +140,15 @@ class UsuariosController extends _$UsuariosController {
   Future<CambiarContrasenaUsuarioResultado> cambiarContrasena({required String usuarioId, required String password}) async {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'usuarios.administrar',
+      // Restablecer la contraseña de OTRA cuenta es su propia facultad.
+      'usuarios.resetearPassword',
       () => ref.read(cambiarContrasenaUsuarioUseCaseProvider).ejecutar(
             usuarioId: usuarioId,
             password: password,
             actorUsuarioId: _actorUsuarioId,
+            // Un reseteo deja una contraseña que conoce quien la fijó:
+            // la cuenta queda obligada a cambiarla en su próximo acceso.
+            exigirCambio: true,
           ),
       CambiarContrasenaUsuarioErrorInesperado.new,
     );
@@ -140,7 +185,11 @@ class UsuariosController extends _$UsuariosController {
   Future<GuardarPermisosUsuarioResultado> guardarPermisos({required String usuarioId, required Set<String> codigos}) {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'usuarios.administrar',
+      // Etapa "Usuarios, permisos y UX de seguridad": otorgar permisos
+      // se separa de administrar cuentas — es la facultad con la que
+      // alguien podría ampliar el alcance de una cuenta, la propia
+      // incluida.
+      'usuarios.otorgarPermisos',
       () => ref.read(guardarPermisosUsuarioUseCaseProvider).ejecutar(
             usuarioId: usuarioId,
             codigos: codigos,

@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/inventario/data/tables/categoria_articulo_table.dart' show AplicacionEspecializadaCategoriaArticulo;
 import 'package:riseg_one/features/inventario/domain/usecases/actualizar_categoria_articulo_usecase.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/adjuntar_comprobante_movimiento_usecase.dart';
@@ -53,19 +54,18 @@ class ArticulosController extends _$ArticulosController {
       final categoriasPorId = {for (final c in categorias) c.id: c.nombre};
 
       final articulos = await articuloRepo.listar();
-      final resumenes = <ArticuloResumen>[];
-      for (final articulo in articulos) {
-        final existencia = articulo.manejaSerie
-            ? await inventarioRepo.calcularExistenciaUnidades(articulo.id)
-            : await inventarioRepo.calcularExistencia(articuloId: articulo.id);
-        resumenes.add(
+      // Una lectura en lote, no una consulta por artículo: las cifras
+      // son idénticas porque ambas rutas pliegan con la misma función
+      // de dominio.
+      final existencias = await inventarioRepo.calcularExistenciaPorArticulos(articulos);
+      final resumenes = [
+        for (final articulo in articulos)
           ArticuloResumen(
             articulo: articulo,
             categoriaNombre: categoriasPorId[articulo.categoriaId] ?? '',
-            existencia: existencia,
+            existencia: existencias[articulo.id] ?? const ExistenciaArticulo(disponible: 0),
           ),
-        );
-      }
+      ];
 
       state = state.copyWith(cargando: false, articulos: resumenes, categorias: categorias, errorCarga: null);
     } catch (e) {
@@ -76,6 +76,33 @@ class ArticulosController extends _$ArticulosController {
   Future<void> reintentarCarga() => _cargar();
 
   Future<void> recargar() => _cargar();
+
+  void aplicarFiltros({
+    String? texto,
+    String? categoriaId,
+    FiltroTipoArticulo? tipo,
+    FiltroEstadoExistencia? estadoExistencia,
+    bool limpiarTexto = false,
+    bool limpiarCategoriaId = false,
+  }) {
+    state = state.copyWith(
+      texto: texto,
+      categoriaId: categoriaId,
+      tipo: tipo,
+      estadoExistencia: estadoExistencia,
+      limpiarTexto: limpiarTexto,
+      limpiarCategoriaId: limpiarCategoriaId,
+    );
+  }
+
+  void limpiarTodosLosFiltros() {
+    state = state.copyWith(
+      limpiarTexto: true,
+      limpiarCategoriaId: true,
+      tipo: FiltroTipoArticulo.todos,
+      estadoExistencia: FiltroEstadoExistencia.todos,
+    );
+  }
 
   Future<ArticuloData?> obtenerArticulo(String articuloId) {
     return ref.read(articuloRepositoryProvider).obtenerPorId(articuloId);
@@ -138,7 +165,7 @@ class ArticulosController extends _$ArticulosController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'inventario.modificar',
+      'inventario.corregir',
       () => ref.read(actualizarCategoriaArticuloUseCaseProvider).ejecutar(
             categoriaId: categoriaId,
             nombre: nombre,
@@ -192,7 +219,7 @@ class ArticulosController extends _$ArticulosController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'inventario.modificar',
+      'inventario.corregir',
       () => ref.read(corregirArticuloUseCaseProvider).ejecutar(
             articuloId: articuloId,
             categoriaId: categoriaId,
@@ -264,7 +291,10 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarEntradaErrorInesperado.new,
     );
-    if (resultado is RegistrarEntradaExitoso) await _cargar();
+    if (resultado is RegistrarEntradaExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -296,7 +326,10 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarEntradaUnidadErrorInesperado.new,
     );
-    if (resultado is RegistrarEntradaUnidadExitoso) await _cargar();
+    if (resultado is RegistrarEntradaUnidadExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -318,7 +351,10 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarBajaErrorInesperado.new,
     );
-    if (resultado is RegistrarBajaExitoso) await _cargar();
+    if (resultado is RegistrarBajaExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -333,7 +369,10 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarBajaUnidadErrorInesperado.new,
     );
-    if (resultado is RegistrarBajaUnidadExitoso) await _cargar();
+    if (resultado is RegistrarBajaUnidadExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -346,7 +385,7 @@ class ArticulosController extends _$ArticulosController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'inventario.modificar',
+      'inventario.ajustarExistencia',
       () => ref.read(registrarAjusteUseCaseProvider).ejecutar(
             articuloId: articuloId,
             varianteId: varianteId,
@@ -357,7 +396,10 @@ class ArticulosController extends _$ArticulosController {
           ),
       RegistrarAjusteErrorInesperado.new,
     );
-    if (resultado is RegistrarAjusteExitoso) await _cargar();
+    if (resultado is RegistrarAjusteExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -369,7 +411,7 @@ class ArticulosController extends _$ArticulosController {
   }) {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'inventario.modificar',
+      'inventario.corregir',
       () => ref.read(adjuntarComprobanteMovimientoUseCaseProvider).ejecutar(
             movimientoInventarioId: movimientoInventarioId,
             sourceFilePath: sourceFilePath,

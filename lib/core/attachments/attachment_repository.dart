@@ -27,6 +27,15 @@ class AttachmentRepository {
     return (_db.select(_db.attachment)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
+  /// Consulta en lote (Etapa 16, evolución visual) — para listados que
+  /// necesitan resolver la miniatura/foto de muchas filas a la vez
+  /// (ej. logos de Cliente, fotografías de Empleado) sin una consulta
+  /// por fila. `ids` vacío devuelve `[]` sin tocar la base de datos.
+  Future<List<AttachmentData>> obtenerPorIds(List<String> ids) {
+    if (ids.isEmpty) return Future.value(const []);
+    return (_db.select(_db.attachment)..where((t) => t.id.isIn(ids))).get();
+  }
+
   /// Solo `estado = activo` — la consulta normal del documento nunca
   /// debe mostrar versiones reemplazadas (Resolución 6 de Marlon).
   Future<List<AttachmentData>> listarActivosPorDocumentoPorEmitir(

@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
@@ -20,6 +21,7 @@ import '../../../finanzas_providers.dart';
 import '../../complementos/widgets/complemento_detalle_dialog.dart';
 import '../../cuentas_por_cobrar/cuentas_por_cobrar_controller.dart';
 import '../../cuentas_por_cobrar/cuentas_por_cobrar_list_screen.dart' show formatoCentavosCuentaPorCobrar;
+import '../../cuentas_por_cobrar/widgets/cuenta_por_cobrar_detalle_dialog.dart';
 import '../pagos_controller.dart';
 import '../pagos_list_screen.dart' show formaPagoLabel, formatoCentavosPago, pagoEstatusLabel, pagoEstatusTono;
 import 'corregir_pago_dialog.dart';
@@ -49,7 +51,11 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
   List<AttachmentData> _comprobantes = const [];
   final Map<String, String> _folioPorCuenta = {};
   final List<CuentaPorCobrarData> _cuentasDeAplicacionesActivas = [];
+  /// El Complemento VIGENTE, o `null` si la obligación sigue pendiente.
   ComplementoPagoData? _complemento;
+
+  /// Todos los Complementos del Pago, vigentes y cancelados.
+  List<ComplementoPagoData> _historialComplementos = const [];
   String? _clienteNombre;
   Map<String, String> _usuariosPorId = const {};
   bool _cargando = true;
@@ -68,20 +74,27 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
     final aplicaciones = await notifier.listarAplicaciones(widget.pagoId);
     final eventos = await notifier.listarEventos(widget.pagoId);
     final comprobantes = await notifier.listarComprobantes(widget.pagoId);
-    final complemento = await ref.read(complementoPagoRepositoryProvider).obtenerPorPagoId(widget.pagoId);
+    // Histórico completo + el vigente (schemaVersion 79): un Pago
+    // puede arrastrar varios Complementos cancelados y a lo más uno
+    // vigente.  es SIEMPRE el vigente — es el que se
+    // muestra y el que congela correcciones.
+    final historialComplementos = await ref.read(complementoPagoRepositoryProvider).listarPorPagoId(widget.pagoId);
+    final complemento = complementoVigente(historialComplementos);
     final usuarios = await ref.read(usuarioRepositoryProvider).listar();
     final usuariosPorId = {for (final u in usuarios) u.id: u.nombre};
 
     String? clienteNombre;
     if (pago != null) {
-      final cliente = await ref.read(clienteRepositoryProvider).obtenerPorId(pago.clienteId);
+      final clienteId = pago.clienteId;
+      final cliente = clienteId == null ? null : await ref.read(clienteRepositoryProvider).obtenerPorId(clienteId);
       clienteNombre = cliente?.nombreComercial;
     }
     _cuentasDeAplicacionesActivas.clear();
     for (final aplicacion in aplicaciones) {
       final cuenta = await ref.read(cuentaPorCobrarRepositoryProvider).obtenerPorId(aplicacion.cuentaPorCobrarId);
       if (cuenta == null) continue;
-      _folioPorCuenta[aplicacion.cuentaPorCobrarId] = cuenta.folioDocumento ?? cuenta.documentoPorEmitirId;
+      _folioPorCuenta[aplicacion.cuentaPorCobrarId] =
+          cuenta.folioDocumento ?? cuenta.documentoPorEmitirId ?? cuenta.id;
       if (EstatusAplicacionPago.values.byName(aplicacion.estatus) == EstatusAplicacionPago.aplicada) {
         _cuentasDeAplicacionesActivas.add(cuenta);
       }
@@ -94,10 +107,19 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
       _eventos = eventos;
       _comprobantes = comprobantes;
       _complemento = complemento;
+      _historialComplementos = historialComplementos;
       _clienteNombre = clienteNombre;
       _usuariosPorId = usuariosPorId;
       _cargando = false;
     });
+  }
+
+  Future<void> _verCuentaPorCobrar(AplicacionPagoData aplicacion) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => CuentaPorCobrarDetalleDialog(cuentaPorCobrarId: aplicacion.cuentaPorCobrarId),
+    );
+    await _cargar();
   }
 
   Future<void> _registrarComplemento() async {
@@ -123,7 +145,13 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
   }
 
   Future<void> _corregir() async {
-    final actualizo = await mostrarDialogoCorregirPago(context, ref, _pago!);
+    final actualizo = await mostrarDialogoCorregirPago(
+      context,
+      ref,
+      _pago!,
+      aplicacionesActivas: _aplicaciones.where((a) => a.estatus == EstatusAplicacionPago.aplicada.name).toList(),
+      complemento: _complemento,
+    );
     if (actualizo) await _cargar();
   }
 
@@ -168,6 +196,8 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
       case CancelarPagoExitoso():
         RisegFeedback.showSuccess(context, l10n.cancelarPagoExito);
         await _cargar();
+      case CancelarPagoComplementoVigente(:final uuid):
+        RisegFeedback.showError(context, l10n.cancelarPagoErrorComplementoVigente(uuid));
       case CancelarPagoNoExiste():
       case CancelarPagoYaCancelado():
       case CancelarPagoErrorInesperado():
@@ -304,7 +334,22 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            CampoConsulta(label: l10n.pagoDetalleCampoCliente, value: _clienteNombre ?? p.clienteId),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(child: CampoConsulta(label: l10n.pagoDetalleCampoCliente, value: _clienteNombre ?? p.clienteId)),
+                RisegButton(
+                  key: const Key('pago_boton_ver_cliente'),
+                  label: l10n.cuentaPorCobrarDetalleBotonVerCliente,
+                  variant: RisegButtonVariant.ghost,
+                  size: RisegButtonSize.compact,
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.push('/comercial/clientes/${p.clienteId}');
+                  },
+                ),
+              ],
+            ),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
@@ -342,29 +387,45 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
               for (final aplicacion in _aplicaciones)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(_folioPorCuenta[aplicacion.cuentaPorCobrarId] ?? aplicacion.cuentaPorCobrarId),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(_folioPorCuenta[aplicacion.cuentaPorCobrarId] ?? aplicacion.cuentaPorCobrarId),
+                          ),
+                          SizedBox(width: 110, child: Text(formatoCentavosCuentaPorCobrar(aplicacion.monto))),
+                          SizedBox(
+                            width: 110,
+                            child: RisegStatusBadge(
+                              label: _aplicacionEstatusLabel(l10n, aplicacion.estatus),
+                              tone: EstatusAplicacionPago.values.byName(aplicacion.estatus) ==
+                                      EstatusAplicacionPago.aplicada
+                                  ? RisegStatusTone.success
+                                  : RisegStatusTone.neutral,
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(width: 110, child: Text(formatoCentavosCuentaPorCobrar(aplicacion.monto))),
-                      SizedBox(
-                        width: 110,
-                        child: RisegStatusBadge(
-                          label: _aplicacionEstatusLabel(l10n, aplicacion.estatus),
-                          tone: EstatusAplicacionPago.values.byName(aplicacion.estatus) ==
-                                  EstatusAplicacionPago.aplicada
-                              ? RisegStatusTone.success
-                              : RisegStatusTone.neutral,
-                        ),
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: [
+                          RisegButton(
+                            label: l10n.pagoDetalleBotonVerCuentaPorCobrar,
+                            variant: RisegButtonVariant.ghost,
+                            onPressed: () => _verCuentaPorCobrar(aplicacion),
+                          ),
+                          if (EstatusAplicacionPago.values.byName(aplicacion.estatus) == EstatusAplicacionPago.aplicada)
+                            RisegButton(
+                              label: l10n.cuentaPorCobrarDetalleBotonCancelarAplicacion,
+                              variant: RisegButtonVariant.ghost,
+                              loading: _procesando,
+                              onPressed: () => _cancelarAplicacion(aplicacion),
+                            ),
+                        ],
                       ),
-                      if (EstatusAplicacionPago.values.byName(aplicacion.estatus) == EstatusAplicacionPago.aplicada)
-                        RisegButton(
-                          label: l10n.cuentaPorCobrarDetalleBotonCancelarAplicacion,
-                          variant: RisegButtonVariant.ghost,
-                          loading: _procesando,
-                          onPressed: () => _cancelarAplicacion(aplicacion),
-                        ),
                     ],
                   ),
                 ),
@@ -382,18 +443,23 @@ class _PagoDetalleDialogState extends ConsumerState<PagoDetalleDialog> {
                   style: AppTypography.body.copyWith(color: colors.textMuted),
                 );
               }
-              final pendiente = complementoPendiente(requiereComplemento: true, complemento: _complemento);
+              final pendiente = complementoPendiente(requiereComplemento: true, complementosDelPago: _historialComplementos);
               if (pendiente) {
-                return Row(
+                // `Wrap`, no `Row`: la etiqueta y el botón juntos no
+                // caben en el ancho del diálogo, y el `Expanded` sólo
+                // conseguía exprimir el texto hasta desbordar igual
+                // (66 px, destapado por la prueba de este flujo). Si no
+                // caben en una línea, el botón baja a la siguiente.
+                return Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
-                      child: Text(
-                        l10n.pagoDetalleComplementoSinRegistrar,
-                        style: AppTypography.body.copyWith(color: colors.textMuted),
-                      ),
+                    Text(
+                      l10n.pagoDetalleComplementoSinRegistrar,
+                      style: AppTypography.body.copyWith(color: colors.textMuted),
                     ),
                     RisegStatusBadge(label: l10n.pagoDetalleComplementoPendienteEtiqueta, tone: RisegStatusTone.warning),
-                    const SizedBox(width: AppSpacing.xs),
                     RisegButton(
                       label: l10n.pagoDetalleBotonRegistrarComplemento,
                       variant: RisegButtonVariant.secondary,

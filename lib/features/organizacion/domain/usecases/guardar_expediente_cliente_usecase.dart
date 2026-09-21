@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
 
@@ -22,6 +23,9 @@ class GuardarExpedienteClienteErroresValidacion extends GuardarExpedienteCliente
   final List<ErrorExpedienteCliente> errores;
 }
 
+/// Sin motivo no hay corrección: la bitácora quedaría sin el porqué.
+class GuardarExpedienteClienteMotivoRequerido extends GuardarExpedienteClienteResultado {}
+
 class GuardarExpedienteClienteErrorInesperado extends GuardarExpedienteClienteResultado {
   GuardarExpedienteClienteErrorInesperado(this.mensaje);
   final String mensaje;
@@ -38,10 +42,15 @@ class GuardarExpedienteClienteUseCase {
 
   final ClienteRepository _repository;
 
+  /// [motivo] es obligatorio: corregir los datos comerciales de un
+  /// Cliente es un cambio sensible y tiene que poder explicarse después.
   Future<GuardarExpedienteClienteResultado> ejecutar({
     required String clienteId,
     required ClienteExpedienteInput input,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return GuardarExpedienteClienteMotivoRequerido();
     final errores = <ErrorExpedienteCliente>[];
 
     final nombreComercial = input.datosGenerales.nombreComercial.trim();
@@ -89,6 +98,8 @@ class GuardarExpedienteClienteUseCase {
           ),
         ),
         direccionReferencia: direccionValidada,
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
       );
 
       return GuardarExpedienteClienteExitoso(

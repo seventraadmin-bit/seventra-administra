@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/finanzas/domain/politica_saldo_cuenta.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -10,6 +11,7 @@ import 'package:riseg_one/features/compras/domain/repositories/compra_repository
 import 'package:riseg_one/features/compras/domain/usecases/cancelar_compra_usecase.dart';
 import 'package:riseg_one/features/compras/domain/usecases/corregir_compra_usecase.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -44,11 +46,12 @@ void main() {
     inventarioRepo = InventarioRepositoryImpl(db);
     inventarioAsignacionRepo = AsignacionRepositoryImpl(db);
     final egresoRepo = EgresoRepositoryImpl(db);
-    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+    final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
-    corregirCompra = CorregirCompraUseCase(compraRepo, articuloRepo, inventarioRepo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
+    corregirCompra = CorregirCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo);
     cancelarCompra = CancelarCompraUseCase(compraRepo);
   });
 
@@ -102,7 +105,7 @@ void main() {
       final resultado = await registrarCompra.ejecutar(
         fecha: DateTime(2026, 8, 10),
         proveedor: 'Uniformes del Centro',
-        formaPago: FormaPago.tarjeta.name,
+        formaPago: FormaPago.efectivo.name,
         partidas: [
           PartidaCompraInput(
             destino: DestinoCompraPartida.inventario.name,
@@ -309,7 +312,7 @@ void main() {
       final resultado = await registrarCompra.ejecutar(
         fecha: DateTime(2026, 8, 10),
         proveedor: 'Uniformes del Centro',
-        formaPago: FormaPago.tarjeta.name,
+        formaPago: FormaPago.efectivo.name,
         partidas: [
           PartidaCompraInput(destino: DestinoCompraPartida.inventario.name, articuloId: camisola.id, cantidad: 10, costoUnitario: 18000),
           PartidaCompraInput(destino: DestinoCompraPartida.inventario.name, articuloId: pantalon.id, cantidad: 5, costoUnitario: 25000),
@@ -409,7 +412,7 @@ void main() {
         ],
       )) as RegistrarCompraExitosa)
           .compra;
-      await cancelarCompra.ejecutar(compraId: creada.id, motivo: 'Cancelación de prueba');
+      await cancelarCompra.ejecutar(compraId: creada.id, motivo: MotivoCancelacionCompra.compraDePrueba);
 
       final resultado = await corregirCompra.ejecutar(compraId: creada.id, proveedor: 'x', motivo: 'y');
       expect(resultado, isA<CorregirCompraCancelada>());
@@ -428,12 +431,13 @@ void main() {
       )) as RegistrarCompraExitosa)
           .compra;
 
-      final resultado = await cancelarCompra.ejecutar(compraId: creada.id, motivo: 'Devolución al proveedor');
+      final resultado =
+          await cancelarCompra.ejecutar(compraId: creada.id, motivo: MotivoCancelacionCompra.compraDevueltaReembolsada);
       expect(resultado, isA<CancelarCompraExitosa>());
 
       final compraCancelada = (resultado as CancelarCompraExitosa).compra;
       expect(compraCancelada.estatus, 'cancelada');
-      expect(compraCancelada.motivoCancelacion, 'Devolución al proveedor');
+      expect(compraCancelada.motivoCancelacionCodigo, MotivoCancelacionCompra.compraDevueltaReembolsada.name);
 
       final egreso = await db.select(db.egreso).getSingle();
       expect(egreso.estatus, 'cancelado');
@@ -466,7 +470,7 @@ void main() {
       )) as RegistrarCompraExitosa)
           .compra;
 
-      await cancelarCompra.ejecutar(compraId: creada.id, motivo: 'Compra duplicada por error');
+      await cancelarCompra.ejecutar(compraId: creada.id, motivo: MotivoCancelacionCompra.compraDuplicada);
 
       final unidades = await compraRepo.listarUnidadesGeneradas(creada.id);
       expect(unidades.every((u) => u.estatus == EstatusArticuloUnidad.baja.name), isTrue);
@@ -499,7 +503,7 @@ void main() {
         fechaEntrega: DateTime(2026, 8, 11),
       );
 
-      final resultado = await cancelarCompra.ejecutar(compraId: creada.id, motivo: 'Intento de cancelación');
+      final resultado = await cancelarCompra.ejecutar(compraId: creada.id, motivo: MotivoCancelacionCompra.errorDeCaptura);
       expect(resultado, isA<CancelarCompraBloqueadaPorUnidadesNoDisponibles>());
       final unidadesBloqueantes = (resultado as CancelarCompraBloqueadaPorUnidadesNoDisponibles).unidades;
       expect(unidadesBloqueantes.single.id, unidad.id);
@@ -524,9 +528,9 @@ void main() {
         ],
       )) as RegistrarCompraExitosa)
           .compra;
-      await cancelarCompra.ejecutar(compraId: creada.id, motivo: 'Primera cancelación');
+      await cancelarCompra.ejecutar(compraId: creada.id, motivo: MotivoCancelacionCompra.compraDuplicada);
 
-      final resultado = await cancelarCompra.ejecutar(compraId: creada.id, motivo: 'Segunda cancelación');
+      final resultado = await cancelarCompra.ejecutar(compraId: creada.id, motivo: MotivoCancelacionCompra.compraNoRealizada);
       expect(resultado, isA<CancelarCompraYaCancelada>());
     });
 
@@ -540,7 +544,7 @@ void main() {
       )) as RegistrarCompraExitosa)
           .compra;
 
-      final resultado = await cancelarCompra.ejecutar(compraId: creada.id, motivo: 'Ya no se necesitaba');
+      final resultado = await cancelarCompra.ejecutar(compraId: creada.id, motivo: MotivoCancelacionCompra.compraNoRealizada);
       expect(resultado, isA<CancelarCompraExitosa>());
 
       final egreso = await db.select(db.egreso).getSingle();
@@ -624,7 +628,7 @@ void main() {
         ],
       );
       final compra2 = (r2 as RegistrarCompraExitosa).compra;
-      await cancelarCompra.ejecutar(compraId: compra2.id, motivo: 'Cancelada');
+      await cancelarCompra.ejecutar(compraId: compra2.id, motivo: MotivoCancelacionCompra.errorDeCaptura);
 
       final total = await compraRepo.totalCompradoEnRango(desde: DateTime(2026, 8, 1), hasta: DateTime(2026, 8, 31));
       expect(total, 20000, reason: 'la Compra cancelada no cuenta hacia el total');
@@ -643,6 +647,59 @@ void main() {
         ],
       );
       expect(resultado, isA<RegistrarCompraExitosa>());
+    });
+  });
+
+  group('Política de saldo (v91) — Compras', () {
+    Future<CuentaFinancieraData> cuentaCon(int saldo) {
+      return db.into(db.cuentaFinanciera).insertReturning(
+        CuentaFinancieraCompanion.insert(
+          codigo: 'CTA-COM-$saldo',
+          nombre: 'Cuenta compras',
+          tipo: 'banco',
+          saldoInicial: saldo,
+          fechaSaldoInicial: DateTime(2026, 1, 1),
+        ),
+      );
+    }
+
+    Future<RegistrarCompraResultado> comprar(String cuentaId, int costoUnitario) async {
+      final articulo = await crearArticuloDePrueba();
+      return registrarCompra.ejecutar(
+        fecha: DateTime(2026, 8, 10),
+        proveedor: 'Uniformes del Centro',
+        formaPago: FormaPago.transferencia.name,
+        cuentaFinancieraId: cuentaId,
+        partidas: [
+          PartidaCompraInput(
+            destino: DestinoCompraPartida.inventario.name,
+            articuloId: articulo.id,
+            cantidad: 10,
+            costoUnitario: costoUnitario,
+          ),
+        ],
+      );
+    }
+
+    test('A) con saldo suficiente: la compra se registra', () async {
+      final cuenta = await cuentaCon(180000);
+      expect(await comprar(cuenta.id, 18000), isA<RegistrarCompraExitosa>());
+    });
+
+    test('B y C) sin saldo: rechaza y NO deja persistencia parcial', () async {
+      final cuenta = await cuentaCon(179999);
+      final movimientosAntes = (await db.select(db.movimientoInventario).get()).length;
+
+      await expectLater(comprar(cuenta.id, 18000), throwsA(isA<SaldoInsuficienteException>()));
+
+      expect(await db.select(db.compra).get(), isEmpty, reason: 'ni la Compra');
+      expect(await db.select(db.egreso).get(), isEmpty, reason: 'ni el Egreso');
+      expect(await db.select(db.egresoFuente).get(), isEmpty, reason: 'ni su fuente');
+      expect(
+        (await db.select(db.movimientoInventario).get()).length,
+        movimientosAntes,
+        reason: 'ni un solo movimiento de inventario',
+      );
     });
   });
 }

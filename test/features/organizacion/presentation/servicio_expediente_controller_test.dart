@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,6 +48,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/organizacion/presentation/servicios/servicio_expediente_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/servicios/servicio_expediente_state.dart';
+import 'package:riseg_one/features/organizacion/presentation/servicios/servicios_list_controller.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
@@ -76,6 +78,17 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // El actor de la bitácora es una FK real contra `Usuario`: la
+    // sesión de prueba tiene que existir, igual que en producción.
+    await db.into(db.usuario).insert(
+      UsuarioCompanion.insert(
+        id: const Value('usuario-prueba'),
+        nombre: 'Usuario de prueba',
+        nombreUsuario: 'prueba',
+        passwordHash: 'x',
+        esMaestro: const Value(true),
+      ),
+    );
 
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     clienteRepo = ClienteRepositoryImpl(db);
@@ -137,6 +150,7 @@ void main() {
         tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
         fechaInicio: DateTime(2026, 2, 1),
       ),
+      motivo: 'Motivo de prueba',
     );
 
     expect(exito, isTrue);
@@ -156,6 +170,7 @@ void main() {
         tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
         fechaInicio: DateTime(2026, 2, 1),
       ),
+      motivo: 'Motivo de prueba',
     );
 
     expect(exito, isFalse);
@@ -168,17 +183,50 @@ void main() {
     await esperarCargaInicial();
     final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
 
-    final resultado = await notifier.cambiarEstatus(EstatusServicio.suspendido);
+    final resultado = await notifier.cambiarEstatus(EstatusServicio.suspendido, motivo: 'Motivo de prueba');
 
     expect(resultado, isA<CambiarEstatusServicioExitoso>());
     expect(container.read(servicioExpedienteControllerProvider(servicioId)).datos?.servicio.estatus, 'suspendido');
+  });
+
+  // Hallazgo real (mismo patrón que `ClienteExpedienteController`): un
+  // Servicio cambiado de estatus desde el expediente seguía viendo el
+  // estatus previo en el listado hasta navegar a otra pestaña y volver
+  // — `ServiciosListController` nunca se invalidaba tras `cambiarEstatus`/
+  // `guardar`. Esta prueba nunca llama `recargar()` a mano: el listado
+  // debe reflejar el estatus real solo por la invalidación que
+  // `cambiarEstatus` dispara.
+  test('cambiarEstatus desde el expediente refleja el nuevo estatus en el listado sin recargar manualmente', () async {
+    await esperarCargaInicial();
+    container.listen(serviciosListControllerProvider, (_, _) {});
+    while (container.read(serviciosListControllerProvider).cargando) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    expect(
+      container.read(serviciosListControllerProvider).servicios.singleWhere((s) => s.servicio.id == servicioId).servicio.estatus,
+      'cotizado',
+    );
+
+    final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
+    final exito = await notifier.cambiarEstatus(EstatusServicio.suspendido, motivo: 'Motivo de prueba');
+    expect(exito, isA<CambiarEstatusServicioExitoso>());
+
+    await Future<void>.delayed(Duration.zero);
+    while (container.read(serviciosListControllerProvider).cargando) {
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    expect(
+      container.read(serviciosListControllerProvider).servicios.singleWhere((s) => s.servicio.id == servicioId).servicio.estatus,
+      'suspendido',
+    );
   });
 
   test('cambiarEstatus a activo se bloquea por falta de Dirección operativa', () async {
     await esperarCargaInicial();
     final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
 
-    final resultado = await notifier.cambiarEstatus(EstatusServicio.activo);
+    final resultado = await notifier.cambiarEstatus(EstatusServicio.activo, motivo: 'Motivo de prueba');
 
     expect(resultado, isA<CambiarEstatusServicioFaltaDireccionOperativa>());
     expect(container.read(servicioExpedienteControllerProvider(servicioId)).datos?.servicio.estatus, 'cotizado');
@@ -188,7 +236,7 @@ void main() {
     await esperarCargaInicial();
     final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
 
-    final resultado = await notifier.cambiarEstatus(EstatusServicio.terminado);
+    final resultado = await notifier.cambiarEstatus(EstatusServicio.terminado, motivo: 'Motivo de prueba');
 
     expect(resultado, isA<CambiarEstatusServicioRequiereFechaTermino>());
   });
@@ -200,6 +248,7 @@ void main() {
     final resultado = await notifier.cambiarEstatus(
       EstatusServicio.terminado,
       fechaTerminoEfectiva: DateTime(2026, 6, 1),
+      motivo: 'Motivo de prueba',
     );
 
     expect(resultado, isA<CambiarEstatusServicioExitoso>());
@@ -352,7 +401,7 @@ void main() {
       final state = container.read(servicioExpedienteControllerProvider(servicioId));
       expect(state.datos?.tieneDireccionOperativaActiva, isTrue);
 
-      final cambio = await notifier.cambiarEstatus(EstatusServicio.activo);
+      final cambio = await notifier.cambiarEstatus(EstatusServicio.activo, motivo: 'Motivo de prueba');
       expect(cambio, isA<CambiarEstatusServicioExitoso>());
     });
 
@@ -575,7 +624,7 @@ void main() {
         final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
         final configuracionCobroId = await agregarConfiguracionCobroDePrueba(notifier);
 
-        final resultado = await notifier.cerrarConfiguracionCobro(configuracionCobroId, DateTime.now());
+        final resultado = await notifier.cerrarConfiguracionCobro(configuracionCobroId, DateTime.now(), motivo: 'Motivo de prueba');
         expect(resultado, isA<CerrarConfiguracionCobroExitoso>());
       });
 
@@ -599,7 +648,7 @@ void main() {
         );
         final programadaId = (creada as CambiarVigenciaConfiguracionCobroExitoso).vigencia.id;
 
-        final resultado = await notifier.cancelarVigenciaProgramadaConfiguracionCobro(programadaId);
+        final resultado = await notifier.cancelarVigenciaProgramadaConfiguracionCobro(programadaId, motivo: 'Motivo de prueba');
         expect(resultado, isA<CancelarVigenciaProgramadaConfiguracionCobroExitoso>());
         final state = container.read(servicioExpedienteControllerProvider(servicioId));
         expect(state.datos?.configuracionCobro?.vigenciasProgramadas, isEmpty);
@@ -686,7 +735,7 @@ void main() {
       final notifier = container.read(servicioExpedienteControllerProvider(servicioId).notifier);
       final lineaId = await agregarLineaDePrueba(notifier, guardia);
 
-      final resultado = await notifier.cerrarLineaComercial(lineaId, DateTime.now());
+      final resultado = await notifier.cerrarLineaComercial(lineaId, DateTime.now(), motivo: 'Motivo de prueba');
       expect(resultado, isA<CerrarLineaComercialExitoso>());
     });
 
@@ -718,7 +767,7 @@ void main() {
       );
       final programadaId = (creada as CambiarVigenciaLineaComercialExitoso).vigencia.id;
 
-      final resultado = await notifier.cancelarVigenciaProgramada(programadaId);
+      final resultado = await notifier.cancelarVigenciaProgramada(programadaId, motivo: 'Motivo de prueba');
       expect(resultado, isA<CancelarVigenciaProgramadaExitoso>());
       final state = container.read(servicioExpedienteControllerProvider(servicioId));
       expect(state.datos?.lineasComerciales.single.vigenciasProgramadas, isEmpty);

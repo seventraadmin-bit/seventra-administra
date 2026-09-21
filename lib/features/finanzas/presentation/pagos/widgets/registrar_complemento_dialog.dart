@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/registrar_complemento_pago_usecase.dart';
 
+import '../../../../notificaciones/presentation/notificaciones_controller.dart';
 import '../../../finanzas_providers.dart';
+import '../../complementos/complementos_controller.dart';
 
 /// Diálogo "Registrar complemento" desde el detalle de un Pago (Etapa
 /// 4J.3) — el Complemento ya se generó y timbró externamente, aquí
@@ -71,19 +73,23 @@ Future<bool> mostrarDialogoRegistrarComplemento(BuildContext context, WidgetRef 
       },
     ),
     onConfirm: () async {
+      // `null`, no `false`: `RisegDialog.showForm` cierra con cualquier
+      // resultado no nulo, así que devolver `false` aquí cerraba el
+      // diálogo y el usuario nunca llegaba a ver el error que se acaba
+      // de escribir en `errorUuid`/`errorMonto`/`errorFecha`.
       final uuid = uuidController.text.trim();
       if (uuid.isEmpty) {
         errorUuid = l10n.registrarComplementoErrorUuidFormatoInvalido;
-        return false;
+        return null;
       }
       final monto = _centavosDesdeTexto(montoController.text);
       if (monto == null || monto <= 0) {
         errorMonto = l10n.registrarComplementoErrorMontoInvalido;
-        return false;
+        return null;
       }
       if (fechaSeleccionada == null) {
         errorFecha = l10n.registrarComplementoCampoFechaTimbrado;
-        return false;
+        return null;
       }
       final resultado = await ref.read(registrarComplementoPagoAutorizadoProvider)(
             pagoId: pagoId,
@@ -100,6 +106,10 @@ Future<bool> mostrarDialogoRegistrarComplemento(BuildContext context, WidgetRef 
 
       switch (resultado) {
         case RegistrarComplementoPagoExitoso():
+          // La obligación quedó cumplida: debe desaparecer del contador
+          // de la campana y de la vista Pendientes SIN reiniciar la app.
+          ref.invalidate(notificacionesControllerProvider);
+          ref.invalidate(complementosControllerProvider);
           RisegFeedback.showSuccess(context, l10n.registrarComplementoExito);
           return true;
         case RegistrarComplementoPagoPagoNoExiste():

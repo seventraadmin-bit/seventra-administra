@@ -27,8 +27,7 @@ import 'package:riseg_one/features/inventario/domain/usecases/registrar_ajuste_u
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_controller.dart';
 import 'package:riseg_one/features/nomina/data/tables/nomina_table.dart';
-import 'package:riseg_one/features/nomina/domain/usecases/actualizar_distribucion_nomina_usecase.dart';
-import 'package:riseg_one/features/nomina/domain/usecases/actualizar_movimientos_nomina_usecase.dart';
+import 'package:riseg_one/features/nomina/domain/usecases/actualizar_renglon_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/cerrar_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/domain/usecases/generar_nomina_usecase.dart';
 import 'package:riseg_one/features/nomina/presentation/nominas/nominas_controller.dart';
@@ -46,6 +45,7 @@ import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart'
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/corregir_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/presentation/vehiculos_controller.dart';
+import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 
 class _SesionFija extends SesionController {
   _SesionFija(this._sesion);
@@ -230,7 +230,7 @@ void main() {
     });
   });
 
-  group('Nómina — cerrar/actualizarMovimientos/actualizarDistribucion, sin pasar por diálogo', () {
+  group('Nómina — cerrar/actualizarRenglon, sin pasar por diálogo', () {
     late AppDatabase db;
 
     setUp(() async {
@@ -255,45 +255,31 @@ void main() {
       expect(resultado, isA<CerrarNominaNoExiste>());
     });
 
-    test('actualizarMovimientos: sin nomina.modificar se rechaza', () async {
+    test('actualizarRenglon: sin nomina.modificar se rechaza (movimientos y distribución comparten el mismo gate)', () async {
       final container = _container(db, _sesionCon({'nomina.ver'}));
-      final resultado = await container.read(nominasControllerProvider.notifier).actualizarMovimientos(
+      final resultado = await container.read(nominasControllerProvider.notifier).actualizarRenglon(
             nominaEmpleadoId: 'renglon-inexistente',
             prestamo: 0,
+            distribucionManual: (montoFiscal: 0, montoNoFiscal: 0),
           );
 
-      expect(resultado, isA<ActualizarMovimientosNominaErrorInesperado>());
+      expect(resultado, isA<ActualizarRenglonNominaErrorInesperado>());
     });
 
-    test('actualizarDistribucion: sin nomina.modificar se rechaza', () async {
-      final container = _container(db, _sesionCon({'nomina.ver'}));
-      final resultado = await container.read(nominasControllerProvider.notifier).actualizarDistribucion(
-            nominaEmpleadoId: 'renglon-inexistente',
-            montoFiscal: 0,
-            montoNoFiscal: 0,
-          );
-
-      expect(resultado, isA<ActualizarDistribucionNominaErrorInesperado>());
-    });
-
-    test('un Maestro puede cerrar/actualizarMovimientos/actualizarDistribucion sin filas de permiso', () async {
+    test('un Maestro puede cerrar/actualizarRenglon sin filas de permiso', () async {
       final container = _container(db, _sesionMaestro);
       final cerrar = await container.read(nominasControllerProvider.notifier).cerrar('nomina-inexistente');
-      final movs = await container
-          .read(nominasControllerProvider.notifier)
-          .actualizarMovimientos(nominaEmpleadoId: 'renglon-inexistente', prestamo: 0);
-      final dist = await container.read(nominasControllerProvider.notifier).actualizarDistribucion(
+      final actualizado = await container.read(nominasControllerProvider.notifier).actualizarRenglon(
             nominaEmpleadoId: 'renglon-inexistente',
-            montoFiscal: 0,
-            montoNoFiscal: 0,
+            prestamo: 0,
+            distribucionManual: (montoFiscal: 0, montoNoFiscal: 0),
           );
 
-      // Ninguno de los tres debe ser el resultado de "permiso denegado" —
+      // Ninguno de los dos debe ser el resultado de "permiso denegado" —
       // el Maestro siempre llega al dominio real, sea cual sea el
       // resultado de negocio.
       expect(cerrar, isNot(isA<CerrarNominaErrorInesperado>()));
-      expect(movs, isNot(isA<ActualizarMovimientosNominaErrorInesperado>()));
-      expect(dist, isNot(isA<ActualizarDistribucionNominaErrorInesperado>()));
+      expect(actualizado, isNot(isA<ActualizarRenglonNominaErrorInesperado>()));
     });
   });
 
@@ -371,7 +357,7 @@ void main() {
     });
     tearDown(() => db.close());
 
-    test('finanzas.ver sin finanzas.crear: rechazado', () async {
+    test('finanzas.ver sin ingresos.crear: rechazado', () async {
       final container = _container(db, _sesionCon({'finanzas.ver'}));
       final resultado = await container.read(ingresosControllerProvider.notifier).registrarManual(
             monto: 50000,
@@ -384,8 +370,8 @@ void main() {
       expect((resultado as RegistrarIngresoManualErrorInesperado).mensaje, _mensajePermiso);
     });
 
-    test('finanzas.crear presente: se registra', () async {
-      final container = _container(db, _sesionCon({'finanzas.ver', 'finanzas.crear'}));
+    test('ingresos.crear presente: se registra', () async {
+      final container = _container(db, _sesionCon({'finanzas.ver', 'ingresos.crear'}));
       final resultado = await container.read(ingresosControllerProvider.notifier).registrarManual(
             monto: 50000,
             fecha: DateTime(2026, 1, 1),
@@ -406,7 +392,7 @@ void main() {
     });
     tearDown(() => db.close());
 
-    test('inventario.ver sin inventario.modificar: ajuste rechazado', () async {
+    test('inventario.ver sin inventario.ajustarExistencia: ajuste rechazado', () async {
       final container = _container(db, _sesionCon({'inventario.ver'}));
       final resultado = await container.read(articulosControllerProvider.notifier).registrarAjuste(
             articuloId: 'articulo-inexistente',
@@ -419,9 +405,9 @@ void main() {
       expect((resultado as RegistrarAjusteErrorInesperado).mensaje, _mensajePermiso);
     });
 
-    test('inventario.modificar presente: llega al dominio real (artículo inexistente, '
+    test('inventario.ajustarExistencia presente: llega al dominio real (artículo inexistente, '
         'no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'inventario.ver', 'inventario.modificar'}));
+      final container = _container(db, _sesionCon({'inventario.ver', 'inventario.ajustarExistencia'}));
       final resultado = await container.read(articulosControllerProvider.notifier).registrarAjuste(
             articuloId: 'articulo-inexistente',
             cantidad: 1,
@@ -460,6 +446,8 @@ void main() {
             vehiculoId: 'vehiculo-inexistente',
             marca: 'Nissan',
             modelo: 'Versa',
+            // schemaVersion 80: la corrección exige motivo.
+            motivo: 'Prueba de autorización',
           );
 
       expect(resultado, isA<CorregirVehiculoErrorInesperado>());
@@ -473,6 +461,8 @@ void main() {
             vehiculoId: 'vehiculo-inexistente',
             marca: 'Nissan',
             modelo: 'Versa',
+            // schemaVersion 80: la corrección exige motivo.
+            motivo: 'Prueba de autorización',
           );
 
       expect(resultado, isA<CorregirVehiculoNoExiste>());
@@ -484,6 +474,8 @@ void main() {
             vehiculoId: 'vehiculo-inexistente',
             marca: 'Nissan',
             modelo: 'Versa',
+            // schemaVersion 80: la corrección exige motivo.
+            motivo: 'Prueba de autorización',
           );
 
       expect(resultado, isNot(isA<CorregirVehiculoErrorInesperado>()));
@@ -499,25 +491,27 @@ void main() {
     });
     tearDown(() => db.close());
 
-    test('telefonia.ver sin telefonia.crear: recarga rechazada', () async {
+    test('telefonia.ver sin telefonia.recargar: recarga rechazada', () async {
       final container = _container(db, _sesionCon({'telefonia.ver'}));
       final resultado = await container.read(registrarRecargaLineaTelefonicaAutorizadoProvider)(
         lineaTelefonicaId: 'linea-inexistente',
         fecha: DateTime(2026, 1, 1),
         importe: 10000,
+        formaPago: FormaPago.efectivo.name,
       );
 
       expect(resultado, isA<RegistrarRecargaLineaTelefonicaErrorInesperado>());
       expect((resultado as RegistrarRecargaLineaTelefonicaErrorInesperado).mensaje, _mensajePermiso);
     });
 
-    test('telefonia.crear presente: llega al dominio real (línea inexistente, '
+    test('telefonia.recargar presente: llega al dominio real (línea inexistente, '
         'no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'telefonia.ver', 'telefonia.crear'}));
+      final container = _container(db, _sesionCon({'telefonia.ver', 'telefonia.recargar'}));
       final resultado = await container.read(registrarRecargaLineaTelefonicaAutorizadoProvider)(
         lineaTelefonicaId: 'linea-inexistente',
         fecha: DateTime(2026, 1, 1),
         importe: 10000,
+        formaPago: FormaPago.efectivo.name,
       );
 
       expect(resultado, isA<RegistrarRecargaLineaTelefonicaLineaNoExiste>());
@@ -529,6 +523,7 @@ void main() {
         lineaTelefonicaId: 'linea-inexistente',
         fecha: DateTime(2026, 1, 1),
         importe: 10000,
+        formaPago: FormaPago.efectivo.name,
       );
 
       expect(resultado, isNot(isA<RegistrarRecargaLineaTelefonicaErrorInesperado>()));
@@ -592,9 +587,9 @@ void main() {
         expect((resultado as CambiarResponsableAsignacionErrorInesperado).mensaje, _mensajePermiso);
       });
 
-      test('inventario.modificar presente: llega al dominio real (asignación inexistente, '
+      test('inventario.corregir presente: llega al dominio real (asignación inexistente, '
           'no el error de permiso)', () async {
-        final container = _container(db, _sesionCon({'inventario.ver', 'inventario.modificar'}));
+        final container = _container(db, _sesionCon({'inventario.ver', 'inventario.corregir'}));
         final resultado = await container.read(cambiarResponsableAsignacionAutorizadoProvider)(
           asignacionId: 'asignacion-inexistente',
           nuevoEmpleadoId: 'empleado-cualquiera',
@@ -629,7 +624,7 @@ void main() {
       });
       tearDown(() => db.close());
 
-      test('inventario.ver sin inventario.modificar: corregir identidad rechazado', () async {
+      test('inventario.ver sin inventario.corregir: corregir identidad rechazado', () async {
         final container = _container(db, _sesionCon({'inventario.ver'}));
         final resultado = await container.read(corregirIdentidadUnidadAutorizadoProvider)(
           unidadId: 'unidad-inexistente',
@@ -640,9 +635,9 @@ void main() {
         expect((resultado as CorregirIdentidadUnidadErrorInesperado).mensaje, _mensajePermiso);
       });
 
-      test('inventario.modificar presente: llega al dominio real (unidad inexistente, '
+      test('inventario.corregir presente: llega al dominio real (unidad inexistente, '
           'no el error de permiso)', () async {
-        final container = _container(db, _sesionCon({'inventario.ver', 'inventario.modificar'}));
+        final container = _container(db, _sesionCon({'inventario.ver', 'inventario.corregir'}));
         final resultado = await container.read(corregirIdentidadUnidadAutorizadoProvider)(
           unidadId: 'unidad-inexistente',
           motivo: 'prueba',
@@ -672,7 +667,7 @@ void main() {
     });
     tearDown(() => db.close());
 
-    test('comercial.ver sin comercial.crear: escritura rechazada sin UI', () async {
+    test('comercial.ver sin clientes.crear: escritura rechazada sin UI', () async {
       final container = _container(db, _sesionCon({'comercial.ver'}));
       final resultado = await container.read(crearClienteAutorizadoProvider)(nombreComercial: 'Cliente de prueba');
 
@@ -682,9 +677,9 @@ void main() {
       expect(failure.message, _mensajePermiso);
     });
 
-    test('comercial.crear presente: llega al dominio real (nombre vacío, '
+    test('clientes.crear presente: llega al dominio real (nombre vacío, '
         'no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'comercial.ver', 'comercial.crear'}));
+      final container = _container(db, _sesionCon({'comercial.ver', 'clientes.crear'}));
       final resultado = await container.read(crearClienteAutorizadoProvider)(nombreComercial: '');
 
       expect(resultado.isFailure, isTrue);

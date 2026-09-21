@@ -75,6 +75,12 @@ enum TipoEventoEmpleado {
   cambioServicio,
   retiroServicio,
   fichaTecnicaGenerada,
+
+  /// Regularización de perfil de una `AsignacionServicio` histórica
+  /// (Etapa 15, corrección de atribución histórica) — completa un
+  /// `lineaComercialId` que había quedado `NULL` (dato pre-Etapa 15),
+  /// sin crear una asignación nueva ni tocar fecha/sueldo/historial.
+  regularizacionPerfilAsignacion,
 }
 
 /// Expediente del empleado (Etapa 5A) — la base sobre la que se
@@ -239,6 +245,23 @@ class Empleado extends Table with AuditColumns {
 
   TextColumn get observacionesBaja => text().nullable()();
 
+  // --- Snapshot de baja (Etapa 15, rediseño de Personal/Bajas) — puro
+  // texto de despliegue, capturado en el momento EXACTO de
+  // `RegistrarBajaLaboralUseCase` (nunca resuelto en vivo después):
+  // `puestoId` es el mismo puntero "vigente" que un Reingreso
+  // sobrescribe, y `Servicio`/`Puesto` pueden corregirse de nombre más
+  // adelante — sin este snapshot, "el puesto/servicio/turno al momento
+  // de salir" se pierde o se reescribe silenciosamente. `null` mientras
+  // `estatus == activo`, igual que el resto del bloque de baja.
+  // `servicioNombreBaja`/`turnoNombreBaja` quedan `null` si el Empleado
+  // no tenía ninguna `AsignacionServicio` vigente al momento de la baja
+  // (nunca se inventa un Servicio que no existía).
+  TextColumn get puestoNombreBaja => text().nullable()();
+
+  TextColumn get servicioNombreBaja => text().nullable()();
+
+  TextColumn get turnoNombreBaja => text().nullable()();
+
   // --- Escolaridad ---
 
   TextColumn get nivelEstudios => text().nullable()();
@@ -354,6 +377,19 @@ class EmpleadoPeriodoLaboral extends Table {
   TextColumn get motivoBaja => text()();
 
   TextColumn get observacionesBaja => text().nullable()();
+
+  // --- Snapshot de baja (Etapa 15) — copiado tal cual desde
+  // `Empleado.puestoNombreBaja`/`servicioNombreBaja`/`turnoNombreBaja`
+  // en el momento exacto en que `RegistrarReingresoUseCase` archiva
+  // este periodo (esos 3 campos ya estaban capturados desde la baja,
+  // sin resolver nada de nuevo aquí). `null` en periodos archivados
+  // antes de que este snapshot existiera — nunca inventado
+  // retroactivamente. ---
+  TextColumn get puestoNombre => text().nullable()();
+
+  TextColumn get servicioNombre => text().nullable()();
+
+  TextColumn get turnoNombre => text().nullable()();
 
   @override
   List<String> get customConstraints => ['CHECK (fecha_baja >= fecha_ingreso)'];

@@ -1,5 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../../data/tables/vehiculo_table.dart';
+
 import '../usecases/eliminar_vehiculo_fisicamente_usecase.dart';
 
 /// El expediente de la flotilla (Etapa 8A) — "qué vehículo es" y su
@@ -58,7 +60,26 @@ abstract interface class VehiculoRepository {
     bool limpiarFechaAdquisicion = false,
     bool limpiarCostoAdquisicion = false,
     bool limpiarObservaciones = false,
+    // schemaVersion 80 — obligatorios: toda corrección deja rastro.
+    required String motivo,
+    String? actorUsuarioId,
   });
+
+  /// Historial append-only del Vehículo (schemaVersion 80) — cubre el
+  /// expediente Y sus subentidades (mantenimiento, documentos,
+  /// kilometraje, asignaciones), porque el activo es la unidad que el
+  /// usuario consulta.
+  Future<void> registrarEvento({
+    required String vehiculoId,
+    required TipoEventoVehiculo tipoEvento,
+    String? observacion,
+    String? estadoAnterior,
+    String? estadoNuevo,
+    String? datosRelevantes,
+    String? actorUsuarioId,
+  });
+
+  Future<List<VehiculoEventoData>> listarEventos(String vehiculoId);
 
   /// Cambia manualmente el estatus a `enMantenimiento`/`fueraDeServicio`/
   /// `disponible` — nunca a `asignado` (eso lo mantiene

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/finanzas/domain/fuente_egreso.dart';
+import 'package:riseg_one/features/descuentos_personal/domain/repositories/descuento_programado_repository.dart';
 import 'package:riseg_one/features/finanzas/domain/repositories/egreso_repository.dart';
 import 'package:uuid/uuid.dart';
 
@@ -17,16 +19,28 @@ import '../tables/pago_nomina_table.dart' show TipoEventoPagoNomina;
 /// directo sobre `_db.egreso` — a diferencia de `PagoRepositoryImpl`,
 /// que sí escribe directo sobre `_db.ingreso` porque `Pago`/`Ingreso`
 /// viven en el mismo dominio (`finanzas`).
+///
+/// También compone `DescuentoProgramadoRepository` (Etapa 15): este es
+/// el ÚNICO punto del sistema donde una cuota `reservada` pasa a
+/// `aplicada` (o se revierte), exactamente cuando el renglón cruza a/
+/// desde `estatusPago == 'pagado'` — nunca al generar/cerrar la
+/// Nómina, que solo reserva.
 class PagoNominaRepositoryImpl implements PagoNominaRepository {
-  PagoNominaRepositoryImpl(this._db, this._egresoRepository);
+  PagoNominaRepositoryImpl(this._db, this._egresoRepository, this._descuentoProgramadoRepository);
 
   final AppDatabase _db;
   final EgresoRepository _egresoRepository;
+  final DescuentoProgramadoRepository _descuentoProgramadoRepository;
   late final _codigoSecuencia = CodigoSecuenciaService(_db);
 
   @override
   Future<PagoNominaData?> obtenerPorId(String id) {
     return (_db.select(_db.pagoNomina)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  @override
+  Future<PagoNominaData?> obtenerPorEgresoId(String egresoId) {
+    return (_db.select(_db.pagoNomina)..where((t) => t.egresoId.equals(egresoId))).getSingleOrNull();
   }
 
   @override
@@ -115,6 +129,34 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
     };
   }
 
+  @override
+  Future<bool> sincronizarEstatusPago({required String nominaEmpleadoId, String? actorUsuarioId}) async {
+    final renglon = await (_db.select(_db.nominaEmpleado)..where((t) => t.id.equals(nominaEmpleadoId))).getSingle();
+    final estatusAnterior = renglon.estatusPago;
+    final saldo = await saldoPendientePago(nominaEmpleadoId);
+    final nuevoEstatus = _estatusPagoPorSaldo(saldo, renglon.totalAPagar);
+    if (nuevoEstatus.name == estatusAnterior) return false;
+
+    await (_db.update(_db.nominaEmpleado)..where((t) => t.id.equals(nominaEmpleadoId))).write(
+      NominaEmpleadoCompanion(estatusPago: Value(nuevoEstatus.name), updatedAt: Value(DateTime.now())),
+    );
+
+    await _evaluarNominaPagada(renglon.nominaId, actorUsuarioId: actorUsuarioId);
+
+    if (estatusAnterior != EstatusPagoNominaEmpleado.pagado.name && nuevoEstatus == EstatusPagoNominaEmpleado.pagado) {
+      await _descuentoProgramadoRepository.aplicarCuotasReservadas(
+        nominaEmpleadoId: nominaEmpleadoId,
+        actorUsuarioId: actorUsuarioId,
+      );
+    } else if (estatusAnterior == EstatusPagoNominaEmpleado.pagado.name && nuevoEstatus != EstatusPagoNominaEmpleado.pagado) {
+      await _descuentoProgramadoRepository.revertirCuotasAplicadasPorCancelacionPago(
+        nominaEmpleadoId: nominaEmpleadoId,
+        actorUsuarioId: actorUsuarioId,
+      );
+    }
+    return true;
+  }
+
   EstatusPagoNominaEmpleado _estatusPagoPorSaldo(int saldoPendiente, int totalAPagar) {
     if (saldoPendiente <= 0) return EstatusPagoNominaEmpleado.pagado;
     if (saldoPendiente < totalAPagar) return EstatusPagoNominaEmpleado.parcial;
@@ -124,8 +166,15 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
   /// Sube la Nómina a `pagada` cuando los 4 renglones reportan
   /// `estatusPago == pagado`, o la regresa a `cerrada` si una
   /// cancelación reabrió saldo pendiente — nunca deja una Nómina
-  /// marcada `pagada` con dinero real todavía por pagar.
-  Future<void> _evaluarNominaPagada(String nominaId) async {
+  /// marcada `pagada` con dinero real todavía por pagar. Etapa 4
+  /// (hallazgo real de auditoría): esta transición mutaba
+  /// `Nomina.estatus` sin dejar NINGÚN rastro directo en `NominaEvento`
+  /// — el único indicio era el `PagoNominaEvento` del pago que la
+  /// disparó. Se escribe aquí, directo sobre `_db.nominaEvento` (mismo
+  /// criterio que ya usa este archivo para tocar `NominaEmpleado`
+  /// directamente — `NominaRepository` nunca se compone de vuelta,
+  /// evitaría una composición circular).
+  Future<void> _evaluarNominaPagada(String nominaId, {String? actorUsuarioId}) async {
     final renglones = await (_db.select(_db.nominaEmpleado)..where((t) => t.nominaId.equals(nominaId))).get();
     final todosPagados = renglones.isNotEmpty && renglones.every((r) => r.estatusPago == 'pagado');
     final nomina = await (_db.select(_db.nomina)..where((t) => t.id.equals(nominaId))).getSingle();
@@ -134,19 +183,38 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
       await (_db.update(_db.nomina)..where((t) => t.id.equals(nominaId))).write(
         NominaCompanion(estatus: const Value('pagada'), updatedAt: Value(DateTime.now())),
       );
+      await _registrarEventoNomina(nominaId: nominaId, tipoEvento: 'pagada', actorUsuarioId: actorUsuarioId);
     } else if (!todosPagados && nomina.estatus == 'pagada') {
       await (_db.update(_db.nomina)..where((t) => t.id.equals(nominaId))).write(
         NominaCompanion(estatus: const Value('cerrada'), updatedAt: Value(DateTime.now())),
       );
+      await _registrarEventoNomina(nominaId: nominaId, tipoEvento: 'reabierta', actorUsuarioId: actorUsuarioId);
     }
+  }
+
+  Future<void> _registrarEventoNomina({
+    required String nominaId,
+    required String tipoEvento,
+    String? actorUsuarioId,
+  }) {
+    return _db.into(_db.nominaEvento).insert(
+          NominaEventoCompanion.insert(
+            nominaId: nominaId,
+            fechaHora: DateTime.now(),
+            tipoEvento: tipoEvento,
+            actorUsuarioId: Value(actorUsuarioId),
+          ),
+        );
   }
 
   Future<AplicacionPagoNominaData> _aplicarInterna({
     required String pagoNominaId,
     required String nominaEmpleadoId,
     required int monto,
+    String? actorUsuarioId,
   }) async {
     final renglon = await (_db.select(_db.nominaEmpleado)..where((t) => t.id.equals(nominaEmpleadoId))).getSingle();
+    final estatusAnterior = renglon.estatusPago;
     final saldoAntes = await saldoPendientePago(nominaEmpleadoId);
     final saldoDespues = saldoAntes - monto;
 
@@ -165,7 +233,17 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
       NominaEmpleadoCompanion(estatusPago: Value(nuevoEstatus.name), updatedAt: Value(DateTime.now())),
     );
 
-    await _evaluarNominaPagada(renglon.nominaId);
+    await _evaluarNominaPagada(renglon.nominaId, actorUsuarioId: actorUsuarioId);
+
+    // Punto único donde una cuota `reservada` pasa a `aplicada` — solo
+    // en el instante exacto en que el renglón CRUZA a `pagado`, nunca
+    // antes (Etapa 15, Descuentos Programados al Personal).
+    if (estatusAnterior != EstatusPagoNominaEmpleado.pagado.name && nuevoEstatus == EstatusPagoNominaEmpleado.pagado) {
+      await _descuentoProgramadoRepository.aplicarCuotasReservadas(
+        nominaEmpleadoId: nominaEmpleadoId,
+        actorUsuarioId: actorUsuarioId,
+      );
+    }
 
     return aplicacion;
   }
@@ -178,6 +256,14 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
     required String formaPago,
     String? referencia,
     String? cuentaBancariaOrigen,
+    String? cuentaFinancieraId,
+
+    /// Reparto explícito entre varias cuentas. Si se omite, la cuenta
+    /// única se convierte en una sola fuente por el importe completo.
+    /// El `PagoNomina` sigue siendo UNO y su `Egreso` sigue siendo
+    /// UNO: lo que se reparte es de dónde salió el dinero, no la
+    /// obligación.
+    List<FuenteEgreso>? fuentes,
     String? observaciones,
     required List<({String nominaEmpleadoId, int monto})> aplicaciones,
     String? actorUsuarioId,
@@ -192,6 +278,8 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
         monto: montoTotal,
         fecha: fechaPago,
         cuentaCaja: cuentaBancariaOrigen,
+        cuentaFinancieraId: cuentaFinancieraId,
+        fuentes: fuentes,
         formaPago: formaPago,
         concepto: 'Pago de Nómina $folioPagoNomina (${nomina.folio})',
         observaciones: observaciones,
@@ -224,7 +312,12 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
       );
 
       for (final ap in aplicaciones) {
-        await _aplicarInterna(pagoNominaId: pagoNomina.id, nominaEmpleadoId: ap.nominaEmpleadoId, monto: ap.monto);
+        await _aplicarInterna(
+          pagoNominaId: pagoNomina.id,
+          nominaEmpleadoId: ap.nominaEmpleadoId,
+          monto: ap.monto,
+          actorUsuarioId: actorUsuarioId,
+        );
       }
 
       return pagoNomina;
@@ -238,6 +331,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
     String? formaPago,
     String? referencia,
     String? cuentaBancariaOrigen,
+    String? cuentaFinancieraId,
     String? observaciones,
     required String motivo,
     String? actorUsuarioId,
@@ -256,6 +350,29 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
         ),
       );
 
+      // Etapa 4 (hallazgo real de auditoría): antes, corregir un
+      // PagoNomina nunca propagaba nada al `Egreso` vinculado —
+      // fecha/formaPago/cuenta quedaban divergentes entre ambas filas
+      // para siempre. Se propaga aquí, en la MISMA transacción, solo
+      // cuando el `Egreso` existe y algún campo relevante realmente
+      // cambió (`EgresoRepository.corregir` ya es un no-op seguro por
+      // campo vía `Value.absent()`, pero evitamos la llamada por
+      // completo si no hay nada que corregir).
+      String? cuentaFinancieraIdAnteriorEgreso;
+      if (anterior.egresoId != null && (fechaPago != null || formaPago != null || cuentaBancariaOrigen != null || cuentaFinancieraId != null)) {
+        final egresoAnterior = await _egresoRepository.obtenerPorId(anterior.egresoId!);
+        cuentaFinancieraIdAnteriorEgreso = egresoAnterior?.cuentaFinancieraId;
+        await _egresoRepository.corregir(
+          egresoId: anterior.egresoId!,
+          fecha: fechaPago,
+          formaPago: formaPago,
+          cuentaCaja: cuentaBancariaOrigen,
+          cuentaFinancieraId: cuentaFinancieraId,
+          motivo: motivo,
+          actorUsuarioId: actorUsuarioId,
+        );
+      }
+
       await _registrarEventoInterno(
         pagoNominaId: pagoNominaId,
         tipoEvento: TipoEventoPagoNomina.corregido,
@@ -266,6 +383,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
           'formaPagoAnterior': anterior.formaPago,
           'referenciaAnterior': anterior.referencia,
           'cuentaBancariaOrigenAnterior': anterior.cuentaBancariaOrigen,
+          if (cuentaFinancieraId != null) 'cuentaFinancieraIdAnterior': cuentaFinancieraIdAnteriorEgreso,
         },
       );
 
@@ -273,9 +391,14 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
     });
   }
 
-  Future<void> _cancelarAplicacionInterna(AplicacionPagoNominaData aplicacion, {required String motivo}) async {
+  Future<void> _cancelarAplicacionInterna(
+    AplicacionPagoNominaData aplicacion, {
+    required String motivo,
+    String? actorUsuarioId,
+  }) async {
     final renglon =
         await (_db.select(_db.nominaEmpleado)..where((t) => t.id.equals(aplicacion.nominaEmpleadoId))).getSingle();
+    final estatusAnterior = renglon.estatusPago;
 
     await (_db.update(_db.aplicacionPagoNomina)..where((t) => t.id.equals(aplicacion.id))).write(
       AplicacionPagoNominaCompanion(
@@ -291,7 +414,17 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
       NominaEmpleadoCompanion(estatusPago: Value(nuevoEstatus.name), updatedAt: Value(DateTime.now())),
     );
 
-    await _evaluarNominaPagada(renglon.nominaId);
+    await _evaluarNominaPagada(renglon.nominaId, actorUsuarioId: actorUsuarioId);
+
+    // Reversa simétrica: solo cuando el renglón deja de estar
+    // `pagado` a causa de esta cancelación — nunca si sigue cubierto
+    // por otras aplicaciones (Etapa 15).
+    if (estatusAnterior == EstatusPagoNominaEmpleado.pagado.name && nuevoEstatus != EstatusPagoNominaEmpleado.pagado) {
+      await _descuentoProgramadoRepository.revertirCuotasAplicadasPorCancelacionPago(
+        nominaEmpleadoId: aplicacion.nominaEmpleadoId,
+        actorUsuarioId: actorUsuarioId,
+      );
+    }
   }
 
   @override
@@ -303,7 +436,7 @@ class PagoNominaRepositoryImpl implements PagoNominaRepository {
             ..where((t) => t.pagoNominaId.equals(pagoNominaId) & t.estatus.equals('aplicada')))
           .get();
       for (final aplicacion in aplicaciones) {
-        await _cancelarAplicacionInterna(aplicacion, motivo: motivo);
+        await _cancelarAplicacionInterna(aplicacion, motivo: motivo, actorUsuarioId: actorUsuarioId);
       }
 
       await (_db.update(_db.pagoNomina)..where((t) => t.id.equals(pagoNominaId))).write(

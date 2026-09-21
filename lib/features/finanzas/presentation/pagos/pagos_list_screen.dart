@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/finanzas/domain/contraparte_cobro.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import 'pagos_controller.dart';
+import 'pagos_state.dart';
+import 'pagos_resumen.dart';
+import 'pagos_state.dart' show EstadoComplementoPago;
 import 'widgets/pago_detalle_dialog.dart';
+import 'widgets/pagos_resumen_row.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoMoneda = NumberFormat.currency(locale: 'es_MX', symbol: r'$');
@@ -40,6 +46,22 @@ RisegStatusTone pagoEstatusTono(String valor) {
   };
 }
 
+String _estadoComplementoLabel(AppLocalizations l10n, EstadoComplementoPago estado) {
+  return switch (estado) {
+    EstadoComplementoPago.noAplica => l10n.pagosComplementoNoAplica,
+    EstadoComplementoPago.pendiente => l10n.pagosComplementoPendiente,
+    EstadoComplementoPago.realizado => l10n.pagosComplementoRealizado,
+  };
+}
+
+RisegStatusTone _estadoComplementoTono(EstadoComplementoPago estado) {
+  return switch (estado) {
+    EstadoComplementoPago.noAplica => RisegStatusTone.neutral,
+    EstadoComplementoPago.pendiente => RisegStatusTone.warning,
+    EstadoComplementoPago.realizado => RisegStatusTone.success,
+  };
+}
+
 /// Listado de Pagos (Etapa 4J.2) — filtros por Cliente/forma de pago/
 /// estatus. Sin acción de creación aquí: el flujo simplificado de esta
 /// etapa registra un Pago desde el detalle de la Cuenta por cobrar que
@@ -54,6 +76,7 @@ class PagosListScreen extends ConsumerStatefulWidget {
 
 class _PagosListScreenState extends ConsumerState<PagosListScreen> {
   List<ClienteData> _clientes = const [];
+  bool _filtroClienteDesdeRutaAplicado = false;
 
   @override
   void initState() {
@@ -64,12 +87,31 @@ class _PagosListScreenState extends ConsumerState<PagosListScreen> {
     });
   }
 
-  String _clienteNombre(String clienteId) {
-    for (final c in _clientes) {
-      if (c.id == clienteId) return c.nombreComercial;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Navegación encadenada Cliente → Pagos (Etapa 17) — mismo criterio
+    // que `CuentasPorCobrarListScreen`.
+    if (!_filtroClienteDesdeRutaAplicado) {
+      _filtroClienteDesdeRutaAplicado = true;
+      // `GoRouterState.of` exige un `GoRouter` ancestro real — ver el
+      // mismo razonamiento en `CuentasPorCobrarListScreen`.
+      String? clienteId;
+      try {
+        clienteId = GoRouterState.of(context).uri.queryParameters['clienteId'];
+      } catch (_) {
+        clienteId = null;
+      }
+      if (clienteId != null) {
+        Future.microtask(() => ref.read(pagosControllerProvider.notifier).aplicarFiltros(clienteId: clienteId));
+      }
     }
-    return clienteId;
   }
+
+  /// Nunca devuelve un UUID — ver `NombresContraparte`. Los nombres
+  /// vienen ya resueltos en lote desde el controlador.
+  String _contraparteNombre(PagosState estado, PagoData pago) => estado.nombres.de(contraparteDePago(pago));
+
 
   Future<void> _mostrarDetalle(PagoData pago) async {
     await showDialog<void>(context: context, builder: (_) => PagoDetalleDialog(pagoId: pago.id));
@@ -94,16 +136,29 @@ class _PagosListScreenState extends ConsumerState<PagosListScreen> {
       );
     }
 
+    final colors = context.colors;
+    final hayFiltrosActivos = state.clienteId != null ||
+        state.formaPago != null ||
+        state.estatus != null ||
+        state.rangoInicio != null ||
+        state.rangoFin != null;
+
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RisegSectionHeader(title: l10n.pagosListadoTitulo),
+          RisegSectionHeader(title: l10n.pagosListadoTitulo, description: l10n.pagosListadoSubtitulo),
           const SizedBox(height: AppSpacing.md),
-          Row(
+          PagosResumenRow(resumen: calcularResumenPagos(state.pagos)),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              SizedBox(
+                width: 200,
                 child: RisegSelect<String?>(
                   label: l10n.pagosFiltroCliente,
                   value: state.clienteId,
@@ -114,8 +169,8 @@ class _PagosListScreenState extends ConsumerState<PagosListScreen> {
                   onChanged: (valor) => notifier.aplicarFiltros(clienteId: valor, limpiarClienteId: valor == null),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
+              SizedBox(
+                width: 190,
                 child: RisegSelect<String?>(
                   label: l10n.pagosFiltroFormaPago,
                   value: state.formaPago,
@@ -127,8 +182,8 @@ class _PagosListScreenState extends ConsumerState<PagosListScreen> {
                   onChanged: (valor) => notifier.aplicarFiltros(formaPago: valor, limpiarFormaPago: valor == null),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
+              SizedBox(
+                width: 170,
                 child: RisegSelect<String?>(
                   label: l10n.pagosFiltroEstatus,
                   value: state.estatus,
@@ -139,6 +194,34 @@ class _PagosListScreenState extends ConsumerState<PagosListScreen> {
                   ],
                   onChanged: (valor) => notifier.aplicarFiltros(estatus: valor, limpiarEstatus: valor == null),
                 ),
+              ),
+              SizedBox(
+                width: 150,
+                child: RisegDateField(
+                  label: l10n.pagosFiltroDesde,
+                  value: state.rangoInicio,
+                  onChanged: (valor) => notifier.aplicarFiltros(rangoInicio: valor),
+                ),
+              ),
+              SizedBox(
+                width: 150,
+                child: RisegDateField(
+                  label: l10n.pagosFiltroHasta,
+                  value: state.rangoFin,
+                  onChanged: (valor) => notifier.aplicarFiltros(rangoFin: valor),
+                ),
+              ),
+              RisegButton(
+                label: l10n.personalActivoLimpiarFiltros,
+                variant: RisegButtonVariant.ghost,
+                onPressed: hayFiltrosActivos
+                    ? () => notifier.aplicarFiltros(
+                          limpiarClienteId: true,
+                          limpiarFormaPago: true,
+                          limpiarEstatus: true,
+                          limpiarRango: true,
+                        )
+                    : null,
               ),
             ],
           ),
@@ -152,15 +235,29 @@ class _PagosListScreenState extends ConsumerState<PagosListScreen> {
                 title: l10n.pagosListadoVacioTitulo,
                 message: l10n.pagosListadoVacioMensaje,
               ),
+              hoverColor: colors.accentSoftBg,
+              rowVerticalPadding: AppSpacing.sm + AppSpacing.xxs,
+              rowActionsBuilder: (_) => Icon(Icons.chevron_right, size: AppSizes.iconMd, color: colors.textMuted),
+              actionsWidth: 40,
               columns: [
                 RisegColumn<PagoData>(
                   label: l10n.pagosColumnaFolio,
-                  width: 110,
-                  cellBuilder: (p) => Text(p.folioPago),
+                  width: 140,
+                  cellBuilder: (p) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(p.folioPago, style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary)),
+                      if (p.referencia != null && p.referencia!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(p.referencia!, style: AppTypography.caption.copyWith(color: colors.textMuted), overflow: TextOverflow.ellipsis),
+                      ],
+                    ],
+                  ),
                 ),
                 RisegColumn<PagoData>(
                   label: l10n.pagosColumnaCliente,
-                  cellBuilder: (p) => Text(_clienteNombre(p.clienteId)),
+                  cellBuilder: (p) => Text(_contraparteNombre(state, p), overflow: TextOverflow.ellipsis),
                 ),
                 RisegColumn<PagoData>(
                   label: l10n.pagosColumnaFecha,
@@ -200,6 +297,14 @@ class _PagosListScreenState extends ConsumerState<PagosListScreen> {
                   width: 130,
                   cellBuilder: (p) =>
                       RisegStatusBadge(label: pagoEstatusLabel(l10n, p.estatus), tone: pagoEstatusTono(p.estatus)),
+                ),
+                RisegColumn<PagoData>(
+                  label: l10n.pagosColumnaComplemento,
+                  width: 130,
+                  cellBuilder: (p) {
+                    final estado = state.estadoComplementoPorPago[p.id] ?? EstadoComplementoPago.noAplica;
+                    return RisegStatusBadge(label: _estadoComplementoLabel(l10n, estado), tone: _estadoComplementoTono(estado));
+                  },
                 ),
               ],
             ),

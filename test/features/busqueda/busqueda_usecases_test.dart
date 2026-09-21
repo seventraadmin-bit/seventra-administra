@@ -81,7 +81,7 @@ class _ArticuloRepoVacio implements ArticuloRepository {
 class _CompraRepoVacio implements CompraRepository {
   var llamado = false;
   @override
-  Future<List<CompraData>> listar({DateTime? desde, DateTime? hasta, String? folio, String? proveedor, String? articuloId, String? estatus}) async {
+  Future<List<CompraData>> listar({DateTime? desde, DateTime? hasta, String? folio, String? proveedor, String? articuloId, String? estatus, String? formaPago}) async {
     llamado = true;
     return const [];
   }

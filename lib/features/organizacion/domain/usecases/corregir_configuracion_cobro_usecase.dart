@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import '../repositories/configuracion_cobro_repository.dart';
 import 'configuracion_cobro_errors.dart';
 import 'configuracion_cobro_etapa_errors.dart';
@@ -14,6 +15,9 @@ class CorregirConfiguracionCobroExitoso extends CorregirConfiguracionCobroResult
 }
 
 class CorregirConfiguracionCobroNoExiste extends CorregirConfiguracionCobroResultado {}
+
+/// Corregir cómo y cuándo se cobra exige explicar por qué.
+class CorregirConfiguracionCobroMotivoRequerido extends CorregirConfiguracionCobroResultado {}
 
 /// La configuración ya tiene más de una vigencia (pasó por "Nueva
 /// vigencia") o su única vigencia ya generó al menos un documento de
@@ -53,7 +57,10 @@ class CorregirConfiguracionCobroUseCase {
     required String configuracionCobroId,
     required ConfiguracionCobroBorrador borrador,
     List<EtapaCobroBorrador> etapas = const [],
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return CorregirConfiguracionCobroMotivoRequerido();
     final configuracion = await _repository.obtenerConfiguracionPorId(configuracionCobroId);
     if (configuracion == null) return CorregirConfiguracionCobroNoExiste();
 
@@ -73,6 +80,8 @@ class CorregirConfiguracionCobroUseCase {
       vigenciaId: historial.single.id,
       datos: validacion.resultado!,
       etapas: validacionEtapas.resultado,
+      motivo: motivo.trim(),
+      actorUsuarioId: actorUsuarioId,
     );
     return CorregirConfiguracionCobroExitoso(vigencia);
   }

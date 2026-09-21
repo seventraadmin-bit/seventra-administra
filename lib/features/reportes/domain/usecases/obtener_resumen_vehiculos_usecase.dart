@@ -72,6 +72,11 @@ class ObtenerResumenVehiculosUseCase {
     var totalIncidencias = 0;
     final detalle = <MantenimientoConVehiculo>[];
     for (final registro in mantenimientos) {
+      // Un mantenimiento anulado (schemaVersion 80) ya revirtió su
+      // efecto financiero. Si Reportes lo siguiera sumando, tendríamos
+      // exactamente el gap de Préstamos otra vez: el módulo corregido y
+      // un segundo totalizador independiente diciendo otra cosa.
+      if (registro.estatus == EstatusMantenimientoVehiculo.cancelado.name) continue;
       if (rangoInicio != null && registro.fecha.isBefore(rangoInicio)) continue;
       if (rangoFin != null && registro.fecha.isAfter(rangoFin)) continue;
       final esIncidencia = TipoMantenimientoVehiculo.values.byName(registro.tipo).esIncidencia;

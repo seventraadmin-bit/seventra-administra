@@ -54,6 +54,46 @@ class VehiculoDocumentoRepositoryImpl implements VehiculoDocumentoRepository {
   }
 
   @override
+  Future<VehiculoDocumentoData> corregir({
+    required String vehiculoDocumentoId,
+    String? tipo,
+    String? tipoOtroDescripcion,
+    String? numeroFolio,
+    bool limpiarNumeroFolio = false,
+    DateTime? fechaEmision,
+    bool limpiarFechaEmision = false,
+    DateTime? fechaVencimiento,
+    bool limpiarFechaVencimiento = false,
+    String? observaciones,
+    bool limpiarObservaciones = false,
+  }) async {
+    await (_db.update(_db.vehiculoDocumento)..where((t) => t.id.equals(vehiculoDocumentoId))).write(
+      VehiculoDocumentoCompanion(
+        tipo: tipo == null ? const Value.absent() : Value(tipo),
+        // `tipoOtroDescripcion` se sincroniza siempre con `tipo`: al
+        // dejar de ser "otro", su descripción deja de tener sentido.
+        tipoOtroDescripcion: tipo == null && tipoOtroDescripcion == null
+            ? const Value.absent()
+            : Value(tipo == 'otro' ? tipoOtroDescripcion : null),
+        numeroFolio: limpiarNumeroFolio
+            ? const Value(null)
+            : (numeroFolio == null ? const Value.absent() : Value(numeroFolio)),
+        fechaEmision: limpiarFechaEmision
+            ? const Value(null)
+            : (fechaEmision == null ? const Value.absent() : Value(fechaEmision)),
+        fechaVencimiento: limpiarFechaVencimiento
+            ? const Value(null)
+            : (fechaVencimiento == null ? const Value.absent() : Value(fechaVencimiento)),
+        observaciones: limpiarObservaciones
+            ? const Value(null)
+            : (observaciones == null ? const Value.absent() : Value(observaciones)),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+    return (_db.select(_db.vehiculoDocumento)..where((t) => t.id.equals(vehiculoDocumentoId))).getSingle();
+  }
+
+  @override
   Future<AttachmentData> adjuntarArchivo({
     required String vehiculoDocumentoId,
     required String originalFileName,

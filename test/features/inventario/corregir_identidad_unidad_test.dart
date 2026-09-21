@@ -9,6 +9,7 @@ import 'package:riseg_one/features/compras/data/repositories/compra_repository_i
 import 'package:riseg_one/features/compras/data/tables/compra_partida_table.dart' show DestinoCompraPartida;
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -256,11 +257,11 @@ void main() {
       final unidad = await crearUnidad(articulo.id, imei: '111111111111111');
 
       final asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
-      final equipoLineaRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, asignacionRepo, inventarioRepo);
+      final equipoLineaRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, asignacionRepo);
       final lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoLineaRepo);
       final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
       final crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, generarCodigo);
-      final asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo);
+      final asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoLineaRepo, inventarioRepo, asignacionLineaRepo);
 
       final linea = (await crearLinea.ejecutar(operador: 'telcel', modalidadSim: 'fisica')) as CrearLineaTelefonicaExitoso;
       await asociarEquipo.ejecutar(lineaTelefonicaId: linea.linea.id, unidadId: unidad.id, fechaInicio: DateTime(2026, 1, 15));
@@ -297,14 +298,15 @@ void main() {
           ArticuloUnidadData unidad,
         })> registrarCompraSerializadaDePrueba() async {
       final egresoRepo = EgresoRepositoryImpl(db);
-      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
-      final registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
+      final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
+      final registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
       final articulo = await crearArticuloSerializado();
 
       final resultado = await registrarCompra.ejecutar(
         fecha: DateTime(2026, 8, 10),
         proveedor: 'Tienda de teléfonos',
-        formaPago: FormaPago.tarjeta.name,
+        formaPago: FormaPago.efectivo.name,
         partidas: [
           PartidaCompraInput(
             destino: DestinoCompraPartida.inventario.name,
@@ -380,8 +382,9 @@ void main() {
 
     test('RegistrarCompraUseCase rechaza un número de serie ya usado por otra unidad, con el mismo mensaje', () async {
       final egresoRepo = EgresoRepositoryImpl(db);
-      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
-      final registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
+      final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
+      final registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
       final articulo = await crearArticuloSerializado();
       await crearUnidad(articulo.id, numeroSerie: 'SN-YA-EXISTE');
 

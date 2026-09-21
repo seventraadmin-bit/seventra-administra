@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart' show MotivoBajaVehiculo;
@@ -85,7 +86,10 @@ class VehiculosController extends _$VehiculosController {
           ),
       CrearVehiculoErrorInesperado.new,
     );
-    if (resultado is CrearVehiculoExitoso) await _cargar();
+    if (resultado is CrearVehiculoExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -110,11 +114,16 @@ class VehiculosController extends _$VehiculosController {
     bool limpiarFechaAdquisicion = false,
     bool limpiarCostoAdquisicion = false,
     bool limpiarObservaciones = false,
+    required String motivo,
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'vehiculos.modificar',
       () => ref.read(corregirVehiculoUseCaseProvider).ejecutar(
+            // schemaVersion 80: motivo y actor obligatorios — toda
+            // corrección del expediente deja rastro.
+            motivo: motivo,
+            actorUsuarioId: _actorUsuarioId,
             vehiculoId: vehiculoId,
             marca: marca,
             modelo: modelo,
@@ -138,7 +147,10 @@ class VehiculosController extends _$VehiculosController {
           ),
       CorregirVehiculoErrorInesperado.new,
     );
-    if (resultado is CorregirVehiculoExitoso) await _cargar();
+    if (resultado is CorregirVehiculoExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -152,7 +164,10 @@ class VehiculosController extends _$VehiculosController {
           ),
       CambiarEstatusVehiculoErrorInesperado.new,
     );
-    if (resultado is CambiarEstatusVehiculoExitoso) await _cargar();
+    if (resultado is CambiarEstatusVehiculoExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -166,7 +181,10 @@ class VehiculosController extends _$VehiculosController {
       () => ref.read(finalizarMantenimientoVehiculoUseCaseProvider).ejecutar(vehiculoId: vehiculoId),
       FinalizarMantenimientoVehiculoErrorInesperado.new,
     );
-    if (resultado is FinalizarMantenimientoVehiculoExitoso) await _cargar();
+    if (resultado is FinalizarMantenimientoVehiculoExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -187,7 +205,10 @@ class VehiculosController extends _$VehiculosController {
           ),
       DarDeBajaVehiculoErrorInesperado.new,
     );
-    if (resultado is DarDeBajaVehiculoExitoso) await _cargar();
+    if (resultado is DarDeBajaVehiculoExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -224,7 +245,7 @@ class VehiculosController extends _$VehiculosController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'vehiculos.crear',
+      'vehiculos.operar',
       () => ref.read(asignarVehiculoUseCaseProvider).ejecutar(
             vehiculoId: vehiculoId,
             empleadoId: empleadoId,
@@ -236,7 +257,10 @@ class VehiculosController extends _$VehiculosController {
           ),
       AsignarVehiculoErrorInesperado.new,
     );
-    if (resultado is AsignarVehiculoExitoso) await _cargar();
+    if (resultado is AsignarVehiculoExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -262,7 +286,10 @@ class VehiculosController extends _$VehiculosController {
           ),
       CambiarAsignacionVehiculoErrorInesperado.new,
     );
-    if (resultado is CambiarAsignacionVehiculoExitoso) await _cargar();
+    if (resultado is CambiarAsignacionVehiculoExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -284,7 +311,10 @@ class VehiculosController extends _$VehiculosController {
           ),
       RetirarAsignacionVehiculoErrorInesperado.new,
     );
-    if (resultado is RetirarAsignacionVehiculoExitoso) await _cargar();
+    if (resultado is RetirarAsignacionVehiculoExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 

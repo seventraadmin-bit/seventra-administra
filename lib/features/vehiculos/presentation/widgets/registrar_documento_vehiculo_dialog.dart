@@ -147,7 +147,7 @@ Future<bool> mostrarDialogoRegistrarDocumentoVehiculo(
           return false;
         case RegistrarDocumentoVehiculoExitoso(:final documento):
           if (archivoPath != null) {
-            final adjuntado = await ref.read(adjuntarArchivoDocumentoVehiculoUseCaseProvider).ejecutar(
+            final adjuntado = await ref.read(adjuntarArchivoDocumentoVehiculoAutorizadoProvider)(
                   vehiculoDocumentoId: documento.id,
                   sourceFilePath: archivoPath!,
                   originalFileName: archivoNombre!,

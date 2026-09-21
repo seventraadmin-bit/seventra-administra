@@ -17,6 +17,33 @@ enum MotivoTerminoAsignacionLineaTelefonica {
   /// al cerrar la asignación vigente en la misma transacción que la
   /// baja de la línea.
   bajaLinea(seleccionableManualmente: false),
+
+  /// Automático — lo coloca `AsignacionLineaTelefonicaRepositoryImpl
+  /// .cerrarPorBajaEmpleado`, invocado desde
+  /// `EmpleadoRepositoryImpl.registrarBajaLaboral` en la MISMA
+  /// transacción que la baja laboral.
+  ///
+  /// Es un motivo propio y no una reutilización de `bajaLinea`, porque
+  /// no son el mismo hecho: ahí se fue la LÍNEA, aquí se fue la
+  /// PERSONA y la línea queda disponible para reasignarse. La
+  /// Auditoría los distingue exactamente por este valor.
+  bajaEmpleado(seleccionableManualmente: false),
+
+  /// Automático — lo coloca el adaptador
+  /// `LineaTelefonicaDeUnidadCoordinador` cuando **Inventario** termina
+  /// la custodia del teléfono que traía la SIM (devolución, daño,
+  /// pérdida, desecho), en la MISMA transacción de ese cierre.
+  ///
+  /// Motivo propio y no `liberacion`: nadie liberó la línea a mano, se
+  /// fue el aparato. La Auditoría los distingue exactamente por este
+  /// valor, igual que distingue `bajaLinea` de `bajaEmpleado`.
+  custodiaEquipoTerminada(seleccionableManualmente: false),
+
+  /// Automático — el aparato que traía la SIM se transfirió a otro
+  /// responsable en Inventario, y la línea viajó con él. El periodo
+  /// anterior se cierra con ESTE motivo y no con `cambioResponsable`,
+  /// que significa "alguien cambió la línea a mano".
+  sincronizacionCustodiaInventario(seleccionableManualmente: false),
   otro(seleccionableManualmente: true, requiereObservaciones: true);
 
   const MotivoTerminoAsignacionLineaTelefonica({required this.seleccionableManualmente, this.requiereObservaciones = false});

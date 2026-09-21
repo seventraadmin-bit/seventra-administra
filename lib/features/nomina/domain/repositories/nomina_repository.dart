@@ -2,6 +2,8 @@ import 'package:riseg_one/core/database/app_database.dart';
 
 import '../../data/tables/nomina_table.dart';
 import '../usecases/calcular_periodo_nomina.dart';
+import '../usecases/eliminar_cadena_prueba_nomina_usecase.dart';
+import '../usecases/eliminar_nomina_fisicamente_usecase.dart';
 import '../usecases/fila_nomina_generada.dart';
 
 /// Proyección segura de `NominaEmpleado` para Reportes (Etapa 12B) —
@@ -94,6 +96,10 @@ abstract interface class NominaRepository {
 
   Future<List<NominaEmpleadoTramoData>> listarTramos(String nominaEmpleadoId);
 
+  /// Ausencias del periodo (Etapa Tiempos Extra) — puramente
+  /// informativas, ver el doc comment de `NominaEmpleadoAusencia`.
+  Future<List<NominaEmpleadoAusenciaData>> listarAusencias(String nominaEmpleadoId);
+
   Future<List<NominaEventoData>> listarEventos(String nominaId);
 
   /// Crea el encabezado de la Nómina y todos sus renglones/tramos
@@ -108,8 +114,17 @@ abstract interface class NominaRepository {
   /// Reemplaza el renglón (y sus tramos) de un Empleado dentro de una
   /// Nómina ya existente — usado por "Actualizar desde Personal" para
   /// los renglones que sí siguen teniendo días pagables. Los campos de
-  /// movimientos manuales/distribución los decide el llamador (ya
-  /// resueltos contra la fila anterior) y se pasan explícitos.
+  /// movimientos manuales los decide el llamador (ya resueltos contra
+  /// la fila anterior) y se pasan explícitos. Fiscal/No fiscal NO se
+  /// reciben aquí — el repositorio los resuelve internamente contra el
+  /// `totalAPagar` final (después de TODAS las deducciones, incluidos
+  /// los descuentos de Inventario recién resueltos en esta misma
+  /// llamada), preservando la distribución manual previa o
+  /// reiniciándola al default — ver el doc comment de
+  /// `NominaRepositoryImpl._resolverDistribucionFiscal` (Etapa 15, bug
+  /// real: antes se recibía como parámetro ya calculado por el
+  /// llamador contra un total que todavía no incluía el descuento de
+  /// Inventario, dejando la distribución desincronizada).
   Future<NominaEmpleadoData> guardarRenglon({
     required String nominaId,
     required FilaNominaGenerada datos,
@@ -120,19 +135,41 @@ abstract interface class NominaRepository {
     required int faltas,
     required int otrosDescuentos,
     required String? observaciones,
-    required int montoFiscal,
-    required int montoNoFiscal,
-    required bool distribucionModificadaManualmente,
-    required bool distribucionPendienteRevision,
   });
 
   /// Elimina por completo un renglón (y sus tramos) — solo válido para
   /// un renglón que perdió todos sus días pagables **y** nunca tuvo
   /// movimientos manuales capturados (ver
-  /// `ActualizarNominaDesdePersonalUseCase`).
-  Future<void> eliminarRenglon(String nominaEmpleadoId);
+  /// `ActualizarNominaDesdePersonalUseCase`). Etapa 4: antes de borrar,
+  /// desvincula (`nominaEmpleadoId = null`) cualquier `NominaEvento`
+  /// previo de este renglón — sin esto, el `cascade` de
+  /// `NominaEvento.nominaEmpleadoId` los destruiría junto con la fila
+  /// — y escribe un evento `renglonEliminado` con los valores clave
+  /// del renglón (única excepción a "nunca snapshots completos": la
+  /// fila en sí desaparece, así que es la única evidencia que quedará).
+  Future<void> eliminarRenglon(String nominaEmpleadoId, {String? motivo, String? actorUsuarioId});
 
-  Future<NominaEmpleadoData> actualizarMovimientos({
+  /// Movimientos manuales y distribución Fiscal/No fiscal de un renglón
+  /// en UNA sola escritura transaccional (Etapa 15, calculadora
+  /// auditable — reemplaza los antiguos `actualizarMovimientos`/
+  /// `actualizarDistribucion` separados). [distribucionManual] es
+  /// `null` para el comportamiento automático de siempre
+  /// (`_resolverDistribucionFiscal`); si se provee, se persiste tal
+  /// cual contra el `totalAPagar` recién calculado en esta misma
+  /// llamada — ninguna validación de negocio vive aquí (si no
+  /// balancea, igual se escribe; esa validación vive en
+  /// `ActualizarRenglonNominaUseCase`, mismo criterio que el resto del
+  /// proyecto).
+  /// Etapa 4: [tipoEvento] lo decide el llamador — `'movimientoModificado'`
+  /// para la edición operativa normal de Borrador
+  /// (`ActualizarRenglonNominaUseCase`), `'corregida'` para una
+  /// corrección de una Nómina ya `cerrada`/`pagada`
+  /// (`CorregirRenglonNominaUseCase`). El evento se escribe DENTRO de
+  /// esta misma transacción (nunca como una llamada separada después:
+  /// antes de esta etapa, la auditoría corría en una segunda
+  /// transacción no atómica y `actorUsuarioId` nunca se pasaba) — solo
+  /// si `DiffEvento` detecta al menos un campo realmente distinto.
+  Future<NominaEmpleadoData> actualizarRenglon({
     required String nominaEmpleadoId,
     required int prestamo,
     required int tiempoExtra,
@@ -141,21 +178,68 @@ abstract interface class NominaRepository {
     required int faltas,
     required int otrosDescuentos,
     required String? observaciones,
-  });
-
-  Future<NominaEmpleadoData> actualizarDistribucion({
-    required String nominaEmpleadoId,
-    required int montoFiscal,
-    required int montoNoFiscal,
+    ({int montoFiscal, int montoNoFiscal})? distribucionManual,
+    required String tipoEvento,
+    String? motivo,
+    String? actorUsuarioId,
   });
 
   Future<NominaData> cerrar({required String nominaId, String? actorUsuarioId});
+
+  /// Cancelación de la Nómina completa (Etapa 4) — solo Borrador o
+  /// Cerrada-sin-`PagoNomina` (validado por
+  /// `CancelarNominaUseCase`, nunca aquí). Revierte a `pendiente`
+  /// cualquier `DescuentoInventario` aplicado y libera TODAS las
+  /// cuotas reservadas de cada renglón (mismo mecanismo exacto que
+  /// [eliminarFisicamente] — nunca `aplicada`, estructuralmente
+  /// imposible sin un `PagoNomina` real), antes de marcar
+  /// `estatus = cancelada`.
+  Future<NominaData> cancelar({
+    required String nominaId,
+    required String motivo,
+    String? detalle,
+    String? observaciones,
+    String? actorUsuarioId,
+  });
 
   Future<void> registrarEvento({
     required String nominaId,
     String? nominaEmpleadoId,
     required String tipoEvento,
     String? observacion,
+    String? estadoAnterior,
+    String? estadoNuevo,
+    String? actorUsuarioId,
+  });
+
+  /// Elegibilidad de solo lectura para [eliminarFisicamente] — ver el
+  /// doc comment de `ResumenEliminacionNomina`.
+  Future<ResumenEliminacionNomina> obtenerResumenEliminacionFisica(String nominaId);
+
+  /// Eliminación física extraordinaria (Etapa 15) — ver el doc comment
+  /// completo en `NominaRepositoryImpl.eliminarFisicamente`. [motivo]
+  /// es el nombre estable del enum `MotivoEliminacionFisicaNomina`,
+  /// nunca la etiqueta traducida.
+  Future<EliminarNominaFisicamenteResultado> eliminarFisicamente({
+    required String nominaId,
+    required String motivo,
+    String? detalle,
+    String? actorUsuarioId,
+  });
+
+  /// Vista previa de solo lectura para [eliminarCadenaPrueba] — ver el
+  /// doc comment de `ResumenCadenaPruebaNomina`.
+  Future<ResumenCadenaPruebaNomina> obtenerResumenCadenaPrueba(String nominaId);
+
+  /// "Eliminar cadena de prueba" (Etapa 15, limpieza segura de datos de
+  /// prueba) — ver el doc comment completo en
+  /// `NominaRepositoryImpl.eliminarCadenaPrueba`. [motivo] es el
+  /// nombre estable del enum `MotivoCadenaPruebaNomina`, nunca la
+  /// etiqueta traducida.
+  Future<EliminarCadenaPruebaNominaResultado> eliminarCadenaPrueba({
+    required String nominaId,
+    required String motivo,
+    String? detalle,
     String? actorUsuarioId,
   });
 }

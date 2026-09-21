@@ -42,7 +42,16 @@ class ReporteGeneralPdfRenderer {
   List<pw.Widget> _filasFinanzas(ResumenGeneralReportes r) {
     final filas = <pw.Widget>[];
     if (r.totalIngresos != null) filas.add(construirFilaReporte('Ingresos', formatearMonedaReporte(r.totalIngresos!)));
-    if (r.totalEgresos != null) filas.add(construirFilaReporte('Egresos', formatearMonedaReporte(r.totalEgresos!)));
+    // 'Gasto operativo' y no 'Egresos': la cifra es la misma que
+    // muestra la pantalla y la misma que usa Finanzas — incluye el
+    // gasto financiado con tarjeta y excluye los pagos de deuda. La
+    // salida de caja real va aparte, abajo, porque es otra cosa.
+    if (r.gastoOperativo != null) {
+      filas.add(construirFilaReporte('Gasto operativo', formatearMonedaReporte(r.gastoOperativo!)));
+    }
+    if (r.salidasDeEfectivo != null) {
+      filas.add(construirFilaReporte('Salidas de efectivo (informativo)', formatearMonedaReporte(r.salidasDeEfectivo!)));
+    }
     if (r.resultadoOperativo != null) {
       filas.add(construirFilaReporte('Resultado operativo', formatearMonedaReporte(r.resultadoOperativo!), destacado: true));
     }

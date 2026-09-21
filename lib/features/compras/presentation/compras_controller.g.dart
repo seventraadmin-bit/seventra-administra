@@ -6,7 +6,7 @@ part of 'compras_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$comprasControllerHash() => r'848b3728adbd0e724cdb7551ab43a0776958edc1';
+String _$comprasControllerHash() => r'c81a0369c46d72fbe204bb6ae4974f8377dc7fe5';
 
 /// Controlador de Compras (Etapa 10) — listado con filtros + todas las
 /// operaciones de expediente, mismo criterio que `TelefoniaController`/

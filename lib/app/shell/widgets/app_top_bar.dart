@@ -9,6 +9,7 @@ import '../../../core/design_system/tokens/app_typography.dart';
 import '../../../features/busqueda/presentation/widgets/global_search_field.dart';
 import '../../../features/notificaciones/presentation/widgets/notification_bell.dart';
 import '../../../features/usuarios/presentation/sesion_controller.dart';
+import '../../../features/usuarios/presentation/widgets/cambiar_mi_contrasena_dialog.dart';
 import '../../theme/theme_mode_controller.dart';
 import '../shell_breakpoints.dart';
 import 'app_breadcrumb.dart';
@@ -29,17 +30,20 @@ class AppTopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).extension<AppColorScheme>()!;
     final themeMode = ref.watch(themeModeControllerProvider);
 
+    // Etapa 16, evolución visual: la barra superior es la única
+    // superficie de RISEG ONE que se pinta con el azul institucional
+    // como FONDO — identidad de marca reconocible aun sin el logotipo
+    // (visible en el sidebar). Sin borde inferior: el bloque de color en
+    // sí ya separa la barra del sidebar/área de contenido, un divisor
+    // encima solo competiría con el azul.
     return Container(
       key: const Key('app_top_bar'),
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(bottom: BorderSide(color: theme.dividerColor)),
-      ),
+      color: colors.accent,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compactSearch = constraints.maxWidth < ShellBreakpoints.topBarSearchCompact;
@@ -47,7 +51,13 @@ class AppTopBar extends ConsumerWidget {
 
           return Row(
             children: [
-              Expanded(child: AppBreadcrumb(segments: breadcrumbSegments)),
+              Expanded(
+                child: AppBreadcrumb(
+                  segments: breadcrumbSegments,
+                  activeColor: colors.shellForeground,
+                  mutedColor: colors.shellForegroundMuted,
+                ),
+              ),
               const SizedBox(width: AppSpacing.md),
               GlobalSearchField(compact: compactSearch),
               const SizedBox(width: AppSpacing.xs),
@@ -76,16 +86,20 @@ class _ThemeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = Theme.of(context).extension<AppColorScheme>()!;
     final icon = switch (mode) {
       ThemeMode.light => Icons.light_mode_outlined,
       ThemeMode.dark => Icons.dark_mode_outlined,
       ThemeMode.system => Icons.brightness_auto_outlined,
     };
 
+    // El menú emergente en sí queda con su Material blanco/oscuro normal
+    // (no vive "sobre" la barra azul, flota encima) — solo el ícono
+    // disparador necesita los tokens de Shell.
     return PopupMenuButton<ThemeMode>(
       key: const Key('top_bar_theme_selector'),
       tooltip: l10n.themeModeLabel,
-      icon: Icon(icon),
+      icon: Icon(icon, color: colors.shellForeground),
       initialValue: mode,
       onSelected: onChanged,
       itemBuilder: (context) => [
@@ -113,12 +127,34 @@ class _ProfileChip extends ConsumerWidget {
     context.go('/login');
   }
 
+  /// Autoservicio: cambia la contraseña de la sesión activa, sin exigir
+  /// ningún permiso de administración (ver `cambiarMiContrasenaProvider`).
+  ///
+  /// El diálogo se abre en el frame siguiente: `PopupMenuItem.onTap` se
+  /// dispara mientras Flutter todavía está cerrando la ruta del menú, y
+  /// abrir otra ruta encima de un `Navigator` a mitad de un pop es
+  /// exactamente el tipo de solapamiento que produce assertions de
+  /// Overlay. Es la misma razón por la que `_cerrarSesion` usa el
+  /// contexto estable del chip y no el efímero del menú.
+  void _cambiarContrasena(BuildContext context, WidgetRef ref) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      mostrarDialogoCambiarMiContrasena(context, ref);
+    });
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = Theme.of(context).extension<AppColorScheme>()!;
     final sesion = ref.watch(sesionControllerProvider);
     final nombre = sesion?.nombre ?? l10n.shellProfilePlaceholderName;
+    // Para un Maestro se dice el tipo de cuenta, discretamente; para el
+    // resto, su nombre de usuario. Nunca se inventa un puesto que la
+    // sesión no trae.
+    final subtitulo = sesion == null
+        ? null
+        : (sesion.esMaestro ? l10n.shellCuentaMaestro : sesion.nombreUsuario);
 
     return PopupMenuButton<void>(
       key: const Key('top_bar_profile'),
@@ -137,10 +173,50 @@ class _ProfileChip extends ConsumerWidget {
       // a ser síncrono, pero se conserva el contexto estable de todas
       // formas — es la referencia correcta aquí, sea síncrono o no.
       itemBuilder: (_) => [
+        // Encabezado de identidad (Etapa "Usuarios, permisos y UX de
+        // seguridad"): el menú anterior era un popup suelto con una sola
+        // línea, sin decir siquiera de quién era la sesión. `enabled:
+        // false` lo vuelve puramente informativo — no es una acción.
+        PopupMenuItem<void>(
+          key: const Key('top_bar_identidad'),
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(nombre, style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary), overflow: TextOverflow.ellipsis),
+              if (subtitulo != null)
+                Text(subtitulo, style: AppTypography.caption.copyWith(color: colors.textMuted), overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<void>(
+          key: const Key('top_bar_cambiar_contrasena'),
+          onTap: () => _cambiarContrasena(context, ref),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.password_outlined, size: 18, color: colors.textMuted),
+              const SizedBox(width: AppSpacing.xs),
+              // `Flexible`: el ancho del menú lo fija Material, y un
+              // texto largo desbordaba la fila (RenderFlex de 30px,
+              // detectado por la suite).
+              Flexible(child: Text(l10n.shellCambiarMiContrasena, overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+        ),
         PopupMenuItem<void>(
           key: const Key('top_bar_cerrar_sesion'),
           onTap: () => _cerrarSesion(context, ref),
-          child: Text(l10n.shellCerrarSesion),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.logout_outlined, size: 18, color: colors.textMuted),
+              const SizedBox(width: AppSpacing.xs),
+              Flexible(child: Text(l10n.shellCerrarSesion, overflow: TextOverflow.ellipsis)),
+            ],
+          ),
         ),
       ],
       child: Container(
@@ -148,13 +224,17 @@ class _ProfileChip extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircleAvatar(radius: 16, child: Icon(Icons.person_outline, size: 18)),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: colors.shellOverlaySubtle,
+              child: Icon(Icons.person_outline, size: 18, color: colors.shellForeground),
+            ),
             if (!compact) ...[
               const SizedBox(width: AppSpacing.xs),
               Text(
                 nombre,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary),
+                style: AppTypography.bodyStrong.copyWith(color: colors.shellForeground),
               ),
             ],
           ],

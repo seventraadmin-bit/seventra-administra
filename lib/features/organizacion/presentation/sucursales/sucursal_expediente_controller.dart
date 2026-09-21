@@ -12,6 +12,7 @@ import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'sucursal_expediente_state.dart';
+import 'sucursales_list_controller.dart';
 
 part 'sucursal_expediente_controller.g.dart';
 
@@ -97,6 +98,10 @@ class SucursalExpedienteController extends _$SucursalExpedienteController {
           erroresGuardado: const [],
           errorGuardadoGeneral: false,
         );
+        // El listado de Sucursales es un `family` independiente que se
+        // queda montado debajo del expediente (`push`) — mismo motivo
+        // que `ClienteExpedienteController.guardar`.
+        ref.invalidate(sucursalesListControllerProvider);
         return true;
       case GuardarExpedienteSucursalErroresValidacion(errores: final errores):
         state = state.copyWith(guardando: false, erroresGuardado: errores, errorGuardadoGeneral: false);
@@ -131,6 +136,10 @@ class SucursalExpedienteController extends _$SucursalExpedienteController {
             horario: datosActuales.horario,
           ),
         );
+        // Mismo motivo que en `guardar` — el listado no se refresca
+        // solo con un cambio de estado operativo hecho desde el
+        // expediente.
+        ref.invalidate(sucursalesListControllerProvider);
         return true;
       },
       failure: (_) {

@@ -33,22 +33,32 @@ abstract interface class IngresoRepository {
     String? sucursalId,
     String? areaId,
     String? cuentaCaja,
+    String? cuentaFinancieraId,
     required String formaPago,
     required String concepto,
     String? observaciones,
     String? actorUsuarioId,
   });
 
-  /// Corrige metadatos administrativos — nunca `monto` (mismo criterio
-  /// que `Pago`/`ComplementoPago`: cancelar y volver a capturar).
+  /// Corrige metadatos administrativos de un Ingreso MANUAL — [monto]
+  /// incluido (etapa "Ingresos y Egresos": antes solo `corregirMonto`,
+  /// nunca expuesto a un caso de uso/UI real, podía tocarlo). Un
+  /// Ingreso automático (`pagoId != null`) nunca llega aquí — el caso
+  /// de uso (`CorregirIngresoUseCase`) lo bloquea antes. Un solo
+  /// `IngresoEvento` `corregido` con `estadoAnterior`/`estadoNuevo`
+  /// (`DiffEvento`) cubriendo TODOS los campos que realmente cambiaron,
+  /// nunca un evento por campo.
   Future<IngresoData> corregir({
     required String ingresoId,
+    int? monto,
     DateTime? fecha,
     String? categoriaFinancieraId,
     String? servicioId,
     String? sucursalId,
     String? areaId,
     String? cuentaCaja,
+    String? cuentaFinancieraId,
+    bool limpiarCuentaFinancieraId = false,
     String? formaPago,
     String? concepto,
     String? observaciones,

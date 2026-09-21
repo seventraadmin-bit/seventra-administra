@@ -12,6 +12,7 @@ import 'package:riseg_one/features/compras/data/repositories/compra_repository_i
 import 'package:riseg_one/features/compras/data/tables/compra_partida_table.dart' show DestinoCompraPartida;
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart' show PartidaCompraInput;
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/finanzas/domain/usecases/eliminar_egreso_fisicamente_usecase.dart';
@@ -123,11 +124,13 @@ void main() {
     test('rechaza eliminar el Egreso de una Compra, con el folio real de la Compra en el mensaje', () async {
       final articuloRepo = ArticuloRepositoryImpl(db);
       final inventarioRepo = InventarioRepositoryImpl(db);
-      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+      final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+      final compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
       final registrarCompra = RegistrarCompraUseCase(
         compraRepo,
         articuloRepo,
         inventarioRepo,
+        deudaRepo,
         GenerarCodigoUseCase(CodigoSecuenciaService(db)),
       );
 

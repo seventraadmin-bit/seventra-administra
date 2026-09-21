@@ -11,8 +11,11 @@ import 'package:riseg_one/features/organizacion/domain/repositories/catalogo_rep
 import '../../organizacion_providers.dart';
 import 'sucursales_list_controller.dart';
 
-/// Listado de Sucursales — buscador (código/nombre/tipo), tabla y alta
-/// vía diálogo (solo nombre + tipo; el resto se captura en el expediente
+/// Listado de Sucursales (Etapa 16, tercera pasada visual) — entidades
+/// físicas independientes, presentadas como una cuadrícula adaptativa
+/// de tarjetas (nunca una tabla): 3 por fila en escritorio ancho, 2 en
+/// medio, 1 en compacto. Buscador (código/nombre/tipo) y alta vía
+/// diálogo (solo nombre + tipo; el resto se captura en el expediente
 /// recién creado).
 class SucursalesListScreen extends ConsumerStatefulWidget {
   const SucursalesListScreen({super.key});
@@ -85,59 +88,197 @@ class _SucursalesListScreenState extends ConsumerState<SucursalesListScreen> {
       );
     }
 
-    return Padding(
+    final filas = state.sucursalesFiltradas;
+
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RisegSectionHeader(
             title: l10n.sucursalesListadoTitulo,
+            description: l10n.sucursalesListadoSubtitulo,
             primaryAction: RisegButton(
               key: const Key('sucursales_boton_nueva'),
               label: l10n.sucursalesListadoBotonNueva,
+              icon: Icons.add,
               onPressed: () => _mostrarDialogoAlta(state.tipos),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          RisegSearchField(
-            hint: l10n.sucursalesListadoBuscarHint,
-            controller: _busquedaController,
-            onChanged: notifier.actualizarBusqueda,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: RisegTableBase<SucursalData>(
-              loading: state.cargando,
-              rows: state.sucursalesFiltradas,
-              onRowTap: (sucursal) => context.push('/organizacion/sucursales/${sucursal.id}'),
-              emptyState: RisegEmptyState(
-                title: l10n.sucursalesListadoVacioTitulo,
-                message: l10n.sucursalesListadoVacioMensaje,
-              ),
-              columns: [
-                RisegColumn<SucursalData>(label: l10n.sucursalesColumnaCodigo, width: 120, cellBuilder: (s) => Text(s.codigo)),
-                RisegColumn<SucursalData>(label: l10n.sucursalesColumnaNombre, cellBuilder: (s) => Text(s.nombre)),
-                RisegColumn<SucursalData>(
-                  label: l10n.sucursalesColumnaTipo,
-                  cellBuilder: (s) => Text(state.nombreTipo(s.tipoSucursalId) ?? ''),
-                ),
-                RisegColumn<SucursalData>(
-                  label: l10n.sucursalesColumnaEstado,
-                  width: 180,
-                  cellBuilder: (s) => RisegStatusBadge(
-                    label: s.estadoOperativo == EstadoOperativoSucursal.operando.name
-                        ? l10n.sucursalEstadoOperativoOperando
-                        : l10n.sucursalEstadoOperativoCerradaTemporalmente,
-                    tone: s.estadoOperativo == EstadoOperativoSucursal.operando.name
-                        ? RisegStatusTone.success
-                        : RisegStatusTone.warning,
-                  ),
-                ),
-              ],
+          SizedBox(
+            width: 320,
+            child: RisegSearchField(
+              hint: l10n.sucursalesListadoBuscarHint,
+              controller: _busquedaController,
+              onChanged: notifier.actualizarBusqueda,
             ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          if (state.cargando)
+            const Padding(padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl), child: Center(child: CircularProgressIndicator()))
+          else if (filas.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+              child: Center(
+                child: RisegEmptyState(
+                  icon: Icons.storefront_outlined,
+                  title: l10n.sucursalesListadoVacioTitulo,
+                  message: l10n.sucursalesListadoVacioMensaje,
+                  primaryAction: state.busqueda.trim().isEmpty
+                      ? RisegButton(
+                          label: l10n.sucursalesListadoBotonNueva,
+                          icon: Icons.add,
+                          onPressed: () => _mostrarDialogoAlta(state.tipos),
+                        )
+                      : null,
+                ),
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columnas = constraints.maxWidth >= 1200 ? 3 : (constraints.maxWidth >= 700 ? 2 : 1);
+                const espacio = AppSpacing.lg;
+                final anchoTarjeta = (constraints.maxWidth - espacio * (columnas - 1)) / columnas;
+
+                return Wrap(
+                  spacing: espacio,
+                  runSpacing: espacio,
+                  children: [
+                    for (final s in filas)
+                      SizedBox(
+                        width: anchoTarjeta,
+                        child: _SucursalCard(
+                          sucursal: s,
+                          tipoNombre: state.nombreTipo(s.tipoSucursalId),
+                          ubicacion: state.ubicacionDe(s.id),
+                          personal: state.personalPorSucursal[s.id] ?? 0,
+                          servicios: state.serviciosPorSucursal[s.id] ?? 0,
+                          onTap: () => context.push('/organizacion/sucursales/${s.id}'),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SucursalCard extends StatelessWidget {
+  const _SucursalCard({
+    required this.sucursal,
+    required this.tipoNombre,
+    required this.ubicacion,
+    required this.personal,
+    required this.servicios,
+    required this.onTap,
+  });
+
+  final SucursalData sucursal;
+  final String? tipoNombre;
+  final String? ubicacion;
+  final int personal;
+  final int servicios;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.colors;
+    final operando = sucursal.estadoOperativo == EstadoOperativoSucursal.operando.name;
+
+    return RisegCard(
+      variant: RisegCardVariant.interactive,
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.location_on_outlined, color: colors.accentText, size: AppSizes.iconMd),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  sucursal.nombre.toUpperCase(),
+                  style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              RisegStatusBadge(
+                label: operando ? l10n.sucursalEstadoOperativoOperando : l10n.sucursalEstadoOperativoCerradaTemporalmente,
+                tone: operando ? RisegStatusTone.success : RisegStatusTone.warning,
+              ),
+            ],
+          ),
+          if (tipoNombre != null) ...[
+            const SizedBox(height: 2),
+            Text(tipoNombre!, style: AppTypography.body.copyWith(color: colors.textMuted)),
+          ],
+          const SizedBox(height: 2),
+          Text(sucursal.codigo, style: AppTypography.caption.copyWith(color: colors.textMuted)),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Icon(Icons.place_outlined, size: AppSizes.iconSm, color: colors.textMuted),
+              const SizedBox(width: AppSpacing.xxs),
+              Expanded(
+                child: Text(
+                  ubicacion ?? l10n.sucursalUbicacionNoRegistrada,
+                  style: AppTypography.caption.copyWith(
+                    color: colors.textMuted,
+                    fontStyle: ubicacion == null ? FontStyle.italic : FontStyle.normal,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              _MiniEstadistica(valor: personal, etiqueta: l10n.sucursalMetricaPersonal),
+              const SizedBox(width: AppSpacing.lg),
+              _MiniEstadistica(valor: servicios, etiqueta: l10n.sucursalMetricaServicios),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(l10n.sucursalVerSucursal, style: AppTypography.caption.copyWith(color: colors.accentText)),
+              Icon(Icons.chevron_right, size: AppSizes.iconSm, color: colors.accentText),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MiniEstadistica extends StatelessWidget {
+  const _MiniEstadistica({required this.valor, required this.etiqueta});
+
+  final int valor;
+  final String etiqueta;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text('$valor', style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary)),
+        const SizedBox(width: AppSpacing.xxs),
+        Text(etiqueta, style: AppTypography.caption.copyWith(color: colors.textMuted)),
+      ],
     );
   }
 }

@@ -1,3 +1,8 @@
+import 'package:riseg_one/features/finanzas/domain/politica_saldo_cuenta.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/cuenta_financiera_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
+import 'package:riseg_one/features/finanzas/domain/origen_financiero_gasto.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -45,8 +50,12 @@ void main() {
   late AdjuntarComprobanteMantenimientoVehiculoUseCase adjuntarComprobante;
   late FinalizarMantenimientoVehiculoUseCase finalizarMantenimiento;
   late Directory tempDir;
+  late CuentaFinancieraRepositoryImpl cuentaRepo;
+  // Desde la schemaVersion 80, TODO gasto con costo debe decir de dónde
+  // salió el dinero — estas pruebas de la Etapa 8D usan esta cuenta.
+  late String cuentaId;
 
-  setUp(() {
+  setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     asignacionRepo = AsignacionVehiculoRepositoryImpl(db);
     vehiculoRepo = VehiculoRepositoryImpl(db, asignacionRepo);
@@ -59,8 +68,18 @@ void main() {
     cambiarEstatus = CambiarEstatusVehiculoUseCase(vehiculoRepo);
     darDeBaja = DarDeBajaVehiculoUseCase(vehiculoRepo);
     asignarVehiculo = AsignarVehiculoUseCase(vehiculoRepo, asignacionRepo, kilometrajeRepo);
-    registrarMantenimiento = RegistrarMantenimientoVehiculoUseCase(mantenimientoRepo, vehiculoRepo, kilometrajeRepo);
+    registrarMantenimiento = RegistrarMantenimientoVehiculoUseCase(mantenimientoRepo, vehiculoRepo, kilometrajeRepo, DeudaRepositoryImpl(db, EgresoRepositoryImpl(db)));
     finalizarMantenimiento = FinalizarMantenimientoVehiculoUseCase(vehiculoRepo, asignacionRepo);
+
+    cuentaRepo = CuentaFinancieraRepositoryImpl(db);
+    cuentaId = (await cuentaRepo.crear(
+      codigo: 'CTA-0001',
+      nombre: 'BBVA Empresarial',
+      tipo: 'banco',
+      saldoInicial: 100000000,
+      fechaSaldoInicial: DateTime(2026, 1, 1),
+    ))
+        .id;
 
     tempDir = Directory.systemTemp.createTempSync('riseg_mantenimiento_vehiculo_test_');
     adjuntarComprobante = AdjuntarComprobanteMantenimientoVehiculoUseCase(mantenimientoRepo, AttachmentStorage(tempDir.path));
@@ -176,6 +195,7 @@ void main() {
         tipo: 'golpe',
         descripcion: 'Golpe en la puerta trasera derecha',
         costo: 250000,
+        origen: OrigenFinancieroCuenta(cuentaId),
       );
       final registro = (resultado as RegistrarMantenimientoVehiculoExitoso).registro;
       expect(registro.costo, 250000);
@@ -319,6 +339,7 @@ void main() {
         tipo: 'preventivo',
         descripcion: 'Servicio',
         costo: 150000,
+        origen: OrigenFinancieroCuenta(cuentaId),
       );
       await registrarMantenimiento.ejecutar(
         vehiculoId: vehiculo.id,
@@ -326,6 +347,7 @@ void main() {
         tipo: 'golpe',
         descripcion: 'Golpe lateral',
         costo: 500000,
+        origen: OrigenFinancieroCuenta(cuentaId),
       );
       await registrarMantenimiento.ejecutar(
         vehiculoId: vehiculo.id,
@@ -341,6 +363,55 @@ void main() {
       expect(costos.totalMantenimientos, 150000);
       expect(costos.totalIncidencias, 500000);
       expect(costos.costoOperativoAcumulado, 30000000 + 150000 + 500000);
+    });
+  });
+
+  group('Política de saldo (v91) — Vehículos', () {
+    Future<CuentaFinancieraData> cuentaCon(int saldo) {
+      return db.into(db.cuentaFinanciera).insertReturning(
+        CuentaFinancieraCompanion.insert(
+          codigo: 'CTA-VEH-$saldo',
+          nombre: 'Cuenta vehículos',
+          tipo: 'banco',
+          saldoInicial: saldo,
+          fechaSaldoInicial: DateTime(2026, 1, 1),
+        ),
+      );
+    }
+
+    test('A) con saldo suficiente: el mantenimiento se registra', () async {
+      final vehiculo = await crearVehiculoDePrueba();
+      final cuenta = await cuentaCon(300000);
+      final resultado = await registrarMantenimiento.ejecutar(
+        vehiculoId: vehiculo.id,
+        fecha: DateTime(2026, 1, 10),
+        tipo: 'preventivo',
+        descripcion: 'Cambio de aceite',
+        costo: 300000,
+        origen: OrigenFinancieroCuenta(cuenta.id),
+      );
+      expect(resultado, isA<RegistrarMantenimientoVehiculoExitoso>());
+    });
+
+    test('B y C) sin saldo: rechaza y NO deja persistencia parcial', () async {
+      final vehiculo = await crearVehiculoDePrueba();
+      final cuenta = await cuentaCon(299999);
+
+      await expectLater(
+        registrarMantenimiento.ejecutar(
+          vehiculoId: vehiculo.id,
+          fecha: DateTime(2026, 1, 10),
+          tipo: 'preventivo',
+          descripcion: 'Cambio de aceite',
+          costo: 300000,
+          origen: OrigenFinancieroCuenta(cuenta.id),
+        ),
+        throwsA(isA<SaldoInsuficienteException>()),
+      );
+
+      expect(await db.select(db.vehiculoMantenimiento).get(), isEmpty, reason: 'ni el mantenimiento');
+      expect(await db.select(db.egreso).get(), isEmpty, reason: 'ni el Egreso');
+      expect(await db.select(db.egresoFuente).get(), isEmpty, reason: 'ni su fuente');
     });
   });
 }
@@ -362,5 +433,6 @@ VehiculoMantenimientoData _mantenimientoDePrueba({DateTime? proximoFecha, int? p
     createdAt: ahora,
     updatedAt: ahora,
     cicloVidaRegistro: 'activo',
+    estatus: 'registrado',
   );
 }

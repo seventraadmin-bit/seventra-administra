@@ -37,8 +37,8 @@ Future<void> migrarCuentaPorCobrarV14(AppDatabase db) async {
       // que ambos campos siempre están presentes aquí.
       final cuenta = await db.into(db.cuentaPorCobrar).insertReturning(
             CuentaPorCobrarCompanion.insert(
-              documentoPorEmitirId: documento.id,
-              clienteId: documento.clienteId,
+              documentoPorEmitirId: Value(documento.id),
+              clienteId: Value(documento.clienteId),
               tipoDocumento: documento.tipoDocumento,
               metodo: documento.metodo,
               requiereComplemento: Value(documento.requiereComplemento),

@@ -42,7 +42,7 @@ class _SesionUsuarioNormal extends SesionController {
       esMaestro: false,
       // Incluso con TODOS los permisos dinámicos de Compras,
       // `exigirMaestro` nunca consulta esta lista.
-      permisos: {'compras.crear', 'compras.archivar', 'compras.ver'},
+      permisos: {'compras.crear', 'compras.cancelar', 'compras.ver'},
     );
   }
 }
@@ -78,7 +78,7 @@ void main() {
 
     final resultado = await container.read(eliminarCompraFisicamenteAutorizadoProvider)(
       compraId: compraId,
-      motivo: 'Intento no autorizado',
+      motivo: MotivoEliminacionFisicaCompra.errorDeCaptura,
     );
 
     expect(resultado, isA<EliminarCompraFisicamenteErrorInesperado>());
@@ -109,7 +109,7 @@ void main() {
 
     final resultado = await container.read(eliminarCompraFisicamenteAutorizadoProvider)(
       compraId: compraId,
-      motivo: 'Captura de prueba',
+      motivo: MotivoEliminacionFisicaCompra.registroDePrueba,
     );
 
     expect(resultado, isA<EliminarCompraFisicamenteExitoso>());

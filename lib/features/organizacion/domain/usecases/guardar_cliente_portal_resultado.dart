@@ -22,6 +22,10 @@ class GuardarClientePortalErroresValidacion extends GuardarClientePortalResultad
 /// criterio que `GuardarEntidadFiscalArchivada`).
 class GuardarClientePortalArchivado extends GuardarClientePortalResultado {}
 
+/// Corregir los datos de acceso de un portal exige explicar por qué —
+/// sólo en `ActualizarClientePortalUseCase`: un alta no justifica nada.
+class GuardarClientePortalMotivoRequerido extends GuardarClientePortalResultado {}
+
 class GuardarClientePortalErrorInesperado extends GuardarClientePortalResultado {
   GuardarClientePortalErrorInesperado(this.mensaje);
   final String mensaje;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme_context.dart';
+import '../tokens/app_color_scheme.dart';
 import '../tokens/app_sizes.dart';
 import '../tokens/app_spacing.dart';
 import '../tokens/app_typography.dart';
@@ -19,6 +20,7 @@ class RisegStatCard extends StatelessWidget {
     this.deltaTone,
     this.icon,
     this.onTap,
+    this.dense = false,
     super.key,
   });
 
@@ -26,18 +28,29 @@ class RisegStatCard extends StatelessWidget {
   final String value;
   final String? delta;
 
-  /// Reutiliza el mismo vocabulario de tono que [RisegStatusBadge].
+  /// Reutiliza el mismo vocabulario de tono que [RisegStatusBadge]. Sin
+  /// [delta], tiñe directamente el número (el elemento dominante de la
+  /// tarjeta) en vez de no tener ningún efecto visible — antes, pasar
+  /// `deltaTone` sin `delta` no cambiaba nada en pantalla (Etapa 15,
+  /// hallazgo real: varias pantallas ya lo hacían esperando un efecto).
   final RisegStatusTone? deltaTone;
   final IconData? icon;
   final VoidCallback? onTap;
 
+  /// Tarjeta ejecutiva compacta (Etapa 15, rediseño visual de
+  /// Personal/Bajas) — mismo contenido, con menos aire alrededor.
+  /// `false` conserva el aspecto exacto de todos los usos existentes.
+  final bool dense;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final valueColor = delta == null && deltaTone != null ? _colorDeTono(colors, deltaTone!) : colors.textPrimary;
 
     return RisegCard(
       variant: onTap == null ? RisegCardVariant.standard : RisegCardVariant.interactive,
       onTap: onTap,
+      padding: dense ? const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -50,8 +63,8 @@ class RisegStatCard extends StatelessWidget {
               if (icon != null) Icon(icon, size: AppSizes.iconMd, color: colors.textMuted),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(value, style: AppTypography.heading1.copyWith(color: colors.textPrimary)),
+          SizedBox(height: dense ? AppSpacing.xxs : AppSpacing.xs),
+          Text(value, style: AppTypography.heading1.copyWith(color: valueColor)),
           if (delta != null) ...[
             const SizedBox(height: AppSpacing.xxs),
             RisegStatusBadge(label: delta!, tone: deltaTone ?? RisegStatusTone.neutral),
@@ -60,4 +73,14 @@ class RisegStatCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _colorDeTono(AppColorScheme colors, RisegStatusTone tone) {
+  return switch (tone) {
+    RisegStatusTone.success => colors.success,
+    RisegStatusTone.warning => colors.warning,
+    RisegStatusTone.error => colors.error,
+    RisegStatusTone.info => colors.info,
+    RisegStatusTone.neutral => colors.neutralText,
+  };
 }

@@ -51,6 +51,19 @@ class AppPaths {
   /// (Etapa 14C).
   String get recibosDir => p.join(_root, 'recibos');
 
+  /// Raíz donde se guardan los PDF de dispersión de Nómina (Etapa 15) —
+  /// mismo criterio que [reportesDir]/[recibosDir]: 100% regenerable
+  /// desde `Nomina`/`NominaEmpleado` (siempre el snapshot ya guardado,
+  /// nunca el dato bancario en vivo del Empleado), sin dueño en
+  /// `Attachment`, fuera del respaldo (Etapa 14C).
+  String get nominaDispersionDir => p.join(_root, 'nomina_dispersion');
+
+  /// Raíz donde se guardan las Tarjetas fiscales de Empresa generadas en
+  /// PDF (Etapa 16) — mismo criterio que [reportesDir]/[recibosDir]:
+  /// 100% regenerable desde `Empresa`/`Direccion`/`MedioContacto`, sin
+  /// dueño en `Attachment`, fuera del respaldo (Etapa 14C).
+  String get datosFiscalesDir => p.join(_root, 'datos_fiscales');
+
   /// Carpeta de espera de una restauración validada pero aún no aplicada
   /// (Etapa 14C) — [bootstrap] revisa [restorePendingMarkerFile] antes
   /// de abrir la base de datos; si existe, sustituye [databaseFile] y

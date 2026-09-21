@@ -128,7 +128,7 @@ void main() {
     );
 
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
-    final crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigo);
+    final crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigo);
     final resultado = await crearManual.ejecutar(
       clienteId: cliente.id,
       servicioIds: [servicioId],

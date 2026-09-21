@@ -81,4 +81,29 @@ abstract interface class AsignacionVehiculoRepository {
   /// llama (`VehiculoRepositoryImpl.darDeBaja`) ya lo deja en `baja` en
   /// la misma transacción.
   Future<void> cerrarPorBajaVehiculo({required String vehiculoId, required DateTime fecha});
+
+  /// Marca como PENDIENTES DE RECUPERACIÓN las asignaciones vigentes de
+  /// un Empleado (schemaVersion 82) — misma transacción que su baja
+  /// laboral, mismo criterio que `AsignacionRepository` en Inventario.
+  ///
+  /// **NO cierra la asignación**, y por lo tanto **no** deja el
+  /// `Vehiculo` en `disponible` ni finge una entrega: mientras nadie
+  /// registre la devolución real, la NP300 sigue con la persona. Es
+  /// justo lo que `cerrar` sí haría, y por eso no se usa aquí.
+  Future<void> marcarPendientesPorBajaEmpleado({
+    required String empleadoId,
+    required DateTime fecha,
+    String? actorUsuarioId,
+  });
+
+  /// Asignaciones VIGENTES de un Empleado — la conciliación de baja las
+  /// carga por FK para que el usuario no tenga que recordar qué trae.
+  /// Asignaciones de vehículo por id, en una sola consulta — mismo
+  /// criterio de lote que AsignacionRepository.listarPorIds.
+  Future<Map<String, AsignacionVehiculoData>> listarPorIds(Iterable<String> ids);
+
+  Future<List<AsignacionVehiculoData>> listarActivasPorEmpleado(String empleadoId);
+
+  /// Asignaciones vigentes marcadas como pendientes de recuperación.
+  Future<List<AsignacionVehiculoData>> listarPendientesRecuperacionPorEmpleado(String empleadoId);
 }

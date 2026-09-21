@@ -109,7 +109,7 @@ void main() {
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     generarAgenda = GenerarAgendaUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigo);
-    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigo);
+    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigo);
   });
 
   tearDown(() => db.close());
@@ -150,10 +150,10 @@ void main() {
         borrador: const ClientePortalBorrador(nombre: 'Portal', tipo: TipoPortalCliente.otro),
       )) as GuardarClientePortalExitoso;
 
-      final archivado = await cambiarCicloVidaPortal.ejecutar(clientePortalId: creado.portal.id, nuevo: CicloVidaRegistro.archivado);
+      final archivado = await cambiarCicloVidaPortal.ejecutar(clientePortalId: creado.portal.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
       expect(archivado, isA<CambiarCicloVidaClientePortalExitoso>());
 
-      final reactivado = await cambiarCicloVidaPortal.ejecutar(clientePortalId: creado.portal.id, nuevo: CicloVidaRegistro.activo);
+      final reactivado = await cambiarCicloVidaPortal.ejecutar(clientePortalId: creado.portal.id, nuevo: CicloVidaRegistro.activo, motivo: 'Motivo de prueba');
       expect(reactivado, isA<CambiarCicloVidaClientePortalExitoso>());
     });
 
@@ -163,11 +163,12 @@ void main() {
         clienteId: clienteId,
         borrador: const ClientePortalBorrador(nombre: 'Portal', tipo: TipoPortalCliente.otro),
       )) as GuardarClientePortalExitoso;
-      await cambiarCicloVidaPortal.ejecutar(clientePortalId: creado.portal.id, nuevo: CicloVidaRegistro.archivado);
+      await cambiarCicloVidaPortal.ejecutar(clientePortalId: creado.portal.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
 
       final resultado = await actualizarPortal.ejecutar(
         id: creado.portal.id,
         borrador: const ClientePortalBorrador(nombre: 'Portal renombrado', tipo: TipoPortalCliente.otro),
+        motivo: 'Motivo de prueba',
       );
       expect(resultado, isA<GuardarClientePortalArchivado>());
     });
@@ -204,6 +205,7 @@ void main() {
       final actualizado = (await actualizarPortal.ejecutar(
         id: creado.portal.id,
         borrador: const ClientePortalBorrador(nombre: 'Portal renombrado', tipo: TipoPortalCliente.otro),
+        motivo: 'Motivo de prueba',
       )) as GuardarClientePortalExitoso;
 
       expect(actualizado.portal.contrasenaCifrada, cifradoOriginal);
@@ -220,6 +222,7 @@ void main() {
       final actualizado = (await actualizarPortal.ejecutar(
         id: creado.portal.id,
         borrador: const ClientePortalBorrador(nombre: 'Portal', tipo: TipoPortalCliente.otro, contrasenaNueva: 'Nueva456'),
+        motivo: 'Motivo de prueba',
       )) as GuardarClientePortalExitoso;
 
       expect(actualizado.portal.contrasenaCifrada, isNot(equals(creado.portal.contrasenaCifrada)));
@@ -293,7 +296,7 @@ void main() {
       )) as GuardarClientePortalExitoso;
       final servicio = await crearServicioConPortalReferenciado(clienteId, creado.portal.id);
 
-      final archivado = await cambiarCicloVidaPortal.ejecutar(clientePortalId: creado.portal.id, nuevo: CicloVidaRegistro.archivado);
+      final archivado = await cambiarCicloVidaPortal.ejecutar(clientePortalId: creado.portal.id, nuevo: CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
       expect(archivado, isA<CambiarCicloVidaClientePortalExitoso>());
 
       final vigenciaConDetalle = await configuracionCobroRepo.obtenerConfiguracion(servicio.servicioId);
@@ -349,6 +352,7 @@ void main() {
       await actualizarPortal.ejecutar(
         id: creado.portal.id,
         borrador: const ClientePortalBorrador(nombre: 'Portal nuevo', tipo: TipoPortalCliente.otro, url: 'https://nuevo.example.com'),
+        motivo: 'Motivo de prueba',
       );
 
       // El Documento sigue apuntando al mismo id — nunca se rompió la

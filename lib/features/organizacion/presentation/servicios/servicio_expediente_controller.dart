@@ -27,10 +27,12 @@ import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_expediente_data.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'servicio_expediente_state.dart';
+import 'servicios_list_controller.dart';
 
 part 'servicio_expediente_controller.g.dart';
 
@@ -95,15 +97,22 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     );
   }
 
-  Future<bool> guardar(ServicioBorrador borrador) async {
+  /// [motivo] obligatorio: viaja a la bitácora del Servicio junto con
+  /// el usuario de la sesión.
+  Future<bool> guardar(ServicioBorrador borrador, {required String motivo}) async {
     if (state.guardando || state.datos == null) return false;
 
     state = state.copyWith(guardando: true, erroresGuardado: const [], errorGuardadoGeneral: false);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(actualizarServicioUseCaseProvider).ejecutar(id: servicioId, borrador: borrador),
+      'servicios.corregir',
+      () => ref.read(actualizarServicioUseCaseProvider).ejecutar(
+            id: servicioId,
+            borrador: borrador,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       GuardarServicioErrorInesperado.new,
     );
 
@@ -117,10 +126,17 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
           erroresGuardado: const [],
           errorGuardadoGeneral: false,
         );
+        // Mismo motivo que `ClienteExpedienteController.guardar` — el
+        // listado de Servicios es un `family` independiente que se
+        // queda montado debajo del expediente (`push`); sin esta
+        // invalidación explícita, un Servicio editado seguía viéndose
+        // con los datos previos hasta cambiar de pestaña y volver.
+        ref.invalidate(serviciosListControllerProvider);
         return true;
       case GuardarServicioErroresValidacion(errores: final errores):
         state = state.copyWith(guardando: false, erroresGuardado: errores, errorGuardadoGeneral: false);
         return false;
+      case GuardarServicioMotivoRequerido():
       case GuardarServicioErrorInesperado():
         state = state.copyWith(guardando: false, erroresGuardado: const [], errorGuardadoGeneral: true);
         return false;
@@ -130,37 +146,51 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
   Future<CambiarEstatusServicioResultado?> cambiarEstatus(
     EstatusServicio nuevo, {
     DateTime? fechaTerminoEfectiva,
+    required String motivo,
   }) async {
     if (state.cambiandoEstatus || state.datos == null) return null;
 
     state = state.copyWith(cambiandoEstatus: true);
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'servicios.corregir',
       () => ref.read(cambiarEstatusServicioUseCaseProvider).ejecutar(
             servicioId: servicioId,
             nuevo: nuevo,
             fechaTerminoEfectiva: fechaTerminoEfectiva,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           ),
       CambiarEstatusServicioErrorInesperado.new,
     );
 
     if (resultado is CambiarEstatusServicioExitoso) {
       state = state.copyWith(cambiandoEstatus: false, datos: _conServicioActualizado(resultado.servicio));
+      // Mismo motivo que en `guardar` — el listado no se refresca solo
+      // con un cambio de estatus hecho desde el expediente.
+      ref.invalidate(serviciosListControllerProvider);
     } else {
       state = state.copyWith(cambiandoEstatus: false);
     }
     return resultado;
   }
 
-  Future<AsignarEntidadFiscalAServicioResultado?> asignarEntidadFiscal(String? entidadFiscalId) async {
+  Future<AsignarEntidadFiscalAServicioResultado?> asignarEntidadFiscal(
+    String? entidadFiscalId, {
+    String? motivo,
+  }) async {
     if (state.operandoRelacion) return null;
     state = state.copyWith(operandoRelacion: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(asignarEntidadFiscalAServicioUseCaseProvider).ejecutar(servicioId: servicioId, entidadFiscalId: entidadFiscalId),
+      'servicios.corregir',
+      () => ref.read(asignarEntidadFiscalAServicioUseCaseProvider).ejecutar(
+            servicioId: servicioId,
+            entidadFiscalId: entidadFiscalId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       AsignarEntidadFiscalAServicioErrorInesperado.new,
     );
     if (resultado is AsignarEntidadFiscalAServicioExitoso) {
@@ -176,8 +206,12 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(asignarResponsableClienteUseCaseProvider).ejecutar(servicioId: servicioId, contactoId: contactoId),
+      'servicios.corregir',
+      () => ref.read(asignarResponsableClienteUseCaseProvider).ejecutar(
+            servicioId: servicioId,
+            contactoId: contactoId,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       AsignarResponsableClienteErrorInesperado.new,
     );
     if (resultado is AsignarResponsableClienteExitoso) {
@@ -193,8 +227,12 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(asignarSucursalAdministrativaUseCaseProvider).ejecutar(servicioId: servicioId, sucursalId: sucursalId),
+      'servicios.corregir',
+      () => ref.read(asignarSucursalAdministrativaUseCaseProvider).ejecutar(
+            servicioId: servicioId,
+            sucursalId: sucursalId,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       AsignarSucursalAdministrativaErrorInesperado.new,
     );
     if (resultado is AsignarSucursalAdministrativaExitoso) {
@@ -210,7 +248,7 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'servicios.corregir',
       () => ref.read(guardarDireccionOperativaServicioUseCaseProvider).ejecutar(servicioId: servicioId, domicilio: domicilio),
       GuardarDireccionOperativaServicioErrorInesperado.new,
     );
@@ -227,8 +265,12 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.crear',
-      () => ref.read(crearLineaComercialUseCaseProvider).ejecutar(servicioId: servicioId, borrador: borrador),
+      'servicios.crear',
+      () => ref.read(crearLineaComercialUseCaseProvider).ejecutar(
+            servicioId: servicioId,
+            borrador: borrador,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CrearLineaComercialErrorInesperado.new,
     );
     if (resultado is CrearLineaComercialExitoso) {
@@ -247,8 +289,13 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.crear',
-      () => ref.read(crearConfiguracionCobroUseCaseProvider).ejecutar(servicioId: servicioId, borrador: borrador, etapas: etapas),
+      'configuracionCobro.crear',
+      () => ref.read(crearConfiguracionCobroUseCaseProvider).ejecutar(
+            servicioId: servicioId,
+            borrador: borrador,
+            etapas: etapas,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CrearConfiguracionCobroErrorInesperado.new,
     );
     if (resultado is CrearConfiguracionCobroExitoso) {
@@ -264,17 +311,20 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     String configuracionCobroId,
     ConfiguracionCobroBorrador borrador, {
     List<EtapaCobroBorrador> etapas = const [],
+    required String motivo,
   }) async {
     if (state.operandoCobro) return null;
     state = state.copyWith(operandoCobro: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'configuracionCobro.corregir',
       () => ref.read(corregirConfiguracionCobroUseCaseProvider).ejecutar(
             configuracionCobroId: configuracionCobroId,
             borrador: borrador,
             etapas: etapas,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           ),
       CorregirConfiguracionCobroErrorInesperado.new,
     );
@@ -285,21 +335,26 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     return resultado;
   }
 
+  /// [observacion] OPCIONAL: abrir una vigencia de cobro nueva no es
+  /// corregir nada; la anterior queda histórica.
   Future<CambiarVigenciaConfiguracionCobroResultado?> cambiarVigenciaConfiguracionCobro(
     String configuracionCobroId,
     ConfiguracionCobroBorrador borrador, {
     List<EtapaCobroBorrador> etapas = const [],
+    String? observacion,
   }) async {
     if (state.operandoCobro) return null;
     state = state.copyWith(operandoCobro: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'configuracionCobro.corregir',
       () => ref.read(cambiarVigenciaConfiguracionCobroUseCaseProvider).ejecutar(
             configuracionCobroId: configuracionCobroId,
             borrador: borrador,
             etapas: etapas,
+            observacion: observacion,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           ),
       CambiarVigenciaConfiguracionCobroErrorInesperado.new,
     );
@@ -312,15 +367,21 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
   Future<CerrarConfiguracionCobroResultado?> cerrarConfiguracionCobro(
     String configuracionCobroId,
-    DateTime fechaEfectiva,
-  ) async {
+    DateTime fechaEfectiva, {
+    required String motivo,
+  }) async {
     if (state.operandoCobro) return null;
     state = state.copyWith(operandoCobro: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(cerrarConfiguracionCobroUseCaseProvider).ejecutar(configuracionCobroId: configuracionCobroId, fechaEfectiva: fechaEfectiva),
+      'configuracionCobro.corregir',
+      () => ref.read(cerrarConfiguracionCobroUseCaseProvider).ejecutar(
+            configuracionCobroId: configuracionCobroId,
+            fechaEfectiva: fechaEfectiva,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CerrarConfiguracionCobroErrorInesperado.new,
     );
     if (resultado is CerrarConfiguracionCobroExitoso) {
@@ -331,15 +392,20 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
   }
 
   Future<CancelarVigenciaProgramadaConfiguracionCobroResultado?> cancelarVigenciaProgramadaConfiguracionCobro(
-    String vigenciaId,
-  ) async {
+    String vigenciaId, {
+    required String motivo,
+  }) async {
     if (state.operandoCobro) return null;
     state = state.copyWith(operandoCobro: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(cancelarVigenciaProgramadaConfiguracionCobroUseCaseProvider).ejecutar(vigenciaId: vigenciaId),
+      'configuracionCobro.corregir',
+      () => ref.read(cancelarVigenciaProgramadaConfiguracionCobroUseCaseProvider).ejecutar(
+            vigenciaId: vigenciaId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CancelarVigenciaProgramadaConfiguracionCobroErrorInesperado.new,
     );
     if (resultado is CancelarVigenciaProgramadaConfiguracionCobroExitoso) {
@@ -358,7 +424,7 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'configuracionCobro.corregir',
       () => ref.read(actualizarObservacionesConfiguracionCobroVigenciaUseCaseProvider).ejecutar(
             vigenciaId: vigenciaId,
             observaciones: observaciones,
@@ -376,17 +442,25 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
   /// creada, sin historia (ver `CorregirLineaComercialUseCase`). Mismo
   /// permiso dinámico que "Nueva vigencia" — no es una facultad
   /// extraordinaria, es una corrección de captura normal.
+  /// [motivo] obligatorio: corregir precio, elementos, turno o IVA de
+  /// una vigencia cambia lo que se cobra.
   Future<CorregirLineaComercialResultado?> corregirLinea(
     String lineaComercialId,
-    LineaComercialBorrador borrador,
-  ) async {
+    LineaComercialBorrador borrador, {
+    required String motivo,
+  }) async {
     if (state.operandoComercial) return null;
     state = state.copyWith(operandoComercial: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(corregirLineaComercialUseCaseProvider).ejecutar(lineaComercialId: lineaComercialId, borrador: borrador),
+      'servicios.corregir',
+      () => ref.read(corregirLineaComercialUseCaseProvider).ejecutar(
+            lineaComercialId: lineaComercialId,
+            borrador: borrador,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CorregirLineaComercialErrorInesperado.new,
     );
     if (resultado is CorregirLineaComercialExitoso) {
@@ -396,17 +470,25 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     return resultado;
   }
 
+  /// [observacion] es OPCIONAL: abrir una vigencia nueva no es corregir
+  /// nada, y pedir un "motivo" la disfrazaría de enmienda.
   Future<CambiarVigenciaLineaComercialResultado?> cambiarVigenciaLinea(
     String lineaComercialId,
-    LineaComercialBorrador borrador,
-  ) async {
+    LineaComercialBorrador borrador, {
+    String? observacion,
+  }) async {
     if (state.operandoComercial) return null;
     state = state.copyWith(operandoComercial: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(cambiarVigenciaLineaComercialUseCaseProvider).ejecutar(lineaComercialId: lineaComercialId, borrador: borrador),
+      'servicios.corregir',
+      () => ref.read(cambiarVigenciaLineaComercialUseCaseProvider).ejecutar(
+            lineaComercialId: lineaComercialId,
+            borrador: borrador,
+            observacion: observacion,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CambiarVigenciaLineaComercialErrorInesperado.new,
     );
     if (resultado is CambiarVigenciaLineaComercialExitoso) {
@@ -418,15 +500,21 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
   Future<CerrarLineaComercialResultado?> cerrarLineaComercial(
     String lineaComercialId,
-    DateTime fechaEfectiva,
-  ) async {
+    DateTime fechaEfectiva, {
+    required String motivo,
+  }) async {
     if (state.operandoComercial) return null;
     state = state.copyWith(operandoComercial: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(cerrarLineaComercialUseCaseProvider).ejecutar(lineaComercialId: lineaComercialId, fechaEfectiva: fechaEfectiva),
+      'servicios.corregir',
+      () => ref.read(cerrarLineaComercialUseCaseProvider).ejecutar(
+            lineaComercialId: lineaComercialId,
+            fechaEfectiva: fechaEfectiva,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CerrarLineaComercialErrorInesperado.new,
     );
     if (resultado is CerrarLineaComercialExitoso) {
@@ -436,14 +524,21 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     return resultado;
   }
 
-  Future<CancelarVigenciaProgramadaResultado?> cancelarVigenciaProgramada(String vigenciaId) async {
+  Future<CancelarVigenciaProgramadaResultado?> cancelarVigenciaProgramada(
+    String vigenciaId, {
+    required String motivo,
+  }) async {
     if (state.operandoComercial) return null;
     state = state.copyWith(operandoComercial: true);
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
-      () => ref.read(cancelarVigenciaProgramadaUseCaseProvider).ejecutar(vigenciaId: vigenciaId),
+      'servicios.corregir',
+      () => ref.read(cancelarVigenciaProgramadaUseCaseProvider).ejecutar(
+            vigenciaId: vigenciaId,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
       CancelarVigenciaProgramadaErrorInesperado.new,
     );
     if (resultado is CancelarVigenciaProgramadaExitoso) {
@@ -463,7 +558,7 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
 
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'comercial.modificar',
+      'servicios.corregir',
       () => ref.read(actualizarAnotacionesVigenciaUseCaseProvider).ejecutar(
             vigenciaId: vigenciaId,
             descripcion: descripcion,
@@ -489,8 +584,12 @@ class ServicioExpedienteController extends _$ServicioExpedienteController {
     try {
       final resultado = await autorizarUseCase(
         ref.read(authorizationServiceProvider),
-        'comercial.modificar',
-        () => ref.read(guardarResponsableInternoUseCaseProvider).ejecutar(servicioId: servicioId, texto: texto).then<ServicioData?>((v) => v),
+        'servicios.corregir',
+        () => ref.read(guardarResponsableInternoUseCaseProvider).ejecutar(
+              servicioId: servicioId,
+              texto: texto,
+              actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+            ).then<ServicioData?>((v) => v),
         (mensaje) => null,
       );
       if (resultado == null) {

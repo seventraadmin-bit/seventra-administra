@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
@@ -55,8 +57,8 @@ void main() {
 
     crearEmpleado =
         CrearEmpleadoUseCase(empleadoRepo, generarNumero, validator, servicioRepo, ServicioComercialRepositoryImpl(db));
-    corregirEmpleado = CorregirEmpleadoUseCase(empleadoRepo, validator);
-    registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, validator);
+    corregirEmpleado = CorregirEmpleadoUseCase(empleadoRepo, validator, asignacionServicioRepo);
+    registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, validator, AsignacionRepositoryImpl(db), AsignacionVehiculoRepositoryImpl(db));
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, validator);
     guardarDomicilio = GuardarDomicilioEmpleadoUseCase(empleadoRepo);
 

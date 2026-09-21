@@ -6,7 +6,7 @@ part of 'sesion_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sesionControllerHash() => r'a0ffb0cad7adc733dd36997ccebe71d50df231ea';
+String _$sesionControllerHash() => r'f144f1e79f006f12ab9000b12375996a420cc9ea';
 
 /// Sesión activa de RISEG ONE (Etapa 11A) — `null` significa "sin
 /// sesión", el estado que fuerza al `redirect` del router a mandar a

@@ -40,7 +40,7 @@ class _SesionUsuarioNormal extends SesionController {
       // Incluso con TODOS los permisos dinámicos de Finanzas, `exigirMaestro`
       // nunca consulta esta lista — ninguna casilla de la matriz puede
       // otorgar esta facultad extraordinaria.
-      permisos: {'finanzas.crear', 'finanzas.modificar', 'finanzas.archivar', 'finanzas.ver'},
+      permisos: {'egresos.crear', 'egresos.corregir', 'egresos.cancelar', 'finanzas.ver'},
     );
   }
 }

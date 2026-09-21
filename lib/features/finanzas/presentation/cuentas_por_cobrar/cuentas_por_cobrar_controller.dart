@@ -1,10 +1,16 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
-import 'package:riseg_one/features/finanzas/domain/usecases/actualizar_fecha_vencimiento_cuenta_por_cobrar_usecase.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_cuenta_por_cobrar_usecase.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/corregir_cuenta_por_cobrar_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cuenta_por_cobrar_antiguedad.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/quitar_reprogramacion_cobro_cuenta_por_cobrar_usecase.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/reprogramar_cobro_cuenta_por_cobrar_usecase.dart';
 
+import '../../../dashboard/presentation/dashboard_controller.dart';
 import '../../finanzas_providers.dart';
+import '../planeacion/planeacion_financiera_controller.dart';
+import '../resumen/resumen_financiero_controller.dart';
 import 'cuentas_por_cobrar_state.dart';
 
 part 'cuentas_por_cobrar_controller.g.dart';
@@ -28,7 +34,10 @@ class CuentasPorCobrarController extends _$CuentasPorCobrarController {
             clienteId: state.clienteId,
             estatus: state.estatus,
           );
-      state = state.copyWith(cargando: false, cuentas: cuentas, errorCarga: null);
+      // Los nombres se resuelven en LOTE junto con las filas: dos
+      // consultas fijas, nunca una por cuenta.
+      final nombres = await ref.read(resolverNombresContraparteUseCaseProvider).paraCuentas(cuentas);
+      state = state.copyWith(cargando: false, cuentas: cuentas, nombres: nombres, errorCarga: null);
     } catch (e) {
       state = state.copyWith(cargando: false, errorCarga: e.toString());
     }
@@ -67,18 +76,97 @@ class CuentasPorCobrarController extends _$CuentasPorCobrarController {
     return ref.read(cuentaPorCobrarRepositoryProvider).listarEventos(cuentaPorCobrarId);
   }
 
-  Future<ActualizarFechaVencimientoCuentaPorCobrarResultado> actualizarFechaVencimiento({
+  /// Corrige `fechaVencimiento`/`observaciones` (Etapa 7, Categoría C —
+  /// ver el doc comment de `CorregirCuentaPorCobrarUseCase`).
+  Future<CorregirCuentaPorCobrarResultado> corregir({
     required String cuentaPorCobrarId,
-    required DateTime fechaVencimiento,
-    String? motivo,
+    DateTime? fechaVencimiento,
+    bool limpiarFechaVencimiento = false,
+    String? observaciones,
+    bool limpiarObservaciones = false,
+    required String motivo,
   }) async {
-    final resultado = await ref.read(actualizarFechaVencimientoCuentaPorCobrarUseCaseProvider).ejecutar(
-          cuentaPorCobrarId: cuentaPorCobrarId,
-          fechaVencimiento: fechaVencimiento,
-          motivo: motivo,
-        );
-    if (resultado is ActualizarFechaVencimientoCuentaPorCobrarExitoso) {
+    final resultado = await ref.read(corregirCuentaPorCobrarAutorizadoProvider)(
+      cuentaPorCobrarId: cuentaPorCobrarId,
+      fechaVencimiento: fechaVencimiento,
+      limpiarFechaVencimiento: limpiarFechaVencimiento,
+      observaciones: observaciones,
+      limpiarObservaciones: limpiarObservaciones,
+      motivo: motivo,
+    );
+    if (resultado is CorregirCuentaPorCobrarExitoso) {
       await _cargar();
+      // Cambia qué compromisos/serie muestran el Resumen y la
+      // Planeación financiera, y la clasificación de cobranza del
+      // Dashboard — ninguno de los tres se entera sin invalidar aquí
+      // (Etapa 19C/19D corrigió los dos primeros; el Dashboard era un
+      // hueco real: consume `fechaVencimiento`/`estatus` directo vía
+      // `ObtenerResumenCobranzaUseCase`/`ObtenerAlertasDashboardUseCase`).
+      ref.invalidate(resumenFinancieroControllerProvider);
+      ref.invalidate(planeacionFinancieraControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+    }
+    return resultado;
+  }
+
+  /// Reprograma la expectativa de cobro de una CxC vencida (Etapa 19D)
+  /// — nunca toca `fechaVencimiento` (ver el doc comment del use case).
+  /// `fechaCobroReprogramada: null` limpia la reprogramación (mismo
+  /// mecanismo que expone [quitarReprogramacion] con semántica propia).
+  Future<ReprogramarCobroCuentaPorCobrarResultado> reprogramarCobro({
+    required String cuentaPorCobrarId,
+    required DateTime? fechaCobroReprogramada,
+    required String motivo,
+  }) async {
+    final resultado = await ref.read(reprogramarCobroCuentaPorCobrarAutorizadoProvider)(
+      cuentaPorCobrarId: cuentaPorCobrarId,
+      fechaCobroReprogramada: fechaCobroReprogramada,
+      motivo: motivo,
+    );
+    if (resultado is ReprogramarCobroCuentaPorCobrarExitoso) {
+      await _cargar();
+      ref.invalidate(resumenFinancieroControllerProvider);
+      ref.invalidate(planeacionFinancieraControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+    }
+    return resultado;
+  }
+
+  /// Quita una reprogramación capturada por error (Etapa 7, Sección 5)
+  /// — la Planeación vuelve a proyectar sobre `fechaVencimiento`.
+  Future<QuitarReprogramacionCobroCuentaPorCobrarResultado> quitarReprogramacion({
+    required String cuentaPorCobrarId,
+    required String motivo,
+  }) async {
+    final resultado = await ref.read(quitarReprogramacionCobroCuentaPorCobrarAutorizadoProvider)(
+      cuentaPorCobrarId: cuentaPorCobrarId,
+      motivo: motivo,
+    );
+    if (resultado is QuitarReprogramacionCobroCuentaPorCobrarExitoso) {
+      await _cargar();
+      ref.invalidate(resumenFinancieroControllerProvider);
+      ref.invalidate(planeacionFinancieraControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+    }
+    return resultado;
+  }
+
+  /// Cancela la obligación completa (Etapa 7, Sección 6) — bloqueado si
+  /// tiene alguna `AplicacionPago` activa (ver el doc comment de
+  /// `CancelarCuentaPorCobrarUseCase`). Nunca toca `DocumentoPorEmitir`.
+  Future<CancelarCuentaPorCobrarResultado> cancelar({
+    required String cuentaPorCobrarId,
+    required String motivo,
+  }) async {
+    final resultado = await ref.read(cancelarCuentaPorCobrarAutorizadoProvider)(
+      cuentaPorCobrarId: cuentaPorCobrarId,
+      motivo: motivo,
+    );
+    if (resultado is CancelarCuentaPorCobrarExitoso) {
+      await _cargar();
+      ref.invalidate(resumenFinancieroControllerProvider);
+      ref.invalidate(planeacionFinancieraControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
     }
     return resultado;
   }

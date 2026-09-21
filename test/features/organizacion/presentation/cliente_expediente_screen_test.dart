@@ -3,6 +3,7 @@
 // estatus, y la sección de Contactos (terreno nuevo: alta, marcar como
 // principal, archivar).
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -13,6 +14,7 @@ import 'package:riseg_one/app/theme/app_theme.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/data/repositories/cliente_repository_impl.dart';
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
@@ -84,12 +86,38 @@ Future<void> _agregarEntidadFiscal(WidgetTester tester, {required String razonSo
   await tester.pumpAndSettle();
 }
 
+
+/// Atraviesa el diálogo común de motivo: escribe uno y confirma.
+///
+/// Toda corrección, suspensión, terminación o archivo de Comercial lo
+/// pide desde la etapa de trazabilidad — el motivo es obligatorio y
+/// termina en la bitácora.
+Future<void> _responderMotivo(WidgetTester tester, String confirmarLabel) async {
+  expect(find.byKey(const Key('dialogo_motivo_campo')), findsOneWidget,
+      reason: 'la operación sensible tiene que pedir motivo');
+  await tester.enterText(find.byKey(const Key('dialogo_motivo_campo')), 'Motivo de prueba');
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(RisegButton, confirmarLabel).last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late AppDatabase db;
   late String clienteId;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // El actor de la bitácora es una FK real contra `Usuario`: la
+    // sesión de prueba tiene que existir, igual que en producción.
+    await db.into(db.usuario).insert(
+      UsuarioCompanion.insert(
+        id: const Value('usuario-prueba'),
+        nombre: 'Usuario de prueba',
+        nombreUsuario: 'prueba',
+        passwordHash: 'x',
+        esMaestro: const Value(true),
+      ),
+    );
     clienteId = await _crearCliente(db);
   });
 
@@ -140,6 +168,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, 'Sportium Renombrado');
     await tester.tap(find.byKey(const Key('cliente_expediente_boton_guardar')));
     await tester.pumpAndSettle();
+    await _responderMotivo(tester, l10n.clienteCambiarEstatusBotonGuardar);
 
     expect(find.text('Sportium Renombrado'), findsWidgets);
     expect(find.text(l10n.clienteGuardadoExito), findsOneWidget);
@@ -162,6 +191,7 @@ void main() {
 
     await tester.tap(find.text(l10n.clienteCambiarEstatusBotonGuardar));
     await tester.pumpAndSettle();
+    await _responderMotivo(tester, l10n.clienteCambiarEstatusBotonGuardar);
 
     expect(find.text(l10n.clienteEstatusActivo), findsOneWidget);
   });
@@ -241,6 +271,9 @@ void main() {
     await tester.tap(find.text(l10n.sucursalConfirmarAceptar));
     await tester.pumpAndSettle();
 
+    // Archivar un contacto es una baja documental: exige motivo.
+    await _responderMotivo(tester, l10n.sucursalConfirmarAceptar);
+
     expect(find.text('Juan Pérez'), findsNothing);
     expect(find.text(l10n.clienteContactosVacioMensaje), findsOneWidget);
   });
@@ -253,7 +286,11 @@ void main() {
     await _agregarEntidadFiscal(tester, razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1');
 
     expect(find.byType(Dialog), findsNothing);
-    expect(find.text('Sportium Toluca SA de CV'), findsOneWidget);
+    // Aparece dos veces: en la lista de Entidades fiscales y en la
+    // cabecera de identidad (Etapa 16, ficha comercial) — la razón
+    // social se muestra ahí en cuanto hay exactamente UNA Entidad
+    // fiscal activa, sin ambigüedad.
+    expect(find.text('Sportium Toluca SA de CV'), findsNWidgets(2));
     expect(find.textContaining('ENF-0001'), findsOneWidget);
     expect(find.text(l10n.entidadFiscalEstadoActiva), findsOneWidget);
     expect(find.text(l10n.entidadFiscalDatosIncompletos), findsOneWidget);
@@ -312,6 +349,7 @@ void main() {
     expect(find.byType(Dialog), findsOneWidget);
     await tester.tap(find.text(l10n.sucursalConfirmarAceptar));
     await tester.pumpAndSettle();
+    await _responderMotivo(tester, l10n.sucursalConfirmarAceptar);
 
     expect(find.text(l10n.entidadFiscalEstadoArchivada), findsOneWidget);
 
@@ -326,6 +364,7 @@ void main() {
     expect(find.byType(Dialog), findsOneWidget);
     await tester.tap(find.text(l10n.sucursalConfirmarAceptar));
     await tester.pumpAndSettle();
+    await _responderMotivo(tester, l10n.sucursalConfirmarAceptar);
 
     expect(find.text(l10n.entidadFiscalEstadoActiva), findsOneWidget);
   });

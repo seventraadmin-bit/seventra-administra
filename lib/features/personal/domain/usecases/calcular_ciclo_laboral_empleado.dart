@@ -9,12 +9,22 @@ class CicloLaboralEmpleado {
   const CicloLaboralEmpleado({
     required this.antiguedadAnios,
     required this.antiguedadMeses,
+    required this.antiguedadDiasResiduales,
     required this.diasLaborados,
     this.fechaProximoAniversario,
   });
 
   final int antiguedadAnios;
   final int antiguedadMeses;
+
+  /// Días transcurridos desde el último mesiversario completo — el
+  /// mismo criterio de "día de corte" que ya usa `antiguedadMeses`
+  /// (`hasta.day < ingreso.day` pide prestado un mes), solo que medido
+  /// en días en vez de en meses. Existe únicamente para presentación
+  /// compacta ("6 meses 22 días") cuando `antiguedadAnios == 0`; nunca
+  /// se usa para decidir ninguna regla de negocio.
+  final int antiguedadDiasResiduales;
+
   final int diasLaborados;
 
   /// `null` si el Empleado está de baja — un aniversario solo tiene
@@ -67,6 +77,13 @@ CicloLaboralEmpleado calcularCicloLaboralDesdeFechas({
 
   final diasLaborados = hasta.difference(ingreso).inDays;
 
+  // Mismo criterio de corte que arriba (`hasta.day < ingreso.day` pide
+  // prestado un mes): el mesiversario más reciente cae en el mes de
+  // `hasta` si `hasta.day >= ingreso.day`, o en el mes anterior si no.
+  final mesUltimoMesiversario = hasta.day >= ingreso.day ? hasta.month : hasta.month - 1;
+  final ultimoMesiversario = DateTime(hasta.year, mesUltimoMesiversario, ingreso.day);
+  final diasResiduales = hasta.difference(ultimoMesiversario).inDays;
+
   DateTime? proximoAniversario;
   if (activo) {
     var candidato = DateTime(referencia.year, ingreso.month, ingreso.day);
@@ -79,6 +96,7 @@ CicloLaboralEmpleado calcularCicloLaboralDesdeFechas({
   return CicloLaboralEmpleado(
     antiguedadAnios: anios,
     antiguedadMeses: meses,
+    antiguedadDiasResiduales: diasResiduales < 0 ? 0 : diasResiduales,
     diasLaborados: diasLaborados < 0 ? 0 : diasLaborados,
     fechaProximoAniversario: proximoAniversario,
   );

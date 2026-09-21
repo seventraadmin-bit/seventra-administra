@@ -8,6 +8,7 @@ import 'package:riseg_one/features/compras/data/repositories/compra_repository_i
 import 'package:riseg_one/features/compras/data/tables/compra_partida_table.dart' show DestinoCompraPartida;
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -39,9 +40,10 @@ void main() {
     articuloRepo = ArticuloRepositoryImpl(db);
     inventarioRepo = InventarioRepositoryImpl(db);
     final egresoRepo = EgresoRepositoryImpl(db);
-    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+    final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
     regularizar = RegularizarArticuloSerializadoUseCase(articuloRepo, inventarioRepo, generarCodigo);
   });
 
@@ -68,7 +70,7 @@ void main() {
       final compraResultado = await registrarCompra.ejecutar(
         fecha: DateTime(2026, 8, 10),
         proveedor: 'Tienda de teléfonos',
-        formaPago: FormaPago.tarjeta.name,
+        formaPago: FormaPago.efectivo.name,
         partidas: [
           PartidaCompraInput(destino: DestinoCompraPartida.inventario.name, articuloId: articulo.id, cantidad: 1, costoUnitario: 179400),
         ],

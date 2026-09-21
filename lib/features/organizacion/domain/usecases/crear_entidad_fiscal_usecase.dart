@@ -22,6 +22,7 @@ class CrearEntidadFiscalUseCase {
   Future<GuardarEntidadFiscalResultado> ejecutar({
     required String clienteId,
     required EntidadFiscalBorrador borrador,
+    String? actorUsuarioId,
   }) async {
     final validacion = await _validator.validar(clienteId: clienteId, borrador: borrador);
     if (validacion.errores.isNotEmpty) {
@@ -48,6 +49,7 @@ class CrearEntidadFiscalUseCase {
           razonSocial: validado.razonSocial,
           rfc: validado.rfc,
         ),
+        actorUsuarioId: actorUsuarioId,
       );
       return GuardarEntidadFiscalExitoso(entidad);
     } catch (e) {

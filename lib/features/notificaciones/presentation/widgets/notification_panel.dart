@@ -53,6 +53,13 @@ class NotificationPanel extends ConsumerWidget {
             _grupo(l10n.notificacionesGrupoCxcProxima, Icons.schedule_outlined, resultados.cxcProximasAVencer),
             _grupo(l10n.notificacionesGrupoCxcVencida, Icons.error_outline, resultados.cxcVencidas),
             _grupo(l10n.notificacionesGrupoPagosRecientes, Icons.payments_outlined, resultados.pagosRecientes),
+            // Séptima categoría — obligación fiscal derivada de un Pago
+            // real, nunca de una fecha del calendario comercial.
+            _grupo(
+              l10n.notificacionesComplementosPendientesTitulo,
+              Icons.request_page_outlined,
+              resultados.complementosPendientes,
+            ),
           ],
         ),
       ),

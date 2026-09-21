@@ -44,8 +44,10 @@ class AppShellScreen extends ConsumerWidget {
     final visibleDestinations = <ShellDestination>[];
     final visibleToRealIndex = <int>[];
     for (var i = 0; i < allDestinations.length; i++) {
-      final requerido = permisoRequeridoParaRuta(allDestinations[i].path);
-      if (requerido == null || permissionService.hasCode(requerido)) {
+      // Basta CUALQUIERA de los códigos que abren la ruta — desde que
+      // Auditoría se separó, `/configuracion` tiene más de un dueño.
+      final permisosQueAbren = permisosQueAbrenRuta(allDestinations[i].path);
+      if (permisosQueAbren.isEmpty || permisosQueAbren.any(permissionService.hasCode)) {
         visibleDestinations.add(allDestinations[i]);
         visibleToRealIndex.add(i);
       }
@@ -94,7 +96,14 @@ class AppShellScreen extends ConsumerWidget {
                     Expanded(
                       child: Container(
                         key: const Key('shell_content_area'),
-                        color: Theme.of(context).colorScheme.surface,
+                        // Etapa 16, evolución visual: `scaffoldBackgroundColor`
+                        // (= `colors.canvas`), NUNCA `colorScheme.surface` —
+                        // jerarquía de 3 niveles (Shell azul / sidebar y topbar
+                        // en `surface` / área de trabajo en `canvas`, un tono
+                        // ligeramente distinto). Las tarjetas/tablas de cada
+                        // pantalla siguen usando `surface` por su cuenta, así
+                        // que quedan visualmente separadas del fondo.
+                        color: Theme.of(context).scaffoldBackgroundColor,
                         child: navigationShell,
                       ),
                     ),

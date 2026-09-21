@@ -7,7 +7,7 @@ part of 'reportes_personal_nomina_controller.dart';
 // **************************************************************************
 
 String _$reportesPersonalNominaControllerHash() =>
-    r'2fa908a436f31ec05d33863ff20a9e47f7d5fc31';
+    r'ca898cb74f8f65e087dfa6e84ddab1389689a638';
 
 /// Controlador de la pestaña Personal · Nómina de Reportes (Etapa 12B).
 ///

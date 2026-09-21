@@ -80,7 +80,7 @@ void main() {
       const ConfiguracionCobroEtapaValidator(),
     );
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
-    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigo);
+    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigo);
     registrarEmision = RegistrarEmisionDocumentoPorEmitirUseCase(documentoRepo);
     actualizarAjuste = ActualizarAjusteManualDocumentoPorEmitirUseCase(documentoRepo);
 

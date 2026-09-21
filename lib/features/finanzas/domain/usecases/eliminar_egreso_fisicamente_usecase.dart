@@ -1,13 +1,15 @@
 import '../repositories/egreso_repository.dart';
 
 /// Resumen de solo lectura de si un Egreso es elegible para
-/// eliminación física (Etapa 15) — insumo del mensaje de confirmación
-/// que la UI muestra antes de pedir el motivo. `detalleBloqueo` no nulo
-/// significa que existe una dependencia real (`Compra`/`PagoNomina`
-/// que lo generaron automáticamente) y la eliminación se rechaza
-/// siempre, sin importar motivo — nunca se rompe la trazabilidad del
-/// origen. Un Egreso `cancelado` sin ningún origen automático SÍ es
-/// elegible (caso real: limpiar una captura de prueba).
+/// eliminación física (Etapa 15; ampliado en la etapa "Ingresos y
+/// Egresos") — insumo del mensaje de confirmación que la UI muestra
+/// antes de pedir el motivo. `detalleBloqueo` no nulo significa que
+/// existe una dependencia real (`Compra`/`PagoNomina`/`TiempoExtra`/
+/// `TiempoExtraCostoAdicional`/`MovimientoDeuda` que lo generaron
+/// automáticamente) y la eliminación se rechaza siempre, sin importar
+/// motivo — nunca se rompe la trazabilidad del origen. Un Egreso
+/// `cancelado` sin ningún origen automático SÍ es elegible (caso real:
+/// limpiar una captura de prueba).
 class ResumenEliminacionEgreso {
   const ResumenEliminacionEgreso({required this.existe, this.detalleBloqueo});
 

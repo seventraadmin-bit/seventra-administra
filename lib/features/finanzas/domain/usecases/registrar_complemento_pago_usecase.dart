@@ -16,8 +16,9 @@ class RegistrarComplementoPagoPagoNoExiste extends RegistrarComplementoPagoResul
 
 class RegistrarComplementoPagoPagoCancelado extends RegistrarComplementoPagoResultado {}
 
-/// Ese Pago ya tiene un Complemento registrado — relación 1:1
-/// definitiva (Resolución de Marlon).
+/// Ese Pago ya tiene un Complemento **vigente**. No impide registrar un
+/// sustituto cuando el anterior está cancelado (schemaVersion 79): el
+/// invariante es "a lo más uno vigente", no "a lo más uno histórico".
 class RegistrarComplementoPagoYaExiste extends RegistrarComplementoPagoResultado {}
 
 class RegistrarComplementoPagoUuidFormatoInvalido extends RegistrarComplementoPagoResultado {}
@@ -63,8 +64,14 @@ class RegistrarComplementoPagoUseCase {
       return RegistrarComplementoPagoPagoCancelado();
     }
 
-    final existente = await _complementoRepository.obtenerPorPagoId(pagoId);
-    if (existente != null) {
+    // Sólo bloquea un Complemento VIGENTE (schemaVersion 79). Antes se
+    // consultaba el histórico completo, así que una fila CANCELADA
+    // seguía ocupando el lugar y el sustituto se rechazaba: el Pago
+    // quedaba pendiente sin forma de cumplir la obligación. El índice
+    // único parcial `complemento_pago_vigente_por_pago` es el candado
+    // final si alguien se saltara esta validación.
+    final vigente = await _complementoRepository.obtenerVigentePorPagoId(pagoId);
+    if (vigente != null) {
       return RegistrarComplementoPagoYaExiste();
     }
 

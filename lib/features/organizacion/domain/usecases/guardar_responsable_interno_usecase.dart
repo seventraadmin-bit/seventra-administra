@@ -12,11 +12,16 @@ class GuardarResponsableInternoUseCase {
 
   final ServicioRepository _repository;
 
-  Future<ServicioData> ejecutar({required String servicioId, required String? texto}) {
+  Future<ServicioData> ejecutar({
+    required String servicioId,
+    required String? texto,
+    String? actorUsuarioId,
+  }) {
     final normalizado = texto?.trim();
     return _repository.guardarResponsableInterno(
       servicioId: servicioId,
       texto: (normalizado == null || normalizado.isEmpty) ? null : normalizado,
+      actorUsuarioId: actorUsuarioId,
     );
   }
 }

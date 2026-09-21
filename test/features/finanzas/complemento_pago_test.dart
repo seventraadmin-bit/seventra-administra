@@ -98,7 +98,7 @@ void main() {
         CrearConfiguracionCobroUseCase(configuracionCobroRepo, servicioRepo, configuracionCobroValidator, reglaValidator);
 
     final ensamblar = EnsamblarDocumentoPorEmitirUseCase(comercialRepo, configuracionCobroRepo);
-    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, ensamblar, generarCodigoInterno);
+    crearManual = CrearDocumentoManualUseCase(documentoRepo, configuracionCobroRepo, servicioRepo, ensamblar, generarCodigoInterno);
     registrarEmision = RegistrarEmisionDocumentoPorEmitirUseCase(documentoRepo);
     cambiarEstatus = CambiarEstatusDocumentoPorEmitirUseCase(documentoRepo);
 
@@ -402,8 +402,8 @@ void main() {
     });
 
     test('complementoPendiente es verdadero sin Complemento registrado', () {
-      expect(complementoPendiente(requiereComplemento: true, complemento: null), isTrue);
-      expect(complementoPendiente(requiereComplemento: false, complemento: null), isFalse);
+      expect(complementoPendiente(requiereComplemento: true, complementosDelPago: const []), isTrue);
+      expect(complementoPendiente(requiereComplemento: false, complementosDelPago: const []), isFalse);
     });
 
     test('complementoPendiente pasa a falso una vez registrado, y vuelve a verdadero si se cancela', () async {
@@ -416,11 +416,11 @@ void main() {
         montoTotal: cuenta.saldoOriginal,
       );
       final complemento = (registrado as RegistrarComplementoPagoExitoso).complemento;
-      expect(complementoPendiente(requiereComplemento: true, complemento: complemento), isFalse);
+      expect(complementoPendiente(requiereComplemento: true, complementosDelPago: [complemento]), isFalse);
 
       final cancelado = await cancelarComplemento.ejecutar(complementoPagoId: complemento.id, motivo: 'Prueba');
       final complementoCancelado = (cancelado as CancelarComplementoPagoExitoso).complemento;
-      expect(complementoPendiente(requiereComplemento: true, complemento: complementoCancelado), isTrue);
+      expect(complementoPendiente(requiereComplemento: true, complementosDelPago: [complementoCancelado]), isTrue);
     });
 
     test('cierreCobranzaCompleto es falso si la Cuenta no está pagada', () async {

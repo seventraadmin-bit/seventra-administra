@@ -7,7 +7,7 @@ part of 'reportes_operacion_controller.dart';
 // **************************************************************************
 
 String _$reportesOperacionControllerHash() =>
-    r'ddf907a9d6e4ba494b39c4d493b741e7a84a70fc';
+    r'66c01691e36a8759d435b8742e8fdcbcee385d7b';
 
 /// Controlador de la pestaña Operación de Reportes (Etapa 12C).
 ///

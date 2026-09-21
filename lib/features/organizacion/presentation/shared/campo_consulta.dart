@@ -27,7 +27,12 @@ class CampoConsulta extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: AppTypography.label.copyWith(color: colors.textMuted)),
+        Text(
+          label,
+          style: AppTypography.label.copyWith(color: colors.textMuted),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         const SizedBox(height: AppSpacing.xxs),
         Text(
           mostrado,
@@ -35,6 +40,8 @@ class CampoConsulta extends StatelessWidget {
             color: esPendiente ? colors.textMuted : colors.textPrimary,
             fontStyle: esPendiente ? FontStyle.italic : FontStyle.normal,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

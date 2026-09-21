@@ -10,8 +10,11 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import 'package:riseg_one/features/usuarios/usuarios_providers.dart' show permissionServiceProvider;
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_documento_table.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_mantenimiento_table.dart';
+import 'package:riseg_one/features/finanzas/finanzas_providers.dart'
+    show cuentaFinancieraRepositoryProvider, deudaRepositoryProvider, egresoRepositoryProvider;
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart' show MotivoBajaVehiculo;
 import 'package:riseg_one/features/vehiculos/domain/usecases/actualizar_fotografia_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/agrupar_documentos_vehiculo.dart';
@@ -32,6 +35,9 @@ import 'widgets/gestionar_vehiculo_dialog.dart';
 import 'widgets/historial_documento_vehiculo_dialog.dart';
 import 'widgets/registrar_documento_vehiculo_dialog.dart';
 import 'widgets/registrar_kilometraje_vehiculo_dialog.dart';
+import 'widgets/anular_mantenimiento_vehiculo_dialog.dart';
+import 'widgets/corregir_documento_vehiculo_dialog.dart';
+import 'widgets/corregir_mantenimiento_vehiculo_dialog.dart';
 import 'widgets/registrar_mantenimiento_vehiculo_dialog.dart';
 import 'widgets/retirar_asignacion_vehiculo_dialog.dart';
 
@@ -64,6 +70,12 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
   Map<String, AttachmentData> _adjuntoPorDocumento = const {};
   List<VehiculoMantenimientoData> _mantenimientos = const [];
   Map<String, AttachmentData> _comprobantePorMantenimiento = const {};
+
+  /// Nombre legible del origen financiero de cada mantenimiento con
+  /// costo (schemaVersion 80) — "BBVA Empresarial", "TDC Konfío".
+  /// Se resuelve aquí, una sola vez por carga, en vez de por celda:
+  /// la tabla del expediente no debe disparar consultas al pintar.
+  Map<String, String> _origenPorMantenimiento = const {};
   _FiltroMantenimiento _filtroMantenimiento = _FiltroMantenimiento.todos;
   bool _cargando = true;
   bool _procesando = false;
@@ -100,6 +112,25 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
       if (adjuntos.isNotEmpty) adjuntoPorDocumento[documento.id] = adjuntos.first;
     }
 
+    // Catálogos de origen, leídos una vez: el nombre de la cuenta o de
+    // la tarjeta de la que salió cada gasto.
+    final cuentas = await ref.read(cuentaFinancieraRepositoryProvider).listar();
+    final tarjetas = await ref.read(deudaRepositoryProvider).listarTarjetasActivas();
+    final egresoRepo = ref.read(egresoRepositoryProvider);
+    final nombreCuenta = {for (final c in cuentas) c.id: c.nombre};
+    final nombreTarjeta = {for (final t in tarjetas) t.id: t.nombre};
+
+    final origenPorMantenimiento = <String, String>{};
+    for (final registro in mantenimientos) {
+      if (registro.deudaId != null) {
+        origenPorMantenimiento[registro.id] = nombreTarjeta[registro.deudaId] ?? registro.deudaId!;
+      } else if (registro.egresoId != null) {
+        final egreso = await egresoRepo.obtenerPorId(registro.egresoId!);
+        final cuentaId = egreso?.cuentaFinancieraId;
+        if (cuentaId != null) origenPorMantenimiento[registro.id] = nombreCuenta[cuentaId] ?? cuentaId;
+      }
+    }
+
     final comprobantePorMantenimiento = <String, AttachmentData>{};
     for (final registro in mantenimientos) {
       final adjuntos = await attachmentRepo.listarActivosPorVehiculoMantenimiento(registro.id);
@@ -119,6 +150,7 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
       _adjuntoPorDocumento = adjuntoPorDocumento;
       _mantenimientos = mantenimientos;
       _comprobantePorMantenimiento = comprobantePorMantenimiento;
+      _origenPorMantenimiento = origenPorMantenimiento;
       _cargando = false;
     });
   }
@@ -162,9 +194,26 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
     if (registrado) await _cargar();
   }
 
+  Future<void> _corregirDocumento(VehiculoDocumentoData documento) async {
+    final corregido = await mostrarDialogoCorregirDocumentoVehiculo(context, ref, documento);
+    if (corregido && mounted) await _cargar();
+  }
+
   Future<void> _verHistorialDocumento(String tipo) async {
     final documentosDelTipo = _documentos.where((d) => d.tipo == tipo).toList();
     await mostrarDialogoHistorialDocumentoVehiculo(context, ref, documentosDelTipo);
+  }
+
+  bool _estaAnulado(VehiculoMantenimientoData m) => m.estatus == EstatusMantenimientoVehiculo.cancelado.name;
+
+  Future<void> _corregirMantenimiento(VehiculoMantenimientoData registro) async {
+    final corregido = await mostrarDialogoCorregirMantenimientoVehiculo(context, ref, registro);
+    if (corregido && mounted) await _cargar();
+  }
+
+  Future<void> _anularMantenimiento(VehiculoMantenimientoData registro) async {
+    final anulado = await mostrarDialogoAnularMantenimientoVehiculo(context, ref, registro);
+    if (anulado && mounted) await _cargar();
   }
 
   Future<void> _registrarMantenimiento() async {
@@ -175,8 +224,9 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
   Future<void> _finalizarMantenimiento() async {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _procesando = true);
-    final resultado =
-        await ref.read(vehiculosControllerProvider.notifier).finalizarMantenimiento(vehiculoId: widget.vehiculoId);
+    final resultado = await ref
+        .read(vehiculosControllerProvider.notifier)
+        .finalizarMantenimiento(vehiculoId: widget.vehiculoId);
     if (!mounted) return;
     setState(() => _procesando = false);
     switch (resultado) {
@@ -234,7 +284,9 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
     if (!mounted) return;
 
     setState(() => _procesando = true);
-    final resultado = await ref.read(vehiculosControllerProvider.notifier).actualizarFotografia(
+    final resultado = await ref
+        .read(vehiculosControllerProvider.notifier)
+        .actualizarFotografia(
           vehiculoId: widget.vehiculoId,
           sourceFilePath: archivo!.path!,
           originalFileName: archivo.name,
@@ -263,7 +315,10 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
     }
     final vehiculo = _vehiculo;
     if (vehiculo == null) {
-      return Scaffold(appBar: AppBar(), body: RisegEmptyState(title: l10n.vehiculosListadoCargaErrorTitulo, message: ''));
+      return Scaffold(
+        appBar: AppBar(),
+        body: RisegEmptyState(title: l10n.vehiculosListadoCargaErrorTitulo, message: ''),
+      );
     }
 
     final esBaja = vehiculo.estatus == 'baja';
@@ -294,7 +349,10 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${vehiculo.marca} ${vehiculo.modelo}', style: AppTypography.heading2.copyWith(color: colors.textPrimary)),
+                          Text(
+                            '${vehiculo.marca} ${vehiculo.modelo}',
+                            style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                          ),
                           Text(vehiculo.codigo, style: AppTypography.body.copyWith(color: colors.textMuted)),
                         ],
                       ),
@@ -403,16 +461,17 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                     children: [
                       RisegSectionHeader(
                         title: l10n.vehiculoAsignacionSeccionTitulo,
-                        primaryAction: esBaja
-                            ? null
-                            : (_asignacionVigente == null
-                                ? RisegButton(
-                                    label: l10n.vehiculoBotonAsignar,
-                                    variant: RisegButtonVariant.secondary,
-                                    size: RisegButtonSize.compact,
-                                    onPressed: vehiculo.estatus == 'disponible' ? _asignar : null,
-                                  )
-                                : null),
+                        primaryAction:
+                            esBaja
+                                ? null
+                                : (_asignacionVigente == null
+                                    ? RisegButton(
+                                      label: l10n.vehiculoBotonAsignar,
+                                      variant: RisegButtonVariant.secondary,
+                                      size: RisegButtonSize.compact,
+                                      onPressed: vehiculo.estatus == 'disponible' ? _asignar : null,
+                                    )
+                                    : null),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       if (_asignacionVigente == null)
@@ -450,14 +509,15 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                     children: [
                       RisegSectionHeader(
                         title: l10n.vehiculoKilometrajeSeccionTitulo,
-                        primaryAction: esBaja
-                            ? null
-                            : RisegButton(
-                                label: l10n.vehiculoBotonRegistrarKilometraje,
-                                variant: RisegButtonVariant.secondary,
-                                size: RisegButtonSize.compact,
-                                onPressed: _registrarKilometraje,
-                              ),
+                        primaryAction:
+                            esBaja
+                                ? null
+                                : RisegButton(
+                                  label: l10n.vehiculoBotonRegistrarKilometraje,
+                                  variant: RisegButtonVariant.secondary,
+                                  size: RisegButtonSize.compact,
+                                  onPressed: _registrarKilometraje,
+                                ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       if (_kilometrajeActual == null)
@@ -477,14 +537,15 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                     children: [
                       RisegSectionHeader(
                         title: l10n.vehiculoDocumentosSeccionTitulo,
-                        primaryAction: esBaja
-                            ? null
-                            : RisegButton(
-                                label: l10n.vehiculoBotonAgregarDocumento,
-                                variant: RisegButtonVariant.secondary,
-                                size: RisegButtonSize.compact,
-                                onPressed: _agregarDocumento,
-                              ),
+                        primaryAction:
+                            esBaja
+                                ? null
+                                : RisegButton(
+                                  label: l10n.vehiculoBotonAgregarDocumento,
+                                  variant: RisegButtonVariant.secondary,
+                                  size: RisegButtonSize.compact,
+                                  onPressed: _agregarDocumento,
+                                ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       if (documentosVigentesPorTipo(_documentos).isEmpty)
@@ -504,7 +565,11 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                                       Builder(
                                         builder: (_) {
                                           final estado = calcularEstadoVigenciaDocumento(documento.fechaVencimiento);
-                                          final detalle = detalleVigenciaDocumentoLabel(l10n, estado, documento.fechaVencimiento);
+                                          final detalle = detalleVigenciaDocumentoLabel(
+                                            l10n,
+                                            estado,
+                                            documento.fechaVencimiento,
+                                          );
                                           return Wrap(
                                             crossAxisAlignment: WrapCrossAlignment.center,
                                             spacing: AppSpacing.xs,
@@ -514,7 +579,10 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                                                 tone: estadoVigenciaDocumentoTono(estado),
                                               ),
                                               if (detalle.isNotEmpty)
-                                                Text(detalle, style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                                                Text(
+                                                  detalle,
+                                                  style: AppTypography.caption.copyWith(color: colors.textMuted),
+                                                ),
                                             ],
                                           );
                                         },
@@ -522,30 +590,52 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                                     ],
                                   ),
                                 ),
-                                Wrap(
-                                  spacing: AppSpacing.xs,
-                                  children: [
-                                    if (_adjuntoPorDocumento.containsKey(documento.id))
+                                // `Flexible` y no un `Wrap` suelto: sin
+                                // el límite de ancho, el Wrap toma su
+                                // tamaño natural y desborda el Row a
+                                // 500 px (lo encontró la prueba
+                                // responsive de esta etapa al sumarse
+                                // el botón "Corregir"). Con Flexible el
+                                // Wrap parte los botones en renglones.
+                                Flexible(
+                                  child: Wrap(
+                                    spacing: AppSpacing.xs,
+                                    alignment: WrapAlignment.end,
+                                    children: [
+                                      if (_adjuntoPorDocumento.containsKey(documento.id))
+                                        RisegButton(
+                                          label: l10n.vehiculoDocumentoBotonAbrir,
+                                          variant: RisegButtonVariant.ghost,
+                                          size: RisegButtonSize.compact,
+                                          onPressed:
+                                              () => ref
+                                                  .read(attachmentStorageProvider)
+                                                  .abrir(_adjuntoPorDocumento[documento.id]!.path),
+                                        ),
                                       RisegButton(
-                                        label: l10n.vehiculoDocumentoBotonAbrir,
+                                        label: l10n.vehiculoBotonRenovarDocumento,
                                         variant: RisegButtonVariant.ghost,
                                         size: RisegButtonSize.compact,
-                                        onPressed: () =>
-                                            ref.read(attachmentStorageProvider).abrir(_adjuntoPorDocumento[documento.id]!.path),
+                                        onPressed: esBaja ? null : () => _renovarDocumento(documento),
                                       ),
-                                    RisegButton(
-                                      label: l10n.vehiculoBotonRenovarDocumento,
-                                      variant: RisegButtonVariant.ghost,
-                                      size: RisegButtonSize.compact,
-                                      onPressed: esBaja ? null : () => _renovarDocumento(documento),
-                                    ),
-                                    RisegButton(
-                                      label: l10n.vehiculoBotonVerHistorialDocumento,
-                                      variant: RisegButtonVariant.ghost,
-                                      size: RisegButtonSize.compact,
-                                      onPressed: () => _verHistorialDocumento(documento.tipo),
-                                    ),
-                                  ],
+                                      // Corregir NO es renovar (v80): esto
+                                      // arregla la captura de esta misma
+                                      // vigencia, sin inventar una nueva.
+                                      RisegButton(
+                                        key: Key('vehiculo_documento_corregir_${documento.id}'),
+                                        label: l10n.vehiculoBotonCorregirDocumento,
+                                        variant: RisegButtonVariant.ghost,
+                                        size: RisegButtonSize.compact,
+                                        onPressed: esBaja ? null : () => _corregirDocumento(documento),
+                                      ),
+                                      RisegButton(
+                                        label: l10n.vehiculoBotonVerHistorialDocumento,
+                                        variant: RisegButtonVariant.ghost,
+                                        size: RisegButtonSize.compact,
+                                        onPressed: () => _verHistorialDocumento(documento.tipo),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -582,7 +672,8 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                           RisegColumn<AsignacionVehiculoData>(
                             label: l10n.vehiculoColumnaFechaTermino,
                             width: 110,
-                            cellBuilder: (a) => Text(a.fechaTermino == null ? '—' : _formatoFecha.format(a.fechaTermino!)),
+                            cellBuilder:
+                                (a) => Text(a.fechaTermino == null ? '—' : _formatoFecha.format(a.fechaTermino!)),
                           ),
                         ],
                       ),
@@ -634,6 +725,7 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
   /// separadas) — el filtro Todos/Mantenimiento/Incidencias es estado
   /// local de la pantalla, no una consulta distinta.
   Widget _buildSeccionMantenimiento(AppLocalizations l10n, AppColorScheme colors, bool esBaja) {
+    final puedeAnular = ref.watch(permissionServiceProvider).hasCode('vehiculos.cancelar');
     final filtrados = switch (_filtroMantenimiento) {
       _FiltroMantenimiento.todos => _mantenimientos,
       _FiltroMantenimiento.mantenimiento =>
@@ -648,14 +740,15 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
         children: [
           RisegSectionHeader(
             title: l10n.vehiculoMantenimientoSeccionTitulo,
-            primaryAction: esBaja
-                ? null
-                : RisegButton(
-                    label: l10n.vehiculoBotonRegistrarMantenimiento,
-                    variant: RisegButtonVariant.secondary,
-                    size: RisegButtonSize.compact,
-                    onPressed: _registrarMantenimiento,
-                  ),
+            primaryAction:
+                esBaja
+                    ? null
+                    : RisegButton(
+                      label: l10n.vehiculoBotonRegistrarMantenimiento,
+                      variant: RisegButtonVariant.secondary,
+                      size: RisegButtonSize.compact,
+                      onPressed: _registrarMantenimiento,
+                    ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
@@ -697,6 +790,15 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                         label: categoriaMantenimientoVehiculoLabel(l10n, esIncidencia: esIncidencia),
                         tone: categoriaMantenimientoVehiculoTono(esIncidencia: esIncidencia),
                       ),
+                      // Un registro anulado NO desaparece del historial:
+                      // se marca. Su costo ya no pesa en los totales
+                      // (calcularCostosVehiculo lo salta) y su efecto
+                      // financiero ya fue revertido.
+                      if (_estaAnulado(m))
+                        RisegStatusBadge(
+                          label: l10n.vehiculoMantenimientoEstatusCancelado,
+                          tone: RisegStatusTone.error,
+                        ),
                     ],
                   );
                 },
@@ -709,21 +811,96 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
                 label: l10n.vehiculoMantenimientoColumnaCosto,
                 width: 100,
                 alignment: TextAlign.right,
-                cellBuilder: (m) => Text(m.costo == null ? '—' : formatoCosto(m.costo!)),
+                cellBuilder:
+                    (m) => Text(
+                      m.costo == null ? '—' : formatoCosto(m.costo!),
+                      style:
+                          _estaAnulado(m)
+                              ? AppTypography.body.copyWith(
+                                decoration: TextDecoration.lineThrough,
+                                color: colors.textMuted,
+                              )
+                              : null,
+                    ),
+              ),
+              // De donde salio el dinero (schemaVersion 80). Un gasto
+              // historico anterior a esta etapa se muestra como "Sin
+              // especificar" — nunca se le inventa una cuenta.
+              RisegColumn<VehiculoMantenimientoData>(
+                label: l10n.vehiculoMantenimientoColumnaOrigen,
+                width: 150,
+                cellBuilder:
+                    (m) => Text(
+                      (m.costo ?? 0) == 0
+                          ? '—'
+                          : _origenPorMantenimiento[m.id] ?? l10n.vehiculoMantenimientoOrigenSinEspecificar,
+                      overflow: TextOverflow.ellipsis,
+                    ),
               ),
               RisegColumn<VehiculoMantenimientoData>(
                 label: l10n.vehiculoMantenimientoColumnaComprobante,
                 width: 90,
-                cellBuilder: (m) => _comprobantePorMantenimiento.containsKey(m.id)
-                    ? RisegButton(
-                        label: l10n.vehiculoMantenimientoBotonAbrirComprobante,
-                        variant: RisegButtonVariant.ghost,
-                        size: RisegButtonSize.compact,
-                        onPressed: () =>
-                            ref.read(attachmentStorageProvider).abrir(_comprobantePorMantenimiento[m.id]!.path),
-                      )
-                    : const Text('—'),
+                cellBuilder:
+                    (m) =>
+                        _comprobantePorMantenimiento.containsKey(m.id)
+                            ? RisegButton(
+                              label: l10n.vehiculoMantenimientoBotonAbrirComprobante,
+                              variant: RisegButtonVariant.ghost,
+                              size: RisegButtonSize.compact,
+                              onPressed:
+                                  () => ref
+                                      .read(attachmentStorageProvider)
+                                      .abrir(_comprobantePorMantenimiento[m.id]!.path),
+                            )
+                            : const Text('—'),
               ),
+              // Corregir y Anular (schemaVersion 80) — el gap que hacia
+              // que un error de captura obligara a borrar historial.
+              // Un vehiculo dado de baja o un registro ya anulado no
+              // ofrecen acciones: no hay nada que corregir ahi.
+              // Menú ⋮ y no dos botones sueltos: "Corregir" y
+              // "Anular" juntos no caben en una celda de tabla a 500 px
+              // (lo encontró la prueba responsive de esta etapa, con un
+              // overflow real de RenderFlex). `RisegActionsMenu` existe
+              // exactamente para consolidar acciones en filas angostas.
+              if (!esBaja)
+                RisegColumn<VehiculoMantenimientoData>(
+                  label: l10n.vehiculoMantenimientoColumnaAcciones,
+                  width: 150,
+                  cellBuilder:
+                      (m) =>
+                          _estaAnulado(m)
+                              ? Text(
+                                l10n.vehiculoMantenimientoAnuladoMotivo(m.motivoCancelacion ?? ''),
+                                style: AppTypography.caption.copyWith(color: colors.textMuted),
+                                overflow: TextOverflow.ellipsis,
+                              )
+                              : RisegActionsMenu(
+                                menuKey: Key('vehiculo_mantenimiento_acciones_${m.id}'),
+                                actions: [
+                                  RisegMenuAction(
+                                    key: Key('vehiculo_mantenimiento_corregir_${m.id}'),
+                                    label: l10n.vehiculoMantenimientoBotonCorregir,
+                                    icon: Icons.edit_outlined,
+                                    onTap: () => _corregirMantenimiento(m),
+                                  ),
+                                  // "Anular" solo se ofrece con
+                                  // `vehiculos.cancelar`: es la acción
+                                  // que revierte dinero real. Esto es
+                                  // cortesía de UI — la compuerta que
+                                  // manda vive en
+                                  // `cancelarMantenimientoVehiculoAutorizadoProvider`.
+                                  if (puedeAnular)
+                                    RisegMenuAction(
+                                      key: Key('vehiculo_mantenimiento_anular_${m.id}'),
+                                      label: l10n.vehiculoMantenimientoBotonAnular,
+                                      icon: Icons.block,
+                                      destructive: true,
+                                      onTap: () => _anularMantenimiento(m),
+                                    ),
+                                ],
+                              ),
+                ),
             ],
           ),
         ],
@@ -743,7 +920,10 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
             Text(l10n.vehiculoProximoMantenimientoVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
           else ...[
             if (proximo.fecha != null)
-              Text(l10n.vehiculoProximoMantenimientoFecha(_formatoFecha.format(proximo.fecha!)), style: AppTypography.body),
+              Text(
+                l10n.vehiculoProximoMantenimientoFecha(_formatoFecha.format(proximo.fecha!)),
+                style: AppTypography.body,
+              ),
             if (proximo.kilometraje != null)
               Text(l10n.vehiculoProximoMantenimientoKilometraje(proximo.kilometraje!), style: AppTypography.body),
             const SizedBox(height: AppSpacing.xs),

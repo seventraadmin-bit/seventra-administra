@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../reportes_permisos.dart';
+import '../reportes_rango_controller.dart';
 import '../../reportes_providers.dart';
 import 'reportes_personal_nomina_state.dart';
 
@@ -18,37 +19,35 @@ part 'reportes_personal_nomina_controller.g.dart';
 class ReportesPersonalNominaController extends _$ReportesPersonalNominaController {
   @override
   ReportesPersonalNominaState build() {
-    final hoy = DateTime.now();
-    final inicioMes = DateTime(hoy.year, hoy.month, 1);
-    Future.microtask(_cargar);
-    return ReportesPersonalNominaState(rangoInicio: inicioMes, rangoFin: hoy);
+    final seleccion = ref.watch(reportesRangoControllerProvider);
+    Future.microtask(() => _cargar(seleccion));
+    return ReportesPersonalNominaState(seleccion: seleccion);
   }
 
   bool get tienePersonal => tienePermisoSeccionReportes(ref.read(permissionServiceProvider), 'personal.ver');
 
   bool get tieneNomina => tienePermisoSeccionReportes(ref.read(permissionServiceProvider), 'nomina.ver');
 
-  Future<void> _cargar() async {
+  Future<void> _cargar(SeleccionRangoReportes seleccion) async {
     state = state.copyWith(cargando: true, errorCarga: null);
     try {
       final resumenPersonal = tienePersonal
           ? await ref.read(obtenerResumenPersonalUseCaseProvider).ejecutar(
-                rangoInicio: state.rangoInicio,
-                rangoFin: state.rangoFin,
+                rangoInicio: seleccion.rango.inicio,
+                rangoFin: seleccion.rango.fin,
               )
           : null;
 
       final resumenNomina = tieneNomina
           ? await ref.read(obtenerResumenNominaUseCaseProvider).ejecutar(
-                rangoInicio: state.rangoInicio,
-                rangoFin: state.rangoFin,
+                rangoInicio: seleccion.rango.inicio,
+                rangoFin: seleccion.rango.fin,
               )
           : null;
 
       state = ReportesPersonalNominaState(
+        seleccion: seleccion,
         cargando: false,
-        rangoInicio: state.rangoInicio,
-        rangoFin: state.rangoFin,
         resumenPersonal: resumenPersonal,
         resumenNomina: resumenNomina,
       );
@@ -57,8 +56,5 @@ class ReportesPersonalNominaController extends _$ReportesPersonalNominaControlle
     }
   }
 
-  Future<void> cambiarRango({DateTime? rangoInicio, DateTime? rangoFin}) async {
-    state = state.copyWith(rangoInicio: rangoInicio, rangoFin: rangoFin);
-    await _cargar();
-  }
+  Future<void> recargar() => _cargar(state.seleccion);
 }

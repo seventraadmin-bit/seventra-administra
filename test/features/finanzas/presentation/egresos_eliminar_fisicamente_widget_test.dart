@@ -43,7 +43,7 @@ class _SesionNormalDePrueba extends SesionController {
       nombre: 'Usuario normal',
       nombreUsuario: 'normal',
       esMaestro: false,
-      permisos: {'finanzas.ver', 'finanzas.crear', 'finanzas.modificar', 'finanzas.archivar'},
+      permisos: {'finanzas.ver', 'egresos.crear', 'egresos.corregir', 'egresos.cancelar'},
     );
   }
 }

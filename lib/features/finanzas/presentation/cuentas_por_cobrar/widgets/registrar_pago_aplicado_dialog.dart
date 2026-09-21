@@ -30,8 +30,12 @@ Future<bool> mostrarDialogoRegistrarPagoAplicado(
   final bancoOrigenController = TextEditingController();
   final cuentaBancariaController = TextEditingController();
   final observacionesController = TextEditingController();
+  String? cuentaFinancieraId;
   String? errorMonto;
   String? errorFecha;
+
+  final cuentasFinancieras = await ref.read(cuentaFinancieraRepositoryProvider).listar(soloActivas: true);
+  if (!context.mounted) return false;
 
   final resultado = await RisegDialog.showForm<bool>(
     context: context,
@@ -82,6 +86,16 @@ Future<bool> mostrarDialogoRegistrarPagoAplicado(
             const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.pagoAplicadoCampoCuentaBancariaDestino, controller: cuentaBancariaController),
             const SizedBox(height: AppSpacing.md),
+            RisegSelect<String?>(
+              label: l10n.movimientoCampoCuentaFinanciera,
+              value: cuentaFinancieraId,
+              items: [
+                RisegSelectItem(value: null, label: l10n.egresoCampoSinAsignar),
+                for (final c in cuentasFinancieras) RisegSelectItem(value: c.id, label: c.nombre),
+              ],
+              onChanged: (valor) => setState(() => cuentaFinancieraId = valor),
+            ),
+            const SizedBox(height: AppSpacing.md),
             RisegTextField(label: l10n.pagoAplicadoCampoObservaciones, controller: observacionesController),
           ],
         );
@@ -106,6 +120,7 @@ Future<bool> mostrarDialogoRegistrarPagoAplicado(
             bancoOrigen: bancoOrigenController.text.trim().isEmpty ? null : bancoOrigenController.text.trim(),
             cuentaBancariaDestino:
                 cuentaBancariaController.text.trim().isEmpty ? null : cuentaBancariaController.text.trim(),
+            cuentaFinancieraId: cuentaFinancieraId,
             observaciones: observacionesController.text.trim().isEmpty ? null : observacionesController.text.trim(),
           );
 
@@ -120,6 +135,9 @@ Future<bool> mostrarDialogoRegistrarPagoAplicado(
           return false;
         case RegistrarPagoAplicadoCuentaYaPagada():
           RisegFeedback.showError(context, l10n.pagoAplicadoErrorCuentaYaPagada);
+          return false;
+        case RegistrarPagoAplicadoCuentaCancelada():
+          RisegFeedback.showError(context, l10n.registrarPagoAplicadoErrorCuentaCancelada);
           return false;
         case RegistrarPagoAplicadoMontoInvalido():
           RisegFeedback.showError(context, l10n.pagoAplicadoErrorMontoInvalido);

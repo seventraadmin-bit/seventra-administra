@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/finanzas/presentation/mensaje_saldo_insuficiente.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -7,6 +8,9 @@ import 'package:go_router/go_router.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
+import 'package:riseg_one/features/finanzas/domain/usecases/calcular_fecha_tarjeta_usecase.dart';
+import 'package:riseg_one/features/finanzas/finanzas_providers.dart';
+import 'package:riseg_one/features/finanzas/presentation/deudas_credito/deudas_credito_list_screen.dart' show formatoCentavosDeuda;
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_list_screen.dart' show formaPagoLabel;
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
@@ -88,6 +92,10 @@ class _RegistrarCompraScreenState extends ConsumerState<RegistrarCompraScreen> {
   String? _comprobantePath;
   String? _comprobanteNombre;
   List<ArticuloData> _articulos = const [];
+  List<DeudaData> _tarjetas = const [];
+  List<CuentaFinancieraData> _cuentasFinancieras = const [];
+  String? _deudaId;
+  String? _cuentaFinancieraId;
   String? _errorGeneral;
   bool _guardando = false;
 
@@ -97,6 +105,14 @@ class _RegistrarCompraScreenState extends ConsumerState<RegistrarCompraScreen> {
     Future.microtask(() async {
       final articulos = await ref.read(articuloRepositoryProvider).listar();
       if (mounted) setState(() => _articulos = articulos);
+    });
+    Future.microtask(() async {
+      final tarjetas = await ref.read(deudaRepositoryProvider).listarTarjetasActivas();
+      if (mounted) setState(() => _tarjetas = tarjetas);
+    });
+    Future.microtask(() async {
+      final cuentas = await ref.read(cuentaFinancieraRepositoryProvider).listar(soloActivas: true);
+      if (mounted) setState(() => _cuentasFinancieras = cuentas);
     });
   }
 
@@ -174,15 +190,24 @@ class _RegistrarCompraScreenState extends ConsumerState<RegistrarCompraScreen> {
       _guardando = true;
     });
 
-    final resultado = await ref.read(comprasControllerProvider.notifier).registrarCompra(
+    // Saldo insuficiente no es un "error inesperado": lo traduce el
+    // mecanismo central y el formulario sigue abierto, con lo ya
+    // capturado, para que el usuario elija otra cuenta.
+    final resultado = await ejecutarMostrandoSaldoInsuficiente(
+      context,
+      l10n,
+      () => ref.read(comprasControllerProvider.notifier).registrarCompra(
           fecha: _fecha,
           proveedor: _proveedorCtrl.text,
           formaPago: _formaPago,
           formaPagoOtroDescripcion: _formaPagoOtroCtrl.text,
           observaciones: _observacionesCtrl.text,
           partidas: _partidas.map(_aInput).toList(),
-        );
-    if (!mounted) return;
+          deudaId: _formaPago == FormaPago.tarjeta.name ? _deudaId : null,
+          cuentaFinancieraId: _formaPago == FormaPago.tarjeta.name ? null : _cuentaFinancieraId,
+        ),
+    );
+    if (!mounted || resultado == null) return;
 
     switch (resultado) {
       case RegistrarCompraExitosa(:final compra):
@@ -220,6 +245,14 @@ class _RegistrarCompraScreenState extends ConsumerState<RegistrarCompraScreen> {
         _errorGeneral = l10n.compraErrorPartidaNumerosSerieInvalidos(_partidas[indice].cantidad, indice + 1);
       case RegistrarCompraPartidaNumeroSerieDuplicado():
         _errorGeneral = l10n.compraErrorPartidaNumeroSerieDuplicado;
+      case RegistrarCompraTarjetaRequerida():
+        _errorGeneral = l10n.compraErrorTarjetaRequerida;
+      case RegistrarCompraTarjetaInvalida():
+        _errorGeneral = l10n.compraErrorTarjetaInvalida;
+      case RegistrarCompraTarjetaExcedeLimite(:final disponible):
+        _errorGeneral = l10n.compraErrorTarjetaExcedeLimite(formatoCentavosDeuda(disponible));
+      case RegistrarCompraTarjetaSinLimiteConfigurado():
+        _errorGeneral = l10n.compraErrorTarjetaSinLimiteConfigurado;
       case RegistrarCompraErrorInesperado():
         _errorGeneral = l10n.compraErrorInesperado;
     }
@@ -278,34 +311,28 @@ class _RegistrarCompraScreenState extends ConsumerState<RegistrarCompraScreen> {
           ] else
             RisegTextField(label: l10n.compraPartidaCampoConcepto, controller: p.conceptoCtrl),
           const SizedBox(height: AppSpacing.md),
-          Row(
+          RisegFieldGrid(
             children: [
-              Expanded(
-                child: RisegTextField(
-                  label: l10n.compraPartidaCampoCantidad,
-                  controller: p.cantidadCtrl,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => setState(p.ajustarSeries),
-                ),
+              RisegTextField(
+                label: l10n.compraPartidaCampoCantidad,
+                controller: p.cantidadCtrl,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(p.ajustarSeries),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: RisegTextField(
-                  label: l10n.compraPartidaCampoCostoUnitario,
-                  controller: p.costoCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (_) => setState(() {}),
-                ),
+              RisegTextField(
+                label: l10n.compraPartidaCampoCostoUnitario,
+                controller: p.costoCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => setState(() {}),
               ),
             ],
           ),
           if (esInventario && (p.articulo?.manejaSerie ?? false)) ...[
             const SizedBox(height: AppSpacing.md),
-            Row(
+            RisegFieldGrid(
               children: [
-                Expanded(child: RisegTextField(label: l10n.compraPartidaCampoMarca, controller: p.marcaCtrl)),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(child: RisegTextField(label: l10n.compraPartidaCampoModelo, controller: p.modeloCtrl)),
+                RisegTextField(label: l10n.compraPartidaCampoMarca, controller: p.marcaCtrl),
+                RisegTextField(label: l10n.compraPartidaCampoModelo, controller: p.modeloCtrl),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -344,17 +371,63 @@ class _RegistrarCompraScreenState extends ConsumerState<RegistrarCompraScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Etapa 19: Fecha/Proveedor/Forma de pago comparten una
+                // sola sección "Información de compra" con
+                // `RisegFieldGrid` (responsive: 1 columna en anchos
+                // reducidos) — antes eran dos `RisegCard` separadas con
+                // `Row`+`Expanded` fijos, sin adaptarse por debajo de
+                // ~600px.
                 RisegCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: RisegFormSection(
+                    title: l10n.compraInformacionSeccionTitulo,
+                    grid: true,
                     children: [
                       RisegDateField(
                         label: l10n.compraCampoFecha,
                         value: _fecha,
                         onChanged: (valor) => setState(() => _fecha = valor),
                       ),
-                      const SizedBox(height: AppSpacing.md),
                       RisegTextField(label: l10n.compraCampoProveedor, controller: _proveedorCtrl),
+                      RisegSelect<String>(
+                        label: l10n.compraCampoFormaPago,
+                        value: _formaPago,
+                        items: [
+                          for (final f in FormaPago.values) RisegSelectItem(value: f.name, label: formaPagoLabel(l10n, f.name)),
+                        ],
+                        onChanged: (valor) => setState(() => _formaPago = valor ?? _formaPago),
+                      ),
+                      if (_formaPago == FormaPago.otro.name)
+                        RisegTextField(label: l10n.compraCampoFormaPagoOtroDescripcion, controller: _formaPagoOtroCtrl),
+                      if (_formaPago == FormaPago.tarjeta.name)
+                        RisegSelect<String?>(
+                          label: l10n.compraCampoTarjeta,
+                          value: _deudaId,
+                          items: [
+                            for (final t in _tarjetas)
+                              RisegSelectItem(
+                                value: t.id,
+                                label: l10n.compraTarjetaOpcionEtiqueta(
+                                  t.nombre,
+                                  t.tarjetaUltimosDigitos ?? '----',
+                                  () {
+                                    final disponible = creditoDisponibleTarjeta(limiteCredito: t.tarjetaLimiteCredito, saldoActual: t.saldoActual);
+                                    return disponible == null ? l10n.deudaTarjetaSinDato : formatoCentavosDeuda(disponible);
+                                  }(),
+                                ),
+                              ),
+                          ],
+                          onChanged: (valor) => setState(() => _deudaId = valor),
+                        ),
+                      if (_formaPago != FormaPago.tarjeta.name)
+                        RisegSelect<String?>(
+                          label: l10n.movimientoCampoCuentaFinanciera,
+                          value: _cuentaFinancieraId,
+                          items: [
+                            RisegSelectItem(value: null, label: l10n.egresoCampoSinAsignar),
+                            for (final c in _cuentasFinancieras) RisegSelectItem(value: c.id, label: c.nombre),
+                          ],
+                          onChanged: (valor) => setState(() => _cuentaFinancieraId = valor),
+                        ),
                     ],
                   ),
                 ),
@@ -376,19 +449,6 @@ class _RegistrarCompraScreenState extends ConsumerState<RegistrarCompraScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      RisegSelect<String>(
-                        label: l10n.compraCampoFormaPago,
-                        value: _formaPago,
-                        items: [
-                          for (final f in FormaPago.values) RisegSelectItem(value: f.name, label: formaPagoLabel(l10n, f.name)),
-                        ],
-                        onChanged: (valor) => setState(() => _formaPago = valor ?? _formaPago),
-                      ),
-                      if (_formaPago == FormaPago.otro.name) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        RisegTextField(label: l10n.compraCampoFormaPagoOtroDescripcion, controller: _formaPagoOtroCtrl),
-                      ],
-                      const SizedBox(height: AppSpacing.md),
                       RisegTextField(label: l10n.compraCampoObservaciones, controller: _observacionesCtrl),
                       const SizedBox(height: AppSpacing.md),
                       Text(l10n.compraCampoComprobante, style: AppTypography.label),

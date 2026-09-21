@@ -6,7 +6,7 @@ part of 'nominas_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$nominasControllerHash() => r'0aad3d09825ccf8870fcea4f531d67bd1ede6828';
+String _$nominasControllerHash() => r'9ca8264b98442e1e1f64a21cbe01ea794224ad84';
 
 /// Controlador del listado de Nóminas (Etapa 6C) — mismo diseño que
 /// `IngresosController`/`PagosController`.

@@ -17,7 +17,6 @@ import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_
 import 'package:riseg_one/features/telefonia/data/repositories/asignacion_linea_telefonica_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_equipo_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_repository_impl.dart';
-import 'package:riseg_one/features/telefonia/domain/usecases/asignar_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/asociar_equipo_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/crear_linea_telefonica_usecase.dart';
 
@@ -525,34 +524,115 @@ void main() {
     });
   });
 
-  group('Consistencia con Telefonía (línea asociada y divergence guard de 9B)', () {
-    test('la línea asociada permanece igual si no se pidió cambiarla', () async {
+  group('Consistencia con Telefonía: la línea SIGUE a la custodia (§15)', () {
+    /// Arma "teléfono entregado a [empleadoId] + línea asociada y
+    /// alineada", por el camino real: primero Inventario entrega, luego
+    /// Telefonía asocia.
+    Future<({String lineaId, String asignacionInventarioId, AsignacionLineaTelefonicaRepositoryImpl asignacionLineaRepo, LineaTelefonicaEquipoRepositoryImpl equipoRepo})>
+        armarTelefonoConLinea(String articuloId, String unidadId, String empleadoId) async {
+      final asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
+      final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, asignacionRepo);
+      final lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoRepo);
+      final crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, GenerarCodigoUseCase(CodigoSecuenciaService(db)));
+      final asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoRepo, inventarioRepo, asignacionLineaRepo);
+
+      final linea = (await crearLinea.ejecutar(operador: 'telcel', modalidadSim: 'fisica')) as CrearLineaTelefonicaExitoso;
+
+      final inicial = (await crearAsignacion.ejecutar(
+        articuloId: articuloId,
+        unidadId: unidadId,
+        cantidad: 1,
+        empleadoId: empleadoId,
+        fechaEntrega: DateTime(2026, 1, 10),
+      )) as CrearAsignacionExitoso;
+
+      final asociado = await asociarEquipo.ejecutar(
+        lineaTelefonicaId: linea.linea.id,
+        unidadId: unidadId,
+        fechaInicio: DateTime(2026, 1, 15),
+        alinearLineaConCustodia: true,
+      );
+      expect(asociado, isA<AsociarEquipoLineaTelefonicaExitoso>(), reason: '$asociado');
+
+      return (
+        lineaId: linea.linea.id,
+        asignacionInventarioId: inicial.asignacion.id,
+        asignacionLineaRepo: asignacionLineaRepo,
+        equipoRepo: equipoRepo,
+      );
+    }
+
+    test('transferir el teléfono mueve también la asignación de la línea, sin tocar la asociación', () async {
       final articulo = await crearArticuloTelefono();
       final unidad = await crearUnidadTelefono(articulo.id);
       final empleadoA = await crearEmpleado(1);
       final empleadoB = await crearEmpleado(2);
 
-      final asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
-      final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, asignacionRepo, inventarioRepo);
-      final lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoRepo);
-      final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
-      final crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, generarCodigo);
-      final asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoRepo, inventarioRepo);
-      final asignarLinea = AsignarLineaTelefonicaUseCase(lineaRepo, asignacionLineaRepo, equipoRepo);
+      final armado = await armarTelefonoConLinea(articulo.id, unidad.id, empleadoA.id);
+      final equipoAntes = await armado.equipoRepo.obtenerActualPorUnidad(unidad.id);
 
-      final linea = (await crearLinea.ejecutar(operador: 'telcel', modalidadSim: 'fisica')) as CrearLineaTelefonicaExitoso;
-      final asociado = await asociarEquipo.ejecutar(
-        lineaTelefonicaId: linea.linea.id,
-        unidadId: unidad.id,
-        fechaInicio: DateTime(2026, 1, 15),
+      await cambiarResponsable.ejecutar(
+        asignacionId: armado.asignacionInventarioId,
+        nuevoEmpleadoId: empleadoB.id,
+        fecha: DateTime(2026, 2, 1),
       );
-      expect(asociado, isA<AsociarEquipoLineaTelefonicaExitoso>());
-      await asignarLinea.ejecutar(
-        lineaTelefonicaId: linea.linea.id,
-        empleadoId: empleadoA.id,
-        fechaInicio: DateTime(2026, 1, 15),
-        moverEquipoAsociado: false,
+
+      final equipoDespues = await armado.equipoRepo.obtenerActualPorUnidad(unidad.id);
+      expect(equipoDespues!.id, equipoAntes!.id, reason: 'la asociación Línea↔Equipo no se toca: el aparato sigue trayendo la misma SIM');
+
+      final vigente = await armado.asignacionLineaRepo.obtenerActivaPorLinea(armado.lineaId);
+      expect(vigente!.empleadoId, empleadoB.id, reason: '§15 — la línea viaja con el aparato');
+      expect(vigente.fechaInicio, DateTime(2026, 2, 1));
+    });
+
+    test('la transferencia cierra el periodo anterior de la línea, nunca reescribe la fila histórica', () async {
+      final articulo = await crearArticuloTelefono();
+      final unidad = await crearUnidadTelefono(articulo.id);
+      final empleadoA = await crearEmpleado(1);
+      final empleadoB = await crearEmpleado(2);
+
+      final armado = await armarTelefonoConLinea(articulo.id, unidad.id, empleadoA.id);
+
+      await cambiarResponsable.ejecutar(
+        asignacionId: armado.asignacionInventarioId,
+        nuevoEmpleadoId: empleadoB.id,
+        fecha: DateTime(2026, 2, 1),
       );
+
+      final historial = await armado.asignacionLineaRepo.listarPorLinea(armado.lineaId);
+      expect(historial, hasLength(2));
+      final cerrada = historial.firstWhere((a) => a.fechaTermino != null);
+      expect(cerrada.empleadoId, empleadoA.id, reason: 'el periodo de A queda en la historia, tal cual fue');
+      expect(cerrada.motivoTermino, 'sincronizacionCustodiaInventario',
+          reason: 'la bitácora distingue la consecuencia sistémica de un cambio manual');
+      expect(cerrada.fechaTermino, DateTime(2026, 2, 1));
+    });
+
+    test('custodia y línea terminan coherentes: nunca queda apuntando al responsable anterior', () async {
+      final articulo = await crearArticuloTelefono();
+      final unidad = await crearUnidadTelefono(articulo.id);
+      final empleadoA = await crearEmpleado(1);
+      final empleadoB = await crearEmpleado(2);
+
+      final armado = await armarTelefonoConLinea(articulo.id, unidad.id, empleadoA.id);
+
+      await cambiarResponsable.ejecutar(
+        asignacionId: armado.asignacionInventarioId,
+        nuevoEmpleadoId: empleadoB.id,
+        fecha: DateTime(2026, 2, 1),
+      );
+
+      final custodia = await armado.equipoRepo.obtenerCustodiaInventarioActual(unidad.id);
+      final vigente = await armado.asignacionLineaRepo.obtenerActivaPorLinea(armado.lineaId);
+      expect(custodia!.empleadoId, empleadoB.id);
+      expect(vigente!.empleadoId, custodia.empleadoId);
+    });
+
+    test('una unidad sin línea asociada se transfiere igual que siempre', () async {
+      final articulo = await crearArticuloTelefono();
+      final unidad = await crearUnidadTelefono(articulo.id);
+      final empleadoA = await crearEmpleado(1);
+      final empleadoB = await crearEmpleado(2);
 
       final inicial = (await crearAsignacion.ejecutar(
         articuloId: articulo.id,
@@ -562,86 +642,15 @@ void main() {
         fechaEntrega: DateTime(2026, 1, 10),
       )) as CrearAsignacionExitoso;
 
-      final equipoAntes = await equipoRepo.obtenerActualPorUnidad(unidad.id);
-
-      await cambiarResponsable.ejecutar(
+      final resultado = await cambiarResponsable.ejecutar(
         asignacionId: inicial.asignacion.id,
         nuevoEmpleadoId: empleadoB.id,
         fecha: DateTime(2026, 2, 1),
       );
 
-      final equipoDespues = await equipoRepo.obtenerActualPorUnidad(unidad.id);
-      expect(equipoDespues!.id, equipoAntes!.id, reason: 'cambiar responsable no toca LineaTelefonicaEquipo');
-      expect(equipoDespues.lineaTelefonicaId, linea.linea.id);
-
-      final asignacionLineaVigente = await asignacionLineaRepo.obtenerActivaPorLinea(linea.linea.id);
-      expect(
-        asignacionLineaVigente!.empleadoId,
-        empleadoA.id,
-        reason: 'la asignación de la línea no cambia — cambiar responsable no sincroniza hacia Telefonía',
-      );
+      expect(resultado, isA<CambiarResponsableAsignacionExitoso>());
+      expect(await db.select(db.asignacionLineaTelefonica).get(), isEmpty);
     });
-
-    test(
-      'consistencia con el divergence guard de 9B — cambiar responsable en Inventario no fuerza ninguna '
-      'sincronización con la línea, la divergencia queda visible, no auto-corregida',
-      () async {
-        final articulo = await crearArticuloTelefono();
-        final unidad = await crearUnidadTelefono(articulo.id);
-        final empleadoA = await crearEmpleado(1);
-        final empleadoB = await crearEmpleado(2);
-
-        final asignacionLineaRepo = AsignacionLineaTelefonicaRepositoryImpl(db);
-        final equipoRepo = LineaTelefonicaEquipoRepositoryImpl(db, asignacionLineaRepo, asignacionRepo, inventarioRepo);
-        final lineaRepo = LineaTelefonicaRepositoryImpl(db, asignacionLineaRepo, equipoRepo);
-        final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
-        final crearLinea = CrearLineaTelefonicaUseCase(lineaRepo, generarCodigo);
-        final asociarEquipo = AsociarEquipoLineaTelefonicaUseCase(lineaRepo, equipoRepo, inventarioRepo);
-        final asignarLinea = AsignarLineaTelefonicaUseCase(lineaRepo, asignacionLineaRepo, equipoRepo);
-
-        final linea = (await crearLinea.ejecutar(operador: 'telcel', modalidadSim: 'fisica')) as CrearLineaTelefonicaExitoso;
-        final asociado = await asociarEquipo.ejecutar(
-          lineaTelefonicaId: linea.linea.id,
-          unidadId: unidad.id,
-          fechaInicio: DateTime(2026, 1, 15),
-        );
-        expect(asociado, isA<AsociarEquipoLineaTelefonicaExitoso>());
-        await asignarLinea.ejecutar(
-          lineaTelefonicaId: linea.linea.id,
-          empleadoId: empleadoA.id,
-          fechaInicio: DateTime(2026, 1, 15),
-          moverEquipoAsociado: false,
-        );
-
-        final inicial = (await crearAsignacion.ejecutar(
-          articuloId: articulo.id,
-          unidadId: unidad.id,
-          cantidad: 1,
-          empleadoId: empleadoA.id,
-          fechaEntrega: DateTime(2026, 1, 10),
-        )) as CrearAsignacionExitoso;
-
-        await cambiarResponsable.ejecutar(
-          asignacionId: inicial.asignacion.id,
-          nuevoEmpleadoId: empleadoB.id,
-          fecha: DateTime(2026, 2, 1),
-        );
-
-        final custodiaInventario = await equipoRepo.obtenerCustodiaInventarioActual(unidad.id);
-        final asignacionLineaVigente = await asignacionLineaRepo.obtenerActivaPorLinea(linea.linea.id);
-
-        expect(custodiaInventario!.empleadoId, empleadoB.id, reason: 'Inventario ya refleja al nuevo responsable');
-        expect(
-          asignacionLineaVigente!.empleadoId,
-          empleadoA.id,
-          reason: 'la línea sigue apuntando al responsable anterior — divergencia real, visible, nunca auto-corregida',
-        );
-        expect(
-          custodiaInventario.empleadoId != asignacionLineaVigente.empleadoId,
-          isTrue,
-          reason: 'misma advertencia de divergencia que ya usa el expediente de la Línea (9B)',
-        );
-      },
-    );
   });
+
 }

@@ -26,6 +26,9 @@ import 'package:riseg_one/features/reportes/domain/export/reporte_export_context
 import 'package:riseg_one/features/reportes/domain/export/sanitizar_nombre_archivo.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/exportar_reporte_general_pdf_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_compras_usecase.dart';
+import 'package:riseg_one/features/reportes/domain/analitica/comparacion_periodo.dart';
+import 'package:riseg_one/features/reportes/domain/analitica/granularidad_serie.dart';
+import 'package:riseg_one/features/reportes/domain/analitica/obtener_analisis_operativo_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_general_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_personal_usecase.dart';
 
@@ -105,10 +108,8 @@ void main() {
           generadoPor: 'Usuario de prueba',
           generadoEn: DateTime(2026, 8, 11),
         ),
-        resumen: const ResumenGeneralReportes(
-          totalIngresos: 500000,
-          totalEgresos: 300000,
-          resultadoOperativo: 200000,
+        resumen: ResumenGeneralReportes(
+          analisis: _analisisDePrueba(ingresos: 500000, gasto: 300000),
           totalComprasPeriodo: 100000,
           totalNominaPagadaPeriodo: 150000,
           personalActivoActual: 42,
@@ -258,7 +259,7 @@ void main() {
           generadoPor: 'Usuario de prueba',
           generadoEn: DateTime(2026, 8, 11),
         ),
-        resumen: const ResumenGeneralReportes(totalIngresos: 100000, totalEgresos: 50000, resultadoOperativo: 50000),
+        resumen: ResumenGeneralReportes(analisis: _analisisDePrueba(ingresos: 100000, gasto: 50000)),
       );
 
       expect(resultado, isA<ExportarReporteExitoso>());
@@ -271,4 +272,19 @@ void main() {
       expect(conteoAttachments, isEmpty, reason: 'el reporte generado no es adjunto de ninguna entidad de negocio');
     });
   });
+}
+
+/// Un análisis operativo mínimo para alimentar el renderizador sin
+/// montar una base de datos: el PDF solo lee los totales derivados.
+AnalisisOperativoPeriodo _analisisDePrueba({required int ingresos, required int gasto}) {
+  return AnalisisOperativoPeriodo(
+    rango: RangoPeriodo(inicio: DateTime(2026, 8, 1), fin: DateTime(2026, 8, 11)),
+    granularidad: GranularidadSerie.dia,
+    puntos: const [],
+    ingresos: ingresos,
+    salidasDeEfectivo: gasto,
+    pagosDeDeuda: 0,
+    cargosDeTarjeta: 0,
+    composicion: const [],
+  );
 }

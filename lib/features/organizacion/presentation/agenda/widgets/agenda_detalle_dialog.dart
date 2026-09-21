@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/finanzas/presentation/cuentas_por_cobrar/cuentas_por_cobrar_controller.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_etapa_table.dart' show TipoEventoCobro;
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
@@ -344,6 +345,9 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
     // junto con el Documento (mismo agregado) — sin esto, el listado de
     // Cuentas por cobrar seguía mostrando una cuenta ya eliminada.
     ref.invalidate(cuentasPorCobrarControllerProvider);
+    // Etapa 20 (hueco real encontrado): el Dashboard lee la misma
+    // CuentaPorCobrar para Cobranza/"Requiere atención".
+    ref.invalidate(dashboardControllerProvider);
     if (mounted) Navigator.of(context).pop();
   }
 

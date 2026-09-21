@@ -98,6 +98,12 @@ Future<bool> mostrarDialogoRegistrarBaja(
           case RegistrarBajaUnidadYaDeBaja():
             errorGeneral = l10n.registrarBajaErrorYaDeBaja;
             return null;
+          case RegistrarBajaUnidadAsignada():
+            errorGeneral = l10n.registrarBajaErrorUnidadAsignada;
+            return null;
+          case RegistrarBajaUnidadTraeLineaTelefonica():
+            errorGeneral = l10n.registrarBajaErrorTraeLineaTelefonica;
+            return null;
           case RegistrarBajaUnidadNoExiste():
           case RegistrarBajaUnidadErrorInesperado():
             RisegFeedback.showError(context, l10n.registrarBajaErrorInesperado);

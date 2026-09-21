@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../reportes_permisos.dart';
+import '../reportes_rango_controller.dart';
 import '../../reportes_providers.dart';
 import 'reportes_operacion_state.dart';
 
@@ -18,10 +19,9 @@ part 'reportes_operacion_controller.g.dart';
 class ReportesOperacionController extends _$ReportesOperacionController {
   @override
   ReportesOperacionState build() {
-    final hoy = DateTime.now();
-    final inicioMes = DateTime(hoy.year, hoy.month, 1);
-    Future.microtask(_cargar);
-    return ReportesOperacionState(rangoInicio: inicioMes, rangoFin: hoy);
+    final seleccion = ref.watch(reportesRangoControllerProvider);
+    Future.microtask(() => _cargar(seleccion));
+    return ReportesOperacionState(seleccion: seleccion);
   }
 
   bool get tieneCompras => tienePermisoSeccionReportes(ref.read(permissionServiceProvider), 'compras.ver');
@@ -32,41 +32,40 @@ class ReportesOperacionController extends _$ReportesOperacionController {
 
   bool get tieneTelefonia => tienePermisoSeccionReportes(ref.read(permissionServiceProvider), 'telefonia.ver');
 
-  Future<void> _cargar() async {
+  Future<void> _cargar(SeleccionRangoReportes seleccion) async {
     state = state.copyWith(cargando: true, errorCarga: null);
     try {
       final resumenCompras = tieneCompras
           ? await ref.read(obtenerResumenComprasUseCaseProvider).ejecutar(
-                rangoInicio: state.rangoInicio,
-                rangoFin: state.rangoFin,
+                rangoInicio: seleccion.rango.inicio,
+                rangoFin: seleccion.rango.fin,
               )
           : null;
 
       final resumenInventario = tieneInventario
           ? await ref.read(obtenerResumenInventarioUseCaseProvider).ejecutar(
-                rangoInicio: state.rangoInicio,
-                rangoFin: state.rangoFin,
+                rangoInicio: seleccion.rango.inicio,
+                rangoFin: seleccion.rango.fin,
               )
           : null;
 
       final resumenVehiculos = tieneVehiculos
           ? await ref.read(obtenerResumenVehiculosUseCaseProvider).ejecutar(
-                rangoInicio: state.rangoInicio,
-                rangoFin: state.rangoFin,
+                rangoInicio: seleccion.rango.inicio,
+                rangoFin: seleccion.rango.fin,
               )
           : null;
 
       final resumenTelefonia = tieneTelefonia
           ? await ref.read(obtenerResumenTelefoniaUseCaseProvider).ejecutar(
-                rangoInicio: state.rangoInicio,
-                rangoFin: state.rangoFin,
+                rangoInicio: seleccion.rango.inicio,
+                rangoFin: seleccion.rango.fin,
               )
           : null;
 
       state = ReportesOperacionState(
+        seleccion: seleccion,
         cargando: false,
-        rangoInicio: state.rangoInicio,
-        rangoFin: state.rangoFin,
         resumenCompras: resumenCompras,
         resumenInventario: resumenInventario,
         resumenVehiculos: resumenVehiculos,
@@ -77,8 +76,5 @@ class ReportesOperacionController extends _$ReportesOperacionController {
     }
   }
 
-  Future<void> cambiarRango({DateTime? rangoInicio, DateTime? rangoFin}) async {
-    state = state.copyWith(rangoInicio: rangoInicio, rangoFin: rangoFin);
-    await _cargar();
-  }
+  Future<void> recargar() => _cargar(state.seleccion);
 }

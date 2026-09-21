@@ -119,6 +119,13 @@ Future<void> _pumpEnExpediente(
 
   await tester.tap(find.byKey(const Key('nav_item_inventario')));
   await tester.pumpAndSettle();
+  // Etapa 18: el listado de Artículos ganó un resumen KPI + fila de
+  // filtros arriba de la tabla — en la ventana de prueba por defecto
+  // (800×600) la fila del artículo queda fuera de la vista inicial
+  // (la pantalla es un `SingleChildScrollView`, así que existe pero
+  // no es visible sin desplazar). `ensureVisible` reemplaza el tap a
+  // ciegas que antes acertaba por casualidad.
+  await tester.ensureVisible(find.text(nombreArticulo).first);
   await tester.tap(find.text(nombreArticulo).first);
   await tester.pumpAndSettle();
 }

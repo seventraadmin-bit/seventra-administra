@@ -2,23 +2,36 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../compras/compras_providers.dart';
+import '../descuentos_personal/descuentos_personal_providers.dart' show descuentoProgramadoRepositoryProvider;
 import '../finanzas/finanzas_providers.dart';
 import '../inventario/inventario_providers.dart';
 import '../nomina/nomina_providers.dart';
 import '../organizacion/organizacion_providers.dart';
 import '../personal/personal_providers.dart';
+import '../servicios_eventuales/servicios_eventuales_providers.dart';
 import '../telefonia/telefonia_providers.dart';
+import '../tiempos_extra/tiempos_extra_providers.dart';
 import '../vehiculos/vehiculos_providers.dart';
 import 'data/pdf/reporte_finanzas_pdf_renderer.dart';
 import 'data/pdf/reporte_general_pdf_renderer.dart';
+import 'data/xlsx/cobranza_xlsx_renderer.dart';
+import 'data/pdf/reporte_patrimonio_pdf_renderer.dart';
 import 'data/xlsx/compras_periodo_xlsx_renderer.dart';
+import 'data/xlsx/patrimonio_xlsx_renderer.dart';
 import 'data/xlsx/finanzas_egresos_xlsx_renderer.dart';
 import 'data/xlsx/nomina_periodo_xlsx_renderer.dart';
 import 'data/xlsx/personal_eventos_xlsx_renderer.dart';
 import 'data/xlsx/telefonia_recargas_xlsx_renderer.dart';
 import 'data/xlsx/vehiculos_mantenimiento_xlsx_renderer.dart';
+import 'domain/analitica/obtener_analisis_cobranza_usecase.dart';
+import 'domain/analitica/obtener_analisis_deuda_usecase.dart';
+import 'domain/analitica/obtener_analisis_operativo_usecase.dart';
+import 'domain/analitica/obtener_analisis_patrimonio_usecase.dart';
+import 'domain/analitica/obtener_analisis_pagos_usecase.dart';
 import 'domain/usecases/clasificar_egresos_por_origen_usecase.dart';
+import 'domain/usecases/exportar_cobranza_xlsx_usecase.dart';
 import 'domain/usecases/exportar_compras_periodo_xlsx_usecase.dart';
+import 'domain/usecases/exportar_patrimonio_usecase.dart';
 import 'domain/usecases/exportar_finanzas_egresos_xlsx_usecase.dart';
 import 'domain/usecases/exportar_nomina_periodo_xlsx_usecase.dart';
 import 'domain/usecases/exportar_personal_eventos_xlsx_usecase.dart';
@@ -40,11 +53,12 @@ import 'domain/usecases/obtener_resumen_vehiculos_usecase.dart';
 /// tabla).
 final obtenerResumenGeneralUseCaseProvider = Provider<ObtenerResumenGeneralUseCase>((ref) {
   return ObtenerResumenGeneralUseCase(
-    ref.watch(obtenerResumenFinancieroUseCaseProvider),
+    ref.watch(obtenerAnalisisOperativoUseCaseProvider),
     ref.watch(compraRepositoryProvider),
     ref.watch(pagoNominaRepositoryProvider),
     ref.watch(empleadoRepositoryProvider),
     ref.watch(servicioRepositoryProvider),
+    ref.watch(cuentaPorCobrarRepositoryProvider),
   );
 });
 
@@ -53,12 +67,89 @@ final clasificarEgresosPorOrigenUseCaseProvider = Provider<ClasificarEgresosPorO
     ref.watch(egresoRepositoryProvider),
     ref.watch(compraRepositoryProvider),
     ref.watch(pagoNominaRepositoryProvider),
+    ref.watch(tiempoExtraRepositoryProvider),
+    ref.watch(recargaLineaTelefonicaRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
+    ref.watch(descuentoProgramadoRepositoryProvider),
+    ref.watch(vehiculoMantenimientoRepositoryProvider),
+    ref.watch(servicioEventualRepositoryProvider),
+  );
+});
+
+/// Rediseño de Reportes — capa analítica. Fuente ÚNICA del gasto
+/// operativo, su serie temporal y su composición: KPI, gráfica y tabla
+/// leen del mismo objeto, así que no pueden mostrar cifras distintas.
+final obtenerAnalisisOperativoUseCaseProvider = Provider<ObtenerAnalisisOperativoUseCase>((ref) {
+  return ObtenerAnalisisOperativoUseCase(
+    ref.watch(ingresoRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
+    ref.watch(clasificarEgresosPorOrigenUseCaseProvider),
+  );
+});
+
+/// Etapa B — análisis de cartera. Consume exclusivamente reglas ya
+/// existentes (antigüedad, proyección de caja, complemento derivado).
+final obtenerAnalisisCobranzaUseCaseProvider = Provider<ObtenerAnalisisCobranzaUseCase>((ref) {
+  return ObtenerAnalisisCobranzaUseCase(
+    ref.watch(cuentaPorCobrarRepositoryProvider),
+    ref.watch(pagoRepositoryProvider),
+    ref.watch(complementoPagoRepositoryProvider),
+    ref.watch(clienteRepositoryProvider),
+    ref.watch(entidadFiscalRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(documentoPorEmitirRepositoryProvider),
+    ref.watch(obtenerProyeccionCajaUseCaseProvider),
+    ref.watch(servicioEventualRepositoryProvider),
+  );
+});
+
+/// Etapa B — Pagos. El objeto proyectado es el Pago, nunca la
+/// aplicación: un pago repartido en dos facturas es UNA fila.
+final obtenerAnalisisPagosUseCaseProvider = Provider<ObtenerAnalisisPagosUseCase>((ref) {
+  return ObtenerAnalisisPagosUseCase(
+    ref.watch(pagoRepositoryProvider),
+    ref.watch(cuentaPorCobrarRepositoryProvider),
+    ref.watch(complementoPagoRepositoryProvider),
+    ref.watch(clienteRepositoryProvider),
+    ref.watch(ingresoRepositoryProvider),
+    ref.watch(cuentaFinancieraRepositoryProvider),
+    ref.watch(servicioEventualRepositoryProvider),
+  );
+});
+
+/// Etapa B — Deudas y tarjetas.
+final obtenerAnalisisDeudaUseCaseProvider = Provider<ObtenerAnalisisDeudaUseCase>((ref) {
+  return ObtenerAnalisisDeudaUseCase(ref.watch(deudaRepositoryProvider));
+});
+
+/// Etapa C — patrimonio y bajas. Proyecta `ConciliacionBaja` y sus
+/// renglones resolviendo TODO por FK: asignación, autorizador,
+/// receptor y obligación económica.
+final obtenerAnalisisPatrimonioUseCaseProvider = Provider<ObtenerAnalisisPatrimonioUseCase>((ref) {
+  return ObtenerAnalisisPatrimonioUseCase(
+    ref.watch(conciliacionBajaRepositoryProvider),
+    ref.watch(asignacionRepositoryProvider),
+    ref.watch(asignacionVehiculoRepositoryProvider),
+    ref.watch(inventarioRepositoryProvider),
+    ref.watch(articuloRepositoryProvider),
+    ref.watch(vehiculoRepositoryProvider),
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(descuentoProgramadoRepositoryProvider),
+    // Adscripción histórica: sólo `AsignacionServicio` por vigencia
+    // real. `Puesto` es cosmético (etiqueta del filtro buscable).
+    ref.watch(asignacionServicioRepositoryProvider),
+    ref.watch(servicioRepositoryProvider),
+    ref.watch(puestoRepositoryProvider),
   );
 });
 
 /// Etapa 12B — Personal · Nómina.
 final obtenerResumenPersonalUseCaseProvider = Provider<ObtenerResumenPersonalUseCase>((ref) {
-  return ObtenerResumenPersonalUseCase(ref.watch(empleadoRepositoryProvider), ref.watch(asignacionServicioRepositoryProvider));
+  return ObtenerResumenPersonalUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(asignacionServicioRepositoryProvider),
+    ref.watch(obtenerPlantillaPersonalUseCaseProvider),
+  );
 });
 
 final obtenerResumenNominaUseCaseProvider = Provider<ObtenerResumenNominaUseCase>((ref) {
@@ -128,6 +219,53 @@ final exportarReporteFinanzasPdfUseCaseProvider = Provider<ExportarReporteFinanz
 final exportarFinanzasEgresosXlsxUseCaseProvider = Provider<ExportarFinanzasEgresosXlsxUseCase>((ref) {
   return ExportarFinanzasEgresosXlsxUseCase(
     FinanzasEgresosXlsxRenderer(),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(appPathsProvider).reportesDir,
+  );
+});
+
+/// Etapa B — exportaciones de cartera, pagos y deuda. Cada una recibe
+/// lo que la pantalla ya tiene cargado y filtrado: el archivo trae el
+/// mismo universo que se está viendo.
+final exportarCuentasPorCobrarXlsxUseCaseProvider = Provider<ExportarCuentasPorCobrarXlsxUseCase>((ref) {
+  return ExportarCuentasPorCobrarXlsxUseCase(
+    CuentasPorCobrarXlsxRenderer(),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(appPathsProvider).reportesDir,
+  );
+});
+
+final exportarPagosXlsxUseCaseProvider = Provider<ExportarPagosXlsxUseCase>((ref) {
+  return ExportarPagosXlsxUseCase(
+    PagosXlsxRenderer(),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(appPathsProvider).reportesDir,
+  );
+});
+
+final exportarDeudasXlsxUseCaseProvider = Provider<ExportarDeudasXlsxUseCase>((ref) {
+  return ExportarDeudasXlsxUseCase(
+    DeudasXlsxRenderer(),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(appPathsProvider).reportesDir,
+  );
+});
+
+/// Etapa C — exportaciones de Patrimonio y bajas. Ambas reciben el
+/// análisis ya filtrado por la pantalla.
+final exportarPatrimonioXlsxUseCaseProvider = Provider<ExportarPatrimonioXlsxUseCase>((ref) {
+  return ExportarPatrimonioXlsxUseCase(
+    PatrimonioXlsxRenderer(),
+    ref.watch(attachmentStorageProvider),
+    ref.watch(appPathsProvider).reportesDir,
+  );
+});
+
+final exportarPatrimonioPdfUseCaseProvider = Provider<ExportarPatrimonioPdfUseCase>((ref) {
+  return ExportarPatrimonioPdfUseCase(
+    ReportePatrimonioPdfRenderer(),
+    ref.watch(empresaRepositoryProvider),
+    ref.watch(attachmentRepositoryProvider),
     ref.watch(attachmentStorageProvider),
     ref.watch(appPathsProvider).reportesDir,
   );

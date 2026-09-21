@@ -17,6 +17,7 @@ import 'package:riseg_one/features/compras/domain/repositories/compra_repository
 import 'package:riseg_one/features/compras/domain/usecases/cancelar_compra_usecase.dart';
 import 'package:riseg_one/features/compras/domain/usecases/eliminar_compra_fisicamente_usecase.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -43,10 +44,11 @@ void main() {
     inventarioRepo = InventarioRepositoryImpl(db);
     asignacionRepo = AsignacionRepositoryImpl(db);
     final egresoRepo = EgresoRepositoryImpl(db);
-    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+    final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
     cancelarCompra = CancelarCompraUseCase(compraRepo);
     eliminarCompra = EliminarCompraFisicamenteUseCase(compraRepo);
 
@@ -113,7 +115,7 @@ void main() {
 
       final r = await eliminarCompra.ejecutar(
         compraId: compra.id,
-        motivo: 'Compra de prueba, nunca fue real',
+        motivo: MotivoEliminacionFisicaCompra.registroDePrueba,
         actorUsuarioId: 'usuario-maestro',
       );
 
@@ -134,7 +136,11 @@ void main() {
       );
       final compra = (resultado as RegistrarCompraExitosa).compra;
 
-      final r = await eliminarCompra.ejecutar(compraId: compra.id, motivo: 'prueba', actorUsuarioId: 'usuario-maestro');
+      final r = await eliminarCompra.ejecutar(
+        compraId: compra.id,
+        motivo: MotivoEliminacionFisicaCompra.registroDePrueba,
+        actorUsuarioId: 'usuario-maestro',
+      );
 
       expect(r, isA<EliminarCompraFisicamenteExitoso>());
       final existencia = await inventarioRepo.calcularExistencia(articuloId: articulo.id);
@@ -160,7 +166,11 @@ void main() {
       final unidades = await compraRepo.listarUnidadesGeneradas(compra.id);
       expect(unidades, hasLength(1));
 
-      final r = await eliminarCompra.ejecutar(compraId: compra.id, motivo: 'prueba', actorUsuarioId: 'usuario-maestro');
+      final r = await eliminarCompra.ejecutar(
+        compraId: compra.id,
+        motivo: MotivoEliminacionFisicaCompra.registroDePrueba,
+        actorUsuarioId: 'usuario-maestro',
+      );
 
       expect(r, isA<EliminarCompraFisicamenteExitoso>());
       final unidadSigueExistiendo =
@@ -178,14 +188,18 @@ void main() {
         ],
       );
       final compra = (resultado as RegistrarCompraExitosa).compra;
-      final cancelacion = await cancelarCompra.ejecutar(compraId: compra.id, motivo: 'Duplicada por error');
+      final cancelacion = await cancelarCompra.ejecutar(compraId: compra.id, motivo: MotivoCancelacionCompra.compraDuplicada);
       expect(cancelacion, isA<CancelarCompraExitosa>());
 
-      final r = await eliminarCompra.ejecutar(compraId: compra.id, motivo: 'limpieza de prueba', actorUsuarioId: 'usuario-maestro');
+      final r = await eliminarCompra.ejecutar(
+        compraId: compra.id,
+        motivo: MotivoEliminacionFisicaCompra.registroDePrueba,
+        actorUsuarioId: 'usuario-maestro',
+      );
       expect(r, isA<EliminarCompraFisicamenteExitoso>());
     });
 
-    test('exige motivo', () async {
+    test('motivo "Otro" sin detalle se rechaza', () async {
       final resultado = await registrarCompra.ejecutar(
         fecha: DateTime(2026, 8, 10),
         formaPago: FormaPago.efectivo.name,
@@ -194,13 +208,32 @@ void main() {
         ],
       );
       final compra = (resultado as RegistrarCompraExitosa).compra;
-      final r = await eliminarCompra.ejecutar(compraId: compra.id, motivo: '   ');
-      expect(r, isA<EliminarCompraFisicamenteMotivoRequerido>());
+      final r = await eliminarCompra.ejecutar(compraId: compra.id, motivo: MotivoEliminacionFisicaCompra.otro);
+      expect(r, isA<EliminarCompraFisicamenteDetalleRequerido>());
       expect(await compraRepo.obtenerPorId(compra.id), isNotNull);
     });
 
+    test('motivo "Otro" con detalle se acepta', () async {
+      final resultado = await registrarCompra.ejecutar(
+        fecha: DateTime(2026, 8, 10),
+        formaPago: FormaPago.efectivo.name,
+        partidas: [
+          PartidaCompraInput(destino: DestinoCompraPartida.gastoDirecto.name, concepto: 'Papelería', cantidad: 1, costoUnitario: 45000),
+        ],
+      );
+      final compra = (resultado as RegistrarCompraExitosa).compra;
+      final r = await eliminarCompra.ejecutar(
+        compraId: compra.id,
+        motivo: MotivoEliminacionFisicaCompra.otro,
+        detalle: 'Registro capturado dos veces por accidente',
+        actorUsuarioId: 'usuario-maestro',
+      );
+      expect(r, isA<EliminarCompraFisicamenteExitoso>());
+      expect(await compraRepo.obtenerPorId(compra.id), isNull);
+    });
+
     test('rechaza una Compra inexistente', () async {
-      final r = await eliminarCompra.ejecutar(compraId: 'no-existe', motivo: 'cualquiera');
+      final r = await eliminarCompra.ejecutar(compraId: 'no-existe', motivo: MotivoEliminacionFisicaCompra.registroDePrueba);
       expect(r, isA<EliminarCompraFisicamenteNoExiste>());
     });
   });
@@ -225,10 +258,14 @@ void main() {
         fechaEntrega: DateTime(2026, 8, 11),
       );
 
-      final r = await eliminarCompra.ejecutar(compraId: compra.id, motivo: 'intento', actorUsuarioId: 'usuario-maestro');
+      final r = await eliminarCompra.ejecutar(
+        compraId: compra.id,
+        motivo: MotivoEliminacionFisicaCompra.errorDeCaptura,
+        actorUsuarioId: 'usuario-maestro',
+      );
 
       expect(r, isA<EliminarCompraFisicamenteTieneDependencias>());
-      expect((r as EliminarCompraFisicamenteTieneDependencias).detalle, contains('asignaciones registradas'));
+      expect((r as EliminarCompraFisicamenteTieneDependencias).detalle, contains('movimientos de salida registrados'));
       expect(await compraRepo.obtenerPorId(compra.id), isNotNull, reason: 'nunca se elimina cuando está bloqueado');
     });
 
@@ -259,7 +296,11 @@ void main() {
         fechaEntrega: DateTime(2026, 8, 11),
       );
 
-      final r = await eliminarCompra.ejecutar(compraId: compra.id, motivo: 'intento', actorUsuarioId: 'usuario-maestro');
+      final r = await eliminarCompra.ejecutar(
+        compraId: compra.id,
+        motivo: MotivoEliminacionFisicaCompra.errorDeCaptura,
+        actorUsuarioId: 'usuario-maestro',
+      );
 
       expect(r, isA<EliminarCompraFisicamenteTieneDependencias>());
       expect((r as EliminarCompraFisicamenteTieneDependencias).detalle, contains(unidad.codigo));

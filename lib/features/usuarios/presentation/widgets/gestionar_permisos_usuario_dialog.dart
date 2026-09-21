@@ -8,7 +8,7 @@ import 'package:riseg_one/core/permissions/modulos_permiso.dart';
 
 import '../../domain/usecases/guardar_permisos_usuario_usecase.dart';
 import '../usuarios_controller.dart';
-import 'permiso_labels.dart';
+import 'selector_permisos.dart';
 
 /// Diálogo "Administrar permisos — {nombre}" (Etapa 11B) — matriz de
 /// checkboxes por módulo (solo las acciones reales de cada uno, nunca
@@ -47,58 +47,33 @@ Future<bool> mostrarDialogoGestionarPermisosUsuario(BuildContext context, Widget
     cancelLabel: l10n.compraBotonCancelarFormulario,
     contentBuilder: (dialogContext) => StatefulBuilder(
       builder: (dialogContext, setState) {
-        void alternar(String codigo, bool marcado) {
-          setState(() {
-            final nuevo = Set<String>.from(seleccionados);
-            if (marcado) {
-              nuevo.add(codigo);
-            } else {
-              nuevo.remove(codigo);
-              // Si se desmarca Ver, las demás acciones base del mismo
-              // módulo se desmarcan también (Etapa 11B, punto 4) — la
-              // dirección contraria a `normalizarPermisos` (que solo
-              // agrega Ver cuando falta, nunca retira nada).
-              for (final modulo in modulosPermiso) {
-                if (modulo.codigoPara(AccionBase.ver) == codigo) {
-                  nuevo.removeAll(modulo.accionesBase.map(modulo.codigoPara));
-                }
-              }
-            }
-            seleccionados = normalizarPermisos(nuevo);
-          });
-        }
-
+        // Etapa "Usuarios, permisos y UX de seguridad": la matriz plana
+        // anterior recorría `modulosPermiso` imprimiendo una tarjeta por
+        // módulo, una debajo de otra. Con el catálogo completo eso se
+        // volvió una tira vertical imposible de recorrer. Ahora la
+        // estructura (buscador, grupos colapsables, contadores, marcar/
+        // quitar por grupo, scroll interno) vive en `SelectorPermisos`,
+        // compartido con el paso "Permisos" del alta de usuario — una
+        // sola implementación, nunca dos que se desincronicen.
         return SizedBox(
-          width: 520,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final modulo in modulosPermiso) ...[
-                  _FilaModuloPermiso(
-                    modulo: modulo,
-                    seleccionados: seleccionados,
-                    onCambio: alternar,
-                    onMarcarTodo: () => setState(() {
-                      final nuevo = Set<String>.from(seleccionados)..addAll(modulo.todosLosCodigos);
-                      seleccionados = normalizarPermisos(nuevo);
-                    }),
-                    onQuitarTodo: () => setState(() {
-                      final nuevo = Set<String>.from(seleccionados)
-                        ..removeAll(modulo.todosLosCodigos);
-                      seleccionados = nuevo;
-                    }),
-                  ),
-                  const Divider(height: AppSpacing.lg),
-                ],
-                if (errorGeneral != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    child: Text(errorGeneral!, style: AppTypography.caption.copyWith(color: context.colors.error)),
-                  ),
-              ],
-            ),
+          width: 620,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectorPermisos(
+                seleccionados: seleccionados,
+                // `normalizarPermisos` garantiza que ninguna acción
+                // quede concedida sin el `ver` de su módulo — misma
+                // regla de siempre, aplicada en un solo lugar.
+                onCambio: (nuevo) => setState(() => seleccionados = normalizarPermisos(nuevo)),
+              ),
+              if (errorGeneral != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Text(errorGeneral!, style: AppTypography.caption.copyWith(color: context.colors.error)),
+                ),
+            ],
           ),
         );
       },
@@ -110,9 +85,14 @@ Future<bool> mostrarDialogoGestionarPermisosUsuario(BuildContext context, Widget
           return true;
         case GuardarPermisosUsuarioNoExiste():
         case GuardarPermisosUsuarioEsMaestro():
-        case GuardarPermisosUsuarioErrorInesperado():
           errorGeneral = l10n.usuarioErrorInesperado;
           return false;
+        case GuardarPermisosUsuarioErrorInesperado(:final mensaje):
+          // Una denegación de permiso llega como `ErrorInesperado` con
+          // su motivo real; mostrarlo tal cual evita el genérico
+          // "ocurrió un error" que ocultaba "no tiene permiso".
+          errorGeneral = mensaje;
+          return null;
       }
     },
   );
@@ -124,105 +104,4 @@ Future<bool> mostrarDialogoGestionarPermisosUsuario(BuildContext context, Widget
     RisegFeedback.showError(context, errorGeneral!);
   }
   return exito;
-}
-
-class _FilaModuloPermiso extends StatelessWidget {
-  const _FilaModuloPermiso({
-    required this.modulo,
-    required this.seleccionados,
-    required this.onCambio,
-    required this.onMarcarTodo,
-    required this.onQuitarTodo,
-  });
-
-  final ModuloPermiso modulo;
-  final Set<String> seleccionados;
-  final void Function(String codigo, bool marcado) onCambio;
-  final VoidCallback onMarcarTodo;
-  final VoidCallback onQuitarTodo;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(moduloPermisoLabel(l10n, modulo.codigo), style: AppTypography.bodyStrong),
-            ),
-            RisegButton(
-              label: l10n.permisosBotonMarcarTodo,
-              variant: RisegButtonVariant.ghost,
-              size: RisegButtonSize.compact,
-              onPressed: onMarcarTodo,
-            ),
-            RisegButton(
-              label: l10n.permisosBotonQuitarTodo,
-              variant: RisegButtonVariant.ghost,
-              size: RisegButtonSize.compact,
-              onPressed: onQuitarTodo,
-            ),
-          ],
-        ),
-        if (modulo.accionesBase.isNotEmpty)
-          Wrap(
-            spacing: AppSpacing.md,
-            children: [
-              for (final accion in AccionBase.values)
-                if (modulo.accionesBase.contains(accion))
-                  _CheckboxPermiso(
-                    label: accionBaseLabel(l10n, accion),
-                    codigo: modulo.codigoPara(accion),
-                    seleccionados: seleccionados,
-                    onCambio: onCambio,
-                  ),
-            ],
-          ),
-        if (modulo.accionesEspeciales.isNotEmpty)
-          Wrap(
-            spacing: AppSpacing.md,
-            children: [
-              for (final codigo in modulo.accionesEspeciales)
-                _CheckboxPermiso(
-                  label: permisoEspecialLabel(l10n, codigo),
-                  codigo: codigo,
-                  seleccionados: seleccionados,
-                  onCambio: onCambio,
-                ),
-            ],
-          ),
-      ],
-    );
-  }
-}
-
-class _CheckboxPermiso extends StatelessWidget {
-  const _CheckboxPermiso({
-    required this.label,
-    required this.codigo,
-    required this.seleccionados,
-    required this.onCambio,
-  });
-
-  final String label;
-  final String codigo;
-  final Set<String> seleccionados;
-  final void Function(String codigo, bool marcado) onCambio;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => onCambio(codigo, !seleccionados.contains(codigo)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Checkbox(value: seleccionados.contains(codigo), onChanged: (v) => onCambio(codigo, v ?? false)),
-          Text(label),
-        ],
-      ),
-    );
-  }
 }

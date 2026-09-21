@@ -11,6 +11,12 @@ abstract interface class AsignacionServicioRepository {
   /// descendente por `fechaInicio`.
   Future<List<AsignacionServicioData>> listarPorEmpleado(String empleadoId);
 
+  /// Mismo historial que [listarPorEmpleado] pero para varios empleados
+  /// en UNA consulta, agrupado por `empleadoId`. Existe para que un
+  /// reporte pueda resolver la adscripción histórica de muchas bajas sin
+  /// caer en N+1. Sólo lectura.
+  Future<Map<String, List<AsignacionServicioData>>> listarPorEmpleados(Iterable<String> empleadoIds);
+
   Future<List<AsignacionServicioData>> listarActivasPorServicio(String servicioId);
 
   /// Todas las asignaciones vigentes (`fechaTermino IS NULL`) de
@@ -19,6 +25,16 @@ abstract interface class AsignacionServicioRepository {
   /// Servicio" se derivan de este conjunto completo, nunca de una
   /// bandera nueva ni de N+1 por Servicio.
   Future<List<AsignacionServicioData>> listarTodasActivas();
+
+  /// TODAS las asignaciones, vigentes y cerradas, de cualquier
+  /// Empleado/Servicio — Etapa "Plantilla operativa vs. administrativa".
+  ///
+  /// Es la única forma de reconstruir "¿este empleado era operativo el
+  /// día X?" para un periodo pasado: `fechaInicio`/`fechaTermino` dan
+  /// el rango real de cada adscripción. `listarTodasActivas` no sirve
+  /// para eso — solo conoce el presente, y usarlo atribuiría la
+  /// estructura de hoy a meses anteriores.
+  Future<List<AsignacionServicioData>> listarTodas();
 
   /// Historial completo (vigente + cerradas) de este Servicio, orden
   /// descendente por `fechaInicio`.
@@ -108,6 +124,21 @@ abstract interface class AsignacionServicioRepository {
   /// una asignación — nunca incluye canceladas. Orden ascendente por
   /// `fechaInicioVigencia`.
   Future<List<AsignacionServicioSueldoVigenciaData>> listarVigenciasSueldoActivas(String asignacionServicioId);
+
+  /// Regulariza el perfil de una `AsignacionServicio` histórica —
+  /// completa `lineaComercialId` (hasta ahora `NULL`) sin crear una
+  /// asignación nueva ni tocar fecha/sueldo/historial (corrección de
+  /// compatibilidad histórica, Etapa 15). Escritura cruda — sin
+  /// validaciones de negocio (existencia, vigencia, pertenencia al
+  /// mismo Servicio); esas viven en
+  /// `RegularizarPerfilAsignacionServicioUseCase`. Reconcilia
+  /// `VacanteOperativa` de la línea recién asignada en la misma
+  /// transacción.
+  Future<AsignacionServicioData> regularizarPerfil({
+    required String asignacionServicioId,
+    required String lineaComercialId,
+    String? actorUsuarioId,
+  });
 
   /// Historial completo (incluye canceladas) de vigencias de sueldo de
   /// una asignación, orden ascendente por `fechaInicioVigencia`.

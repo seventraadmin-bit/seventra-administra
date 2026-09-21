@@ -102,6 +102,7 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
   Future<AsignacionLineaTelefonicaData> cambiarResponsable({
     required String asignacionLineaTelefonicaActualId,
     required DateTime fecha,
+    String? motivoTermino,
     String? observacionesTermino,
     String? nuevoEmpleadoId,
     String? nuevoServicioId,
@@ -117,7 +118,7 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
           .write(
         AsignacionLineaTelefonicaCompanion(
           fechaTermino: Value(fecha),
-          motivoTermino: Value(MotivoTerminoAsignacionLineaTelefonica.cambioResponsable.name),
+          motivoTermino: Value(motivoTermino ?? MotivoTerminoAsignacionLineaTelefonica.cambioResponsable.name),
           observacionesTermino: Value(observacionesTermino),
           updatedAt: Value(DateTime.now()),
           actorUsuarioId: Value(actorUsuarioId),
@@ -134,6 +135,37 @@ class AsignacionLineaTelefonicaRepositoryImpl implements AsignacionLineaTelefoni
               actorUsuarioId: Value(actorUsuarioId),
             ),
           );
+    });
+  }
+
+  @override
+  Future<void> cerrarPorBajaEmpleado({
+    required String empleadoId,
+    required DateTime fecha,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final vigentes = await (_db.select(_db.asignacionLineaTelefonica)
+            ..where((t) => t.empleadoId.equals(empleadoId) & t.fechaTermino.isNull()))
+          .get();
+      if (vigentes.isEmpty) return;
+
+      // Una sola sentencia para todas: o se cierran las dos líneas de
+      // la persona, o no se cierra ninguna. Ya estamos dentro de la
+      // transacción de la baja laboral, así que un fallo aquí revierte
+      // también la baja.
+      await (_db.update(_db.asignacionLineaTelefonica)
+            ..where((t) => t.empleadoId.equals(empleadoId) & t.fechaTermino.isNull()))
+          .write(
+        AsignacionLineaTelefonicaCompanion(
+          fechaTermino: Value(fecha),
+          motivoTermino: Value(MotivoTerminoAsignacionLineaTelefonica.bajaEmpleado.name),
+          // El actor de la baja laboral: el cierre derivado conserva
+          // quién originó la operación, no queda huérfano.
+          actorUsuarioId: actorUsuarioId == null ? const Value.absent() : Value(actorUsuarioId),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
     });
   }
 

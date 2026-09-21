@@ -15,6 +15,7 @@ import 'package:riseg_one/features/organizacion/data/repositories/ubicacion_repo
 import 'package:riseg_one/features/organizacion/data/tables/cliente_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/ubicacion_table.dart';
+import 'package:riseg_one/features/organizacion/domain/shared/direccion_input.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
@@ -131,6 +132,47 @@ void main() {
       expect(item.tipoServicioNombre, 'Vigilancia fija');
     });
 
+    test(
+      'Etapa 16, evolución visual: listar() trae municipio/estado reales de la Dirección operativa, '
+      'nunca inventados cuando no existe',
+      () async {
+        final cliente = await crearClienteDePrueba(nombre: 'Sportium');
+
+        final conDireccion =
+            (await crearServicio.ejecutar(clienteId: cliente.id, borrador: borrador(nombre: 'Sportium Toluca')))
+                as GuardarServicioExitoso;
+        final sinDireccion =
+            (await crearServicio.ejecutar(clienteId: cliente.id, borrador: borrador(nombre: 'Sportium Interlomas')))
+                as GuardarServicioExitoso;
+
+        await servicioRepo.guardarDireccionOperativa(
+          conDireccion.servicio.id,
+          const DireccionInput(
+            calle: 'Av. Morelos',
+            numeroExterior: '100',
+            colonia: 'Centro',
+            municipioAlcaldia: 'Toluca',
+            estado: 'Estado de México',
+            codigoPostal: '50000',
+          ),
+        );
+
+        final listado = await listarServicios.ejecutar();
+
+        final itemConDireccion = listado.singleWhere((s) => s.servicio.id == conDireccion.servicio.id);
+        expect(itemConDireccion.municipioAlcaldia, 'Toluca');
+        expect(itemConDireccion.estado, 'Estado de México');
+
+        final itemSinDireccion = listado.singleWhere((s) => s.servicio.id == sinDireccion.servicio.id);
+        expect(
+          itemSinDireccion.municipioAlcaldia,
+          isNull,
+          reason: 'sin Dirección operativa capturada, nunca se inventa una ubicación a partir del nombre',
+        );
+        expect(itemSinDireccion.estado, isNull);
+      },
+    );
+
     test('rechaza nombre vacío', () async {
       final cliente = await crearClienteDePrueba();
       final resultado = await crearServicio.ejecutar(clienteId: cliente.id, borrador: borrador(nombre: '   '));
@@ -209,6 +251,7 @@ void main() {
       final resultado = await actualizarServicio.ejecutar(
         id: creado.servicio.id,
         borrador: borrador(nombre: 'Vigilancia Sportium Renombrada', observaciones: 'Actualizado'),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<GuardarServicioExitoso>());
@@ -231,6 +274,7 @@ void main() {
       final resultado = await cambiarEstatusServicio.ejecutar(
         servicioId: servicio.id,
         nuevo: EstatusServicio.suspendido,
+        motivo: 'Motivo de prueba',
       );
       expect(resultado, isA<CambiarEstatusServicioExitoso>());
       expect((resultado as CambiarEstatusServicioExitoso).servicio.estatus, 'suspendido');
@@ -238,7 +282,7 @@ void main() {
 
     test('rechaza activar sin Dirección operativa (bloqueo real durante toda la Etapa 4F.1)', () async {
       final servicio = await crearServicioDePrueba();
-      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo);
+      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
       expect(resultado, isA<CambiarEstatusServicioFaltaDireccionOperativa>());
     });
 
@@ -257,7 +301,7 @@ void main() {
             ),
           );
 
-      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo);
+      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
       expect(resultado, isA<CambiarEstatusServicioExitoso>());
     });
 
@@ -279,7 +323,7 @@ void main() {
       await (db.update(db.cliente)..where((t) => t.id.equals(servicio.clienteId)))
           .write(const ClienteCompanion(cicloVidaRegistro: Value('archivado')));
 
-      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo);
+      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
       expect(resultado, isA<CambiarEstatusServicioClienteNoDisponible>());
     });
 
@@ -291,13 +335,13 @@ void main() {
       // aplicando sin importar cómo se haya llegado al estado actual.
       await servicioRepo.cambiarEstatus(id: servicio.id, nuevo: EstatusServicio.activo);
 
-      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.cotizado);
+      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.cotizado, motivo: 'Motivo de prueba');
       expect(resultado, isA<CambiarEstatusServicioTransicionInvalida>());
     });
 
     test('terminar sin fechaTermino previa y sin proporcionar una exige la fecha efectiva', () async {
       final servicio = await crearServicioDePrueba();
-      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.terminado);
+      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.terminado, motivo: 'Motivo de prueba');
       expect(resultado, isA<CambiarEstatusServicioRequiereFechaTermino>());
     });
 
@@ -307,6 +351,7 @@ void main() {
         servicioId: servicio.id,
         nuevo: EstatusServicio.terminado,
         fechaTerminoEfectiva: DateTime(2026, 6, 15),
+        motivo: 'Motivo de prueba',
       );
       expect(resultado, isA<CambiarEstatusServicioExitoso>());
       expect((resultado as CambiarEstatusServicioExitoso).servicio.fechaTermino, DateTime(2026, 6, 15));
@@ -318,6 +363,7 @@ void main() {
         servicioId: servicio.id,
         nuevo: EstatusServicio.terminado,
         fechaTerminoEfectiva: DateTime(2025, 1, 1),
+        motivo: 'Motivo de prueba',
       );
       expect(resultado, isA<CambiarEstatusServicioFechaTerminoInvalida>());
     });
@@ -328,6 +374,7 @@ void main() {
         servicioId: servicio.id,
         nuevo: EstatusServicio.terminado,
         fechaTerminoEfectiva: DateTime(2026, 6, 15),
+        motivo: 'Motivo de prueba',
       );
       // Regresa a 'suspendido' vía repositorio directo (el propio
       // dominio no permite terminado → suspendido; se hace así solo
@@ -339,8 +386,9 @@ void main() {
         id: servicio.id,
         nuevo: EstatusServicio.suspendido,
         fechaTermino: DateTime(2026, 6, 15),
+        motivo: 'Motivo de prueba',
       );
-      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.terminado);
+      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.terminado, motivo: 'Motivo de prueba');
 
       expect(resultado, isA<CambiarEstatusServicioExitoso>());
       expect((resultado as CambiarEstatusServicioExitoso).servicio.fechaTermino, DateTime(2026, 6, 15));
@@ -350,7 +398,7 @@ void main() {
       final servicio = await crearServicioDePrueba();
       await servicioRepo.cambiarEstatus(id: servicio.id, nuevo: EstatusServicio.terminado, fechaTermino: DateTime(2026, 3, 1));
 
-      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo);
+      final resultado = await cambiarEstatusServicio.ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
       expect(resultado, isA<CambiarEstatusServicioFaltaDireccionOperativa>());
     });
   });

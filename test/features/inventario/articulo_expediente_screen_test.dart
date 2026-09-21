@@ -90,7 +90,8 @@ class _SesionNoMaestroDePrueba extends SesionController {
       permisos: {
         'inventario.ver',
         'inventario.crear',
-        'inventario.modificar',
+        'inventario.corregir',
+        'inventario.ajustarExistencia',
         'inventario.archivar',
       },
     );
@@ -387,6 +388,16 @@ void main() {
     () {
       Future<AppLocalizations> l10nDePrueba() => AppLocalizations.delegate.load(const Locale('es'));
 
+      // Etapa 18: Archivar/Eliminar físicamente se movieron del
+      // `secondaryAction` (botones sueltos) a un menú ⋯
+      // (`RisegActionsMenu`) — sus `PopupMenuItem` solo existen en el
+      // árbol una vez abierto el menú.
+      Future<void> abrirMenuAcciones(WidgetTester tester) async {
+        await tester.ensureVisible(find.byKey(const Key('articulo_expediente_menu_acciones')));
+        await tester.tap(find.byKey(const Key('articulo_expediente_menu_acciones')));
+        await tester.pumpAndSettle();
+      }
+
       testWidgets(
         'sesión Maestro (3 acciones: Editar/Archivar/Eliminar físicamente), ventana normal (1440×900)',
         (tester) async {
@@ -403,6 +414,9 @@ void main() {
           expect(tester.takeException(), isNull);
           expect(find.text('CAMISOLA TACTICA'), findsWidgets, reason: 'AppBar + título del encabezado');
           expect(find.text(l10n.articuloExpedienteBotonEditar), findsOneWidget);
+
+          await abrirMenuAcciones(tester);
+          expect(tester.takeException(), isNull);
           expect(find.text(l10n.articuloBotonArchivar), findsOneWidget);
           expect(find.text(l10n.eliminacionFisicaAccionMenu), findsOneWidget, reason: '"Eliminar físicamente" solo para Maestro');
         },
@@ -426,10 +440,20 @@ void main() {
           expect(tester.takeException(), isNull);
           expect(find.text('CAMISOLA TACTICA'), findsWidgets, reason: 'el título sigue visible');
 
-          for (final texto in [l10n.articuloExpedienteBotonEditar, l10n.articuloBotonArchivar, l10n.eliminacionFisicaAccionMenu]) {
-            await tester.ensureVisible(find.text(texto));
+          await tester.ensureVisible(find.text(l10n.articuloExpedienteBotonEditar));
+          expect(find.text(l10n.articuloExpedienteBotonEditar).hitTestable(), findsOneWidget);
+
+          await abrirMenuAcciones(tester);
+          for (final texto in [l10n.articuloBotonArchivar, l10n.eliminacionFisicaAccionMenu]) {
             expect(find.text(texto).hitTestable(), findsOneWidget, reason: '"$texto" sigue accesible en este ancho');
           }
+          // Cierra el menú antes de tocar "Editar" — tocar la barrera
+          // modal del propio menú (nunca una coordenada fija arbitraria,
+          // que podría caer sobre otro widget del shell real y no
+          // cerrar nada) es lo que garantiza el cierre.
+          await tester.tapAt(tester.getTopLeft(find.byType(ModalBarrier).last));
+          await tester.pumpAndSettle();
+          expect(find.text(l10n.articuloBotonArchivar), findsNothing, reason: 'el menú ya debe estar cerrado');
 
           // Funcional, no solo visible: "Editar" sigue siendo tocable y
           // abre su diálogo incluso en el ancho más exigente.
@@ -451,7 +475,10 @@ void main() {
           final l10n = await l10nDePrueba();
 
           expect(tester.takeException(), isNull);
-          for (final texto in [l10n.articuloExpedienteBotonEditar, l10n.articuloBotonArchivar, l10n.eliminacionFisicaAccionMenu]) {
+          expect(find.text(l10n.articuloExpedienteBotonEditar).hitTestable(), findsOneWidget);
+
+          await abrirMenuAcciones(tester);
+          for (final texto in [l10n.articuloBotonArchivar, l10n.eliminacionFisicaAccionMenu]) {
             expect(find.text(texto).hitTestable(), findsOneWidget);
           }
         },
@@ -475,6 +502,8 @@ void main() {
 
           expect(tester.takeException(), isNull);
           expect(find.text(l10n.articuloExpedienteBotonEditar), findsOneWidget);
+
+          await abrirMenuAcciones(tester);
           expect(find.text(l10n.articuloBotonArchivar), findsOneWidget);
           expect(find.text(l10n.eliminacionFisicaAccionMenu), findsNothing, reason: 'no-Maestro: sin la acción extraordinaria');
         },

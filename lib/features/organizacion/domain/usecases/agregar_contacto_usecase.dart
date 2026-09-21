@@ -13,6 +13,7 @@ class AgregarContactoUseCase {
   Future<GuardarContactoResultado> ejecutar({
     required String clienteId,
     required ContactoBorrador borrador,
+    String? actorUsuarioId,
   }) async {
     final validacion = ContactoValidator.validar(borrador);
     if (validacion.errores.isNotEmpty) {
@@ -31,6 +32,7 @@ class AgregarContactoUseCase {
           correo: Value(validado.correo),
           esPrincipal: Value(validado.esPrincipal),
         ),
+        actorUsuarioId: actorUsuarioId,
       );
       return GuardarContactoExitoso(contacto);
     } catch (e) {

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,6 +50,17 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // El actor de la bitácora es una FK real contra `Usuario`: la
+    // sesión de prueba tiene que existir, igual que en producción.
+    await db.into(db.usuario).insert(
+      UsuarioCompanion.insert(
+        id: const Value('usuario-prueba'),
+        nombre: 'Usuario de prueba',
+        nombreUsuario: 'prueba',
+        passwordHash: 'x',
+        esMaestro: const Value(true),
+      ),
+    );
     final crear = CrearClienteUseCase(ClienteRepositoryImpl(db), GenerarCodigoUseCase(CodigoSecuenciaService(db)));
     final creado = await crear.ejecutar(nombreComercial: 'Sportium');
     clienteId = creado.when(ok: (c) => c.id, failure: (f) => throw StateError(f.message));
@@ -123,6 +135,7 @@ void main() {
           codigoPostal: '06000',
         ),
       ),
+      motivo: 'Motivo de prueba',
     );
 
     expect(exito, isTrue);
@@ -139,6 +152,7 @@ void main() {
 
     final exito = await notifier.guardar(
       const ClienteExpedienteInput(datosGenerales: ClienteDatosGeneralesInput(nombreComercial: '   ')),
+      motivo: 'Motivo de prueba',
     );
 
     expect(exito, isFalse);
@@ -151,7 +165,7 @@ void main() {
     await esperarCargaInicial();
     final notifier = container.read(clienteExpedienteControllerProvider(clienteId).notifier);
 
-    final exito = await notifier.cambiarEstatus(EstatusCliente.activo);
+    final exito = await notifier.cambiarEstatus(EstatusCliente.activo, motivo: 'Motivo de prueba');
 
     expect(exito, isTrue);
     expect(container.read(clienteExpedienteControllerProvider(clienteId)).datos?.cliente.estatus, 'activo');
@@ -175,7 +189,7 @@ void main() {
     );
 
     final notifier = container.read(clienteExpedienteControllerProvider(clienteId).notifier);
-    final exito = await notifier.cambiarEstatus(EstatusCliente.activo);
+    final exito = await notifier.cambiarEstatus(EstatusCliente.activo, motivo: 'Motivo de prueba');
     expect(exito, isTrue);
 
     // `invalidate` reprograma la reconstrucción para el siguiente
@@ -231,7 +245,7 @@ void main() {
     );
     final contactoId = (agregado as GuardarContactoExitoso).contacto.id;
 
-    await notifier.archivarContacto(contactoId);
+    await notifier.archivarContacto(contactoId, motivo: 'Motivo de prueba');
 
     expect(container.read(clienteExpedienteControllerProvider(clienteId)).datos?.contactos, isEmpty);
   });
@@ -306,6 +320,7 @@ void main() {
       await notifier.actualizarEntidadFiscal(
         entidadId,
         const EntidadFiscalBorrador(razonSocial: 'Sportium Toluca SA de CV', rfc: 'STO010101AB1'),
+        motivo: 'Motivo de prueba',
       );
 
       final state = container.read(clienteExpedienteControllerProvider(clienteId));
@@ -320,7 +335,7 @@ void main() {
       );
       final entidadId = (agregado as GuardarEntidadFiscalExitoso).entidadFiscal.id;
 
-      final archivado = await notifier.cambiarCicloVidaEntidadFiscal(entidadId, CicloVidaRegistro.archivado);
+      final archivado = await notifier.cambiarCicloVidaEntidadFiscal(entidadId, CicloVidaRegistro.archivado, motivo: 'Motivo de prueba');
       expect(archivado, isTrue);
 
       var state = container.read(clienteExpedienteControllerProvider(clienteId));
@@ -329,10 +344,11 @@ void main() {
       final edicion = await notifier.actualizarEntidadFiscal(
         entidadId,
         const EntidadFiscalBorrador(razonSocial: 'Otro nombre SA', rfc: 'STO010101AB1'),
+        motivo: 'Motivo de prueba',
       );
       expect(edicion, isA<GuardarEntidadFiscalArchivada>());
 
-      final reactivado = await notifier.cambiarCicloVidaEntidadFiscal(entidadId, CicloVidaRegistro.activo);
+      final reactivado = await notifier.cambiarCicloVidaEntidadFiscal(entidadId, CicloVidaRegistro.activo, motivo: 'Motivo de prueba');
       expect(reactivado, isTrue);
       state = container.read(clienteExpedienteControllerProvider(clienteId));
       expect(state.datos?.entidadesFiscales.single.entidadFiscal.cicloVidaRegistro, 'activo');

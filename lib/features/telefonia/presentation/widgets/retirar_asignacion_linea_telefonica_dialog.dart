@@ -7,22 +7,27 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/retirar_asignacion_linea_telefonica_usecase.dart';
 
 import '../../telefonia_providers.dart';
+import 'coherencia_linea_equipo_mensajes.dart';
 
-/// Diálogo "Retirar asignación" (Etapa 9B) — libera una línea. Si
-/// [tieneEquipoAsociado], expone "mover también el equipo asociado"
-/// (en este caso, liberar su custodia en Inventario). Devuelve `true`
-/// si tuvo éxito.
+/// Diálogo "Retirar asignación" (Etapa 9B) — libera una línea.
+///
+/// §12: si el teléfono asociado sigue en manos de alguien, dejar la
+/// línea sin asignación se rechaza — es exactamente el caso real que
+/// originó la Rebanada 2. Hay que retirar antes el equipo de la línea,
+/// o devolver el aparato en Inventario. Devuelve `true` si tuvo éxito.
 Future<bool> mostrarDialogoRetirarAsignacionLineaTelefonica(
   BuildContext context,
   WidgetRef ref,
-  AsignacionLineaTelefonicaData asignacion, {
-  required bool tieneEquipoAsociado,
-}) async {
+  AsignacionLineaTelefonicaData asignacion,
+) async {
   final l10n = AppLocalizations.of(context)!;
+  final nombres = await NombresDestinoTelefonia.cargar(ref);
+  if (!context.mounted) return false;
 
   DateTime fechaTermino = DateTime.now();
   final observacionesCtrl = TextEditingController();
-  bool moverEquipoAsociado = true;
+  final motivoCtrl = TextEditingController();
+  bool pideMotivo = false;
   String? errorGeneral;
 
   final resultado = await RisegDialog.showForm<bool>(
@@ -45,14 +50,12 @@ Future<bool> mostrarDialogoRetirarAsignacionLineaTelefonica(
               ),
               const SizedBox(height: AppSpacing.md),
               RisegTextField(label: l10n.lineaTelefonicaRetirarAsignacionCampoObservaciones, controller: observacionesCtrl),
-              if (tieneEquipoAsociado) ...[
-                const SizedBox(height: AppSpacing.xs),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(l10n.lineaTelefonicaCampoMoverEquipoAsociado),
-                  value: moverEquipoAsociado,
-                  onChanged: (valor) => setState(() => moverEquipoAsociado = valor ?? moverEquipoAsociado),
+              if (pideMotivo) ...[
+                const SizedBox(height: AppSpacing.md),
+                RisegTextField(
+                  key: const Key('linea_retirar_asignacion_campo_motivo'),
+                  label: l10n.lineaTelefonicaResolverInconsistenciaCampoMotivo,
+                  controller: motivoCtrl,
                 ),
               ],
               if (errorGeneral != null) ...[
@@ -69,7 +72,7 @@ Future<bool> mostrarDialogoRetirarAsignacionLineaTelefonica(
             asignacionLineaTelefonicaId: asignacion.id,
             fechaTermino: fechaTermino,
             observacionesTermino: observacionesCtrl.text.trim().isEmpty ? null : observacionesCtrl.text.trim(),
-            moverEquipoAsociado: moverEquipoAsociado,
+            motivo: motivoCtrl.text,
           );
       switch (resultado) {
         case RetirarAsignacionLineaTelefonicaExitoso():
@@ -77,6 +80,13 @@ Future<bool> mostrarDialogoRetirarAsignacionLineaTelefonica(
           return true;
         case RetirarAsignacionLineaTelefonicaYaCerrada():
           errorGeneral = l10n.lineaTelefonicaRetirarAsignacionErrorYaCerrada;
+          return null;
+        case RetirarAsignacionLineaTelefonicaEquipoCustodiado(:final coherencia):
+          errorGeneral = mensajeIncoherenciaLineaEquipo(l10n, coherencia, nombres);
+          return null;
+        case RetirarAsignacionLineaTelefonicaMotivoRequerido():
+          pideMotivo = true;
+          errorGeneral = l10n.lineaTelefonicaCoherenciaMotivoRequerido;
           return null;
         case RetirarAsignacionLineaTelefonicaNoExiste():
         case RetirarAsignacionLineaTelefonicaErrorInesperado():
@@ -86,6 +96,9 @@ Future<bool> mostrarDialogoRetirarAsignacionLineaTelefonica(
     },
   );
 
-  observacionesCtrl.dispose();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    observacionesCtrl.dispose();
+    motivoCtrl.dispose();
+  });
   return resultado ?? false;
 }

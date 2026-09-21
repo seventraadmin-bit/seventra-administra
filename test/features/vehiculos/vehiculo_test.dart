@@ -116,11 +116,11 @@ void main() {
       )) as CrearVehiculoExitoso)
           .vehiculo;
 
-      final resultado = await corregirVehiculo.ejecutar(vehiculoId: vehiculo.id, color: 'Blanco');
+      final resultado = await corregirVehiculo.ejecutar(motivo: 'Corrección de prueba', vehiculoId: vehiculo.id, color: 'Blanco');
       expect(resultado, isA<CorregirVehiculoExitoso>());
       expect((resultado as CorregirVehiculoExitoso).vehiculo.color, 'Blanco');
 
-      final limpiado = await corregirVehiculo.ejecutar(vehiculoId: vehiculo.id, limpiarColor: true);
+      final limpiado = await corregirVehiculo.ejecutar(motivo: 'Corrección de prueba', vehiculoId: vehiculo.id, limpiarColor: true);
       expect((limpiado as CorregirVehiculoExitoso).vehiculo.color, isNull);
     });
 
@@ -134,15 +134,15 @@ void main() {
           .vehiculo;
       await crearVehiculo.ejecutar(marca: 'Nissan', modelo: 'Versa', tipoVehiculo: 'sedan', placas: 'XYZ-999');
 
-      final chocaConOtro = await corregirVehiculo.ejecutar(vehiculoId: v1.id, placas: 'XYZ-999');
+      final chocaConOtro = await corregirVehiculo.ejecutar(motivo: 'Corrección de prueba', vehiculoId: v1.id, placas: 'XYZ-999');
       expect(chocaConOtro, isA<CorregirVehiculoPlacasDuplicadas>());
 
-      final conservaLaPropia = await corregirVehiculo.ejecutar(vehiculoId: v1.id, placas: 'ABC-123');
+      final conservaLaPropia = await corregirVehiculo.ejecutar(motivo: 'Corrección de prueba', vehiculoId: v1.id, placas: 'ABC-123');
       expect(conservaLaPropia, isA<CorregirVehiculoExitoso>());
     });
 
     test('rechaza id inexistente', () async {
-      final resultado = await corregirVehiculo.ejecutar(vehiculoId: 'no-existe', marca: 'BMW');
+      final resultado = await corregirVehiculo.ejecutar(motivo: 'Corrección de prueba', vehiculoId: 'no-existe', marca: 'BMW');
       expect(resultado, isA<CorregirVehiculoNoExiste>());
     });
   });

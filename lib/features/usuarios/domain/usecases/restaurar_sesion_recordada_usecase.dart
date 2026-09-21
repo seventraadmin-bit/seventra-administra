@@ -44,6 +44,7 @@ class RestaurarSesionRecordadaUseCase {
       nombreUsuario: usuario.nombreUsuario,
       esMaestro: usuario.esMaestro,
       permisos: permisos,
+      debeCambiarPassword: usuario.debeCambiarPassword,
     );
   }
 }

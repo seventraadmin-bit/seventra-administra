@@ -17,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/di/providers.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/finanzas/presentation/cuentas_por_cobrar/cuentas_por_cobrar_controller.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
@@ -157,4 +158,26 @@ void main() {
     // de haberse invalidado (comportamiento correcto, no solo casual).
     expect(container.read(cuentasPorCobrarControllerProvider).cuentas, isEmpty);
   });
+
+  test(
+    'Etapa 20 — hueco real corregido: la misma transición también invalida el Dashboard '
+    '(Cobranza/"Requiere atención" leen la misma CuentaPorCobrar)',
+    () async {
+      container.listen(dashboardControllerProvider, (_, _) {});
+      while (container.read(dashboardControllerProvider).cargando) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      var reconstrucciones = 0;
+      container.listen(dashboardControllerProvider, (_, _) => reconstrucciones++);
+
+      final resultado = await container.read(agendaControllerProvider.notifier).cambiarEstatus(
+            documentoPorEmitirId: documentoId,
+            nuevo: EstatusDocumentoPorEmitir.procesadoAceptado,
+          );
+      expect(resultado, isA<CambiarEstatusDocumentoPorEmitirExitoso>());
+
+      await Future<void>.delayed(Duration.zero);
+      expect(reconstrucciones, greaterThan(0), reason: 'bug real: Agenda nunca invalidaba dashboardControllerProvider al crear una CxC');
+    },
+  );
 }

@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/utils/clock.dart';
 
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import '../repositories/configuracion_cobro_repository.dart';
 import 'configuracion_cobro_con_vigencia.dart';
 
@@ -13,6 +14,10 @@ class CancelarVigenciaProgramadaConfiguracionCobroNoEsProgramada
     extends CancelarVigenciaProgramadaConfiguracionCobroResultado {}
 
 class CancelarVigenciaProgramadaConfiguracionCobroNoExiste extends CancelarVigenciaProgramadaConfiguracionCobroResultado {}
+
+/// Cancelar una vigencia de cobro programada exige explicar por qué.
+class CancelarVigenciaProgramadaConfiguracionCobroMotivoRequerido
+    extends CancelarVigenciaProgramadaConfiguracionCobroResultado {}
 
 class CancelarVigenciaProgramadaConfiguracionCobroErrorInesperado
     extends CancelarVigenciaProgramadaConfiguracionCobroResultado {
@@ -30,7 +35,12 @@ class CancelarVigenciaProgramadaConfiguracionCobroUseCase {
   final ConfiguracionCobroRepository _repository;
   final Clock _clock;
 
-  Future<CancelarVigenciaProgramadaConfiguracionCobroResultado> ejecutar({required String vigenciaId}) async {
+  Future<CancelarVigenciaProgramadaConfiguracionCobroResultado> ejecutar({
+    required String vigenciaId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) async {
+    if (!motivoEsValido(motivo)) return CancelarVigenciaProgramadaConfiguracionCobroMotivoRequerido();
     final vigencia = await _repository.obtenerVigencia(vigenciaId);
     if (vigencia == null) {
       return CancelarVigenciaProgramadaConfiguracionCobroNoExiste();
@@ -42,7 +52,11 @@ class CancelarVigenciaProgramadaConfiguracionCobroUseCase {
     }
 
     try {
-      await _repository.cancelarVigenciaProgramada(vigenciaId);
+      await _repository.cancelarVigenciaProgramada(
+        vigenciaId,
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
+      );
       return CancelarVigenciaProgramadaConfiguracionCobroExitoso();
     } catch (e) {
       return CancelarVigenciaProgramadaConfiguracionCobroErrorInesperado(e.toString());

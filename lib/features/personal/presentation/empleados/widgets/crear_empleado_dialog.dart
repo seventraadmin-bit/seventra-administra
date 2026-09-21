@@ -848,7 +848,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
           var huboAdvertencia = false;
 
           if (fotografiaPath != null) {
-            final fotoResultado = await ref.read(actualizarFotografiaEmpleadoUseCaseProvider).ejecutar(
+            final fotoResultado = await ref.read(actualizarFotografiaEmpleadoAutorizadoProvider)(
                   empleadoId: empleadoId,
                   sourceFilePath: fotografiaPath!,
                   originalFileName: fotografiaNombre!,
@@ -858,7 +858,7 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
           }
 
           for (final doc in documentosPendientes) {
-            final docResultado = await ref.read(adjuntarDocumentoEmpleadoUseCaseProvider).ejecutar(
+            final docResultado = await ref.read(adjuntarDocumentoEmpleadoAutorizadoProvider)(
                   empleadoId: empleadoId,
                   categoria: doc.categoria,
                   sourceFilePath: doc.path,
@@ -946,51 +946,41 @@ Future<String?> mostrarDialogoCrearEmpleado(BuildContext context, WidgetRef ref)
     },
   );
 
-  // `RisegDialog.showForm` resuelve este `Future` en cuanto se llama a
-  // `Navigator.pop` — pero el diálogo sigue montado y visible unos
-  // instantes más mientras corre su animación de salida (el cursor
-  // parpadeante del campo con foco, por ejemplo, sigue "tickeando" ahí).
-  // Liberar los controllers de inmediato los deja usados-después-de-
-  // dispose apenas ese siguiente tick intenta reconstruir su `TextField`
-  // — el crash "A TextEditingController was used after being disposed"
-  // reportado por Marlon. Se difiere la liberación lo suficiente para
-  // que la transición del diálogo termine primero; no se espera aquí
-  // (no debe retrasar el valor ya devuelto al llamador).
-  unawaited(
-    Future.delayed(const Duration(milliseconds: 300), () {
-      for (final c in [
-        nombresController,
-        apellidoPaternoController,
-        apellidoMaternoController,
-        curpController,
-        rfcController,
-        codigoPostalFiscalController,
-        nssController,
-        nacionalidadController,
-        telefonoController,
-        correoController,
-        contactoEmergenciaNombreController,
-        telefonoEmergenciaController,
-        parentescoEmergenciaController,
-        bancoOtroDescripcionController,
-        numeroCuentaTarjetaController,
-        clabeController,
-        sueldoMensualAdministrativoController,
-        bonoMensualAdministrativoController,
-        sueldoAcordadoController,
-        bonoAcordadoController,
-        observacionesController,
-        observacionesEscolaridadController,
-        aniosExperienciaController,
-        mesesExperienciaController,
-        ultimoPuestoController,
-        resumenExperienciaController,
-        observacionesExperienciaController,
-      ]) {
-        c.dispose();
-      }
-    }),
-  );
+  // Liberar aquí es seguro: `RisegDialog.showForm` no devuelve
+  // hasta que la ruta del diálogo terminó de cerrarse (ver su
+  // documentación). Antes sí hacía falta aplazarlo 300 ms, y ese
+  // aplazamiento dejaba un Timer vivo después de desmontar el árbol.
+  for (final c in [
+    nombresController,
+    apellidoPaternoController,
+    apellidoMaternoController,
+    curpController,
+    rfcController,
+    codigoPostalFiscalController,
+    nssController,
+    nacionalidadController,
+    telefonoController,
+    correoController,
+    contactoEmergenciaNombreController,
+    telefonoEmergenciaController,
+    parentescoEmergenciaController,
+    bancoOtroDescripcionController,
+    numeroCuentaTarjetaController,
+    clabeController,
+    sueldoMensualAdministrativoController,
+    bonoMensualAdministrativoController,
+    sueldoAcordadoController,
+    bonoAcordadoController,
+    observacionesController,
+    observacionesEscolaridadController,
+    aniosExperienciaController,
+    mesesExperienciaController,
+    ultimoPuestoController,
+    resumenExperienciaController,
+    observacionesExperienciaController,
+  ]) {
+    c.dispose();
+  }
 
   return resultado;
 }

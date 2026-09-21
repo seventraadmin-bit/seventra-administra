@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -11,16 +9,24 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
+import 'package:riseg_one/features/descuentos_personal/descuentos_personal_providers.dart';
+import 'package:riseg_one/features/descuentos_personal/presentation/descuentos_personal_list_screen.dart' show descuentoProgramadoTipoLabel;
+import 'package:riseg_one/features/descuentos_personal/presentation/widgets/registrar_descuento_programado_dialog.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart';
+import 'package:riseg_one/features/inventario/data/tables/descuento_inventario_table.dart' show EstatusDescuentoInventario;
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/adjuntar_resguardo_firmado_dialog.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/asignar_articulo_dialog.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/cerrar_asignacion_dialog.dart';
+import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/entregar_equipo_dialog.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/generar_resguardo_dialog.dart';
+import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/historial_unidad_dialog.dart' show estatusAsignacionLabel, estatusAsignacionTono;
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/reemplazar_asignacion_dialog.dart';
+import 'package:riseg_one/features/nomina/nomina_providers.dart';
 import 'package:riseg_one/features/telefonia/presentation/widgets/linea_telefonica_asignada_empleado_section.dart';
 import 'package:riseg_one/features/vehiculos/presentation/widgets/vehiculo_asignado_empleado_section.dart';
+import 'package:riseg_one/features/vehiculos/vehiculos_providers.dart' show asignacionVehiculoRepositoryProvider;
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
@@ -32,13 +38,16 @@ import 'package:riseg_one/features/personal/domain/usecases/calcular_edad.dart';
 
 import '../../../organizacion/organizacion_providers.dart';
 import '../../personal_providers.dart';
-import 'empleados_list_controller.dart';
+import 'antiguedad_texto.dart';
+import 'bajas_controller.dart';
+import 'personal_activo_controller.dart';
 import 'empleados_list_screen.dart';
 import 'widgets/actualizar_sueldo_asignacion_dialog.dart';
+import 'widgets/motivo_baja_empleado_labels.dart';
+import 'widgets/empleado_ficha_header.dart';
 import 'widgets/adjuntar_documento_empleado_dialog.dart';
 import 'widgets/antidoping_empleado_dialog.dart';
 import 'widgets/asignar_servicio_empleado_dialog.dart';
-import 'widgets/baja_laboral_empleado_dialog.dart';
 import 'widgets/cambiar_servicio_empleado_dialog.dart';
 import 'widgets/corregir_empleado_dialog.dart';
 import 'widgets/crear_empleado_dialog.dart';
@@ -48,6 +57,7 @@ import 'widgets/estudio_socioeconomico_empleado_dialog.dart';
 import 'widgets/generar_ficha_tecnica_empleado_dialog.dart';
 import 'widgets/perfil_psicologico_empleado_dialog.dart';
 import 'widgets/reingreso_empleado_dialog.dart';
+import 'widgets/regularizar_perfil_asignacion_dialog.dart';
 import 'widgets/retirar_servicio_empleado_dialog.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
@@ -88,11 +98,33 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   List<FichaTecnicaEmpleadoData> _fichasTecnicas = const [];
   Map<String, String> _fichaTecnicaRutasPorAttachmentId = const {};
   List<AsignacionData> _inventarioAsignado = const [];
+
+  /// Bienes que la persona NO ha devuelto tras su baja laboral
+  /// (schemaVersion 82). Se muestran en su propia sección, separados de
+  /// "actualmente asignado": un empleado de baja no es usuario
+  /// operativo del activo, pero sí su último responsable pendiente.
+  List<AsignacionData> _inventarioPendiente = const [];
+  List<AsignacionVehiculoData> _vehiculosPendientes = const [];
   Map<String, ArticuloData> _articulosInventarioPorId = const {};
   Map<String, String> _variantesInventarioPorId = const {};
   Map<String, String> _unidadesInventarioPorId = const {};
   List<AttachmentData> _resguardos = const [];
-  List<DescuentoInventarioData> _descuentosPendientes = const [];
+  // Etapa "Entrega múltiple de Inventario" — cabecera documental que
+  // agrupa varias Asignacion de un mismo acto de entrega (ver el doc
+  // comment de `Entrega`). `_historialInventario` (TODAS, no solo
+  // activas) es lo que arma cada tarjeta de Entrega, para que una
+  // entrega ya cerrada por completo siga siendo historial visible —
+  // `_inventarioAsignado` (solo activas) sigue siendo lo que arma el
+  // grupo "Asignaciones individuales" (legacy, sin Entrega).
+  List<EntregaData> _entregas = const [];
+  List<AsignacionData> _historialInventario = const [];
+  Map<String, List<AttachmentData>> _resguardosPorAsignacionId = const {};
+  List<DescuentoInventarioData> _descuentos = const [];
+  Map<String, String> _foliosNominaPorDescuento = const {};
+  // Etapa 15 — "Descuentos / Préstamos": tarjeta APARTE de `_descuentos`
+  // (esa es daño/pérdida de Inventario, nunca se mezclan).
+  List<DescuentoProgramadoEmpleadoData> _descuentosProgramados = const [];
+  DescuentoProgramadoCuotaData? _proximoDescuentoGlobal;
   bool _cargando = true;
   bool _procesando = false;
 
@@ -183,41 +215,92 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     // Inventario asignado (Etapa 7B) — solo consulta, nunca duplica
     // nombre de Artículo/talla/serie: se resuelve contra sus propios
     // repositorios, mismo criterio que Servicio/Turno arriba.
-    final inventarioAsignado = await ref.read(asignacionRepositoryProvider).listarActivasPorEmpleado(widget.empleadoId);
+    final inventarioRepoAsignacion = ref.read(asignacionRepositoryProvider);
+    final inventarioActivas = await inventarioRepoAsignacion.listarActivasPorEmpleado(widget.empleadoId);
+    // Los pendientes de recuperación siguen siendo técnicamente
+    // "activas" (el bien está con la persona), pero NO son asignaciones
+    // normales: se separan aquí para no mezclarlos en la sección de
+    // equipo asignado.
+    final inventarioPendiente = inventarioActivas.where((a) => a.pendienteRecuperacionDesde != null).toList();
+    final inventarioAsignado = inventarioActivas.where((a) => a.pendienteRecuperacionDesde == null).toList();
+    final vehiculosPendientes =
+        await ref.read(asignacionVehiculoRepositoryProvider).listarPendientesRecuperacionPorEmpleado(widget.empleadoId);
+    // Historial completo (Etapa "Entrega múltiple de Inventario") —
+    // superset de `inventarioAsignado` (sin filtro de estatus), cargado
+    // ANTES de armar los mapas de resolución de nombre de abajo: una
+    // Asignacion ya cerrada (devuelta/dañada/perdida) también necesita
+    // resolver su Artículo/variante/unidad al renderizar su tarjeta de
+    // Entrega como historial, no solo las activas.
+    final historialInventario = await ref.read(asignacionRepositoryProvider).listarHistorialPorEmpleado(widget.empleadoId);
     final articuloRepo = ref.read(articuloRepositoryProvider);
     final articulosInventarioPorId = <String, ArticuloData>{};
-    for (final articuloId in inventarioAsignado.map((a) => a.articuloId).toSet()) {
+    for (final articuloId in historialInventario.map((a) => a.articuloId).toSet()) {
       final articulo = await articuloRepo.obtenerPorId(articuloId);
       if (articulo != null) articulosInventarioPorId[articuloId] = articulo;
     }
     final variantesInventarioPorId = <String, String>{};
-    for (final varianteId in inventarioAsignado.map((a) => a.varianteId).whereType<String>().toSet()) {
-      final articuloId = inventarioAsignado.firstWhere((a) => a.varianteId == varianteId).articuloId;
+    for (final varianteId in historialInventario.map((a) => a.varianteId).whereType<String>().toSet()) {
+      final articuloId = historialInventario.firstWhere((a) => a.varianteId == varianteId).articuloId;
       final variantes = await articuloRepo.listarVariantes(articuloId, soloActivas: false);
       final variante = variantes.where((v) => v.id == varianteId).firstOrNull;
       if (variante != null) variantesInventarioPorId[varianteId] = variante.valor;
     }
     final unidadesInventarioPorId = <String, String>{};
-    for (final unidadId in inventarioAsignado.map((a) => a.unidadId).whereType<String>().toSet()) {
+    for (final unidadId in historialInventario.map((a) => a.unidadId).whereType<String>().toSet()) {
       final unidad = await ref.read(inventarioRepositoryProvider).obtenerUnidadPorId(unidadId);
       if (unidad != null) unidadesInventarioPorId[unidadId] = '${unidad.codigo} · ${unidad.numeroSerie}';
     }
 
+    // Entregas (Etapa "Entrega múltiple de Inventario") — cabecera
+    // documental que agrupa varias Asignaciones de un mismo acto.
+    final entregas = await ref.read(entregaRepositoryProvider).listarPorEmpleado(widget.empleadoId);
+
     // Resguardos (Etapa 7C) — un mismo documento puede cubrir varias
     // Asignaciones y sigue siendo consultable aunque ya no estén
     // activas, así que se agrega sobre el historial completo,
-    // deduplicando por Attachment.
-    final historialInventario = await ref.read(asignacionRepositoryProvider).listarHistorialPorEmpleado(widget.empleadoId);
+    // deduplicando por Attachment. Se conserva también por-Asignacion
+    // (`resguardosPorAsignacionId`) para derivar el badge Pendiente/
+    // Firmado de cada tarjeta de Entrega sin una consulta aparte.
     final resguardosPorId = <String, AttachmentData>{};
+    final resguardosPorAsignacionId = <String, List<AttachmentData>>{};
     for (final asignacion in historialInventario) {
       final adjuntos = await ref.read(attachmentRepositoryProvider).listarActivosPorAsignacion(asignacion.id);
+      resguardosPorAsignacionId[asignacion.id] = adjuntos;
       for (final adjunto in adjuntos) {
         resguardosPorId[adjunto.id] = adjunto;
       }
     }
     final resguardos = resguardosPorId.values.toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-    final descuentosPendientes = await ref.read(asignacionRepositoryProvider).listarDescuentosPendientesPorEmpleado(widget.empleadoId);
+    // Etapa 15 (integración real con Nómina): historial completo, no
+    // solo pendientes — un descuento `aplicado` conserva su monto +
+    // folio de Nómina + fecha, para trazabilidad auditable.
+    final descuentos = await ref.read(asignacionRepositoryProvider).listarDescuentosPorEmpleado(widget.empleadoId);
+    final foliosNominaPorDescuento = <String, String>{};
+    for (final descuento in descuentos) {
+      final nominaEmpleadoId = descuento.nominaEmpleadoId;
+      if (nominaEmpleadoId == null) continue;
+      final nominaEmpleado = await ref.read(nominaRepositoryProvider).obtenerEmpleado(nominaEmpleadoId);
+      if (nominaEmpleado == null) continue;
+      final nomina = await ref.read(nominaRepositoryProvider).obtenerPorId(nominaEmpleado.nominaId);
+      if (nomina != null) foliosNominaPorDescuento[descuento.id] = nomina.folio;
+    }
+
+    // Etapa 15 — préstamos/botas (fuente de verdad del COBRO, aparte de
+    // Inventario) — se lista completo (activo/liquidado/cancelado), la
+    // tarjeta filtra qué mostrar.
+    final descuentosProgramados = await ref.read(descuentoProgramadoRepositoryProvider).listarPorEmpleado(widget.empleadoId);
+    DescuentoProgramadoCuotaData? proximoDescuentoGlobal;
+    for (final d in descuentosProgramados) {
+      if (d.estatus != 'activo') continue;
+      final cuotas = await ref.read(descuentoProgramadoRepositoryProvider).listarCuotas(d.id);
+      for (final c in cuotas) {
+        if (c.estatus != 'pendiente' && c.estatus != 'reservada') continue;
+        if (proximoDescuentoGlobal == null || c.fechaProgramada.isBefore(proximoDescuentoGlobal.fechaProgramada)) {
+          proximoDescuentoGlobal = c;
+        }
+      }
+    }
 
     if (!mounted) return;
     setState(() {
@@ -239,11 +322,19 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       _fichasTecnicas = fichasTecnicas;
       _fichaTecnicaRutasPorAttachmentId = fichaTecnicaRutasPorAttachmentId;
       _inventarioAsignado = inventarioAsignado;
+      _inventarioPendiente = inventarioPendiente;
+      _vehiculosPendientes = vehiculosPendientes;
       _articulosInventarioPorId = articulosInventarioPorId;
       _variantesInventarioPorId = variantesInventarioPorId;
       _unidadesInventarioPorId = unidadesInventarioPorId;
+      _entregas = entregas;
+      _historialInventario = historialInventario;
+      _resguardosPorAsignacionId = resguardosPorAsignacionId;
       _resguardos = resguardos;
-      _descuentosPendientes = descuentosPendientes;
+      _descuentos = descuentos;
+      _foliosNominaPorDescuento = foliosNominaPorDescuento;
+      _descuentosProgramados = descuentosProgramados;
+      _proximoDescuentoGlobal = proximoDescuentoGlobal;
       _cargando = false;
     });
   }
@@ -266,6 +357,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
       TipoEventoEmpleado.cambioServicio => l10n.empleadoDetalleHistorialEventoCambioServicio,
       TipoEventoEmpleado.retiroServicio => l10n.empleadoDetalleHistorialEventoRetiroServicio,
       TipoEventoEmpleado.fichaTecnicaGenerada => l10n.empleadoDetalleHistorialEventoFichaTecnicaGenerada,
+      TipoEventoEmpleado.regularizacionPerfilAsignacion => l10n.empleadoDetalleHistorialEventoRegularizacionPerfilAsignacion,
     };
   }
 
@@ -318,7 +410,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     if (!mounted) return;
 
     setState(() => _procesando = true);
-    final resultado = await ref.read(actualizarFotografiaEmpleadoUseCaseProvider).ejecutar(
+    final resultado = await ref.read(actualizarFotografiaEmpleadoAutorizadoProvider)(
           empleadoId: widget.empleadoId,
           sourceFilePath: archivo!.path!,
           originalFileName: archivo.name,
@@ -339,15 +431,29 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   Future<void> _eliminarFisicamente() async {
     final eliminado = await mostrarDialogoEliminarEmpleadoFisicamente(context, ref, widget.empleadoId);
     if (!eliminado) return;
-    ref.read(empleadosListControllerProvider.notifier).recargar();
+    ref.invalidate(personalActivoControllerProvider);
+    ref.invalidate(bajasControllerProvider);
+    // Etapa 20 (hueco real encontrado): el Empleado eliminado puede
+    // haber estado en `alertas.empleadosBajaConPendiente` del
+    // Dashboard — sin esto, seguía apareciendo ahí tras eliminarse.
+    ref.invalidate(dashboardControllerProvider);
     if (mounted) context.pop();
   }
 
   Future<void> _registrarBajaLaboral() async {
-    final actualizo = await mostrarDialogoBajaLaboralEmpleado(context, ref, _empleado!);
+    // La baja dejó de caber en un diálogo: ahora es la pantalla que
+    // concilia TODO lo que la persona tiene bajo su responsabilidad.
+    // El diálogo antiguo se retiró — era la puerta trasera que marcaba
+    // todos los bienes como pendientes sin que nadie decidiera nada.
+    final actualizo = await context.push<bool>('/personal/empleados/${widget.empleadoId}/baja') ?? false;
     if (actualizo) {
       await _cargar();
-      ref.read(empleadosListControllerProvider.notifier).recargar();
+      // El Empleado desaparece de Personal activo y aparece de
+      // inmediato en Bajas (Etapa 15, rediseño de Personal/Bajas) —
+      // sin esta invalidación, ambas pantallas quedarían obsoletas
+      // hasta cambiar de pestaña.
+      ref.invalidate(personalActivoControllerProvider);
+      ref.invalidate(bajasControllerProvider);
       // Un Empleado dado de baja con Inventario todavía pendiente
       // alimenta "Requiere atención" del Dashboard.
       ref.invalidate(dashboardControllerProvider);
@@ -359,23 +465,58 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     final actualizo = await mostrarDialogoReingresoEmpleado(context, ref, _empleado!, alerta);
     if (actualizo) {
       await _cargar();
-      ref.read(empleadosListControllerProvider.notifier).recargar();
+      // El Empleado vuelve a Personal activo; Bajas conserva el evento
+      // recién archivado en su historial (nunca lo destruye) — ambas
+      // vistas deben refrescarse de inmediato.
+      ref.invalidate(personalActivoControllerProvider);
+      ref.invalidate(bajasControllerProvider);
+      // Etapa 20 (hueco real encontrado): el reingreso cambia
+      // `totalActivos`/`reingresosEnPeriodo` que lee el Dashboard
+      // (Personal y KPIs).
+      ref.invalidate(dashboardControllerProvider);
     }
   }
 
   Future<void> _asignarServicio() async {
     final actualizo = await mostrarDialogoAsignarServicioEmpleado(context, ref, _empleado!);
-    if (actualizo) await _cargar();
+    if (actualizo) {
+      await _cargar();
+      // Asignar/cambiar/retirar un Servicio reconcilia VacanteOperativa
+      // (Etapa 15, rediseño gerencial) — la Cobertura/Vacantes del
+      // Dashboard quedarían obsoletas sin esta invalidación; Personal
+      // activo también muestra Servicio/Turno/asignado-sin-asignar.
+      ref.invalidate(dashboardControllerProvider);
+      ref.invalidate(personalActivoControllerProvider);
+    }
   }
 
   Future<void> _cambiarServicio() async {
     final actualizo = await mostrarDialogoCambiarServicioEmpleado(context, ref, _empleado!, _asignacionVigente!.servicioId);
-    if (actualizo) await _cargar();
+    if (actualizo) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+      ref.invalidate(personalActivoControllerProvider);
+    }
   }
 
   Future<void> _retirarServicio() async {
     final actualizo = await mostrarDialogoRetirarServicioEmpleado(context, ref, _empleado!);
-    if (actualizo) await _cargar();
+    if (actualizo) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+      ref.invalidate(personalActivoControllerProvider);
+    }
+  }
+
+  Future<void> _regularizarPerfilAsignacion() async {
+    final actualizo = await mostrarDialogoRegularizarPerfilAsignacion(context, ref, _asignacionVigente!);
+    if (actualizo) {
+      await _cargar();
+      // Regularizar el perfil de una asignación histórica cambia su
+      // atribución de cobertura (línea comercial) — el Dashboard debe
+      // reflejarlo de inmediato, sin cambiar de pestaña ni reabrir la app.
+      ref.invalidate(dashboardControllerProvider);
+    }
   }
 
   Future<void> _actualizarSueldoAsignacion() async {
@@ -386,6 +527,16 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
   Future<void> _asignarInventario() async {
     final asignado = await mostrarDialogoAsignarArticulo(context, ref, empleadoId: widget.empleadoId);
     if (asignado) await _cargar();
+  }
+
+  Future<void> _entregarEquipo() async {
+    final entregado = await mostrarDialogoEntregarEquipo(
+      context,
+      ref,
+      empleadoId: widget.empleadoId,
+      empleadoNombre: empleadoNombreCompleto(_empleado!),
+    );
+    if (entregado) await _cargar();
   }
 
   Future<void> _devolverInventario(AsignacionData asignacion) async {
@@ -422,15 +573,18 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     if (reemplazado) await _cargar();
   }
 
-  Future<void> _generarResguardo() async {
-    await mostrarDialogoGenerarResguardo(context, ref, asignaciones: _inventarioAsignado, detalleBuilder: _inventarioDetalle);
+  // Acotado a [asignaciones] (una Entrega o el bucket legacy), nunca a
+  // todo el inventario del empleado — ver el doc comment de
+  // `_inventarioGrupoCard`.
+  Future<void> _generarResguardo(List<AsignacionData> asignaciones) async {
+    await mostrarDialogoGenerarResguardo(context, ref, asignaciones: asignaciones, detalleBuilder: _inventarioDetalle);
   }
 
-  Future<void> _adjuntarResguardoFirmado() async {
+  Future<void> _adjuntarResguardoFirmado(List<AsignacionData> asignaciones) async {
     final adjunto = await mostrarDialogoAdjuntarResguardoFirmado(
       context,
       ref,
-      asignaciones: _inventarioAsignado,
+      asignaciones: asignaciones,
       detalleBuilder: _inventarioDetalle,
     );
     if (adjunto) await _cargar();
@@ -444,6 +598,114 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     if (unidad != null) return '$nombre · $unidad';
     if (variante != null) return '${asignacion.cantidad} × $nombre ($variante)';
     return '${asignacion.cantidad} × $nombre';
+  }
+
+  /// Una tarjeta de grupo de "Equipo asignado" — una Entrega (folio +
+  /// fecha) o el bucket legacy "Asignaciones individuales" (sin
+  /// Entrega). Acciones de resguardo acotadas a [asignaciones] (nunca
+  /// globales a todo el empleado — Etapa "Entrega múltiple de
+  /// Inventario"): antes del rediseño, "Generar resguardo"/"Adjuntar
+  /// resguardo firmado" cubrían el inventario completo del empleado,
+  /// sin distinción; ahora cada tarjeta genera/adjunta solo sobre sus
+  /// propias líneas.
+  Widget _inventarioGrupoCard({
+    required String titulo,
+    String? subtitulo,
+    required List<AsignacionData> asignaciones,
+    required Future<void> Function(List<AsignacionData>) onGenerarResguardo,
+    required Future<void> Function(List<AsignacionData>) onAdjuntarResguardo,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.colors;
+    final activas = asignaciones.where((a) => a.estatus == EstatusAsignacion.activa.name).toList();
+    final cerradas = asignaciones.where((a) => a.estatus != EstatusAsignacion.activa.name).toList();
+    // Firmado si CUALQUIER línea del grupo ya tiene un resguardo activo
+    // adjunto — un mismo documento puede cubrir varias Asignaciones
+    // (Etapa 7C), así que basta con encontrar una.
+    final firmado = asignaciones.any((a) => (_resguardosPorAsignacionId[a.id] ?? const []).isNotEmpty);
+    // Derivado, nunca persistido (decisión confirmada: badge de 2
+    // estados) — una tarjeta donde ya no queda ninguna línea activa se
+    // muestra atenuada, mismo criterio que el resto del proyecto usa
+    // `RisegCardVariant.subtle` para contenido secundario.
+    final todoCerrado = asignaciones.isNotEmpty && activas.isEmpty;
+
+    return RisegCard(
+      variant: todoCerrado ? RisegCardVariant.subtle : RisegCardVariant.standard,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RisegSectionHeader(
+            title: titulo,
+            description: subtitulo,
+            primaryAction: Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                RisegStatusBadge(
+                  label: firmado ? l10n.empleadoInventarioBadgeFirmado : l10n.empleadoInventarioBadgePendiente,
+                  tone: firmado ? RisegStatusTone.success : RisegStatusTone.warning,
+                ),
+                RisegButton(
+                  label: l10n.generarResguardoDialogoTitulo,
+                  variant: RisegButtonVariant.secondary,
+                  size: RisegButtonSize.compact,
+                  onPressed: () => onGenerarResguardo(asignaciones),
+                ),
+                RisegButton(
+                  label: l10n.adjuntarResguardoDialogoTitulo,
+                  variant: RisegButtonVariant.secondary,
+                  size: RisegButtonSize.compact,
+                  onPressed: () => onAdjuntarResguardo(asignaciones),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          for (final asignacion in activas)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Row(
+                children: [
+                  Expanded(child: Text(_inventarioDetalle(asignacion), style: AppTypography.body)),
+                  RisegActionsMenu(
+                    actions: [
+                      RisegMenuAction(
+                        label: l10n.asignacionBotonDevolver,
+                        icon: Icons.assignment_return_outlined,
+                        onTap: () => _devolverInventario(asignacion),
+                      ),
+                      RisegMenuAction(
+                        label: l10n.asignacionBotonReemplazar,
+                        icon: Icons.swap_horiz_outlined,
+                        onTap: () => _reemplazarInventario(asignacion),
+                      ),
+                      RisegMenuAction(
+                        label: l10n.asignacionBotonReportarDanoPerdida,
+                        icon: Icons.report_problem_outlined,
+                        destructive: true,
+                        onTap: () => _reportarDanoPerdidaInventario(asignacion),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          for (final asignacion in cerradas)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(_inventarioDetalle(asignacion), style: AppTypography.body.copyWith(color: colors.textMuted)),
+                  ),
+                  RisegStatusBadge(label: estatusAsignacionLabel(l10n, asignacion.estatus), tone: estatusAsignacionTono(asignacion.estatus)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -475,6 +737,22 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
     final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
     final fotografia = _fotografia;
 
+    // Agrupamiento en memoria por Entrega (Etapa "Entrega múltiple de
+    // Inventario") — armado a mano igual que el resto de agrupamientos
+    // de esta pantalla, sin controller nuevo. `_historialInventario`
+    // (todas, no solo activas) alimenta cada tarjeta de Entrega para
+    // que una entrega ya cerrada por completo siga siendo historial
+    // visible; el bucket "Asignaciones individuales" (legacy, sin
+    // Entrega) conserva el comportamiento previo — solo activas.
+    final historialPorEntregaId = <String, List<AsignacionData>>{};
+    for (final asignacion in _historialInventario) {
+      final entregaId = asignacion.entregaId;
+      if (entregaId != null) (historialPorEntregaId[entregaId] ??= []).add(asignacion);
+    }
+    final entregasOrdenadas = [..._entregas]..sort((a, b) => b.fechaEntrega.compareTo(a.fechaEntrega));
+    final individuales = _inventarioAsignado.where((a) => a.entregaId == null).toList();
+    final hayEquipoAsignado = individuales.isNotEmpty || historialPorEntregaId.values.any((lineas) => lineas.isNotEmpty);
+
     return Scaffold(
       appBar: AppBar(title: Text(empleadoNombreCompleto(empleado))),
       body: SingleChildScrollView(
@@ -485,65 +763,58 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: _procesando ? null : _actualizarFotografia,
-                      child: CircleAvatar(
-                        radius: 32,
-                        backgroundColor: colors.surfaceSunken,
-                        backgroundImage: fotografia == null ? null : FileImage(File(fotografia.path)),
-                        child: fotografia == null ? const Icon(Icons.person, size: 32) : null,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(empleadoNombreCompleto(empleado), style: AppTypography.heading2.copyWith(color: colors.textPrimary)),
-                          Text(
-                            l10n.empleadoDetalleNumeroEmpleado(empleado.numeroEmpleado),
-                            style: AppTypography.body.copyWith(color: colors.textMuted),
-                          ),
+                EmpleadoFichaHeader(
+                  nombreCompleto: empleadoNombreCompleto(empleado),
+                  subtitulo: _puesto == null
+                      ? l10n.personalActivoNumeroEmpleado(empleado.numeroEmpleado)
+                      : l10n.empleadoFichaSubtituloConPuesto(empleado.numeroEmpleado, _puesto!.nombre),
+                  servicioActual: _asignacionVigente == null ? null : _serviciosPorId[_asignacionVigente!.servicioId],
+                  estatusBadge: RisegStatusBadge(
+                    label: empleadoEstatusLabel(l10n, empleado.estatus),
+                    tone: empleadoEstatusTono(empleado.estatus),
+                  ),
+                  ingresoAntiguedad: l10n.empleadoFichaIngresoAntiguedad(
+                    _formatoFecha.format(empleado.fechaIngreso),
+                    antiguedadTexto(l10n, empleado),
+                  ),
+                  fotografiaPath: fotografia?.path,
+                  onTapFoto: _procesando ? null : _actualizarFotografia,
+                  acciones: Wrap(
+                    spacing: AppSpacing.xs,
+                    children: [
+                      RisegButton(label: l10n.empleadoDetalleBotonCorregir, variant: RisegButtonVariant.secondary, onPressed: _corregir),
+                      RisegActionsMenu(
+                        menuKey: const Key('empleado_expediente_menu_acciones'),
+                        actions: [
+                          if (cancelado)
+                            RisegMenuAction(
+                              label: l10n.empleadoDetalleBotonRegistrarReingreso,
+                              icon: Icons.replay_outlined,
+                              onTap: _registrarReingreso,
+                            )
+                          else
+                            RisegMenuAction(
+                              label: l10n.empleadoDetalleBotonDarDeBaja,
+                              icon: Icons.person_off_outlined,
+                              destructive: true,
+                              onTap: _registrarBajaLaboral,
+                            ),
+                          // Facultad extraordinaria Maestro-only (Etapa
+                          // 15) — antes un botón rojo permanente junto a
+                          // "Dar de baja"; Etapa 17 la mueve al menú ⋯,
+                          // misma llamada/autorización exacta.
+                          if (esMaestro)
+                            RisegMenuAction(
+                              key: const Key('empleado_expediente_boton_eliminar_fisicamente'),
+                              label: l10n.empleadoDetalleBotonEliminarFisicamente,
+                              icon: Icons.delete_forever_outlined,
+                              destructive: true,
+                              onTap: _eliminarFisicamente,
+                            ),
                         ],
                       ),
-                    ),
-                    RisegStatusBadge(
-                      label: empleadoEstatusLabel(l10n, empleado.estatus),
-                      tone: empleadoEstatusTono(empleado.estatus),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.xs,
-                  children: [
-                    RisegButton(label: l10n.empleadoDetalleBotonCorregir, variant: RisegButtonVariant.secondary, onPressed: _corregir),
-                    if (cancelado)
-                      RisegButton(
-                        label: l10n.empleadoDetalleBotonRegistrarReingreso,
-                        variant: RisegButtonVariant.primary,
-                        onPressed: _registrarReingreso,
-                      )
-                    else
-                      RisegButton(
-                        label: l10n.empleadoDetalleBotonDarDeBaja,
-                        variant: RisegButtonVariant.danger,
-                        onPressed: _registrarBajaLaboral,
-                      ),
-                    // Facultad extraordinaria Maestro-only (Etapa 15) —
-                    // mismo patrón ya usado en Compra/Documento por
-                    // emitir: botón suelto en el mismo `Wrap` de
-                    // acciones, nunca un menú nuevo.
-                    if (esMaestro)
-                      RisegButton(
-                        key: const Key('empleado_expediente_boton_eliminar_fisicamente'),
-                        label: l10n.empleadoDetalleBotonEliminarFisicamente,
-                        variant: RisegButtonVariant.danger,
-                        onPressed: _eliminarFisicamente,
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
                 if (cancelado && _inventarioAsignado.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),
@@ -566,80 +837,92 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(l10n.empleadoSeccionGeneral, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoSexo, value: empleadoSexoLabelDetalle(l10n, empleado.sexo)),
-                      const SizedBox(height: AppSpacing.sm),
-                      Row(
+                      Text(
+                        l10n.empleadoSeccionInformacionPersonalContacto,
+                        style: AppTypography.heading2.copyWith(color: colors.textPrimary),
+                      ),
+                      RisegFormSection(
+                        title: l10n.empleadoSeccionGeneral,
                         children: [
-                          Expanded(
-                            child: CampoConsulta(
-                              label: l10n.empleadoCampoFechaNacimiento,
-                              value: _formatoFecha.format(empleado.fechaNacimiento),
-                            ),
-                          ),
-                          Expanded(
-                            child: CampoConsulta(
-                              label: l10n.empleadoDetalleCampoEdad,
-                              value: l10n.empleadoDetalleEdadAnios(calcularEdad(empleado.fechaNacimiento)),
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CampoConsulta(label: l10n.empleadoCampoSexo, value: empleadoSexoLabelDetalle(l10n, empleado.sexo)),
+                              const SizedBox(height: AppSpacing.sm),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: CampoConsulta(
+                                      label: l10n.empleadoCampoFechaNacimiento,
+                                      value: _formatoFecha.format(empleado.fechaNacimiento),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: CampoConsulta(
+                                      label: l10n.empleadoDetalleCampoEdad,
+                                      value: l10n.empleadoDetalleEdadAnios(calcularEdad(empleado.fechaNacimiento)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoCurp, value: empleado.curp),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoRfc, value: empleado.rfc),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoCodigoPostalFiscal, value: empleado.codigoPostalFiscal),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoNss, value: empleado.nss),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(
+                                label: l10n.empleadoCampoEstadoCivil,
+                                value: empleadoEstadoCivilLabelDetalle(l10n, empleado.estadoCivil),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoNacionalidad, value: empleado.nacionalidad),
+                            ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoCurp, value: empleado.curp),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoRfc, value: empleado.rfc),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoCodigoPostalFiscal, value: empleado.codigoPostalFiscal),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoNss, value: empleado.nss),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(
-                        label: l10n.empleadoCampoEstadoCivil,
-                        value: empleadoEstadoCivilLabelDetalle(l10n, empleado.estadoCivil),
+                      RisegFormSection(
+                        title: l10n.empleadoSeccionContacto,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CampoConsulta(label: l10n.empleadoCampoTelefono, value: empleado.telefono),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoCorreoElectronico, value: empleado.correoElectronico),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoContactoEmergenciaNombre, value: empleado.contactoEmergenciaNombre),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoTelefonoEmergencia, value: empleado.telefonoEmergencia),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoParentescoEmergencia, value: empleado.parentescoEmergencia),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoNacionalidad, value: empleado.nacionalidad),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                RisegCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l10n.empleadoSeccionContacto, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoTelefono, value: empleado.telefono),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoCorreoElectronico, value: empleado.correoElectronico),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoContactoEmergenciaNombre, value: empleado.contactoEmergenciaNombre),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoTelefonoEmergencia, value: empleado.telefonoEmergencia),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoParentescoEmergencia, value: empleado.parentescoEmergencia),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                RisegCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l10n.empleadoSeccionDatosBancarios, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(
-                        label: l10n.empleadoCampoBanco,
-                        value: empleado.bancoId == SeedIds.bancoOtro && empleado.bancoOtroDescripcion != null
-                            ? '$_bancoNombre · ${empleado.bancoOtroDescripcion}'
-                            : _bancoNombre,
+                      RisegFormSection(
+                        title: l10n.empleadoSeccionDatosBancarios,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CampoConsulta(
+                                label: l10n.empleadoCampoBanco,
+                                value: empleado.bancoId == SeedIds.bancoOtro && empleado.bancoOtroDescripcion != null
+                                    ? '$_bancoNombre · ${empleado.bancoOtroDescripcion}'
+                                    : _bancoNombre,
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoNumeroCuentaTarjeta, value: empleado.numeroCuentaTarjeta),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoClabe, value: empleado.clabe),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoNumeroCuentaTarjeta, value: empleado.numeroCuentaTarjeta),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoClabe, value: empleado.clabe),
                     ],
                   ),
                 ),
@@ -680,109 +963,148 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(l10n.empleadoSeccionLaboral, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoFechaIngreso, value: _formatoFecha.format(empleado.fechaIngreso)),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoPuesto, value: _puesto?.nombre),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoEmpresa, value: _empresa?.nombreComercial),
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoSucursal, value: _sucursal?.nombre),
-                      // Sueldo/bono administrativo — solo tienen sentido
-                      // sin AsignacionServicio vigente (ver doc comment
-                      // de `Empleado.sueldoMensualAdministrativo`); con
-                      // asignación vigente, esos datos vienen de ahí
-                      // (Etapa 6B, expediente de esa asignación).
-                      if (_asignacionVigente == null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        CampoConsulta(
-                          label: l10n.empleadoCampoSueldoMensualAdministrativo,
-                          value: empleado.sueldoMensualAdministrativo == null
-                              ? null
-                              : _formatoMonedaEmpleado.format(empleado.sueldoMensualAdministrativo! / 100),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        CampoConsulta(
-                          label: l10n.empleadoCampoBonoMensualAdministrativo,
-                          value: empleado.bonoMensualAdministrativo == null
-                              ? null
-                              : _formatoMonedaEmpleado.format(empleado.bonoMensualAdministrativo! / 100),
-                        ),
-                      ],
-                      const SizedBox(height: AppSpacing.sm),
-                      CampoConsulta(label: l10n.empleadoCampoObservaciones, value: empleado.observaciones),
-                      const SizedBox(height: AppSpacing.sm),
-                      Row(
+                      Text(l10n.empleadoSeccionLaboral, style: AppTypography.heading2.copyWith(color: colors.textPrimary)),
+                      RisegFormSection(
+                        title: l10n.empleadoSeccionDatosLaborales,
                         children: [
-                          Expanded(
-                            child: CampoConsulta(
-                              label: l10n.empleadoCampoAntiguedad,
-                              value: l10n.empleadoDetalleAntiguedadAniosMeses(cicloLaboral.antiguedadAnios, cicloLaboral.antiguedadMeses),
-                            ),
-                          ),
-                          Expanded(
-                            child: CampoConsulta(
-                              label: l10n.empleadoCampoDiasLaborados,
-                              value: l10n.empleadoDetalleDiasLaborados(cicloLaboral.diasLaborados),
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CampoConsulta(label: l10n.empleadoCampoFechaIngreso, value: _formatoFecha.format(empleado.fechaIngreso)),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoPuesto, value: _puesto?.nombre),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoEmpresa, value: _empresa?.nombreComercial),
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoSucursal, value: _sucursal?.nombre),
+                              // Sueldo/bono administrativo — solo tienen sentido
+                              // sin AsignacionServicio vigente (ver doc comment
+                              // de `Empleado.sueldoMensualAdministrativo`); con
+                              // asignación vigente, esos datos vienen de ahí
+                              // (Etapa 6B, expediente de esa asignación).
+                              if (_asignacionVigente == null) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                CampoConsulta(
+                                  label: l10n.empleadoCampoSueldoMensualAdministrativo,
+                                  value: empleado.sueldoMensualAdministrativo == null
+                                      ? null
+                                      : _formatoMonedaEmpleado.format(empleado.sueldoMensualAdministrativo! / 100),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                CampoConsulta(
+                                  label: l10n.empleadoCampoBonoMensualAdministrativo,
+                                  value: empleado.bonoMensualAdministrativo == null
+                                      ? null
+                                      : _formatoMonedaEmpleado.format(empleado.bonoMensualAdministrativo! / 100),
+                                ),
+                              ],
+                              const SizedBox(height: AppSpacing.sm),
+                              CampoConsulta(label: l10n.empleadoCampoObservaciones, value: empleado.observaciones),
+                              const SizedBox(height: AppSpacing.sm),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: CampoConsulta(
+                                      label: l10n.empleadoCampoAntiguedad,
+                                      value: l10n.empleadoDetalleAntiguedadAniosMeses(cicloLaboral.antiguedadAnios, cicloLaboral.antiguedadMeses),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: CampoConsulta(
+                                      label: l10n.empleadoCampoDiasLaborados,
+                                      value: l10n.empleadoDetalleDiasLaborados(cicloLaboral.diasLaborados),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (cicloLaboral.fechaProximoAniversario != null) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                CampoConsulta(
+                                  label: l10n.empleadoCampoProximoAniversario,
+                                  value: _formatoFecha.format(cicloLaboral.fechaProximoAniversario!),
+                                ),
+                              ],
+                              if (cancelado) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                CampoConsulta(label: l10n.empleadoCampoFechaBaja, value: _formatoFecha.format(empleado.fechaBaja!)),
+                                const SizedBox(height: AppSpacing.sm),
+                                CampoConsulta(
+                                  label: l10n.empleadoCampoMotivoBaja,
+                                  value: motivoBajaEmpleadoLabel(l10n, empleado.motivoBaja!),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                CampoConsulta(label: l10n.empleadoCampoObservacionesBaja, value: empleado.observacionesBaja),
+                              ],
+                            ],
                           ),
                         ],
                       ),
-                      if (cicloLaboral.fechaProximoAniversario != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        CampoConsulta(
-                          label: l10n.empleadoCampoProximoAniversario,
-                          value: _formatoFecha.format(cicloLaboral.fechaProximoAniversario!),
-                        ),
-                      ],
-                      if (cancelado) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        CampoConsulta(label: l10n.empleadoCampoFechaBaja, value: _formatoFecha.format(empleado.fechaBaja!)),
-                        const SizedBox(height: AppSpacing.sm),
-                        CampoConsulta(
-                          label: l10n.empleadoCampoMotivoBaja,
-                          value: motivoBajaEmpleadoLabel(l10n, empleado.motivoBaja!),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        CampoConsulta(label: l10n.empleadoCampoObservacionesBaja, value: empleado.observacionesBaja),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                RisegCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l10n.empleadoSeccionHistorialLaboral, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
-                      const SizedBox(height: AppSpacing.xs),
-                      Padding(
+                      RisegFormSection(
+                        title: l10n.empleadoSeccionHistorialLaboral,
+                        children: [
+                          Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                '${_formatoFecha.format(empleado.fechaIngreso)} — '
-                                '${cancelado ? _formatoFecha.format(empleado.fechaBaja!) : l10n.empleadoHistorialLaboralActivo}',
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${_formatoFecha.format(empleado.fechaIngreso)} — '
+                                    '${cancelado ? _formatoFecha.format(empleado.fechaBaja!) : l10n.empleadoHistorialLaboralActivo}',
+                                  ),
+                                ),
+                                if (cancelado) Text(motivoBajaEmpleadoLabel(l10n, empleado.motivoBaja!), style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                              ],
                             ),
-                            if (cancelado) Text(motivoBajaEmpleadoLabel(l10n, empleado.motivoBaja!), style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                            if (cancelado &&
+                                lineaPuestoServicioTurno(
+                                      puesto: empleado.puestoNombreBaja,
+                                      servicio: empleado.servicioNombreBaja,
+                                      turno: empleado.turnoNombreBaja,
+                                    ) !=
+                                    null)
+                              Text(
+                                lineaPuestoServicioTurno(
+                                  puesto: empleado.puestoNombreBaja,
+                                  servicio: empleado.servicioNombreBaja,
+                                  turno: empleado.turnoNombreBaja,
+                                )!,
+                                style: AppTypography.caption.copyWith(color: colors.textMuted),
+                              ),
                           ],
                         ),
                       ),
                       for (final periodo in _periodosArchivados)
                         Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text('${_formatoFecha.format(periodo.fechaIngreso)} — ${_formatoFecha.format(periodo.fechaBaja)}'),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text('${_formatoFecha.format(periodo.fechaIngreso)} — ${_formatoFecha.format(periodo.fechaBaja)}'),
+                                  ),
+                                  Text(motivoBajaEmpleadoLabel(l10n, periodo.motivoBaja), style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                                ],
                               ),
-                              Text(motivoBajaEmpleadoLabel(l10n, periodo.motivoBaja), style: AppTypography.caption.copyWith(color: colors.textMuted)),
+                              if (lineaPuestoServicioTurno(puesto: periodo.puestoNombre, servicio: periodo.servicioNombre, turno: periodo.turnoNombre) !=
+                                  null)
+                                Text(
+                                  lineaPuestoServicioTurno(
+                                    puesto: periodo.puestoNombre,
+                                    servicio: periodo.servicioNombre,
+                                    turno: periodo.turnoNombre,
+                                  )!,
+                                  style: AppTypography.caption.copyWith(color: colors.textMuted),
+                                ),
                             ],
                           ),
                         ),
+                      ],
+                      ),
                     ],
                   ),
                 ),
@@ -791,39 +1113,58 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(l10n.empleadoSeccionAsignacionServicio, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
-                          ),
-                          if (_asignacionVigente == null)
-                            RisegButton(
-                              label: l10n.empleadoBotonAsignarServicio,
-                              variant: RisegButtonVariant.ghost,
-                              onPressed: _asignarServicio,
-                            )
-                          else
-                            Wrap(
-                              spacing: AppSpacing.xs,
-                              children: [
-                                RisegButton(
-                                  label: l10n.empleadoBotonActualizarSueldo,
-                                  variant: RisegButtonVariant.ghost,
-                                  onPressed: _actualizarSueldoAsignacion,
-                                ),
-                                RisegButton(
-                                  label: l10n.empleadoBotonCambiarServicio,
-                                  variant: RisegButtonVariant.ghost,
-                                  onPressed: _cambiarServicio,
-                                ),
-                                RisegButton(
-                                  label: l10n.empleadoBotonRetirarServicio,
-                                  variant: RisegButtonVariant.ghost,
-                                  onPressed: _retirarServicio,
-                                ),
-                              ],
-                            ),
-                        ],
+                      // Etapa "Entrega múltiple de Inventario" (corrección de
+                      // regresión bloqueante): este encabezado usaba un
+                      // `Row([Expanded(Text), Wrap(botones)])` crudo — el
+                      // mismo patrón que `RisegSectionHeader` (Etapa 9D) fue
+                      // creado para eliminar en todo el proyecto ("solo el
+                      // título puede encogerse con `Expanded`, nunca las
+                      // acciones"; con el grupo de acciones ancho, el
+                      // `Expanded` colapsaba a casi cero y el título se
+                      // envolvía letra por letra). Se migra al mismo patrón
+                      // ya usado 100 líneas más abajo por "Inventario
+                      // asignado", en vez de un ancho fijo/mágico.
+                      RisegSectionHeader(
+                        title: l10n.empleadoSeccionAsignacionServicio,
+                        primaryAction: _asignacionVigente == null
+                            ? RisegButton(
+                                label: l10n.empleadoBotonAsignarServicio,
+                                variant: RisegButtonVariant.ghost,
+                                onPressed: _asignarServicio,
+                              )
+                            : Wrap(
+                                spacing: AppSpacing.xs,
+                                runSpacing: AppSpacing.xs,
+                                children: [
+                                  RisegButton(
+                                    key: const Key('empleado_boton_ver_servicio'),
+                                    label: l10n.empleadoAsignacionVerServicio,
+                                    variant: RisegButtonVariant.ghost,
+                                    onPressed: () => context.push('/comercial/servicios/${_asignacionVigente!.servicioId}'),
+                                  ),
+                                  RisegButton(
+                                    label: l10n.empleadoBotonActualizarSueldo,
+                                    variant: RisegButtonVariant.ghost,
+                                    onPressed: _actualizarSueldoAsignacion,
+                                  ),
+                                  RisegButton(
+                                    label: l10n.empleadoBotonCambiarServicio,
+                                    variant: RisegButtonVariant.ghost,
+                                    onPressed: _cambiarServicio,
+                                  ),
+                                  RisegButton(
+                                    label: l10n.empleadoBotonRetirarServicio,
+                                    variant: RisegButtonVariant.ghost,
+                                    onPressed: _retirarServicio,
+                                  ),
+                                  if (esMaestro && _asignacionVigente!.lineaComercialId == null)
+                                    RisegButton(
+                                      label: l10n.empleadoBotonRegularizarPerfil,
+                                      variant: RisegButtonVariant.ghost,
+                                      onPressed: _regularizarPerfilAsignacion,
+                                    ),
+                                ],
+                              ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       if (_asignacionVigente == null)
@@ -841,6 +1182,11 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                           Text(
                             _turnosPorId[_asignacionVigente!.turnoId] ?? _asignacionVigente!.turnoId!,
                             style: AppTypography.caption.copyWith(color: colors.textMuted),
+                          ),
+                        if (_asignacionVigente!.lineaComercialId == null)
+                          Text(
+                            l10n.empleadoAsignacionSinPerfil,
+                            style: AppTypography.caption.copyWith(color: colors.warning),
                           ),
                         if (_sueldoVigente != null)
                           Text(
@@ -880,95 +1226,73 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                       children: [
                         RisegSectionHeader(
                           title: l10n.asignacionSeccionTitulo,
-                        primaryAction: RisegButton(
-                          label: l10n.asignacionBotonAsignar,
-                          variant: RisegButtonVariant.ghost,
-                          size: RisegButtonSize.compact,
-                          onPressed: _asignarInventario,
+                          primaryAction: RisegButton(
+                            label: l10n.entregarEquipoDialogoTitulo,
+                            variant: RisegButtonVariant.secondary,
+                            size: RisegButtonSize.compact,
+                            onPressed: _entregarEquipo,
+                          ),
+                          secondaryAction: RisegButton(
+                            label: l10n.asignacionBotonAsignar,
+                            variant: RisegButtonVariant.ghost,
+                            size: RisegButtonSize.compact,
+                            onPressed: _asignarInventario,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Wrap(
-                        spacing: AppSpacing.xs,
-                        runSpacing: AppSpacing.xs,
-                        children: [
-                          RisegButton(
-                            label: l10n.generarResguardoDialogoTitulo,
-                            variant: RisegButtonVariant.secondary,
-                            size: RisegButtonSize.compact,
-                            onPressed: _inventarioAsignado.isEmpty ? null : _generarResguardo,
-                          ),
-                          RisegButton(
-                            label: l10n.adjuntarResguardoDialogoTitulo,
-                            variant: RisegButtonVariant.secondary,
-                            size: RisegButtonSize.compact,
-                            onPressed: _inventarioAsignado.isEmpty ? null : _adjuntarResguardoFirmado,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      if (_inventarioAsignado.isEmpty)
-                        Text(l10n.asignacionSeccionVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
-                      else
-                        for (final asignacion in _inventarioAsignado)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                            child: Row(
-                              children: [
-                                Expanded(child: Text(_inventarioDetalle(asignacion), style: AppTypography.body)),
-                                Wrap(
-                                  spacing: AppSpacing.xxs,
-                                  children: [
-                                    RisegButton(
-                                      label: l10n.asignacionBotonDevolver,
-                                      variant: RisegButtonVariant.ghost,
-                                      size: RisegButtonSize.compact,
-                                      onPressed: () => _devolverInventario(asignacion),
-                                    ),
-                                    RisegButton(
-                                      label: l10n.asignacionBotonReemplazar,
-                                      variant: RisegButtonVariant.ghost,
-                                      size: RisegButtonSize.compact,
-                                      onPressed: () => _reemplazarInventario(asignacion),
-                                    ),
-                                    RisegButton(
-                                      label: l10n.asignacionBotonReportarDanoPerdida,
-                                      variant: RisegButtonVariant.ghost,
-                                      size: RisegButtonSize.compact,
-                                      onPressed: () => _reportarDanoPerdidaInventario(asignacion),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                      if (_resguardos.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Text(l10n.resguardoSeccionTitulo, style: AppTypography.label),
                         const SizedBox(height: AppSpacing.xs),
-                        for (final resguardo in _resguardos)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _formatoFechaHora.format(resguardo.createdAt),
-                                    style: AppTypography.body.copyWith(color: colors.textMuted),
-                                  ),
+                        if (!hayEquipoAsignado)
+                          Text(l10n.asignacionSeccionVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+                        else ...[
+                          for (final entrega in entregasOrdenadas)
+                            if ((historialPorEntregaId[entrega.id] ?? const <AsignacionData>[]).isNotEmpty) ...[
+                              _inventarioGrupoCard(
+                                titulo: entrega.folio,
+                                subtitulo: l10n.empleadoInventarioEntregaResumen(
+                                  _formatoFecha.format(entrega.fechaEntrega),
+                                  historialPorEntregaId[entrega.id]!.fold<int>(0, (acc, a) => acc + a.cantidad),
+                                  historialPorEntregaId[entrega.id]!.length,
                                 ),
-                                RisegButton(
-                                  label: l10n.resguardoBotonAbrir,
-                                  variant: RisegButtonVariant.ghost,
-                                  size: RisegButtonSize.compact,
-                                  onPressed: () => ref.read(attachmentStorageProvider).abrir(resguardo.path),
-                                ),
-                              ],
+                                asignaciones: historialPorEntregaId[entrega.id]!,
+                                onGenerarResguardo: _generarResguardo,
+                                onAdjuntarResguardo: _adjuntarResguardoFirmado,
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                            ],
+                          if (individuales.isNotEmpty)
+                            _inventarioGrupoCard(
+                              titulo: l10n.empleadoInventarioAsignacionesIndividuales,
+                              asignaciones: individuales,
+                              onGenerarResguardo: _generarResguardo,
+                              onAdjuntarResguardo: _adjuntarResguardoFirmado,
                             ),
-                          ),
+                        ],
+                        if (_resguardos.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Text(l10n.resguardoSeccionTitulo, style: AppTypography.label),
+                          const SizedBox(height: AppSpacing.xs),
+                          for (final resguardo in _resguardos)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _formatoFechaHora.format(resguardo.createdAt),
+                                      style: AppTypography.body.copyWith(color: colors.textMuted),
+                                    ),
+                                  ),
+                                  RisegButton(
+                                    label: l10n.resguardoBotonAbrir,
+                                    variant: RisegButtonVariant.ghost,
+                                    size: RisegButtonSize.compact,
+                                    onPressed: () => ref.read(attachmentStorageProvider).abrir(resguardo.path),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ],
-                    ],
-                  ),
+                    ),
                   ),
                 ],
                 // Secciones de otro dominio embebidas aquí (Etapa 11C, frontera
@@ -978,6 +1302,67 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                 // acceso a Personal; a diferencia de una lectura interna de
                 // composición (ej. Compras leyendo Artículos), esto es
                 // información mostrada directo al usuario.
+                // Pendientes de recuperación (schemaVersion 82) — sección
+                // propia, nunca mezclada con "equipo asignado": dar de baja
+                // a alguien no devuelve su radio.
+                if (_inventarioPendiente.isNotEmpty || _vehiculosPendientes.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  RisegCard(
+                    key: const Key('empleado_pendientes_recuperacion'),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RisegSectionHeader(title: l10n.empleadoPendientesRecuperacionTitulo),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          l10n.empleadoPendientesRecuperacionAyuda,
+                          style: AppTypography.caption.copyWith(color: colors.textMuted),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        for (final asignacion in _inventarioPendiente)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _articulosInventarioPorId[asignacion.articuloId]?.nombre ?? asignacion.articuloId,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                RisegStatusBadge(
+                                  label: l10n.empleadoPendienteRecuperacionDesde(
+                                    _formatoFecha.format(asignacion.pendienteRecuperacionDesde!),
+                                  ),
+                                  tone: RisegStatusTone.warning,
+                                ),
+                              ],
+                            ),
+                          ),
+                        for (final asignacion in _vehiculosPendientes)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    l10n.empleadoPendienteRecuperacionVehiculo,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                RisegStatusBadge(
+                                  label: l10n.empleadoPendienteRecuperacionDesde(
+                                    _formatoFecha.format(asignacion.pendienteRecuperacionDesde!),
+                                  ),
+                                  tone: RisegStatusTone.warning,
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (ref.watch(permissionServiceProvider).hasCode('vehiculos.ver')) ...[
                   const SizedBox(height: AppSpacing.xl),
                   RisegCard(child: VehiculoAsignadoEmpleadoSection(empleadoId: widget.empleadoId)),
@@ -986,7 +1371,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                   const SizedBox(height: AppSpacing.xl),
                   RisegCard(child: LineaTelefonicaAsignadaEmpleadoSection(empleadoId: widget.empleadoId)),
                 ],
-                if (_descuentosPendientes.isNotEmpty) ...[
+                if (_descuentos.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
                   RisegCard(
                     child: Column(
@@ -994,7 +1379,7 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                       children: [
                         Text(l10n.descuentosPendientesSeccionTitulo, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
                         const SizedBox(height: AppSpacing.xs),
-                        for (final descuento in _descuentosPendientes)
+                        for (final descuento in _descuentos)
                           Padding(
                             padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                             child: Row(
@@ -1005,16 +1390,148 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                                     children: [
                                       Text(_formatoMonedaEmpleado.format(descuento.importe / 100), style: AppTypography.label),
                                       Text(
-                                        descuento.observaciones ?? l10n.descuentosPendientesAvisoNoAplicado,
+                                        descuento.estatus == EstatusDescuentoInventario.aplicado.name
+                                            ? l10n.descuentosPendientesAplicadoDetalle(
+                                                _foliosNominaPorDescuento[descuento.id] ?? '—',
+                                                descuento.fechaAplicacion != null
+                                                    ? _formatoFecha.format(descuento.fechaAplicacion!)
+                                                    : '—',
+                                              )
+                                            : descuento.observaciones ?? l10n.descuentosPendientesAvisoNoAplicado,
                                         style: AppTypography.caption.copyWith(color: colors.textMuted),
                                       ),
                                     ],
                                   ),
                                 ),
-                                RisegStatusBadge(label: l10n.descuentosPendientesEstadoPendiente, tone: RisegStatusTone.warning),
+                                RisegStatusBadge(
+                                  label: switch (EstatusDescuentoInventario.values.byName(descuento.estatus)) {
+                                    EstatusDescuentoInventario.pendiente => l10n.descuentosPendientesEstadoPendiente,
+                                    EstatusDescuentoInventario.aplicado => l10n.descuentosPendientesEstadoAplicado,
+                                    EstatusDescuentoInventario.cancelado => l10n.descuentosPendientesEstadoCancelado,
+                                  },
+                                  tone: switch (EstatusDescuentoInventario.values.byName(descuento.estatus)) {
+                                    EstatusDescuentoInventario.pendiente => RisegStatusTone.warning,
+                                    EstatusDescuentoInventario.aplicado => RisegStatusTone.success,
+                                    EstatusDescuentoInventario.cancelado => RisegStatusTone.neutral,
+                                  },
+                                ),
                               ],
                             ),
                           ),
+                        if (_descuentos.any((d) => d.estatus == EstatusDescuentoInventario.pendiente.name)) ...[
+                          const Divider(),
+                          Text(
+                            l10n.descuentosPendientesTotalPendiente(
+                              _formatoMonedaEmpleado.format(
+                                _descuentos
+                                        .where((d) => d.estatus == EstatusDescuentoInventario.pendiente.name)
+                                        .fold<int>(0, (s, d) => s + d.importe) /
+                                    100,
+                              ),
+                            ),
+                            style: AppTypography.label.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                if (ref.watch(permissionServiceProvider).hasCode('descuentos.ver') &&
+                    (_descuentosProgramados.isNotEmpty || empleado.estatus == 'baja')) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  RisegCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l10n.empleadoDescuentosCardTitulo,
+                                style: AppTypography.heading3.copyWith(color: colors.textPrimary),
+                              ),
+                            ),
+                            RisegButton(
+                              label: l10n.empleadoDescuentosBotonRegistrar,
+                              variant: RisegButtonVariant.ghost,
+                              size: RisegButtonSize.compact,
+                              onPressed: () async {
+                                final ok = await mostrarDialogoRegistrarDescuentoProgramado(
+                                  context,
+                                  ref,
+                                  empleadoIdPreseleccionado: widget.empleadoId,
+                                );
+                                if (ok) await _cargar();
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        if (empleado.estatus == 'baja' &&
+                            _descuentosProgramados.any((d) => d.estatus == 'activo' && d.saldoPendiente > 0))
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(color: colors.errorBg, borderRadius: AppRadius.mdRadius),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.warning_amber_outlined, color: colors.error, size: AppSizes.iconSm),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Expanded(
+                                    child: Text(
+                                      l10n.empleadoDescuentosAvisoBajaConSaldo,
+                                      style: AppTypography.body.copyWith(color: colors.error),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        CampoConsulta(
+                          label: l10n.empleadoDescuentosSaldoPendiente,
+                          value: _formatoMonedaEmpleado.format(
+                            _descuentosProgramados
+                                    .where((d) => d.estatus == 'activo')
+                                    .fold<int>(0, (s, d) => s + d.saldoPendiente) /
+                                100,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        CampoConsulta(
+                          label: l10n.empleadoDescuentosProximoDescuento,
+                          value: _proximoDescuentoGlobal == null
+                              ? l10n.empleadoDescuentosSinActivos
+                              : l10n.empleadoDescuentosProximoDescuentoDetalle(
+                                  _formatoMonedaEmpleado.format(_proximoDescuentoGlobal!.importeProgramado / 100),
+                                  _formatoFecha.format(_proximoDescuentoGlobal!.fechaProgramada),
+                                ),
+                        ),
+                        if (_descuentosProgramados.any((d) => d.estatus == 'activo')) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          for (final d in _descuentosProgramados.where((d) => d.estatus == 'activo'))
+                            Padding(
+                              padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${d.folio} · ${descuentoProgramadoTipoLabel(l10n, d.tipo)}',
+                                      style: AppTypography.body,
+                                    ),
+                                  ),
+                                  Text(_formatoMonedaEmpleado.format(d.saldoPendiente / 100), style: AppTypography.body),
+                                ],
+                              ),
+                            ),
+                        ],
+                        const SizedBox(height: AppSpacing.sm),
+                        RisegButton(
+                          label: l10n.empleadoDescuentosBotonVerHistorial,
+                          variant: RisegButtonVariant.ghost,
+                          size: RisegButtonSize.compact,
+                          onPressed: () => context.go('/personal/descuentos'),
+                        ),
                       ],
                     ),
                   ),
@@ -1276,10 +1793,17 @@ class _EmpleadoExpedienteScreenState extends ConsumerState<EmpleadoExpedienteScr
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
+                                // Hallazgo real (prueba responsive de la Etapa
+                                // "Entrega múltiple de Inventario"): un `Row`
+                                // crudo con 2 `Text` desbordaba en anchos
+                                // angostos cuando fecha+etiqueta no cabían
+                                // juntos — mismo criterio que el resto de esta
+                                // pantalla, `Wrap` en vez de `Row` crudo.
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: AppSpacing.xs,
                                   children: [
                                     Text(_formatoFechaHora.format(evento.fechaHora), style: AppTypography.caption.copyWith(color: colors.textMuted)),
-                                    const SizedBox(width: AppSpacing.xs),
                                     Text(_eventoLabel(l10n, evento.tipoEvento), style: AppTypography.label),
                                   ],
                                 ),

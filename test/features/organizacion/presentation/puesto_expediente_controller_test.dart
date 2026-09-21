@@ -15,8 +15,10 @@ import 'package:riseg_one/features/organizacion/domain/usecases/crear_puesto_use
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_puesto_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/puesto_errors.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/puesto_validator.dart';
+import 'package:riseg_one/features/organizacion/presentation/areas/areas_list_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/puestos/puesto_expediente_controller.dart';
 import 'package:riseg_one/features/organizacion/presentation/puestos/puesto_expediente_state.dart';
+import 'package:riseg_one/features/organizacion/presentation/puestos/puestos_list_controller.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
@@ -191,6 +193,37 @@ void main() {
       container.read(puestoExpedienteControllerProvider(puestoId)).datos?.cicloVidaRegistro,
       CicloVidaRegistro.archivado.name,
     );
+  });
+
+  // Hallazgo real (mismo patrón que `ServicioExpedienteController`/
+  // `ClienteExpedienteController`): archivar/reactivar un Puesto desde
+  // el expediente seguía viendo el ciclo de vida previo en el listado
+  // (y en las métricas "Puestos por Área") hasta navegar a otra
+  // pestaña y volver.
+  test('cambiarCicloVida refleja el archivado en el listado de Puestos y en las métricas de Áreas sin recargar manualmente', () async {
+    // `ListarPuestosUseCase` solo trae Puestos activos — un Puesto
+    // archivado desaparece del listado por completo, nunca se muestra
+    // con `cicloVidaRegistro == 'archivado'`.
+    await esperarCargaInicial();
+    container.listen(puestosListControllerProvider, (_, _) {});
+    container.listen(areasListControllerProvider, (_, _) {});
+    while (container.read(puestosListControllerProvider).cargando || container.read(areasListControllerProvider).cargando) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    expect(container.read(puestosListControllerProvider).puestos.any((p) => p.id == puestoId), isTrue);
+    expect(container.read(areasListControllerProvider).puestosPorArea[SeedIds.areaOperaciones], 1);
+
+    final notifier = container.read(puestoExpedienteControllerProvider(puestoId).notifier);
+    final archivado = await notifier.cambiarCicloVida(CicloVidaRegistro.archivado);
+    expect(archivado, isTrue);
+
+    await Future<void>.delayed(Duration.zero);
+    while (container.read(puestosListControllerProvider).cargando || container.read(areasListControllerProvider).cargando) {
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    expect(container.read(puestosListControllerProvider).puestos.any((p) => p.id == puestoId), isFalse);
+    expect(container.read(areasListControllerProvider).puestosPorArea[SeedIds.areaOperaciones] ?? 0, 0);
   });
 
   test('reintentarCarga vuelve a intentar tras un error de carga', () async {

@@ -6,6 +6,16 @@ import 'package:riseg_one/core/database/app_database.dart';
 abstract interface class VehiculoMantenimientoRepository {
   Future<VehiculoMantenimientoData?> obtenerPorId(String vehiculoMantenimientoId);
 
+  /// El mantenimiento dueño de un `Egreso` automático (schemaVersion
+  /// 80) — FK real (`egresoId`), nunca una heurística por concepto.
+  /// Sostiene el bloqueo de corrección/cancelación desde Finanzas y la
+  /// navegación "Ver origen".
+  Future<VehiculoMantenimientoData?> obtenerPorEgresoId(String egresoId);
+
+  /// Todos los `egresoId` generados por mantenimientos — insumo en lote
+  /// de `ClasificarEgresosPorOrigenUseCase`, sin N+1.
+  Future<List<String>> listarEgresoIds();
+
   /// Historial completo de este Vehículo, orden descendente por `fecha`
   /// (empate resuelto por `createdAt` más reciente) — el llamador filtra
   /// por `tipo.esIncidencia` en memoria para el toggle
@@ -26,6 +36,13 @@ abstract interface class VehiculoMantenimientoRepository {
   /// nulo, inserta también una fila en `VehiculoKilometraje` (origen
   /// `mantenimiento`) en la misma transacción — nunca una fuente
   /// paralela (punto 4).
+  /// [cuentaFinancieraId]/[deudaIdTarjeta] son el origen financiero
+  /// (schemaVersion 80), mutuamente excluyentes y sólo con [costo] > 0:
+  ///  - cuenta → crea el `Egreso` y guarda su `egresoId`;
+  ///  - tarjeta → registra un `cargoCompra` en la TDC y guarda
+  ///    `deudaId`, **sin** crear ningún Egreso.
+  /// Ambos nulos con costo se permite únicamente para no romper el
+  /// legacy; el caso de uso lo rechaza en capturas nuevas.
   Future<VehiculoMantenimientoData> crear({
     required String vehiculoId,
     required DateTime fecha,
@@ -37,6 +54,43 @@ abstract interface class VehiculoMantenimientoRepository {
     DateTime? proximoMantenimientoFecha,
     int? proximoMantenimientoKilometraje,
     String? observaciones,
+    String? cuentaFinancieraId,
+    String? deudaIdTarjeta,
+    String? actorUsuarioId,
+  });
+
+  /// Corrige un mantenimiento, incluida cualquier transición de origen
+  /// financiero (schemaVersion 80): cuenta→misma cuenta, cuenta→otra
+  /// cuenta, cuenta→TDC, TDC→cuenta, TDC→misma TDC, TDC→otra TDC, con o
+  /// sin cambio de monto. Todo en UNA transacción — nunca queda un
+  /// Egreso huérfano ni un cargo de tarjeta sin revertir.
+  ///
+  /// El llamador ya validó la tarjeta destino con `validarOrigenTarjeta`
+  /// y que el motivo no esté vacío.
+  Future<VehiculoMantenimientoData> corregir({
+    required String vehiculoMantenimientoId,
+    DateTime? fecha,
+    String? tipo,
+    String? descripcion,
+    String? tallerProveedor,
+    int? costo,
+    bool limpiarCosto = false,
+    DateTime? proximoMantenimientoFecha,
+    int? proximoMantenimientoKilometraje,
+    String? observaciones,
+    String? cuentaFinancieraId,
+    String? deudaIdTarjeta,
+    required String motivo,
+    String? actorUsuarioId,
+  });
+
+  /// Anula el registro sin borrarlo y revierte EXACTAMENTE su efecto
+  /// financiero: cancela el `Egreso`, o revierte el cargo de la TDC.
+  /// Una segunda anulación nunca produce una segunda reversión.
+  Future<VehiculoMantenimientoData> cancelar({
+    required String vehiculoMantenimientoId,
+    required String motivo,
+    String? actorUsuarioId,
   });
 
   /// Adjunta un comprobante — inserta `Attachment` +

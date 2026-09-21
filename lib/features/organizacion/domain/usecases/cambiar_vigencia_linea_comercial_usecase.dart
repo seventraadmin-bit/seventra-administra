@@ -46,9 +46,13 @@ class CambiarVigenciaLineaComercialUseCase {
   final ServicioRepository _servicioRepository;
   final LineaComercialValidator _validator;
 
+  /// [observacion] es opcional: abrir una vigencia nueva NO es corregir
+  /// nada. La anterior queda intacta, cerrada en su fecha.
   Future<CambiarVigenciaLineaComercialResultado> ejecutar({
     required String lineaComercialId,
     required LineaComercialBorrador borrador,
+    String? observacion,
+    String? actorUsuarioId,
   }) async {
     final linea = await _repository.obtenerLinea(lineaComercialId);
     if (linea == null) {
@@ -73,7 +77,12 @@ class CambiarVigenciaLineaComercialUseCase {
     }
 
     try {
-      final vigencia = await _repository.cambiarVigencia(lineaComercialId: lineaComercialId, datos: validacion.resultado!);
+      final vigencia = await _repository.cambiarVigencia(
+        lineaComercialId: lineaComercialId,
+        datos: validacion.resultado!,
+        observacion: observacion,
+        actorUsuarioId: actorUsuarioId,
+      );
       return CambiarVigenciaLineaComercialExitoso(vigencia);
     } catch (e) {
       return CambiarVigenciaLineaComercialErrorInesperado(e.toString());

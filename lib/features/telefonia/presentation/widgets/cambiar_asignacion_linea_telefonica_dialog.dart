@@ -7,17 +7,20 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/cambiar_asignacion_linea_telefonica_usecase.dart';
 
 import '../../telefonia_providers.dart';
+import 'coherencia_linea_equipo_mensajes.dart';
 
 /// Diálogo "Cambiar asignación" (Etapa 9B) — cierra la vigente y crea
-/// una nueva hacia otro Empleado/Servicio, una sola operación. Si
-/// [tieneEquipoAsociado], expone "mover también el equipo asociado".
+/// una nueva hacia otro Empleado/Servicio, una sola operación.
+///
+/// §11: si el teléfono asociado sigue bajo la custodia anterior, el
+/// cambio se rechaza antes de persistir. Para mover ambos, la operación
+/// correcta es transferir el aparato en Inventario — la línea lo sigue.
 /// Devuelve `true` si tuvo éxito.
 Future<bool> mostrarDialogoCambiarAsignacionLineaTelefonica(
   BuildContext context,
   WidgetRef ref,
-  AsignacionLineaTelefonicaData asignacionActual, {
-  required bool tieneEquipoAsociado,
-}) async {
+  AsignacionLineaTelefonicaData asignacionActual,
+) async {
   final l10n = AppLocalizations.of(context)!;
   final opciones = ref.read(obtenerOpcionesAsignacionLineaTelefonicaUseCaseProvider);
 
@@ -31,7 +34,12 @@ Future<bool> mostrarDialogoCambiarAsignacionLineaTelefonica(
   DateTime fecha = DateTime.now();
   final observacionesTerminoCtrl = TextEditingController();
   final observacionesNuevaCtrl = TextEditingController();
-  bool moverEquipoAsociado = true;
+  final motivoCtrl = TextEditingController();
+  final nombres = NombresDestinoTelefonia(
+    {for (final e in empleados) e.id: e.nombre},
+    {for (final s in servicios) s.id: s.nombre},
+  );
+  bool pideMotivo = false;
   String? errorGeneral;
 
   final resultado = await RisegDialog.showForm<bool>(
@@ -91,14 +99,12 @@ Future<bool> mostrarDialogoCambiarAsignacionLineaTelefonica(
                 label: l10n.lineaTelefonicaCambiarAsignacionCampoObservacionesNueva,
                 controller: observacionesNuevaCtrl,
               ),
-              if (tieneEquipoAsociado) ...[
-                const SizedBox(height: AppSpacing.xs),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(l10n.lineaTelefonicaCampoMoverEquipoAsociado),
-                  value: moverEquipoAsociado,
-                  onChanged: (valor) => setState(() => moverEquipoAsociado = valor ?? moverEquipoAsociado),
+              if (pideMotivo) ...[
+                const SizedBox(height: AppSpacing.md),
+                RisegTextField(
+                  key: const Key('linea_cambiar_asignacion_campo_motivo'),
+                  label: l10n.lineaTelefonicaResolverInconsistenciaCampoMotivo,
+                  controller: motivoCtrl,
                 ),
               ],
               if (errorGeneral != null) ...[
@@ -123,7 +129,7 @@ Future<bool> mostrarDialogoCambiarAsignacionLineaTelefonica(
             nuevoEmpleadoId: destinoTipo == 'empleado' ? empleadoId : null,
             nuevoServicioId: destinoTipo == 'servicio' ? servicioId : null,
             observacionesNueva: observacionesNuevaCtrl.text.trim().isEmpty ? null : observacionesNuevaCtrl.text.trim(),
-            moverEquipoAsociado: moverEquipoAsociado,
+            motivo: motivoCtrl.text,
           );
       if (!context.mounted) return false;
       switch (resultado) {
@@ -135,6 +141,13 @@ Future<bool> mostrarDialogoCambiarAsignacionLineaTelefonica(
           return null;
         case CambiarAsignacionLineaTelefonicaYaCerrada():
           errorGeneral = l10n.lineaTelefonicaCambiarAsignacionErrorYaCerrada;
+          return null;
+        case CambiarAsignacionLineaTelefonicaIncoherenteConEquipo(:final coherencia):
+          errorGeneral = mensajeIncoherenciaLineaEquipo(l10n, coherencia, nombres);
+          return null;
+        case CambiarAsignacionLineaTelefonicaMotivoRequerido():
+          pideMotivo = true;
+          errorGeneral = l10n.lineaTelefonicaCoherenciaMotivoRequerido;
           return null;
         case CambiarAsignacionLineaTelefonicaNoExiste():
         case CambiarAsignacionLineaTelefonicaErrorInesperado():

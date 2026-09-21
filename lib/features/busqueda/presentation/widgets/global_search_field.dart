@@ -51,11 +51,13 @@ class _GlobalSearchFieldState extends ConsumerState<GlobalSearchField> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
+    final colors = context.colors;
+
     if (widget.compact) {
       return IconButton(
         key: const Key('top_bar_search'),
         tooltip: l10n.shellSearchTooltip,
-        icon: const Icon(Icons.search),
+        icon: Icon(Icons.search, color: colors.shellForeground),
         onPressed: () => showDialog<void>(context: context, builder: (_) => const GlobalSearchDialog()),
       );
     }
@@ -69,8 +71,12 @@ class _GlobalSearchFieldState extends ConsumerState<GlobalSearchField> {
       }
     });
 
-    final colors = context.colors;
-    final border = OutlineInputBorder(borderRadius: AppRadius.mdRadius, borderSide: BorderSide(color: colors.borderSubtle));
+    // Etapa 16, evolución visual: este campo vive SOLO en la barra
+    // superior azul institucional (único consumidor de este widget) —
+    // superficie translúcida derivada del propio azul, nunca un blanco
+    // sólido flotando encima ni vidrio/blur.
+    final border = OutlineInputBorder(borderRadius: AppRadius.mdRadius, borderSide: BorderSide(color: colors.shellSearchBorder));
+    final focusedBorder = OutlineInputBorder(borderRadius: AppRadius.mdRadius, borderSide: BorderSide(color: colors.shellFocusRing, width: 2));
 
     return TapRegion(
       groupId: _grupoAncla,
@@ -108,17 +114,20 @@ class _GlobalSearchFieldState extends ConsumerState<GlobalSearchField> {
                 key: const Key('top_bar_search'),
                 controller: _controller,
                 focusNode: _focusNode,
-                style: AppTypography.body.copyWith(color: colors.textMuted),
+                cursorColor: colors.shellForeground,
+                style: AppTypography.body.copyWith(color: colors.shellForeground),
                 decoration: InputDecoration(
                   isDense: true,
-                  prefixIcon: Icon(Icons.search, size: 18, color: colors.textMuted),
+                  prefixIcon: Icon(Icons.search, size: 18, color: colors.shellForegroundMuted),
                   prefixIconConstraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                   contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   hintText: l10n.shellSearchTooltip,
-                  hintStyle: AppTypography.body.copyWith(color: colors.textMuted),
-                  filled: false,
+                  hintStyle: AppTypography.body.copyWith(color: colors.shellForegroundMuted),
+                  filled: true,
+                  fillColor: colors.shellSearchBg,
                   border: border,
                   enabledBorder: border,
+                  focusedBorder: focusedBorder,
                 ),
                 onChanged: (texto) => ref.read(busquedaControllerProvider.notifier).actualizarTexto(texto),
               ),

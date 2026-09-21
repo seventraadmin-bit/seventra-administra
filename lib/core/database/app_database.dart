@@ -10,6 +10,7 @@ import '../../features/organizacion/data/tables/cliente_portal_table.dart';
 import '../../features/organizacion/data/tables/cliente_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_correo_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_etapa_table.dart';
+import '../../features/organizacion/data/tables/comercial_evento_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_table.dart';
 import '../../features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import '../../features/organizacion/data/tables/contacto_table.dart';
@@ -28,8 +29,12 @@ import '../../features/organizacion/data/tables/ubicacion_table.dart';
 import '../../features/finanzas/data/tables/categoria_financiera_table.dart';
 import '../../features/finanzas/data/tables/complemento_pago_attachment_table.dart';
 import '../../features/finanzas/data/tables/complemento_pago_table.dart';
+import '../../features/finanzas/data/tables/cuenta_financiera_table.dart';
 import '../../features/finanzas/data/tables/cuenta_por_cobrar_table.dart';
+import '../../features/finanzas/data/tables/deuda_table.dart';
 import '../../features/finanzas/data/tables/egreso_attachment_table.dart';
+import '../../features/finanzas/data/tables/egreso_fuente_table.dart';
+import '../../features/finanzas/data/tables/transferencia_cuenta_table.dart';
 import '../../features/finanzas/data/tables/egreso_table.dart';
 import '../../features/finanzas/data/tables/ingreso_attachment_table.dart';
 import '../../features/finanzas/data/tables/ingreso_table.dart';
@@ -38,12 +43,21 @@ import '../../features/finanzas/data/tables/pago_table.dart';
 import '../../features/personal/data/tables/asignacion_servicio_sueldo_vigencia_table.dart';
 import '../../features/personal/data/tables/asignacion_servicio_table.dart';
 import '../../features/personal/data/tables/empleado_attachment_table.dart';
+import '../../features/personal/data/tables/conciliacion_baja_table.dart';
 import '../../features/personal/data/tables/empleado_table.dart';
 import '../../features/personal/data/tables/ficha_tecnica_empleado_table.dart';
+import '../../features/personal/data/tables/vacante_operativa_table.dart';
+import '../../features/descuentos_personal/data/tables/descuento_programado_cuota_table.dart';
+import '../../features/descuentos_personal/data/tables/descuento_programado_empleado_table.dart';
+import '../../features/descuentos_personal/data/tables/descuento_programado_movimiento_table.dart';
+import '../../features/nomina/data/tables/nomina_empleado_ausencia_table.dart';
 import '../../features/nomina/data/tables/nomina_empleado_table.dart';
 import '../../features/nomina/data/tables/nomina_empleado_tramo_table.dart';
 import '../../features/nomina/data/tables/nomina_evento_table.dart';
 import '../../features/nomina/data/tables/nomina_table.dart';
+import '../../features/servicios_eventuales/data/tables/servicio_eventual_documento_fiscal_table.dart';
+import '../../features/servicios_eventuales/data/tables/servicio_eventual_table.dart';
+import '../../features/tiempos_extra/data/tables/tiempo_extra_table.dart';
 import '../../features/nomina/data/tables/pago_nomina_attachment_table.dart';
 import '../../features/nomina/data/tables/pago_nomina_table.dart';
 import '../../features/inventario/data/tables/articulo_table.dart';
@@ -55,6 +69,7 @@ import '../../features/inventario/data/tables/asignacion_attachment_table.dart';
 import '../../features/inventario/data/tables/asignacion_table.dart';
 import '../../features/inventario/data/tables/categoria_articulo_table.dart';
 import '../../features/inventario/data/tables/descuento_inventario_table.dart';
+import '../../features/inventario/data/tables/entrega_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_attachment_table.dart';
 import '../../features/inventario/data/tables/movimiento_inventario_table.dart';
 import '../../features/telefonia/data/tables/asignacion_linea_telefonica_table.dart';
@@ -93,6 +108,45 @@ import 'migrations/migrar_configuracion_cobro_etapa_v49.dart';
 import 'migrations/migrar_condiciones_personal_linea_comercial_v50.dart';
 import 'migrations/migrar_horario_linea_comercial_v51.dart';
 import 'migrations/migrar_cliente_portal_v52.dart';
+import 'migrations/migrar_compra_eliminacion_fisica_v53.dart';
+import 'migrations/migrar_descuento_inventario_nomina_v54.dart';
+import 'migrations/migrar_reparacion_descuentos_inventario_v55.dart';
+import 'migrations/migrar_vacante_operativa_v56.dart';
+import 'migrations/migrar_descuentos_personal_v57.dart';
+import 'migrations/migrar_snapshot_baja_empleado_v58.dart';
+import 'migrations/migrar_cliente_logo_v59.dart';
+import 'migrations/migrar_entrega_inventario_v60.dart';
+import 'migrations/migrar_compra_tarjeta_v62.dart';
+import 'migrations/migrar_cuenta_financiera_v63.dart';
+import 'migrations/migrar_cuenta_por_cobrar_reprogramacion_v64.dart';
+import 'migrations/migrar_tiempos_extra_v65.dart';
+import 'migrations/migrar_deuda_ciclo_cubierto_v68.dart';
+import 'migrations/migrar_deuda_tarjeta_revolvente_v66.dart';
+import 'migrations/migrar_deuda_tasa_cat_v67.dart';
+import 'migrations/migrar_correccion_tiempo_extra_v70.dart';
+import 'migrations/migrar_permisos_granulares_v71.dart';
+import 'migrations/migrar_correccion_nomina_v72.dart';
+import 'migrations/migrar_correccion_descuento_programado_v73.dart';
+import 'migrations/migrar_correccion_cuenta_por_cobrar_v74.dart';
+import 'migrations/migrar_origen_financiero_descuento_programado_v75.dart';
+import 'migrations/migrar_egreso_origen_tarjeta_v76.dart';
+import 'migrations/migrar_correccion_pago_deuda_v77.dart';
+import 'migrations/migrar_conciliacion_baja_v83.dart';
+import 'migrations/migrar_origen_cobertura_tiempo_extra_v85.dart';
+import 'migrations/migrar_recarga_origen_financiero_v86.dart';
+import 'migrations/migrar_trazabilidad_comercial_v84.dart';
+import 'migrations/migrar_pendiente_recuperacion_v82.dart';
+import 'migrations/migrar_telefonia_trazabilidad_v81.dart';
+import 'migrations/migrar_vehiculos_origen_financiero_v80.dart';
+import 'migrations/migrar_complemento_sustituto_v79.dart';
+import 'migrations/migrar_cobranza_eventual_v88.dart';
+import 'migrations/migrar_iva_eventual_v89.dart';
+import 'migrations/migrar_origen_financiero_multicuenta_v91.dart';
+import 'migrations/migrar_receptor_fiscal_eventual_v90.dart';
+import 'migrations/migrar_servicios_eventuales_v87.dart';
+import 'migrations/migrar_usuarios_permisos_v78.dart';
+import 'migrations/migrar_origen_financiero_tiempo_extra_v69.dart';
+import 'migrations/migrar_deudas_credito_v61.dart';
 import 'migrations/migrar_empleado_v48.dart';
 import 'migrations/migrar_linea_telefonica_v34.dart';
 import 'migrations/migrar_recarga_linea_telefonica_v36.dart';
@@ -173,6 +227,9 @@ class AppMetadata extends Table {
   ServicioLineaComercialVigencia,
   ServicioLineaComercialVigenciaHorario,
   ConfiguracionCobro,
+  ClienteEvento,
+  ServicioEvento,
+  ConfiguracionCobroEvento,
   ConfiguracionCobroVigencia,
   ConfiguracionCobroCorreo,
   ConfiguracionCobroEtapa,
@@ -196,6 +253,12 @@ class AppMetadata extends Table {
   IngresoEvento,
   Egreso,
   EgresoEvento,
+  EgresoFuente,
+  TransferenciaCuenta,
+  TransferenciaCuentaEvento,
+  Deuda,
+  MovimientoDeuda,
+  CuentaFinanciera,
   Empleado,
   EmpleadoEvento,
   EmpleadoPeriodoLaboral,
@@ -229,6 +292,7 @@ class AppMetadata extends Table {
   Asignacion,
   DescuentoInventario,
   AsignacionAttachment,
+  Entrega,
   Vehiculo,
   VehiculoAttachment,
   AsignacionVehiculo,
@@ -237,6 +301,10 @@ class AppMetadata extends Table {
   VehiculoDocumentoAttachment,
   VehiculoMantenimiento,
   VehiculoMantenimientoAttachment,
+  VehiculoEvento,
+  LineaTelefonicaEvento,
+  ConciliacionBaja,
+  ConciliacionBajaRenglon,
   LineaTelefonica,
   AsignacionLineaTelefonica,
   LineaTelefonicaEquipo,
@@ -256,6 +324,23 @@ class AppMetadata extends Table {
   BovedaCredencial,
   BovedaCredencialEvento,
   SesionPersistente,
+  VacanteOperativa,
+  DescuentoProgramadoEmpleado,
+  DescuentoProgramadoCuota,
+  DescuentoProgramadoMovimiento,
+  // Etapa "Tiempos Extra" (cobertura operativa por ausencia).
+  TiempoExtra,
+  TiempoExtraCostoAdicional,
+  // Servicios Eventuales — Rebanada 1 (schemaVersion 87).
+  ServicioEventual,
+  ServicioEventualParticipante,
+  ServicioEventualCobertura,
+  ServicioEventualCosto,
+  ServicioEventualEvento,
+  ServicioEventualDocumentoFiscal,
+  ServicioEventualDocumentoFiscalAttachment,
+  TiempoExtraEvento,
+  NominaEmpleadoAusencia,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor, {AlmacenClaveCifrado? almacenClaveCifrado}) : _almacenClaveCifrado = almacenClaveCifrado;
@@ -268,7 +353,7 @@ class AppDatabase extends _$AppDatabase {
   final AlmacenClaveCifrado? _almacenClaveCifrado;
 
   @override
-  int get schemaVersion => 52;
+  int get schemaVersion => 91;
 
   @override
   MigrationStrategy get migration {
@@ -912,6 +997,285 @@ class AppDatabase extends _$AppDatabase {
         // plano) sin tocar los correos — ver el doc comment del archivo.
         if (to >= 52 && from <= 51) {
           await migrarClientePortalV52(this, m, cipher: CredentialCipher(almacen: _almacenClaveCifrado));
+        }
+        // Aditiva (Etapa 15, bug real COM-000021): estructura el motivo
+        // de cancelación/eliminación física de `Compra` — ver el doc
+        // comment del archivo de migración.
+        if (to >= 53 && from <= 52) {
+          await migrarCompraEliminacionFisicaV53(this, m);
+        }
+        // Aditiva (Etapa 15, prueba funcional Inventario + Personal +
+        // Nómina): activa "Pendiente → Aplicado" de DescuentoInventario
+        // — ver el doc comment del archivo de migración.
+        if (to >= 54 && from <= 53) {
+          await migrarDescuentoInventarioNominaV54(this, m);
+        }
+        // REPARACIÓN (Etapa 15, bug real): la instalación real de
+        // desarrollo ya había migrado a 54 con la forma anterior de
+        // `migrarDescuentoInventarioNominaV54` (sin
+        // `descuentos_inventario_pendiente_revision`, agregada después
+        // sin subir de versión) — Drift nunca vuelve a correr
+        // `onUpgrade` si `user_version` ya coincide con `schemaVersion`,
+        // así que esa instalación se quedó con la columna faltante. Ver
+        // el doc comment del archivo de migración para la causa raíz
+        // completa.
+        if (to >= 55 && from <= 54) {
+          await migrarReparacionDescuentosInventarioV55(this, m);
+        }
+        // Aditiva (Etapa 15, rediseño del Dashboard gerencial): tabla
+        // nueva `VacanteOperativa` — ver el doc comment del archivo de
+        // migración.
+        if (to >= 56 && from <= 55) {
+          await migrarVacanteOperativaV56(this, m);
+        }
+        // Aditiva (Etapa 15, "Descuentos Programados al Personal" —
+        // préstamos + cobro de botas): 3 tablas nuevas + 2 columnas en
+        // NominaEmpleado + 2 filas de CodigoSecuencia — ver el doc
+        // comment del archivo de migración.
+        if (to >= 57 && from <= 56) {
+          await migrarDescuentosPersonalV57(this, m);
+        }
+        // Aditiva (Etapa 15, rediseño de Personal/Bajas): snapshot de
+        // puesto/servicio/turno al momento de la baja en `Empleado` y
+        // en `EmpleadoPeriodoLaboral` — ver el doc comment del archivo
+        // de migración para el backfill real de bajas ya existentes.
+        if (to >= 58 && from <= 57) {
+          await migrarSnapshotBajaEmpleadoV58(this, m);
+        }
+        // Aditiva (Etapa 16, evolución visual del Design System):
+        // `Cliente.logoAttachmentId` — ver el doc comment del archivo
+        // de migración.
+        if (to >= 59 && from <= 58) {
+          await migrarClienteLogoV59(this, m);
+        }
+        // Aditiva ("Entrega múltiple de Inventario a Personal"): tabla
+        // nueva `Entrega` (cabecera documental que agrupa varias
+        // Asignacion de un mismo acto de entrega) + columna
+        // `Asignacion.entregaId` (nullable — toda Asignacion legacy y
+        // toda la que siga creando "Asignar artículo" individual queda
+        // sin agrupar, sin romperse) + fila de CodigoSecuencia
+        // (`entrega` → `ENT`) — ver el doc comment del archivo de
+        // migración.
+        if (to >= 60 && from <= 59) {
+          await migrarEntregaInventarioV60(this, m);
+        }
+        // Aditiva (Etapa 19, "Deudas y crédito empresarial"): tablas
+        // nuevas `Deuda` (identidad propia con saldo — nunca una
+        // `CategoriaFinanciera` más) + `MovimientoDeuda` (historial
+        // append-only con saldo explícito por línea) + fila de
+        // CodigoSecuencia (`deuda` → `DEU`) — ver el doc comment del
+        // archivo de migración.
+        if (to >= 61 && from <= 60) {
+          await migrarDeudasCreditoV61(this, m);
+        }
+        // Aditiva (Etapa 19B, "Compra ↔ Tarjeta de crédito ↔ Deuda"):
+        // `MovimientoDeuda.compraId` (vínculo determinista al cargo que
+        // una Compra pagada con tarjeta genera) + `Compra.deudaId`
+        // (qué tarjeta la financió) — ambas columnas nuevas y nullable,
+        // sin backfill: ninguna Compra/MovimientoDeuda existente tiene
+        // qué reconstruir. Ver el doc comment del archivo de migración.
+        if (to >= 62 && from <= 61) {
+          await migrarCompraTarjetaV62(this, m);
+        }
+        // Aditiva (Etapa 19C, "Posición de caja, flujo real y
+        // proyección de compromisos"): tabla nueva `CuentaFinanciera`
+        // (Banco/Efectivo, sin saldoActual persistido — siempre
+        // derivado) + `Ingreso.cuentaFinancieraId`/
+        // `Egreso.cuentaFinancieraId` (nullable, restrict) + fila de
+        // CodigoSecuencia (`cuenta_financiera` → `CTA`) — ver el doc
+        // comment del archivo de migración.
+        if (to >= 63 && from <= 62) {
+          await migrarCuentaFinancieraV63(this, m);
+        }
+        // Aditiva (Etapa 19D, "Calendario financiero y planeación de
+        // liquidez"): `CuentaPorCobrar.fechaCobroReprogramada`
+        // (nullable) — nunca toca `fechaVencimiento`. Ver el doc
+        // comment del archivo de migración.
+        if (to >= 64 && from <= 63) {
+          await migrarCuentaPorCobrarReprogramacionV64(this, m);
+        }
+        // Aditiva (Etapa "Tiempos Extra" — cobertura operativa por
+        // ausencia): tablas nuevas `TiempoExtra`/
+        // `TiempoExtraCostoAdicional`/`TiempoExtraEvento` +
+        // `NominaEmpleadoAusencia` + fila de catálogo
+        // `TipoModalidadTurno` ("12X24") + fila de CodigoSecuencia
+        // (`tiempoExtra` → `TEX`) — ver el doc comment del archivo de
+        // migración.
+        if (to >= 65 && from <= 64) {
+          await migrarTiemposExtraV65(this, m);
+        }
+        // Estructural (Etapa "Tarjeta de crédito como línea revolvente"):
+        // `Deuda.importeOriginal`/`fechaOrigen` pasan a nullable (no
+        // aplican a una TDC) + columnas nuevas `fechaSaldoInicial`/
+        // `tarjetaReglaFechaPago`/`tarjetaDiasDespuesCorte` — con
+        // backfill fiel a partir de datos ya existentes (nunca
+        // inventados). Ver el doc comment del archivo de migración.
+        if (to >= 66 && from <= 65) {
+          await migrarDeudaTarjetaRevolventeV66(this, m);
+        }
+        // Aditiva (Etapa "Tasa fija/variable y CAT para TDC", caso real
+        // Konfío Empresarial): 7 columnas nuevas en `Deuda` para
+        // modelar la tasa ordinaria de una tarjeta como fija o variable
+        // (referencia/diferencial/tratamiento de IVA) sin colapsarla a
+        // un porcentaje falso, más un CAT opcional — ver el doc
+        // comment del archivo de migración.
+        if (to >= 67 && from <= 66) {
+          await migrarDeudaTasaCatV67(this, m);
+        }
+        // Aditiva (Etapa "Dashboard: posición financiera + ciclo de
+        // TDC"): 1 columna nueva en `Deuda`,
+        // `tarjetaVencimientoCubiertoHasta` — permite conciliar, al
+        // incorporar una TDC ya en uso, un ciclo de pago cubierto ANTES
+        // de capturar sus saldos reales (sin generar Egreso/
+        // MovimientoDeuda) y avanza automáticamente al registrar un
+        // pago real — ver el doc comment del archivo de migración y de
+        // la columna en `deuda_table.dart`.
+        if (to >= 68 && from <= 67) {
+          await migrarDeudaCicloCubiertoV68(this, m);
+        }
+        // Aditiva (Etapa "Origen financiero unificado — TiempoExtra,
+        // Egresos manuales, TDC"): 6 columnas nuevas —
+        // `MovimientoDeuda.tiempoExtraId`/`costoAdicionalId`,
+        // `TiempoExtra.deudaId`, `TiempoExtraCostoAdicional.formaPago`/
+        // `egresoId`/`deudaId` — ver el doc comment del archivo de
+        // migración.
+        if (to >= 69 && from <= 68) {
+          await migrarOrigenFinancieroTiempoExtraV69(this, m);
+        }
+        // Etapa "corrección real de Tiempo Extra": aditiva
+        // (`TiempoExtraEvento.estadoAnterior`/`estadoNuevo`) + datos
+        // (reemplaza `personal.gestionarTiemposExtra` por 3 permisos
+        // separados, sin quitar acceso a quien ya lo tenía) — ver el
+        // doc comment del archivo de migración.
+        if (to >= 70 && from <= 69) {
+          await migrarCorreccionTiempoExtraV70(this, m);
+        }
+        // Etapa "1 — Modelo de permisos granular y consistente": de
+        // datos, sin cambio de esquema — reemplaza/estrecha varios
+        // códigos amplios de `PermisoUsuario` por facultades más finas,
+        // conservador con todo usuario que ya tenía el código viejo
+        // (ver el doc comment del archivo de migración).
+        if (to >= 71 && from <= 70) {
+          await migrarPermisosGranularesV71(this, m);
+        }
+        // Etapa 4 ("Nómina — corrección, cancelación y trazabilidad
+        // integral"): aditiva — `NominaEvento.estadoAnterior`/
+        // `estadoNuevo` + `Nomina.motivoCancelacionCodigo`/`Detalle`/
+        // `Observaciones` — ver el doc comment del archivo de
+        // migración.
+        if (to >= 72 && from <= 71) {
+          await migrarCorreccionNominaV72(this, m);
+        }
+        // Etapa 5 ("Descuentos programados — CRUD corregible,
+        // trazabilidad y consistencia con Nómina"): aditiva —
+        // `DescuentoProgramadoMovimiento.estadoAnterior`/`estadoNuevo`
+        // — ver el doc comment del archivo de migración.
+        if (to >= 73 && from <= 72) {
+          await migrarCorreccionDescuentoProgramadoV73(this, m);
+        }
+        // Etapa 7 ("Cuentas por cobrar — corrección, cancelación,
+        // trazabilidad y consistencia con Agenda/Pagos"): puramente de
+        // datos (permisos) — ver el doc comment del archivo de migración.
+        if (to >= 74 && from <= 73) {
+          await migrarCorreccionCuentaPorCobrarV74(this, m);
+        }
+        // Etapa "Cierre del ciclo financiero de Descuentos Programados —
+        // Préstamo/Botas": puramente aditiva (2 columnas nullable) — ver
+        // el doc comment del archivo de migración.
+        if (to >= 75 && from <= 74) {
+          await migrarOrigenFinancieroDescuentoProgramadoV75(this, m);
+        }
+        // Etapa "Origen financiero de Egresos manuales: Cuenta vs. TDC":
+        // puramente aditiva (2 columnas nullable) — `Egreso.deudaId` y
+        // `MovimientoDeuda.egresoGastoId`. Sin backfill: ningún Egreso
+        // histórico con `formaPago == 'tarjeta'` guarda en ninguna parte
+        // CUÁL tarjeta lo financió — ver el doc comment del archivo de
+        // migración.
+        if (to >= 76 && from <= 75) {
+          await migrarEgresoOrigenTarjetaV76(this, m);
+        }
+        // Etapa 9 ("Deudas y crédito: corrección y cancelación
+        // individual de pagos"): puramente aditiva (2 columnas nullable
+        // en `MovimientoDeuda` — `movimientoOrigenId` y
+        // `tarjetaVencimientoCubiertoAnterior`). El valor nuevo
+        // `reversionPago` del enum no requiere migración: `tipo` es
+        // texto libre. Ver el doc comment del archivo de migración.
+        if (to >= 77 && from <= 76) {
+          await migrarCorreccionPagoDeudaV77(this, m);
+        }
+        // Etapa "Usuarios, permisos y UX de seguridad": aditiva
+        // (`Usuario.empleadoId`/`debeCambiarPassword`) + datos (fragmenta
+        // `usuarios.administrar` en facultades separables, sin quitar
+        // acceso a nadie) — ver el doc comment del archivo de migración.
+        if (to >= 78 && from <= 77) {
+          await migrarUsuariosPermisosV78(this, m);
+        }
+
+        // Complemento de pago sustituto (schemaVersion 79): retira el
+        // UNIQUE de columna sobre `pago_id` y lo reemplaza por un
+        // índice único PARCIAL sobre los vigentes, para que un
+        // Complemento cancelado deje de bloquear a su sustituto — ver
+        // el doc comment del archivo de migración.
+        if (to >= 79 && from <= 78) {
+          await migrarComplementoSustitutoV79(this, m);
+        }
+
+        // Vehículos: ciclo de vida, origen financiero y trazabilidad
+        // (schemaVersion 80) — `VehiculoEvento`, origen financiero dual
+        // del mantenimiento (`egresoId`/`deudaId`) y su anulación.
+        // Puramente aditiva, SIN backfill del gasto histórico (ver el
+        // doc comment del archivo de migración).
+        if (to >= 80 && from <= 79) {
+          await migrarVehiculosOrigenFinancieroV80(this, m);
+        }
+        if (to >= 81 && from <= 80) {
+          await migrarTelefoniaTrazabilidadV81(this, m);
+        }
+        if (to >= 82 && from <= 81) {
+          await migrarPendienteRecuperacionV82(this, m);
+        }
+        if (to >= 83 && from <= 82) {
+          await migrarConciliacionBajaV83(this, m);
+        }
+        if (to >= 84 && from <= 83) {
+          await migrarTrazabilidadComercialV84(this, m);
+        }
+        // Estructural (Etapa "Tiempo Extra: origen de cobertura"):
+        // `TiempoExtra.empleadoAusenteId`/`motivoAusencia` pasan a
+        // nullable + 3 columnas nuevas (`origenCobertura`,
+        // `vacanteOperativaId`, `descripcionOrigen`). Todo lo
+        // histórico queda clasificado como `ausenciaEmpleado` — que es
+        // lo que era por construcción del esquema anterior, no una
+        // inferencia. Ver el doc comment del archivo de migración.
+        if (to >= 85 && from <= 84) {
+          await migrarOrigenCoberturaTiempoExtraV85(this, m);
+        }
+        // Aditiva (Etapa "Cierre integral de Telefonía — recargas"):
+        // origen financiero real de `RecargaLineaTelefonica`
+        // (`formaPago`/`egresoId`/`deudaId`) + FK inversa
+        // `MovimientoDeuda.recargaLineaTelefonicaId`. Cero efecto
+        // retroactivo sobre balances — ver el doc comment del archivo.
+        if (to >= 86 && from <= 85) {
+          await migrarRecargaOrigenFinancieroV86(this, m);
+        }
+        // Servicios Eventuales (Rebanada 1): núcleo nuevo + la
+        // generalización de Cuenta por cobrar/Pago a un origen dual.
+        if (to >= 87 && from <= 86) {
+          await migrarServiciosEventualesV87(this, m);
+        }
+        if (to >= 88 && from <= 87) {
+          await migrarCobranzaEventualV88(this, m);
+        }
+        if (to >= 89 && from <= 88) {
+          await migrarIvaEventualV89(this, m);
+        }
+        // El receptor fiscal del eventual, separado del solicitante.
+        if (to >= 90 && from <= 89) {
+          await migrarReceptorFiscalEventualV90(this, m);
+        }
+        // Origen financiero multicuenta + transferencias entre cuentas.
+        if (to >= 91 && from <= 90) {
+          await migrarOrigenFinancieroMulticuentaV91(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

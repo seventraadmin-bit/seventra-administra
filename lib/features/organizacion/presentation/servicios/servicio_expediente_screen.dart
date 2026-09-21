@@ -10,6 +10,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/validation/direccion_validator.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
@@ -51,10 +52,13 @@ import 'servicio_expediente_form_controllers.dart';
 import 'servicio_expediente_state.dart';
 import 'widgets/servicio_auditoria_section.dart';
 import 'widgets/servicio_configuracion_comercial_section.dart';
+import 'widgets/decision_cierre_nueva_vigencia_cobro.dart';
 import 'widgets/servicio_configuracion_cobro_section.dart';
 import 'widgets/servicio_personal_asignado_section.dart';
 import 'widgets/servicio_datos_generales_section.dart';
 import 'widgets/servicio_direccion_operativa_section.dart';
+import 'widgets/servicio_ficha_header.dart';
+import 'widgets/servicio_indicadores_operacionales.dart';
 import 'widgets/eliminar_linea_comercial_fisicamente_dialog.dart';
 import 'widgets/eliminar_servicio_fisicamente_dialog.dart';
 import 'widgets/servicio_historial_configuracion_cobro_dialog.dart';
@@ -104,6 +108,21 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
   ServicioExpedienteController get _notifier =>
       ref.read(servicioExpedienteControllerProvider(widget.servicioId).notifier);
 
+  /// Logo del Cliente dueño + catálogo de Modalidades de turno (Etapa
+  /// 16, ficha operacional) — un único detalle por Servicio (no una
+  /// lista de muchas filas) más una tabla de referencia pequeña que no
+  /// escala con datos, así que combinarlas aquí no es el mismo riesgo
+  /// de N+1 que en un listado.
+  Future<({AttachmentData? logo, List<CatalogoItem> turnos})> _cargarDatosFicha(ClienteData cliente) async {
+    final resultados = await Future.wait([
+      cliente.logoAttachmentId == null
+          ? Future.value(null)
+          : ref.read(attachmentRepositoryProvider).obtenerPorId(cliente.logoAttachmentId!),
+      ref.read(catalogoRepositoryProvider).listarModalidadesTurno(),
+    ]);
+    return (logo: resultados[0] as AttachmentData?, turnos: resultados[1] as List<CatalogoItem>);
+  }
+
   void _iniciarEdicion(ServicioData servicio) {
     _datosGenerales.poblar(servicio);
     _notifier.entrarModoEdicion();
@@ -139,7 +158,17 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
 
   Future<void> _guardar() async {
     final l10n = AppLocalizations.of(context)!;
-    final exito = await _notifier.guardar(_datosGenerales.capturar());
+    final motivo = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.servicioGuardarMotivoTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.servicioTerminarBotonConfirmar,
+      cancelarLabel: l10n.servicioTerminarBotonCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivo == null) return;
+
+    final exito = await _notifier.guardar(_datosGenerales.capturar(), motivo: motivo);
     if (!mounted) return;
 
     final estadoActual = ref.read(servicioExpedienteControllerProvider(widget.servicioId));
@@ -153,11 +182,46 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     }
   }
 
+  /// Pide el motivo de un cambio de estatus y lo aplica.
+  ///
+  /// Suspender, reactivar o terminar un Servicio afecta a la cobranza:
+  /// el motivo es obligatorio y viaja a la bitácora. Un solo punto,
+  /// para que las tres acciones no lo pidan de tres formas distintas.
+  Future<void> _cambiarEstatusConMotivo(
+    EstatusServicio nuevo, {
+    DateTime? fechaTerminoEfectiva,
+    required String titulo,
+    required String confirmarLabel,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final motivo = await mostrarDialogoMotivo(
+      context,
+      titulo: titulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: confirmarLabel,
+      cancelarLabel: l10n.servicioTerminarBotonCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivo == null) return;
+
+    final resultado = await _notifier.cambiarEstatus(
+      nuevo,
+      fechaTerminoEfectiva: fechaTerminoEfectiva,
+      motivo: motivo,
+    );
+    if (!mounted) return;
+    _mostrarResultadoCambioEstatus(resultado);
+  }
+
   void _mostrarResultadoCambioEstatus(CambiarEstatusServicioResultado? resultado) {
     final l10n = AppLocalizations.of(context)!;
     switch (resultado) {
       case CambiarEstatusServicioExitoso():
         RisegFeedback.showSuccess(context, l10n.servicioCambiarEstatusExito);
+        // Un Servicio activo/suspendido/terminado entra o sale del
+        // conjunto que cuenta para Cobertura operativa/Servicios
+        // activos del Dashboard (Etapa 15, rediseño gerencial).
+        ref.invalidate(dashboardControllerProvider);
       case CambiarEstatusServicioTransicionInvalida():
         RisegFeedback.showError(context, l10n.servicioCambiarEstatusErrorTransicionInvalida);
       case CambiarEstatusServicioClienteNoDisponible():
@@ -168,6 +232,8 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         RisegFeedback.showError(context, l10n.servicioCambiarEstatusErrorRequiereFechaTermino);
       case CambiarEstatusServicioFechaTerminoInvalida():
         RisegFeedback.showError(context, l10n.servicioCambiarEstatusErrorFechaTerminoInvalida);
+      case CambiarEstatusServicioMotivoRequerido():
+        RisegFeedback.showError(context, l10n.auditoriaErrorMotivoRequerido);
       case CambiarEstatusServicioErrorInesperado():
         RisegFeedback.showError(context, l10n.servicioCambiarEstatusErrorInesperado);
       case null:
@@ -177,7 +243,10 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
 
   Future<void> _eliminarFisicamente() async {
     final eliminado = await mostrarDialogoEliminarServicioFisicamente(context, ref, widget.servicioId);
-    if (eliminado && mounted) context.pop();
+    if (eliminado) {
+      ref.invalidate(dashboardControllerProvider);
+      if (mounted) context.pop();
+    }
   }
 
   Future<void> _activarOReactivar(EstatusServicio actual) async {
@@ -193,9 +262,11 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     );
     if (confirmado != true) return;
 
-    final resultado = await _notifier.cambiarEstatus(EstatusServicio.activo);
-    if (!mounted) return;
-    _mostrarResultadoCambioEstatus(resultado);
+    await _cambiarEstatusConMotivo(
+      EstatusServicio.activo,
+      titulo: esReactivar ? l10n.servicioConfirmarReactivarTitulo : l10n.servicioBotonActivar,
+      confirmarLabel: esReactivar ? l10n.servicioBotonReactivar : l10n.servicioBotonActivar,
+    );
   }
 
   Future<void> _suspender() async {
@@ -209,9 +280,11 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     );
     if (confirmado != true) return;
 
-    final resultado = await _notifier.cambiarEstatus(EstatusServicio.suspendido);
-    if (!mounted) return;
-    _mostrarResultadoCambioEstatus(resultado);
+    await _cambiarEstatusConMotivo(
+      EstatusServicio.suspendido,
+      titulo: l10n.servicioConfirmarSuspenderTitulo,
+      confirmarLabel: l10n.servicioBotonSuspender,
+    );
   }
 
   Future<void> _terminar(DateTime? fechaTerminoExistente) async {
@@ -228,9 +301,11 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       );
       if (confirmado != true) return;
 
-      final resultado = await _notifier.cambiarEstatus(EstatusServicio.terminado);
-      if (!mounted) return;
-      _mostrarResultadoCambioEstatus(resultado);
+      await _cambiarEstatusConMotivo(
+        EstatusServicio.terminado,
+        titulo: l10n.servicioTerminarDialogoTitulo,
+        confirmarLabel: l10n.servicioTerminarBotonConfirmar,
+      );
       return;
     }
 
@@ -249,12 +324,12 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     );
     if (confirmado != true) return;
 
-    final resultado = await _notifier.cambiarEstatus(
+    await _cambiarEstatusConMotivo(
       EstatusServicio.terminado,
       fechaTerminoEfectiva: fechaEfectiva,
+      titulo: l10n.servicioTerminarDialogoTitulo,
+      confirmarLabel: l10n.servicioTerminarBotonConfirmar,
     );
-    if (!mounted) return;
-    _mostrarResultadoCambioEstatus(resultado);
   }
 
   Future<void> _asignarEntidadFiscal() async {
@@ -266,8 +341,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         .toList();
     if (!mounted) return;
 
-    var seleccionId = datos.entidadFiscal?.id;
-    final resultado = await RisegDialog.showForm<AsignarEntidadFiscalAServicioResultado?>(
+    final entidadAnterior = datos.entidadFiscal?.id;
+    var seleccionId = entidadAnterior;
+    final confirmadoEntidadFiscal = await RisegDialog.showForm<bool>(
       context: context,
       title: l10n.servicioAsignarEntidadFiscalTitulo,
       confirmLabel: l10n.servicioVinculacionDialogoBotonGuardar,
@@ -278,15 +354,33 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         items: [for (final e in entidades) RisegSelectItem(value: e.entidadFiscal.id, label: e.entidadFiscal.razonSocial)],
         onCambio: (valor) => seleccionId = valor,
       ),
-      onConfirm: () {
-        return _notifier.asignarEntidadFiscal(seleccionId);
-      },
+      onConfirm: () async => true,
     );
+
+    if (!mounted || confirmadoEntidadFiscal != true) return;
+
+    // Sustituir la Entidad fiscal vigente mueve a quién se le factura:
+    // ahí sí se pide motivo. La primera asignación, no.
+    String? motivoEntidadFiscal;
+    if (exigeMotivoAsignacionEntidadFiscal(anterior: entidadAnterior, nueva: seleccionId)) {
+      motivoEntidadFiscal = await mostrarDialogoMotivo(
+        context,
+        titulo: l10n.servicioEntidadFiscalMotivoCambioTitulo,
+        etiquetaMotivo: l10n.auditoriaCampoMotivo,
+        confirmarLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+        cancelarLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+        errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+      );
+      if (!mounted || motivoEntidadFiscal == null) return;
+    }
+
+    final resultado = await _notifier.asignarEntidadFiscal(seleccionId, motivo: motivoEntidadFiscal);
 
     if (!mounted) return;
     switch (resultado) {
       case AsignarEntidadFiscalAServicioExitoso():
         RisegFeedback.showSuccess(context, l10n.servicioAsignarEntidadFiscalExito);
+      case AsignarEntidadFiscalAServicioMotivoRequerido():
       case AsignarEntidadFiscalAServicioNoPerteneceAlCliente():
         RisegFeedback.showError(context, l10n.servicioAsignarEntidadFiscalErrorNoPertenece);
       case AsignarEntidadFiscalAServicioNoDisponible():
@@ -300,7 +394,20 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
 
   Future<void> _quitarEntidadFiscal() async {
     final l10n = AppLocalizations.of(context)!;
-    final resultado = await _notifier.asignarEntidadFiscal(null);
+
+    // Retirar la Entidad fiscal deja al Servicio sin a quién facturarle:
+    // exige motivo, igual que sustituirla.
+    final motivoRetiro = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.servicioEntidadFiscalMotivoRetiroTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+      cancelarLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivoRetiro == null) return;
+
+    final resultado = await _notifier.asignarEntidadFiscal(null, motivo: motivoRetiro);
     if (!mounted) return;
     if (resultado is AsignarEntidadFiscalAServicioExitoso) {
       RisegFeedback.showSuccess(context, l10n.servicioQuitarEntidadFiscalExito);
@@ -513,6 +620,9 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     switch (resultado) {
       case CrearLineaComercialExitoso():
         RisegFeedback.showSuccess(context, l10n.servicioComercialGuardadoExito);
+        // La cantidad requerida por línea alimenta directamente
+        // Cobertura operativa del Dashboard (Etapa 15).
+        ref.invalidate(dashboardControllerProvider);
       case CrearLineaComercialErroresValidacion():
         RisegFeedback.showError(context, l10n.servicioComercialErrorValidacion);
       case CrearLineaComercialServicioNoDisponible():
@@ -651,7 +761,23 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         },
       ),
       onConfirm: () async {
-        final r = await _notifier.corregirConfiguracionCobro(configuracionCobro.configuracion.id, borrador, etapas: etapas);
+        // Corregir CÓMO y CUÁNDO se cobra exige motivo: el diálogo común
+        // se abre antes de tocar nada.
+        final motivo = await mostrarDialogoMotivo(
+          context,
+          titulo: l10n.configuracionCobroMotivoCorreccionTitulo,
+          etiquetaMotivo: l10n.auditoriaCampoMotivo,
+          confirmarLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+          cancelarLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+          errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+        );
+        if (motivo == null) return null;
+        final r = await _notifier.corregirConfiguracionCobro(
+          configuracionCobro.configuracion.id,
+          borrador,
+          etapas: etapas,
+          motivo: motivo,
+        );
         if (r is CorregirConfiguracionCobroErroresValidacion) {
           errores = r.errores;
           if (r.erroresEtapas.isNotEmpty && mounted) {
@@ -669,6 +795,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         RisegFeedback.showSuccess(context, l10n.servicioCobroCorregirExito);
       case CorregirConfiguracionCobroTieneHistoria():
         RisegFeedback.showError(context, l10n.servicioCobroCorregirErrorTieneHistoria);
+      case CorregirConfiguracionCobroMotivoRequerido():
       case CorregirConfiguracionCobroNoExiste():
         RisegFeedback.showError(context, l10n.servicioCobroNuevaVigenciaErrorInesperado);
       case CorregirConfiguracionCobroErroresValidacion():
@@ -711,6 +838,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     );
     var etapas = const <EtapaCobroBorrador>[];
     var errores = const <ErrorConfiguracionCobro>[];
+    String? errorGeneral;
 
     final resultado = await RisegDialog.showForm<CambiarVigenciaConfiguracionCobroResultado?>(
       context: context,
@@ -725,6 +853,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         valoresIniciales: vigenciaActual,
         etapasIniciales: configuracionCobro.etapas,
         errores: errores,
+        errorGeneral: errorGeneral,
         onCambio: (nuevoBorrador, nuevasEtapas) {
           borrador = nuevoBorrador;
           etapas = nuevasEtapas;
@@ -733,15 +862,16 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       onConfirm: () async {
         if (!await _confirmarSiEsRetroactiva(borrador.fechaInicioVigencia)) return null;
         if (!mounted) return null;
+        errores = const [];
+        errorGeneral = null;
         final r = await _notifier.cambiarVigenciaConfiguracionCobro(configuracionCobro.configuracion.id, borrador, etapas: etapas);
-        if (r is CambiarVigenciaConfiguracionCobroErroresValidacion) {
-          errores = r.errores;
-          if (r.erroresEtapas.isNotEmpty && mounted) {
-            RisegFeedback.showError(context, l10n.servicioCobroErrorReglasEvento);
-          }
-          return null;
-        }
-        return r;
+
+        final decision = decidirCierreNuevaVigenciaCobro(r, mensajeReglasEtapas: l10n.servicioCobroErrorReglasEvento);
+        errores = decision.errores;
+        errorGeneral = decision.errorGeneral;
+        // `null` mantiene el diálogo abierto (convenio de
+        // `RisegDialog.showForm`) con toda la captura intacta.
+        return decision.cierraElDialogo ? r : null;
       },
     );
 
@@ -750,12 +880,13 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       case CambiarVigenciaConfiguracionCobroExitoso():
         RisegFeedback.showSuccess(context, l10n.servicioCobroNuevaVigenciaExito);
       case CambiarVigenciaConfiguracionCobroErroresValidacion():
-        break; // Ya se mostró inline; el diálogo nunca cierra con este caso.
+      case CambiarVigenciaConfiguracionCobroErrorInesperado():
+        break; // Se muestran dentro del formulario; nunca cierran el diálogo.
       case CambiarVigenciaConfiguracionCobroServicioNoDisponible():
+        // El Servicio está terminado: no hay nada que corregir en el
+        // formulario, así que aquí sí tiene sentido cerrar.
         RisegFeedback.showError(context, l10n.servicioCobroNuevaVigenciaErrorServicioNoDisponible);
       case CambiarVigenciaConfiguracionCobroNoExiste():
-        RisegFeedback.showError(context, l10n.servicioCobroNuevaVigenciaErrorInesperado);
-      case CambiarVigenciaConfiguracionCobroErrorInesperado():
         RisegFeedback.showError(context, l10n.servicioCobroNuevaVigenciaErrorInesperado);
       case null:
         break;
@@ -767,15 +898,36 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     final configuracionCobro = ref.read(servicioExpedienteControllerProvider(widget.servicioId)).datos!.configuracionCobro!;
 
     var fechaEfectiva = DateTime.now();
-    final resultado = await RisegDialog.showForm<CerrarConfiguracionCobroResultado?>(
+    final confirmadoCierreCobro = await RisegDialog.showForm<bool>(
       context: context,
       title: l10n.servicioCobroCerrarDialogoTitulo,
       confirmLabel: l10n.servicioCobroCerrarBotonConfirmar,
       cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
       contentBuilder: (_) => ServicioCerrarConfiguracionCobroForm(onCambio: (valor) => fechaEfectiva = valor),
-      onConfirm: () {
-        return _notifier.cerrarConfiguracionCobro(configuracionCobro.configuracion.id, fechaEfectiva);
-      },
+      onConfirm: () async => true,
+    );
+
+    if (!mounted || confirmadoCierreCobro != true) return;
+
+    // El motivo se pide con el formulario ya cerrado — mismo orden que
+    // "Cerrar línea comercial". Pedirlo dentro de `onConfirm` dejaría al
+    // diálogo anfitrión girando en "guardando" mientras el usuario
+    // escribe, y no hay validación inline que obligue a mantenerlo
+    // abierto.
+    final motivoCierreCobro = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.configuracionCobroMotivoCierreTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.servicioVinculacionDialogoBotonGuardar,
+      cancelarLabel: l10n.servicioVinculacionDialogoBotonCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivoCierreCobro == null) return;
+
+    final resultado = await _notifier.cerrarConfiguracionCobro(
+      configuracionCobro.configuracion.id,
+      fechaEfectiva,
+      motivo: motivoCierreCobro,
     );
 
     if (!mounted) return;
@@ -788,6 +940,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         RisegFeedback.showError(context, l10n.servicioCobroCerrarErrorTieneProgramada);
       case CerrarConfiguracionCobroFechaAnteriorInicio():
         RisegFeedback.showError(context, l10n.servicioCobroCerrarErrorFechaAnterior);
+      case CerrarConfiguracionCobroMotivoRequerido():
       case CerrarConfiguracionCobroNoExiste():
         RisegFeedback.showError(context, l10n.servicioCobroCerrarErrorInesperado);
       case CerrarConfiguracionCobroErrorInesperado():
@@ -844,13 +997,27 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       cancelLabel: l10n.servicioCobroCancelarProgramadaConfirmacionCancelar,
       destructive: true,
     );
-    if (confirmado != true) return;
+    if (!mounted || confirmado != true) return;
 
-    final resultado = await _notifier.cancelarVigenciaProgramadaConfiguracionCobro(fila.vigencia.id);
+    final motivoCancelacionCobro = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.configuracionCobroMotivoCancelacionTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.servicioCobroCancelarProgramadaConfirmacionConfirmar,
+      cancelarLabel: l10n.servicioCobroCancelarProgramadaConfirmacionCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivoCancelacionCobro == null) return;
+
+    final resultado = await _notifier.cancelarVigenciaProgramadaConfiguracionCobro(
+      fila.vigencia.id,
+      motivo: motivoCancelacionCobro,
+    );
     if (!mounted) return;
     switch (resultado) {
       case CancelarVigenciaProgramadaConfiguracionCobroExitoso():
         RisegFeedback.showSuccess(context, l10n.servicioCobroCancelarProgramadaExito);
+      case CancelarVigenciaProgramadaConfiguracionCobroMotivoRequerido():
       case CancelarVigenciaProgramadaConfiguracionCobroNoEsProgramada():
         RisegFeedback.showError(context, l10n.servicioCobroCancelarProgramadaErrorNoEsProgramada);
       case CancelarVigenciaProgramadaConfiguracionCobroNoExiste():
@@ -934,7 +1101,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       observaciones: vigenciaActual?.observaciones,
     );
 
-    final resultado = await RisegDialog.showForm<CorregirLineaComercialResultado?>(
+    final confirmadoCorreccion = await RisegDialog.showForm<bool>(
       context: context,
       title: l10n.servicioComercialCorregirDialogoTitulo,
       confirmLabel: l10n.servicioVinculacionDialogoBotonGuardar,
@@ -947,13 +1114,30 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
         horarioInicial: horarioInicial,
         onCambio: (nuevo) => borrador = nuevo,
       ),
-      onConfirm: () => _notifier.corregirLinea(linea.linea.id, borrador),
+      onConfirm: () async => true,
     );
+
+    if (!mounted || confirmadoCorreccion != true) return;
+
+    // Corregir una vigencia EXISTENTE cambia lo que se cobra: el motivo
+    // es obligatorio y viaja a la bitácora del Servicio.
+    final motivoCorreccion = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.lineaComercialMotivoCorreccionTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.servicioTerminarBotonConfirmar,
+      cancelarLabel: l10n.servicioTerminarBotonCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivoCorreccion == null) return;
+    final resultado = await _notifier.corregirLinea(linea.linea.id, borrador, motivo: motivoCorreccion);
 
     if (!mounted) return;
     switch (resultado) {
       case CorregirLineaComercialExitoso():
         RisegFeedback.showSuccess(context, l10n.servicioComercialCorregirExito);
+        ref.invalidate(dashboardControllerProvider);
+      case CorregirLineaComercialMotivoRequerido():
       case CorregirLineaComercialTieneHistoria():
         RisegFeedback.showError(context, l10n.servicioComercialCorregirErrorTieneHistoria);
       case CorregirLineaComercialNoExiste():
@@ -969,7 +1153,10 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
 
   Future<void> _eliminarLineaFisicamente(LineaComercialConVigencia linea) async {
     final eliminado = await mostrarDialogoEliminarLineaComercialFisicamente(context, ref, linea.linea.id);
-    if (eliminado && mounted) await _notifier.reintentarCarga();
+    if (eliminado && mounted) {
+      await _notifier.reintentarCarga();
+      ref.invalidate(dashboardControllerProvider);
+    }
   }
 
   Future<void> _nuevaVigencia(LineaComercialConVigencia linea) async {
@@ -1023,6 +1210,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     switch (resultado) {
       case CambiarVigenciaLineaComercialExitoso():
         RisegFeedback.showSuccess(context, l10n.servicioComercialNuevaVigenciaExito);
+        ref.invalidate(dashboardControllerProvider);
       case CambiarVigenciaLineaComercialErroresValidacion():
         RisegFeedback.showError(context, l10n.servicioComercialErrorValidacion);
       case CambiarVigenciaLineaComercialServicioNoDisponible():
@@ -1040,21 +1228,34 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     final l10n = AppLocalizations.of(context)!;
 
     var fechaEfectiva = DateTime.now();
-    final resultado = await RisegDialog.showForm<CerrarLineaComercialResultado?>(
+    final confirmadoCierre = await RisegDialog.showForm<bool>(
       context: context,
       title: l10n.servicioComercialCerrarLineaDialogoTitulo,
       confirmLabel: l10n.servicioComercialCerrarLineaBotonConfirmar,
       cancelLabel: l10n.servicioVinculacionDialogoBotonCancelar,
       contentBuilder: (_) => ServicioCerrarLineaForm(onCambio: (valor) => fechaEfectiva = valor),
-      onConfirm: () {
-        return _notifier.cerrarLineaComercial(linea.linea.id, fechaEfectiva);
-      },
+      onConfirm: () async => true,
     );
+
+    if (!mounted || confirmadoCierre != true) return;
+
+    final motivoCierre = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.lineaComercialMotivoCierreTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.servicioTerminarBotonConfirmar,
+      cancelarLabel: l10n.servicioTerminarBotonCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivoCierre == null) return;
+    final resultado = await _notifier.cerrarLineaComercial(linea.linea.id, fechaEfectiva, motivo: motivoCierre);
 
     if (!mounted) return;
     switch (resultado) {
       case CerrarLineaComercialExitoso():
         RisegFeedback.showSuccess(context, l10n.servicioComercialCerrarLineaExito);
+        ref.invalidate(dashboardControllerProvider);
+      case CerrarLineaComercialMotivoRequerido():
       case CerrarLineaComercialSinCondicionVigente():
         RisegFeedback.showError(context, l10n.servicioComercialCerrarLineaErrorSinCondicionVigente);
       case CerrarLineaComercialTieneVigenciaProgramada():
@@ -1122,13 +1323,25 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
       cancelLabel: l10n.servicioComercialCancelarProgramadaConfirmacionCancelar,
       destructive: true,
     );
-    if (confirmado != true) return;
+    if (!mounted || confirmado != true) return;
 
-    final resultado = await _notifier.cancelarVigenciaProgramada(fila.vigencia.id);
+    final motivoCancelacion = await mostrarDialogoMotivo(
+      context,
+      titulo: l10n.lineaComercialMotivoCancelacionTitulo,
+      etiquetaMotivo: l10n.auditoriaCampoMotivo,
+      confirmarLabel: l10n.servicioTerminarBotonConfirmar,
+      cancelarLabel: l10n.servicioTerminarBotonCancelar,
+      errorMotivoRequerido: l10n.auditoriaErrorMotivoRequerido,
+    );
+    if (!mounted || motivoCancelacion == null) return;
+
+    final resultado = await _notifier.cancelarVigenciaProgramada(fila.vigencia.id, motivo: motivoCancelacion);
     if (!mounted) return;
     switch (resultado) {
       case CancelarVigenciaProgramadaExitoso():
         RisegFeedback.showSuccess(context, l10n.servicioComercialCancelarProgramadaExito);
+        ref.invalidate(dashboardControllerProvider);
+      case CancelarVigenciaProgramadaMotivoRequerido():
       case CancelarVigenciaProgramadaNoEsProgramada():
         RisegFeedback.showError(context, l10n.servicioComercialCancelarProgramadaErrorNoEsProgramada);
       case CancelarVigenciaProgramadaNoExiste():
@@ -1232,6 +1445,10 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
     final mostrarTerminar = estatusActual != EstatusServicio.terminado;
     final esMaestro = ref.watch(sesionControllerProvider)?.esMaestro ?? false;
 
+    final direccionOperativa = datos.direccionOperativa;
+    final ubicacionTexto =
+        direccionOperativa == null ? null : '${direccionOperativa.municipioAlcaldia}, ${direccionOperativa.estado}';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Center(
@@ -1241,7 +1458,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               RisegSectionHeader(
-                title: l10n.servicioSeccionDatosGeneralesTitulo,
+                title: l10n.servicioExpedienteTitulo,
                 primaryAction: esEdicion
                     ? RisegButton(
                         key: const Key('servicio_expediente_boton_guardar'),
@@ -1249,11 +1466,7 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
                         loading: state.guardando,
                         onPressed: _guardar,
                       )
-                    : RisegButton(
-                        key: const Key('servicio_expediente_boton_editar'),
-                        label: l10n.servicioExpedienteBotonEditar,
-                        onPressed: () => _iniciarEdicion(servicio),
-                      ),
+                    : null,
                 secondaryAction: esEdicion
                     ? RisegButton(
                         key: const Key('servicio_expediente_boton_cancelar'),
@@ -1263,69 +1476,106 @@ class _ServicioExpedienteScreenState extends ConsumerState<ServicioExpedienteScr
                       )
                     : null,
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  RisegStatusBadge(
-                    label: _nombreEstatus(l10n, estatusActual),
-                    tone: _tonoEstatus(estatusActual),
-                  ),
-                  if (mostrarActivar)
-                    RisegButton(
-                      key: const Key('servicio_boton_activar'),
-                      label: estatusActual == EstatusServicio.terminado
-                          ? l10n.servicioBotonReactivar
-                          : l10n.servicioBotonActivar,
-                      variant: RisegButtonVariant.secondary,
-                      size: RisegButtonSize.compact,
-                      loading: state.cambiandoEstatus,
-                      onPressed: datos.tieneDireccionOperativaActiva
-                          ? () => _activarOReactivar(estatusActual)
-                          : null,
-                    ),
-                  if (mostrarSuspender)
-                    RisegButton(
-                      key: const Key('servicio_boton_suspender'),
-                      label: l10n.servicioBotonSuspender,
-                      variant: RisegButtonVariant.secondary,
-                      size: RisegButtonSize.compact,
-                      loading: state.cambiandoEstatus,
-                      onPressed: _suspender,
-                    ),
-                  if (mostrarTerminar)
-                    RisegButton(
-                      key: const Key('servicio_boton_terminar'),
-                      label: l10n.servicioBotonTerminar,
-                      variant: RisegButtonVariant.secondary,
-                      size: RisegButtonSize.compact,
-                      loading: state.cambiandoEstatus,
-                      onPressed: () => _terminar(servicio.fechaTermino),
-                    ),
-                  if (esMaestro && !esEdicion)
-                    RisegActionsMenu(
-                      menuKey: const Key('servicio_menu_acciones'),
-                      actions: [
-                        RisegMenuAction(
-                          key: const Key('servicio_accion_eliminar_fisicamente'),
-                          label: l10n.eliminacionFisicaAccionMenu,
-                          icon: Icons.delete_forever_outlined,
-                          destructive: true,
-                          onTap: _eliminarFisicamente,
+              const SizedBox(height: AppSpacing.md),
+              FutureBuilder<({AttachmentData? logo, List<CatalogoItem> turnos})>(
+                future: _cargarDatosFicha(datos.cliente),
+                builder: (context, snapshot) {
+                  final nombrePorTurnoId = {for (final t in snapshot.data?.turnos ?? const []) t.id: t.nombre};
+                  final turnosDistintos = <String>{};
+                  for (final p in datos.personalVigente) {
+                    final nombre = p.asignacion.turnoId == null ? null : nombrePorTurnoId[p.asignacion.turnoId];
+                    if (nombre != null) turnosDistintos.add(nombre);
+                  }
+                  final coberturaTurnos = turnosDistintos.isEmpty ? null : (turnosDistintos.toList()..sort()).join(' / ');
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ServicioFichaHeader(
+                        servicio: servicio,
+                        clienteNombre: datos.cliente.nombreComercial,
+                        logoPath: snapshot.data?.logo?.path,
+                        ubicacion: ubicacionTexto,
+                        estatusBadge: RisegStatusBadge(label: _nombreEstatus(l10n, estatusActual), tone: _tonoEstatus(estatusActual)),
+                        onTapCliente: esEdicion ? null : () => context.push('/comercial/clientes/${servicio.clienteId}'),
+                        acciones: esEdicion
+                            ? null
+                            : Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: AppSpacing.sm,
+                                runSpacing: AppSpacing.xs,
+                                children: [
+                                  if (mostrarActivar)
+                                    RisegButton(
+                                      key: const Key('servicio_boton_activar'),
+                                      label: estatusActual == EstatusServicio.terminado
+                                          ? l10n.servicioBotonReactivar
+                                          : l10n.servicioBotonActivar,
+                                      variant: RisegButtonVariant.secondary,
+                                      size: RisegButtonSize.compact,
+                                      loading: state.cambiandoEstatus,
+                                      onPressed: datos.tieneDireccionOperativaActiva
+                                          ? () => _activarOReactivar(estatusActual)
+                                          : null,
+                                    ),
+                                  if (mostrarSuspender)
+                                    RisegButton(
+                                      key: const Key('servicio_boton_suspender'),
+                                      label: l10n.servicioBotonSuspender,
+                                      variant: RisegButtonVariant.secondary,
+                                      size: RisegButtonSize.compact,
+                                      loading: state.cambiandoEstatus,
+                                      onPressed: _suspender,
+                                    ),
+                                  if (mostrarTerminar)
+                                    RisegButton(
+                                      key: const Key('servicio_boton_terminar'),
+                                      label: l10n.servicioBotonTerminar,
+                                      variant: RisegButtonVariant.secondary,
+                                      size: RisegButtonSize.compact,
+                                      loading: state.cambiandoEstatus,
+                                      onPressed: () => _terminar(servicio.fechaTermino),
+                                    ),
+                                  RisegButton(
+                                    key: const Key('servicio_expediente_boton_editar'),
+                                    label: l10n.servicioExpedienteBotonEditar,
+                                    size: RisegButtonSize.compact,
+                                    onPressed: () => _iniciarEdicion(servicio),
+                                  ),
+                                  if (esMaestro)
+                                    RisegActionsMenu(
+                                      menuKey: const Key('servicio_menu_acciones'),
+                                      actions: [
+                                        RisegMenuAction(
+                                          key: const Key('servicio_accion_eliminar_fisicamente'),
+                                          label: l10n.eliminacionFisicaAccionMenu,
+                                          icon: Icons.delete_forever_outlined,
+                                          destructive: true,
+                                          onTap: _eliminarFisicamente,
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                      ),
+                      if (mostrarActivar && !datos.tieneDireccionOperativaActiva) ...[
+                        const SizedBox(height: AppSpacing.xxs),
+                        Text(
+                          l10n.servicioBotonActivarAyudaSinDireccion,
+                          style: AppTypography.caption.copyWith(color: Theme.of(context).colorScheme.outline),
                         ),
                       ],
-                    ),
-                ],
+                      const SizedBox(height: AppSpacing.lg),
+                      ServicioIndicadoresOperacionales(
+                        personalAsignado: datos.personalVigente.length,
+                        coberturaTurnos: coberturaTurnos,
+                        importeMensual: datos.subtotalComercial,
+                        antiguedad: formatearAntiguedadServicio(l10n, calcularAntiguedadServicioEnMeses(servicio.fechaInicio)),
+                      ),
+                    ],
+                  );
+                },
               ),
-              if (mostrarActivar && !datos.tieneDireccionOperativaActiva) ...[
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  l10n.servicioBotonActivarAyudaSinDireccion,
-                  style: AppTypography.caption.copyWith(color: Theme.of(context).colorScheme.outline),
-                ),
-              ],
               const SizedBox(height: AppSpacing.xl),
               RisegCard(
                 child: ServicioDatosGeneralesSection(

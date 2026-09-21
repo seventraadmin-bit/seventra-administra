@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 
 import '../../domain/repositories/asignacion_linea_telefonica_repository.dart';
+import '../tables/linea_telefonica_table.dart';
 import '../../domain/repositories/linea_telefonica_equipo_repository.dart';
 import '../../domain/repositories/linea_telefonica_repository.dart';
 import '../../domain/usecases/eliminar_linea_telefonica_fisicamente_usecase.dart';
@@ -68,6 +69,38 @@ class LineaTelefonicaRepositoryImpl implements LineaTelefonicaRepository {
   }
 
   @override
+  Future<void> registrarEvento({
+    required String lineaTelefonicaId,
+    required TipoEventoLineaTelefonica tipoEvento,
+    String? recargaId,
+    String? observacion,
+    String? estadoAnterior,
+    String? estadoNuevo,
+    String? actorUsuarioId,
+  }) async {
+    await _db.into(_db.lineaTelefonicaEvento).insert(
+          LineaTelefonicaEventoCompanion.insert(
+            lineaTelefonicaId: lineaTelefonicaId,
+            recargaId: Value(recargaId),
+            fechaHora: DateTime.now(),
+            tipoEvento: tipoEvento.name,
+            observacion: Value(observacion),
+            estadoAnterior: Value(estadoAnterior),
+            estadoNuevo: Value(estadoNuevo),
+            actorUsuarioId: Value(actorUsuarioId),
+          ),
+        );
+  }
+
+  @override
+  Future<List<LineaTelefonicaEventoData>> listarEventos(String lineaTelefonicaId) {
+    return (_db.select(_db.lineaTelefonicaEvento)
+          ..where((t) => t.lineaTelefonicaId.equals(lineaTelefonicaId))
+          ..orderBy([(t) => OrderingTerm.desc(t.fechaHora), (t) => OrderingTerm.desc(t.id)]))
+        .get();
+  }
+
+  @override
   Future<LineaTelefonicaData> corregir({
     required String lineaTelefonicaId,
     String? numero,
@@ -122,8 +155,10 @@ class LineaTelefonicaRepositoryImpl implements LineaTelefonicaRepository {
     required DateTime fechaBaja,
     required String motivoBaja,
     String? observacionesBaja,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
+      final anterior = await (_db.select(_db.lineaTelefonica)..where((t) => t.id.equals(lineaTelefonicaId))).getSingle();
       await _equipoRepository.cerrarPorBajaLinea(lineaTelefonicaId: lineaTelefonicaId, fecha: fechaBaja);
       await _asignacionRepository.cerrarPorBajaLinea(lineaTelefonicaId: lineaTelefonicaId, fecha: fechaBaja);
       await (_db.update(_db.lineaTelefonica)..where((t) => t.id.equals(lineaTelefonicaId))).write(
@@ -135,6 +170,20 @@ class LineaTelefonicaRepositoryImpl implements LineaTelefonicaRepository {
           updatedAt: Value(DateTime.now()),
         ),
       );
+      // El hecho "esta línea se dio de baja" es propio de la LÍNEA y no
+      // lo expresa ninguna otra fila: la asignación cerrada dice que
+      // terminó una asignación, no que la línea murió. Por eso sí lleva
+      // evento — a diferencia del cierre de la asignación, que la
+      // propia fila ya expresa con su `motivoTermino`.
+      await registrarEvento(
+        lineaTelefonicaId: lineaTelefonicaId,
+        tipoEvento: TipoEventoLineaTelefonica.dadaDeBaja,
+        observacion: observacionesBaja,
+        estadoAnterior: anterior.estatus,
+        estadoNuevo: 'baja',
+        actorUsuarioId: actorUsuarioId,
+      );
+
       return (_db.select(_db.lineaTelefonica)..where((t) => t.id.equals(lineaTelefonicaId))).getSingle();
     });
   }

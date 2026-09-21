@@ -127,6 +127,9 @@ class AsignacionVehiculoRepositoryImpl implements AsignacionVehiculoRepository {
           fechaTermino: Value(fechaTermino),
           motivoTermino: Value(motivoTermino),
           observacionesTermino: Value(observacionesTermino),
+          // La entrega real resolvió el pendiente. `fechaTermino` es la
+          // fecha REAL de la entrega, nunca la de la baja laboral.
+          pendienteRecuperacionDesde: const Value(null),
           updatedAt: Value(DateTime.now()),
         ),
       );
@@ -186,6 +189,52 @@ class AsignacionVehiculoRepositoryImpl implements AsignacionVehiculoRepository {
 
       return nueva;
     });
+  }
+
+  @override
+  Future<void> marcarPendientesPorBajaEmpleado({
+    required String empleadoId,
+    required DateTime fecha,
+    String? actorUsuarioId,
+  }) async {
+    await (_db.update(_db.asignacionVehiculo)
+          ..where((t) =>
+              t.empleadoId.equals(empleadoId) &
+              t.fechaTermino.isNull() &
+              t.pendienteRecuperacionDesde.isNull()))
+        .write(
+      AsignacionVehiculoCompanion(
+        pendienteRecuperacionDesde: Value(fecha),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  @override
+  Future<Map<String, AsignacionVehiculoData>> listarPorIds(Iterable<String> ids) async {
+    final unicos = ids.toSet();
+    if (unicos.isEmpty) return {};
+    final filas = await (_db.select(_db.asignacionVehiculo)..where((t) => t.id.isIn(unicos))).get();
+    return {for (final f in filas) f.id: f};
+  }
+
+  @override
+  Future<List<AsignacionVehiculoData>> listarActivasPorEmpleado(String empleadoId) {
+    return (_db.select(_db.asignacionVehiculo)
+          ..where((t) => t.empleadoId.equals(empleadoId) & t.fechaTermino.isNull())
+          ..orderBy([(t) => OrderingTerm.desc(t.fechaInicio)]))
+        .get();
+  }
+
+  @override
+  Future<List<AsignacionVehiculoData>> listarPendientesRecuperacionPorEmpleado(String empleadoId) {
+    return (_db.select(_db.asignacionVehiculo)
+          ..where((t) =>
+              t.empleadoId.equals(empleadoId) &
+              t.fechaTermino.isNull() &
+              t.pendienteRecuperacionDesde.isNotNull())
+          ..orderBy([(t) => OrderingTerm.desc(t.fechaInicio)]))
+        .get();
   }
 
   @override

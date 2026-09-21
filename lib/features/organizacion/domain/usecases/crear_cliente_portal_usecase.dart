@@ -21,6 +21,7 @@ class CrearClientePortalUseCase {
   Future<GuardarClientePortalResultado> ejecutar({
     required String clienteId,
     required ClientePortalBorrador borrador,
+    String? actorUsuarioId,
   }) async {
     final validacion = await _validator.validar(clienteId: clienteId, borrador: borrador);
     if (validacion.errores.isNotEmpty) {
@@ -42,6 +43,7 @@ class CrearClientePortalUseCase {
           contrasenaCifrada: Value(contrasenaCifrada),
           observaciones: Value(validado.observaciones),
         ),
+        actorUsuarioId: actorUsuarioId,
       );
       return GuardarClientePortalExitoso(portal);
     } catch (e) {

@@ -31,6 +31,13 @@ CostosVehiculo calcularCostosVehiculo(VehiculoData vehiculo, List<VehiculoManten
   var totalMantenimientos = 0;
   var totalIncidencias = 0;
   for (final registro in historial) {
+    // Un mantenimiento anulado (schemaVersion 80) ya revirtió su efecto
+    // financiero — su Egreso quedó cancelado, o su cargo de TDC
+    // revertido. Seguir sumándolo aquí dejaría el costo del vehículo
+    // contradiciendo a Finanzas. La fila SÍ se conserva y se sigue
+    // viendo en el historial: lo que no se conserva es su peso en el
+    // total.
+    if (registro.estatus == EstatusMantenimientoVehiculo.cancelado.name) continue;
     final costo = registro.costo;
     if (costo == null) continue;
     final esIncidencia = TipoMantenimientoVehiculo.values.byName(registro.tipo).esIncidencia;

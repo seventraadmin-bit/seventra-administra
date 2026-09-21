@@ -18,10 +18,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:riseg_one/app/app.dart';
 import 'package:riseg_one/app/router/app_router.dart';
+import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart' show attachmentStorageProvider;
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
@@ -88,6 +90,11 @@ Future<GoRouter> _pumpAppEnReportes(
         appDatabaseProvider.overrideWithValue(db),
         contarUsuariosProvider.overrideWith((ref) async => 1),
         sesionControllerProvider.overrideWith(sesion),
+        // Etapa B: la pestaña Finanzas ahora resuelve Servicio y
+        // Entidad fiscal de cada CxC vía `DocumentoPorEmitirRepository`,
+        // que arrastra `attachmentStorageProvider` (sin `path_provider`
+        // bajo `flutter test`).
+        attachmentStorageProvider.overrideWithValue(AttachmentStorage('.')),
       ],
       child: RisegOneApp(router: router),
     ),
@@ -127,7 +134,10 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text(l10n.reportesFinanzasPagosRecibidos), findsOneWidget);
       expect(find.text(l10n.reportesFinanzasAntiguedadTitulo), findsOneWidget);
-      expect(find.text(l10n.reportesFinanzasOrigenTitulo), findsOneWidget);
+      // El bloque de egresos por origen ahora es la gráfica de
+      // composición del gasto, no una lista de textos sueltos.
+      expect(find.text(l10n.reportesFinanzasComposicionTitulo), findsOneWidget);
+      expect(find.text(l10n.reportesFinanzasFinanciamientoTitulo), findsOneWidget);
     });
   });
 
@@ -142,7 +152,7 @@ void main() {
 
       expect(find.text(l10n.reportesGeneralPersonalActivo), findsOneWidget);
       expect(find.text(l10n.reportesGeneralIngresos), findsNothing, reason: 'sin finanzas.ver, nunca se muestra Ingresos');
-      expect(find.text(l10n.reportesGeneralEgresos), findsNothing);
+      expect(find.text(l10n.reportesGeneralGastoOperativo), findsNothing);
       expect(find.text(l10n.reportesGeneralCompras), findsNothing, reason: 'sin compras.ver');
       expect(find.text(l10n.reportesGeneralServiciosActivos), findsNothing, reason: 'sin comercial.ver');
     });

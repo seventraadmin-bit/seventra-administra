@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import '../repositories/entidad_fiscal_repository.dart';
 import 'entidad_fiscal_validator.dart';
 import 'guardar_entidad_fiscal_resultado.dart';
@@ -20,10 +21,16 @@ class ActualizarEntidadFiscalUseCase {
   final EntidadFiscalRepository _repository;
   final EntidadFiscalValidator _validator;
 
+  /// [motivo] es obligatorio: RFC y razón social son datos fiscales,
+  /// y una corrección sin explicación deja sin dueño un cambio que
+  /// afecta a la facturación.
   Future<GuardarEntidadFiscalResultado> ejecutar({
     required String id,
     required EntidadFiscalBorrador borrador,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return GuardarEntidadFiscalMotivoRequerido();
     final existente = await _repository.obtenerPorId(id);
     if (existente == null) {
       return GuardarEntidadFiscalErrorInesperado('Entidad fiscal no encontrada: $id');
@@ -51,6 +58,8 @@ class ActualizarEntidadFiscalUseCase {
           razonSocial: Value(validado.razonSocial),
           rfc: Value(validado.rfc),
         ),
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
       );
       return GuardarEntidadFiscalExitoso(actualizada);
     } catch (e) {

@@ -37,12 +37,14 @@ class AsignarSucursalAdministrativaUseCase {
   Future<AsignarSucursalAdministrativaResultado> ejecutar({
     required String servicioId,
     required String? sucursalId,
+    String? actorUsuarioId,
   }) async {
     if (sucursalId == null) {
       try {
         final servicio = await _servicioRepository.asignarSucursalAdministrativa(
           servicioId: servicioId,
           sucursalId: null,
+          actorUsuarioId: actorUsuarioId,
         );
         return AsignarSucursalAdministrativaExitoso(servicio);
       } catch (e) {
@@ -62,6 +64,7 @@ class AsignarSucursalAdministrativaUseCase {
       final servicio = await _servicioRepository.asignarSucursalAdministrativa(
         servicioId: servicioId,
         sucursalId: sucursalId,
+        actorUsuarioId: actorUsuarioId,
       );
       return AsignarSucursalAdministrativaExitoso(servicio);
     } catch (e) {

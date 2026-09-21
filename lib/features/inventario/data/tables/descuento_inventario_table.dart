@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../../core/database/tables/audit_columns.dart';
+import '../../../nomina/data/tables/nomina_empleado_table.dart';
 import '../../../personal/data/tables/empleado_table.dart';
 import 'asignacion_table.dart';
 
@@ -38,8 +39,19 @@ class DescuentoInventario extends Table with AuditColumns {
 
   TextColumn get estatus => text().withDefault(const Constant('pendiente'))();
 
-  /// La escribe una futura integración con Nómina — nunca en 7B.
+  /// La escribe `NominaRepositoryImpl.generar` al aplicarlo (Etapa 15,
+  /// integración real con Nómina) — nunca en 7B.
   DateTimeColumn get fechaAplicacion => dateTime().nullable()();
+
+  /// El renglón de Nómina donde se aplicó (Etapa 15) — `null` mientras
+  /// `estatus == pendiente`/`cancelado`. `restrict`: nunca se permite
+  /// borrar/reemplazar un renglón que ya consumió un descuento real sin
+  /// resolverlo explícitamente primero — consecuencia intencional:
+  /// `NominaRepository.guardarRenglon` (borra+reinserta el renglón,
+  /// usado por "Actualizar desde Personal") fallará si el renglón ya
+  /// tiene un descuento aplicado.
+  TextColumn get nominaEmpleadoId =>
+      text().nullable().references(NominaEmpleado, #id, onDelete: KeyAction.restrict)();
 
   TextColumn get observaciones => text().nullable()();
 

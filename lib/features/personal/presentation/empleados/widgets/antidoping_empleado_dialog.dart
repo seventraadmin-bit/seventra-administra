@@ -7,7 +7,6 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/registrar_antidoping_usecase.dart';
-import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../../personal_providers.dart';
 
@@ -173,7 +172,7 @@ Future<bool> mostrarDialogoAntidopingEmpleado(BuildContext context, WidgetRef re
         return false;
       }
 
-      final resultado = await ref.read(registrarAntidopingUseCaseProvider).ejecutar(
+      final resultado = await ref.read(registrarAntidopingAutorizadoProvider)(
             empleadoId: empleado.id,
             fecha: fecha!,
             amp: amp,
@@ -185,7 +184,6 @@ Future<bool> mostrarDialogoAntidopingEmpleado(BuildContext context, WidgetRef re
             sourceFilePath: archivoPath,
             originalFileName: archivoNombre,
             mimeType: archivoPath == null ? null : 'application/pdf',
-            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           );
 
       if (!context.mounted) return false;

@@ -64,6 +64,8 @@ Future<bool> mostrarDialogoCrearDocumentoManual(BuildContext context, WidgetRef 
       RisegFeedback.showError(context, l10n.agendaCrearManualErrorIncompatibles);
     case CrearDocumentoManualYaExiste():
       RisegFeedback.showError(context, l10n.agendaCrearManualErrorYaExiste);
+    case CrearDocumentoManualServicioFueraDeVigencia():
+      RisegFeedback.showError(context, l10n.agendaCrearManualErrorFueraDeVigencia);
     case CrearDocumentoManualErrorInesperado():
       RisegFeedback.showError(context, l10n.agendaCrearManualErrorInesperado);
     case null:

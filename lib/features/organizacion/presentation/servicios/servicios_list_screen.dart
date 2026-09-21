@@ -13,6 +13,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validat
 
 import '../../organizacion_providers.dart';
 import 'servicios_list_controller.dart';
+import 'servicios_list_state.dart';
 
 /// Listado de Servicios — buscador (código/nombre/Cliente/Tipo de
 /// Servicio/observaciones), tabla y alta mínima vía diálogo (nombre,
@@ -79,6 +80,7 @@ class _ServiciosListScreenState extends ConsumerState<ServiciosListScreen> {
         RisegFeedback.showSuccess(context, l10n.servicioCrearExito);
         context.push('/comercial/servicios/${servicio.id}');
       case GuardarServicioErroresValidacion():
+      case GuardarServicioMotivoRequerido():
       case GuardarServicioErrorInesperado():
         RisegFeedback.showError(context, l10n.servicioCrearError);
       case null:
@@ -123,6 +125,8 @@ class _ServiciosListScreenState extends ConsumerState<ServiciosListScreen> {
       );
     }
 
+    final colors = context.colors;
+
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
@@ -130,17 +134,97 @@ class _ServiciosListScreenState extends ConsumerState<ServiciosListScreen> {
         children: [
           RisegSectionHeader(
             title: l10n.serviciosListadoTitulo,
+            description: l10n.serviciosListadoSubtitulo,
             primaryAction: RisegButton(
               key: const Key('servicios_boton_nuevo'),
               label: l10n.serviciosListadoBotonNuevo,
+              icon: Icons.add,
               onPressed: _mostrarDialogoAlta,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          RisegSearchField(
-            hint: l10n.serviciosListadoBuscarHint,
-            controller: _busquedaController,
-            onChanged: notifier.actualizarBusqueda,
+          // División comercial primaria (pedido explícito) — separa
+          // Servicios vigentes de los ya terminados, antes de cualquier
+          // otro filtro más granular.
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: [
+              ChoiceChip(
+                key: const Key('servicios_grupo_vigentes'),
+                label: Text(l10n.serviciosGrupoVigentes),
+                selected: state.grupo == GrupoVigenciaServicio.vigentes,
+                onSelected: (_) => notifier.cambiarGrupo(GrupoVigenciaServicio.vigentes),
+              ),
+              ChoiceChip(
+                key: const Key('servicios_grupo_finalizados'),
+                label: Text(l10n.serviciosGrupoFinalizados),
+                selected: state.grupo == GrupoVigenciaServicio.finalizados,
+                onSelected: (_) => notifier.cambiarGrupo(GrupoVigenciaServicio.finalizados),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(
+                width: 260,
+                child: RisegSearchField(
+                  hint: l10n.serviciosListadoBuscarHint,
+                  controller: _busquedaController,
+                  onChanged: notifier.actualizarBusqueda,
+                ),
+              ),
+              SizedBox(
+                width: 190,
+                child: RisegSelect<String?>(
+                  label: l10n.servicioCampoCliente,
+                  value: state.filtroClienteId,
+                  items: [
+                    RisegSelectItem(value: null, label: l10n.serviciosFiltroClienteTodos),
+                    for (final (id, nombre) in state.clientesDisponibles) RisegSelectItem(value: id, label: nombre),
+                  ],
+                  onChanged: notifier.cambiarFiltroCliente,
+                ),
+              ),
+              SizedBox(
+                width: 170,
+                child: RisegSelect<String?>(
+                  label: l10n.serviciosColumnaTipo,
+                  value: state.filtroTipoServicioId,
+                  items: [
+                    RisegSelectItem(value: null, label: l10n.serviciosFiltroTipoTodos),
+                    for (final (id, nombre) in state.tiposDisponibles) RisegSelectItem(value: id, label: nombre),
+                  ],
+                  onChanged: notifier.cambiarFiltroTipo,
+                ),
+              ),
+              SizedBox(
+                width: 170,
+                child: RisegSelect<String?>(
+                  label: l10n.serviciosColumnaEstatus,
+                  value: state.filtroEstatus,
+                  items: [
+                    RisegSelectItem(value: null, label: l10n.serviciosFiltroEstatusTodos),
+                    for (final e in ['cotizado', 'activo', 'suspendido', 'terminado'])
+                      RisegSelectItem(value: e, label: _nombreEstatus(l10n, e)),
+                  ],
+                  onChanged: notifier.cambiarFiltroEstatus,
+                ),
+              ),
+              RisegButton(
+                label: l10n.personalActivoLimpiarFiltros,
+                variant: RisegButtonVariant.ghost,
+                onPressed: state.hayFiltrosActivos
+                    ? () {
+                        _busquedaController.clear();
+                        notifier.limpiarTodosLosFiltros();
+                      }
+                    : null,
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.md),
           Expanded(
@@ -152,24 +236,45 @@ class _ServiciosListScreenState extends ConsumerState<ServiciosListScreen> {
                 title: l10n.serviciosListadoVacioTitulo,
                 message: l10n.serviciosListadoVacioMensaje,
               ),
+              hoverColor: colors.accentSoftBg,
+              rowVerticalPadding: AppSpacing.sm + AppSpacing.xxs,
+              rowActionsBuilder: (_) => Icon(Icons.chevron_right, size: AppSizes.iconMd, color: colors.textMuted),
+              actionsWidth: 40,
               columns: [
                 RisegColumn<ServicioListItem>(
-                  label: l10n.serviciosColumnaCodigo,
-                  width: 100,
-                  cellBuilder: (item) => Text(item.servicio.codigo),
-                ),
-                RisegColumn<ServicioListItem>(
                   label: l10n.serviciosColumnaNombre,
-                  cellBuilder: (item) => Text(item.servicio.nombre),
+                  cellBuilder: (item) => RisegEntityIdentity(
+                    forma: RisegEntityImageShape.cuadradaRedondeada,
+                    primario: item.servicio.nombre,
+                    secundario: item.clienteNombre,
+                    imagenPath: state.logoPathPorClienteId[item.servicio.clienteId],
+                  ),
                 ),
                 RisegColumn<ServicioListItem>(
-                  label: l10n.serviciosColumnaCliente,
-                  cellBuilder: (item) => Text(item.clienteNombre),
+                  label: l10n.serviciosColumnaUbicacion,
+                  cellBuilder: (item) => Text(
+                    item.municipioAlcaldia != null && item.estado != null
+                        ? '${item.municipioAlcaldia}, ${item.estado}'
+                        : l10n.serviciosUbicacionNoRegistrada,
+                    style: item.municipioAlcaldia == null ? AppTypography.body.copyWith(color: colors.textMuted) : null,
+                  ),
                 ),
                 RisegColumn<ServicioListItem>(
-                  label: l10n.serviciosColumnaTipo,
-                  width: 160,
-                  cellBuilder: (item) => Text(item.tipoServicioNombre),
+                  label: l10n.serviciosColumnaPersonal,
+                  width: 110,
+                  cellBuilder: (item) => Text('${state.personalPorServicio[item.servicio.id] ?? 0}'),
+                ),
+                RisegColumn<ServicioListItem>(
+                  label: l10n.serviciosColumnaTurno,
+                  width: 150,
+                  cellBuilder: (item) {
+                    final turno = state.turnoPorServicio[item.servicio.id];
+                    return Text(
+                      turno == null || turno.isEmpty ? l10n.serviciosTurnoNoRegistrado : turno,
+                      style: turno == null || turno.isEmpty ? AppTypography.body.copyWith(color: colors.textMuted) : null,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  },
                 ),
                 RisegColumn<ServicioListItem>(
                   label: l10n.serviciosColumnaEstatus,

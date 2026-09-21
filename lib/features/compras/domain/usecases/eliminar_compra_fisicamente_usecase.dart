@@ -1,5 +1,32 @@
 import '../repositories/compra_repository.dart';
 
+/// Motivo estructurado de eliminación física de una Compra (Etapa 15,
+/// Maestro-only) — mismo criterio que `MotivoCancelacionCompra`: se
+/// persiste el nombre estable del enum en
+/// `EliminacionFisicaEvento.motivoCodigo`, nunca la etiqueta. `otro` es
+/// el único valor que exige `detalle`.
+enum MotivoEliminacionFisicaCompra {
+  registroDePrueba,
+  registroDuplicado,
+  errorDeCaptura,
+  registroCreadoPorEquivocacion,
+  otro,
+}
+
+/// Etiqueta traducida de cada [MotivoEliminacionFisicaCompra] — se
+/// persiste también en `EliminacionFisicaEvento.motivo` (texto libre,
+/// siempre poblado por compatibilidad con el resto de dominios que
+/// comparten esa tabla).
+extension MotivoEliminacionFisicaCompraLabel on MotivoEliminacionFisicaCompra {
+  String get etiqueta => switch (this) {
+        MotivoEliminacionFisicaCompra.registroDePrueba => 'Registro de prueba',
+        MotivoEliminacionFisicaCompra.registroDuplicado => 'Registro duplicado',
+        MotivoEliminacionFisicaCompra.errorDeCaptura => 'Error de captura',
+        MotivoEliminacionFisicaCompra.registroCreadoPorEquivocacion => 'Registro creado por equivocación',
+        MotivoEliminacionFisicaCompra.otro => 'Otro',
+      };
+}
+
 /// Resumen de solo lectura de si una Compra es elegible para
 /// eliminación física (Etapa 15) — insumo del mensaje de confirmación
 /// que la UI muestra antes de pedir el motivo. `detalleBloqueo` no nulo
@@ -23,7 +50,8 @@ class EliminarCompraFisicamenteExitoso extends EliminarCompraFisicamenteResultad
 
 class EliminarCompraFisicamenteNoExiste extends EliminarCompraFisicamenteResultado {}
 
-class EliminarCompraFisicamenteMotivoRequerido extends EliminarCompraFisicamenteResultado {}
+/// `motivo == MotivoEliminacionFisicaCompra.otro` sin `detalle` capturado.
+class EliminarCompraFisicamenteDetalleRequerido extends EliminarCompraFisicamenteResultado {}
 
 /// La Compra generó historia real posterior que no es seguro revertir
 /// (una unidad ya asignada/vinculada a una línea telefónica, o un
@@ -41,10 +69,11 @@ class EliminarCompraFisicamenteErrorInesperado extends EliminarCompraFisicamente
 
 /// Eliminación física extraordinaria de una `Compra` (Etapa 15) —
 /// exclusiva del Usuario Maestro (`exigirMaestro`, nunca aquí — este
-/// caso de uso es puro). `motivo` siempre obligatorio. Toda la
-/// validación de dependencias + snapshot + registro de auditoría +
-/// `DELETE` (Compra, su Egreso, y las integraciones de Inventario que
-/// generó) ocurre transaccionalmente dentro de
+/// caso de uso es puro). `motivo` siempre obligatorio (enum
+/// estructurado, Etapa 15); `otro` exige `detalle`. Toda la validación
+/// de dependencias + snapshot + registro de auditoría + `DELETE`
+/// (Compra, su Egreso, y las integraciones de Inventario que generó)
+/// ocurre transaccionalmente dentro de
 /// `CompraRepositoryImpl.eliminarFisicamente`.
 class EliminarCompraFisicamenteUseCase {
   EliminarCompraFisicamenteUseCase(this._repository);
@@ -57,16 +86,20 @@ class EliminarCompraFisicamenteUseCase {
 
   Future<EliminarCompraFisicamenteResultado> ejecutar({
     required String compraId,
-    required String motivo,
+    required MotivoEliminacionFisicaCompra motivo,
+    String? detalle,
     String? actorUsuarioId,
   }) async {
-    final motivoLimpio = motivo.trim();
-    if (motivoLimpio.isEmpty) return EliminarCompraFisicamenteMotivoRequerido();
+    final detalleLimpio = detalle?.trim();
+    if (motivo == MotivoEliminacionFisicaCompra.otro && (detalleLimpio == null || detalleLimpio.isEmpty)) {
+      return EliminarCompraFisicamenteDetalleRequerido();
+    }
 
     try {
       return await _repository.eliminarFisicamente(
         compraId: compraId,
-        motivo: motivoLimpio,
+        motivo: motivo.name,
+        detalle: detalleLimpio,
         actorUsuarioId: actorUsuarioId,
       );
     } catch (e) {

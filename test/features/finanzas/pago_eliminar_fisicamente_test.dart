@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/complemento_pago_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/pago_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/eliminar_pago_fisicamente_usecase.dart';
@@ -28,7 +29,7 @@ void main() {
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     pagoRepo = PagoRepositoryImpl(db);
-    cancelarPago = CancelarPagoUseCase(pagoRepo);
+    cancelarPago = CancelarPagoUseCase(pagoRepo, ComplementoPagoRepositoryImpl(db));
     eliminarPago = EliminarPagoFisicamenteUseCase(pagoRepo);
 
     await db.into(db.usuario).insert(
@@ -67,8 +68,8 @@ void main() {
         );
     final cuenta = await db.into(db.cuentaPorCobrar).insertReturning(
           CuentaPorCobrarCompanion.insert(
-            documentoPorEmitirId: documento.id,
-            clienteId: clienteId,
+            documentoPorEmitirId: Value(documento.id),
+            clienteId: Value(clienteId),
             tipoDocumento: 'reciboDePago',
             metodo: 'noAplica',
             fechaEmisionReal: DateTime(2026, 1, 5),
@@ -176,6 +177,16 @@ void main() {
         fechaPago: DateTime(2026, 8, 10),
         formaPago: 'efectivo',
       );
+      // Se cancela ANTES de insertar el Complemento (Etapa 6:
+      // `CancelarPagoUseCase` ahora bloquea la cancelación de un Pago
+      // con un Complemento vigente) — el Complemento se inserta directo
+      // sobre la tabla, sin pasar por `RegistrarComplementoPagoUseCase`
+      // (que tampoco permitiría registrarlo sobre un Pago ya
+      // cancelado), justo para simular defensivamente que el
+      // Complemento terminó asociado a un Pago cancelado sin importar
+      // el orden real de captura — la eliminación física debe seguir
+      // bloqueada de todas formas.
+      await cancelarPago.ejecutar(pagoId: pago.id, motivo: 'Duplicado');
       await db.into(db.complementoPago).insert(
             ComplementoPagoCompanion.insert(
               pagoId: pago.id,
@@ -185,7 +196,6 @@ void main() {
               folioFiscal: const Value('CFDI-9001'),
             ),
           );
-      await cancelarPago.ejecutar(pagoId: pago.id, motivo: 'Duplicado');
 
       final r = await eliminarPago.ejecutar(pagoId: pago.id, motivo: 'intento', actorUsuarioId: 'usuario-maestro');
 

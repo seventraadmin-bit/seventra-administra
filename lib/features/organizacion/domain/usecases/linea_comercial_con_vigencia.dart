@@ -61,6 +61,23 @@ class LineaComercialConVigencia {
   /// no tiene ninguna vigencia en efecto (solo programadas a futuro).
   int get subtotal =>
       vigenciaActual == null ? 0 : vigenciaActual!.cantidadElementos * vigenciaActual!.precioUnitario;
+
+  /// Usado por `listarLineasEnFecha` para sumar la atribución de
+  /// asignaciones históricas sin línea (`lineaComercialId == null`,
+  /// corrección de compatibilidad histórica) sobre el conteo directo ya
+  /// resuelto — nunca cambia ningún otro campo.
+  LineaComercialConVigencia copyWith({int? asignadosVigentes}) {
+    return LineaComercialConVigencia(
+      linea: linea,
+      vigenciaActual: vigenciaActual,
+      vigenciasProgramadas: vigenciasProgramadas,
+      puestoNombre: puestoNombre,
+      modalidadTurnoNombre: modalidadTurnoNombre,
+      esCorregible: esCorregible,
+      asignadosVigentes: asignadosVigentes ?? this.asignadosVigentes,
+      horarioVigenciaMostrada: horarioVigenciaMostrada,
+    );
+  }
 }
 
 /// Compara solo año/mes/día — una vigencia es cuestión de fechas de

@@ -8,7 +8,9 @@ import 'package:riseg_one/features/organizacion/domain/usecases/puesto_validator
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
+import '../areas/areas_list_controller.dart';
 import 'puesto_expediente_state.dart';
+import 'puestos_list_controller.dart';
 
 part 'puesto_expediente_controller.g.dart';
 
@@ -94,6 +96,12 @@ class PuestoExpedienteController extends _$PuestoExpedienteController {
           erroresGuardado: const [],
           errorGuardadoGeneral: false,
         );
+        // El listado de Puestos (y las métricas "Puestos por Área" de
+        // Áreas, que se calculan sobre Puestos activos) son providers
+        // independientes que se quedan montados debajo del expediente
+        // (`push`) — mismo motivo que `ClienteExpedienteController.guardar`.
+        ref.invalidate(puestosListControllerProvider);
+        ref.invalidate(areasListControllerProvider);
         return true;
       case GuardarPuestoErroresValidacion(errores: final errores):
         state = state.copyWith(guardando: false, erroresGuardado: errores, errorGuardadoGeneral: false);
@@ -123,6 +131,10 @@ class PuestoExpedienteController extends _$PuestoExpedienteController {
     switch (resultado) {
       case CambiarCicloVidaPuestoExitoso(puesto: final puesto):
         state = state.copyWith(cambiandoCicloVida: false, datos: puesto);
+        // Mismo motivo que en `guardar` — archivar/reactivar un Puesto
+        // cambia sus métricas en Áreas y su fila en el listado.
+        ref.invalidate(puestosListControllerProvider);
+        ref.invalidate(areasListControllerProvider);
         return true;
       case CambiarCicloVidaPuestoAreaInactiva():
         state = state.copyWith(cambiandoCicloVida: false);

@@ -126,27 +126,30 @@ void main() {
   tearDown(() => db.close());
 
   group('Empresa', () {
-    testWidgets('ancho amplio: código y razón social comparten fila (grid de 3 columnas), sin overflow', (
-      tester,
-    ) async {
+    // Etapa 16, tercera pasada visual — consulta ahora agrupa
+    // "Información fiscal" y "Contacto" lado a lado en ancho amplio
+    // (`ResumenEmpresaConsulta`), apilados en ancho reducido; ya no hay
+    // un único grid de 6 campos (`Código`/`Razón social` compartiendo
+    // fila era ese layout anterior).
+    testWidgets('ancho amplio: "Información fiscal" y "Contacto" comparten fila, sin overflow', (tester) async {
       await _fijarAncho(tester, _anchoAmplio);
       await _pumpEmpresa(tester, db);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
-      final yCodigo = tester.getTopLeft(find.text(l10n.empresaCampoCodigo)).dy;
-      final yRazonSocial = tester.getTopLeft(find.text(l10n.empresaCampoRazonSocial)).dy;
-      expect(yCodigo, yRazonSocial);
+      final yFiscal = tester.getTopLeft(find.text(l10n.empresaSeccionInformacionFiscalTitulo)).dy;
+      final yContacto = tester.getTopLeft(find.text(l10n.empresaSeccionContactoTitulo)).dy;
+      expect(yFiscal, yContacto);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('ancho reducido: código y razón social se apilan (1 columna), sin overflow', (tester) async {
+    testWidgets('ancho reducido: "Información fiscal" y "Contacto" se apilan, sin overflow', (tester) async {
       await _fijarAncho(tester, _anchoReducido);
       await _pumpEmpresa(tester, db);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
-      final yCodigo = tester.getTopLeft(find.text(l10n.empresaCampoCodigo)).dy;
-      final yRazonSocial = tester.getTopLeft(find.text(l10n.empresaCampoRazonSocial)).dy;
-      expect(yRazonSocial, greaterThan(yCodigo));
+      final yFiscal = tester.getTopLeft(find.text(l10n.empresaSeccionInformacionFiscalTitulo)).dy;
+      final yContacto = tester.getTopLeft(find.text(l10n.empresaSeccionContactoTitulo)).dy;
+      expect(yContacto, greaterThan(yFiscal));
       expect(tester.takeException(), isNull);
     });
 

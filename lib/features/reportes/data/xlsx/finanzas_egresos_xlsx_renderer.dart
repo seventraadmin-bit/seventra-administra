@@ -7,6 +7,10 @@ import 'reporte_xlsx_utils.dart';
 const _origenLabel = {
   OrigenEgreso.compra: 'Compra',
   OrigenEgreso.nomina: 'Nómina',
+  OrigenEgreso.tiempoExtra: 'Tiempo extra',
+  OrigenEgreso.deuda: 'Pago de deuda',
+  OrigenEgreso.descuentoProgramado: 'Préstamo a empleado',
+  OrigenEgreso.vehiculo: 'Vehículo',
   OrigenEgreso.manual: 'Manual',
 };
 

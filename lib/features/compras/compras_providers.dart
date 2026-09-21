@@ -12,6 +12,7 @@ import 'domain/repositories/compra_repository.dart';
 import 'domain/usecases/adjuntar_comprobante_compra_usecase.dart';
 import 'domain/usecases/cancelar_compra_usecase.dart';
 import 'domain/usecases/corregir_compra_usecase.dart';
+import 'domain/usecases/eliminar_cadena_prueba_compra_usecase.dart';
 import 'domain/usecases/eliminar_compra_fisicamente_usecase.dart';
 import 'domain/usecases/registrar_compra_usecase.dart';
 
@@ -26,6 +27,7 @@ final compraRepositoryProvider = Provider<CompraRepository>((ref) {
     ref.watch(inventarioRepositoryProvider),
     ref.watch(articuloRepositoryProvider),
     ref.watch(egresoRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
   );
 });
 
@@ -34,6 +36,7 @@ final registrarCompraUseCaseProvider = Provider<RegistrarCompraUseCase>((ref) {
     ref.watch(compraRepositoryProvider),
     ref.watch(articuloRepositoryProvider),
     ref.watch(inventarioRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
     ref.watch(generarCodigoUseCaseProvider),
   );
 });
@@ -43,6 +46,7 @@ final corregirCompraUseCaseProvider = Provider<CorregirCompraUseCase>((ref) {
     ref.watch(compraRepositoryProvider),
     ref.watch(articuloRepositoryProvider),
     ref.watch(inventarioRepositoryProvider),
+    ref.watch(deudaRepositoryProvider),
   );
 });
 
@@ -63,19 +67,49 @@ final eliminarCompraFisicamenteUseCaseProvider = Provider<EliminarCompraFisicame
 
 typedef EliminarCompraFisicamenteAutorizado = Future<EliminarCompraFisicamenteResultado> Function({
   required String compraId,
-  required String motivo,
+  required MotivoEliminacionFisicaCompra motivo,
+  String? detalle,
 });
 
 final eliminarCompraFisicamenteAutorizadoProvider = Provider<EliminarCompraFisicamenteAutorizado>((ref) {
-  return ({required String compraId, required String motivo}) {
+  return ({required String compraId, required MotivoEliminacionFisicaCompra motivo, String? detalle}) {
     return exigirMaestro(
       ref.read(permissionServiceProvider),
       () => ref.read(eliminarCompraFisicamenteUseCaseProvider).ejecutar(
             compraId: compraId,
             motivo: motivo,
+            detalle: detalle,
             actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           ),
       EliminarCompraFisicamenteErrorInesperado.new,
+    );
+  };
+});
+
+// "Eliminar cadena de prueba" (Etapa 15, limpieza segura de datos de
+// prueba) — ofrecida SOLO cuando la eliminación física normal está
+// bloqueada por historia posterior; misma facultad exclusiva Maestro.
+final eliminarCadenaPruebaCompraUseCaseProvider = Provider<EliminarCadenaPruebaCompraUseCase>((ref) {
+  return EliminarCadenaPruebaCompraUseCase(ref.watch(compraRepositoryProvider));
+});
+
+typedef EliminarCadenaPruebaCompraAutorizado = Future<EliminarCadenaPruebaCompraResultado> Function({
+  required String compraId,
+  required MotivoCadenaPruebaCompra motivo,
+  String? detalle,
+});
+
+final eliminarCadenaPruebaCompraAutorizadoProvider = Provider<EliminarCadenaPruebaCompraAutorizado>((ref) {
+  return ({required String compraId, required MotivoCadenaPruebaCompra motivo, String? detalle}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(eliminarCadenaPruebaCompraUseCaseProvider).ejecutar(
+            compraId: compraId,
+            motivo: motivo,
+            detalle: detalle,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      EliminarCadenaPruebaCompraErrorInesperado.new,
     );
   };
 });

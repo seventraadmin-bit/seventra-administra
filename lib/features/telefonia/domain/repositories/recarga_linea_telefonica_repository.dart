@@ -22,6 +22,26 @@ class DestinoHistoricoRecarga {
 abstract interface class RecargaLineaTelefonicaRepository {
   Future<RecargaLineaTelefonicaData?> obtenerPorId(String recargaLineaTelefonicaId);
 
+  /// Nombre legible de la CuentaFinanciera desde la que salió un Egreso
+  /// automático — para el diff de auditoría, que muestra nombres y
+  /// nunca UUIDs. `null` si el Egreso no existe o no tiene cuenta.
+  Future<String?> nombreCuentaDeEgreso(String egresoId);
+
+  /// Id de la CuentaFinanciera desde la que salió un Egreso automático
+  /// — para precargar el selector al corregir. `null` si no aplica.
+  Future<String?> cuentaDeEgreso(String egresoId);
+
+  /// Ids de los Egresos generados automáticamente por recargas
+  /// VIGENTES — fuente de `OrigenEgreso.telefonia` en la clasificación
+  /// de Finanzas. Una recarga cancelada ya canceló su Egreso, así que
+  /// no aparece en el listado de Egresos registrados.
+  Future<List<String>> listarEgresoIds();
+
+  /// La recarga a la que pertenece un Egreso automático, o `null` si
+  /// ese Egreso no nació de una recarga. Es la relación REAL por FK —
+  /// nunca se infiere por concepto, importe ni fecha.
+  Future<RecargaLineaTelefonicaData?> obtenerPorEgresoId(String egresoId);
+
   /// Historial completo de una línea, orden descendente por `fecha` —
   /// el primero es siempre "la última recarga".
   Future<List<RecargaLineaTelefonicaData>> listarPorLinea(String lineaTelefonicaId);
@@ -69,11 +89,74 @@ abstract interface class RecargaLineaTelefonicaRepository {
     DateTime? hasta,
   });
 
+  /// Registra la recarga Y su efecto financiero, atómicamente
+  /// (schemaVersion 86): Cuenta → exactamente un Egreso automático;
+  /// tarjeta → exactamente un `MovimientoDeuda` de cargo y JAMÁS un
+  /// Egreso. Mismo patrón exacto que `CompraRepository.registrar` y
+  /// `TiempoExtraRepository.crear` — nunca una cuarta arquitectura.
   Future<RecargaLineaTelefonicaData> registrar({
     required String lineaTelefonicaId,
     required DateTime fecha,
     required int importe,
+    /// Cómo se pagó — mismo catálogo `FormaPago` de Compras/TEX/Egresos.
+    required String formaPago,
+
+    /// Origen cuando `formaPago != tarjeta`. Exactamente uno de este o
+    /// [deudaIdTarjeta] se puebla; la invariante la impone el caso de uso.
+    String? cuentaFinancieraId,
+
+    /// Origen cuando `formaPago == tarjeta`.
+    String? deudaIdTarjeta,
     String? observaciones,
+    String? actorUsuarioId,
+  });
+
+  /// Corrige una recarga YA registrada (schemaVersion 81) — sobre la
+  /// MISMA fila, nunca creando una "recarga sustituta": una recarga no
+  /// tiene identidad contable propia que obligue a preservar la fila
+  /// errónea (a diferencia de un Complemento de pago timbrado), y
+  /// duplicarla inflaría todos los totalizadores del módulo.
+  ///
+  /// Escritura cruda, sin validaciones ni auditoría: el motivo y el
+  /// evento los impone `CorregirRecargaLineaTelefonicaUseCase`.
+  /// Corrige la recarga y **mueve su efecto financiero** a donde
+  /// corresponda, atómicamente. Soporta las seis transiciones:
+  /// Cuenta→misma Cuenta, Cuenta→otra Cuenta, TDC→misma TDC,
+  /// TDC→otra TDC, Cuenta→TDC y TDC→Cuenta. Nunca deja dos efectos
+  /// vivos ni ninguno.
+  ///
+  /// [motivo] viaja a la corrección del Egreso/cargo subyacente, no
+  /// sólo a la bitácora de Telefonía.
+  Future<RecargaLineaTelefonicaData> corregir({
+    required String recargaLineaTelefonicaId,
+    DateTime? fecha,
+    int? importe,
+    /// Cómo se pagó — mismo catálogo `FormaPago` de Compras/TEX/Egresos.
+    required String formaPago,
+
+    /// Origen cuando `formaPago != tarjeta`. Exactamente uno de este o
+    /// [deudaIdTarjeta] se puebla; la invariante la impone el caso de uso.
+    String? cuentaFinancieraId,
+
+    /// Origen cuando `formaPago == tarjeta`.
+    String? deudaIdTarjeta,
+    String? observaciones,
+    bool limpiarObservaciones = false,
+    required String motivo,
+    String? actorUsuarioId,
+  });
+
+  /// Anula una recarga conservando la fila (schemaVersion 81). Deja de
+  /// sumar en TODOS los totalizadores, pero sigue en el historial con
+  /// su motivo — un error de captura nunca obliga a borrar evidencia.
+  /// Anula la recarga y revierte su efecto financiero exactamente una
+  /// vez: cancela el Egreso automático (Cuenta) o revierte el cargo de
+  /// la tarjeta (TDC). Nunca crea un Ingreso ni un segundo gasto. Una
+  /// recarga legacy —sin origen financiero registrado— se cancela sin
+  /// tocar ningún balance.
+  Future<RecargaLineaTelefonicaData> cancelar({
+    required String recargaLineaTelefonicaId,
+    required String motivo,
     String? actorUsuarioId,
   });
 

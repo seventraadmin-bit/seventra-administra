@@ -735,6 +735,7 @@ class ServicioConfiguracionCobroForm extends StatefulWidget {
     this.valoresIniciales,
     this.etapasIniciales = const [],
     this.errores = const [],
+    this.errorGeneral,
     super.key,
   });
 
@@ -762,6 +763,14 @@ class ServicioConfiguracionCobroForm extends StatefulWidget {
   /// uso para que cada campo muestre su propio `errorText` específico,
   /// en vez del mensaje genérico único que se mostraba antes.
   final List<ErrorConfiguracionCobro> errores;
+
+  /// Error que no pertenece a ningún campo — reglas de las etapas, o un
+  /// fallo al persistir. Se muestra DENTRO del formulario, arriba de
+  /// todo, y el diálogo permanece abierto con la captura intacta (mismo
+  /// criterio que el alta de usuario). Antes, un fallo al guardar
+  /// cerraba el diálogo y tiraba todo lo capturado, dejando solo un
+  /// snackbar genérico — así se reportó el caso MORGAN ATLACOMULCO.
+  final String? errorGeneral;
 
   @override
   State<ServicioConfiguracionCobroForm> createState() => _ServicioConfiguracionCobroFormState();
@@ -905,10 +914,28 @@ class _ServicioConfiguracionCobroFormState extends State<ServicioConfiguracionCo
   /// se ofrece solo si esta vigencia todavía no lo tiene (a lo más una
   /// etapa por `tipoSistema`, mismo criterio que
   /// `ConfiguracionCobroEtapaValidator`).
+  /// `complementoPago` se retira de la captura NUEVA (decisión ② de
+  /// Marlon, etapa "Complemento dependiente del Pago real"): era una
+  /// fecha de calendario calculada desde el inicio del periodo, sin
+  /// ninguna relación con el Pago que realmente origina la obligación
+  /// fiscal. La única fuente de verdad es
+  /// `Pago + AplicacionPago + CuentaPorCobrar PPD + ComplementoPago`
+  /// (ver `complemento_pago_derivado.dart`).
+  ///
+  /// El enum, las filas y los hitos históricos se CONSERVAN intactos —
+  /// significaron una fecha que en su momento se configuró así, y siguen
+  /// siendo evidencia de eso. `_etapaSistemaLabel` la sigue resolviendo,
+  /// de modo que una vigencia antigua que la tenga se abre y se
+  /// renderiza igual que siempre; simplemente ya no se puede agregar.
+  static const _tiposSistemaRetirados = {
+    TipoEventoCobro.emision, // ya está forzada, única y no removible
+    TipoEventoCobro.procesamiento, // compatibilidad histórica
+    TipoEventoCobro.complementoPago, // deja de ser fuente de verdad
+  };
+
   List<TipoEventoCobro> get _tiposSistemaOfrecidos => [
         for (final t in TipoEventoCobro.values)
-          if (t != TipoEventoCobro.emision && t != TipoEventoCobro.procesamiento && !_etapas.any((e) => e.tipoSistema == t))
-            t,
+          if (!_tiposSistemaRetirados.contains(t) && !_etapas.any((e) => e.tipoSistema == t)) t,
       ];
 
   void _agregarEtapa({TipoEventoCobro? tipoSistema}) {
@@ -955,11 +982,35 @@ class _ServicioConfiguracionCobroFormState extends State<ServicioConfiguracionCo
     final metodoBloqueado = _tipoDocumento == TipoDocumentoCobro.reciboDePago;
     // PPD exige complemento — igual, se fija en vez de solo rechazarlo.
     final complementoBloqueado = _metodo == MetodoPagoCobro.ppd;
+    // …y ningún otro método lo admite: la obligación fiscal sólo existe
+    // en PPD (`cuentaRequiereComplemento`). Con PUE/No aplica el control
+    // queda apagado y explicado, en vez de dejar capturar un `true`
+    // inerte.
+    final complementoNoAplica = _metodo != null && _metodo != MetodoPagoCobro.ppd;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (widget.errorGeneral != null) ...[
+          RisegCard(
+            key: const Key('configuracion_cobro_error_general'),
+            variant: RisegCardVariant.subtle,
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, size: 20, color: colors.error),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    widget.errorGeneral!,
+                    style: AppTypography.body.copyWith(color: colors.error),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
         RisegSelect<TipoDocumentoCobro>(
           label: l10n.servicioCobroCampoTipoDocumento,
           value: _tipoDocumento,
@@ -1026,7 +1077,15 @@ class _ServicioConfiguracionCobroFormState extends State<ServicioConfiguracionCo
           onChanged: (valor) {
             setState(() {
               _metodo = valor;
-              if (valor == MetodoPagoCobro.ppd) _requiereComplemento = true;
+              // Sólo PPD genera obligación de Complemento. PPD la fuerza;
+              // cualquier otro método la apaga — antes PUE dejaba el
+              // switch encendido y se guardaba un `true` que el resto del
+              // sistema ignoraba (ver `ConfiguracionCobroValidator`).
+              if (valor == MetodoPagoCobro.ppd) {
+                _requiereComplemento = true;
+              } else {
+                _requiereComplemento = false;
+              }
             });
             _notificar();
           },
@@ -1035,11 +1094,25 @@ class _ServicioConfiguracionCobroFormState extends State<ServicioConfiguracionCo
         Row(
           children: [
             Expanded(
-              child: Text(l10n.servicioCobroCampoRequiereComplemento, style: AppTypography.body.copyWith(color: colors.textPrimary)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(l10n.servicioCobroCampoRequiereComplemento, style: AppTypography.body.copyWith(color: colors.textPrimary)),
+                  if (complementoNoAplica)
+                    Text(
+                      l10n.servicioCobroAyudaComplementoSoloPpd,
+                      style: AppTypography.caption.copyWith(color: colors.textMuted),
+                    ),
+                ],
+              ),
             ),
             Switch(
+              key: const Key('servicio_cobro_switch_requiere_complemento'),
               value: _requiereComplemento,
-              onChanged: complementoBloqueado
+              // Apagado en ambos extremos: PPD lo exige, el resto no lo
+              // admite. Sólo queda editable si aún no se eligió método.
+              onChanged: complementoBloqueado || complementoNoAplica
                   ? null
                   : (valor) {
                       setState(() => _requiereComplemento = valor);

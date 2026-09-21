@@ -9,7 +9,6 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/linea_comercial_con_vigencia.dart';
 import 'package:riseg_one/features/personal/domain/usecases/cambiar_servicio_empleado_usecase.dart';
-import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
 import '../../../../organizacion/organizacion_providers.dart';
 import '../../../personal_providers.dart';
@@ -179,7 +178,7 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
         return null;
       }
 
-      final resultado = await ref.read(cambiarServicioEmpleadoUseCaseProvider).ejecutar(
+      final resultado = await ref.read(cambiarServicioEmpleadoAutorizadoProvider)(
             empleadoId: empleado.id,
             nuevoServicioId: servicioId!,
             fecha: fecha!,
@@ -188,7 +187,6 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
             observaciones: observacionesController.text,
             sueldoMensual: centavosDesdeTexto(sueldoController.text),
             bonoMensual: centavosDesdeTexto(bonoController.text),
-            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           );
 
       if (!context.mounted) return null;
@@ -229,13 +227,12 @@ Future<bool> mostrarDialogoCambiarServicioEmpleado(
     },
   );
 
-  // Deferred — mismo criterio que `asignar_servicio_empleado_dialog.dart`.
-  unawaited(
-    Future.delayed(const Duration(milliseconds: 300), () {
-      observacionesController.dispose();
-      sueldoController.dispose();
-      bonoController.dispose();
-    }),
-  );
+  // Liberar aquí es seguro: `RisegDialog.showForm` no devuelve
+  // hasta que la ruta del diálogo terminó de cerrarse (ver su
+  // documentación). Antes sí hacía falta aplazarlo 300 ms, y ese
+  // aplazamiento dejaba un Timer vivo después de desmontar el árbol.
+  observacionesController.dispose();
+  sueldoController.dispose();
+  bonoController.dispose();
   return resultado ?? false;
 }

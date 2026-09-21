@@ -70,6 +70,9 @@ class SucursalRepositoryImpl implements SucursalRepository {
   }
 
   @override
+  Future<List<SucursalData>> listarTodas() => _db.select(_db.sucursal).get();
+
+  @override
   Future<SucursalData> cambiarEstadoOperativo({
     required String sucursalId,
     required EstadoOperativoSucursal nuevo,
@@ -89,6 +92,19 @@ class SucursalRepositoryImpl implements SucursalRepository {
                 t.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name),
           ))
         .getSingleOrNull();
+  }
+
+  @override
+  Future<Map<String, DireccionData>> listarDireccionesPrincipales(List<String> sucursalIds) async {
+    if (sucursalIds.isEmpty) return {};
+    final filas = await (_db.select(_db.direccion)
+          ..where(
+            (t) =>
+                t.sucursalId.isIn(sucursalIds) &
+                t.cicloVidaRegistro.equals(CicloVidaRegistro.activo.name),
+          ))
+        .get();
+    return {for (final d in filas) d.sucursalId!: d};
   }
 
   Future<HorarioData?> _obtenerHorarioActivo(String sucursalId) {

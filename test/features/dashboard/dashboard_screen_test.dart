@@ -12,8 +12,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:riseg_one/app/app.dart';
 import 'package:riseg_one/app/router/app_router.dart';
+import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/di/providers.dart';
+import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
@@ -120,6 +122,13 @@ Future<void> _pumpDashboard(
         appDatabaseProvider.overrideWithValue(db),
         contarUsuariosProvider.overrideWith((ref) async => 1),
         sesionControllerProvider.overrideWith(sesion),
+        // Etapa 20: el Dashboard ahora también lee
+        // `documentoPorEmitirRepositoryProvider` (alerta de documentos
+        // por emitir) — ese provider depende de `attachmentStorageProvider`,
+        // que a su vez requiere `appPathsProvider`/`path_provider`
+        // (no disponible bajo `flutter test`). Mismo criterio ya usado
+        // en las pruebas de Agenda.
+        attachmentStorageProvider.overrideWithValue(AttachmentStorage('.')),
       ],
       child: RisegOneApp(router: createAppRouter()),
     ),
@@ -145,9 +154,11 @@ void main() {
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
       expect(tester.takeException(), isNull);
-      expect(find.text(l10n.reportesGeneralPersonalActivo), findsOneWidget);
+      // "Personal" a secas colisiona con el ítem del sidebar — se
+      // verifica con una etiqueta exclusiva del bloque nuevo.
+      expect(find.text(l10n.dashboardPersonalAsignados), findsOneWidget);
       expect(find.text(l10n.reportesGeneralIngresos), findsNothing, reason: 'sin finanzas.ver, Finanzas nunca debe aparecer');
-      expect(find.text(l10n.reportesGeneralEgresos), findsNothing);
+      expect(find.text(l10n.reportesGeneralGastoOperativo), findsNothing);
       expect(find.text(l10n.dashboardAlertaCxcVencida), findsNothing);
       expect(find.text(l10n.dashboardAccesoAltaPersonal), findsOneWidget, reason: 'tiene personal.crear');
       expect(find.text(l10n.dashboardAccesoRegistrarCompra), findsNothing, reason: 'no tiene compras.crear');
@@ -160,7 +171,7 @@ void main() {
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
       expect(tester.takeException(), isNull);
-      expect(find.text(l10n.reportesGeneralPersonalActivo), findsNothing);
+      expect(find.text(l10n.dashboardPersonalTitulo), findsNothing);
       expect(find.text(l10n.dashboardActividadAltas), findsNothing);
       expect(find.text(l10n.dashboardActividadBajas), findsNothing);
       expect(find.text(l10n.dashboardAlertaEmpleadosBajaPendiente), findsNothing);
@@ -186,13 +197,17 @@ void main() {
   });
 
   group('DashboardScreen — sesión con solo inventario.ver', () {
-    testWidgets('ve sus indicadores de Resumen (Existencia, Asignaciones vigentes)', (tester) async {
+    testWidgets('ve el acceso rápido a Inventario, nunca Existencia total/Asignaciones vigentes como KPI', (tester) async {
       await _pumpDashboard(tester, sesion: _SesionInventarioDePrueba.new);
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
       expect(tester.takeException(), isNull);
-      expect(find.text(l10n.reportesInventarioExistencia), findsOneWidget);
-      expect(find.text(l10n.reportesInventarioAsignaciones), findsOneWidget);
+      // Etapa 15 (rediseño gerencial): Existencia total/Asignaciones
+      // vigentes dejan de ser KPI del Dashboard (Parte A) — Inventario
+      // solo ocupa espacio cuando hay una excepción real (Parte L), y
+      // esta base de datos vacía no tiene ninguna.
+      expect(find.text(l10n.reportesInventarioExistencia), findsNothing);
+      expect(find.text(l10n.reportesInventarioAsignaciones), findsNothing);
       expect(find.text(l10n.dashboardAccesoInventario), findsOneWidget);
     });
   });

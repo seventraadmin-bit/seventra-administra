@@ -225,7 +225,7 @@ void main() {
             ),
           );
       final cambiado = await CambiarEstatusServicioUseCase(servicioRepo, clienteRepo)
-          .ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo);
+          .ejecutar(servicioId: servicio.id, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
       servicio = (cambiado as CambiarEstatusServicioExitoso).servicio;
     }
 

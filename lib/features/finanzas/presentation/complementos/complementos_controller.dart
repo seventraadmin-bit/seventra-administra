@@ -5,10 +5,12 @@ import 'package:riseg_one/features/finanzas/data/tables/complemento_pago_table.d
 import 'package:riseg_one/features/finanzas/domain/usecases/adjuntar_archivo_complemento_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_complemento_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/corregir_complemento_pago_usecase.dart';
+import 'package:riseg_one/features/finanzas/domain/usecases/obtener_complementos_pendientes_usecase.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
+import '../../../notificaciones/presentation/notificaciones_controller.dart';
 import '../../../organizacion/organizacion_providers.dart';
 import '../../finanzas_providers.dart';
 import 'complementos_state.dart';
@@ -29,33 +31,71 @@ class ComplementosController extends _$ComplementosController {
   /// criterio que `UsuariosController._actorUsuarioId`.
   String? get _actorUsuarioId => ref.read(sesionControllerProvider)?.usuarioId;
 
+  /// Una sola proyección alimenta las cuatro vistas — pendientes y
+  /// registrados salen del mismo barrido en lote
+  /// (`ObtenerComplementosPendientesUseCase`), que a su vez reutiliza
+  /// `complemento_pago_derivado.dart`. La pantalla nunca reimplementa
+  /// la fórmula de "pendiente", ni guarda un booleano cacheado.
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
     try {
-      final complementos = await ref.read(complementoPagoRepositoryProvider).listar(
+      final proyeccion = await ref.read(obtenerComplementosPendientesUseCaseProvider).ejecutar(
             clienteId: state.clienteId,
-            estatus: state.estatus,
           );
-      state = state.copyWith(cargando: false, complementos: complementos, errorCarga: null);
+
+      final clientes = await ref.read(clienteRepositoryProvider).listarActivos();
+      final nombrePorCliente = {for (final c in clientes) c.id: c.nombreComercial};
+
+      final visibles = switch (state.vista) {
+        VistaComplementos.pendientes => const <ComplementoConContexto>[],
+        VistaComplementos.registrados => proyeccion.registrados
+            .where((c) => EstatusComplementoPago.values.byName(c.complemento.estatus) == EstatusComplementoPago.registrado)
+            .toList(),
+        VistaComplementos.cancelados => proyeccion.registrados
+            .where((c) => EstatusComplementoPago.values.byName(c.complemento.estatus) == EstatusComplementoPago.cancelado)
+            .toList(),
+        VistaComplementos.todos => proyeccion.registrados,
+      };
+
+      state = state.copyWith(
+        cargando: false,
+        complementos: visibles,
+        // El contador de pendientes se mantiene correcto en cualquier
+        // vista: es la pregunta que la pantalla debe poder responder
+        // siempre.
+        pendientes: proyeccion.pendientes,
+        contextoPorComplemento: {for (final c in proyeccion.registrados) c.complemento.id: c},
+        nombrePorCliente: nombrePorCliente,
+        nombres: await ref.read(resolverNombresContraparteUseCaseProvider).paraPagos([
+          for (final p in proyeccion.pendientes) p.pago,
+          for (final c in proyeccion.registrados) if (c.pago != null) c.pago!,
+        ]),
+        errorCarga: null,
+      );
     } catch (e) {
       state = state.copyWith(cargando: false, errorCarga: e.toString());
     }
   }
 
+  /// El contador de la campana muestra "Complemento pendiente" desde
+  /// esta misma proyección — cancelar uno hace reaparecer la obligación
+  /// y debe verse SIN reiniciar la app. El panel se recarga solo al
+  /// abrirse; esto mantiene correcto también el badge cerrado.
+  ///
+  /// Es `invalidate`, no una lectura: no crea dependencia de Finanzas
+  /// hacia Notificaciones (que sí depende de Finanzas) — el ciclo que
+  /// rompería Riverpod nunca se forma.
+  void _invalidarNotificaciones() => ref.invalidate(notificacionesControllerProvider);
+
   Future<void> reintentarCarga() => _cargar();
 
-  Future<void> aplicarFiltros({
-    String? clienteId,
-    String? estatus,
-    bool limpiarClienteId = false,
-    bool limpiarEstatus = false,
-  }) async {
-    state = state.copyWith(
-      clienteId: clienteId,
-      estatus: estatus,
-      limpiarClienteId: limpiarClienteId,
-      limpiarEstatus: limpiarEstatus,
-    );
+  Future<void> cambiarVista(VistaComplementos vista) async {
+    state = state.copyWith(vista: vista);
+    await _cargar();
+  }
+
+  Future<void> aplicarFiltros({String? clienteId, bool limpiarClienteId = false}) async {
+    state = state.copyWith(clienteId: clienteId, limpiarClienteId: limpiarClienteId);
     await _cargar();
   }
 
@@ -63,8 +103,15 @@ class ComplementosController extends _$ComplementosController {
     return ref.read(complementoPagoRepositoryProvider).obtenerPorId(complementoPagoId);
   }
 
-  Future<ComplementoPagoData?> obtenerPorPagoId(String pagoId) {
-    return ref.read(complementoPagoRepositoryProvider).obtenerPorPagoId(pagoId);
+  /// El Complemento VIGENTE de un Pago — `null` si la obligación sigue
+  /// pendiente (nunca hubo uno, o el que hubo se canceló).
+  Future<ComplementoPagoData?> obtenerVigentePorPagoId(String pagoId) {
+    return ref.read(complementoPagoRepositoryProvider).obtenerVigentePorPagoId(pagoId);
+  }
+
+  /// El histórico completo de un Pago, vigentes y cancelados.
+  Future<List<ComplementoPagoData>> listarPorPagoId(String pagoId) {
+    return ref.read(complementoPagoRepositoryProvider).listarPorPagoId(pagoId);
   }
 
   Future<List<ComplementoPagoEventoData>> listarEventos(String complementoPagoId) {
@@ -89,7 +136,7 @@ class ComplementosController extends _$ComplementosController {
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'finanzas.modificar',
+      'pagos.corregir',
       () => ref.read(corregirComplementoPagoUseCaseProvider).ejecutar(
             complementoPagoId: complementoPagoId,
             serieFiscal: serieFiscal,
@@ -110,7 +157,7 @@ class ComplementosController extends _$ComplementosController {
   Future<CancelarComplementoPagoResultado> cancelar({required String complementoPagoId, required String motivo}) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'finanzas.archivar',
+      'pagos.cancelar',
       () => ref.read(cancelarComplementoPagoUseCaseProvider).ejecutar(
             complementoPagoId: complementoPagoId,
             motivo: motivo,
@@ -120,6 +167,7 @@ class ComplementosController extends _$ComplementosController {
     );
     if (resultado is CancelarComplementoPagoExitoso) {
       await _cargar();
+      _invalidarNotificaciones();
     }
     return resultado;
   }
@@ -131,12 +179,20 @@ class ComplementosController extends _$ComplementosController {
     required String originalFileName,
     required String mimeType,
   }) {
-    return ref.read(adjuntarArchivoComplementoPagoUseCaseProvider).ejecutar(
-          complementoPagoId: complementoPagoId,
-          categoria: categoria,
-          sourceFilePath: sourceFilePath,
-          originalFileName: originalFileName,
-          mimeType: mimeType,
-        );
+    // Etapa 0 (auditoría de consistencia transversal — corrección de un
+    // hueco real de autorización): antes llamaba al use case crudo, sin
+    // ningún `autorizarUseCase`. Mismo código que corregir.
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'pagos.corregir',
+      () => ref.read(adjuntarArchivoComplementoPagoUseCaseProvider).ejecutar(
+            complementoPagoId: complementoPagoId,
+            categoria: categoria,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      AdjuntarArchivoComplementoPagoErrorInesperado.new,
+    );
   }
 }

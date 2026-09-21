@@ -135,14 +135,16 @@ void main() {
 
   tearDown(() => db.close());
 
-  testWidgets('muestra los Servicios creados, con su Cliente y Tipo de Servicio', (tester) async {
+  testWidgets('muestra los Servicios creados, con su Cliente', (tester) async {
     await _pumpScreen(tester, db);
 
     expect(find.text('Vigilancia Sportium Toluca'), findsOneWidget);
     expect(find.text('Mirabilia'), findsOneWidget);
     expect(find.text('Sportium'), findsOneWidget);
     expect(find.text('Construcciones Habitacionales'), findsOneWidget);
-    expect(find.text('Vigilancia fija'), findsNWidgets(2));
+    // Tipo de Servicio (Etapa 16, pasada visual de Comercial) ya no es
+    // columna de la tabla — se mueve al filtro "Tipo" (colapsado, solo
+    // visible al desplegarlo) para dejar espacio a Personal/Turno.
   });
 
   testWidgets('el buscador filtra por nombre del Cliente (Construcciones Habitacionales → Mirabilia)', (tester) async {

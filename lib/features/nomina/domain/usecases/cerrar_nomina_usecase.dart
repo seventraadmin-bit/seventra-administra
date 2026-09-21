@@ -24,6 +24,27 @@ class CerrarNominaDistribucionPendiente extends CerrarNominaResultado {
   final List<NominaEmpleadoData> renglonesPendientes;
 }
 
+/// Al menos un renglón tiene `descuentosInventarioPendienteRevision`
+/// (Etapa 15, resolución explícita de Marlon: "bloquear y avisar") —
+/// sus `DescuentoInventario` pendientes superaban el neto disponible,
+/// así que solo se aplicó una parte; nunca se cierra sin que el
+/// usuario revise el remanente.
+class CerrarNominaDescuentosInventarioPendientes extends CerrarNominaResultado {
+  CerrarNominaDescuentosInventarioPendientes(this.renglonesPendientes);
+  final List<NominaEmpleadoData> renglonesPendientes;
+}
+
+/// Al menos un renglón tiene `descuentosProgramadosPendienteRevision`
+/// (Etapa 15, Descuentos Programados al Personal) — sus cuotas de
+/// préstamo/botas pendientes superaban el neto disponible después de
+/// Inventario, así que solo se reservó una parte; misma resolución
+/// exacta que `CerrarNominaDescuentosInventarioPendientes`, nunca se
+/// cierra sin que el usuario revise el remanente.
+class CerrarNominaDescuentosProgramadosPendientes extends CerrarNominaResultado {
+  CerrarNominaDescuentosProgramadosPendientes(this.renglonesPendientes);
+  final List<NominaEmpleadoData> renglonesPendientes;
+}
+
 /// Al menos un renglón, re-evaluado contra el estado actual de
 /// Personal (`EvaluarRenglonesRequierenRevisionUseCase`), se quedó sin
 /// cobertura laboral/sueldo pero conserva movimientos manuales o una
@@ -67,6 +88,14 @@ class CerrarNominaUseCase {
 
     final pendientes = renglones.where((r) => r.distribucionPendienteRevision).toList();
     if (pendientes.isNotEmpty) return CerrarNominaDistribucionPendiente(pendientes);
+
+    final descuentosPendientes = renglones.where((r) => r.descuentosInventarioPendienteRevision).toList();
+    if (descuentosPendientes.isNotEmpty) return CerrarNominaDescuentosInventarioPendientes(descuentosPendientes);
+
+    final descuentosProgramadosPendientes = renglones.where((r) => r.descuentosProgramadosPendienteRevision).toList();
+    if (descuentosProgramadosPendientes.isNotEmpty) {
+      return CerrarNominaDescuentosProgramadosPendientes(descuentosProgramadosPendientes);
+    }
 
     final cerrada = await _nominaRepository.cerrar(nominaId: nominaId, actorUsuarioId: actorUsuarioId);
     return CerrarNominaExitoso(cerrada);

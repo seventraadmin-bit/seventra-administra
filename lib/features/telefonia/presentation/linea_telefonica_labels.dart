@@ -10,6 +10,7 @@ String operadorTelefonicoLabel(AppLocalizations l10n, String operador) {
     'telcel' => l10n.operadorTelefonicoTelcel,
     'att' => l10n.operadorTelefonicoAtt,
     'movistar' => l10n.operadorTelefonicoMovistar,
+    'bait' => l10n.operadorTelefonicoBait,
     'otro' => l10n.operadorTelefonicoOtro,
     _ => operador,
   };

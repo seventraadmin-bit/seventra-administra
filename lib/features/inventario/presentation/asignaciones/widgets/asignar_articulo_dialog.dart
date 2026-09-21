@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/inventario/domain/usecases/crear_asignacion_usecase.dart';
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
+import 'package:riseg_one/features/inventario/presentation/articulos/articulos_controller.dart';
 
 /// Diálogo "Asignar artículo" (Etapa 7B) — entrega un Artículo/
 /// variante/unidad a un Empleado o Servicio (exactamente uno de los
@@ -155,6 +157,24 @@ Future<bool> mostrarDialogoAsignarArticulo(
       if (!context.mounted) return false;
       switch (resultado) {
         case CrearAsignacionExitoso():
+          // Bug real reportado por Marlon (prueba funcional Inventario +
+          // Personal): el listado general de Inventario seguía mostrando
+          // Total/Disponible/Asignado obsoletos tras asignar — la causa
+          // no era el cálculo de existencia (ya correcto, siempre se
+          // recalcula desde MovimientoInventario), sino que este diálogo
+          // nunca invalidaba `articulosControllerProvider`/`dashboardControllerProvider`
+          // (que sí cachean su estado entre visitas), mismo hallazgo que
+          // ya motivó la invalidación cruzada en `ComprasController`.
+          // Bug real reportado por Marlon (prueba funcional Inventario +
+          // Personal): el listado general de Inventario seguía mostrando
+          // Total/Disponible/Asignado obsoletos tras asignar — la causa
+          // no era el cálculo de existencia (ya correcto, siempre se
+          // recalcula desde MovimientoInventario), sino que este diálogo
+          // nunca invalidaba `articulosControllerProvider`/`dashboardControllerProvider`
+          // (que sí cachean su estado entre visitas), mismo hallazgo que
+          // ya motivó la invalidación cruzada en `ComprasController`.
+          ref.invalidate(articulosControllerProvider);
+          ref.invalidate(dashboardControllerProvider);
           RisegFeedback.showSuccess(context, l10n.asignarArticuloExito);
           return true;
         case CrearAsignacionVarianteInvalida():
@@ -181,9 +201,18 @@ Future<bool> mostrarDialogoAsignarArticulo(
     },
   );
 
-  cantidadCtrl.dispose();
-  condicionCtrl.dispose();
-  observacionesCtrl.dispose();
+  // `RisegDialog.showForm` cierra la ruta con una animación de salida
+  // — disponer los controladores en el mismo frame en que su Future
+  // resuelve los deja en uso mientras esa transición todavía anima el
+  // formulario ("A TextEditingController was used after being
+  // disposed.", hallazgo real al escribir la prueba de regresión del
+  // resumen de Inventario). Mismo criterio ya usado en
+  // `riseg_eliminar_fisicamente_dialog.dart`/`cancelar_compra_dialog.dart`.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    cantidadCtrl.dispose();
+    condicionCtrl.dispose();
+    observacionesCtrl.dispose();
+  });
 
   return resultado ?? false;
 }

@@ -7,10 +7,13 @@ part of 'clientes_list_controller.dart';
 // **************************************************************************
 
 String _$clientesListControllerHash() =>
-    r'01015af54561c39461466d37b7d6721e0aefa37d';
+    r'6b149da231f4da0036c4bd1444afa74cfd60240e';
 
 /// Controlador del listado de Clientes comerciales — mismo shape que
-/// `PuestosListController`.
+/// `PuestosListController`, más las métricas reales de Comercial
+/// (Etapa 16): Servicios activos y Personal asignado por Cliente,
+/// ambos agregados en memoria sobre listados completos ya cargados en
+/// una sola consulta cada uno.
 ///
 /// Copied from [ClientesListController].
 @ProviderFor(ClientesListController)

@@ -29,12 +29,28 @@ class ResguardoData {
   const ResguardoData({
     this.empleadoNombre,
     this.servicioNombre,
+    this.servicioActualNombre,
+    this.folio,
     required this.fechaGeneracion,
     required this.items,
   });
 
   final String? empleadoNombre;
   final String? servicioNombre;
+
+  /// Servicio vigente del Empleado destino (Etapa "Entrega múltiple de
+  /// Inventario"), no el destino del resguardo — solo se puebla cuando
+  /// el destino es un Empleado y tiene una `AsignacionServicio` activa.
+  /// `null` cuando el destino ya es un Servicio (sería redundante) o el
+  /// Empleado no tiene asignación vigente.
+  final String? servicioActualNombre;
+
+  /// Folio de la `Entrega` (Etapa "Entrega múltiple de Inventario") si
+  /// TODAS las Asignaciones del resguardo vienen del mismo acto de
+  /// entrega — `null` para resguardos de Asignaciones legacy o mixtas,
+  /// que nunca tuvieron folio propio.
+  final String? folio;
+
   final DateTime fechaGeneracion;
   final List<ResguardoItem> items;
 }

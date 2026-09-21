@@ -1,5 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
+import '../../data/tables/linea_telefonica_table.dart';
+
 import '../usecases/eliminar_linea_telefonica_fisicamente_usecase.dart';
 
 /// El expediente de una línea telefónica (Etapa 9A) — "qué línea es" y
@@ -31,6 +33,22 @@ abstract interface class LineaTelefonicaRepository {
     String? observaciones,
   });
 
+  /// Escribe un evento en el historial de la línea (schemaVersion 81).
+  /// [estadoAnterior]/[estadoNuevo] son el JSON de `DiffEvento` — solo
+  /// los campos que realmente cambiaron, nunca un snapshot completo.
+  Future<void> registrarEvento({
+    required String lineaTelefonicaId,
+    required TipoEventoLineaTelefonica tipoEvento,
+    String? recargaId,
+    String? observacion,
+    String? estadoAnterior,
+    String? estadoNuevo,
+    String? actorUsuarioId,
+  });
+
+  /// Historial completo de una línea, más reciente primero.
+  Future<List<LineaTelefonicaEventoData>> listarEventos(String lineaTelefonicaId);
+
   Future<LineaTelefonicaData> corregir({
     required String lineaTelefonicaId,
     String? numero,
@@ -54,11 +72,18 @@ abstract interface class LineaTelefonicaRepository {
   /// Baja terminal — estatus, fecha y motivo en una sola transacción.
   /// En 9A no cierra ninguna asignación/equipo todavía (esas tablas no
   /// existen hasta 9B); esa composición se agrega ahí.
+  /// Baja OPERATIVA de la línea — terminal (no existe reactivación,
+  /// ver `CambiarEstatusLineaTelefonicaUseCase`) y distinta de la
+  /// eliminación física, que sigue siendo Maestro-only.
+  ///
+  /// Cierra en la MISMA transacción la asignación y el equipo vigentes:
+  /// una línea de baja nunca puede conservar asignación vigente.
   Future<LineaTelefonicaData> darDeBaja({
     required String lineaTelefonicaId,
     required DateTime fechaBaja,
     required String motivoBaja,
     String? observacionesBaja,
+    String? actorUsuarioId,
   });
 
   /// Eliminación física extraordinaria (Etapa 11D) — ver el doc comment

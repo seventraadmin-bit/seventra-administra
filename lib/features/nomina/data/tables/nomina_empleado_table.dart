@@ -124,6 +124,57 @@ class NominaEmpleado extends Table with AuditColumns {
 
   IntColumn get otrosDescuentos => integer().withDefault(const Constant(0))();
 
+  /// Suma de los `DescuentoInventario` (daño/pérdida con cargo al
+  /// Empleado, Etapa 7B) aplicados a este renglón — Etapa 15,
+  /// integración real con Nómina. Distinto de [otrosDescuentos]
+  /// (siempre manual, texto libre): este campo lo puebla
+  /// exclusivamente `NominaRepositoryImpl.generar`, nunca una edición a
+  /// mano — el desglose identificable (artículo, motivo, monto) vive en
+  /// las filas de `DescuentoInventario` vinculadas por
+  /// `DescuentoInventario.nominaEmpleadoId`, no aquí.
+  ///
+  /// Deliberadamente **sin** `CHECK (>= 0)` propio: `NominaEmpleado` ya
+  /// existe desde la Etapa 6C, así que una migración posterior no puede
+  /// agregar una restricción de tabla nueva sin romper la validación
+  /// contra los esquemas históricos congelados (`Migrator.createTable`
+  /// siempre usa la forma *actual* de esta clase en los pasos
+  /// `onUpgrade` que recrean la tabla desde cero para un `from`
+  /// antiguo — la migración a un objetivo intermedio viejo terminaría
+  /// con más constraints de las que ese esquema histórico espera).
+  /// Nunca puede ser negativo de todas formas: siempre es la suma de
+  /// `DescuentoInventario.importe`, que ya exige `CHECK (importe > 0)`.
+  IntColumn get descuentosInventario => integer().withDefault(const Constant(0))();
+
+  /// `true` cuando los `DescuentoInventario` pendientes de este Empleado
+  /// superaban el neto disponible al aplicar (Etapa 15, resolución
+  /// explícita de Marlon: "bloquear y avisar" — nunca un
+  /// `totalAPagar` negativo silencioso). Solo se aplica hasta donde el
+  /// neto alcanza (orden FIFO por fecha de creación del descuento); el
+  /// resto queda `pendiente` para una Nómina futura. Mismo criterio
+  /// exacto que [distribucionPendienteRevision]: bloquea el cierre
+  /// (`CerrarNominaUseCase`), nunca se ajusta en silencio.
+  BoolColumn get descuentosInventarioPendienteRevision => boolean().withDefault(const Constant(false))();
+
+  /// Suma de `DescuentoProgramadoCuota` (préstamos, costo de botas, y
+  /// futuros tipos — Etapa 15, "Descuentos Programados al Personal")
+  /// vinculadas a este renglón — mismo criterio exacto que
+  /// [descuentosInventario]: lo puebla exclusivamente
+  /// `NominaRepositoryImpl.guardarRenglon`, nunca una edición a mano; el
+  /// desglose identificable (folio, número de cuota) vive en
+  /// `DescuentoProgramadoCuota.nominaEmpleadoId`, no aquí. Deliberadamente
+  /// **sin** `CHECK (>= 0)` propio — mismo motivo exacto que
+  /// [descuentosInventario] (tabla ya existente desde 6C).
+  IntColumn get descuentosProgramados => integer().withDefault(const Constant(0))();
+
+  /// `true` cuando las `DescuentoProgramadoCuota` elegibles de este
+  /// Empleado superaban el neto disponible al resolver (mismo criterio
+  /// exacto que [descuentosInventarioPendienteRevision]) — bloquea el
+  /// cierre (`CerrarNominaUseCase`), nunca se ajusta en silencio. El
+  /// neto disponible para este pool ya viene descontado de
+  /// [descuentosInventario] (Inventario se resuelve primero, ver
+  /// `NominaRepositoryImpl._resolverCuotasProgramadasAplicables`).
+  BoolColumn get descuentosProgramadosPendienteRevision => boolean().withDefault(const Constant(false))();
+
   TextColumn get observaciones => text().nullable()();
 
   // --- Fiscal / No fiscal (Etapa 6C, Resolución explícita de Marlon:
@@ -144,8 +195,10 @@ class NominaEmpleado extends Table with AuditColumns {
   BoolColumn get distribucionPendienteRevision => boolean().withDefault(const Constant(false))();
 
   /// `importeBase + bono + tiempoExtra − prestamo − descuentoPorFaltas
-  /// − otrosDescuentos`. Se recalcula en cada escritura del renglón,
-  /// nunca en pantalla — igual que el resto de esta fila.
+  /// − otrosDescuentos − descuentosInventario − descuentosProgramados`.
+  /// Se recalcula en cada escritura del renglón, nunca en pantalla —
+  /// igual que el resto de esta fila (`calcularTotalesRenglonNomina`,
+  /// única fuente de verdad de la fórmula).
   IntColumn get totalAPagar => integer()();
 
   // Literal en vez de referencia al enum — mismo motivo de siempre.

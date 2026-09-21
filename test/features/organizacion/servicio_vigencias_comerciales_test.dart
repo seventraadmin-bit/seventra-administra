@@ -366,6 +366,7 @@ void main() {
         servicioId: ctx.servicio.id,
         nuevo: EstatusServicio.terminado,
         fechaTerminoEfectiva: DateTime(2026, 6, 1),
+        motivo: 'Motivo de prueba',
       );
 
       final resultado = await cambiarVigencia.ejecutar(
@@ -388,7 +389,7 @@ void main() {
     test('cierra la vigente actual y la línea queda sin condición vigente', () async {
       final ctx = await crearServicioConLineaDePrueba();
 
-      final resultado = await cerrarLinea.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy);
+      final resultado = await cerrarLinea.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy, motivo: 'Motivo de prueba');
       expect(resultado, isA<CerrarLineaComercialExitoso>());
 
       // `fechaFinVigencia` es inclusiva (mismo criterio que el truncado de
@@ -418,13 +419,13 @@ void main() {
         ),
       );
 
-      final resultado = await cerrarLinea.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy);
+      final resultado = await cerrarLinea.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy, motivo: 'Motivo de prueba');
       expect(resultado, isA<CerrarLineaComercialTieneVigenciaProgramada>());
     });
 
     test('rechaza cerrar si no hay condición vigente', () async {
       final ctx = await crearServicioConLineaDePrueba();
-      await cerrarLinea.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy);
+      await cerrarLinea.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy, motivo: 'Motivo de prueba');
 
       // Un segundo intento el MISMO día es, en la práctica, un
       // re-cierre válido (la vigencia sigue siendo "la vigente" hasta el
@@ -435,7 +436,7 @@ void main() {
         ServicioComercialRepositoryImpl(db, clock: clockManana),
         clockManana,
       );
-      final resultado = await cerrarLineaManana.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy);
+      final resultado = await cerrarLineaManana.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy, motivo: 'Motivo de prueba');
       expect(resultado, isA<CerrarLineaComercialSinCondicionVigente>());
     });
 
@@ -445,9 +446,10 @@ void main() {
         servicioId: ctx.servicio.id,
         nuevo: EstatusServicio.terminado,
         fechaTerminoEfectiva: DateTime(2026, 6, 1),
+        motivo: 'Motivo de prueba',
       );
 
-      final resultado = await cerrarLinea.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy);
+      final resultado = await cerrarLinea.ejecutar(lineaComercialId: ctx.lineaId, fechaEfectiva: hoy, motivo: 'Motivo de prueba');
       expect(resultado, isA<CerrarLineaComercialExitoso>());
     });
   });
@@ -468,7 +470,7 @@ void main() {
       );
       final programada = (await comercialRepo.listarLineas(ctx.servicio.id)).single.vigenciasProgramadas.single;
 
-      final resultado = await cancelarProgramada.ejecutar(vigenciaId: programada.id);
+      final resultado = await cancelarProgramada.ejecutar(vigenciaId: programada.id, motivo: 'Motivo de prueba');
       expect(resultado, isA<CancelarVigenciaProgramadaExitoso>());
 
       final lineas = await comercialRepo.listarLineas(ctx.servicio.id);
@@ -508,7 +510,7 @@ void main() {
       final programadas = (await comercialRepo.listarLineas(ctx.servicio.id)).single.vigenciasProgramadas;
       final aCancelar = programadas.firstWhere((v) => v.precioUnitario == 1600000);
 
-      await cancelarProgramada.ejecutar(vigenciaId: aCancelar.id);
+      await cancelarProgramada.ejecutar(vigenciaId: aCancelar.id, motivo: 'Motivo de prueba');
 
       final lineas = await comercialRepo.listarLineas(ctx.servicio.id);
       final linea = lineas.single;
@@ -526,7 +528,7 @@ void main() {
       final lineas = await comercialRepo.listarLineas(ctx.servicio.id);
       final vigenteActual = lineas.single.vigenciaActual!;
 
-      final resultado = await cancelarProgramada.ejecutar(vigenciaId: vigenteActual.id);
+      final resultado = await cancelarProgramada.ejecutar(vigenciaId: vigenteActual.id, motivo: 'Motivo de prueba');
       expect(resultado, isA<CancelarVigenciaProgramadaNoEsProgramada>());
     });
   });
@@ -595,7 +597,7 @@ void main() {
         ),
       );
       final programada = (await comercialRepo.listarLineas(ctx.servicio.id)).single.vigenciasProgramadas.single;
-      await cancelarProgramada.ejecutar(vigenciaId: programada.id);
+      await cancelarProgramada.ejecutar(vigenciaId: programada.id, motivo: 'Motivo de prueba');
 
       final historial = await obtenerHistorial.ejecutar(ctx.lineaId);
       expect(historial, hasLength(3));
@@ -639,6 +641,7 @@ void main() {
           tratamientoIva: TratamientoIva.masIva,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CorregirLineaComercialExitoso>());
@@ -681,6 +684,7 @@ void main() {
           tratamientoIva: TratamientoIva.masIva,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CorregirLineaComercialTieneHistoria>());
@@ -733,6 +737,7 @@ void main() {
           tratamientoIva: TratamientoIva.masIva,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CorregirLineaComercialTieneHistoria>());
@@ -753,6 +758,7 @@ void main() {
           tratamientoIva: TratamientoIva.masIva,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
 
       expect(resultado, isA<CorregirLineaComercialErroresValidacion>());
@@ -774,6 +780,7 @@ void main() {
           tratamientoIva: TratamientoIva.masIva,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
       expect(resultado, isA<CorregirLineaComercialNoExiste>());
     });
@@ -949,6 +956,7 @@ void main() {
           fechaInicioVigencia: DateTime(2026, 1, 1),
           horario: horarioDePrueba(),
         ),
+        motivo: 'Motivo de prueba',
       );
       expect(resultado, isA<CorregirLineaComercialExitoso>());
 
@@ -969,6 +977,7 @@ void main() {
           tratamientoIva: TratamientoIva.masIva,
           fechaInicioVigencia: DateTime(2026, 1, 1),
         ),
+        motivo: 'Motivo de prueba',
       );
       expect(segundo, isA<CorregirLineaComercialExitoso>());
       final horarioTrasSegundo = await comercialRepo.obtenerHorario(vigenciaId);

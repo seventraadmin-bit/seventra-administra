@@ -6,22 +6,30 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/asignar_linea_telefonica_usecase.dart';
 
 import '../../telefonia_providers.dart';
+import 'coherencia_linea_equipo_mensajes.dart';
 
 /// Diálogo "Asignar" (Etapa 9B) — entrega una línea sin destino a un
-/// Empleado o a un Servicio. Si [tieneEquipoAsociado], expone la opción
-/// explícita "mover también el equipo asociado" (punto 7 de Marlon: "no
-/// quiero automatismos sorprendentes"). Devuelve `true` si tuvo éxito.
+/// Empleado o a un Servicio.
+///
+/// Ya no ofrece "mover también el equipo asociado": Telefonía no mueve
+/// la custodia. Si el equipo asociado está en manos de alguien, la
+/// línea sólo puede ir a ESE destino, y el diálogo lo dice. Cuando la
+/// operación resulta ser la corrección de una incoherencia histórica,
+/// pide el motivo. Devuelve `true` si tuvo éxito.
 Future<bool> mostrarDialogoAsignarLineaTelefonica(
   BuildContext context,
   WidgetRef ref,
-  String lineaTelefonicaId, {
-  required bool tieneEquipoAsociado,
-}) async {
+  String lineaTelefonicaId,
+) async {
   final l10n = AppLocalizations.of(context)!;
   final opciones = ref.read(obtenerOpcionesAsignacionLineaTelefonicaUseCaseProvider);
 
   final empleados = await opciones.obtenerEmpleados();
   final servicios = await opciones.obtenerServicios();
+  final nombres = NombresDestinoTelefonia(
+    {for (final e in empleados) e.id: e.nombre},
+    {for (final s in servicios) s.id: s.nombre},
+  );
   if (!context.mounted) return false;
 
   String destinoTipo = 'empleado';
@@ -29,7 +37,8 @@ Future<bool> mostrarDialogoAsignarLineaTelefonica(
   String? servicioId;
   DateTime fechaInicio = DateTime.now();
   final observacionesCtrl = TextEditingController();
-  bool moverEquipoAsociado = true;
+  final motivoCtrl = TextEditingController();
+  bool pideMotivo = false;
   String? errorGeneral;
 
   final resultado = await RisegDialog.showForm<bool>(
@@ -81,14 +90,12 @@ Future<bool> mostrarDialogoAsignarLineaTelefonica(
               ),
               const SizedBox(height: AppSpacing.md),
               RisegTextField(label: l10n.lineaTelefonicaAsignarCampoObservaciones, controller: observacionesCtrl),
-              if (tieneEquipoAsociado) ...[
-                const SizedBox(height: AppSpacing.xs),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(l10n.lineaTelefonicaCampoMoverEquipoAsociado),
-                  value: moverEquipoAsociado,
-                  onChanged: (valor) => setState(() => moverEquipoAsociado = valor ?? moverEquipoAsociado),
+              if (pideMotivo) ...[
+                const SizedBox(height: AppSpacing.md),
+                RisegTextField(
+                  key: const Key('linea_asignar_campo_motivo'),
+                  label: l10n.lineaTelefonicaResolverInconsistenciaCampoMotivo,
+                  controller: motivoCtrl,
                 ),
               ],
               if (errorGeneral != null) ...[
@@ -111,7 +118,7 @@ Future<bool> mostrarDialogoAsignarLineaTelefonica(
             servicioId: destinoTipo == 'servicio' ? servicioId : null,
             fechaInicio: fechaInicio,
             observaciones: observacionesCtrl.text.trim().isEmpty ? null : observacionesCtrl.text.trim(),
-            moverEquipoAsociado: moverEquipoAsociado,
+            motivo: motivoCtrl.text,
           );
       if (!context.mounted) return false;
       switch (resultado) {
@@ -127,6 +134,15 @@ Future<bool> mostrarDialogoAsignarLineaTelefonica(
         case AsignarLineaTelefonicaLineaDeBaja():
           errorGeneral = l10n.lineaTelefonicaAsignarErrorLineaDeBaja;
           return null;
+        case AsignarLineaTelefonicaIncoherenteConEquipo(:final coherencia):
+          errorGeneral = mensajeIncoherenciaLineaEquipo(l10n, coherencia, nombres);
+          return null;
+        case AsignarLineaTelefonicaMotivoRequerido():
+          // Se descubre aquí que la operación corrige una incoherencia
+          // histórica: el campo aparece y se vuelve a confirmar.
+          pideMotivo = true;
+          errorGeneral = l10n.lineaTelefonicaCoherenciaMotivoRequerido;
+          return null;
         case AsignarLineaTelefonicaNoExiste():
         case AsignarLineaTelefonicaErrorInesperado():
           RisegFeedback.showError(context, l10n.lineaTelefonicaErrorInesperado);
@@ -137,6 +153,7 @@ Future<bool> mostrarDialogoAsignarLineaTelefonica(
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
     observacionesCtrl.dispose();
+    motivoCtrl.dispose();
   });
   return resultado ?? false;
 }

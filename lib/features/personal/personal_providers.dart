@@ -2,17 +2,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/permissions/authorization_service.dart';
+import '../../core/validation/direccion_validator.dart' show DireccionBorrador;
 import '../organizacion/organizacion_providers.dart';
 import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/pdf/ficha_tecnica_pdf_renderer.dart';
+import 'data/tables/asignacion_servicio_table.dart' show MotivoTerminoAsignacion;
 import 'data/tables/empleado_table.dart';
 import 'data/repositories/asignacion_servicio_repository_impl.dart';
 import 'data/repositories/empleado_repository_impl.dart';
 import 'data/repositories/ficha_tecnica_empleado_repository_impl.dart';
+import 'data/repositories/vacante_operativa_repository_impl.dart';
 import 'domain/repositories/asignacion_servicio_repository.dart';
 import 'domain/repositories/empleado_repository.dart';
 import 'domain/repositories/ficha_tecnica_empleado_repository.dart';
+import 'domain/repositories/vacante_operativa_repository.dart';
 import 'domain/usecases/actualizar_fotografia_empleado_usecase.dart';
 import 'domain/usecases/adjuntar_documento_empleado_usecase.dart';
 import 'domain/usecases/asignacion_servicio_validator.dart';
@@ -21,15 +25,25 @@ import 'domain/usecases/cambiar_servicio_empleado_usecase.dart';
 import 'domain/usecases/cambiar_vigencia_sueldo_asignacion_usecase.dart';
 import 'domain/usecases/corregir_empleado_usecase.dart';
 import 'domain/usecases/crear_empleado_usecase.dart';
+import 'domain/usecases/obtener_plantilla_personal_usecase.dart';
+import 'domain/usecases/obtener_rotacion_personal_usecase.dart';
 import 'domain/usecases/eliminar_empleado_fisicamente_usecase.dart';
 import 'domain/usecases/empleado_validator.dart';
 import 'domain/usecases/generar_ficha_tecnica_empleado_usecase.dart';
 import 'domain/usecases/guardar_domicilio_empleado_usecase.dart';
 import 'domain/usecases/registrar_antidoping_usecase.dart';
+import 'package:riseg_one/features/inventario/inventario_providers.dart' show asignacionRepositoryProvider;
+import 'package:riseg_one/features/vehiculos/vehiculos_providers.dart' show asignacionVehiculoRepositoryProvider;
+import 'package:riseg_one/features/descuentos_personal/descuentos_personal_providers.dart' show registrarDescuentoProgramadoUseCaseProvider;
+import 'package:riseg_one/core/database/app_database.dart' show EmpleadoData;
+import 'data/repositories/conciliacion_baja_repository_impl.dart';
+import 'domain/repositories/conciliacion_baja_repository.dart';
+import 'domain/usecases/conciliar_baja_empleado_usecase.dart';
 import 'domain/usecases/registrar_baja_laboral_usecase.dart';
 import 'domain/usecases/registrar_estudio_socioeconomico_usecase.dart';
 import 'domain/usecases/registrar_perfil_psicologico_usecase.dart';
 import 'domain/usecases/registrar_reingreso_usecase.dart';
+import 'domain/usecases/regularizar_perfil_asignacion_usecase.dart';
 import 'domain/usecases/retirar_empleado_servicio_usecase.dart';
 
 /// Providers del dominio Personal (Etapa 5A) — nace aquí, separado de
@@ -37,6 +51,15 @@ import 'domain/usecases/retirar_empleado_servicio_usecase.dart';
 /// Resolución B de Marlon para `finanzas`, 4J.1).
 final asignacionServicioRepositoryProvider = Provider<AsignacionServicioRepository>((ref) {
   return AsignacionServicioRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+/// Bitácora de vacantes operativas (Etapa 15, rediseño del Dashboard) —
+/// ver el doc comment de `VacanteOperativa`. Escrita internamente por
+/// `AsignacionServicioRepositoryImpl` (compuesta ahí sin inyección, ver
+/// su propio doc comment); expuesta aquí como provider independiente
+/// para el lado de LECTURA (Dashboard).
+final vacanteOperativaRepositoryProvider = Provider<VacanteOperativaRepository>((ref) {
+  return VacanteOperativaRepositoryImpl(ref.watch(appDatabaseProvider));
 });
 
 final asignacionServicioValidatorProvider = Provider<AsignacionServicioValidator>((ref) {
@@ -109,11 +132,20 @@ final cambiarVigenciaSueldoAsignacionUseCaseProvider = Provider<CambiarVigenciaS
 });
 
 final corregirEmpleadoUseCaseProvider = Provider<CorregirEmpleadoUseCase>((ref) {
-  return CorregirEmpleadoUseCase(ref.watch(empleadoRepositoryProvider), ref.watch(empleadoValidatorProvider));
+  return CorregirEmpleadoUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(empleadoValidatorProvider),
+    ref.watch(asignacionServicioRepositoryProvider),
+  );
 });
 
 final registrarBajaLaboralUseCaseProvider = Provider<RegistrarBajaLaboralUseCase>((ref) {
-  return RegistrarBajaLaboralUseCase(ref.watch(empleadoRepositoryProvider), ref.watch(empleadoValidatorProvider));
+  return RegistrarBajaLaboralUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(empleadoValidatorProvider),
+    ref.watch(asignacionRepositoryProvider),
+    ref.watch(asignacionVehiculoRepositoryProvider),
+  );
 });
 
 final registrarReingresoUseCaseProvider = Provider<RegistrarReingresoUseCase>((ref) {
@@ -158,6 +190,328 @@ final registrarAntidopingUseCaseProvider = Provider<RegistrarAntidopingUseCase>(
     ref.watch(attachmentStorageProvider),
     ref.watch(empleadoValidatorProvider),
   );
+});
+
+// Etapa 0 (auditoría de consistencia transversal — corrección de un
+// hueco real de autorización): estas 9 operaciones del expediente de
+// Personal se invocaban desde sus diálogos directo sobre el use case
+// crudo, sin ningún `autorizarUseCase` en toda la cadena. Mismo código
+// ya usado para `corregirEmpleado` (`personal.modificar`) — todas son
+// mutaciones del expediente del empleado, nunca un código nuevo.
+typedef AsignarEmpleadoServicioAutorizado = Future<AsignarEmpleadoServicioResultado> Function({
+  required String empleadoId,
+  required String servicioId,
+  required DateTime fechaInicio,
+  String? turnoId,
+  String? lineaComercialId,
+  String? observaciones,
+  int? sueldoMensual,
+  int? bonoMensual,
+});
+
+final asignarEmpleadoServicioAutorizadoProvider = Provider<AsignarEmpleadoServicioAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required String servicioId,
+    required DateTime fechaInicio,
+    String? turnoId,
+    String? lineaComercialId,
+    String? observaciones,
+    int? sueldoMensual,
+    int? bonoMensual,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(asignarEmpleadoServicioUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            servicioId: servicioId,
+            fechaInicio: fechaInicio,
+            turnoId: turnoId,
+            lineaComercialId: lineaComercialId,
+            observaciones: observaciones,
+            sueldoMensual: sueldoMensual,
+            bonoMensual: bonoMensual,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      AsignarEmpleadoServicioErrorInesperado.new,
+    );
+  };
+});
+
+typedef CambiarServicioEmpleadoAutorizado = Future<CambiarServicioEmpleadoResultado> Function({
+  required String empleadoId,
+  required String nuevoServicioId,
+  required DateTime fecha,
+  String? turnoId,
+  String? lineaComercialId,
+  String? observaciones,
+  int? sueldoMensual,
+  int? bonoMensual,
+});
+
+final cambiarServicioEmpleadoAutorizadoProvider = Provider<CambiarServicioEmpleadoAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required String nuevoServicioId,
+    required DateTime fecha,
+    String? turnoId,
+    String? lineaComercialId,
+    String? observaciones,
+    int? sueldoMensual,
+    int? bonoMensual,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(cambiarServicioEmpleadoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            nuevoServicioId: nuevoServicioId,
+            fecha: fecha,
+            turnoId: turnoId,
+            lineaComercialId: lineaComercialId,
+            observaciones: observaciones,
+            sueldoMensual: sueldoMensual,
+            bonoMensual: bonoMensual,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      CambiarServicioEmpleadoErrorInesperado.new,
+    );
+  };
+});
+
+typedef RetirarEmpleadoServicioAutorizado = Future<RetirarEmpleadoServicioResultado> Function({
+  required String empleadoId,
+  required DateTime fechaTermino,
+  required MotivoTerminoAsignacion motivo,
+  String? observaciones,
+});
+
+final retirarEmpleadoServicioAutorizadoProvider = Provider<RetirarEmpleadoServicioAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required DateTime fechaTermino,
+    required MotivoTerminoAsignacion motivo,
+    String? observaciones,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(retirarEmpleadoServicioUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            fechaTermino: fechaTermino,
+            motivo: motivo,
+            observaciones: observaciones,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      RetirarEmpleadoServicioErrorInesperado.new,
+    );
+  };
+});
+
+typedef ActualizarFotografiaEmpleadoAutorizado = Future<ActualizarFotografiaEmpleadoResultado> Function({
+  required String empleadoId,
+  required String sourceFilePath,
+  required String originalFileName,
+  required String mimeType,
+});
+
+final actualizarFotografiaEmpleadoAutorizadoProvider = Provider<ActualizarFotografiaEmpleadoAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required String sourceFilePath,
+    required String originalFileName,
+    required String mimeType,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(actualizarFotografiaEmpleadoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      ActualizarFotografiaEmpleadoErrorInesperado.new,
+    );
+  };
+});
+
+typedef GuardarDomicilioEmpleadoAutorizado = Future<GuardarDomicilioEmpleadoResultado> Function({
+  required String empleadoId,
+  required DireccionBorrador? domicilio,
+});
+
+final guardarDomicilioEmpleadoAutorizadoProvider = Provider<GuardarDomicilioEmpleadoAutorizado>((ref) {
+  return ({required String empleadoId, required DireccionBorrador? domicilio}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(guardarDomicilioEmpleadoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            domicilio: domicilio,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      GuardarDomicilioEmpleadoErrorInesperado.new,
+    );
+  };
+});
+
+typedef AdjuntarDocumentoEmpleadoAutorizado = Future<AdjuntarDocumentoEmpleadoResultado> Function({
+  required String empleadoId,
+  required CategoriaDocumentoEmpleado categoria,
+  required String sourceFilePath,
+  required String originalFileName,
+  required String mimeType,
+});
+
+final adjuntarDocumentoEmpleadoAutorizadoProvider = Provider<AdjuntarDocumentoEmpleadoAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required CategoriaDocumentoEmpleado categoria,
+    required String sourceFilePath,
+    required String originalFileName,
+    required String mimeType,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(adjuntarDocumentoEmpleadoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            categoria: categoria,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+          ),
+      AdjuntarDocumentoEmpleadoErrorInesperado.new,
+    );
+  };
+});
+
+typedef RegistrarPerfilPsicologicoAutorizado = Future<RegistrarPerfilPsicologicoResultado> Function({
+  required String empleadoId,
+  required DateTime fecha,
+  String? resumen,
+  String? observaciones,
+  String? sourceFilePath,
+  String? originalFileName,
+  String? mimeType,
+});
+
+final registrarPerfilPsicologicoAutorizadoProvider = Provider<RegistrarPerfilPsicologicoAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required DateTime fecha,
+    String? resumen,
+    String? observaciones,
+    String? sourceFilePath,
+    String? originalFileName,
+    String? mimeType,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(registrarPerfilPsicologicoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            fecha: fecha,
+            resumen: resumen,
+            observaciones: observaciones,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      RegistrarPerfilPsicologicoErrorInesperado.new,
+    );
+  };
+});
+
+typedef RegistrarEstudioSocioeconomicoAutorizado = Future<RegistrarEstudioSocioeconomicoResultado> Function({
+  required String empleadoId,
+  required DateTime fecha,
+  String? resumen,
+  String? observaciones,
+  String? sourceFilePath,
+  String? originalFileName,
+  String? mimeType,
+});
+
+final registrarEstudioSocioeconomicoAutorizadoProvider = Provider<RegistrarEstudioSocioeconomicoAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required DateTime fecha,
+    String? resumen,
+    String? observaciones,
+    String? sourceFilePath,
+    String? originalFileName,
+    String? mimeType,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(registrarEstudioSocioeconomicoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            fecha: fecha,
+            resumen: resumen,
+            observaciones: observaciones,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      RegistrarEstudioSocioeconomicoErrorInesperado.new,
+    );
+  };
+});
+
+typedef RegistrarAntidopingAutorizado = Future<RegistrarAntidopingResultado> Function({
+  required String empleadoId,
+  required DateTime fecha,
+  required ResultadoSustanciaAntidoping amp,
+  required ResultadoSustanciaAntidoping bzd,
+  required ResultadoSustanciaAntidoping coc,
+  required ResultadoSustanciaAntidoping met,
+  required ResultadoSustanciaAntidoping opi,
+  String? observaciones,
+  String? sourceFilePath,
+  String? originalFileName,
+  String? mimeType,
+});
+
+final registrarAntidopingAutorizadoProvider = Provider<RegistrarAntidopingAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required DateTime fecha,
+    required ResultadoSustanciaAntidoping amp,
+    required ResultadoSustanciaAntidoping bzd,
+    required ResultadoSustanciaAntidoping coc,
+    required ResultadoSustanciaAntidoping met,
+    required ResultadoSustanciaAntidoping opi,
+    String? observaciones,
+    String? sourceFilePath,
+    String? originalFileName,
+    String? mimeType,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.modificar',
+      () => ref.read(registrarAntidopingUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            fecha: fecha,
+            amp: amp,
+            bzd: bzd,
+            coc: coc,
+            met: met,
+            opi: opi,
+            observaciones: observaciones,
+            sourceFilePath: sourceFilePath,
+            originalFileName: originalFileName,
+            mimeType: mimeType,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      RegistrarAntidopingErrorInesperado.new,
+    );
+  };
 });
 
 final fichaTecnicaEmpleadoRepositoryProvider = Provider<FichaTecnicaEmpleadoRepository>((ref) {
@@ -506,7 +860,7 @@ final registrarBajaLaboralAutorizadoProvider = Provider<RegistrarBajaLaboralAuto
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'personal.modificar',
+      'personal.archivar',
       () => ref.read(registrarBajaLaboralUseCaseProvider).ejecutar(
             empleadoId: empleadoId,
             fechaBaja: fechaBaja,
@@ -540,7 +894,7 @@ final registrarReingresoAutorizadoProvider = Provider<RegistrarReingresoAutoriza
     final actorUsuarioId = ref.read(sesionControllerProvider)?.usuarioId;
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'personal.modificar',
+      'personal.archivar',
       () => ref.read(registrarReingresoUseCaseProvider).ejecutar(
             empleadoId: empleadoId,
             fechaIngreso: fechaIngreso,
@@ -591,6 +945,12 @@ typedef GenerarFichaTecnicaEmpleadoAutorizado = Future<GenerarFichaTecnicaEmplea
   Set<String> seccionesExcluidas,
 });
 
+// Etapa 1B (cierre de seguridad): antes gateada por `personal.crear` —
+// sin razón real (confirmado por auditoría): generar la ficha técnica
+// de un Empleado YA EXISTENTE no crea ningún Empleado, es una consulta/
+// generación de documento sobre datos ya visibles en su expediente
+// (gateado a su vez por `personal.ver`). Nunca toca la fila del
+// Empleado — solo inserta un registro histórico de la ficha generada.
 final generarFichaTecnicaEmpleadoAutorizadoProvider = Provider<GenerarFichaTecnicaEmpleadoAutorizado>((ref) {
   return ({
     required String empleadoId,
@@ -598,7 +958,7 @@ final generarFichaTecnicaEmpleadoAutorizadoProvider = Provider<GenerarFichaTecni
   }) {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
-      'personal.crear',
+      'personal.ver',
       () => ref.read(generarFichaTecnicaEmpleadoUseCaseProvider).ejecutar(
             empleadoId: empleadoId,
             seccionesExcluidas: seccionesExcluidas,
@@ -643,4 +1003,128 @@ final eliminarEmpleadoFisicamenteAutorizadoProvider = Provider<EliminarEmpleadoF
       EliminarEmpleadoFisicamenteErrorInesperado.new,
     );
   };
+});
+
+// "Regularizar perfil de asignación" (Etapa 15, corrección del bug real
+// de atribución histórica) — completa un `lineaComercialId` que quedó
+// `NULL` en una asignación vigente (dato previo a Etapa 15). Facultad
+// exclusiva del Usuario Maestro, mismo patrón `exigirMaestro` que
+// eliminación física — corrige un dato de clasificación, no cualquier
+// usuario debe poder reescribirlo.
+final regularizarPerfilAsignacionServicioUseCaseProvider = Provider<RegularizarPerfilAsignacionServicioUseCase>((ref) {
+  return RegularizarPerfilAsignacionServicioUseCase(
+    ref.watch(asignacionServicioRepositoryProvider),
+    ref.watch(servicioComercialRepositoryProvider),
+  );
+});
+
+typedef RegularizarPerfilAsignacionAutorizado = Future<RegularizarPerfilAsignacionResultado> Function({
+  required String asignacionServicioId,
+  required String lineaComercialId,
+});
+
+final regularizarPerfilAsignacionAutorizadoProvider = Provider<RegularizarPerfilAsignacionAutorizado>((ref) {
+  return ({required String asignacionServicioId, required String lineaComercialId}) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(regularizarPerfilAsignacionServicioUseCaseProvider).ejecutar(
+            asignacionServicioId: asignacionServicioId,
+            lineaComercialId: lineaComercialId,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      RegularizarPerfilAsignacionErrorInesperado.new,
+    );
+  };
+});
+
+// --- Etapa "Plantilla operativa vs. administrativa" ---
+
+/// Fuente de verdad ÚNICA de la composición de la plantilla — Dashboard,
+/// Personal y Reportes la consumen; ninguno reimplementa la regla
+/// Servicio=operativo / Sucursal=administrativo.
+final obtenerPlantillaPersonalUseCaseProvider = Provider<ObtenerPlantillaPersonalUseCase>((ref) {
+  return ObtenerPlantillaPersonalUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(asignacionServicioRepositoryProvider),
+    ref.watch(puestoRepositoryProvider),
+  );
+});
+
+/// Rotación reconstruida sobre ciclos laborales reales — métrica de
+/// PERIODO, nunca snapshot (ver el doc comment del use case).
+final obtenerRotacionPersonalUseCaseProvider = Provider<ObtenerRotacionPersonalUseCase>((ref) {
+  return ObtenerRotacionPersonalUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(asignacionServicioRepositoryProvider),
+  );
+});
+
+/// Conciliación de resguardos al dar de baja (schemaVersion 83).
+final conciliacionBajaRepositoryProvider = Provider<ConciliacionBajaRepository>((ref) {
+  return ConciliacionBajaRepositoryImpl(ref.watch(appDatabaseProvider));
+});
+
+final conciliarBajaEmpleadoUseCaseProvider = Provider<ConciliarBajaEmpleadoUseCase>((ref) {
+  return ConciliarBajaEmpleadoUseCase(
+    ref.watch(empleadoRepositoryProvider),
+    ref.watch(registrarBajaLaboralUseCaseProvider),
+    ref.watch(asignacionRepositoryProvider),
+    ref.watch(asignacionVehiculoRepositoryProvider),
+    ref.watch(conciliacionBajaRepositoryProvider),
+    ref.watch(registrarDescuentoProgramadoUseCaseProvider),
+  );
+});
+
+typedef ConciliarBajaEmpleadoAutorizado = Future<ConciliarBajaEmpleadoResultado> Function({
+  required String empleadoId,
+  required DateTime fechaBaja,
+  required MotivoBajaEmpleado motivo,
+  String? observaciones,
+  required List<ResolucionResguardo> resoluciones,
+});
+
+/// Gateado con `personal.archivar`, el MISMO permiso que ya protege la
+/// baja laboral. Auditado antes de decidirlo: la conciliación no es una
+/// facultad aparte, es la baja hecha bien. El control que Marlon pidió
+/// —quién autoriza no recuperar o no cobrar— es un DATO (un empleado
+/// administrativo por FK), no un permiso; crear un código nuevo daría
+/// la apariencia de un control que en realidad ya vive en el dato.
+final conciliarBajaEmpleadoAutorizadoProvider = Provider<ConciliarBajaEmpleadoAutorizado>((ref) {
+  return ({
+    required String empleadoId,
+    required DateTime fechaBaja,
+    required MotivoBajaEmpleado motivo,
+    String? observaciones,
+    required List<ResolucionResguardo> resoluciones,
+  }) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'personal.archivar',
+      () => ref.read(conciliarBajaEmpleadoUseCaseProvider).ejecutar(
+            empleadoId: empleadoId,
+            fechaBaja: fechaBaja,
+            motivo: motivo,
+            observaciones: observaciones,
+            resoluciones: resoluciones,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      ConciliarBajaEmpleadoErrorInesperado.new,
+    );
+  };
+});
+
+/// Empleados ADMINISTRATIVOS y ACTIVOS — la única fuente válida para
+/// autorizador y receptor (§9/§14). Devuelve el empleado con su puesto
+/// resuelto, para mostrar "Juan Cruz — Operaciones".
+final personalAdministrativoActivoProvider = FutureProvider<List<({EmpleadoData empleado, String? puesto})>>((ref) async {
+  final repo = ref.watch(empleadoRepositoryProvider);
+  final activos = await repo.listar(estatus: 'activo');
+  final resultado = <({EmpleadoData empleado, String? puesto})>[];
+  for (final empleado in activos) {
+    final clasificacion = await repo.clasificar(empleado.id);
+    if (clasificacion?.esAdministrativo ?? false) {
+      resultado.add((empleado: empleado, puesto: clasificacion?.plantilla?.name));
+    }
+  }
+  return resultado;
 });

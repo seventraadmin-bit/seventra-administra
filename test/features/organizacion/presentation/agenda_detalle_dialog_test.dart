@@ -250,8 +250,8 @@ void main() {
     final documentoId = await crearDocumentoDePrueba(estatus: 'procesadoAceptado');
     await db.into(db.cuentaPorCobrar).insert(
           CuentaPorCobrarCompanion.insert(
-            documentoPorEmitirId: documentoId,
-            clienteId: clienteId,
+            documentoPorEmitirId: Value(documentoId),
+            clienteId: Value(clienteId),
             tipoDocumento: 'reciboDePago',
             metodo: 'noAplica',
             fechaEmisionReal: DateTime(2026, 1, 5),
@@ -280,8 +280,8 @@ void main() {
     final documentoId = await crearDocumentoDePrueba(estatus: 'procesadoAceptado');
     final cuenta = await db.into(db.cuentaPorCobrar).insertReturning(
           CuentaPorCobrarCompanion.insert(
-            documentoPorEmitirId: documentoId,
-            clienteId: clienteId,
+            documentoPorEmitirId: Value(documentoId),
+            clienteId: Value(clienteId),
             tipoDocumento: 'reciboDePago',
             metodo: 'noAplica',
             fechaEmisionReal: DateTime(2026, 1, 5),
@@ -293,7 +293,7 @@ void main() {
     final pago = await db.into(db.pago).insertReturning(
           PagoCompanion.insert(
             folioPago: 'PAG-WIDGET-0001',
-            clienteId: clienteId,
+            clienteId: Value(clienteId),
             montoTotal: 2180000,
             fechaPago: DateTime(2026, 1, 6),
             formaPago: 'transferencia',

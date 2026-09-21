@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
-import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
-import 'package:riseg_one/features/personal/domain/usecases/empleado_alertas.dart';
-import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import 'package:riseg_one/features/personal/data/tables/empleado_table.dart' show EstatusEmpleado;
 
-import '../../../organizacion/organizacion_providers.dart';
-import 'empleados_list_controller.dart';
-import 'widgets/crear_empleado_dialog.dart';
+import 'bajas_list_screen.dart';
+import 'personal_activo_list_screen.dart';
 
 String empleadoNombreCompleto(EmpleadoData empleado) {
   final materno = empleado.apellidoMaterno;
@@ -32,150 +27,60 @@ RisegStatusTone empleadoEstatusTono(String valor) {
   };
 }
 
-/// Listado del expediente de empleados (Etapa 5A) — filtros por Puesto/
-/// estatus. "Registrar empleado" abre el formulario completo de alta.
-class EmpleadosListScreen extends ConsumerStatefulWidget {
-  const EmpleadosListScreen({super.key});
-
-  @override
-  ConsumerState<EmpleadosListScreen> createState() => _EmpleadosListScreenState();
+/// Línea compacta "Puesto · Servicio · Turno" — mismo formato en el
+/// Historial laboral del expediente y en la vista Bajas (Etapa 15),
+/// para que ambos lugares muestren el snapshot exactamente igual.
+/// Omite los segmentos ausentes; `null` si los 3 son nulos (nunca
+/// texto vacío ni "—" repetido tres veces).
+String? lineaPuestoServicioTurno({String? puesto, String? servicio, String? turno}) {
+  final partes = [puesto, servicio, turno].whereType<String>().where((p) => p.trim().isNotEmpty).toList();
+  return partes.isEmpty ? null : partes.join(' · ');
 }
 
-class _EmpleadosListScreenState extends ConsumerState<EmpleadosListScreen> {
-  List<PuestoData> _puestos = const [];
+/// Empleados (Etapa 5A, rediseñado en la Etapa 15) — dos subpestañas:
+/// "Personal activo" (predeterminada) y "Bajas". Un empleado con baja
+/// vigente nunca aparece en Personal activo — pasa de inmediato a
+/// Bajas (nunca se elimina información histórica, solo cambia la
+/// vista). Subpestañas locales (no rutas de `go_router`): mismo
+/// contenido de siempre en `/personal/empleados`, sin abrir un nuevo
+/// nivel de URL para esta separación puramente visual.
+class EmpleadosListScreen extends StatefulWidget {
+  const EmpleadosListScreen({this.filtroInicialSinAsignar = false, super.key});
+
+  /// Deep-link real desde el Dashboard (Etapa 20, "Sin asignar").
+  final bool filtroInicialSinAsignar;
 
   @override
-  void initState() {
-    super.initState();
-    Future.microtask(() async {
-      final puestos = await ref.read(puestoRepositoryProvider).listarActivos();
-      if (mounted) setState(() => _puestos = puestos);
-    });
-  }
+  State<EmpleadosListScreen> createState() => _EmpleadosListScreenState();
+}
 
-  String? _puestoNombre(String? puestoId) {
-    if (puestoId == null) return null;
-    for (final p in _puestos) {
-      if (p.id == puestoId) return p.nombre;
-    }
-    return puestoId;
-  }
-
-  Future<void> _registrar() async {
-    final empleadoId = await mostrarDialogoCrearEmpleado(context, ref);
-    if (empleadoId == null) return;
-    ref.read(empleadosListControllerProvider.notifier).recargar();
-    if (mounted) context.push('/personal/empleados/$empleadoId');
-  }
+class _EmpleadosListScreenState extends State<EmpleadosListScreen> {
+  int _tabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final state = ref.watch(empleadosListControllerProvider);
-    final notifier = ref.read(empleadosListControllerProvider.notifier);
 
-    if (state.errorCarga != null && state.empleados.isEmpty) {
-      return RisegEmptyState(
-        icon: Icons.error_outline,
-        title: l10n.empleadosListadoCargaErrorTitulo,
-        message: l10n.empleadosListadoCargaErrorMensaje,
-        primaryAction: RisegButton(
-          key: const Key('empleados_boton_reintentar'),
-          label: l10n.empleadosListadoBotonReintentar,
-          onPressed: notifier.reintentarCarga,
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          RisegSectionHeader(
-            title: l10n.empleadosListadoTitulo,
-            primaryAction: RisegButton(
-              key: const Key('empleados_boton_registrar'),
-              label: l10n.empleadosListadoBotonRegistrar,
-              onPressed: ref.watch(permissionServiceProvider).hasCode('personal.crear') ? _registrar : null,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: RisegSelect<String?>(
-                  label: l10n.empleadosFiltroPuesto,
-                  value: state.puestoId,
-                  items: [
-                    RisegSelectItem(value: null, label: l10n.empleadosFiltroPuestoTodos),
-                    for (final p in _puestos) RisegSelectItem(value: p.id, label: p.nombre),
-                  ],
-                  onChanged: (valor) => notifier.aplicarFiltros(puestoId: valor, limpiarPuestoId: valor == null),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: RisegSelect<String?>(
-                  label: l10n.empleadosFiltroEstatus,
-                  value: state.estatus,
-                  items: [
-                    RisegSelectItem(value: null, label: l10n.empleadosFiltroEstatusTodos),
-                    for (final e in EstatusEmpleado.values)
-                      RisegSelectItem(value: e.name, label: empleadoEstatusLabel(l10n, e.name)),
-                  ],
-                  onChanged: (valor) => notifier.aplicarFiltros(estatus: valor, limpiarEstatus: valor == null),
-                ),
-              ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, 0),
+          child: RisegTabs(
+            tabs: [
+              RisegTabItem(label: l10n.empleadosTabActivo),
+              RisegTabItem(label: l10n.empleadosTabBajas),
             ],
+            selectedIndex: _tabIndex,
+            onChanged: (index) => setState(() => _tabIndex = index),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: RisegTableBase<EmpleadoData>(
-              loading: state.cargando,
-              rows: state.empleados,
-              onRowTap: (empleado) => context.push('/personal/empleados/${empleado.id}'),
-              emptyState: RisegEmptyState(
-                title: l10n.empleadosListadoVacioTitulo,
-                message: l10n.empleadosListadoVacioMensaje,
-              ),
-              columns: [
-                RisegColumn<EmpleadoData>(
-                  label: l10n.empleadosColumnaNumero,
-                  width: 90,
-                  cellBuilder: (e) => Text('${e.numeroEmpleado}'),
-                ),
-                RisegColumn<EmpleadoData>(
-                  label: l10n.empleadosColumnaNombre,
-                  cellBuilder: (e) => Text(empleadoNombreCompleto(e)),
-                ),
-                RisegColumn<EmpleadoData>(
-                  label: l10n.empleadosColumnaPuesto,
-                  cellBuilder: (e) => Text(_puestoNombre(e.puestoId) ?? ''),
-                ),
-                RisegColumn<EmpleadoData>(
-                  label: l10n.empleadosColumnaEstatus,
-                  width: 130,
-                  cellBuilder: (e) =>
-                      RisegStatusBadge(label: empleadoEstatusLabel(l10n, e.estatus), tone: empleadoEstatusTono(e.estatus)),
-                ),
-                RisegColumn<EmpleadoData>(
-                  label: l10n.empleadosColumnaEvaluaciones,
-                  width: 150,
-                  cellBuilder: (e) {
-                    final alertas = calcularAlertasEmpleado(e);
-                    if (!alertas.tieneAlertas) return const SizedBox.shrink();
-                    return RisegStatusBadge(
-                      label: l10n.empleadosColumnaEvaluacionesPendientes,
-                      tone: RisegStatusTone.warning,
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: switch (_tabIndex) {
+            0 => PersonalActivoListScreen(filtroInicialSinAsignar: widget.filtroInicialSinAsignar),
+            _ => const BajasListScreen(),
+          },
+        ),
+      ],
     );
   }
 }

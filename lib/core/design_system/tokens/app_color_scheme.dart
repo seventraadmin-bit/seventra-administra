@@ -56,6 +56,13 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
     required this.errorBg,
     required this.neutralText,
     required this.neutralBg,
+    required this.shellForeground,
+    required this.shellForegroundMuted,
+    required this.shellOverlaySubtle,
+    required this.shellOverlayStrong,
+    required this.shellSearchBg,
+    required this.shellSearchBorder,
+    required this.shellFocusRing,
   });
 
   /// Fondo de página.
@@ -110,6 +117,46 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
   final Color neutralText;
   final Color neutralBg;
 
+  /// ## Identidad del App Shell (Etapa 16, evolución visual)
+  /// La barra superior es la única superficie de la app que se pinta con
+  /// el azul institucional (`accent`) como FONDO — el resto de RISEG ONE
+  /// usa azul solo como acento sobre superficies neutras. Estos 7 tokens
+  /// son deliberadamente los MISMOS en claro/oscuro (igual que `accent`):
+  /// la identidad de marca no debe cambiar con el tema del usuario.
+  ///
+  /// Texto/ícono principal sobre el azul institucional — blanco, mismo
+  /// contraste ya validado para texto de botón sobre `accent` (5.51:1).
+  final Color shellForeground;
+
+  /// Texto/ícono secundario sobre el azul institucional (ej. separador
+  /// de breadcrumb, placeholder del buscador) — un blanco-azulado, nunca
+  /// alpha sobre blanco puro: el contraste debe quedar fijo y predecible,
+  /// no depender de qué tan saturado esté el azul de fondo.
+  final Color shellForegroundMuted;
+
+  /// Fondo hover de un ícono/botón que vive sobre la barra azul (tema,
+  /// notificaciones, perfil) — velo blanco translúcido sutil, nunca un
+  /// segundo azul.
+  final Color shellOverlaySubtle;
+
+  /// Igual que [shellOverlaySubtle] pero más marcado — presionado, o un
+  /// ítem de menú activo (ej. el modo de tema vigente).
+  final Color shellOverlayStrong;
+
+  /// Relleno del buscador global sobre la barra azul — superficie
+  /// translúcida derivada del propio azul (nunca vidrio/blur — solo un
+  /// velo plano), para que siga leyéndose como parte de la barra y no
+  /// como un campo blanco flotando encima.
+  final Color shellSearchBg;
+
+  /// Borde del buscador global sobre la barra azul.
+  final Color shellSearchBorder;
+
+  /// Anillo de foco de teclado para controles que viven sobre la barra
+  /// azul — nunca [focusRing] (es del mismo azul institucional: sería
+  /// invisible contra este fondo).
+  final Color shellFocusRing;
+
   factory AppColorScheme.light() {
     return const AppColorScheme(
       canvas: AppColors.neutral0,
@@ -136,6 +183,13 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       errorBg: AppColors.errorBgLight,
       neutralText: AppColors.neutral600,
       neutralBg: AppColors.neutral100,
+      shellForeground: AppColors.shellForeground,
+      shellForegroundMuted: AppColors.shellForegroundMuted,
+      shellOverlaySubtle: AppColors.shellOverlaySubtle,
+      shellOverlayStrong: AppColors.shellOverlayStrong,
+      shellSearchBg: AppColors.shellSearchBg,
+      shellSearchBorder: AppColors.shellSearchBorder,
+      shellFocusRing: AppColors.shellFocusRing,
     );
   }
 
@@ -165,6 +219,13 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       errorBg: AppColors.errorBgDark,
       neutralText: AppColors.darkTextMuted,
       neutralBg: AppColors.darkSurfaceSunken,
+      shellForeground: AppColors.shellForeground,
+      shellForegroundMuted: AppColors.shellForegroundMuted,
+      shellOverlaySubtle: AppColors.shellOverlaySubtle,
+      shellOverlayStrong: AppColors.shellOverlayStrong,
+      shellSearchBg: AppColors.shellSearchBg,
+      shellSearchBorder: AppColors.shellSearchBorder,
+      shellFocusRing: AppColors.shellFocusRing,
     );
   }
 
@@ -194,6 +255,13 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
     Color? errorBg,
     Color? neutralText,
     Color? neutralBg,
+    Color? shellForeground,
+    Color? shellForegroundMuted,
+    Color? shellOverlaySubtle,
+    Color? shellOverlayStrong,
+    Color? shellSearchBg,
+    Color? shellSearchBorder,
+    Color? shellFocusRing,
   }) {
     return AppColorScheme(
       canvas: canvas ?? this.canvas,
@@ -220,6 +288,13 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       errorBg: errorBg ?? this.errorBg,
       neutralText: neutralText ?? this.neutralText,
       neutralBg: neutralBg ?? this.neutralBg,
+      shellForeground: shellForeground ?? this.shellForeground,
+      shellForegroundMuted: shellForegroundMuted ?? this.shellForegroundMuted,
+      shellOverlaySubtle: shellOverlaySubtle ?? this.shellOverlaySubtle,
+      shellOverlayStrong: shellOverlayStrong ?? this.shellOverlayStrong,
+      shellSearchBg: shellSearchBg ?? this.shellSearchBg,
+      shellSearchBorder: shellSearchBorder ?? this.shellSearchBorder,
+      shellFocusRing: shellFocusRing ?? this.shellFocusRing,
     );
   }
 
@@ -252,6 +327,13 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       errorBg: c(errorBg, other.errorBg),
       neutralText: c(neutralText, other.neutralText),
       neutralBg: c(neutralBg, other.neutralBg),
+      shellForeground: c(shellForeground, other.shellForeground),
+      shellForegroundMuted: c(shellForegroundMuted, other.shellForegroundMuted),
+      shellOverlaySubtle: c(shellOverlaySubtle, other.shellOverlaySubtle),
+      shellOverlayStrong: c(shellOverlayStrong, other.shellOverlayStrong),
+      shellSearchBg: c(shellSearchBg, other.shellSearchBg),
+      shellSearchBorder: c(shellSearchBorder, other.shellSearchBorder),
+      shellFocusRing: c(shellFocusRing, other.shellFocusRing),
     );
   }
 }

@@ -7,7 +7,7 @@ part of 'sucursales_list_controller.dart';
 // **************************************************************************
 
 String _$sucursalesListControllerHash() =>
-    r'fdb7f12260153b4b3e3caabe058770b197894364';
+    r'966b8e7594d5f739dd3118a2390db644ba4b6d0f';
 
 /// Controlador de la pantalla de listado de Sucursales — carga, error,
 /// texto de búsqueda. El filtrado en sí vive en `SucursalesListState`

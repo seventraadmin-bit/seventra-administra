@@ -7,7 +7,7 @@ part of 'puesto_expediente_controller.dart';
 // **************************************************************************
 
 String _$puestoExpedienteControllerHash() =>
-    r'69c1c1caa0752f47e88cd17953d8e69363bb411c';
+    r'2f6b60de84404db486b7edbd82cb5de908b3b410';
 
 /// Copied from Dart SDK
 class _SystemHash {

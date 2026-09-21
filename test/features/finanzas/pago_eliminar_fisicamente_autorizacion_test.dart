@@ -12,6 +12,7 @@ import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/di/providers.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/complemento_pago_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/pago_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/cancelar_pago_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/eliminar_pago_fisicamente_usecase.dart';
@@ -44,7 +45,7 @@ class _SesionUsuarioNormal extends SesionController {
       esMaestro: false,
       // Incluso con TODOS los permisos dinámicos de Finanzas,
       // `exigirMaestro` nunca consulta esta lista.
-      permisos: {'finanzas.crear', 'finanzas.modificar', 'finanzas.archivar', 'finanzas.ver'},
+      permisos: {'pagos.registrar', 'pagos.corregir', 'pagos.cancelar', 'finanzas.ver'},
     );
   }
 }
@@ -69,7 +70,7 @@ void main() {
       fechaPago: DateTime(2026, 8, 10),
       formaPago: 'efectivo',
     );
-    await CancelarPagoUseCase(pagoRepo).ejecutar(pagoId: pago.id, motivo: 'Duplicado por error');
+    await CancelarPagoUseCase(pagoRepo, ComplementoPagoRepositoryImpl(db)).ejecutar(pagoId: pago.id, motivo: 'Duplicado por error');
     pagoId = pago.id;
   });
 

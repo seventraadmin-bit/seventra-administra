@@ -26,6 +26,7 @@ import 'package:riseg_one/features/compras/domain/repositories/compra_repository
 import 'package:riseg_one/features/compras/domain/usecases/cancelar_compra_usecase.dart';
 import 'package:riseg_one/features/compras/domain/usecases/eliminar_compra_fisicamente_usecase.dart';
 import 'package:riseg_one/features/compras/domain/usecases/registrar_compra_usecase.dart';
+import 'package:riseg_one/features/finanzas/data/repositories/deuda_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/repositories/egreso_repository_impl.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/inventario/data/repositories/articulo_repository_impl.dart';
@@ -55,13 +56,14 @@ void main() {
     articuloRepo = ArticuloRepositoryImpl(db);
     inventarioRepo = InventarioRepositoryImpl(db);
     final egresoRepo = EgresoRepositoryImpl(db);
-    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo);
+    final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
+    compraRepo = CompraRepositoryImpl(db, inventarioRepo, articuloRepo, egresoRepo, deudaRepo);
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
 
     registrarEntrada = RegistrarEntradaUseCase(inventarioRepo, articuloRepo);
     registrarBaja = RegistrarBajaUseCase(inventarioRepo, articuloRepo);
     registrarAjuste = RegistrarAjusteUseCase(inventarioRepo, articuloRepo);
-    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, generarCodigo);
+    registrarCompra = RegistrarCompraUseCase(compraRepo, articuloRepo, inventarioRepo, deudaRepo, generarCodigo);
     cancelarCompra = CancelarCompraUseCase(compraRepo);
     eliminarCompraFisicamente = EliminarCompraFisicamenteUseCase(compraRepo);
   });
@@ -166,7 +168,7 @@ void main() {
     var existencia = await inventarioRepo.calcularExistencia(articuloId: articulo.id, varianteId: ch.id);
     expect(existencia.disponible, 1);
 
-    final cancelacion = await cancelarCompra.ejecutar(compraId: compra.id, motivo: 'Prueba');
+    final cancelacion = await cancelarCompra.ejecutar(compraId: compra.id, motivo: MotivoCancelacionCompra.compraDePrueba);
     expect(cancelacion, isA<CancelarCompraExitosa>());
 
     existencia = await inventarioRepo.calcularExistencia(articuloId: articulo.id, varianteId: ch.id);
@@ -185,11 +187,11 @@ void main() {
     );
     final compra = (resultado as RegistrarCompraExitosa).compra;
 
-    final primeraCancelacion = await cancelarCompra.ejecutar(compraId: compra.id, motivo: 'Prueba');
+    final primeraCancelacion = await cancelarCompra.ejecutar(compraId: compra.id, motivo: MotivoCancelacionCompra.compraDePrueba);
     expect(primeraCancelacion, isA<CancelarCompraExitosa>());
 
     // Reintento — simula refrescar/reintentar el flujo de cancelación.
-    final segundaCancelacion = await cancelarCompra.ejecutar(compraId: compra.id, motivo: 'Prueba otra vez');
+    final segundaCancelacion = await cancelarCompra.ejecutar(compraId: compra.id, motivo: MotivoCancelacionCompra.compraNoRealizada);
     expect(segundaCancelacion, isA<CancelarCompraYaCancelada>());
 
     final existencia = await inventarioRepo.calcularExistencia(articuloId: articulo.id, varianteId: ch.id);
@@ -211,7 +213,7 @@ void main() {
       ],
     );
     final compra = (resultado as RegistrarCompraExitosa).compra;
-    await cancelarCompra.ejecutar(compraId: compra.id, motivo: 'Prueba');
+    await cancelarCompra.ejecutar(compraId: compra.id, motivo: MotivoCancelacionCompra.compraDePrueba);
 
     final existenciaCh = await inventarioRepo.calcularExistencia(articuloId: articulo.id, varianteId: ch.id);
     final existenciaG = await inventarioRepo.calcularExistencia(articuloId: articulo.id, varianteId: g.id);
@@ -229,11 +231,11 @@ void main() {
       ],
     );
     final compra = (resultado as RegistrarCompraExitosa).compra;
-    await cancelarCompra.ejecutar(compraId: compra.id, motivo: 'Prueba');
+    await cancelarCompra.ejecutar(compraId: compra.id, motivo: MotivoCancelacionCompra.compraDePrueba);
 
     final eliminacion = await eliminarCompraFisicamente.ejecutar(
       compraId: compra.id,
-      motivo: 'Limpieza de prueba',
+      motivo: MotivoEliminacionFisicaCompra.registroDePrueba,
     );
     expect(eliminacion, isA<EliminarCompraFisicamenteExitoso>());
 
@@ -284,15 +286,15 @@ void main() {
         ],
       );
       final compra = (resultado as RegistrarCompraExitosa).compra;
-      await cancelarCompra.ejecutar(compraId: compra.id, motivo: 'Prueba');
+      await cancelarCompra.ejecutar(compraId: compra.id, motivo: MotivoCancelacionCompra.compraDePrueba);
       return compra.id;
     }
 
     final compraId1 = await comprarYCancelar();
     final compraId2 = await comprarYCancelar();
 
-    await eliminarCompraFisicamente.ejecutar(compraId: compraId1, motivo: 'Limpieza');
-    await eliminarCompraFisicamente.ejecutar(compraId: compraId2, motivo: 'Limpieza');
+    await eliminarCompraFisicamente.ejecutar(compraId: compraId1, motivo: MotivoEliminacionFisicaCompra.registroDePrueba);
+    await eliminarCompraFisicamente.ejecutar(compraId: compraId2, motivo: MotivoEliminacionFisicaCompra.registroDePrueba);
 
     // La entrada manual real que sí debe sobrevivir intacta.
     await registrarEntrada.ejecutar(articuloId: articulo.id, varianteId: ch.id, cantidad: 1, fecha: DateTime(2026, 8, 12));

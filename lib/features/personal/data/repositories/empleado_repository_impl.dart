@@ -4,23 +4,44 @@ import 'package:drift/drift.dart';
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/telefonia/data/repositories/asignacion_linea_telefonica_repository_impl.dart';
+import 'package:riseg_one/features/telefonia/domain/repositories/asignacion_linea_telefonica_repository.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
+import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart' show TipoPuesto;
 import 'package:riseg_one/features/organizacion/domain/shared/direccion_input.dart';
 import 'package:riseg_one/features/personal/domain/repositories/asignacion_servicio_repository.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/plantilla_personal.dart';
 import '../../domain/repositories/empleado_repository.dart';
 import '../../domain/usecases/eliminar_empleado_fisicamente_usecase.dart';
 import '../tables/empleado_table.dart';
 import 'empleado_evento_writer.dart';
 
 class EmpleadoRepositoryImpl implements EmpleadoRepository {
-  EmpleadoRepositoryImpl(this._db, this._asignacionServicioRepository, {AttachmentStorage? attachmentStorage})
-      : _attachmentStorage = attachmentStorage;
+  EmpleadoRepositoryImpl(
+    this._db,
+    this._asignacionServicioRepository, {
+    AttachmentStorage? attachmentStorage,
+    AsignacionLineaTelefonicaRepository? asignacionLineaTelefonicaRepository,
+  })  : _attachmentStorage = attachmentStorage,
+        _asignacionLineaTelefonicaRepository =
+            asignacionLineaTelefonicaRepository ?? AsignacionLineaTelefonicaRepositoryImpl(_db);
 
   final AppDatabase _db;
   final AsignacionServicioRepository _asignacionServicioRepository;
+
+  /// Telefonía entra aquí por la misma puerta que Servicios: al cerrar
+  /// la relación laboral hay que cerrar TODO lo que la persona tenía
+  /// vigente, y la línea telefónica es una de esas cosas.
+  ///
+  /// Dependencia en un solo sentido (Personal → Telefonía): los
+  /// repositorios de Telefonía no dependen de `EmpleadoRepository`, así
+  /// que no se introduce ningún ciclo. Con `default` para no romper a
+  /// los muchos llamadores que solo necesitan leer Empleados.
+  final AsignacionLineaTelefonicaRepository _asignacionLineaTelefonicaRepository;
+
   late final AttachmentRepository _attachmentRepository = AttachmentRepository(_db);
 
   /// Opcional a propósito (Etapa 15): la mayoría de los llamadores de
@@ -37,6 +58,12 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
   @override
   Future<EmpleadoData?> obtenerPorId(String id) {
     return (_db.select(_db.empleado)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  @override
+  Future<List<EmpleadoData>> listarPorIds(List<String> ids) {
+    if (ids.isEmpty) return Future.value(const []);
+    return (_db.select(_db.empleado)..where((t) => t.id.isIn(ids))).get();
   }
 
   @override
@@ -197,12 +224,27 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     return _db.transaction(() async {
       final anterior = await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingle();
 
+      // Snapshot de baja (Etapa 15) — se resuelve ANTES de cerrar la
+      // asignación (todavía vigente en este punto exacto), para que
+      // "el servicio/turno al momento de salir" quede capturado como
+      // puro texto, nunca vuelto a resolver en vivo después (ver el
+      // doc comment de `Empleado.puestoNombreBaja`).
+      final puestoNombreBaja = await _resolverNombrePuesto(anterior.puestoId);
+      final asignacionVigente = await _asignacionServicioRepository.obtenerActivaPorEmpleado(empleadoId);
+      final servicioNombreBaja =
+          asignacionVigente == null ? null : await _resolverNombreServicio(asignacionVigente.servicioId);
+      final turnoNombreBaja =
+          asignacionVigente == null ? null : await _resolverNombreTurno(asignacionVigente.turnoId);
+
       await (_db.update(_db.empleado)..where((t) => t.id.equals(empleadoId))).write(
         EmpleadoCompanion(
           estatus: Value(EstatusEmpleado.baja.name),
           fechaBaja: Value(fechaBaja),
           motivoBaja: Value(motivo),
           observacionesBaja: Value(observaciones),
+          puestoNombreBaja: Value(puestoNombreBaja),
+          servicioNombreBaja: Value(servicioNombreBaja),
+          turnoNombreBaja: Value(turnoNombreBaja),
           updatedAt: Value(DateTime.now()),
         ),
       );
@@ -223,8 +265,74 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       // misma transacción, con la misma fecha efectiva de la baja.
       await _asignacionServicioRepository.cerrarPorBajaEmpleado(empleadoId: empleadoId, fecha: fechaBaja);
 
+      // Y tampoco "Empleado = Baja, Línea telefónica = Todavía
+      // asignada" (mini-etapa "Cierre automático de asignaciones de
+      // Telefonía"). Misma transacción y misma fecha efectiva: si algo
+      // falla al cerrar las líneas, la baja laboral tampoco ocurre.
+      //
+      // La línea NO se da de baja — queda disponible para reasignarse.
+      // Quien se fue es la persona, no la línea.
+      await _asignacionLineaTelefonicaRepository.cerrarPorBajaEmpleado(
+        empleadoId: empleadoId,
+        fecha: fechaBaja,
+        actorUsuarioId: actorUsuarioId,
+      );
+
+      // Los bienes FÍSICOS son otra cosa (schemaVersion 82). Servicio y
+      // línea son relaciones lógicas: terminarlas es la verdad completa.
+      // Un radio o una camioneta siguen existiendo y siguen con la
+      // persona hasta que alguien registre la devolución REAL.
+      //
+      // Por eso aquí no se cierra nada: se MARCA. Cerrar habría emitido
+      // un movimiento de entrada por devolución, dejado la unidad
+      // disponible y puesto el vehículo en disponible — es decir, habría
+      // hecho desaparecer administrativamente bienes que RISEG todavía
+      // debe recuperar.
+      //
+      // La baja laboral NUNCA se bloquea por esto: terminar la relación
+      // laboral no depende de que alguien devuelva un radio.
+      //
+      // El marcado masivo automático SE RETIRÓ (ajuste de cierre de la
+      // conciliación): era una puerta trasera al flujo obligatorio y
+      // dejaba bienes en un limbo de "pendiente" que nadie había
+      // decidido. Ahora `RegistrarBajaLaboralUseCase` rechaza la baja
+      // si queda algún bien vigente sin resolver, y cada pendiente
+      // nace de una resolución documentada.
+
       return actualizado;
     });
+  }
+
+  @override
+  Future<ClasificacionEmpleado?> clasificar(String empleadoId) async {
+    final empleado = await obtenerPorId(empleadoId);
+    if (empleado == null) return null;
+    final asignacion = await _asignacionServicioRepository.obtenerActivaPorEmpleado(empleadoId);
+    final puesto = empleado.puestoId == null
+        ? null
+        : await (_db.select(_db.puesto)..where((t) => t.id.equals(empleado.puestoId!))).getSingleOrNull();
+    return clasificarEmpleado(
+      empleado: empleado,
+      servicioIdVigente: asignacion?.servicioId,
+      tipoPuesto: puesto == null ? null : TipoPuesto.values.byName(puesto.tipo),
+    );
+  }
+
+  Future<String?> _resolverNombrePuesto(String? puestoId) async {
+    if (puestoId == null) return null;
+    final fila = await (_db.select(_db.puesto)..where((t) => t.id.equals(puestoId))).getSingleOrNull();
+    return fila?.nombre;
+  }
+
+  Future<String?> _resolverNombreServicio(String servicioId) async {
+    final fila = await (_db.select(_db.servicio)..where((t) => t.id.equals(servicioId))).getSingleOrNull();
+    return fila?.nombre;
+  }
+
+  Future<String?> _resolverNombreTurno(String? turnoId) async {
+    if (turnoId == null) return null;
+    final fila = await (_db.select(_db.tipoModalidadTurno)..where((t) => t.id.equals(turnoId))).getSingleOrNull();
+    return fila?.nombre;
   }
 
   @override
@@ -252,6 +360,12 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
                 fechaBaja: anterior.fechaBaja!,
                 motivoBaja: anterior.motivoBaja!,
                 observacionesBaja: Value(anterior.observacionesBaja),
+                // Copiado tal cual desde el snapshot ya capturado en
+                // `registrarBajaLaboral` — nunca se vuelve a resolver
+                // aquí (ver el doc comment de `EmpleadoPeriodoLaboral`).
+                puestoNombre: Value(anterior.puestoNombreBaja),
+                servicioNombre: Value(anterior.servicioNombreBaja),
+                turnoNombre: Value(anterior.turnoNombreBaja),
               ),
             );
       }
@@ -263,6 +377,9 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
           fechaBaja: const Value(null),
           motivoBaja: const Value(null),
           observacionesBaja: const Value(null),
+          puestoNombreBaja: const Value(null),
+          servicioNombreBaja: const Value(null),
+          turnoNombreBaja: const Value(null),
           puestoId: limpiarPuesto ? const Value(null) : (puestoId == null ? const Value.absent() : Value(puestoId)),
           sucursalId:
               limpiarSucursal ? const Value(null) : (sucursalId == null ? const Value.absent() : Value(sucursalId)),

@@ -15,6 +15,7 @@ abstract interface class ServicioComercialRepository {
   Future<({ServicioLineaComercialData linea, ServicioLineaComercialVigenciaData vigencia})> crearLinea({
     required String servicioId,
     required LineaComercialValidada datos,
+    String? actorUsuarioId,
   });
 
   /// Todas las líneas comerciales del Servicio (cualquier
@@ -53,9 +54,14 @@ abstract interface class ServicioComercialRepository {
   /// sola transacción. Asume `datos` ya validados por
   /// `LineaComercialValidator.validarNuevaVigencia` — este método no
   /// vuelve a validar existencia/duplicados/solapamiento.
+  /// `observacion` es opcional a propósito: abrir una vigencia es un
+  /// hecho de negocio, no la enmienda de un error, y forzar un "motivo"
+  /// la disfrazaría de corrección.
   Future<ServicioLineaComercialVigenciaData> cambiarVigencia({
     required String lineaComercialId,
     required LineaComercialValidada datos,
+    String? observacion,
+    String? actorUsuarioId,
   });
 
   /// Cierra una vigencia (la vigente actual, ya identificada por el
@@ -64,6 +70,8 @@ abstract interface class ServicioComercialRepository {
   Future<ServicioLineaComercialVigenciaData> cerrarVigencia({
     required String vigenciaId,
     required DateTime fechaEfectiva,
+    String? motivo,
+    String? actorUsuarioId,
   });
 
   /// Cancela una vigencia programada — la marca `archivado` (nunca
@@ -73,7 +81,7 @@ abstract interface class ServicioComercialRepository {
   /// importante que ocultarla). Repara la predecesora, restaurando su
   /// `fechaFinVigencia` al valor que tenía la cancelada — como si nunca
   /// se hubiera registrado.
-  Future<void> cancelarVigenciaProgramada(String vigenciaId);
+  Future<void> cancelarVigenciaProgramada(String vigenciaId, {String? motivo, String? actorUsuarioId});
 
   /// Edita únicamente descripción/observaciones de una vigencia — nunca
   /// sus condiciones comerciales. No valida si es histórica (eso vive en
@@ -97,6 +105,8 @@ abstract interface class ServicioComercialRepository {
   Future<ServicioLineaComercialVigenciaData> corregirVigencia({
     required String vigenciaId,
     required LineaComercialValidada datos,
+    String? motivo,
+    String? actorUsuarioId,
   });
 
   /// Eliminación física extraordinaria (Etapa 15) — ver el doc comment
@@ -112,4 +122,25 @@ abstract interface class ServicioComercialRepository {
   /// se capturó. Usado para precargar Corregir/Nueva vigencia con el
   /// horario real de la vigencia en cuestión.
   Future<List<ServicioLineaComercialVigenciaHorarioData>> obtenerHorario(String vigenciaId);
+
+  /// Cobertura batch de TODOS los Servicios dados en una sola pasada
+  /// (Etapa 20, Dashboard) — mismo cálculo que `listarLineasEnFecha`
+  /// (línea vigente hoy vía `clasificarVigencias`, asignados vigentes
+  /// clamped por el llamador, atribución histórica vía
+  /// `atribuirAsignacionesHistoricas`), pero sin N+1: pensado
+  /// EXCLUSIVAMENTE para `ObtenerCoberturaOperativaUseCase`, que solo
+  /// necesita requerido/cubierto/puestoNombre por línea, nunca el
+  /// historial de vigencias/horario/esCorregible que sí necesita el
+  /// expediente de Servicio. NO reemplaza `listarLineasEnFecha` — ese
+  /// sigue siendo la fuente para el expediente, sin tocar. 5 consultas
+  /// totales sin importar cuántos Servicios/líneas se pidan.
+  Future<
+      List<
+          ({
+            String servicioId,
+            String lineaComercialId,
+            String puestoNombre,
+            int requerido,
+            int cubierto,
+          })>> listarCoberturaPorServicios(List<String> servicioIds, DateTime fecha);
 }

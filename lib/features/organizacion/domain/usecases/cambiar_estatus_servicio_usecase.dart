@@ -3,6 +3,7 @@ import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_table.dart';
 
 import '../repositories/cliente_repository.dart';
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import '../repositories/servicio_repository.dart';
 
 /// Resultado de [CambiarEstatusServicioUseCase] — tipos distintos por
@@ -36,6 +37,10 @@ class CambiarEstatusServicioRequiereFechaTermino extends CambiarEstatusServicioR
 /// Solo posible al terminar: la fecha efectiva proporcionada es anterior
 /// a `fechaInicio`.
 class CambiarEstatusServicioFechaTerminoInvalida extends CambiarEstatusServicioResultado {}
+
+/// Suspender, reactivar o terminar un Servicio exige explicar por qué:
+/// la decisión afecta directamente a la cobranza.
+class CambiarEstatusServicioMotivoRequerido extends CambiarEstatusServicioResultado {}
 
 class CambiarEstatusServicioErrorInesperado extends CambiarEstatusServicioResultado {
   CambiarEstatusServicioErrorInesperado(this.mensaje);
@@ -71,7 +76,10 @@ class CambiarEstatusServicioUseCase {
     required String servicioId,
     required EstatusServicio nuevo,
     DateTime? fechaTerminoEfectiva,
+    required String motivo,
+    String? actorUsuarioId,
   }) async {
+    if (!motivoEsValido(motivo)) return CambiarEstatusServicioMotivoRequerido();
     final servicio = await _repository.obtenerPorId(servicioId);
     if (servicio == null) {
       return CambiarEstatusServicioErrorInesperado('Servicio no encontrado: $servicioId');
@@ -110,6 +118,8 @@ class CambiarEstatusServicioUseCase {
         id: servicioId,
         nuevo: nuevo,
         fechaTermino: fechaTerminoFinal,
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
       );
       return CambiarEstatusServicioExitoso(actualizado);
     } catch (e) {

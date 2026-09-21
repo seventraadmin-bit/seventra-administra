@@ -2,6 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/telefonia/data/tables/linea_telefonica_table.dart' show MotivoBajaLineaTelefonica;
 import 'package:riseg_one/features/telefonia/domain/usecases/cambiar_estatus_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/telefonia/domain/usecases/corregir_linea_telefonica_usecase.dart';
@@ -10,6 +12,7 @@ import 'package:riseg_one/features/telefonia/domain/usecases/dar_de_baja_linea_t
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../telefonia_providers.dart';
+import 'equipos_telefonicos_controller.dart';
 import 'telefonia_state.dart';
 
 part 'telefonia_controller.g.dart';
@@ -66,7 +69,10 @@ class TelefoniaController extends _$TelefoniaController {
           ),
       CrearLineaTelefonicaErrorInesperado.new,
     );
-    if (resultado is CrearLineaTelefonicaExitoso) await _cargar();
+    if (resultado is CrearLineaTelefonicaExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -84,6 +90,7 @@ class TelefoniaController extends _$TelefoniaController {
     bool limpiarIccid = false,
     bool limpiarFechaActivacion = false,
     bool limpiarObservaciones = false,
+    required String motivo,
   }) async {
     final resultado = await autorizarUseCase(
       ref.read(authorizationServiceProvider),
@@ -102,10 +109,15 @@ class TelefoniaController extends _$TelefoniaController {
             limpiarIccid: limpiarIccid,
             limpiarFechaActivacion: limpiarFechaActivacion,
             limpiarObservaciones: limpiarObservaciones,
+            motivo: motivo,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           ),
       CorregirLineaTelefonicaErrorInesperado.new,
     );
-    if (resultado is CorregirLineaTelefonicaExitoso) await _cargar();
+    if (resultado is CorregirLineaTelefonicaExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -122,7 +134,10 @@ class TelefoniaController extends _$TelefoniaController {
           ),
       CambiarEstatusLineaTelefonicaErrorInesperado.new,
     );
-    if (resultado is CambiarEstatusLineaTelefonicaExitoso) await _cargar();
+    if (resultado is CambiarEstatusLineaTelefonicaExitoso) {
+      await _cargar();
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 
@@ -140,10 +155,19 @@ class TelefoniaController extends _$TelefoniaController {
             fechaBaja: fechaBaja,
             motivoBaja: motivoBaja,
             observacionesBaja: observacionesBaja,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
           ),
       DarDeBajaLineaTelefonicaErrorInesperado.new,
     );
-    if (resultado is DarDeBajaLineaTelefonicaExitoso) await _cargar();
+    if (resultado is DarDeBajaLineaTelefonicaExitoso) {
+      await _cargar();
+      // La baja terminal cierra en la misma transacción la
+      // `AsignacionLineaTelefonica`/`LineaTelefonicaEquipo` vigentes
+      // (ver el doc comment de `DarDeBajaLineaTelefonicaUseCase`) — eso
+      // cambia lo que el listado de Equipos muestra en "Línea actual".
+      ref.invalidate(equiposTelefonicosControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+    }
     return resultado;
   }
 }

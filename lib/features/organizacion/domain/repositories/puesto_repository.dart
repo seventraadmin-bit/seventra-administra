@@ -15,6 +15,11 @@ abstract interface class PuestoRepository {
 
   Future<List<PuestoData>> listarActivos();
 
+  /// Incluye los archivados. Un reporte histórico tiene que poder
+  /// nombrar el puesto de alguien que ya no está, aunque ese puesto se
+  /// haya archivado después. Sólo lectura.
+  Future<List<PuestoData>> listarTodos();
+
   /// Operación mecánica — sin validar si el Área destino existe/está
   /// activa al reactivar; esa regla vive en
   /// `CambiarCicloVidaPuestoUseCase`.

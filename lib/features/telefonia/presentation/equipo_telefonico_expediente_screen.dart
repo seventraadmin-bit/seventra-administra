@@ -8,8 +8,10 @@ import 'package:intl/intl.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/compras/domain/repositories/compra_repository.dart' show OrigenCompra;
+import 'package:riseg_one/features/dashboard/presentation/dashboard_controller.dart';
 import 'package:riseg_one/features/inventario/data/tables/asignacion_table.dart' show MotivoCierreAsignacion;
 import 'package:riseg_one/features/inventario/inventario_providers.dart';
+import 'package:riseg_one/features/inventario/presentation/articulos/articulos_controller.dart';
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_list_screen.dart' show formatoCosto;
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/cerrar_asignacion_dialog.dart';
 import 'package:riseg_one/features/inventario/presentation/asignaciones/widgets/historial_unidad_dialog.dart'
@@ -28,7 +30,10 @@ import 'widgets/actualizar_correo_equipo_telefonico_dialog.dart';
 import 'widgets/asignar_equipo_telefonico_dialog.dart';
 import 'widgets/cambiar_contrasena_equipo_telefonico_dialog.dart';
 import 'widgets/configurar_equipo_telefonico_dialog.dart';
+import 'equipos_telefonicos_controller.dart';
 import '../telefonia_providers.dart';
+import 'package:riseg_one/features/telefonia/domain/coherencia_linea_equipo.dart';
+import 'widgets/coherencia_linea_equipo_mensajes.dart';
 
 final _formatoFecha = DateFormat('dd/MM/yyyy');
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
@@ -152,29 +157,25 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
     });
   }
 
-  /// Misma lógica exacta que `_divergenciaEquipo` de
-  /// `LineaTelefonicaExpedienteScreen` (Etapa 9B, punto 5) — comparando
-  /// la custodia real en Inventario (ya cargada como
-  /// [_asignacionVigente]) contra la asignación vigente de la línea.
-  /// Nunca corrige nada automáticamente, solo informa.
+  /// La MISMA regla que usa el expediente de la línea y que aplican los
+  /// casos de uso al rechazar — no una segunda opinión (§4). Esta
+  /// pantalla sólo informa: la resolución vive en el expediente de la
+  /// línea, porque lo que se corrige es la asignación de la línea.
   String? _divergenciaEquipo() {
-    final l10n = AppLocalizations.of(context)!;
     if (_lineaVigente == null) return null;
-
-    final destinoLineaEmpleado = _asignacionLineaVigente?.empleadoId;
-    final destinoLineaServicio = _asignacionLineaVigente?.servicioId;
-    final custodiaEmpleado = _asignacionVigente?.empleadoId;
-    final custodiaServicio = _asignacionVigente?.servicioId;
-
-    final coincide = custodiaEmpleado == destinoLineaEmpleado && custodiaServicio == destinoLineaServicio;
-    if (coincide) return null;
-    if (_asignacionVigente == null && destinoLineaEmpleado == null && destinoLineaServicio == null) return null;
-    if (_asignacionVigente == null) return l10n.lineaTelefonicaEquipoDivergenciaSinCustodia;
-
-    final destino = custodiaEmpleado != null
-        ? (_empleadosPorId[custodiaEmpleado] ?? custodiaEmpleado)
-        : (_serviciosPorId[custodiaServicio] ?? custodiaServicio ?? '—');
-    return l10n.lineaTelefonicaEquipoDivergenciaAdvertencia(destino);
+    final coherencia = evaluarCoherenciaLineaEquipo(
+      unidadId: widget.unidadId,
+      destinoLinea: destinoDeAsignacionLinea(_asignacionLineaVigente),
+      destinoEquipo: destinoDe(
+        empleadoId: _asignacionVigente?.empleadoId,
+        servicioId: _asignacionVigente?.servicioId,
+      ),
+    );
+    return mensajeIncoherenciaLineaEquipo(
+      AppLocalizations.of(context)!,
+      coherencia,
+      NombresDestinoTelefonia(_empleadosPorId, _serviciosPorId),
+    );
   }
 
   Future<void> _editarImei() async {
@@ -185,7 +186,13 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
       imeiActual: _telefono?.imei,
       imei2Actual: _telefono?.imei2,
     );
-    if (resultado != null && resultado.isNotEmpty) await _cargar();
+    if (resultado != null && resultado.isNotEmpty) {
+      await _cargar();
+      // El listado de Equipos muestra el IMEI 1 en su propia columna —
+      // sin esta invalidación quedaba obsoleto hasta cambiar de pestaña
+      // (hallazgo real reportado, corrección de invalidación Etapa 9D).
+      ref.invalidate(equiposTelefonicosControllerProvider);
+    }
   }
 
   /// Distinto de "Editar IMEI" (arriba): esa es alta/edición rápida sin
@@ -199,7 +206,12 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
     final unidad = _unidad;
     if (unidad == null) return;
     final corregida = await mostrarDialogoCorregirIdentidadUnidad(context, ref, unidad: unidad, telefono: _telefono);
-    if (corregida) await _cargar();
+    if (corregida) {
+      await _cargar();
+      // Marca/modelo (y el propio IMEI si se corrigió aquí) también se
+      // muestran en el listado de Equipos.
+      ref.invalidate(equiposTelefonicosControllerProvider);
+    }
   }
 
   Future<void> _editarCorreo() async {
@@ -268,7 +280,15 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
       articuloId: unidad.articuloId,
       unidadId: unidad.id,
     );
-    if (asignado) await _cargar();
+    if (asignado) {
+      await _cargar();
+      // El listado de Equipos muestra "Asignado a". La unidad también
+      // cambia de "disponible" a "asignada" en Inventario/Dashboard —
+      // ninguno de los dos se enteraba antes de esta corrección.
+      ref.invalidate(equiposTelefonicosControllerProvider);
+      ref.invalidate(articulosControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+    }
   }
 
   Future<void> _retirarAsignacion() async {
@@ -280,7 +300,13 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
       titulo: l10n.cerrarAsignacionDialogoTituloDevolver,
       motivosDisponibles: const [MotivoCierreAsignacion.desgaste, MotivoCierreAsignacion.defecto, MotivoCierreAsignacion.otro],
     );
-    if (cerrado) await _cargar();
+    if (cerrado) {
+      await _cargar();
+      // La unidad vuelve a "disponible" en Inventario/Dashboard.
+      ref.invalidate(equiposTelefonicosControllerProvider);
+      ref.invalidate(articulosControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+    }
   }
 
   /// "Cambiar responsable" (Etapa 9D, ajuste aprobado por Marlon tras
@@ -292,7 +318,12 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
   /// solo la consume.
   Future<void> _cambiarResponsable() async {
     final cambiado = await mostrarDialogoCambiarResponsableAsignacion(context, ref, asignacion: _asignacionVigente!);
-    if (cambiado) await _cargar();
+    if (cambiado) {
+      await _cargar();
+      // Inventario muestra "asignado a" en el detalle de la unidad.
+      ref.invalidate(equiposTelefonicosControllerProvider);
+      ref.invalidate(articulosControllerProvider);
+    }
   }
 
   Future<void> _reportarDanoPerdida() async {
@@ -304,7 +335,15 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
       titulo: l10n.cerrarAsignacionDialogoTituloDanoPerdida,
       motivosDisponibles: const [MotivoCierreAsignacion.dano, MotivoCierreAsignacion.perdida],
     );
-    if (cerrado) await _cargar();
+    if (cerrado) {
+      await _cargar();
+      // El daño/pérdida cambia el estatus de la unidad, mostrado en la
+      // columna "Estatus" del listado — también visible en Inventario y
+      // en el resumen del Dashboard.
+      ref.invalidate(equiposTelefonicosControllerProvider);
+      ref.invalidate(articulosControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+    }
   }
 
   @override
@@ -618,10 +657,16 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
                     children: [
                       Text(l10n.equipoTelefonicoEstadoSeccionTitulo, style: AppTypography.heading3),
                       const SizedBox(height: AppSpacing.sm),
-                      Row(
+                      // `Wrap` y no `Row` + `Spacer`: a 500 px el badge y
+                      // el botón de daño/pérdida no caben en una línea y
+                      // se desbordaban 39 px (§21).
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           RisegStatusBadge(label: estatusEquipoTelefonicoLabel(l10n, unidad.estatus), tone: estatusEquipoTelefonicoTono(unidad.estatus)),
-                          const Spacer(),
                           if (puedeModificar)
                             RisegButton(
                               label: l10n.equipoTelefonicoEstadoBotonReportarDanoPerdida,
@@ -643,6 +688,10 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
                     children: [
                       Text(l10n.equipoTelefonicoHistorialAsignacionesTitulo, style: AppTypography.heading3),
                       const SizedBox(height: AppSpacing.sm),
+                      // §12 — vacío: una línea. Con registros: tabla densa.
+                      if ((_historia?.asignaciones ?? const []).isEmpty)
+                        Text(l10n.equipoTelefonicoHistorialAsignacionesVacio, style: AppTypography.body.copyWith(color: colors.textMuted))
+                      else
                       RisegTableBase<AsignacionData>(
                         rows: _historia?.asignaciones ?? const [],
                         emptyState: RisegEmptyState(title: l10n.equipoTelefonicoHistorialAsignacionesVacio, message: ''),

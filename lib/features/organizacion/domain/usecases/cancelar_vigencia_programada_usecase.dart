@@ -1,5 +1,6 @@
 import 'package:riseg_one/core/utils/clock.dart';
 
+import 'package:riseg_one/core/auditoria/diff_evento.dart';
 import '../repositories/servicio_comercial_repository.dart';
 import 'linea_comercial_con_vigencia.dart';
 
@@ -13,6 +14,9 @@ class CancelarVigenciaProgramadaExitoso extends CancelarVigenciaProgramadaResult
 class CancelarVigenciaProgramadaNoEsProgramada extends CancelarVigenciaProgramadaResultado {}
 
 class CancelarVigenciaProgramadaNoExiste extends CancelarVigenciaProgramadaResultado {}
+
+/// Cancelar una vigencia programada exige explicar por qué.
+class CancelarVigenciaProgramadaMotivoRequerido extends CancelarVigenciaProgramadaResultado {}
 
 class CancelarVigenciaProgramadaErrorInesperado extends CancelarVigenciaProgramadaResultado {
   CancelarVigenciaProgramadaErrorInesperado(this.mensaje);
@@ -31,7 +35,15 @@ class CancelarVigenciaProgramadaUseCase {
   final ServicioComercialRepository _repository;
   final Clock _clock;
 
-  Future<CancelarVigenciaProgramadaResultado> ejecutar({required String vigenciaId}) async {
+  /// [motivo] obligatorio: cancelar una vigencia programada retira
+  /// condiciones que ya estaban decididas. La vigencia NO se borra —
+  /// queda archivada y visible en el historial.
+  Future<CancelarVigenciaProgramadaResultado> ejecutar({
+    required String vigenciaId,
+    required String motivo,
+    String? actorUsuarioId,
+  }) async {
+    if (!motivoEsValido(motivo)) return CancelarVigenciaProgramadaMotivoRequerido();
     final vigencia = await _repository.obtenerVigencia(vigenciaId);
     if (vigencia == null) {
       return CancelarVigenciaProgramadaNoExiste();
@@ -43,7 +55,11 @@ class CancelarVigenciaProgramadaUseCase {
     }
 
     try {
-      await _repository.cancelarVigenciaProgramada(vigenciaId);
+      await _repository.cancelarVigenciaProgramada(
+        vigenciaId,
+        motivo: motivo.trim(),
+        actorUsuarioId: actorUsuarioId,
+      );
       return CancelarVigenciaProgramadaExitoso();
     } catch (e) {
       return CancelarVigenciaProgramadaErrorInesperado(e.toString());

@@ -14,6 +14,26 @@ enum TipoEventoNomina {
   movimientoModificado,
   distribucionModificada,
   cerrada,
+  /// Etapa 4 — corrección de un renglón mientras la Nómina ya está
+  /// `cerrada`/`pagada` (nunca en Borrador, ahí sigue siendo
+  /// `movimientoModificado`/`distribucionModificada`) — siempre con
+  /// `estadoAnterior`/`estadoNuevo` y motivo obligatorio.
+  corregida,
+  /// Etapa 4 — la Nómina cruzó automáticamente de `cerrada` a `pagada`
+  /// (todos los renglones reportan `pagado`) — ver
+  /// `PagoNominaRepositoryImpl._evaluarNominaPagada`.
+  pagada,
+  /// Etapa 4 — la Nómina regresó de `pagada` a `cerrada` (una
+  /// cancelación de pago o una corrección reabrió saldo pendiente).
+  reabierta,
+  /// Etapa 4 — un renglón se eliminó por completo (solo posible desde
+  /// "Actualizar desde Personal", nunca con movimientos manuales
+  /// capturados) — `datosRelevantes` conserva sus valores clave, ya
+  /// que la fila en sí desaparece.
+  renglonEliminado,
+  /// Etapa 4 — la Nómina completa se canceló (`CancelarNominaUseCase`,
+  /// solo Borrador o Cerrada-sin-pagos).
+  cancelada,
 }
 
 /// Historial append-only de una Nómina (Etapa 6C) — tabla de solo
@@ -48,4 +68,13 @@ class NominaEvento extends Table {
   TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   TextColumn get datosRelevantes => text().nullable()();
+
+  /// Etapa 4 (Nómina — corrección/cancelación/trazabilidad integral):
+  /// convención de auditoría de Etapa 2, vía `DiffEvento` — únicamente
+  /// los campos que realmente cambiaron, nunca un snapshot completo.
+  /// `null` en filas históricas anteriores a esta etapa (migración
+  /// aditiva, nunca se rellenan retroactivamente).
+  TextColumn get estadoAnterior => text().nullable()();
+
+  TextColumn get estadoNuevo => text().nullable()();
 }

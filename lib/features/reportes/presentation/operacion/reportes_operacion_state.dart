@@ -3,6 +3,8 @@ import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_inve
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_telefonia_usecase.dart';
 import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_vehiculos_usecase.dart';
 
+import '../reportes_rango_controller.dart';
+
 /// Estado de la pestaña Operación de Reportes (Etapa 12C).
 ///
 /// Cada `resumenXxx` es `null` cuando la sesión no tiene el permiso de
@@ -12,9 +14,8 @@ import 'package:riseg_one/features/reportes/domain/usecases/obtener_resumen_vehi
 /// repositorio). Mismo patrón que la pestaña Personal · Nómina (12B).
 class ReportesOperacionState {
   const ReportesOperacionState({
+    required this.seleccion,
     this.cargando = true,
-    this.rangoInicio,
-    this.rangoFin,
     this.resumenCompras,
     this.resumenInventario,
     this.resumenVehiculos,
@@ -22,19 +23,19 @@ class ReportesOperacionState {
     this.errorCarga,
   });
 
+  final SeleccionRangoReportes seleccion;
   final bool cargando;
-  final DateTime? rangoInicio;
-  final DateTime? rangoFin;
   final ResumenComprasReportes? resumenCompras;
   final ResumenInventarioReportes? resumenInventario;
   final ResumenVehiculosReportes? resumenVehiculos;
   final ResumenTelefoniaReportes? resumenTelefonia;
   final String? errorCarga;
 
+  DateTime get rangoInicio => seleccion.rango.inicio;
+  DateTime get rangoFin => seleccion.rango.fin;
+
   ReportesOperacionState copyWith({
     bool? cargando,
-    DateTime? rangoInicio,
-    DateTime? rangoFin,
     ResumenComprasReportes? resumenCompras,
     ResumenInventarioReportes? resumenInventario,
     ResumenVehiculosReportes? resumenVehiculos,
@@ -42,9 +43,8 @@ class ReportesOperacionState {
     String? errorCarga,
   }) {
     return ReportesOperacionState(
+      seleccion: seleccion,
       cargando: cargando ?? this.cargando,
-      rangoInicio: rangoInicio ?? this.rangoInicio,
-      rangoFin: rangoFin ?? this.rangoFin,
       resumenCompras: resumenCompras ?? this.resumenCompras,
       resumenInventario: resumenInventario ?? this.resumenInventario,
       resumenVehiculos: resumenVehiculos ?? this.resumenVehiculos,

@@ -24,12 +24,32 @@ bool pagoRequiereComplemento(List<CuentaPorCobrarData> cuentasDeAplicacionesActi
   return cuentasDeAplicacionesActivas.any(cuentaRequiereComplemento);
 }
 
-/// La obligación sigue pendiente si no hay Complemento, o si el único
-/// que existía fue cancelado.
-bool complementoPendiente({required bool requiereComplemento, required ComplementoPagoData? complemento}) {
+/// El Complemento VIGENTE de un Pago dentro de su histórico — `null` si
+/// ninguno lo está. Un Pago puede acumular varios Complementos
+/// cancelados y un sustituto vigente (schemaVersion 79); el índice
+/// único parcial garantiza que a lo más uno esté `registrado`.
+ComplementoPagoData? complementoVigente(List<ComplementoPagoData> complementosDelPago) {
+  for (final c in complementosDelPago) {
+    if (EstatusComplementoPago.values.byName(c.estatus) == EstatusComplementoPago.registrado) return c;
+  }
+  return null;
+}
+
+/// La obligación sigue pendiente mientras NO exista un Complemento
+/// vigente. Da igual cuántos cancelados haya en el histórico: un CFDI
+/// cancelado no documenta nada.
+///
+/// Recibe el histórico COMPLETO del Pago y no una fila suelta a
+/// propósito (schemaVersion 79): mientras la relación era 1:1 bastaba
+/// pasar "el" Complemento, pero ahora una fila suelta puede ser
+/// cualquiera de varias y la respuesta dependería de cuál tocó — un
+/// error silencioso. Con la lista, la función no se puede usar mal.
+bool complementoPendiente({
+  required bool requiereComplemento,
+  required List<ComplementoPagoData> complementosDelPago,
+}) {
   if (!requiereComplemento) return false;
-  if (complemento == null) return true;
-  return EstatusComplementoPago.values.byName(complemento.estatus) == EstatusComplementoPago.cancelado;
+  return complementoVigente(complementosDelPago) == null;
 }
 
 /// Una Cuenta por cobrar está verdaderamente cerrada (cobrada Y, si

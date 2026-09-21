@@ -53,10 +53,43 @@ Catálogo completo de módulos/acciones: `lib/core/permissions/modulos_permiso.d
 | `RegistrarBajaLaboralUseCase` | `personal.modificar` | `registrarBajaLaboralAutorizadoProvider` (fachada) |
 | `RegistrarReingresoUseCase` | `personal.modificar` | `registrarReingresoAutorizadoProvider` (fachada) |
 | `CambiarVigenciaSueldoAsignacionUseCase` (sueldo/bono de una Asignación) | `personal.cambiarSueldo` | `cambiarVigenciaSueldoAsignacionAutorizadoProvider` (fachada) |
-| `GenerarFichaTecnicaEmpleadoUseCase` | `personal.crear` | `generarFichaTecnicaEmpleadoAutorizadoProvider` (fachada) |
-
+| `GenerarFichaTecnicaEmpleadoUseCase` | `personal.ver` (Etapa 1B — antes `personal.crear`, sin razón real: generar la ficha de un Empleado existente no lo crea) | `generarFichaTecnicaEmpleadoAutorizadoProvider` (fachada) |
 Lecturas protegidas: `EmpleadoExpedienteScreen` gatea las secciones embebidas de
 Inventario/Vehículos/Telefonía con `inventario.ver`/`vehiculos.ver`/`telefonia.ver`.
+
+## Descuentos Programados al Personal
+
+Sin ruta propia en el Shell — vive anidado bajo Personal, mismo criterio que Tiempos
+Extra. El antiguo `personal.gestionarDescuentos` (Etapa 15) se dividió en `descuentos.ver`/
+`crear`/`corregir`/`cancelar` — acciones financieras distintas otorgables por separado.
+`descuentos.corregir` gatea a la vez `ReprogramarCuotasPendientesUseCase` y
+`CorregirDescuentoProgramadoUseCase` (misma facultad).
+
+| Caso de uso | Permiso | Enforcement |
+|---|---|---|
+| `RegistrarDescuentoProgramadoUseCase` (préstamo/botas — un préstamo con `cuentaFinancieraId` genera un Egreso real, Etapa "Cierre del ciclo financiero") | `descuentos.crear` | `registrarDescuentoProgramadoAutorizadoProvider` (fachada) |
+| `ReprogramarCuotasPendientesUseCase` | `descuentos.corregir` | `reprogramarCuotasPendientesAutorizadoProvider` (fachada) |
+| `CorregirDescuentoProgramadoUseCase` | `descuentos.corregir` | `corregirDescuentoProgramadoAutorizadoProvider` (fachada) |
+| `CancelarSaldoDescuentoProgramadoUseCase` (revierte el Egreso del desembolso solo si nada se ha recuperado todavía) | `descuentos.cancelar` | `cancelarSaldoDescuentoProgramadoAutorizadoProvider` (fachada) |
+| `EliminarDescuentoProgramadoFisicamenteUseCase` | Ninguno — `exigirMaestro` | `eliminarDescuentoProgramadoFisicamenteAutorizadoProvider` (fachada) |
+
+Lectura: `DescuentosPersonalController.tieneDescuentos` gatea la carga de datos con
+`descuentos.ver` — barrera real independiente de si la pestaña se oculta en la UI.
+
+## Tiempos Extra
+
+Sin ruta propia en el Shell — vive anidado bajo Personal, mismo criterio que
+`personal.gestionarDescuentos`. Registrar/corregir/cancelar mueven dinero real, así que son 3
+códigos separados en vez del único `personal.gestionarTiemposExtra` de antes (Etapa "corrección
+real de Tiempo Extra": pedido explícito de Marlon — acciones financieras distintas deben poder
+otorgarse independientemente).
+
+| Caso de uso | Permiso | Enforcement |
+|---|---|---|
+| `RegistrarTiempoExtraUseCase` | `tiempoExtra.crear` | `registrarTiempoExtraAutorizadoProvider` (fachada) |
+| `CorregirTiempoExtraUseCase` | `tiempoExtra.corregir` | `corregirTiempoExtraAutorizadoProvider` (fachada) |
+| `CancelarTiempoExtraUseCase` | `tiempoExtra.cancelar` | `cancelarTiempoExtraAutorizadoProvider` (fachada) |
+| `EliminarTiempoExtraFisicamenteUseCase` | Ninguno — `exigirMaestro` | `eliminarTiempoExtraFisicamenteAutorizadoProvider` (fachada) |
 
 ## Nómina
 
@@ -64,11 +97,11 @@ Inventario/Vehículos/Telefonía con `inventario.ver`/`vehiculos.ver`/`telefonia
 |---|---|---|
 | `GenerarNominaUseCase` | `nomina.crear` | `NominasController.generar` |
 | `ActualizarDesdePersonalUseCase` | `nomina.modificar` | `NominasController.actualizarDesdePersonal` |
-| `ActualizarMovimientosNominaUseCase` | `nomina.modificar` | `NominasController.actualizarMovimientos` |
-| `ActualizarDistribucionNominaUseCase` | `nomina.modificar` | `NominasController.actualizarDistribucion` |
+| `ActualizarRenglonNominaUseCase` | `nomina.modificar` | `NominasController.actualizarRenglon` |
 | `CerrarNominaUseCase` | `nomina.cerrar` | `NominasController.cerrar` |
 | Registrar pago de Nómina | `nomina.pagar` | `NominasController.registrarPago` |
 | Cancelar pago de Nómina | `nomina.pagar` | `NominasController.cancelarPago` |
+| Generar PDF de dispersión de Nómina | `nomina.pagar` | `NominasController.generarDispersionPdf` |
 
 `CorregirPagoNominaUseCase` y `AdjuntarComprobantePagoNominaUseCase` no están conectados a
 ningún botón de UI todavía — sin guard, documentado como pendiente si algún día se exponen.
@@ -127,9 +160,14 @@ asignado con `inventario.ver`.
 | Caso de uso | Permiso | Enforcement |
 |---|---|---|
 | `CrearVehiculoUseCase` | `vehiculos.crear` | `VehiculosController.crearVehiculo` |
-| `AsignarVehiculoUseCase` | `vehiculos.crear` | `VehiculosController.asignar` |
-| `RegistrarDocumentoVehiculoUseCase` | `vehiculos.crear` | `registrarDocumentoVehiculoAutorizadoProvider` (fachada) |
-| `RegistrarMantenimientoVehiculoUseCase` | `vehiculos.crear` | `registrarMantenimientoVehiculoAutorizadoProvider` (fachada) |
+| `AsignarVehiculoUseCase` | `vehiculos.operar` | `VehiculosController.asignar` |
+| `RegistrarDocumentoVehiculoUseCase` | `vehiculos.operar` | `registrarDocumentoVehiculoAutorizadoProvider` (fachada) |
+| `AdjuntarArchivoDocumentoVehiculoUseCase` | `vehiculos.operar` | `adjuntarArchivoDocumentoVehiculoAutorizadoProvider` (fachada) |
+| `CorregirDocumentoVehiculoUseCase` | `vehiculos.operar` | `corregirDocumentoVehiculoAutorizadoProvider` (fachada) |
+| `RegistrarMantenimientoVehiculoUseCase` | `vehiculos.operar` | `registrarMantenimientoVehiculoAutorizadoProvider` (fachada) |
+| `AdjuntarComprobanteMantenimientoVehiculoUseCase` | `vehiculos.operar` | `adjuntarComprobanteMantenimientoVehiculoAutorizadoProvider` (fachada) |
+| `CorregirMantenimientoVehiculoUseCase` | `vehiculos.operar` | `corregirMantenimientoVehiculoAutorizadoProvider` (fachada) |
+| `CancelarMantenimientoVehiculoUseCase` | **`vehiculos.cancelar`** | `cancelarMantenimientoVehiculoAutorizadoProvider` (fachada) |
 | `CorregirVehiculoUseCase` | `vehiculos.modificar` | `VehiculosController.corregirVehiculo` |
 | `CambiarAsignacionVehiculoUseCase` / `RetirarAsignacionVehiculoUseCase` | `vehiculos.modificar` | `VehiculosController.cambiarAsignacion` / `.retirarAsignacion` |
 | `RegistrarKilometrajeVehiculoUseCase` | `vehiculos.modificar` | `VehiculosController.registrarKilometraje` |
@@ -137,6 +175,14 @@ asignado con `inventario.ver`.
 | `CambiarEstatusVehiculoUseCase` | `vehiculos.modificar` | `VehiculosController.cambiarEstatus` |
 | `ActualizarFotografiaVehiculoUseCase` | `vehiculos.modificar` | `VehiculosController.actualizarFotografia` |
 | `DarDeBajaVehiculoUseCase` | `vehiculos.archivar` | `VehiculosController.darDeBaja` |
+| `EliminarVehiculoFisicamenteUseCase` | **Maestro** (`exigirMaestro`, sin código de permiso) | `eliminarVehiculoFisicamenteAutorizadoProvider` |
+
+`vehiculos.cancelar` (schemaVersion 80) es la única facultad de Vehículos que **revierte
+dinero real**: anular un mantenimiento cancela su `Egreso` de `CuentaFinanciera`, o libera
+su cargo de TDC con un ajuste negativo. Va aparte de `vehiculos.operar` por el mismo
+criterio ya vigente en `compras.cancelar`, `tiempoExtra.cancelar` y `nomina.cancelarPago`:
+quien captura la operación no necesariamente puede revertirla. Corregir se queda en
+`vehiculos.operar` — ajusta el importe, no lo devuelve.
 
 Lecturas protegidas: `EmpleadoExpedienteScreen` (Personal) gatea la sección de Vehículo
 asignado con `vehiculos.ver`.
@@ -176,6 +222,7 @@ telefónica asignada con `telefonia.ver`.
 | `UbicacionesArbolController.agregarUbicacion` | `organizacion.crear` | `UbicacionesArbolController.agregarUbicacion` |
 | `UbicacionesArbolController.moverUbicacion` | `organizacion.modificar` | `UbicacionesArbolController.moverUbicacion` |
 | Editar Empresa (registro único, sin alta/baja) | `organizacion.modificar` | `EmpresaExpedienteController.guardar` |
+| `GenerarTarjetaFiscalPdfUseCase` (Etapa 1B — antes sin ningún gate) | `organizacion.ver` (solo lectura/generación de documento sobre datos de Empresa ya visibles en su ficha, nunca escribe en BD) | `generarTarjetaFiscalPdfAutorizadoProvider` (fachada) |
 
 ## Comercial
 
@@ -183,8 +230,8 @@ telefónica asignada con `telefonia.ver`.
 |---|---|---|
 | `CrearClienteUseCase` | `comercial.crear` | `crearClienteAutorizadoProvider` (fachada; `Result<ClienteData>` — denegación vía `PermissionFailure`, mismo criterio que Sucursal) |
 | `ClienteExpedienteController.guardar` / `.cambiarEstatus` / `.agregarContacto` / `.actualizarContacto` / `.agregarEntidadFiscal` / `.actualizarEntidadFiscal` / `.guardarDomicilioFiscal` | `comercial.modificar` | `ClienteExpedienteController` |
-| `ClienteExpedienteController.archivarContacto` | `comercial.archivar` | `ClienteExpedienteController.archivarContacto` (`ArchivarContactoUseCase` no tiene tipo sellado — denegación vía `null`, mismo criterio que `ActivarAreaUseCase`) |
-| `ClienteExpedienteController.cambiarCicloVidaEntidadFiscal` (archivar/reactivar) | `comercial.archivar` | `ClienteExpedienteController.cambiarCicloVidaEntidadFiscal` |
+| `ClienteExpedienteController.archivarContacto` | `clientes.archivar` | `ClienteExpedienteController.archivarContacto` (`ArchivarContactoResultado` distingue motivo faltante; denegación de permiso vía `null`) |
+| `ClienteExpedienteController.cambiarCicloVidaEntidadFiscal` (archivar/reactivar) | `clientes.archivar` | `ClienteExpedienteController.cambiarCicloVidaEntidadFiscal` |
 | `crearServicioAutorizadoProvider` | `comercial.crear` | fachada, `organizacion_providers.dart` |
 | `ServicioExpedienteController` — 18 métodos de escritura (`guardar`, `cambiarEstatus`, `asignarEntidadFiscal`, `asignarResponsableCliente`, `asignarSucursalAdministrativa`, `guardarDireccionOperativa`, `cambiarVigenciaConfiguracionCobro`, `cerrarConfiguracionCobro`, `cancelarVigenciaProgramadaConfiguracionCobro`, `actualizarObservacionesConfiguracionCobroVigencia`, `cambiarVigenciaLinea`, `cerrarLineaComercial`, `cancelarVigenciaProgramada`, `actualizarAnotacionesVigencia`, `guardarSueldoReferencia`) | `comercial.modificar` | `ServicioExpedienteController` |
 | `ServicioExpedienteController.guardarResponsableInterno` | `comercial.modificar` | `ServicioExpedienteController.guardarResponsableInterno` (`GuardarResponsableInternoUseCase` no tiene tipo sellado — denegación vía `null`, mismo criterio que `ActivarAreaUseCase`) |
@@ -196,6 +243,29 @@ telefónica asignada con `telefonia.ver`.
 Lecturas protegidas: `ServicioExpedienteScreen` gatea las secciones embebidas de
 Inventario/Vehículos/Telefonía/Personal con `inventario.ver`/`vehiculos.ver`/
 `telefonia.ver`/`personal.ver`.
+
+## Servicios Eventuales
+
+Subdominio de Comercial (schemaVersion 87). Las facultades que **mueven dinero**
+van aparte de las de captura, mismo criterio que `telefonia.recargar` frente a
+`telefonia.crear`: pagar a quien cubrió un evento genera un Egreso real o un
+cargo a una tarjeta, y revertir ese pago lo deshace.
+
+| Caso de uso | Permiso | Enforcement |
+|---|---|---|
+| `CrearServicioEventualUseCase` | `serviciosEventuales.crear` | `crearServicioEventualAutorizadoProvider` (fachada) |
+| `CorregirServicioEventualUseCase`, `FinalizarServicioEventualUseCase` | `serviciosEventuales.corregir` | fachadas `*AutorizadoProvider` |
+| `AgregarParticipanteServicioEventualUseCase`, `RetirarParticipanteServicioEventualUseCase`, `AgregarCoberturaServicioEventualUseCase`, `CorregirCoberturaServicioEventualUseCase`, `AgregarCostoServicioEventualUseCase`, `CorregirCostoServicioEventualUseCase` | `serviciosEventuales.corregir` | fachadas `*AutorizadoProvider` |
+| `CancelarServicioEventualUseCase`, `CancelarCoberturaServicioEventualUseCase`, `CancelarCostoServicioEventualUseCase` | `serviciosEventuales.cancelar` | fachadas `*AutorizadoProvider` |
+| `PagarCoberturaServicioEventualUseCase`, `PagarCostoServicioEventualUseCase` | `serviciosEventuales.pagar` | fachadas `*AutorizadoProvider` |
+| `RevertirPagoCoberturaServicioEventualUseCase`, `RevertirPagoCostoServicioEventualUseCase` | `serviciosEventuales.revertirPago` | fachadas `*AutorizadoProvider` |
+| `RegistrarCobroServicioEventualUseCase` | `serviciosEventuales.cobrar` | fachada; vender con cobro inmediato exige la MISMA facultad, comprobada antes de abrir la transacción |
+| `RegistrarDocumentoFiscalEventualUseCase`, `CorregirDocumentoFiscalEventualUseCase`, `CancelarDocumentoFiscalEventualUseCase` | `serviciosEventuales.facturar` | fachadas `*AutorizadoProvider`; cancelar un CFDI es facultad fiscal, no comercial |
+| `EliminarServicioEventualFisicamenteUseCase` | Maestro-only | `eliminarServicioEventualFisicamenteAutorizadoProvider` (`exigirMaestro`, nunca `PermisoUsuario`) |
+
+No hay `serviciosEventuales.ver`: la ruta `/comercial/eventuales` la gatea
+`comercial.ver` a nivel router (`permisoRequeridoParaRuta` sólo lee el primer
+segmento de la URL), mismo criterio que Clientes y Servicios.
 
 ## Usuarios
 

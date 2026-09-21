@@ -2,6 +2,7 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/features/organizacion/domain/shared/direccion_input.dart';
 import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
+import '../plantilla_personal.dart';
 import '../usecases/eliminar_empleado_fisicamente_usecase.dart';
 
 /// Proyección segura de `Empleado` para Reportes (Etapa 12B) — allow-list
@@ -46,6 +47,15 @@ class EmpleadoReporteRow {
 /// Expediente del empleado (Etapa 5A) — la base de Personal.
 abstract interface class EmpleadoRepository {
   Future<EmpleadoData?> obtenerPorId(String id);
+
+  /// Consulta en lote (Etapa 16, evolución visual) — para pantallas que
+  /// necesitan resolver varios Empleados a la vez a partir de IDs ya
+  /// conocidos (ej. fotografía por fila en un listado ajeno a Personal,
+  /// como Nómina), sin una consulta por fila ni traer la tabla completa.
+  /// `ids` vacío devuelve `[]` sin tocar la base de datos. Incluye
+  /// Empleados de cualquier `estatus`/`cicloVidaRegistro` — el llamador
+  /// ya conoce los IDs exactos que necesita.
+  Future<List<EmpleadoData>> listarPorIds(List<String> ids);
 
   Future<List<EmpleadoData>> listar({
     String? estatus,
@@ -97,6 +107,11 @@ abstract interface class EmpleadoRepository {
     String? observaciones,
     String? actorUsuarioId,
   });
+
+  /// Clasificación estructural del Empleado (operativo/administrativo) —
+  /// la conciliación de baja la usa para que autorizador y receptor
+  /// sean personal ADMINISTRATIVO real, resuelto por FK.
+  Future<ClasificacionEmpleado?> clasificar(String empleadoId);
 
   /// Archiva el periodo cerrado actual en `EmpleadoPeriodoLaboral` y
   /// resetea el periodo vigente en `Empleado` (Etapa 5C) — nunca crea
