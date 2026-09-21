@@ -113,7 +113,10 @@ Future<void> _correr(String ruta, {required bool aplicar}) async {
       for (final e in antes.entries) {
         print('Saldo actual ${nombres[e.key]}: ${e.value}');
       }
-      print('\nDIAGNÓSTICO: no se escribió nada. Añade --aplicar para reconciliar.');
+      // El interruptor real es la variable de entorno, no un flag:
+      // decirlo mal en una herramienta que mueve dinero es peor que
+      // no decir nada.
+      print('\nDIAGNÓSTICO: no se escribió nada. Repite con RISEG_APLICAR=1 para reconciliar.');
       return;
     }
 

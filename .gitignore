@@ -21,10 +21,10 @@ migrate_working_dir/
 # Claude Code — configuracion personal/local, nunca compartida
 .claude/settings.local.json
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# El .vscode/ de este proyecto sólo contiene configuración local del
+# editor con rutas absolutas de la máquina (cmake.sourceDirectory),
+# así que no se versiona.
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
