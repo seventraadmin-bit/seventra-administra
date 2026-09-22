@@ -249,7 +249,16 @@ GoRouter createAppRouter() {
                         // Sin sub-ruta `:id` — el detalle de un
                         // DocumentoPorEmitir se muestra en un diálogo, no
                         // en su propia pantalla (Etapa 4I.1).
-                        builder: (context, state) => const ComercialShellScreen(tab: ComercialTab.agenda),
+                        //
+                        // `?filtro=pendientes` (Dashboard → "Documentos por
+                        // emitir pendientes"): la ruta basta para
+                        // reconstruir la vista, sin depender de estado del
+                        // Dashboard. Mismo precedente que
+                        // `?filtro=sinAsignar` en Personal.
+                        builder: (context, state) => ComercialShellScreen(
+                          tab: ComercialTab.agenda,
+                          agendaModoPendientes: state.uri.queryParameters['filtro'] == 'pendientes',
+                        ),
                       ),
                       GoRoute(
                         path: 'eventuales',

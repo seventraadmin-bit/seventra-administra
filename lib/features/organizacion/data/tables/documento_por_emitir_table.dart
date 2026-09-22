@@ -36,6 +36,13 @@ enum TipoEventoDocumentoPorEmitir {
   creadoManual,
   marcadoEnPreparacion,
   ajusteRegistrado,
+
+  /// Corrección del ajuste comercial de un documento YA emitido
+  /// (Maestro). Distinto de `ajusteRegistrado` a propósito: ese es el
+  /// flujo normal previo a la emisión; este reescribe un dato histórico
+  /// y por eso lleva su propio motivo administrativo, separado del
+  /// motivo comercial del ajuste.
+  correccionAjusteHistorico,
   emisionRegistrada,
   correccionDatosEmision,
   archivoAdjuntado,
@@ -225,9 +232,14 @@ class DocumentoPorEmitirConfiguracion extends Table {
 
 /// Snapshot por línea comercial incluida — aquí vive `tratamientoIva`
 /// (Resolución C: nunca un campo único a nivel de documento) y el
-/// cálculo proporcional ya redondeado de esa línea. El hueco para un
-/// futuro descuento por cobertura no prestada vive en `diasAplicables`
-/// sin rediseñar nada hoy.
+/// cálculo proporcional ya redondeado de esa línea.
+///
+/// `diasAplicables` es exclusivamente el prorrateo comercial: cuántos días
+/// del periodo quedaron dentro de la vigencia de la condición comercial y
+/// de la vida del Servicio (`calcularDiasAplicables`). No representa días
+/// efectivamente cubiertos ni sabe nada de operación: Facturación no
+/// consulta ausencias, coberturas ni incidencias, y cualquier diferencia
+/// comercial se registra como el ajuste del documento, con su motivo.
 class DocumentoPorEmitirLinea extends Table {
   IntColumn get id => integer().autoIncrement()();
 

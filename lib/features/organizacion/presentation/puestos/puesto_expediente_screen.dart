@@ -1,3 +1,5 @@
+import 'puestos_list_controller.dart';
+import 'package:riseg_one/features/organizacion/presentation/areas/areas_list_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,7 +106,15 @@ class _PuestoExpedienteScreenState extends ConsumerState<PuestoExpedienteScreen>
 
   Future<void> _eliminarFisicamente() async {
     final eliminado = await mostrarDialogoEliminarPuestoFisicamente(context, ref, widget.puestoId);
-    if (eliminado && mounted) context.pop();
+    if (!eliminado) return;
+    // La eliminacion fisica no pasa por ningun controlador: sin esto el
+    // renglon sobrevive en el listado de Puestos hasta que algo ajeno (cambiar de
+    // pestana) reconstruya el provider. Navegar no es refrescar.
+    ref.invalidate(puestosListControllerProvider);
+    // Areas muestra una columna "Puestos" con el conteo por area
+    // (`state.puestosPorArea`): tambien queda desfasada al borrar uno.
+    ref.invalidate(areasListControllerProvider);
+    if (mounted) context.pop();
   }
 
   void _onAreaCambiada(String? valor) {

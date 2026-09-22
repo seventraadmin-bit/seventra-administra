@@ -1,5 +1,4 @@
 import 'package:riseg_one/core/database/app_database.dart';
-import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart' show TratamientoIva;
 
 import 'calcular_totales_esperados_usecase.dart';
 import 'resumen_iva_documento_por_emitir.dart';
@@ -45,42 +44,41 @@ class DocumentoPorEmitirDetalle {
 
   ResumenIvaDocumento get resumenIva => calcularResumenIva([for (final l in lineas) l.tratamientoIva]);
 
-  /// Base/IVA/Total esperados para control comercial/cobranza (Etapa
-  /// 15, corrección estructural CFDI real) — `null` solo cuando el
-  /// documento es `mixto` (líneas con tratamientos de IVA distintos):
-  /// `calcularTotalesEsperados` recibe un único `TratamientoIva`, y
-  /// aplicar una sola tasa a un documento mixto sería incorrecto. Fuera
-  /// de ese caso, se calcula siempre sobre `importeBaseEsperado` +
-  /// `ajusteManual` — la misma base ajustada que ya usa
-  /// `importeFinalEsperado`, nunca duplicando ni ignorando el ajuste.
-  TotalesEsperados? get totalesEsperados {
-    final tratamiento = switch (resumenIva) {
-      ResumenIvaDocumento.masIva => TratamientoIva.masIva,
-      ResumenIvaDocumento.ivaIncluido => TratamientoIva.ivaIncluido,
-      ResumenIvaDocumento.noAplica => TratamientoIva.noAplica,
-      ResumenIvaDocumento.mixto => null,
-    };
-    if (tratamiento == null) return null;
-    return calcularTotalesEsperados(
-      importeBaseCentavos: documento.importeBaseEsperado,
-      ajusteManualCentavos: documento.ajusteManual,
-      tratamientoIva: tratamiento,
-    );
-  }
+  /// Base/IVA/Total esperados — delega en `totalesEsperadosDeDocumento`,
+  /// la misma decisión fiscal que usan el renglón y el KPI de la Agenda.
+  /// Que la ficha y la lista no puedan mostrar cifras distintas del mismo
+  /// documento es el motivo de que esto no se calcule aquí.
+  TotalesDeDocumento get _totales => totalesEsperadosDeDocumento(
+        importeBaseEsperado: documento.importeBaseEsperado,
+        ajusteManual: documento.ajusteManual,
+        lineas: [
+          for (final l in lineas) (subtotalCentavos: l.subtotalProporcional, tratamientoIva: l.tratamientoIva),
+        ],
+      );
 
-  /// `null` mientras no se haya registrado el importe emitido — nunca
-  /// se muestra "sin diferencia" cuando en realidad no hay dato. Se
-  /// compara siempre contra el TOTAL esperado (incluyendo IVA cuando
-  /// aplica), nunca contra la base antes de impuestos — comparar contra
-  /// la base producía una "diferencia" que en realidad era el IVA
-  /// mismo (Etapa 15, hallazgo real con el CFDI de MILUYOLE). Para
-  /// documentos `mixto` (`totalesEsperados == null`), se conserva el
-  /// criterio anterior (`importeFinalEsperado`) como única base posible
-  /// sin inventar un desglose que el modelo no soporta todavía.
+  TotalesEsperados? get totalesEsperados => _totales.totales;
+
+  /// Por qué no hay totales comparables, para que la pantalla lo diga con
+  /// palabras en vez de dejar un hueco sin explicación.
+  bool get totalesNoDisponiblesPorAjusteEnMixto => _totales.noDisponiblePorAjusteEnMixto;
+
+  /// `null` mientras no se haya registrado el importe emitido, y
+  /// también cuando no existe un total esperado comparable (mixto con
+  /// ajuste) — nunca se muestra "sin diferencia" cuando en realidad no
+  /// hay dato.
+  ///
+  /// Se compara siempre contra el TOTAL esperado (incluyendo IVA cuando
+  /// aplica), nunca contra la base antes de impuestos: comparar contra
+  /// la base producía una "diferencia" que en realidad era el IVA mismo
+  /// (Etapa 15, hallazgo real con el CFDI de MILUYOLE). Antes, para los
+  /// documentos mixtos se caía a `importeFinalEsperado` — es decir, se
+  /// reintroducía ese mismo error justo donde el modelo menos podía
+  /// justificarlo.
   int? get diferenciaEmision {
     final importeEmitido = documento.importeEmitido;
     if (importeEmitido == null) return null;
-    final totalEsperado = totalesEsperados?.totalEsperado ?? documento.importeFinalEsperado;
+    final totalEsperado = totalesEsperados?.totalEsperado;
+    if (totalEsperado == null) return null;
     return importeEmitido - totalEsperado;
   }
 

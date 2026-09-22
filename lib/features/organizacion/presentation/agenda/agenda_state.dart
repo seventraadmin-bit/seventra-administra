@@ -8,6 +8,7 @@ class AgendaState {
     this.cargando = true,
     this.generando = false,
     this.documentos = const [],
+    this.totalEsperadoPorDocumento = const {},
     this.errorCarga,
     DateTime? rangoInicio,
     DateTime? rangoFin,
@@ -15,6 +16,7 @@ class AgendaState {
     this.servicioId,
     this.tipoDocumento,
     this.estatus,
+    this.modoPendientes = false,
   })  : _rangoInicio = rangoInicio,
         _rangoFin = rangoFin;
 
@@ -23,6 +25,15 @@ class AgendaState {
   /// Bloquea "Generar agenda"/"Crear manual" contra doble-clic.
   final bool generando;
   final List<DocumentoPorEmitirData> documentos;
+
+  /// Total esperado de cada documento (contractual + ajuste + IVA que
+  /// corresponda), derivado en cada carga desde los snapshots ya
+  /// persistidos — nunca se guarda en la base ni reescribe historia.
+  ///
+  /// La clave ausente significa **no calculable** (hoy: mixto con ajuste),
+  /// que es distinto de cero y por eso se representa con la ausencia y no
+  /// con un 0 que se sumaría sin ruido.
+  final Map<String, int> totalEsperadoPorDocumento;
   final String? errorCarga;
   final DateTime? _rangoInicio;
   final DateTime? _rangoFin;
@@ -30,6 +41,15 @@ class AgendaState {
   final String? servicioId;
   final String? tipoDocumento;
   final String? estatus;
+
+  /// Vista de "Pendientes de emisión": el conjunto accionable de
+  /// CUALQUIER periodo, el mismo que cuentan la alerta del Dashboard y el
+  /// Centro de notificaciones.
+  ///
+  /// No es un filtro más: cambia la unidad de lo que se está mirando. La
+  /// vista normal es un mes; ésta es un conjunto de trabajo sin mes, y por
+  /// eso el rango de fechas deja de aplicarse mientras está activa.
+  final bool modoPendientes;
 
   /// El filtro de rango por defecto es el mes calendario actual —
   /// nunca se interpreta como "periodo iniciado este mes" (esa
@@ -44,6 +64,7 @@ class AgendaState {
     bool? cargando,
     bool? generando,
     List<DocumentoPorEmitirData>? documentos,
+    Map<String, int>? totalEsperadoPorDocumento,
     String? errorCarga,
     DateTime? rangoInicio,
     DateTime? rangoFin,
@@ -55,11 +76,14 @@ class AgendaState {
     bool limpiarServicioId = false,
     bool limpiarTipoDocumento = false,
     bool limpiarEstatus = false,
+    bool? modoPendientes,
   }) {
     return AgendaState(
       cargando: cargando ?? this.cargando,
       generando: generando ?? this.generando,
       documentos: documentos ?? this.documentos,
+      totalEsperadoPorDocumento: totalEsperadoPorDocumento ?? this.totalEsperadoPorDocumento,
+      modoPendientes: modoPendientes ?? this.modoPendientes,
       errorCarga: errorCarga,
       rangoInicio: rangoInicio ?? _rangoInicio,
       rangoFin: rangoFin ?? _rangoFin,

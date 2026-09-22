@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/notificaciones/presentation/notificaciones_controller.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -15,6 +16,8 @@ import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart'
+    show ajusteComercialCongelado;
 import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_emitir_detalle.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/generar_recibo_pago_pdf_usecase.dart';
 import 'package:riseg_one/features/organizacion/data/tables/servicio_linea_comercial_vigencia_table.dart';
@@ -28,6 +31,7 @@ import '../agenda_controller.dart';
 import '../agenda_list_screen.dart' show formatoCentavosAgenda;
 import 'agenda_adjuntos_section.dart';
 import 'agenda_ajuste_manual_dialog.dart';
+import 'agenda_correccion_ajuste_historico_dialog.dart';
 import 'agenda_corregir_datos_emision_dialog.dart';
 import 'agenda_registrar_emision_dialog.dart';
 import 'agenda_registrar_envio_dialog.dart';
@@ -145,6 +149,8 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
       TipoEventoDocumentoPorEmitir.creadoManual => l10n.agendaDetalleHistorialEventoCreadoManual,
       TipoEventoDocumentoPorEmitir.marcadoEnPreparacion => l10n.agendaDetalleHistorialEventoMarcadoEnPreparacion,
       TipoEventoDocumentoPorEmitir.ajusteRegistrado => l10n.agendaDetalleHistorialEventoAjusteRegistrado,
+      TipoEventoDocumentoPorEmitir.correccionAjusteHistorico =>
+        l10n.agendaDetalleHistorialEventoCorreccionAjusteHistorico,
       TipoEventoDocumentoPorEmitir.emisionRegistrada => l10n.agendaDetalleHistorialEventoEmisionRegistrada,
       TipoEventoDocumentoPorEmitir.correccionDatosEmision => l10n.agendaDetalleHistorialEventoCorreccionDatosEmision,
       TipoEventoDocumentoPorEmitir.archivoAdjuntado => l10n.agendaDetalleHistorialEventoArchivoAdjuntado,
@@ -292,6 +298,11 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
     if (actualizo) await _cargar();
   }
 
+  Future<void> _corregirAjusteHistorico(DocumentoPorEmitirData documento) async {
+    final actualizo = await mostrarDialogoCorregirAjusteHistorico(context, ref, documento);
+    if (actualizo) await _cargar();
+  }
+
   Future<void> _verVersionesArchivadas() async {
     await mostrarDialogoVersionesArchivadas(context, ref, widget.documentoPorEmitirId);
   }
@@ -348,6 +359,12 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
     // Etapa 20 (hueco real encontrado): el Dashboard lee la misma
     // CuentaPorCobrar para Cobranza/"Requiere atención".
     ref.invalidate(dashboardControllerProvider);
+    // Y un documento pendiente eliminado deja de contar en la alerta
+    // "Documentos por emitir pendientes" y en el Centro de notificaciones,
+    // que leen la misma regla (invalidacion_documentos_por_emitir.dart).
+    // Aqui se invalida a mano porque esto es un widget: su ref es un
+    // WidgetRef y la extension vive sobre Ref.
+    ref.invalidate(notificacionesControllerProvider);
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -463,15 +480,45 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
             const SizedBox(height: AppSpacing.md),
             Text(l10n.agendaDetalleSeccionComparacionImportes, style: AppTypography.heading3.copyWith(color: colors.textPrimary)),
             const SizedBox(height: AppSpacing.xs),
-            if (_detalle!.resumenIva == ResumenIvaDocumento.masIva && _detalle!.totalesEsperados != null)
+            // Una sola presentación, nunca dos bloques excluyentes: antes, en
+            // cuanto había totales con IVA desaparecían de la pantalla el
+            // importe contractual y el ajuste, que son justamente lo que hay
+            // que poder auditar. Ahora los renglones se suman según lo que el
+            // documento realmente tiene, y ninguno sustituye a otro.
+            Row(
+              children: [
+                Expanded(
+                  child: CampoConsulta(
+                    label: l10n.agendaDetalleComparacionImporteContractual,
+                    value: formatoCentavosAgenda(d.importeBaseEsperado),
+                  ),
+                ),
+                Expanded(
+                  child: CampoConsulta(
+                    label: l10n.agendaDetalleComparacionAjusteFacturacion,
+                    value: _ajusteLabel(l10n, d.ajusteManual),
+                  ),
+                ),
+                Expanded(
+                  child: CampoConsulta(
+                    label: l10n.agendaDetalleComparacionImporteFacturableEsperado,
+                    value: formatoCentavosAgenda(d.importeFinalEsperado),
+                  ),
+                ),
+              ],
+            ),
+            // El motivo sólo aparece si hay algo que motivar.
+            if ((d.ajusteManual ?? 0) != 0 && d.motivoAjuste != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              CampoConsulta(label: l10n.agendaDetalleComparacionMotivoAjuste, value: d.motivoAjuste!),
+            ],
+            // IVA y total sólo cuando hay IVA que mostrar: para "No aplica" e
+            // "IVA incluido" el total ya ES el facturable esperado, y repetirlo
+            // con un IVA en cero sugeriría un desglose que no existe.
+            if (_detalle!.totalesEsperados != null && _detalle!.totalesEsperados!.ivaEsperado != 0) ...[
+              const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
-                  Expanded(
-                    child: CampoConsulta(
-                      label: l10n.agendaDetalleComparacionImporteBaseEsperado,
-                      value: formatoCentavosAgenda(_detalle!.totalesEsperados!.base),
-                    ),
-                  ),
                   Expanded(
                     child: CampoConsulta(
                       label: l10n.agendaDetalleComparacionIvaEsperado,
@@ -480,29 +527,44 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                   ),
                   Expanded(
                     child: CampoConsulta(
-                      label: l10n.agendaDetalleComparacionTotalEsperado,
+                      label: l10n.agendaDetalleComparacionTotalFacturableEsperado,
                       value: formatoCentavosAgenda(_detalle!.totalesEsperados!.totalEsperado),
                     ),
                   ),
-                ],
-              )
-            else
-              Row(
-                children: [
-                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteCalculado, value: formatoCentavosAgenda(d.importeBaseEsperado))),
-                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionAjuste, value: _ajusteLabel(l10n, d.ajusteManual))),
-                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteFinalEsperado, value: formatoCentavosAgenda(d.importeFinalEsperado))),
+                  const Expanded(child: SizedBox.shrink()),
                 ],
               ),
+            ],
             if (d.importeEmitido != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
-                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionImporteEmitido, value: formatoCentavosAgenda(d.importeEmitido!))),
-                  Expanded(child: CampoConsulta(label: l10n.agendaDetalleComparacionDiferencia, value: formatoCentavosAgenda(_detalle!.diferenciaEmision!))),
+                  Expanded(
+                    child: CampoConsulta(
+                      label: l10n.agendaDetalleComparacionImporteEmitido,
+                      value: formatoCentavosAgenda(d.importeEmitido!),
+                    ),
+                  ),
+                  Expanded(
+                    child: CampoConsulta(
+                      label: l10n.agendaDetalleComparacionDiferencia,
+                      // "No disponible" en vez de una diferencia que compararía
+                      // un emitido con IVA contra una base sin IVA.
+                      value: _detalle!.diferenciaEmision == null
+                          ? l10n.agendaDetalleComparacionNoDisponible
+                          : formatoCentavosAgenda(_detalle!.diferenciaEmision!),
+                    ),
+                  ),
                   const Expanded(child: SizedBox.shrink()),
                 ],
               ),
+              if (_detalle!.totalesNoDisponiblesPorAjusteEnMixto) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.agendaDetalleComparacionMixtoConAjusteNota,
+                  style: AppTypography.caption.copyWith(color: colors.textMuted),
+                ),
+              ],
             ],
             const SizedBox(height: AppSpacing.sm),
             CampoConsulta(label: l10n.agendaDetalleCampoResumenIva, value: _resumenIvaLabel(l10n, _detalle!.resumenIva)),
@@ -732,12 +794,26 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
                     variant: RisegButtonVariant.ghost,
                     onPressed: () => _corregirDatosEmision(d),
                   ),
+                // El ajuste normal desaparece en cuanto el documento se emite.
+                // No es solo cosmetica: el dominio rechaza la operacion con el
+                // MISMO predicado (ajusteComercialCongelado), asi que ocultar el
+                // boton y bloquear la escritura no pueden discrepar.
                 if (estatusActual != EstatusDocumentoPorEmitir.cancelado &&
-                    estatusActual != EstatusDocumentoPorEmitir.noRequerido)
+                    estatusActual != EstatusDocumentoPorEmitir.noRequerido &&
+                    !ajusteComercialCongelado(d))
                   RisegButton(
+                    key: const Key('agenda_detalle_boton_ajuste_manual'),
                     label: l10n.agendaDetalleBotonAjusteManual,
                     variant: RisegButtonVariant.ghost,
                     onPressed: () => _ajusteManual(d),
+                  ),
+                // Y en su lugar aparece la via Maestro, solo para el Maestro.
+                if (esMaestro && ajusteComercialCongelado(d))
+                  RisegButton(
+                    key: const Key('agenda_detalle_boton_correccion_historica'),
+                    label: l10n.agendaCorreccionHistoricaBoton,
+                    variant: RisegButtonVariant.ghost,
+                    onPressed: () => _corregirAjusteHistorico(d),
                   ),
               ],
             ),

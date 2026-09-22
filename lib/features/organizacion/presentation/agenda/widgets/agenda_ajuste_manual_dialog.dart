@@ -17,7 +17,7 @@ import '../agenda_list_screen.dart' show formatoCentavosAgenda;
 Future<bool> mostrarDialogoAjusteManual(BuildContext context, WidgetRef ref, DocumentoPorEmitirData documento) async {
   final l10n = AppLocalizations.of(context)!;
 
-  var datos = _DatosAjuste(
+  var datos = DatosAjusteComercial(
     ajusteCentavos: documento.ajusteManual,
     motivo: documento.motivoAjuste ?? '',
   );
@@ -27,7 +27,7 @@ Future<bool> mostrarDialogoAjusteManual(BuildContext context, WidgetRef ref, Doc
     title: l10n.agendaAjusteManualDialogoTitulo,
     confirmLabel: l10n.agendaAjusteManualBotonConfirmar,
     cancelLabel: l10n.agendaAjusteManualBotonCancelar,
-    contentBuilder: (_) => _AjusteManualForm(
+    contentBuilder: (_) => AjusteComercialForm(
       importeBase: documento.importeBaseEsperado,
       datosIniciales: datos,
       onCambio: (nuevo) => datos = nuevo,
@@ -49,6 +49,8 @@ Future<bool> mostrarDialogoAjusteManual(BuildContext context, WidgetRef ref, Doc
       return true;
     case ActualizarAjusteManualDocumentoPorEmitirMotivoRequerido():
       RisegFeedback.showError(context, l10n.agendaAjusteManualErrorMotivoRequerido);
+    case ActualizarAjusteManualDocumentoPorEmitirCongelado():
+      RisegFeedback.showError(context, l10n.agendaAjusteManualErrorCongelado);
     case ActualizarAjusteManualDocumentoPorEmitirImporteNegativo():
       RisegFeedback.showError(context, l10n.agendaAjusteManualErrorImporteNegativo);
     case ActualizarAjusteManualDocumentoPorEmitirNoExiste():
@@ -60,24 +62,29 @@ Future<bool> mostrarDialogoAjusteManual(BuildContext context, WidgetRef ref, Doc
   return false;
 }
 
-class _DatosAjuste {
-  const _DatosAjuste({this.ajusteCentavos, this.motivo = ''});
+/// Importe con signo + motivo comercial libre — lo que el usuario captura,
+/// tanto en el ajuste normal como en la correccion historica Maestro.
+class DatosAjusteComercial {
+  const DatosAjusteComercial({this.ajusteCentavos, this.motivo = ''});
   final int? ajusteCentavos;
   final String motivo;
 }
 
-class _AjusteManualForm extends StatefulWidget {
-  const _AjusteManualForm({required this.importeBase, required this.datosIniciales, required this.onCambio});
+/// Captura del ajuste comercial, compartida por el ajuste previo a la
+/// emision y por la correccion historica: el dato es el mismo, cambia solo
+/// quien puede tocarlo y que mas se le exige alrededor.
+class AjusteComercialForm extends StatefulWidget {
+  const AjusteComercialForm({required this.importeBase, required this.datosIniciales, required this.onCambio});
 
   final int importeBase;
-  final _DatosAjuste datosIniciales;
-  final void Function(_DatosAjuste datos) onCambio;
+  final DatosAjusteComercial datosIniciales;
+  final void Function(DatosAjusteComercial datos) onCambio;
 
   @override
-  State<_AjusteManualForm> createState() => _AjusteManualFormState();
+  State<AjusteComercialForm> createState() => AjusteComercialFormState();
 }
 
-class _AjusteManualFormState extends State<_AjusteManualForm> {
+class AjusteComercialFormState extends State<AjusteComercialForm> {
   late final _ajusteController = TextEditingController(
     text: widget.datosIniciales.ajusteCentavos == null
         ? ''
@@ -110,7 +117,7 @@ class _AjusteManualFormState extends State<_AjusteManualForm> {
   void _notificar() {
     _ajusteCentavos = _parsearAjuste();
     setState(() {});
-    widget.onCambio(_DatosAjuste(ajusteCentavos: _ajusteCentavos, motivo: _motivoController.text));
+    widget.onCambio(DatosAjusteComercial(ajusteCentavos: _ajusteCentavos, motivo: _motivoController.text));
   }
 
   String _etiquetaAjuste(AppLocalizations l10n) {

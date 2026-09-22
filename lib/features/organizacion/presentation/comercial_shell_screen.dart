@@ -22,9 +22,14 @@ enum ComercialTab { clientes, servicios, agenda, eventuales }
 /// defecto: redirige a `/comercial/clientes` (ver `createAppRouter`;
 /// mismo patrón que `OrganizacionShellScreen` desde la Etapa 15).
 class ComercialShellScreen extends StatelessWidget {
-  const ComercialShellScreen({required this.tab, super.key});
+  const ComercialShellScreen({required this.tab, this.agendaModoPendientes = false, super.key});
 
   final ComercialTab tab;
+
+  /// `/comercial/agenda?filtro=pendientes` — el único query param que este
+  /// Shell soporta hoy, mismo precedente que `?filtro=sinAsignar` en el
+  /// Shell de Personal.
+  final bool agendaModoPendientes;
 
   static const _rutasPorIndice = [
     '/comercial/clientes',
@@ -56,7 +61,7 @@ class ComercialShellScreen extends StatelessWidget {
           child: switch (tab) {
             ComercialTab.clientes => const ClientesListScreen(),
             ComercialTab.servicios => const ServiciosListScreen(),
-            ComercialTab.agenda => const AgendaListScreen(),
+            ComercialTab.agenda => AgendaListScreen(modoPendientes: agendaModoPendientes),
             ComercialTab.eventuales => const ServiciosEventualesListScreen(),
           },
         ),

@@ -128,6 +128,31 @@ abstract interface class DocumentoPorEmitirRepository {
     String? actorUsuarioId,
   });
 
+  /// Corrige el ajuste comercial de un documento ya emitido (Maestro).
+  ///
+  /// Escribe exactamente los mismos tres campos que
+  /// `actualizarAjusteManual` y ni uno más: nunca el importe emitido, el
+  /// folio, el UUID ni nada de cobranza. Registra
+  /// `correccionAjusteHistorico` con el antes y el después completos,
+  /// incluyendo el motivo administrativo de la corrección.
+  Future<DocumentoPorEmitirData> corregirAjusteHistorico({
+    required String documentoPorEmitirId,
+    required String motivoCorreccion,
+    int? ajusteManual,
+    String? motivoAjuste,
+    String? actorUsuarioId,
+  });
+
+  /// Líneas de varios documentos en UNA sola consulta, agrupadas por
+  /// documento.
+  ///
+  /// Existe porque la Agenda necesita el tratamiento fiscal de cada línea
+  /// para calcular el total esperado de cada renglón, y pedirlas documento
+  /// por documento sería un N+1 en la pantalla más poblada del módulo.
+  /// Devuelve sólo los documentos que tienen líneas: uno sin ninguna
+  /// simplemente no aparece en el mapa.
+  Future<Map<String, List<DocumentoPorEmitirLineaData>>> lineasPorDocumentos(List<String> documentoIds);
+
   /// Correos realmente utilizados en el envío vigente — vacío si nunca
   /// se ha registrado un envío.
   Future<List<String>> listarCorreosEnvio(String documentoPorEmitirId);

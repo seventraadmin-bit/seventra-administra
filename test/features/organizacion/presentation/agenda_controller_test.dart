@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,12 +21,14 @@ import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_etapa_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/configuracion_cobro_validator.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_configuracion_cobro_usecase.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/corregir_ajuste_historico_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_servicio_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_servicio_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validator.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/organizacion/presentation/agenda/agenda_controller.dart';
+import 'package:riseg_one/features/organizacion/presentation/agenda/agenda_resumen_periodo.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 
@@ -244,6 +247,127 @@ void main() {
     expect(resultado, isA<ActualizarAjusteManualDocumentoPorEmitirExitoso>());
     final state = container.read(agendaControllerProvider);
     expect(state.documentos.single.importeFinalEsperado, 50000);
+  });
+
+  test('corregir el ajuste histórico actualiza la Agenda en el mismo contenedor, sin navegar', () async {
+    await esperarCarga();
+    await crearConfiguracionCobroConReglas();
+    // La corrección histórica SÍ registra al actor, así que el usuario de la
+    // sesión tiene que existir de verdad (en producción siempre existe).
+    await db.into(db.usuario).insert(
+      UsuarioCompanion.insert(
+        id: const Value("usuario-prueba"),
+        nombre: "Usuario de prueba",
+        nombreUsuario: "prueba",
+        passwordHash: "x",
+      ),
+    );
+    final notifier = container.read(agendaControllerProvider.notifier);
+    await notifier.aplicarFiltros(rangoInicio: DateTime(2026, 1, 1), rangoFin: DateTime(2026, 1, 31));
+    final creado = await notifier.crearManual(
+      clienteId: clienteId,
+      servicioIds: [servicioId],
+      periodoInicio: DateTime(2026, 1, 1),
+      periodoFin: DateTime(2026, 1, 31),
+    );
+    final documento = (creado as CrearDocumentoManualExitoso).documento;
+
+    await notifier.registrarEmision(
+      documentoPorEmitirId: documento.id,
+      folioDocumento: 'A-001',
+      fechaEmisionReal: DateTime(2026, 2, 5),
+      importeEmitido: 2002934,
+    );
+
+    // Emitido: el camino normal ya está cerrado.
+    final bloqueado = await notifier.actualizarAjusteManual(
+      documentoPorEmitirId: documento.id,
+      ajusteManual: 123333,
+      motivoAjuste: 'Cargo adicional acordado',
+    );
+    expect(bloqueado, isA<ActualizarAjusteManualDocumentoPorEmitirCongelado>());
+
+    final corregido = await notifier.corregirAjusteHistorico(
+      documentoPorEmitirId: documento.id,
+      motivoCorreccion: 'Capturado antes de que existiera la regla',
+      ajusteManual: 123333,
+      motivoAjuste: 'Cargo adicional acordado',
+    );
+    expect(corregido, isA<CorregirAjusteHistoricoDocumentoPorEmitirExitoso>());
+
+    // Sin invalidar a mano y sin reconstruir el contenedor: el renglón de
+    // la Agenda ya trae el importe facturable esperado nuevo.
+    final state = container.read(agendaControllerProvider);
+    expect(state.documentos.single.ajusteManual, 123333);
+    expect(
+      state.documentos.single.importeFinalEsperado,
+      state.documentos.single.importeBaseEsperado + 123333,
+    );
+    expect(
+      state.documentos.single.importeEmitido,
+      2002934,
+      reason: 'la corrección comercial no tocó lo que realmente se emitió',
+    );
+
+    // La columna de la Agenda: el total esperado del renglón, recalculado
+    // en la misma carga. Sin líneas comerciales el documento es `noAplica`,
+    // así que su total es el facturable, sin IVA inventado.
+    expect(state.totalEsperadoPorDocumento[documento.id], 123333);
+
+    // Y el KPI del periodo, que suma esos totales.
+    final resumen = calcularResumenPeriodoAgenda(
+      state.documentos,
+      DateTime(2026, 1, 15),
+      totalEsperadoPorDocumento: state.totalEsperadoPorDocumento,
+    );
+    expect(resumen.importeEsperado, 123333);
+    expect(resumen.documentosSinTotalCalculable, 0);
+  });
+
+  test('el agregado sigue al filtro de periodo: fuera del rango no suma', () async {
+    await esperarCarga();
+    await crearConfiguracionCobroConReglas();
+    final notifier = container.read(agendaControllerProvider.notifier);
+    await notifier.aplicarFiltros(rangoInicio: DateTime(2026, 1, 1), rangoFin: DateTime(2026, 1, 31));
+    final creado = await notifier.crearManual(
+      clienteId: clienteId,
+      servicioIds: [servicioId],
+      periodoInicio: DateTime(2026, 1, 1),
+      periodoFin: DateTime(2026, 1, 31),
+    );
+    final documento = (creado as CrearDocumentoManualExitoso).documento;
+    await notifier.actualizarAjusteManual(
+      documentoPorEmitirId: documento.id,
+      ajusteManual: 50000,
+      motivoAjuste: 'Cargo adicional acordado',
+    );
+
+    var state = container.read(agendaControllerProvider);
+    expect(state.totalEsperadoPorDocumento[documento.id], 50000);
+    expect(
+      calcularResumenPeriodoAgenda(
+        state.documentos,
+        DateTime(2026, 1, 15),
+        totalEsperadoPorDocumento: state.totalEsperadoPorDocumento,
+      ).importeEsperado,
+      50000,
+    );
+
+    // Mismo dato, otro periodo: el documento sale de la vista y el
+    // agregado baja con él, sin quedarse con totales huérfanos.
+    await notifier.aplicarFiltros(rangoInicio: DateTime(2026, 6, 1), rangoFin: DateTime(2026, 6, 30));
+
+    state = container.read(agendaControllerProvider);
+    expect(state.documentos, isEmpty);
+    expect(state.totalEsperadoPorDocumento, isEmpty);
+    expect(
+      calcularResumenPeriodoAgenda(
+        state.documentos,
+        DateTime(2026, 6, 15),
+        totalEsperadoPorDocumento: state.totalEsperadoPorDocumento,
+      ).importeEsperado,
+      0,
+    );
   });
 
   test('obtenerDetalle regresa el expediente completo del documento', () async {

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/features/tiempos_extra/domain/usecases/eliminar_tiempo_extra_fisicamente_usecase.dart';
 
-import '../../tiempos_extra_providers.dart';
+import '../tiempos_extra_controller.dart';
 
 /// Eliminación física extraordinaria de un TiempoExtra (Etapa
 /// "corrección real de Tiempo Extra") — facultad exclusiva del Usuario
@@ -70,7 +70,12 @@ Future<bool> mostrarDialogoEliminarTiempoExtraFisicamente(BuildContext context, 
         return null;
       }
 
-      final resultado = await ref.read(eliminarTiempoExtraFisicamenteAutorizadoProvider)(
+      // Por el controlador, nunca por el provider autorizado directo:
+      // `TiemposExtraController.eliminarFisicamente` es quien recarga el
+      // listado (renglones, filtros y KPIs) e invalida a Finanzas, que
+      // ve desaparecer el Egreso de la cobertura. Llamar al provider
+      // autorizado aqui persistia el borrado y no refrescaba nada.
+      final resultado = await ref.read(tiemposExtraControllerProvider.notifier).eliminarFisicamente(
         tiempoExtraId: tiempoExtraId,
         motivo: motivo,
         detalle: detalleCtrl.text.trim().isEmpty ? null : detalleCtrl.text.trim(),

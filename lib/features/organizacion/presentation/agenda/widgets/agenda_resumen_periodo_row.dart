@@ -39,6 +39,13 @@ class AgendaResumenPeriodoRow extends StatelessWidget {
         label: l10n.agendaResumenImporteEsperado,
         value: _formatoMoneda.format(resumen.importeEsperado / 100),
         dense: true,
+        // Cuando algún documento no tiene total comparable, la suma sigue
+        // siendo cierta pero ya no es completa: decirlo es lo único
+        // honesto. Nunca se estima el faltante para "cuadrar" el KPI.
+        delta: resumen.documentosSinTotalCalculable == 0
+            ? null
+            : l10n.agendaResumenSinTotalCalculable(resumen.documentosSinTotalCalculable),
+        deltaTone: resumen.documentosSinTotalCalculable == 0 ? null : RisegStatusTone.warning,
       ),
     ];
 
@@ -51,6 +58,57 @@ class AgendaResumenPeriodoRow extends StatelessWidget {
                 : 5;
         final ancho = (constraints.maxWidth - (AppSpacing.md * (columnas - 1))) / columnas;
 
+        return Wrap(
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.md,
+          children: [for (final tarjeta in tarjetas) SizedBox(width: ancho, child: tarjeta)],
+        );
+      },
+    );
+  }
+}
+/// Las tres tarjetas del modo "Pendientes de emisión".
+class AgendaResumenPendientesRow extends StatelessWidget {
+  const AgendaResumenPendientesRow({required this.resumen, super.key});
+
+  final AgendaResumenPendientes resumen;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final formatoFecha = DateFormat.yMMMd("es_MX");
+
+    final tarjetas = [
+      RisegStatCard(
+        label: l10n.agendaPendientesResumenTotal,
+        value: '${resumen.total}',
+        dense: true,
+        deltaTone: resumen.total > 0 ? RisegStatusTone.warning : null,
+      ),
+      RisegStatCard(
+        label: l10n.agendaPendientesResumenMasAntiguo,
+        value: resumen.masAntiguo == null
+            ? l10n.agendaTotalEsperadoNoDisponible
+            : formatoFecha.format(resumen.masAntiguo!),
+        dense: true,
+      ),
+      RisegStatCard(
+        label: l10n.agendaResumenImporteEsperado,
+        value: _formatoMoneda.format(resumen.totalEsperado / 100),
+        dense: true,
+        // Mismo criterio que la vista mensual: si algo no es comparable se
+        // dice, nunca se estima para completar la suma.
+        delta: resumen.documentosSinTotalCalculable == 0
+            ? null
+            : l10n.agendaResumenSinTotalCalculable(resumen.documentosSinTotalCalculable),
+        deltaTone: resumen.documentosSinTotalCalculable == 0 ? null : RisegStatusTone.warning,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columnas = constraints.maxWidth < AppBreakpoints.compact ? 1 : 3;
+        final ancho = (constraints.maxWidth - (AppSpacing.md * (columnas - 1))) / columnas;
         return Wrap(
           spacing: AppSpacing.md,
           runSpacing: AppSpacing.md,

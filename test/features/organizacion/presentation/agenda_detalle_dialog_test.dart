@@ -382,4 +382,109 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+
+  /// Documento gravado (masIva) con ajuste opcional y emisión opcional —
+  /// justo la combinación en la que el detalle ANTES escondía el importe
+  /// contractual y el ajuste detrás del bloque de IVA.
+  Future<String> crearDocumentoGravado({
+    String codigo = 'DOC-IVA-1',
+    int? ajusteManual,
+    String? motivoAjuste,
+    int? importeEmitido,
+  }) async {
+    final documento = await db.into(db.documentoPorEmitir).insertReturning(
+          DocumentoPorEmitirCompanion.insert(
+            codigo: codigo,
+            clienteId: clienteId,
+            tipoDocumento: 'cfdi',
+            agrupacion: 'porServicio',
+            metodo: 'pue',
+            periodoInicio: DateTime(2026, 6, 1),
+            periodoFin: DateTime(2026, 6, 30),
+            generationKey: 'GK-$codigo',
+            importeBaseEsperado: 1850000,
+            ajusteManual: Value(ajusteManual),
+            motivoAjuste: Value(motivoAjuste),
+            importeFinalEsperado: 1850000 + (ajusteManual ?? 0),
+            estatus: Value(importeEmitido == null ? 'pendiente' : 'emitido'),
+            importeEmitido: Value(importeEmitido),
+          ),
+        );
+    await db.into(db.documentoPorEmitirServicio).insert(
+          DocumentoPorEmitirServicioCompanion.insert(documentoPorEmitirId: documento.id, servicioId: servicioId),
+        );
+    await db.into(db.documentoPorEmitirLinea).insert(
+          DocumentoPorEmitirLineaCompanion.insert(
+            documentoPorEmitirId: documento.id,
+            servicioId: servicioId,
+            lineaComercialVigenciaId: vigenciaId,
+            puestoNombre: 'Guardia',
+            modalidadTurnoNombre: '24x24',
+            cantidadElementos: 1,
+            precioUnitario: 1850000,
+            tratamientoIva: 'masIva',
+            diasAplicables: 30,
+            subtotalProporcional: 1850000,
+          ),
+        );
+    return documento.id;
+  }
+
+  testWidgets('el detalle muestra contractual, ajuste y facturable JUNTO al IVA, nunca en vez de', (tester) async {
+    final documentoId = await crearDocumentoGravado(
+      ajusteManual: -123333,
+      motivoAjuste: '2 días no facturados',
+      importeEmitido: 2002934,
+    );
+    await _pump(tester, db, documentoId);
+
+    // Los tres que antes desaparecían en cuanto había totales con IVA.
+    expect(find.text('Importe contractual'), findsOneWidget);
+    expect(find.text('Ajuste de facturación'), findsOneWidget);
+    expect(find.text('Importe facturable esperado'), findsOneWidget);
+    // Y los fiscales, en la misma vista.
+    expect(find.text('IVA esperado (16%)'), findsOneWidget);
+    expect(find.text('Total facturable esperado'), findsOneWidget);
+    expect(find.text('Importe emitido'), findsOneWidget);
+    expect(find.text('Diferencia'), findsOneWidget);
+    // El motivo acompaña al ajuste cuando hay algo que motivar.
+    expect(find.text('2 días no facturados'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('sin ajuste, el motivo no ocupa espacio', (tester) async {
+    final documentoId = await crearDocumentoGravado(codigo: 'DOC-IVA-2');
+    await _pump(tester, db, documentoId);
+
+    expect(find.text('Importe contractual'), findsOneWidget);
+    expect(find.text('Motivo'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('antes de emitir se ofrece el ajuste normal y no la corrección histórica', (tester) async {
+    final documentoId = await crearDocumentoGravado(codigo: 'DOC-IVA-3');
+    await _pump(tester, db, documentoId, esMaestro: true);
+
+    expect(find.byKey(const Key('agenda_detalle_boton_ajuste_manual')), findsOneWidget);
+    expect(find.byKey(const Key('agenda_detalle_boton_correccion_historica')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('después de emitir la UI ya no ofrece el ajuste normal', (tester) async {
+    final documentoId = await crearDocumentoGravado(codigo: 'DOC-IVA-4', importeEmitido: 2146000);
+    await _pump(tester, db, documentoId, esMaestro: true);
+
+    expect(find.byKey(const Key('agenda_detalle_boton_ajuste_manual')), findsNothing);
+    expect(find.byKey(const Key('agenda_detalle_boton_correccion_historica')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('la corrección histórica es sólo del Maestro', (tester) async {
+    final documentoId = await crearDocumentoGravado(codigo: 'DOC-IVA-5', importeEmitido: 2146000);
+    await _pump(tester, db, documentoId, esMaestro: false);
+
+    expect(find.byKey(const Key('agenda_detalle_boton_correccion_historica')), findsNothing);
+    expect(find.byKey(const Key('agenda_detalle_boton_ajuste_manual')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

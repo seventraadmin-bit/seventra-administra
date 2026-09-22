@@ -16,6 +16,7 @@ import 'package:riseg_one/features/finanzas/domain/usecases/complemento_pago_der
 import 'package:riseg_one/features/finanzas/domain/usecases/cuenta_por_cobrar_antiguedad.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/quitar_reprogramacion_cobro_cuenta_por_cobrar_usecase.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/reprogramar_cobro_cuenta_por_cobrar_usecase.dart';
+import 'package:riseg_one/features/notificaciones/presentation/notificaciones_controller.dart';
 import 'package:riseg_one/features/organizacion/data/tables/configuracion_cobro_vigencia_table.dart';
 import 'package:riseg_one/features/organizacion/presentation/agenda/widgets/agenda_detalle_dialog.dart';
 import 'package:riseg_one/features/organizacion/presentation/shared/campo_consulta.dart';
@@ -389,6 +390,14 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
       // la Cuenta financiera elegida en el diálogo — su saldo derivado
       // cambia y nunca se avisaba.
       ref.invalidate(cuentasFinancierasControllerProvider);
+      // El Pago recién creado es una fila NUEVA del listado de Pagos, que
+      // es un provider aparte: se quedaba sin mostrarlo hasta que su
+      // `autoDispose` se disparara por otro motivo.
+      ref.invalidate(pagosControllerProvider);
+      // Y la campana cuenta "pagos recientes" y las CxC por vencer con esta
+      // misma información: su número, que está siempre a la vista, sólo se
+      // recalculaba al abrirla — sincronizar abriendo.
+      ref.invalidate(notificacionesControllerProvider);
     }
   }
 

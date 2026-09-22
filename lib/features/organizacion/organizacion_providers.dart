@@ -44,6 +44,7 @@ import 'domain/repositories/servicio_repository.dart';
 import 'domain/repositories/sucursal_repository.dart';
 import 'domain/repositories/ubicacion_repository.dart';
 import 'domain/usecases/activar_area_usecase.dart';
+import 'domain/usecases/corregir_ajuste_historico_documento_por_emitir_usecase.dart';
 import 'domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
 import 'domain/usecases/actualizar_anotaciones_vigencia_usecase.dart';
@@ -751,6 +752,44 @@ final actualizarAjusteManualDocumentoPorEmitirUseCaseProvider =
 });
 
 // --- Etapa 4I.2.1 — Emisión, envío e historial administrativo ---
+
+final corregirAjusteHistoricoDocumentoPorEmitirUseCaseProvider =
+    Provider<CorregirAjusteHistoricoDocumentoPorEmitirUseCase>((ref) {
+  return CorregirAjusteHistoricoDocumentoPorEmitirUseCase(ref.watch(documentoPorEmitirRepositoryProvider));
+});
+
+typedef CorregirAjusteHistoricoDocumentoPorEmitirAutorizado
+    = Future<CorregirAjusteHistoricoDocumentoPorEmitirResultado> Function({
+  required String documentoPorEmitirId,
+  required String motivoCorreccion,
+  int? ajusteManual,
+  String? motivoAjuste,
+});
+
+/// Maestro, no `agendaComercial.corregir`: reescribir el importe esperado
+/// de un documento ya emitido no es la misma facultad que ajustarlo antes
+/// de emitirlo, aunque el campo que se toca sea el mismo.
+final corregirAjusteHistoricoDocumentoPorEmitirAutorizadoProvider =
+    Provider<CorregirAjusteHistoricoDocumentoPorEmitirAutorizado>((ref) {
+  return ({
+    required String documentoPorEmitirId,
+    required String motivoCorreccion,
+    int? ajusteManual,
+    String? motivoAjuste,
+  }) {
+    return exigirMaestro(
+      ref.read(permissionServiceProvider),
+      () => ref.read(corregirAjusteHistoricoDocumentoPorEmitirUseCaseProvider).ejecutar(
+            documentoPorEmitirId: documentoPorEmitirId,
+            motivoCorreccion: motivoCorreccion,
+            ajusteManual: ajusteManual,
+            motivoAjuste: motivoAjuste,
+            actorUsuarioId: ref.read(sesionControllerProvider)?.usuarioId,
+          ),
+      CorregirAjusteHistoricoDocumentoPorEmitirErrorInesperado.new,
+    );
+  };
+});
 
 final registrarEmisionDocumentoPorEmitirUseCaseProvider =
     Provider<RegistrarEmisionDocumentoPorEmitirUseCase>((ref) {

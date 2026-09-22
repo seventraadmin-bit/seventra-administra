@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/notificaciones/presentation/notificaciones_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
@@ -187,6 +188,9 @@ class PagosController extends _$PagosController {
       // que ya invalida `cancelar()`, nunca solo el propio listado.
       ref.invalidate(cuentasPorCobrarControllerProvider);
       ref.invalidate(dashboardControllerProvider);
+      // Mismo motivo que en Cuentas por cobrar: la campana lee pagos
+      // recientes y el vencimiento de las CxC afectadas.
+      ref.invalidate(notificacionesControllerProvider);
       ref.invalidate(ingresosControllerProvider);
       ref.invalidate(cuentasFinancierasControllerProvider);
       ref.invalidate(resumenFinancieroControllerProvider);
@@ -214,6 +218,9 @@ class PagosController extends _$PagosController {
       // diálogo de CxC, que ya invalida correctamente).
       ref.invalidate(cuentasPorCobrarControllerProvider);
       ref.invalidate(dashboardControllerProvider);
+      // Mismo motivo que en Cuentas por cobrar: la campana lee pagos
+      // recientes y el vencimiento de las CxC afectadas.
+      ref.invalidate(notificacionesControllerProvider);
       // Auditoría integral 19A-19D: `PagoRepositoryImpl.cancelar` también
       // cancela el Ingreso automático ligado al Pago en la misma
       // transacción — Ingresos/Cuentas financieras/Resumen/Planeación
@@ -244,6 +251,9 @@ class PagosController extends _$PagosController {
       await _cargar();
       ref.invalidate(cuentasPorCobrarControllerProvider);
       ref.invalidate(dashboardControllerProvider);
+      // Mismo motivo que en Cuentas por cobrar: la campana lee pagos
+      // recientes y el vencimiento de las CxC afectadas.
+      ref.invalidate(notificacionesControllerProvider);
       // Auditoría integral 19A-19D: el mismo `CancelarAplicacionPagoUseCase`
       // invocado desde `CuentaPorCobrarDetalleDialog` sí invalida
       // Resumen/Planeación (cambia el saldo de la CxC) — invocado desde

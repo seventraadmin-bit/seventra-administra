@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/notificaciones/presentation/notificaciones_controller.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -181,8 +182,16 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
 
   Future<void> _agregarDocumento() async {
     final registrado = await mostrarDialogoRegistrarDocumentoVehiculo(context, ref, widget.vehiculoId);
-    if (registrado) await _cargar();
+    if (!registrado) return;
+    await _cargar();
+    _avisarALaCampana();
   }
+
+  /// Verificación y tenencia/refrendo del Centro de notificaciones salen
+  /// de estos documentos. Su contador está siempre a la vista y sólo se
+  /// recalculaba al abrir la campana: registrar o corregir un documento
+  /// que vence pronto no movía el número.
+  void _avisarALaCampana() => ref.invalidate(notificacionesControllerProvider);
 
   Future<void> _renovarDocumento(VehiculoDocumentoData documento) async {
     final registrado = await mostrarDialogoRegistrarDocumentoVehiculo(
@@ -196,7 +205,9 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
 
   Future<void> _corregirDocumento(VehiculoDocumentoData documento) async {
     final corregido = await mostrarDialogoCorregirDocumentoVehiculo(context, ref, documento);
-    if (corregido && mounted) await _cargar();
+    if (!corregido || !mounted) return;
+    await _cargar();
+    _avisarALaCampana();
   }
 
   Future<void> _verHistorialDocumento(String tipo) async {
@@ -273,7 +284,12 @@ class _VehiculoExpedienteScreenState extends ConsumerState<VehiculoExpedienteScr
 
   Future<void> _eliminarFisicamente() async {
     final eliminado = await mostrarDialogoEliminarVehiculoFisicamente(context, ref, widget.vehiculoId);
-    if (eliminado && mounted) context.pop();
+    if (!eliminado) return;
+    // La eliminacion fisica no pasa por ningun controlador: sin esto el
+    // renglon sobrevive en el listado de Vehiculos hasta que algo ajeno (cambiar de
+    // pestana) reconstruya el provider. Navegar no es refrescar.
+    ref.invalidate(vehiculosControllerProvider);
+    if (mounted) context.pop();
   }
 
   Future<void> _cambiarFotografia() async {

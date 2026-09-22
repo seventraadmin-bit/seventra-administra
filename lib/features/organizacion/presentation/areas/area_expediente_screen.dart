@@ -1,3 +1,4 @@
+import 'areas_list_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,7 +85,12 @@ class _AreaExpedienteScreenState extends ConsumerState<AreaExpedienteScreen> {
 
   Future<void> _eliminarFisicamente() async {
     final eliminado = await mostrarDialogoEliminarAreaFisicamente(context, ref, widget.areaId);
-    if (eliminado && mounted) Navigator.of(context).pop();
+    if (!eliminado) return;
+    // La eliminacion fisica no pasa por ningun controlador: sin esto el
+    // renglon sobrevive en el listado de Areas hasta que algo ajeno (cambiar de
+    // pestana) reconstruya el provider. Navegar no es refrescar.
+    ref.invalidate(areasListControllerProvider);
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override

@@ -655,7 +655,10 @@ class _SeccionAtencion extends StatelessWidget {
         texto: l10n.dashboardAlertaDocumentosPorEmitir,
         valor: l10n.dashboardAlertaDocumentosPorEmitirDetalle(documentosPorEmitir.length),
         tono: RisegStatusTone.warning,
-        onTap: () => context.push('/comercial/agenda'),
+        // Con contexto: la Agenda abre en el modo Pendientes y muestra
+        // exactamente los documentos que esta alerta acaba de contar. Sin
+        // el parámetro, abría en el mes actual y podía mostrar cero.
+        onTap: () => context.push('/comercial/agenda?filtro=pendientes'),
       ));
     }
 

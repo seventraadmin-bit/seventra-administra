@@ -552,6 +552,72 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
   }
 
   @override
+  Future<DocumentoPorEmitirData> corregirAjusteHistorico({
+    required String documentoPorEmitirId,
+    required String motivoCorreccion,
+    int? ajusteManual,
+    String? motivoAjuste,
+    String? actorUsuarioId,
+  }) {
+    return _db.transaction(() async {
+      final actual = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId)))
+          .getSingle();
+      final importeFinal = actual.importeBaseEsperado + (ajusteManual ?? 0);
+
+      // Exactamente los mismos tres campos que el ajuste normal. Que la
+      // corrección histórica no pueda tocar importe emitido, folio, UUID
+      // ni cobranza no es una regla que se valide: es que no hay por
+      // dónde escribirlos desde aquí.
+      await (_db.update(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).write(
+        DocumentoPorEmitirCompanion(
+          ajusteManual: Value(ajusteManual),
+          motivoAjuste: Value(motivoAjuste),
+          importeFinalEsperado: Value(importeFinal),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      await _registrarEvento(
+        documentoPorEmitirId: documentoPorEmitirId,
+        tipoEvento: TipoEventoDocumentoPorEmitir.correccionAjusteHistorico,
+        estadoAnterior: actual.estatus,
+        estadoNuevo: actual.estatus,
+        observacion: motivoCorreccion,
+        actorUsuarioId: actorUsuarioId,
+        datosRelevantes: {
+          'motivoCorreccion': motivoCorreccion,
+          'ajusteAnterior': actual.ajusteManual,
+          'ajusteNuevo': ajusteManual,
+          'motivoAnterior': actual.motivoAjuste,
+          'motivoNuevo': motivoAjuste,
+          'importeFinalAnterior': actual.importeFinalEsperado,
+          'importeFinalNuevo': importeFinal,
+          // Se deja constancia de que el emitido NO cambió, para que el
+          // historial pruebe por sí solo lo que la corrección no tocó.
+          'importeEmitidoSinCambio': actual.importeEmitido,
+        },
+      );
+
+      return (_db.select(_db.documentoPorEmitir)..where((t) => t.id.equals(documentoPorEmitirId))).getSingle();
+    });
+  }
+
+  @override
+  Future<Map<String, List<DocumentoPorEmitirLineaData>>> lineasPorDocumentos(List<String> documentoIds) async {
+    if (documentoIds.isEmpty) return const {};
+
+    final filas = await (_db.select(_db.documentoPorEmitirLinea)
+          ..where((t) => t.documentoPorEmitirId.isIn(documentoIds)))
+        .get();
+
+    final porDocumento = <String, List<DocumentoPorEmitirLineaData>>{};
+    for (final fila in filas) {
+      porDocumento.putIfAbsent(fila.documentoPorEmitirId, () => []).add(fila);
+    }
+    return porDocumento;
+  }
+
+  @override
   Future<List<String>> listarCorreosEnvio(String documentoPorEmitirId) async {
     final filas = await (_db.select(_db.documentoPorEmitirCorreoEnvio)
           ..where((t) => t.documentoPorEmitirId.equals(documentoPorEmitirId)))

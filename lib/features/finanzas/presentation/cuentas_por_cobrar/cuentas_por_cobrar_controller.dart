@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/notificaciones/presentation/notificaciones_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:riseg_one/core/database/app_database.dart';
@@ -105,6 +106,9 @@ class CuentasPorCobrarController extends _$CuentasPorCobrarController {
       ref.invalidate(resumenFinancieroControllerProvider);
       ref.invalidate(planeacionFinancieraControllerProvider);
       ref.invalidate(dashboardControllerProvider);
+      // La campana cuenta CxC próximas a vencer y vencidas: cambiar su
+      // vencimiento, reprogramarla o cancelarla altera ese número.
+      ref.invalidate(notificacionesControllerProvider);
     }
     return resultado;
   }
@@ -128,6 +132,9 @@ class CuentasPorCobrarController extends _$CuentasPorCobrarController {
       ref.invalidate(resumenFinancieroControllerProvider);
       ref.invalidate(planeacionFinancieraControllerProvider);
       ref.invalidate(dashboardControllerProvider);
+      // La campana cuenta CxC próximas a vencer y vencidas: cambiar su
+      // vencimiento, reprogramarla o cancelarla altera ese número.
+      ref.invalidate(notificacionesControllerProvider);
     }
     return resultado;
   }
@@ -147,6 +154,9 @@ class CuentasPorCobrarController extends _$CuentasPorCobrarController {
       ref.invalidate(resumenFinancieroControllerProvider);
       ref.invalidate(planeacionFinancieraControllerProvider);
       ref.invalidate(dashboardControllerProvider);
+      // La campana cuenta CxC próximas a vencer y vencidas: cambiar su
+      // vencimiento, reprogramarla o cancelarla altera ese número.
+      ref.invalidate(notificacionesControllerProvider);
     }
     return resultado;
   }
@@ -167,6 +177,9 @@ class CuentasPorCobrarController extends _$CuentasPorCobrarController {
       ref.invalidate(resumenFinancieroControllerProvider);
       ref.invalidate(planeacionFinancieraControllerProvider);
       ref.invalidate(dashboardControllerProvider);
+      // La campana cuenta CxC próximas a vencer y vencidas: cambiar su
+      // vencimiento, reprogramarla o cancelarla altera ese número.
+      ref.invalidate(notificacionesControllerProvider);
     }
     return resultado;
   }

@@ -1,3 +1,4 @@
+import 'clientes_list_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,7 +126,12 @@ class _ClienteExpedienteScreenState extends ConsumerState<ClienteExpedienteScree
 
   Future<void> _eliminarFisicamente() async {
     final eliminado = await mostrarDialogoEliminarClienteFisicamente(context, ref, widget.clienteId);
-    if (eliminado && mounted) context.pop();
+    if (!eliminado) return;
+    // La eliminacion fisica no pasa por ningun controlador: sin esto el
+    // renglon sobrevive en el listado de Clientes hasta que algo ajeno (cambiar de
+    // pestana) reconstruya el provider. Navegar no es refrescar.
+    ref.invalidate(clientesListControllerProvider);
+    if (mounted) context.pop();
   }
 
   /// Cabecera de identidad comercial (Etapa 16, ficha comercial) —

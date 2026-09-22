@@ -1,3 +1,4 @@
+import 'package:riseg_one/features/notificaciones/presentation/notificaciones_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +33,12 @@ String formatoCentavosAgenda(int centavos) => _formatoMoneda.format(centavos / 1
 /// **emisión programada** (nunca "periodo iniciado en"), generación
 /// automática del rango visible, creación manual y detalle por fila.
 class AgendaListScreen extends ConsumerStatefulWidget {
-  const AgendaListScreen({super.key});
+  const AgendaListScreen({this.modoPendientes = false, super.key});
+
+  /// Viene de la URL (`/comercial/agenda?filtro=pendientes`), nunca de
+  /// estado recordado: entrar por la pestaña normal siempre abre la vista
+  /// mensual, aunque la visita anterior hubiera estado en Pendientes.
+  final bool modoPendientes;
 
   @override
   ConsumerState<AgendaListScreen> createState() => _AgendaListScreenState();
@@ -48,6 +54,26 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
       final clientes = await ref.read(clienteRepositoryProvider).listarActivos();
       if (mounted) setState(() => _clientes = clientes);
     });
+    Future.microtask(_sincronizarConLaUrl);
+  }
+
+  @override
+  void didUpdateWidget(AgendaListScreen anterior) {
+    super.didUpdateWidget(anterior);
+    if (anterior.modoPendientes != widget.modoPendientes) _sincronizarConLaUrl();
+  }
+
+  /// La URL manda. El controlador sobrevive a la navegación dentro del
+  /// Shell de Comercial, así que sin esto un regreso a `/comercial/agenda`
+  /// sin parámetro se quedaría en Pendientes por inercia.
+  void _sincronizarConLaUrl() {
+    if (!mounted) return;
+    final notifier = ref.read(agendaControllerProvider.notifier);
+    if (widget.modoPendientes) {
+      notifier.activarModoPendientes();
+    } else {
+      notifier.volverAVistaMensual();
+    }
   }
 
   String _clienteNombre(String clienteId) {
@@ -136,6 +162,13 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
     // Etapa 20 (hueco real encontrado): el Dashboard lee la misma
     // CuentaPorCobrar para Cobranza/"Requiere atención".
     ref.invalidate(dashboardControllerProvider);
+    // Y un documento pendiente eliminado deja de contar en la alerta
+    // "Documentos por emitir pendientes" y en el Centro de
+    // notificaciones, que leen la misma regla
+    // (`invalidacion_documentos_por_emitir.dart`). Aquí se invalida a
+    // mano porque esto es un widget: su `ref` es un `WidgetRef` y la
+    // extensión vive sobre `Ref`.
+    ref.invalidate(notificacionesControllerProvider);
   }
 
   @override
@@ -181,36 +214,76 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          AgendaResumenPeriodoRow(resumen: calcularResumenPeriodoAgenda(state.documentos, hoy)),
+          // En modo Pendientes, "Enviados" y "Procesados" serían siempre
+          // cero por construcción: se muestra un resumen propio en vez de
+          // tarjetas que no pueden informar nada.
+          if (state.modoPendientes)
+            AgendaResumenPendientesRow(
+              resumen: calcularResumenPendientes(
+                state.documentos,
+                totalEsperadoPorDocumento: state.totalEsperadoPorDocumento,
+              ),
+            )
+          else
+            AgendaResumenPeriodoRow(
+              resumen: calcularResumenPeriodoAgenda(
+                state.documentos,
+                hoy,
+                totalEsperadoPorDocumento: state.totalEsperadoPorDocumento,
+              ),
+            ),
           const SizedBox(height: AppSpacing.md),
           Wrap(
             spacing: AppSpacing.md,
             runSpacing: AppSpacing.sm,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left),
-                    tooltip: l10n.agendaListadoBotonMesAnterior,
-                    onPressed: () => _cambiarMes(state, -1),
-                  ),
-                  SizedBox(
-                    width: 160,
-                    child: Text(
-                      _tituloMesCapitalizado(state.rangoInicio),
-                      textAlign: TextAlign.center,
-                      style: AppTypography.label,
+              // Nunca el navegador de mes en modo Pendientes: estos
+              // documentos pueden ser de julio, agosto y septiembre a la
+              // vez, y un título de mes estaría mintiendo.
+              if (state.modoPendientes)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RisegStatusBadge(
+                      key: const Key("agenda_distintivo_modo_pendientes"),
+                      label: l10n.agendaPendientesTitulo,
+                      tone: RisegStatusTone.warning,
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right),
-                    tooltip: l10n.agendaListadoBotonMesSiguiente,
-                    onPressed: () => _cambiarMes(state, 1),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: AppSpacing.sm),
+                    RisegButton(
+                      key: const Key("agenda_boton_volver_al_mes"),
+                      label: l10n.agendaPendientesBotonVolver,
+                      variant: RisegButtonVariant.ghost,
+                      size: RisegButtonSize.compact,
+                      onPressed: () => notifier.volverAVistaMensual(),
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      tooltip: l10n.agendaListadoBotonMesAnterior,
+                      onPressed: () => _cambiarMes(state, -1),
+                    ),
+                    SizedBox(
+                      width: 160,
+                      child: Text(
+                        _tituloMesCapitalizado(state.rangoInicio),
+                        textAlign: TextAlign.center,
+                        style: AppTypography.label,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      tooltip: l10n.agendaListadoBotonMesSiguiente,
+                      onPressed: () => _cambiarMes(state, 1),
+                    ),
+                  ],
+                ),
               SizedBox(
                 width: 200,
                 child: RisegSelect<String?>(
@@ -243,9 +316,14 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
                       notifier.aplicarFiltros(tipoDocumento: valor, limpiarTipoDocumento: valor == null),
                 ),
               ),
+              // El conjunto ya está restringido a documentos accionables:
+              // ofrecer aquí "Procesado/Aceptado" prometería una
+              // combinación que jamás puede devolver nada.
+              if (!state.modoPendientes)
               SizedBox(
                 width: 190,
                 child: RisegSelect<String?>(
+                  key: const Key("agenda_filtro_estatus"),
                   label: l10n.agendaListadoFiltroEstatus,
                   value: state.estatus,
                   items: [
@@ -264,9 +342,13 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
               loading: state.cargando,
               rows: state.documentos,
               onRowTap: _mostrarDetalle,
+              // Llegar a cero pendientes es un resultado, no un error: se
+              // dice y se permanece en el modo, nunca se devuelve al mes.
               emptyState: RisegEmptyState(
-                title: l10n.agendaListadoVacioTitulo,
-                message: l10n.agendaListadoVacioMensaje,
+                key: const Key("agenda_vacio"),
+                title: state.modoPendientes ? l10n.agendaPendientesVacioTitulo : l10n.agendaListadoVacioTitulo,
+                message:
+                    state.modoPendientes ? l10n.agendaPendientesVacioMensaje : l10n.agendaListadoVacioMensaje,
               ),
               // Eliminación física individual por fila (pedido explícito)
               // — Maestro-only, mismo criterio que el resto de la app:
@@ -339,10 +421,19 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
                   ),
                 ),
                 RisegColumn<DocumentoPorEmitirData>(
-                  label: l10n.agendaColumnaImporte,
+                  label: l10n.agendaColumnaTotalEsperado,
                   width: 130,
                   alignment: TextAlign.right,
-                  cellBuilder: (d) => Text(formatoCentavosAgenda(d.importeFinalEsperado)),
+                  // TOTAL esperado, no el facturable: una sola magnitud para
+                  // todas las filas, comparable entre sí y sumable en el KPI.
+                  // `importeFinalEsperado` significaba cosas distintas según
+                  // el tratamiento fiscal de cada documento.
+                  cellBuilder: (d) {
+                    final total = state.totalEsperadoPorDocumento[d.id];
+                    return Text(
+                      total == null ? l10n.agendaTotalEsperadoNoDisponible : formatoCentavosAgenda(total),
+                    );
+                  },
                 ),
                 RisegColumn<DocumentoPorEmitirData>(
                   label: l10n.agendaColumnaEstatus,

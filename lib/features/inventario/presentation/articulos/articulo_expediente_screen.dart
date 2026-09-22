@@ -231,7 +231,12 @@ class _ArticuloExpedienteScreenState extends ConsumerState<ArticuloExpedienteScr
 
   Future<void> _eliminarFisicamente() async {
     final eliminado = await mostrarDialogoEliminarArticuloFisicamente(context, ref, widget.articuloId);
-    if (eliminado && mounted) context.pop();
+    if (!eliminado) return;
+    // La eliminacion fisica no pasa por ningun controlador: sin esto el
+    // renglon sobrevive en el Catalogo de articulos hasta que algo ajeno (cambiar de
+    // pestana) reconstruya el provider. Navegar no es refrescar.
+    ref.invalidate(articulosControllerProvider);
+    if (mounted) context.pop();
   }
 
   // --- Asignaciones vigentes (Etapa 18) ---

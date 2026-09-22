@@ -78,14 +78,52 @@ void main() {
   });
 
   test('importe esperado excluye cancelado y noRequerido', () {
-    final resumen = calcularResumenPeriodoAgenda([
-      _doc(estatus: 'pendiente', importeFinalEsperado: 100000),
-      _doc(estatus: 'cancelado', importeFinalEsperado: 999999),
-      _doc(estatus: 'noRequerido', importeFinalEsperado: 999999),
-      _doc(estatus: 'procesadoAceptado', importeFinalEsperado: 50000),
-    ], hoy);
+    final pendiente = _doc(estatus: 'pendiente', importeFinalEsperado: 100000);
+    final cancelado = _doc(estatus: 'cancelado', importeFinalEsperado: 999999);
+    final noRequerido = _doc(estatus: 'noRequerido', importeFinalEsperado: 999999);
+    final procesado = _doc(estatus: 'procesadoAceptado', importeFinalEsperado: 50000);
 
-    expect(resumen.importeEsperado, 150000);
+    // El KPI suma TOTALES esperados (ya con su IVA), no el facturable: por
+    // eso recibe el mapa que el controlador calculó con la decisión fiscal
+    // única, en vez de leer `importeFinalEsperado` de cada documento.
+    final resumen = calcularResumenPeriodoAgenda(
+      [pendiente, cancelado, noRequerido, procesado],
+      hoy,
+      totalEsperadoPorDocumento: {
+        pendiente.id: 116000,
+        cancelado.id: 999999,
+        noRequerido.id: 999999,
+        procesado.id: 58000,
+      },
+    );
+
+    expect(resumen.importeEsperado, 174000);
+    expect(resumen.documentosSinTotalCalculable, 0);
+  });
+
+  test('un documento sin total comparable no se suma y se reporta aparte', () {
+    final calculable = _doc(estatus: 'pendiente', importeFinalEsperado: 100000);
+    final ambiguo = _doc(estatus: 'pendiente', importeFinalEsperado: 999999, fechaEmisionProgramada: hoy);
+
+    final resumen = calcularResumenPeriodoAgenda(
+      [calculable, ambiguo],
+      hoy,
+      // `ambiguo` no está en el mapa: es un mixto con ajuste, cuyo total no
+      // es fiscalmente atribuible.
+      totalEsperadoPorDocumento: {calculable.id: 116000},
+    );
+
+    expect(resumen.importeEsperado, 116000, reason: 'nunca se estima el faltante');
+    expect(resumen.documentosSinTotalCalculable, 1);
+  });
+
+  test('los cancelados no cuentan como no calculables: sencillamente no se cobran', () {
+    final cancelado = _doc(estatus: 'cancelado');
+
+    final resumen = calcularResumenPeriodoAgenda([cancelado], hoy);
+
+    expect(resumen.importeEsperado, 0);
+    expect(resumen.documentosSinTotalCalculable, 0);
   });
 
   test('lista vacía produce un resumen en ceros, nunca un error', () {
@@ -96,5 +134,6 @@ void main() {
     expect(resumen.enviados, 0);
     expect(resumen.procesados, 0);
     expect(resumen.importeEsperado, 0);
+    expect(resumen.documentosSinTotalCalculable, 0);
   });
 }

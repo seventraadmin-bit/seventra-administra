@@ -10,12 +10,14 @@ import 'package:riseg_one/features/finanzas/presentation/cuentas_por_cobrar/cuen
 import 'package:riseg_one/features/finanzas/presentation/planeacion/planeacion_financiera_controller.dart';
 import 'package:riseg_one/features/finanzas/presentation/resumen/resumen_financiero_controller.dart';
 import 'package:riseg_one/features/organizacion/data/tables/documento_por_emitir_table.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/corregir_ajuste_historico_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/actualizar_ajuste_manual_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/adjuntar_archivo_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/cambiar_estatus_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/corregir_datos_emision_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_documento_manual_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_emitir_detalle.dart';
+import 'package:riseg_one/features/organizacion/domain/usecases/documento_por_emitir_requiere_accion.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/generar_agenda_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/generar_recibo_pago_pdf_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_emision_documento_por_emitir_usecase.dart';
@@ -25,6 +27,8 @@ import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
 import 'agenda_state.dart';
+import 'invalidacion_documentos_por_emitir.dart';
+import 'total_esperado_documento.dart';
 
 part 'agenda_controller.g.dart';
 
@@ -42,18 +46,98 @@ class AgendaController extends _$AgendaController {
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
     try {
-      final documentos = await ref.read(documentoPorEmitirRepositoryProvider).listar(
-            rangoInicio: state.rangoInicio,
-            rangoFin: state.rangoFin,
-            clienteId: state.clienteId,
-            servicioId: state.servicioId,
-            tipoDocumento: state.tipoDocumento,
-            estatus: state.estatus,
+      final documentos = state.modoPendientes ? await _cargarPendientes() : await _cargarDelMes();
+      // UNA consulta más para todas las líneas, no una por documento: el
+      // total esperado necesita el tratamiento fiscal de cada línea.
+      final lineasPorDocumento = await ref.read(documentoPorEmitirRepositoryProvider).lineasPorDocumentos(
+            [for (final d in documentos) d.id],
           );
-      state = state.copyWith(cargando: false, documentos: documentos, errorCarga: null);
+
+      // Derivado en cada carga desde los snapshots ya guardados: no se
+      // persiste, no se recalcula historia, no se completa nada por
+      // inferencia. Un documento sin total comparable sencillamente no
+      // entra al mapa.
+      final totales = <String, int>{};
+      for (final documento in documentos) {
+        final total = totalEsperadoDeDocumento(
+          documento,
+          lineasPorDocumento[documento.id] ?? const <DocumentoPorEmitirLineaData>[],
+        );
+        if (total != null) totales[documento.id] = total;
+      }
+
+      state = state.copyWith(
+        cargando: false,
+        documentos: documentos,
+        totalEsperadoPorDocumento: totales,
+        errorCarga: null,
+      );
     } catch (e) {
       state = state.copyWith(cargando: false, errorCarga: e.toString());
     }
+  }
+
+  Future<List<DocumentoPorEmitirData>> _cargarDelMes() {
+    return ref.read(documentoPorEmitirRepositoryProvider).listar(
+          rangoInicio: state.rangoInicio,
+          rangoFin: state.rangoFin,
+          clienteId: state.clienteId,
+          servicioId: state.servicioId,
+          tipoDocumento: state.tipoDocumento,
+          estatus: state.estatus,
+        );
+  }
+
+  /// El conjunto accionable, sin ventana de fechas.
+  ///
+  /// Reutiliza `documentoPorEmitirRequiereAccion` —la MISMA regla que
+  /// alimentan la alerta del Dashboard y el Centro de notificaciones— en vez
+  /// de reinventar "pendiente" con una condición propia. Por eso entrar
+  /// desde la alerta muestra exactamente los documentos que la alerta
+  /// contaba, incluidos los de meses anteriores, y NO los pendientes cuya
+  /// fecha programada todavía no llega: ésos siguen siendo asunto de la
+  /// vista mensual.
+  ///
+  /// Dos consultas, no una por documento: mismo criterio que
+  /// `ObtenerNotificacionesDocumentosPorEmitirUseCase`.
+  Future<List<DocumentoPorEmitirData>> _cargarPendientes() async {
+    final repo = ref.read(documentoPorEmitirRepositoryProvider);
+    final accionables = <DocumentoPorEmitirData>[];
+    for (final estatus in [
+      EstatusDocumentoPorEmitir.pendiente.name,
+      EstatusDocumentoPorEmitir.enPreparacion.name,
+    ]) {
+      accionables.addAll(await repo.listar(
+        estatus: estatus,
+        clienteId: state.clienteId,
+        servicioId: state.servicioId,
+        tipoDocumento: state.tipoDocumento,
+      ));
+    }
+
+    final hoy = DateTime.now();
+    final resultado = accionables.where((d) => documentoPorEmitirRequiereAccion(d, hoy)).toList();
+
+    // Lo más atrasado primero: es el orden en el que se trabaja una lista
+    // de pendientes, no el orden de captura.
+    resultado.sort((a, b) => a.fechaEmisionProgramada!.compareTo(b.fechaEmisionProgramada!));
+    return resultado;
+  }
+
+  /// Entra al modo Pendientes. El estatus se limpia: en este conjunto un
+  /// filtro por "Procesado/Aceptado" no puede dar nada, y ofrecerlo sería
+  /// prometer una combinación imposible.
+  Future<void> activarModoPendientes() async {
+    if (state.modoPendientes) return;
+    state = state.copyWith(modoPendientes: true, limpiarEstatus: true);
+    await _cargar();
+  }
+
+  /// Vuelve a la vista mensual, al mes que estuviera seleccionado.
+  Future<void> volverAVistaMensual() async {
+    if (!state.modoPendientes) return;
+    state = state.copyWith(modoPendientes: false);
+    await _cargar();
   }
 
   Future<void> reintentarCarga() => _cargar();
@@ -85,6 +169,8 @@ class AgendaController extends _$AgendaController {
     await _cargar();
   }
 
+  /// Genera los documentos del periodo. Crea pendientes nuevos, así que el
+  /// Dashboard y Notificaciones tienen más que contar en cuanto termina.
   Future<GenerarAgendaResultado?> generar({String? servicioId, String? clienteId}) async {
     if (state.generando) return null;
     state = state.copyWith(generando: true);
@@ -106,6 +192,7 @@ class AgendaController extends _$AgendaController {
     );
 
     await _cargar();
+    ref.invalidarConsumidoresDeDocumentosPorEmitir();
     state = state.copyWith(generando: false);
     return resultado;
   }
@@ -135,6 +222,9 @@ class AgendaController extends _$AgendaController {
 
     if (resultado is CrearDocumentoManualExitoso) {
       await _cargar();
+      // Un documento manual nace pendiente: entra al conteo del Dashboard
+      // y del Centro de notificaciones desde este mismo instante.
+      ref.invalidarConsumidoresDeDocumentosPorEmitir();
     }
     state = state.copyWith(generando: false);
     return resultado;
@@ -157,6 +247,10 @@ class AgendaController extends _$AgendaController {
     );
     if (resultado is CambiarEstatusDocumentoPorEmitirExitoso) {
       await _cargar();
+      // Cualquier transición puede sacar (o meter) el documento del
+      // conjunto accionable: a `emitido`, `cancelado` o `noRequerido` deja
+      // de contar; volver a `enPreparacion` vuelve a contar.
+      ref.invalidarConsumidoresDeDocumentosPorEmitir();
       // La transición a `procesadoAceptado` crea la Cuenta por cobrar
       // en la misma transacción (Etapa 4J.1, Resolución A) —
       // `cuentasPorCobrarControllerProvider` es un provider ajeno a
@@ -203,6 +297,27 @@ class AgendaController extends _$AgendaController {
     return resultado;
   }
 
+  /// Corrección Maestro del ajuste de un documento ya emitido. Recarga la
+  /// Agenda igual que el ajuste normal: el importe esperado del renglón y
+  /// el resumen del periodo se derivan de este mismo estado.
+  Future<CorregirAjusteHistoricoDocumentoPorEmitirResultado?> corregirAjusteHistorico({
+    required String documentoPorEmitirId,
+    required String motivoCorreccion,
+    int? ajusteManual,
+    String? motivoAjuste,
+  }) async {
+    final resultado = await ref.read(corregirAjusteHistoricoDocumentoPorEmitirAutorizadoProvider)(
+      documentoPorEmitirId: documentoPorEmitirId,
+      motivoCorreccion: motivoCorreccion,
+      ajusteManual: ajusteManual,
+      motivoAjuste: motivoAjuste,
+    );
+    if (resultado is CorregirAjusteHistoricoDocumentoPorEmitirExitoso) {
+      await _cargar();
+    }
+    return resultado;
+  }
+
   Future<DocumentoPorEmitirDetalle?> obtenerDetalle(String documentoPorEmitirId) {
     return ref.read(documentoPorEmitirRepositoryProvider).obtenerDetalle(documentoPorEmitirId);
   }
@@ -230,6 +345,10 @@ class AgendaController extends _$AgendaController {
     );
     if (resultado is RegistrarEmisionDocumentoPorEmitirExitoso) {
       await _cargar();
+      // El caso del hallazgo: emitir es justo lo que saca al documento de
+      // "Documentos por emitir pendientes", y era la única transición que
+      // no avisaba a nadie fuera de la Agenda.
+      ref.invalidarConsumidoresDeDocumentosPorEmitir();
     }
     return resultado;
   }
