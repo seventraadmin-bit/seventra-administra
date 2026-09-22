@@ -31,10 +31,15 @@ abstract interface class DocumentoPorEmitirRepository {
   /// Inserta el documento y sus tablas hijas, y el primer evento de
   /// historial (`creadoAutomatico`/`creadoManual`, según corresponda),
   /// todo en una sola transacción.
+  /// [actorUsuarioId] es quien PULSÓ la acción, también cuando el documento
+  /// lo arma el generador: "automático" describe cómo se calculó el
+  /// contenido, no que nadie lo haya pedido. Sólo queda nulo cuando la
+  /// creación no nace de una sesión (arranque, herramientas, pruebas).
   Future<DocumentoPorEmitirData> crearDocumento({
     required String codigo,
     required DocumentoPorEmitirArmado armado,
     required TipoEventoDocumentoPorEmitir tipoEventoCreacion,
+    String? actorUsuarioId,
   });
 
   Future<DocumentoPorEmitirDetalle?> obtenerDetalle(String documentoPorEmitirId);

@@ -46,6 +46,7 @@ class CorregirDatosEmisionDocumentoPorEmitirUseCase {
   final DocumentoPorEmitirRepository _repository;
 
   Future<CorregirDatosEmisionDocumentoPorEmitirResultado> ejecutar({
+    String? actorUsuarioId,
     required String documentoPorEmitirId,
     required String motivo,
     String? folioDocumento,
@@ -84,6 +85,7 @@ class CorregirDatosEmisionDocumentoPorEmitirUseCase {
 
     try {
       final actualizado = await _repository.corregirDatosEmision(
+        actorUsuarioId: actorUsuarioId,
         documentoPorEmitirId: documentoPorEmitirId,
         motivo: motivoLimpio,
         folioDocumento: folioDocumento,

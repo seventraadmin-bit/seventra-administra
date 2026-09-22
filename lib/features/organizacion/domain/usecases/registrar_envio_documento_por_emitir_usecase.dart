@@ -34,6 +34,7 @@ class RegistrarEnvioDocumentoPorEmitirUseCase {
   final DocumentoPorEmitirRepository _repository;
 
   Future<RegistrarEnvioDocumentoPorEmitirResultado> ejecutar({
+    String? actorUsuarioId,
     required String documentoPorEmitirId,
     required DateTime fechaEnvio,
     List<String> correos = const [],
@@ -51,6 +52,7 @@ class RegistrarEnvioDocumentoPorEmitirUseCase {
 
     try {
       final actualizado = await _repository.registrarEnvio(
+        actorUsuarioId: actorUsuarioId,
         documentoPorEmitirId: documentoPorEmitirId,
         fechaEnvio: fechaEnvio,
         correos: correos,

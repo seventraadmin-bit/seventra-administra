@@ -69,6 +69,17 @@ void main() {
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
 
+    // Las mutaciones de Agenda registran al actor con FK real contra
+    // usuario: la cuenta de la sesion de prueba tiene que existir.
+    await db.into(db.usuario).insert(
+      UsuarioCompanion.insert(
+        id: const Value('usuario-prueba'),
+        nombre: 'Usuario de prueba',
+        nombreUsuario: 'prueba',
+        passwordHash: 'x',
+      ),
+    );
+
     final cliente = await db.into(db.cliente).insertReturning(
           ClienteCompanion.insert(codigo: 'CLI-000001', nombreComercial: 'SPORTIUM'),
         );

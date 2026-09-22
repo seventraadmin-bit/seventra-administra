@@ -158,6 +158,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     String? lineaComercialIdAsignacion,
     int? sueldoMensualAsignacion,
     int? bonoMensualAsignacion,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final empleado = await _db.into(_db.empleado).insertReturning(datos);
@@ -165,6 +166,7 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
         empleadoId: empleado.id,
         tipoEvento: TipoEventoEmpleado.creado,
         estadoNuevo: empleado.estatus,
+        actorUsuarioId: actorUsuarioId,
       );
 
       // Adscripción a Servicio capturada en la misma alta (Etapa 5D) —
@@ -263,7 +265,11 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
       // Nunca debe quedar "Empleado = Baja, Servicio = Todavía asignado"
       // (Resolución explícita de Marlon, Etapa 5D) — se cierra en la
       // misma transacción, con la misma fecha efectiva de la baja.
-      await _asignacionServicioRepository.cerrarPorBajaEmpleado(empleadoId: empleadoId, fecha: fechaBaja);
+      await _asignacionServicioRepository.cerrarPorBajaEmpleado(
+        empleadoId: empleadoId,
+        fecha: fechaBaja,
+        actorUsuarioId: actorUsuarioId,
+      );
 
       // Y tampoco "Empleado = Baja, Línea telefónica = Todavía
       // asignada" (mini-etapa "Cierre automático de asignaciones de

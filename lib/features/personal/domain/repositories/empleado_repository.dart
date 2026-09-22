@@ -84,6 +84,7 @@ abstract interface class EmpleadoRepository {
     String? lineaComercialIdAsignacion,
     int? sueldoMensualAsignacion,
     int? bonoMensualAsignacion,
+    String? actorUsuarioId,
   });
 
   /// `cambios` nunca debe incluir `codigoEmpleado` — inmutable después

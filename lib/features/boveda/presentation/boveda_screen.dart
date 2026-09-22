@@ -15,6 +15,7 @@ import 'boveda_controller.dart';
 import 'boveda_labels.dart';
 import 'widgets/cambiar_secreto_credencial_boveda_dialog.dart';
 import 'widgets/credencial_boveda_historial_dialog.dart';
+import 'widgets/credencial_boveda_detalle_dialog.dart';
 import 'widgets/gestionar_credencial_boveda_dialog.dart';
 
 /// Pantalla de la Bóveda de Accesos del Maestro (Etapa 14D) — pestaña
@@ -51,13 +52,14 @@ class BovedaScreen extends ConsumerWidget {
       case RevelarSecretoCredencialBovedaExitoso(:final secreto):
         await showDialog<void>(
           context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text(credencial.nombre),
-            content: SelectableText(secreto),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: Text(l10n.bovedaBotonCerrar)),
-            ],
-          ),
+          builder:
+              (dialogContext) => AlertDialog(
+                title: Text(credencial.nombre),
+                content: SelectableText(secreto),
+                actions: [
+                  TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: Text(l10n.bovedaBotonCerrar)),
+                ],
+              ),
         );
       case RevelarSecretoCredencialBovedaSinSecreto():
         RisegFeedback.showError(context, l10n.bovedaSecretoNoConfigurado);
@@ -155,7 +157,8 @@ class BovedaScreen extends ConsumerWidget {
                       label: l10n.bovedaCampoTipo,
                       value: state.tipo,
                       items: [
-                        for (final t in TipoAccesoBoveda.values) RisegSelectItem(value: t.name, label: tipoAccesoBovedaLabel(l10n, t.name)),
+                        for (final t in TipoAccesoBoveda.values)
+                          RisegSelectItem(value: t.name, label: tipoAccesoBovedaLabel(l10n, t.name)),
                       ],
                       onChanged: (valor) => notifier.aplicarFiltros(tipo: valor, limpiarTipo: valor == null),
                     ),
@@ -181,6 +184,9 @@ class BovedaScreen extends ConsumerWidget {
             child: RisegTableBase<BovedaCredencialData>(
               loading: state.cargando,
               rows: state.credenciales,
+              // La fila entera abre la ficha: hasta ahora no hacía nada y
+              // todo vivía escondido detrás del menú.
+              onRowTap: (c) => mostrarDetalleCredencialBoveda(context, c.id),
               emptyState: RisegEmptyState(title: l10n.bovedaListaVaciaTitulo, message: l10n.bovedaListaVaciaMensaje),
               columns: [
                 RisegColumn<BovedaCredencialData>(label: l10n.bovedaCampoNombre, cellBuilder: (c) => Text(c.nombre)),
@@ -196,15 +202,16 @@ class BovedaScreen extends ConsumerWidget {
                 RisegColumn<BovedaCredencialData>(
                   label: l10n.bovedaCampoEstatus,
                   width: 110,
-                  cellBuilder: (c) => RisegStatusBadge(
-                    label: c.cicloVidaRegistro == 'activo' ? l10n.bovedaEstatusActivo : l10n.bovedaEstatusBaja,
-                    tone: c.cicloVidaRegistro == 'activo' ? RisegStatusTone.success : RisegStatusTone.neutral,
-                  ),
+                  cellBuilder:
+                      (c) => RisegStatusBadge(
+                        label: c.cicloVidaRegistro == 'activo' ? l10n.bovedaEstatusActivo : l10n.bovedaEstatusBaja,
+                        tone: c.cicloVidaRegistro == 'activo' ? RisegStatusTone.success : RisegStatusTone.neutral,
+                      ),
                 ),
-                RisegColumn<BovedaCredencialData>(
-                  label: '',
-                  width: 56,
-                  cellBuilder: (c) => PopupMenuButton<String>(
+              ],
+              actionsWidth: 56,
+              rowActionsBuilder:
+                  (c) => PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     onSelected: (accion) {
                       switch (accion) {
@@ -224,20 +231,19 @@ class BovedaScreen extends ConsumerWidget {
                           _reactivar(context, ref, c);
                       }
                     },
-                    itemBuilder: (menuContext) => [
-                      PopupMenuItem(value: 'editar', child: Text(l10n.bovedaAccionEditar)),
-                      PopupMenuItem(value: 'cambiarSecreto', child: Text(l10n.bovedaAccionCambiarSecreto)),
-                      PopupMenuItem(value: 'mostrarSecreto', child: Text(l10n.bovedaAccionMostrarSecreto)),
-                      PopupMenuItem(value: 'copiarSecreto', child: Text(l10n.bovedaAccionCopiarSecreto)),
-                      PopupMenuItem(value: 'historial', child: Text(l10n.bovedaAccionHistorial)),
-                      if (c.cicloVidaRegistro == 'activo')
-                        PopupMenuItem(value: 'darDeBaja', child: Text(l10n.bovedaAccionDarDeBaja))
-                      else
-                        PopupMenuItem(value: 'reactivar', child: Text(l10n.bovedaAccionReactivar)),
-                    ],
+                    itemBuilder:
+                        (menuContext) => [
+                          PopupMenuItem(value: 'editar', child: Text(l10n.bovedaAccionEditar)),
+                          PopupMenuItem(value: 'cambiarSecreto', child: Text(l10n.bovedaAccionCambiarSecreto)),
+                          PopupMenuItem(value: 'mostrarSecreto', child: Text(l10n.bovedaAccionMostrarSecreto)),
+                          PopupMenuItem(value: 'copiarSecreto', child: Text(l10n.bovedaAccionCopiarSecreto)),
+                          PopupMenuItem(value: 'historial', child: Text(l10n.bovedaAccionHistorial)),
+                          if (c.cicloVidaRegistro == 'activo')
+                            PopupMenuItem(value: 'darDeBaja', child: Text(l10n.bovedaAccionDarDeBaja))
+                          else
+                            PopupMenuItem(value: 'reactivar', child: Text(l10n.bovedaAccionReactivar)),
+                        ],
                   ),
-                ),
-              ],
             ),
           ),
         ],

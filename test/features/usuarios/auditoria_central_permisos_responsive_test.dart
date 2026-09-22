@@ -216,10 +216,10 @@ void main() {
       );
 
       // El evento está en la lista, con su credencial identificada.
-      expect(find.text('secretoRevelado'), findsOneWidget);
+      expect(find.text('Secreto revelado'), findsOneWidget);
       expect(find.textContaining('Portal SAT'), findsWidgets);
 
-      await tester.tap(find.text('secretoRevelado'));
+      await tester.tap(find.text('Secreto revelado'));
       await tester.pumpAndSettle();
 
       expect(
@@ -227,8 +227,9 @@ void main() {
         findsNothing,
         reason: 'la Bóveda es Maestro-only: auditoria.ver no puede abrirla',
       );
-      // Y el detalle sigue siendo útil: acción, actor y credencial.
-      expect(find.textContaining('secretoRevelado'), findsWidgets);
+      // Y el detalle sigue siendo útil: acción, actor y credencial. La acción
+      // se lee humanizada; el valor técnico ya no se muestra crudo.
+      expect(find.textContaining('Secreto revelado'), findsWidgets);
     });
 
     testWidgets('el Maestro sí puede navegar al origen del evento de Bóveda', (tester) async {
@@ -240,7 +241,7 @@ void main() {
         permisos: const {},
       );
 
-      await tester.tap(find.text('secretoRevelado'));
+      await tester.tap(find.text('Secreto revelado'));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('auditoria_ver_origen')), findsOneWidget);
@@ -254,7 +255,7 @@ void main() {
         esMaestro: false,
         permisos: {'auditoria.ver'},
       );
-      await tester.tap(find.text('correccionIdentidad'));
+      await tester.tap(find.text('Correccion identidad'));
       await tester.pumpAndSettle();
 
       expect(
@@ -272,7 +273,7 @@ void main() {
         esMaestro: false,
         permisos: {'auditoria.ver', 'inventario.ver'},
       );
-      await tester.tap(find.text('correccionIdentidad'));
+      await tester.tap(find.text('Correccion identidad'));
       await tester.pumpAndSettle();
 
       expect(
@@ -290,7 +291,7 @@ void main() {
         esMaestro: true,
         permisos: const {},
       );
-      await tester.tap(find.text('secretoRevelado'));
+      await tester.tap(find.text('Secreto revelado'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('SECRETO-QUE-NO-DEBE-SALIR'), findsNothing);
@@ -307,7 +308,7 @@ void main() {
         esMaestro: true,
         permisos: const {},
       );
-      await tester.tap(find.text('correccionIdentidad'));
+      await tester.tap(find.text('Correccion identidad'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('numeroSerie: SN-MAL-000000000000001 → SN-CORREGIDO-02'), findsOneWidget);
@@ -321,7 +322,7 @@ void main() {
         esMaestro: true,
         permisos: const {},
       );
-      await tester.tap(find.text('secretoRevelado'));
+      await tester.tap(find.text('Secreto revelado'));
       await tester.pumpAndSettle();
 
       expect(find.text('Cambios'), findsNothing);
@@ -369,7 +370,7 @@ void main() {
 
           expect(tester.takeException(), isNull);
           // Las 3 filas están, con nombre de credencial y motivo largos.
-          expect(find.text('correccionIdentidad'), findsOneWidget);
+          expect(find.text('Correccion identidad'), findsOneWidget);
         });
 
         testWidgets('Detalle con cambios JSON largos (${entrada.key}, $tema): cero overflow', (tester) async {
@@ -380,7 +381,7 @@ void main() {
             esMaestro: true,
             permisos: const {},
           );
-          final fila = find.text('corregido');
+          final fila = find.text('Corregido');
           await tester.ensureVisible(fila);
           await tester.pumpAndSettle();
           await tester.tap(fila);

@@ -237,6 +237,7 @@ class CrearEmpleadoUseCase {
       final numeroEmpleado = numeroResultado.when(ok: (n) => n, failure: (f) => throw StateError(f.message));
 
       final empleado = await _repository.crear(
+        actorUsuarioId: actorUsuarioId,
         EmpleadoCompanion.insert(
           numeroEmpleado: numeroEmpleado,
           nombres: nombres.trim(),

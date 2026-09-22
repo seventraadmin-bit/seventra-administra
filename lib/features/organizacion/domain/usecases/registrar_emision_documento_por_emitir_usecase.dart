@@ -48,6 +48,7 @@ class RegistrarEmisionDocumentoPorEmitirUseCase {
   final DocumentoPorEmitirRepository _repository;
 
   Future<RegistrarEmisionDocumentoPorEmitirResultado> ejecutar({
+    String? actorUsuarioId,
     required String documentoPorEmitirId,
     required String folioDocumento,
     String? uuid,
@@ -84,6 +85,7 @@ class RegistrarEmisionDocumentoPorEmitirUseCase {
 
     try {
       final actualizado = await _repository.registrarEmision(
+        actorUsuarioId: actorUsuarioId,
         documentoPorEmitirId: documentoPorEmitirId,
         folioDocumento: folioDocumento.trim(),
         uuid: uuid,

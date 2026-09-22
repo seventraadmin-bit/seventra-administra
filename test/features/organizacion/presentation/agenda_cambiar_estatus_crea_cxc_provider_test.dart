@@ -46,6 +46,17 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+
+    // Las mutaciones de Agenda registran al actor con FK real contra
+    // `usuario`: la cuenta de la sesión de prueba tiene que existir.
+    await db.into(db.usuario).insert(
+      UsuarioCompanion.insert(
+        id: const Value('usuario-maestro'),
+        nombre: 'Maestro de prueba',
+        nombreUsuario: 'maestro',
+        passwordHash: 'x',
+      ),
+    );
     container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),

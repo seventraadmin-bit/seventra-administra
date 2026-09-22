@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/permissions/authorization_service.dart';
 import '../../core/security/credential_cipher.dart';
+import '../../core/security/portapapeles_sensible.dart';
 import '../usuarios/presentation/sesion_controller.dart';
 import '../usuarios/usuarios_providers.dart';
 import 'data/repositories/boveda_credencial_repository_impl.dart';
@@ -22,6 +23,18 @@ import 'domain/usecases/revelar_secreto_credencial_boveda_usecase.dart';
 /// instancias resuelven la misma clave porque `AlmacenClaveSeguraWindows`
 /// usa un nombre de clave fijo, no una por instancia.
 final credentialCipherProvider = Provider<CredentialCipher>((ref) => CredentialCipher());
+
+/// Infraestructura de seguridad, NO estado de negocio.
+///
+/// Vive a nivel de contenedor a proposito: una contrasena copiada debe
+/// retirarse del portapapeles aunque la ficha se haya cerrado hace rato. Es
+/// un Provider simple —sin estado observable, sin notificar a nadie—: la
+/// contrasena pendiente nunca es algo que la interfaz pueda leer.
+final portapapelesSensibleProvider = Provider<PortapapelesSensible>((ref) {
+  final portapapeles = PortapapelesSensible();
+  ref.onDispose(portapapeles.cancelar);
+  return portapapeles;
+});
 
 final bovedaCredencialRepositoryProvider = Provider<BovedaCredencialRepository>((ref) {
   return BovedaCredencialRepositoryImpl(ref.watch(appDatabaseProvider));

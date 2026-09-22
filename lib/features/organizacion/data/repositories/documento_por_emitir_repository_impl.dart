@@ -82,6 +82,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
     required String codigo,
     required DocumentoPorEmitirArmado armado,
     required TipoEventoDocumentoPorEmitir tipoEventoCreacion,
+    String? actorUsuarioId,
   }) {
     return _db.transaction(() async {
       final documento = await _db.into(_db.documentoPorEmitir).insertReturning(
@@ -167,6 +168,7 @@ class DocumentoPorEmitirRepositoryImpl implements DocumentoPorEmitirRepository {
         tipoEvento: tipoEventoCreacion,
         estadoAnterior: null,
         estadoNuevo: documento.estatus,
+        actorUsuarioId: actorUsuarioId,
       );
 
       return documento;

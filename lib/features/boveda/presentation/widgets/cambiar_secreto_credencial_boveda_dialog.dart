@@ -13,7 +13,11 @@ import '../../boveda_providers.dart';
 /// historial de secretos anteriores: sobreescribe el vigente (o lo
 /// limpia si el campo queda vacío — a diferencia de Telefonía, aquí el
 /// secreto es opcional en toda la credencial).
-Future<bool> mostrarDialogoCambiarSecretoCredencialBoveda(BuildContext context, WidgetRef ref, {required String credencialId}) async {
+Future<bool> mostrarDialogoCambiarSecretoCredencialBoveda(
+  BuildContext context,
+  WidgetRef ref, {
+  required String credencialId,
+}) async {
   final l10n = AppLocalizations.of(context)!;
   final cambiar = ref.read(cambiarSecretoCredencialBovedaAutorizadoProvider);
 
@@ -24,10 +28,11 @@ Future<bool> mostrarDialogoCambiarSecretoCredencialBoveda(BuildContext context, 
     title: l10n.bovedaCambiarSecretoDialogoTitulo,
     confirmLabel: l10n.bovedaCambiarSecretoBotonConfirmar,
     cancelLabel: l10n.bovedaGestionarBotonCancelar,
-    contentBuilder: (dialogContext) => SizedBox(
-      width: 380,
-      child: RisegTextField(label: l10n.bovedaCambiarSecretoCampoNuevo, controller: secretoCtrl, obscureText: true),
-    ),
+    contentBuilder:
+        (dialogContext) => SizedBox(
+          width: 380,
+          child: RisegTextField(label: l10n.bovedaCambiarSecretoCampoNuevo, controller: secretoCtrl, obscureText: true),
+        ),
     onConfirm: () async {
       final resultado = await cambiar(id: credencialId, secreto: secretoCtrl.text.isEmpty ? null : secretoCtrl.text);
       if (!context.mounted) return false;
@@ -35,6 +40,9 @@ Future<bool> mostrarDialogoCambiarSecretoCredencialBoveda(BuildContext context, 
         case CambiarSecretoCredencialBovedaExitoso():
           RisegFeedback.showSuccess(context, l10n.bovedaCambiarSecretoExito);
           return true;
+        case CambiarSecretoCredencialBovedaDadaDeBaja():
+          RisegFeedback.showError(context, l10n.bovedaInactivaNoPermiteCambio);
+          return false;
         case CambiarSecretoCredencialBovedaNoExiste():
         case CambiarSecretoCredencialBovedaErrorInesperado():
           RisegFeedback.showError(context, l10n.bovedaErrorInesperado);

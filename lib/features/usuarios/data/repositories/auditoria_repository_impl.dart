@@ -36,78 +36,159 @@ class AuditoriaRepositoryImpl implements AuditoriaRepository {
     // --- Tablas "Evento" propiamente dichas (fechaHora/tipoEvento/observacion/datosRelevantes) ---
 
     final compraEventos = await (_db.select(_db.compraEvento)..where((t) => enRango(t.fechaHora))).get();
+    final etiquetaCompra = await _etiquetasPorId(
+      ids: compraEventos.map((e) => e.compraId),
+      cargar: (ids) async {
+        final filas = await (_db.select(_db.compra)..where((t) => t.id.isIn(ids))).get();
+        return {
+          for (final f in filas)
+            f.id: f.folioCompra,
+        };
+      },
+    );
     eventos.addAll(compraEventos.map((e) => EventoAuditoria(
           fechaHora: e.fechaHora,
           actorUsuarioId: e.actorUsuarioId,
           modulo: 'compras',
           accion: e.tipoEvento,
           registroId: e.compraId,
+          entidadEtiqueta: etiquetaCompra[e.compraId],
           motivo: e.observacion,
           detalleJson: e.datosRelevantes,
         )));
 
     final complementoEventos = await (_db.select(_db.complementoPagoEvento)..where((t) => enRango(t.fechaHora))).get();
+    final etiquetaComplemento = await _etiquetasPorId(
+      ids: complementoEventos.map((e) => e.complementoPagoId),
+      cargar: (ids) async {
+        final filas = await (_db.select(_db.complementoPago)..where((t) => t.id.isIn(ids))).get();
+        return {
+          for (final f in filas)
+            if (f.folioFiscal != null) f.id: f.folioFiscal!,
+        };
+      },
+    );
     eventos.addAll(complementoEventos.map((e) => EventoAuditoria(
           fechaHora: e.fechaHora,
           actorUsuarioId: e.actorUsuarioId,
           modulo: 'finanzas',
           accion: e.tipoEvento,
           registroId: e.complementoPagoId,
+          entidadEtiqueta: etiquetaComplemento[e.complementoPagoId],
           motivo: e.observacion,
           detalleJson: e.datosRelevantes,
         )));
 
     final cuentaPorCobrarEventos = await (_db.select(_db.cuentaPorCobrarEvento)..where((t) => enRango(t.fechaHora))).get();
+    // La Cuenta por cobrar no tiene folio propio: su identificador humano es
+    // el folio del comprobante que la originó, y en un recibo puede no
+    // existir. Cuando falta, la fila conserva el id técnico — nunca se
+    // fabrica una etiqueta.
+    final etiquetaCuentaPorCobrar = await _etiquetasPorId(
+      ids: cuentaPorCobrarEventos.map((e) => e.cuentaPorCobrarId),
+      cargar: (ids) async {
+        final filas = await (_db.select(_db.cuentaPorCobrar)..where((t) => t.id.isIn(ids))).get();
+        return {
+          for (final f in filas)
+            if (f.folioDocumento != null) f.id: f.folioDocumento!,
+        };
+      },
+    );
     eventos.addAll(cuentaPorCobrarEventos.map((e) => EventoAuditoria(
           fechaHora: e.fechaHora,
           actorUsuarioId: e.actorUsuarioId,
           modulo: 'finanzas',
           accion: e.tipoEvento,
           registroId: e.cuentaPorCobrarId,
+          entidadEtiqueta: etiquetaCuentaPorCobrar[e.cuentaPorCobrarId],
           motivo: e.observacion,
           detalleJson: e.datosRelevantes,
         )));
 
     final egresoEventos = await (_db.select(_db.egresoEvento)..where((t) => enRango(t.fechaHora))).get();
+    final etiquetaEgreso = await _etiquetasPorId(
+      ids: egresoEventos.map((e) => e.egresoId),
+      cargar: (ids) async {
+        final filas = await (_db.select(_db.egreso)..where((t) => t.id.isIn(ids))).get();
+        return {
+          for (final f in filas)
+            f.id: f.folioEgreso,
+        };
+      },
+    );
     eventos.addAll(egresoEventos.map((e) => EventoAuditoria(
           fechaHora: e.fechaHora,
           actorUsuarioId: e.actorUsuarioId,
           modulo: 'finanzas',
           accion: e.tipoEvento,
           registroId: e.egresoId,
+          entidadEtiqueta: etiquetaEgreso[e.egresoId],
           motivo: e.observacion,
           detalleJson: e.datosRelevantes,
         )));
 
     final ingresoEventos = await (_db.select(_db.ingresoEvento)..where((t) => enRango(t.fechaHora))).get();
+    final etiquetaIngreso = await _etiquetasPorId(
+      ids: ingresoEventos.map((e) => e.ingresoId),
+      cargar: (ids) async {
+        final filas = await (_db.select(_db.ingreso)..where((t) => t.id.isIn(ids))).get();
+        return {
+          for (final f in filas)
+            f.id: f.folioIngreso,
+        };
+      },
+    );
     eventos.addAll(ingresoEventos.map((e) => EventoAuditoria(
           fechaHora: e.fechaHora,
           actorUsuarioId: e.actorUsuarioId,
           modulo: 'finanzas',
           accion: e.tipoEvento,
           registroId: e.ingresoId,
+          entidadEtiqueta: etiquetaIngreso[e.ingresoId],
           motivo: e.observacion,
           detalleJson: e.datosRelevantes,
         )));
 
     final pagoEventos = await (_db.select(_db.pagoEvento)..where((t) => enRango(t.fechaHora))).get();
+    final etiquetaPago = await _etiquetasPorId(
+      ids: pagoEventos.map((e) => e.pagoId),
+      cargar: (ids) async {
+        final filas = await (_db.select(_db.pago)..where((t) => t.id.isIn(ids))).get();
+        return {
+          for (final f in filas)
+            f.id: f.folioPago,
+        };
+      },
+    );
     eventos.addAll(pagoEventos.map((e) => EventoAuditoria(
           fechaHora: e.fechaHora,
           actorUsuarioId: e.actorUsuarioId,
           modulo: 'finanzas',
           accion: e.tipoEvento,
           registroId: e.pagoId,
+          entidadEtiqueta: etiquetaPago[e.pagoId],
           motivo: e.observacion,
           detalleJson: e.datosRelevantes,
         )));
 
     final nominaEventos = await (_db.select(_db.nominaEvento)..where((t) => enRango(t.fechaHora))).get();
+    final etiquetaNomina = await _etiquetasPorId(
+      ids: nominaEventos.map((e) => e.nominaId),
+      cargar: (ids) async {
+        final filas = await (_db.select(_db.nomina)..where((t) => t.id.isIn(ids))).get();
+        return {
+          for (final f in filas)
+            f.id: f.folio,
+        };
+      },
+    );
     eventos.addAll(nominaEventos.map((e) => EventoAuditoria(
           fechaHora: e.fechaHora,
           actorUsuarioId: e.actorUsuarioId,
           modulo: 'nomina',
           accion: e.tipoEvento,
           registroId: e.nominaEmpleadoId ?? e.nominaId,
+          entidadEtiqueta: etiquetaNomina[e.nominaId],
           motivo: e.observacion,
           detalleJson: e.datosRelevantes,
         )));
@@ -196,12 +277,23 @@ class AuditoriaRepositoryImpl implements AuditoriaRepository {
 
     final documentoPorEmitirEventos =
         await (_db.select(_db.documentoPorEmitirEvento)..where((t) => enRango(t.fechaHora))).get();
+    final etiquetaDocumento = await _etiquetasPorId(
+      ids: documentoPorEmitirEventos.map((e) => e.documentoPorEmitirId),
+      cargar: (ids) async {
+        final filas = await (_db.select(_db.documentoPorEmitir)..where((t) => t.id.isIn(ids))).get();
+        return {
+          for (final f in filas)
+            f.id: f.codigo,
+        };
+      },
+    );
     eventos.addAll(documentoPorEmitirEventos.map((e) => EventoAuditoria(
           fechaHora: e.fechaHora,
           actorUsuarioId: e.actorUsuarioId,
           modulo: 'comercial',
           accion: e.tipoEvento,
           registroId: e.documentoPorEmitirId,
+          entidadEtiqueta: etiquetaDocumento[e.documentoPorEmitirId],
           motivo: e.observacion,
           detalleJson: e.datosRelevantes,
         )));
@@ -218,12 +310,23 @@ class AuditoriaRepositoryImpl implements AuditoriaRepository {
         )));
 
     final usuarioEventos = await (_db.select(_db.usuarioEvento)..where((t) => enRango(t.fechaHora))).get();
+    final etiquetaUsuarioAuditado = await _etiquetasPorId(
+      ids: usuarioEventos.map((e) => e.usuarioId),
+      cargar: (ids) async {
+        final filas = await (_db.select(_db.usuario)..where((t) => t.id.isIn(ids))).get();
+        return {
+          for (final f in filas)
+            f.id: f.nombre,
+        };
+      },
+    );
     eventos.addAll(usuarioEventos.map((e) => EventoAuditoria(
           fechaHora: e.fechaHora,
           actorUsuarioId: e.actorUsuarioId,
           modulo: 'usuarios',
           accion: e.tipoEvento,
           registroId: e.usuarioId,
+          entidadEtiqueta: etiquetaUsuarioAuditado[e.usuarioId],
           motivo: e.observacion,
           detalleJson: e.datosRelevantes,
         )));
@@ -729,12 +832,43 @@ class AuditoriaRepositoryImpl implements AuditoriaRepository {
   /// permisos (ej. `'vehiculos'`) — así el filtro de Módulo de la
   /// pantalla de Auditoría encuentra estos eventos igual que cualquier
   /// otro del mismo dominio.
+  /// Traduce el `tipoEntidad` de una eliminación física al código de módulo
+  /// que usa el resto de la auditoría.
+  ///
+  /// Existe para dos cosas a la vez: que filtrar por Módulo encuentre
+  /// también las eliminaciones físicas de ese dominio, y que la columna no
+  /// enseñe el nombre técnico de la tabla. Cada tipo apunta al MISMO código
+  /// que ya usa su familia de eventos (un Pago borrado cae en `finanzas`,
+  /// igual que `PagoEvento`), para que un filtro no parta en dos la historia
+  /// de la misma entidad.
+  ///
+  /// El `tipoEntidad` completo nunca se pierde: sigue dentro de `accion`
+  /// (`eliminacionFisica:<tipo>`) y se muestra en el detalle.
   String _moduloDeTipoEntidad(String tipoEntidad) {
     return switch (tipoEntidad) {
       'vehiculo' => 'vehiculos',
       'lineaTelefonica' => 'telefonia',
       'articulo' || 'categoriaArticulo' => 'inventario',
       'area' || 'puesto' || 'sucursal' => 'organizacion',
+      'cliente' || 'clientePortal' => 'clientes',
+      'servicio' || 'servicioLineaComercial' => 'servicios',
+      'documentoPorEmitir' => 'comercial',
+      'servicioEventual' => 'serviciosEventuales',
+      'empleado' => 'personal',
+      'nomina' => 'nomina',
+      'compra' => 'compras',
+      'tiempoExtra' => 'tiempoExtra',
+      'descuentoProgramado' => 'descuentos',
+      'deuda' => 'deudas',
+      // `cuenta_financiera` quedó en snake_case cuando el resto es camelCase
+      // (deuda técnica del valor ya persistido): se acepta tal cual, nunca
+      // se reescribe un evento histórico para que case con una convención.
+      'cuenta_financiera' || 'cuentaFinanciera' => 'cuentasFinancieras',
+      'categoriaFinanciera' => 'categoriasFinancieras',
+      'pago' => 'finanzas',
+      'egreso' => 'egresos',
+      // Un tipo nuevo que nadie haya mapeado todavía cae aquí y se ve crudo:
+      // es preferible a esconderlo bajo un módulo que no le corresponde.
       _ => tipoEntidad,
     };
   }

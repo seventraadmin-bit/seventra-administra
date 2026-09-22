@@ -23,6 +23,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/generar_recibo_p
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_emision_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/registrar_envio_documento_por_emitir_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/reemplazar_archivo_documento_por_emitir_usecase.dart';
+import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../organizacion_providers.dart';
@@ -42,6 +43,10 @@ class AgendaController extends _$AgendaController {
     Future.microtask(_cargar);
     return const AgendaState();
   }
+
+  /// Quien pulsó la acción. Viaja explícito hasta el evento: ningún
+  /// repositorio consulta la sesión por su cuenta.
+  String? get _actorUsuarioId => ref.read(sesionControllerProvider)?.usuarioId;
 
   Future<void> _cargar() async {
     state = state.copyWith(cargando: true, errorCarga: null);
@@ -183,6 +188,7 @@ class AgendaController extends _$AgendaController {
       ref.read(authorizationServiceProvider),
       'agendaComercial.crear',
       () => ref.read(generarAgendaUseCaseProvider).ejecutar(
+            actorUsuarioId: _actorUsuarioId,
             rangoInicio: state.rangoInicio,
             rangoFin: state.rangoFin,
             servicioId: servicioId,
@@ -211,6 +217,7 @@ class AgendaController extends _$AgendaController {
       ref.read(authorizationServiceProvider),
       'agendaComercial.crear',
       () => ref.read(crearDocumentoManualUseCaseProvider).ejecutar(
+            actorUsuarioId: _actorUsuarioId,
             clienteId: clienteId,
             servicioIds: servicioIds,
             periodoInicio: periodoInicio,
@@ -239,6 +246,7 @@ class AgendaController extends _$AgendaController {
       ref.read(authorizationServiceProvider),
       'agendaComercial.corregir',
       () => ref.read(cambiarEstatusDocumentoPorEmitirUseCaseProvider).ejecutar(
+            actorUsuarioId: _actorUsuarioId,
             documentoPorEmitirId: documentoPorEmitirId,
             nuevo: nuevo,
             motivo: motivo,
@@ -285,6 +293,7 @@ class AgendaController extends _$AgendaController {
       ref.read(authorizationServiceProvider),
       'agendaComercial.corregir',
       () => ref.read(actualizarAjusteManualDocumentoPorEmitirUseCaseProvider).ejecutar(
+            actorUsuarioId: _actorUsuarioId,
             documentoPorEmitirId: documentoPorEmitirId,
             ajusteManual: ajusteManual,
             motivoAjuste: motivoAjuste,
@@ -334,6 +343,7 @@ class AgendaController extends _$AgendaController {
       ref.read(authorizationServiceProvider),
       'agendaComercial.corregir',
       () => ref.read(registrarEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
+            actorUsuarioId: _actorUsuarioId,
             documentoPorEmitirId: documentoPorEmitirId,
             folioDocumento: folioDocumento,
             uuid: uuid,
@@ -366,6 +376,7 @@ class AgendaController extends _$AgendaController {
       ref.read(authorizationServiceProvider),
       'agendaComercial.corregir',
       () => ref.read(corregirDatosEmisionDocumentoPorEmitirUseCaseProvider).ejecutar(
+            actorUsuarioId: _actorUsuarioId,
             documentoPorEmitirId: documentoPorEmitirId,
             motivo: motivo,
             folioDocumento: folioDocumento,
@@ -392,6 +403,7 @@ class AgendaController extends _$AgendaController {
       ref.read(authorizationServiceProvider),
       'agendaComercial.corregir',
       () => ref.read(registrarEnvioDocumentoPorEmitirUseCaseProvider).ejecutar(
+            actorUsuarioId: _actorUsuarioId,
             documentoPorEmitirId: documentoPorEmitirId,
             fechaEnvio: fechaEnvio,
             correos: correos,

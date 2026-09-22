@@ -58,6 +58,7 @@ class GenerarAgendaUseCase {
   static const _calcularFechas = CalcularFechasCobroUseCase();
 
   Future<GenerarAgendaResultado> ejecutar({
+    String? actorUsuarioId,
     required DateTime rangoInicio,
     required DateTime rangoFin,
     String? servicioId,
@@ -276,6 +277,7 @@ class GenerarAgendaUseCase {
       final codigo = codigoResultado.when(ok: (c) => c, failure: (f) => throw StateError(f.message));
       creados.add(
         await _repository.crearDocumento(
+          actorUsuarioId: actorUsuarioId,
           codigo: codigo,
           armado: armado,
           tipoEventoCreacion: TipoEventoDocumentoPorEmitir.creadoAutomatico,

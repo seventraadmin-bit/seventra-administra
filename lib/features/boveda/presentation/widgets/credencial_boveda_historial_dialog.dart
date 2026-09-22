@@ -48,7 +48,7 @@ Future<void> mostrarDialogoHistorialCredencialBoveda(BuildContext context, Widge
                               style: AppTypography.label,
                             ),
                             Text(
-                              nombrePorId[evento.actorUsuarioId] ?? l10n.usuarioHistorialConfiguracionInicial,
+                              nombrePorId[evento.actorUsuarioId] ?? l10n.auditoriaActorNoRegistrado,
                               style: AppTypography.caption,
                             ),
                             if (evento.observacion != null && evento.observacion!.trim().isNotEmpty)

@@ -81,6 +81,7 @@ class CrearDocumentoManualUseCase {
   static const _calcularFechas = CalcularFechasCobroUseCase();
 
   Future<CrearDocumentoManualResultado> ejecutar({
+    String? actorUsuarioId,
     required String clienteId,
     required List<String> servicioIds,
     required DateTime periodoInicio,
@@ -212,6 +213,7 @@ class CrearDocumentoManualUseCase {
       final codigoResultado = await _generarCodigo.ejecutar('documento_por_emitir');
       final codigo = codigoResultado.when(ok: (c) => c, failure: (f) => throw StateError(f.message));
       final documento = await _repository.crearDocumento(
+        actorUsuarioId: actorUsuarioId,
         codigo: codigo,
         armado: armado,
         tipoEventoCreacion: TipoEventoDocumentoPorEmitir.creadoManual,

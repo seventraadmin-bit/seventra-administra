@@ -58,6 +58,18 @@ void main() {
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
 
+    // Toda mutación de Agenda registra ahora quién la hizo, y el evento
+    // tiene FK real contra `usuario`: la cuenta de la sesión de prueba
+    // tiene que existir, igual que existe siempre en producción.
+    await db.into(db.usuario).insert(
+      UsuarioCompanion.insert(
+        id: const Value('usuario-prueba'),
+        nombre: 'Usuario de prueba',
+        nombreUsuario: 'prueba',
+        passwordHash: 'x',
+      ),
+    );
+
     final generarCodigo = GenerarCodigoUseCase(CodigoSecuenciaService(db));
     final clienteRepo = ClienteRepositoryImpl(db);
     final servicioRepo = ServicioRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
@@ -252,16 +264,6 @@ void main() {
   test('corregir el ajuste histórico actualiza la Agenda en el mismo contenedor, sin navegar', () async {
     await esperarCarga();
     await crearConfiguracionCobroConReglas();
-    // La corrección histórica SÍ registra al actor, así que el usuario de la
-    // sesión tiene que existir de verdad (en producción siempre existe).
-    await db.into(db.usuario).insert(
-      UsuarioCompanion.insert(
-        id: const Value("usuario-prueba"),
-        nombre: "Usuario de prueba",
-        nombreUsuario: "prueba",
-        passwordHash: "x",
-      ),
-    );
     final notifier = container.read(agendaControllerProvider.notifier);
     await notifier.aplicarFiltros(rangoInicio: DateTime(2026, 1, 1), rangoFin: DateTime(2026, 1, 31));
     final creado = await notifier.crearManual(

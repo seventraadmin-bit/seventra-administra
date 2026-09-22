@@ -12,6 +12,17 @@ class CambiarSecretoCredencialBovedaExitoso extends CambiarSecretoCredencialBove
 
 class CambiarSecretoCredencialBovedaNoExiste extends CambiarSecretoCredencialBovedaResultado {}
 
+/// La credencial está dada de baja.
+///
+/// Consultar la contraseña de un acceso retirado es legítimo —se guarda
+/// precisamente para poder recuperarla—, pero fijarle una contraseña NUEVA
+/// no significa nada: ese acceso ya no está en uso. Reactivar primero es
+/// una decisión explícita, y deja su propio rastro en el historial.
+///
+/// La regla vive aquí, en el dominio, no en que la pantalla esconda un
+/// botón: hasta ahora "dada de baja" no impedía absolutamente nada.
+class CambiarSecretoCredencialBovedaDadaDeBaja extends CambiarSecretoCredencialBovedaResultado {}
+
 class CambiarSecretoCredencialBovedaErrorInesperado extends CambiarSecretoCredencialBovedaResultado {
   CambiarSecretoCredencialBovedaErrorInesperado(this.mensaje);
   final String mensaje;
@@ -37,10 +48,21 @@ class CambiarSecretoCredencialBovedaUseCase {
     try {
       final existente = await _repository.obtenerPorId(id);
       if (existente == null) return CambiarSecretoCredencialBovedaNoExiste();
+      if (existente.cicloVidaRegistro != 'activo') {
+        return CambiarSecretoCredencialBovedaDadaDeBaja();
+      }
 
       final secretoCifrado = (secreto != null && secreto.isNotEmpty) ? await _cipher.cifrar(secreto) : null;
-      final actualizado = await _repository.cambiarSecreto(id: id, secretoCifrado: secretoCifrado, fecha: DateTime.now());
-      await _repository.registrarEvento(credencialId: id, tipoEvento: 'secretoCambiado', actorUsuarioId: actorUsuarioId);
+      final actualizado = await _repository.cambiarSecreto(
+        id: id,
+        secretoCifrado: secretoCifrado,
+        fecha: DateTime.now(),
+      );
+      await _repository.registrarEvento(
+        credencialId: id,
+        tipoEvento: 'secretoCambiado',
+        actorUsuarioId: actorUsuarioId,
+      );
       return CambiarSecretoCredencialBovedaExitoso(actualizado);
     } catch (e) {
       return CambiarSecretoCredencialBovedaErrorInesperado(e.toString());

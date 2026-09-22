@@ -1,3 +1,4 @@
+import 'accion_auditoria.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -89,9 +90,14 @@ class AuditoriaScreen extends ConsumerWidget {
     // (los valores de `accion` son heterogéneos entre dominios: tipos
     // de evento, tipos de movimiento, orígenes de kilometraje, etc.).
     if (accion.startsWith('eliminacionFisica:')) {
-      return 'Eliminación física — ${accion.substring('eliminacionFisica:'.length)}';
+      // El tipo de entidad también se humaniza: antes asomaba crudo
+      // ('documentoPorEmitir', 'cuenta_financiera').
+      final tipo = accion.substring('eliminacionFisica:'.length);
+      return 'Eliminación física — ${humanizarAccionAuditoria(tipo)}';
     }
-    return accion;
+    // Ningún identificador técnico llega a la pantalla: lo que ningún
+    // catálogo reconoció se lee como texto, nunca como camelCase.
+    return humanizarAccionAuditoria(accion);
   }
 
   /// Igual que [_accionLabel] pero con acceso a l10n — necesario para
@@ -127,6 +133,10 @@ class AuditoriaScreen extends ConsumerWidget {
           _ => motivo,
         },
       );
+    }
+    if (modulo == 'comercial') {
+      final comercial = accionComercialLabel(accion);
+      if (comercial != null) return comercial;
     }
     if (accion == 'correccionPago:positivo') return l10n.auditoriaAccionCorreccionPagoPositivo;
     if (accion == 'correccionPago:negativo') return l10n.auditoriaAccionCorreccionPagoNegativo;
@@ -164,7 +174,7 @@ class AuditoriaScreen extends ConsumerWidget {
               children: [
                 Text('${l10n.auditoriaColumnaFecha}: ${_formatoFechaHora.format(evento.fechaHora)}'),
                 const SizedBox(height: AppSpacing.xs),
-                Text('${l10n.auditoriaColumnaUsuario}: ${nombreUsuario ?? l10n.usuarioHistorialConfiguracionInicial}'),
+                Text('${l10n.auditoriaColumnaUsuario}: ${nombreUsuario ?? l10n.auditoriaActorNoRegistrado}'),
                 const SizedBox(height: AppSpacing.xs),
                 Text('${l10n.auditoriaColumnaModulo}: ${moduloPermisoLabel(l10n, evento.modulo)}'),
                 const SizedBox(height: AppSpacing.xs),
@@ -338,7 +348,7 @@ class AuditoriaScreen extends ConsumerWidget {
                 ),
                 RisegColumn<EventoAuditoria>(
                   label: l10n.auditoriaColumnaUsuario,
-                  cellBuilder: (e) => Text(state.nombreUsuario(e.actorUsuarioId) ?? l10n.usuarioHistorialConfiguracionInicial),
+                  cellBuilder: (e) => Text(state.nombreUsuario(e.actorUsuarioId) ?? l10n.auditoriaActorNoRegistrado),
                 ),
                 RisegColumn<EventoAuditoria>(
                   label: l10n.auditoriaColumnaModulo,

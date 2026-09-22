@@ -70,6 +70,7 @@ class ActualizarAjusteManualDocumentoPorEmitirUseCase {
   final DocumentoPorEmitirRepository _repository;
 
   Future<ActualizarAjusteManualDocumentoPorEmitirResultado> ejecutar({
+    String? actorUsuarioId,
     required String documentoPorEmitirId,
     int? ajusteManual,
     String? motivoAjuste,
@@ -98,6 +99,7 @@ class ActualizarAjusteManualDocumentoPorEmitirUseCase {
 
     try {
       final actualizado = await _repository.actualizarAjusteManual(
+        actorUsuarioId: actorUsuarioId,
         documentoPorEmitirId: documentoPorEmitirId,
         ajusteManual: ajuste == 0 ? null : ajuste,
         motivoAjuste: ajuste == 0 ? null : motivoLimpio,

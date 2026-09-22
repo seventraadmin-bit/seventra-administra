@@ -71,7 +71,10 @@ class CrearPrimerMaestroUseCase {
         esMaestro: true,
         // Sin actorUsuarioId: es el único evento del sistema sin actor —
         // todavía no existe ninguna sesión. La UI lo muestra como
-        // "Configuración inicial", nunca como un actor `null` crudo.
+        // "Actor no registrado": no existe una marca en el evento que
+        // permita demostrar que ESTE nulo es el bootstrap y no un actor
+        // perdido, y afirmarlo por el solo hecho de ser nulo fue justo lo
+        // que ocultó durante meses el hueco de Comercial.
       );
       return CrearPrimerMaestroExitoso(usuario);
     } catch (e) {

@@ -43,6 +43,7 @@ class CambiarEstatusDocumentoPorEmitirUseCase {
   final DocumentoPorEmitirRepository _repository;
 
   Future<CambiarEstatusDocumentoPorEmitirResultado> ejecutar({
+    String? actorUsuarioId,
     required String documentoPorEmitirId,
     required EstatusDocumentoPorEmitir nuevo,
     String? motivo,
@@ -109,6 +110,7 @@ class CambiarEstatusDocumentoPorEmitirUseCase {
 
     try {
       final actualizado = await _repository.cambiarEstatus(
+        actorUsuarioId: actorUsuarioId,
         documentoPorEmitirId: documentoPorEmitirId,
         nuevoEstatus: nuevo.name,
         motivo: requiereMotivo ? motivoLimpio : null,

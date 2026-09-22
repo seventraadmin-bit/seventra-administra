@@ -98,13 +98,25 @@ abstract interface class AsignacionServicioRepository {
   /// `bajaEmpleado` — compuesto desde `EmpleadoRepositoryImpl.
   /// registrarBajaLaboral`, dentro de la misma transacción. No-op si no
   /// hay asignación vigente.
-  Future<void> cerrarPorBajaEmpleado({required String empleadoId, required DateTime fecha});
+  /// [actorUsuarioId] es quien dio la baja: el cierre es automático en su
+  /// mecánica, pero no es anónimo — lo desencadenó una persona, y el
+  /// historial del Empleado debe poder decir quién.
+  Future<void> cerrarPorBajaEmpleado({
+    required String empleadoId,
+    required DateTime fecha,
+    String? actorUsuarioId,
+  });
 
   /// Cierra **todas** las asignaciones vigentes de un Servicio (puede
   /// haber varios Empleados) con motivo `servicioTerminado` — compuesto
   /// desde `ServicioRepositoryImpl.cambiarEstatus`, dentro de la misma
   /// transacción. No-op si no hay ninguna.
-  Future<void> cerrarTodasPorServicioTerminado({required String servicioId, required DateTime fecha});
+  /// [actorUsuarioId] es quien terminó el Servicio, por el mismo motivo.
+  Future<void> cerrarTodasPorServicioTerminado({
+    required String servicioId,
+    required DateTime fecha,
+    String? actorUsuarioId,
+  });
 
   /// Registra una nueva vigencia de sueldo/bono sobre una asignación ya
   /// existente (Etapa 6B) — reemplaza la vigente actual (si la fecha

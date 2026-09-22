@@ -348,7 +348,11 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
   }
 
   @override
-  Future<void> cerrarPorBajaEmpleado({required String empleadoId, required DateTime fecha}) {
+  Future<void> cerrarPorBajaEmpleado({
+    required String empleadoId,
+    required DateTime fecha,
+    String? actorUsuarioId,
+  }) {
     return _db.transaction(() async {
       final activa = await _buscarActivaPorEmpleado(empleadoId);
       if (activa == null) return;
@@ -365,6 +369,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
         empleadoId: empleadoId,
         tipoEvento: TipoEventoEmpleado.retiroServicio,
         observacion: 'Cierre automático por Baja laboral.',
+        actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'servicioId': activa.servicioId, 'motivo': MotivoTerminoAsignacion.bajaEmpleado.name},
       );
       await _reconciliarVacante(
@@ -378,7 +383,11 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
   }
 
   @override
-  Future<void> cerrarTodasPorServicioTerminado({required String servicioId, required DateTime fecha}) {
+  Future<void> cerrarTodasPorServicioTerminado({
+    required String servicioId,
+    required DateTime fecha,
+    String? actorUsuarioId,
+  }) {
     return _db.transaction(() async {
       final activas = await (_db.select(_db.asignacionServicio)
             ..where((t) => t.servicioId.equals(servicioId) & t.fechaTermino.isNull()))
@@ -397,6 +406,7 @@ class AsignacionServicioRepositoryImpl implements AsignacionServicioRepository {
           empleadoId: asignacion.empleadoId,
           tipoEvento: TipoEventoEmpleado.retiroServicio,
           observacion: 'Cierre automático por término del Servicio.',
+          actorUsuarioId: actorUsuarioId,
           datosRelevantes: {'servicioId': servicioId, 'motivo': MotivoTerminoAsignacion.servicioTerminado.name},
         );
       }

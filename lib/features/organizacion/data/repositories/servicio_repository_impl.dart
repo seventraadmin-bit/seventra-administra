@@ -192,7 +192,11 @@ class ServicioRepositoryImpl implements ServicioRepository {
       // — solo `terminado` las cierra, y solo entonces, en la misma
       // transacción, con la fecha efectiva de término.
       if (nuevo == EstatusServicio.terminado && fechaTermino != null) {
-        await _asignacionServicioRepository.cerrarTodasPorServicioTerminado(servicioId: id, fecha: fechaTermino);
+        await _asignacionServicioRepository.cerrarTodasPorServicioTerminado(
+          servicioId: id,
+          fecha: fechaTermino,
+          actorUsuarioId: actorUsuarioId,
+        );
       }
 
       return actualizado;

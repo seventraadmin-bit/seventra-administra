@@ -102,7 +102,7 @@ class UsuarioEvento extends Table {
 
   // Nulo solo en el evento de bootstrap (creación del primer Maestro,
   // cuando todavía no existe ninguna sesión) — la UI lo muestra como
-  // "Configuración inicial", nunca como un actor `null` crudo.
+  // "Actor no registrado", nunca como un actor `null` crudo: sin una marca
   TextColumn get actorUsuarioId => text().nullable().references(Usuario, #id, onDelete: KeyAction.setNull)();
 
   DateTimeColumn get fechaHora => dateTime()();

@@ -75,7 +75,7 @@ Widget? _diffPermisos(AppLocalizations l10n, UsuarioEventoData evento) {
 /// mismo molde que `mostrarDialogoHistorialDocumentoVehiculo`. El actor
 /// se resuelve por nombre a partir de la lista de Usuarios ya cargada
 /// en `UsuariosState` (bulk-fetch-then-loop, sin N+1) — un evento sin
-/// `actorUsuarioId` se muestra como "Configuración inicial" (el único
+/// `actorUsuarioId` se muestra como "Actor no registrado" (el único
 /// caso posible: el bootstrap del primer Maestro).
 Future<void> mostrarDialogoHistorialUsuario(BuildContext context, WidgetRef ref, UsuarioData usuario) async {
   final l10n = AppLocalizations.of(context)!;
@@ -115,8 +115,8 @@ Future<void> mostrarDialogoHistorialUsuario(BuildContext context, WidgetRef ref,
                             Text(
                               l10n.usuarioHistorialPor(
                                 evento.actorUsuarioId == null
-                                    ? l10n.usuarioHistorialConfiguracionInicial
-                                    : usuariosPorId[evento.actorUsuarioId] ?? l10n.usuarioHistorialConfiguracionInicial,
+                                    ? l10n.auditoriaActorNoRegistrado
+                                    : usuariosPorId[evento.actorUsuarioId] ?? l10n.auditoriaActorNoRegistrado,
                               ),
                               style: AppTypography.caption.copyWith(color: context.colors.textMuted),
                             ),
