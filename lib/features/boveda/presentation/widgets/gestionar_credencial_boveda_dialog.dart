@@ -65,7 +65,18 @@ Future<bool> mostrarDialogoGestionarCredencialBoveda(BuildContext context, Widge
               const SizedBox(height: AppSpacing.md),
               RisegTextField(label: l10n.bovedaCampoUrl, controller: urlCtrl),
               const SizedBox(height: AppSpacing.md),
-              RisegTextField(label: l10n.bovedaCampoObservaciones, controller: observacionesCtrl),
+              // Para qué sirve este acceso: es lo que permite que otra persona
+              // autorizada entienda la credencial sin preguntarle a nadie.
+              // Arranca con cuatro líneas y crece hasta ocho antes de
+              // desplazarse por dentro, para no empujar los botones fuera
+              // del formulario.
+              RisegTextField(
+                key: const Key('boveda_campo_descripcion'),
+                label: l10n.bovedaCampoObservaciones,
+                controller: observacionesCtrl,
+                minLines: 4,
+                maxLines: 8,
+              ),
               if (errorGeneral != null) ...[
                 const SizedBox(height: AppSpacing.xs),
                 Text(errorGeneral!, style: AppTypography.caption.copyWith(color: Theme.of(dialogContext).colorScheme.error)),

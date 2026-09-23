@@ -309,7 +309,7 @@ class _CredencialBovedaDetalleDialogState extends ConsumerState<CredencialBoveda
             RisegSectionHeader(title: l10n.bovedaSeccionInformacion),
             const SizedBox(height: AppSpacing.xs),
             if ((credencial.observaciones ?? '').isNotEmpty)
-              CampoConsulta(label: l10n.bovedaCampoObservaciones, value: credencial.observaciones!),
+              _Descripcion(etiqueta: l10n.bovedaCampoObservaciones, texto: credencial.observaciones!),
             if (credencial.fechaActualizacionSecreto != null) ...[
               const SizedBox(height: AppSpacing.xs),
               CampoConsulta(
@@ -482,6 +482,41 @@ class _Marco extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "Descripción y uso": el texto que explica para qué sirve un acceso.
+///
+/// No usa `CampoConsulta` a propósito — ese componente recorta a una línea
+/// con puntos suspensivos, que es correcto para una fecha o un tipo y
+/// destructivo para lo único que permite que otra persona entienda la
+/// credencial sin preguntar. Aquí el texto se muestra COMPLETO: envuelve,
+/// crece en vertical y respeta los saltos de línea; si la ficha se alarga,
+/// la recorre el scroll del diálogo.
+class _Descripcion extends StatelessWidget {
+  const _Descripcion({required this.etiqueta, required this.texto});
+
+  final String etiqueta;
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(etiqueta, style: AppTypography.label.copyWith(color: colors.textMuted)),
+        const SizedBox(height: AppSpacing.xxs),
+        // Seleccionable: parte de su utilidad es poder copiar una
+        // instrucción concreta. Sin maxLines y sin overflow.
+        SelectableText(
+          key: const Key('boveda_detalle_descripcion'),
+          texto,
+          style: AppTypography.body.copyWith(color: colors.textPrimary, height: 1.4),
+        ),
+      ],
     );
   }
 }

@@ -28,6 +28,8 @@ class RisegTextField extends StatelessWidget {
     this.onSubmitted,
     this.focusNode,
     this.autofocus = false,
+    this.minLines,
+    this.maxLines = 1,
     super.key,
   });
 
@@ -60,6 +62,17 @@ class RisegTextField extends StatelessWidget {
   final FocusNode? focusNode;
   final bool autofocus;
 
+  /// Altura inicial en líneas — sólo tiene efecto junto con un
+  /// [maxLines] mayor que uno.
+  final int? minLines;
+
+  /// `1` por defecto: TODOS los campos del proyecto eran de una línea y
+  /// siguen siéndolo. Se sube sólo donde el dato es redacción y no un
+  /// valor corto — el primer caso real es "Descripción y uso" de la
+  /// Bóveda, que explica para qué sirve un acceso y tiene que poder
+  /// escribirse en varios párrafos. `null` significa sin límite.
+  final int? maxLines;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -80,6 +93,8 @@ class RisegTextField extends StatelessWidget {
           onFieldSubmitted: onSubmitted,
           focusNode: focusNode,
           autofocus: autofocus,
+          minLines: minLines,
+          maxLines: maxLines,
           style: AppTypography.body.copyWith(color: colors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
