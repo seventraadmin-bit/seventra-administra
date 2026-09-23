@@ -20,6 +20,7 @@ import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -49,6 +50,10 @@ class _SesionRrhhDePrueba extends SesionController {
 
 Future<AppDatabase> _dbConVehiculoVencido() async {
   final db = AppDatabase(NativeDatabase.memory());
+  // Etapa 3B: autorizar revalida contra la base, así que el
+  // escenario de la sesión tiene que estar persistido.
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-rrhh', nombre: 'RRHH de prueba', nombreUsuario: 'rrhh', esMaestro: false, permisos: {'personal.ver'}, ));
   final vehiculo = await db.into(db.vehiculo).insertReturning(
         VehiculoCompanion.insert(
           codigo: 'VH-001',
@@ -143,6 +148,10 @@ void main() {
   group('Centro de notificaciones — sin datos pendientes', () {
     testWidgets('sin badge y el panel muestra el mensaje de vacío', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
+      // Etapa 3B: autorizar revalida contra la base, así que el
+      // escenario de la sesión tiene que estar persistido.
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-rrhh', nombre: 'RRHH de prueba', nombreUsuario: 'rrhh', esMaestro: false, permisos: {'personal.ver'}, ));
       await _pumpApp(tester, db: db);
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 

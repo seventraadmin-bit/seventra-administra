@@ -30,6 +30,7 @@ import 'package:riseg_one/features/usuarios/domain/usecases/corregir_usuario_use
 import 'package:riseg_one/features/usuarios/domain/usecases/crear_usuario_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/login_usecase.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 import 'package:riseg_one/features/usuarios/presentation/usuarios_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
@@ -43,6 +44,12 @@ class _SesionDePrueba extends SesionController {
   @override
   SesionUsuario? build() => _inicial;
 
+  /// Cambia de titular sin pasar por el login — sirve para comprobar
+  /// que la sesión entrante no hereda nada de la anterior.
+  ///
+  /// Etapa 3B: la cuenta entrante también tiene que existir en la base,
+  /// porque la autorización se revalida contra ella. Se siembra desde
+  /// la propia prueba, justo antes de llamar aquí.
   void entrarComo(SesionUsuario sesion) => state = sesion;
 }
 
@@ -114,7 +121,13 @@ void main() {
 
   tearDown(() => db.close());
 
-  ProviderContainer contenedor({SesionUsuario? sesion = _sesionMaestro}) {
+  /// Etapa 3B: la autorización se revalida contra la base, así que el
+  /// escenario de CADA paso se persiste aquí. Este archivo recorre a la
+  /// misma persona cambiando de permisos paso a paso, así que sembrar
+  /// una sola vez en el `setUp` mezclaría escenarios que la prueba
+  /// quiere separar.
+  Future<ProviderContainer> contenedor({SesionUsuario? sesion = _sesionMaestro}) async {
+    if (sesion != null) await sembrarSesionEnBase(db, sesion);
     final container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
@@ -127,7 +140,7 @@ void main() {
 
   group('§19 — CASO INTEGRAL JAVIER, de empleado a cuenta y hasta su baja', () {
     test('PASO 1: JAVIER es un empleado activo SIN cuenta, así que es vinculable', () async {
-      final c = contenedor();
+      final c = await contenedor();
       final vinculables = await c.read(usuariosControllerProvider.notifier).empleadosVinculables();
 
       expect(vinculables.map((e) => e.id), contains(empleadoJavierId));
@@ -135,7 +148,7 @@ void main() {
     });
 
     test('PASO 2: el alta crea cuenta + permisos + evento en UNA operación, con la plantilla de RH', () async {
-      final c = contenedor();
+      final c = await contenedor();
       final plantillaRh = codigosDePlantilla('recursosHumanos');
 
       final resultado = await c.read(usuariosControllerProvider.notifier).crear(
@@ -173,7 +186,7 @@ void main() {
     });
 
     test('PASO 3: ya con cuenta, JAVIER deja de aparecer como vinculable', () async {
-      final c = contenedor();
+      final c = await contenedor();
       await c.read(usuariosControllerProvider.notifier).crear(
             nombre: 'JAVIER RIOS MENDOZA',
             nombreUsuario: 'javier.rios',
@@ -192,7 +205,7 @@ void main() {
     });
 
     test('PASO 4: su primer login trae la obligación de cambio; tras cambiarla, opera', () async {
-      final c = contenedor();
+      final c = await contenedor();
       await c.read(usuariosControllerProvider.notifier).crear(
             nombre: 'JAVIER RIOS MENDOZA',
             nombreUsuario: 'javier.rios',
@@ -213,7 +226,7 @@ void main() {
 
       // Cambia su contraseña: la vieja deja de servir, la nueva sirve, y
       // la obligación se apaga.
-      final cJavier = contenedor(sesion: sesionJavier);
+      final cJavier = await contenedor(sesion: sesionJavier);
       await cJavier.read(cambiarMiContrasenaProvider)('miContrasenaPropia9');
 
       expect(
@@ -229,8 +242,8 @@ void main() {
       expect((segundo as LoginExitoso).sesion.debeCambiarPassword, isFalse);
     });
 
-    test('PASO 5: con la plantilla de RH entra a Personal y Nómina, nunca a Finanzas ni Configuración', () {
-      final c = contenedor(
+    test('PASO 5: con la plantilla de RH entra a Personal y Nómina, nunca a Finanzas ni Configuración', () async {
+      final c = await contenedor(
         sesion: SesionUsuario(
           usuarioId: 'javier',
           nombre: 'JAVIER RIOS MENDOZA',
@@ -262,7 +275,7 @@ void main() {
     });
 
     test('PASO 6: JAVIER con usuarios.administrar NO puede elevarse a Maestro', () async {
-      final c = contenedor();
+      final c = await contenedor();
       await c.read(usuariosControllerProvider.notifier).crear(
             nombre: 'JAVIER RIOS MENDOZA',
             nombreUsuario: 'javier.rios',
@@ -274,7 +287,7 @@ void main() {
 
       // Ahora actúa ÉL, con el permiso más fuerte que un Normal puede
       // tener sobre cuentas.
-      final cJavier = contenedor(
+      final cJavier = await contenedor(
         sesion: SesionUsuario(
           usuarioId: javierId,
           nombre: 'JAVIER RIOS MENDOZA',
@@ -323,7 +336,7 @@ void main() {
     });
 
     test('PASO 7: una baja laboral NO borra ni desactiva su cuenta por su cuenta', () async {
-      final c = contenedor();
+      final c = await contenedor();
       await c.read(usuariosControllerProvider.notifier).crear(
             nombre: 'JAVIER RIOS MENDOZA',
             nombreUsuario: 'javier.rios',
@@ -342,7 +355,7 @@ void main() {
     });
 
     test('PASO 8: desactivar la cuenta SÍ invalida futuras autenticaciones', () async {
-      final c = contenedor();
+      final c = await contenedor();
       await c.read(usuariosControllerProvider.notifier).crear(
             nombre: 'JAVIER RIOS MENDOZA',
             nombreUsuario: 'javier.rios',
@@ -382,6 +395,11 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
+      // Etapa 3B: estas pruebas montan la aplicación con una sesión
+      // distinta a la del contenedor anterior, así que la cuenta de
+      // ESTA sesión se persiste aquí, inmediatamente antes de montar.
+      await sembrarSesionEnBase(db, sesion);
+
       final router = createAppRouter();
       await tester.pumpWidget(
         ProviderScope(
@@ -404,7 +422,7 @@ void main() {
     testWidgets('tras cerrar sesión, la sesión siguiente NO conserva los permisos de la anterior', (tester) async {
       final router = await montar(
         tester,
-        contenedor(),
+        await contenedor(),
         SesionUsuario(
           usuarioId: 'tesorero',
           nombre: 'TESORERA',
@@ -442,15 +460,18 @@ void main() {
         reason: 'sin sesión no se construye ninguna pantalla del sistema',
       );
 
-      notifier.entrarComo(
-        SesionUsuario(
-          usuarioId: 'javier',
-          nombre: 'JAVIER RIOS MENDOZA',
-          nombreUsuario: 'javier.rios',
-          esMaestro: false,
-          permisos: codigosDePlantilla('recursosHumanos'),
-        ),
+      final javierRh = SesionUsuario(
+        usuarioId: 'javier',
+        nombre: 'JAVIER RIOS MENDOZA',
+        nombreUsuario: 'javier.rios',
+        esMaestro: false,
+        permisos: codigosDePlantilla('recursosHumanos'),
       );
+      // La cuenta entrante también vive en la base: la autorización se
+      // revalida contra ella, y lo que se comprueba es que NO hereda los
+      // permisos del titular anterior, no que no exista.
+      await sembrarSesionEnBase(db, javierRh);
+      notifier.entrarComo(javierRh);
       await tester.pumpAndSettle();
 
       router.go('/finanzas');
@@ -468,22 +489,22 @@ void main() {
     });
 
     testWidgets('un Maestro que cede la sesión a un Normal pierde el acceso total de inmediato', (tester) async {
-      final router = await montar(tester, contenedor(), _sesionMaestro);
+      final router = await montar(tester, await contenedor(), _sesionMaestro);
 
       router.go('/configuracion/boveda');
       await tester.pumpAndSettle();
       expect(router.routerDelegate.currentConfiguration.uri.path, '/configuracion/boveda');
 
       final contenedorVivo = ProviderScope.containerOf(tester.element(find.byType(MaterialApp)));
-      (contenedorVivo.read(sesionControllerProvider.notifier) as _SesionDePrueba).entrarComo(
-        const SesionUsuario(
-          usuarioId: 'javier',
-          nombre: 'JAVIER RIOS MENDOZA',
-          nombreUsuario: 'javier.rios',
-          esMaestro: false,
-          permisos: {'usuarios.administrar'},
-        ),
+      const javierNormal = SesionUsuario(
+        usuarioId: 'javier',
+        nombre: 'JAVIER RIOS MENDOZA',
+        nombreUsuario: 'javier.rios',
+        esMaestro: false,
+        permisos: {'usuarios.administrar'},
       );
+      await sembrarSesionEnBase(db, javierNormal);
+      (contenedorVivo.read(sesionControllerProvider.notifier) as _SesionDePrueba).entrarComo(javierNormal);
       await tester.pumpAndSettle();
 
       router.go('/configuracion/boveda');

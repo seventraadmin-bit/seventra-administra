@@ -13,6 +13,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:riseg_one/features/finanzas/data/repositories/cuenta_financiera_repository_impl.dart';
+import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
@@ -104,7 +105,7 @@ void main() {
       servicioRepo,
       ServicioComercialRepositoryImpl(db),
     );
-    registrarBaja = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator, AsignacionRepositoryImpl(db), AsignacionVehiculoRepositoryImpl(db));
+    registrarBaja = RegistrarBajaLaboralUseCase(empleadoRepo, empleadoValidator, AsignacionRepositoryImpl(db), AsignacionVehiculoRepositoryImpl(db), usuarioRepository: UsuarioRepositoryImpl(db));
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, empleadoValidator);
     crearServicio = CrearServicioUseCase(servicioRepo, generarCodigo, servicioValidator);
     cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);

@@ -34,6 +34,7 @@ import 'package:riseg_one/features/reportes/domain/usecases/clasificar_egresos_p
 import 'package:riseg_one/features/reportes/reportes_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -203,6 +204,9 @@ void main() {
         appDatabaseProvider.overrideWithValue(db),
         sesionControllerProvider.overrideWith(_SesionMaestroDePrueba.new),
       ]);
+      // Etapa 3B: autorizar revalida contra la base, así que la
+      // sesión de esta prueba tiene que corresponder a una cuenta real.
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
     });
 
     tearDown(() {

@@ -48,6 +48,7 @@ import 'package:riseg_one/features/vehiculos/domain/usecases/adjuntar_archivo_do
 import 'package:riseg_one/features/vehiculos/domain/usecases/crear_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/registrar_documento_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/vehiculos_providers.dart';
+import '../support/sesion_en_base.dart';
 
 class _SesionSinPermisos extends SesionController {
   @override
@@ -120,12 +121,19 @@ void main() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  ProviderContainer containerCon(SesionController Function() sesion) {
-    return ProviderContainer(overrides: [
+  Future<ProviderContainer> containerCon(SesionController Function() sesion) async {
+    final container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(sesion),
       attachmentStorageProvider.overrideWithValue(AttachmentStorage(tempDir.path)),
     ]);
+    // Etapa 3B: la autorización se revalida contra la base. Se
+    // persiste la sesión que ESTA prueba va a usar, leída del
+    // propio contenedor: el escenario sembrado y el inyectado no
+    // pueden divergir, y una prueba negativa sigue sin permisos.
+    final sesionDeLaPrueba = container.read(sesionControllerProvider);
+    if (sesionDeLaPrueba != null) await sembrarSesionEnBase(db, sesionDeLaPrueba);
+    return container;
   }
 
   group('Compras — ComprasController.adjuntarComprobante (compras.corregir)', () {
@@ -145,7 +153,7 @@ void main() {
     });
 
     test('un usuario sin compras.corregir no puede adjuntar el comprobante', () async {
-      final container = containerCon(_SesionSinPermisos.new);
+      final container = await containerCon(_SesionSinPermisos.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/factura.pdf';
@@ -167,7 +175,7 @@ void main() {
     });
 
     test('un usuario con compras.corregir sí puede adjuntar el comprobante', () async {
-      final container = containerCon(_SesionComprasCorregir.new);
+      final container = await containerCon(_SesionComprasCorregir.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/factura.pdf';
@@ -226,7 +234,7 @@ void main() {
     });
 
     test('un usuario sin nomina.corregirPago no puede adjuntar el comprobante', () async {
-      final container = containerCon(_SesionSinPermisos.new);
+      final container = await containerCon(_SesionSinPermisos.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/comprobante_pago.pdf';
@@ -248,7 +256,7 @@ void main() {
     });
 
     test('un usuario con nomina.corregirPago sí puede adjuntar el comprobante', () async {
-      final container = containerCon(_SesionNominaCorregirPago.new);
+      final container = await containerCon(_SesionNominaCorregirPago.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/comprobante_pago.pdf';
@@ -282,7 +290,7 @@ void main() {
     });
 
     test('un usuario sin vehiculos.operar no puede adjuntar el archivo del documento', () async {
-      final container = containerCon(_SesionSinPermisos.new);
+      final container = await containerCon(_SesionSinPermisos.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/poliza.pdf';
@@ -304,7 +312,7 @@ void main() {
     });
 
     test('un usuario con vehiculos.operar sí puede adjuntar el archivo del documento', () async {
-      final container = containerCon(_SesionVehiculosOperar.new);
+      final container = await containerCon(_SesionVehiculosOperar.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/poliza.pdf';

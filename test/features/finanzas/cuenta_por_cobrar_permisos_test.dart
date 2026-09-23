@@ -54,6 +54,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/servicio_validat
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 const _mensajePermiso = 'No tiene permiso para realizar esta acción.';
 
@@ -73,7 +74,12 @@ SesionUsuario _sesionCon(Set<String> permisos, {bool esMaestro = false}) => Sesi
       permisos: permisos,
     );
 
-ProviderContainer _container(AppDatabase db, SesionUsuario sesion) {
+Future<ProviderContainer> _container(AppDatabase db, SesionUsuario sesion) async {
+  // Etapa 3B: la autorización se revalida contra la base, así que
+  // el escenario de ESTA prueba se persiste aquí — no en el `setUp`,
+  // porque cada prueba declara su propio conjunto de permisos y
+  // sembrar uno solo volvería positivas las pruebas negativas.
+  await sembrarSesionEnBase(db, sesion);
   final container = ProviderContainer(
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
@@ -224,7 +230,7 @@ void main() {
 
   test('cuentaPorCobrar.corregir sin las otras: SÍ corrige, NO reprograma, NO cancela', () async {
     final cuenta = await crearCuentaDePrueba('Cliente Solo Corregir');
-    final container = _container(db, _sesionCon({'cuentaPorCobrar.corregir'}));
+    final container = await _container(db, _sesionCon({'cuentaPorCobrar.corregir'}));
     final controller = container.read(cuentasPorCobrarControllerProvider.notifier);
 
     final corregido = await controller.corregir(
@@ -249,7 +255,7 @@ void main() {
 
   test('cuentaPorCobrar.reprogramarCobro sin las otras: SÍ reprograma y quita reprogramación, NO corrige, NO cancela', () async {
     final cuenta = await crearCuentaDePrueba('Cliente Solo Reprogramar');
-    final container = _container(db, _sesionCon({'cuentaPorCobrar.reprogramarCobro'}));
+    final container = await _container(db, _sesionCon({'cuentaPorCobrar.reprogramarCobro'}));
     final controller = container.read(cuentasPorCobrarControllerProvider.notifier);
 
     final reprogramado = await controller.reprogramarCobro(
@@ -277,7 +283,7 @@ void main() {
 
   test('cuentaPorCobrar.cancelar sin las otras: SÍ cancela, NO corrige, NO reprograma', () async {
     final cuenta = await crearCuentaDePrueba('Cliente Solo Cancelar');
-    final container = _container(db, _sesionCon({'cuentaPorCobrar.cancelar'}));
+    final container = await _container(db, _sesionCon({'cuentaPorCobrar.cancelar'}));
     final controller = container.read(cuentasPorCobrarControllerProvider.notifier);
 
     final corregido = await controller.corregir(
@@ -302,7 +308,7 @@ void main() {
 
   test('Maestro: acceso completo a corregir/reprogramar/quitar reprogramación/cancelar sin ninguna fila de PermisoUsuario', () async {
     final cuenta = await crearCuentaDePrueba('Cliente Maestro');
-    final container = _container(db, _sesionCon({}, esMaestro: true));
+    final container = await _container(db, _sesionCon({}, esMaestro: true));
     final controller = container.read(cuentasPorCobrarControllerProvider.notifier);
 
     final corregido = await controller.corregir(

@@ -46,6 +46,7 @@ import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/corregir_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/presentation/vehiculos_controller.dart';
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
+import '../../support/sesion_en_base.dart';
 
 class _SesionFija extends SesionController {
   _SesionFija(this._sesion);
@@ -56,7 +57,12 @@ class _SesionFija extends SesionController {
 
 const _mensajePermiso = 'No tiene permiso para realizar esta acción.';
 
-ProviderContainer _container(AppDatabase db, SesionUsuario? sesion) {
+Future<ProviderContainer> _container(AppDatabase db, SesionUsuario? sesion) async {
+  // Etapa 3B: la autorización se revalida contra la base, así que
+  // el escenario de ESTA prueba se persiste aquí — no en el `setUp`,
+  // porque cada prueba declara su propio conjunto de permisos y
+  // sembrar uno solo volvería positivas las pruebas negativas.
+  if (sesion != null) await sembrarSesionEnBase(db, sesion);
   final container = ProviderContainer(
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
@@ -144,7 +150,7 @@ void main() {
     tearDown(() => db.close());
 
     test('compras.ver sin compras.crear: rechazada, ninguna Compra se crea', () async {
-      final container = _container(db, _sesionCon({'compras.ver'}));
+      final container = await _container(db, _sesionCon({'compras.ver'}));
       final resultado = await container.read(comprasControllerProvider.notifier).registrarCompra(
             fecha: DateTime(2026, 1, 1),
             formaPago: 'efectivo',
@@ -160,7 +166,7 @@ void main() {
 
     test('compras.crear presente: se registra, sin necesitar inventario.crear '
         '(la Compra compone Inventario/Finanzas automáticamente)', () async {
-      final container = _container(db, _sesionCon({'compras.ver', 'compras.crear'}));
+      final container = await _container(db, _sesionCon({'compras.ver', 'compras.crear'}));
       final resultado = await container.read(comprasControllerProvider.notifier).registrarCompra(
             fecha: DateTime(2026, 1, 1),
             formaPago: 'efectivo',
@@ -174,7 +180,7 @@ void main() {
     });
 
     test('un Maestro registra sin ninguna fila de PermisoUsuario', () async {
-      final container = _container(db, _sesionMaestro);
+      final container = await _container(db, _sesionMaestro);
       final resultado = await container.read(comprasControllerProvider.notifier).registrarCompra(
             fecha: DateTime(2026, 1, 1),
             formaPago: 'efectivo',
@@ -187,7 +193,7 @@ void main() {
     });
 
     test('sin ninguna sesión activa, la operación también se rechaza', () async {
-      final container = _container(db, null);
+      final container = await _container(db, null);
       final resultado = await container.read(comprasControllerProvider.notifier).registrarCompra(
             fecha: DateTime(2026, 1, 1),
             formaPago: 'efectivo',
@@ -210,7 +216,7 @@ void main() {
     tearDown(() => db.close());
 
     test('nomina.ver sin nomina.crear: rechazada antes de tocar el dominio', () async {
-      final container = _container(db, _sesionCon({'nomina.ver'}));
+      final container = await _container(db, _sesionCon({'nomina.ver'}));
       final resultado = await container
           .read(nominasControllerProvider.notifier)
           .generar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera);
@@ -221,7 +227,7 @@ void main() {
 
     test('nomina.crear presente: la solicitud llega al dominio real (sin Empleados, '
         'devuelve el resultado de negocio, no el de permiso)', () async {
-      final container = _container(db, _sesionCon({'nomina.ver', 'nomina.crear'}));
+      final container = await _container(db, _sesionCon({'nomina.ver', 'nomina.crear'}));
       final resultado = await container
           .read(nominasControllerProvider.notifier)
           .generar(anio: 2026, mes: 1, tipo: TipoPeriodoNomina.primera);
@@ -240,7 +246,7 @@ void main() {
     tearDown(() => db.close());
 
     test('cerrar: nomina.ver sin nomina.cerrar se rechaza', () async {
-      final container = _container(db, _sesionCon({'nomina.ver', 'nomina.crear'}));
+      final container = await _container(db, _sesionCon({'nomina.ver', 'nomina.crear'}));
       final resultado = await container.read(nominasControllerProvider.notifier).cerrar('nomina-inexistente');
 
       expect(resultado, isA<CerrarNominaErrorInesperado>());
@@ -249,14 +255,14 @@ void main() {
 
     test('cerrar: con nomina.cerrar llega al dominio real (nómina inexistente, '
         'no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'nomina.ver', 'nomina.cerrar'}));
+      final container = await _container(db, _sesionCon({'nomina.ver', 'nomina.cerrar'}));
       final resultado = await container.read(nominasControllerProvider.notifier).cerrar('nomina-inexistente');
 
       expect(resultado, isA<CerrarNominaNoExiste>());
     });
 
     test('actualizarRenglon: sin nomina.modificar se rechaza (movimientos y distribución comparten el mismo gate)', () async {
-      final container = _container(db, _sesionCon({'nomina.ver'}));
+      final container = await _container(db, _sesionCon({'nomina.ver'}));
       final resultado = await container.read(nominasControllerProvider.notifier).actualizarRenglon(
             nominaEmpleadoId: 'renglon-inexistente',
             prestamo: 0,
@@ -267,7 +273,7 @@ void main() {
     });
 
     test('un Maestro puede cerrar/actualizarRenglon sin filas de permiso', () async {
-      final container = _container(db, _sesionMaestro);
+      final container = await _container(db, _sesionMaestro);
       final cerrar = await container.read(nominasControllerProvider.notifier).cerrar('nomina-inexistente');
       final actualizado = await container.read(nominasControllerProvider.notifier).actualizarRenglon(
             nominaEmpleadoId: 'renglon-inexistente',
@@ -293,7 +299,7 @@ void main() {
     tearDown(() => db.close());
 
     test('personal.ver sin personal.crear: creación rechazada desde la fachada de aplicación', () async {
-      final container = _container(db, _sesionCon({'personal.ver'}));
+      final container = await _container(db, _sesionCon({'personal.ver'}));
       final resultado = await container.read(crearEmpleadoAutorizadoProvider)(
         nombres: 'Juan',
         apellidoPaterno: 'Pérez',
@@ -312,7 +318,7 @@ void main() {
     });
 
     test('personal.crear presente: llega al dominio real (nombres vacío, no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'personal.ver', 'personal.crear'}));
+      final container = await _container(db, _sesionCon({'personal.ver', 'personal.crear'}));
       final resultado = await container.read(crearEmpleadoAutorizadoProvider)(
         nombres: '',
         apellidoPaterno: 'Pérez',
@@ -330,7 +336,7 @@ void main() {
     });
 
     test('sin sesión activa, la creación se rechaza', () async {
-      final container = _container(db, null);
+      final container = await _container(db, null);
       final resultado = await container.read(crearEmpleadoAutorizadoProvider)(
         nombres: 'Juan',
         apellidoPaterno: 'Pérez',
@@ -358,7 +364,7 @@ void main() {
     tearDown(() => db.close());
 
     test('finanzas.ver sin ingresos.crear: rechazado', () async {
-      final container = _container(db, _sesionCon({'finanzas.ver'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver'}));
       final resultado = await container.read(ingresosControllerProvider.notifier).registrarManual(
             monto: 50000,
             fecha: DateTime(2026, 1, 1),
@@ -371,7 +377,7 @@ void main() {
     });
 
     test('ingresos.crear presente: se registra', () async {
-      final container = _container(db, _sesionCon({'finanzas.ver', 'ingresos.crear'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver', 'ingresos.crear'}));
       final resultado = await container.read(ingresosControllerProvider.notifier).registrarManual(
             monto: 50000,
             fecha: DateTime(2026, 1, 1),
@@ -393,7 +399,7 @@ void main() {
     tearDown(() => db.close());
 
     test('inventario.ver sin inventario.ajustarExistencia: ajuste rechazado', () async {
-      final container = _container(db, _sesionCon({'inventario.ver'}));
+      final container = await _container(db, _sesionCon({'inventario.ver'}));
       final resultado = await container.read(articulosControllerProvider.notifier).registrarAjuste(
             articuloId: 'articulo-inexistente',
             cantidad: 1,
@@ -407,7 +413,7 @@ void main() {
 
     test('inventario.ajustarExistencia presente: llega al dominio real (artículo inexistente, '
         'no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'inventario.ver', 'inventario.ajustarExistencia'}));
+      final container = await _container(db, _sesionCon({'inventario.ver', 'inventario.ajustarExistencia'}));
       final resultado = await container.read(articulosControllerProvider.notifier).registrarAjuste(
             articuloId: 'articulo-inexistente',
             cantidad: 1,
@@ -419,7 +425,7 @@ void main() {
     });
 
     test('un Maestro ajusta sin ninguna fila de PermisoUsuario', () async {
-      final container = _container(db, _sesionMaestro);
+      final container = await _container(db, _sesionMaestro);
       final resultado = await container.read(articulosControllerProvider.notifier).registrarAjuste(
             articuloId: 'articulo-inexistente',
             cantidad: 1,
@@ -441,7 +447,7 @@ void main() {
     tearDown(() => db.close());
 
     test('vehiculos.ver sin vehiculos.modificar: modificación rechazada', () async {
-      final container = _container(db, _sesionCon({'vehiculos.ver'}));
+      final container = await _container(db, _sesionCon({'vehiculos.ver'}));
       final resultado = await container.read(vehiculosControllerProvider.notifier).corregirVehiculo(
             vehiculoId: 'vehiculo-inexistente',
             marca: 'Nissan',
@@ -456,7 +462,7 @@ void main() {
 
     test('vehiculos.modificar presente: llega al dominio real (vehículo inexistente, '
         'no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'vehiculos.ver', 'vehiculos.modificar'}));
+      final container = await _container(db, _sesionCon({'vehiculos.ver', 'vehiculos.modificar'}));
       final resultado = await container.read(vehiculosControllerProvider.notifier).corregirVehiculo(
             vehiculoId: 'vehiculo-inexistente',
             marca: 'Nissan',
@@ -469,7 +475,7 @@ void main() {
     });
 
     test('un Maestro corrige sin ninguna fila de PermisoUsuario', () async {
-      final container = _container(db, _sesionMaestro);
+      final container = await _container(db, _sesionMaestro);
       final resultado = await container.read(vehiculosControllerProvider.notifier).corregirVehiculo(
             vehiculoId: 'vehiculo-inexistente',
             marca: 'Nissan',
@@ -492,7 +498,7 @@ void main() {
     tearDown(() => db.close());
 
     test('telefonia.ver sin telefonia.recargar: recarga rechazada', () async {
-      final container = _container(db, _sesionCon({'telefonia.ver'}));
+      final container = await _container(db, _sesionCon({'telefonia.ver'}));
       final resultado = await container.read(registrarRecargaLineaTelefonicaAutorizadoProvider)(
         lineaTelefonicaId: 'linea-inexistente',
         fecha: DateTime(2026, 1, 1),
@@ -506,7 +512,7 @@ void main() {
 
     test('telefonia.recargar presente: llega al dominio real (línea inexistente, '
         'no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'telefonia.ver', 'telefonia.recargar'}));
+      final container = await _container(db, _sesionCon({'telefonia.ver', 'telefonia.recargar'}));
       final resultado = await container.read(registrarRecargaLineaTelefonicaAutorizadoProvider)(
         lineaTelefonicaId: 'linea-inexistente',
         fecha: DateTime(2026, 1, 1),
@@ -518,7 +524,7 @@ void main() {
     });
 
     test('un Maestro registra recargas sin ninguna fila de PermisoUsuario', () async {
-      final container = _container(db, _sesionMaestro);
+      final container = await _container(db, _sesionMaestro);
       final resultado = await container.read(registrarRecargaLineaTelefonicaAutorizadoProvider)(
         lineaTelefonicaId: 'linea-inexistente',
         fecha: DateTime(2026, 1, 1),
@@ -540,7 +546,7 @@ void main() {
     tearDown(() => db.close());
 
     test('organizacion.ver sin organizacion.crear: escritura rechazada sin UI', () async {
-      final container = _container(db, _sesionCon({'organizacion.ver'}));
+      final container = await _container(db, _sesionCon({'organizacion.ver'}));
       final resultado = await container.read(crearAreaAutorizadoProvider)(nombre: 'Área de prueba');
 
       expect(resultado, isA<GuardarAreaErrorInesperado>());
@@ -549,14 +555,14 @@ void main() {
 
     test('organizacion.crear presente: llega al dominio real (nombre vacío, '
         'no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'organizacion.ver', 'organizacion.crear'}));
+      final container = await _container(db, _sesionCon({'organizacion.ver', 'organizacion.crear'}));
       final resultado = await container.read(crearAreaAutorizadoProvider)(nombre: '');
 
       expect(resultado, isA<GuardarAreaNombreRequerido>());
     });
 
     test('un Maestro crea sin ninguna fila de PermisoUsuario', () async {
-      final container = _container(db, _sesionMaestro);
+      final container = await _container(db, _sesionMaestro);
       final resultado = await container.read(crearAreaAutorizadoProvider)(nombre: 'Área de prueba');
 
       expect(resultado, isNot(isA<GuardarAreaErrorInesperado>()));
@@ -576,7 +582,7 @@ void main() {
       tearDown(() => db.close());
 
       test('inventario.ver sin inventario.modificar: cambiar responsable rechazado', () async {
-        final container = _container(db, _sesionCon({'inventario.ver'}));
+        final container = await _container(db, _sesionCon({'inventario.ver'}));
         final resultado = await container.read(cambiarResponsableAsignacionAutorizadoProvider)(
           asignacionId: 'asignacion-inexistente',
           nuevoEmpleadoId: 'empleado-cualquiera',
@@ -589,7 +595,7 @@ void main() {
 
       test('inventario.corregir presente: llega al dominio real (asignación inexistente, '
           'no el error de permiso)', () async {
-        final container = _container(db, _sesionCon({'inventario.ver', 'inventario.corregir'}));
+        final container = await _container(db, _sesionCon({'inventario.ver', 'inventario.corregir'}));
         final resultado = await container.read(cambiarResponsableAsignacionAutorizadoProvider)(
           asignacionId: 'asignacion-inexistente',
           nuevoEmpleadoId: 'empleado-cualquiera',
@@ -600,7 +606,7 @@ void main() {
       });
 
       test('un Maestro cambia responsable sin ninguna fila de PermisoUsuario', () async {
-        final container = _container(db, _sesionMaestro);
+        final container = await _container(db, _sesionMaestro);
         final resultado = await container.read(cambiarResponsableAsignacionAutorizadoProvider)(
           asignacionId: 'asignacion-inexistente',
           nuevoEmpleadoId: 'empleado-cualquiera',
@@ -625,7 +631,7 @@ void main() {
       tearDown(() => db.close());
 
       test('inventario.ver sin inventario.corregir: corregir identidad rechazado', () async {
-        final container = _container(db, _sesionCon({'inventario.ver'}));
+        final container = await _container(db, _sesionCon({'inventario.ver'}));
         final resultado = await container.read(corregirIdentidadUnidadAutorizadoProvider)(
           unidadId: 'unidad-inexistente',
           motivo: 'prueba',
@@ -637,7 +643,7 @@ void main() {
 
       test('inventario.corregir presente: llega al dominio real (unidad inexistente, '
           'no el error de permiso)', () async {
-        final container = _container(db, _sesionCon({'inventario.ver', 'inventario.corregir'}));
+        final container = await _container(db, _sesionCon({'inventario.ver', 'inventario.corregir'}));
         final resultado = await container.read(corregirIdentidadUnidadAutorizadoProvider)(
           unidadId: 'unidad-inexistente',
           motivo: 'prueba',
@@ -647,7 +653,7 @@ void main() {
       });
 
       test('un Maestro corrige identidad sin ninguna fila de PermisoUsuario', () async {
-        final container = _container(db, _sesionMaestro);
+        final container = await _container(db, _sesionMaestro);
         final resultado = await container.read(corregirIdentidadUnidadAutorizadoProvider)(
           unidadId: 'unidad-inexistente',
           motivo: 'prueba',
@@ -668,7 +674,7 @@ void main() {
     tearDown(() => db.close());
 
     test('comercial.ver sin clientes.crear: escritura rechazada sin UI', () async {
-      final container = _container(db, _sesionCon({'comercial.ver'}));
+      final container = await _container(db, _sesionCon({'comercial.ver'}));
       final resultado = await container.read(crearClienteAutorizadoProvider)(nombreComercial: 'Cliente de prueba');
 
       expect(resultado.isFailure, isTrue);
@@ -679,7 +685,7 @@ void main() {
 
     test('clientes.crear presente: llega al dominio real (nombre vacío, '
         'no el error de permiso)', () async {
-      final container = _container(db, _sesionCon({'comercial.ver', 'clientes.crear'}));
+      final container = await _container(db, _sesionCon({'comercial.ver', 'clientes.crear'}));
       final resultado = await container.read(crearClienteAutorizadoProvider)(nombreComercial: '');
 
       expect(resultado.isFailure, isTrue);
@@ -688,7 +694,7 @@ void main() {
     });
 
     test('un Maestro crea sin ninguna fila de PermisoUsuario', () async {
-      final container = _container(db, _sesionMaestro);
+      final container = await _container(db, _sesionMaestro);
       final resultado = await container.read(crearClienteAutorizadoProvider)(nombreComercial: 'Cliente de prueba');
 
       expect(resultado.isOk, isTrue);

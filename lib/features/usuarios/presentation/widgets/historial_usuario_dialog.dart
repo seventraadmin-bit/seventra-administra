@@ -22,6 +22,7 @@ String _tipoEventoLabel(AppLocalizations l10n, String tipoEvento) {
     'activado' => l10n.usuarioEventoActivado,
     'desactivado' => l10n.usuarioEventoDesactivado,
     'permisosModificados' => l10n.usuarioEventoPermisosModificados,
+    'vinculoEmpleadoModificado' => l10n.usuarioEventoVinculoModificado,
     _ => tipoEvento,
   };
 }
@@ -46,6 +47,7 @@ String _etiquetaPermiso(AppLocalizations l10n, String codigo) {
 /// es de este tipo o no trae datos (nunca debería faltar, pero la UI de
 /// auditoría no debe romperse por un dato histórico incompleto).
 Widget? _diffPermisos(AppLocalizations l10n, UsuarioEventoData evento) {
+  if (evento.tipoEvento == 'vinculoEmpleadoModificado') return _diffVinculo(l10n, evento);
   if (evento.tipoEvento != 'permisosModificados' || evento.datosRelevantes == null) return null;
   final Map<String, dynamic> datos;
   try {
@@ -71,6 +73,35 @@ Widget? _diffPermisos(AppLocalizations l10n, UsuarioEventoData evento) {
   );
 }
 
+/// Qué Empleado tenía la cuenta y cuál tiene ahora (Etapa 3B).
+///
+/// Se imprimen los NOMBRES guardados en el evento, nunca los
+/// identificadores: el historial lo lee una persona. Si un evento
+/// antiguo no trajera nombre, se dice "Sin vincular" en vez de
+/// mostrar un UUID.
+Widget? _diffVinculo(AppLocalizations l10n, UsuarioEventoData evento) {
+  if (evento.datosRelevantes == null) return null;
+  final Map<String, dynamic> datos;
+  try {
+    datos = jsonDecode(evento.datosRelevantes!) as Map<String, dynamic>;
+  } catch (_) {
+    return null;
+  }
+  final anterior = datos['empleadoAnterior'] as String?;
+  final nuevo = datos['empleadoNuevo'] as String?;
+
+  return Padding(
+    padding: const EdgeInsets.only(top: AppSpacing.xxs),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('− ${anterior ?? l10n.usuarioEmpleadoSinVincular}', style: AppTypography.caption),
+        Text('+ ${nuevo ?? l10n.usuarioEmpleadoSinVincular}', style: AppTypography.caption),
+      ],
+    ),
+  );
+}
+
 /// Historial administrativo de un Usuario (Etapa 11A) — solo lectura,
 /// mismo molde que `mostrarDialogoHistorialDocumentoVehiculo`. El actor
 /// se resuelve por nombre a partir de la lista de Usuarios ya cargada
@@ -80,7 +111,12 @@ Widget? _diffPermisos(AppLocalizations l10n, UsuarioEventoData evento) {
 Future<void> mostrarDialogoHistorialUsuario(BuildContext context, WidgetRef ref, UsuarioData usuario) async {
   final l10n = AppLocalizations.of(context)!;
   final eventos = await ref.read(usuariosControllerProvider.notifier).obtenerEventos(usuario.id);
-  final usuariosPorId = {for (final u in ref.read(usuariosControllerProvider).usuarios) u.id: u.nombre};
+  // Nombres de actor ya en memoria (bulk-fetch-then-loop, sin N+1).
+  // Se usa el nombre EFECTIVO: si el actor es una cuenta vinculada, el
+  // historial lo nombra como lo nombra el resto del sistema.
+  final usuariosPorId = {
+    for (final i in ref.read(usuariosControllerProvider).identidades) i.usuario.id: i.nombreEfectivo,
+  };
   if (!context.mounted) return;
 
   await showDialog<void>(

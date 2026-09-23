@@ -29,6 +29,7 @@ import 'package:riseg_one/features/finanzas/finanzas_providers.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_mantenimiento_table.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart' show MotivoBajaVehiculo;
 import 'package:riseg_one/features/vehiculos/domain/usecases/corregir_vehiculo_usecase.dart';
@@ -102,6 +103,13 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+
+    // Etapa 3B: la autorización se revalida contra la base. Se persiste
+    // la sesión que ESTE escenario va a usar, leída del propio
+    // contenedor — así lo sembrado y lo inyectado no pueden divergir, y
+    // una prueba sin permiso sigue sin él.
+    final sesionDelEscenario = container.read(sesionControllerProvider);
+    if (sesionDelEscenario != null) await sembrarSesionEnBase(db, sesionDelEscenario);
 
     final cuenta = await container.read(cuentaFinancieraRepositoryProvider).crear(
           codigo: 'CTA-BBVA',

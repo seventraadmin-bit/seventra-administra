@@ -47,6 +47,7 @@ import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart'
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart';
 import 'package:riseg_one/features/vehiculos/vehiculos_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestro extends SesionController {
   @override
@@ -325,6 +326,11 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       SharedPreferences.setMockInitialValues({});
+      // Etapa 3B: la autorización se revalida contra la base, así que
+      // la cuenta del escenario —Maestra o acotada— tiene que existir
+      // con sus permisos reales antes de montar la aplicación.
+      final sesionDelEscenario = sesion().build();
+      if (sesionDelEscenario != null) await sembrarSesionEnBase(db, sesionDelEscenario);
       final router = createAppRouter();
 
       await tester.pumpWidget(

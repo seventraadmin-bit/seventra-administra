@@ -14,6 +14,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
+import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/seed/seed_ids.dart';
@@ -60,7 +61,7 @@ void main() {
     final codigoSecuencia = CodigoSecuenciaService(db);
     conciliar = ConciliarBajaEmpleadoUseCase(
       empleadoRepo,
-      RegistrarBajaLaboralUseCase(empleadoRepo, const EmpleadoValidator(), inventarioRepo, vehiculoAsignacionRepo),
+      RegistrarBajaLaboralUseCase(empleadoRepo, const EmpleadoValidator(), inventarioRepo, vehiculoAsignacionRepo, usuarioRepository: UsuarioRepositoryImpl(db)),
       inventarioRepo,
       vehiculoAsignacionRepo,
       conciliacionRepo,

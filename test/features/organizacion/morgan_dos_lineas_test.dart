@@ -59,6 +59,7 @@ import 'package:riseg_one/features/personal/domain/usecases/empleado_validator.d
 import 'package:riseg_one/features/personal/presentation/empleados/widgets/asignar_servicio_empleado_dialog.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionControllerDePrueba extends SesionController {
   @override
@@ -171,6 +172,9 @@ void main() {
           ),
         );
     await CambiarEstatusServicioUseCase(servicioRepo, clienteRepo).ejecutar(servicioId: servicioId, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
+    // Etapa 3B: autorizar revalida contra la base, así que la
+    // sesión de esta prueba tiene que corresponder a una cuenta real.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() => db.close());

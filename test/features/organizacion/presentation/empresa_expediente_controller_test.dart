@@ -9,6 +9,7 @@ import 'package:riseg_one/features/organizacion/presentation/empresa/empresa_exp
 import 'package:riseg_one/features/organizacion/presentation/empresa/empresa_expediente_state.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../../support/sesion_en_base.dart';
 
 const _datosGeneralesValidos = EmpresaDatosGeneralesInput(nombreComercial: 'Seguridad Privada RISEG');
 
@@ -33,7 +34,7 @@ void main() {
   late AppDatabase db;
   late ProviderContainer container;
 
-  setUp(() {
+  setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     container = ProviderContainer(
       overrides: [
@@ -45,6 +46,9 @@ void main() {
     // El provider es autoDispose: sin un listener persistente, cada
     // `container.read` suelto podría recrear su estado desde cero.
     container.listen(empresaExpedienteControllerProvider, (_, _) {});
+    // Etapa 3B: autorizar revalida contra la base, así que la
+    // sesión de esta prueba tiene que corresponder a una cuenta real.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() => db.close());

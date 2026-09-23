@@ -23,6 +23,7 @@ import 'package:riseg_one/features/finanzas/finanzas_providers.dart';
 import 'package:riseg_one/features/finanzas/presentation/planeacion/planeacion_financiera_screen.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -51,6 +52,19 @@ void main() {
             passwordHash: 'x',
           ),
         );
+    // Etapa 3B: la fila anterior existe pero nace sin `esMaestro`, y la
+    // autorización se revalida contra la base — sin esto, el propio
+    // `setUp` no podría ejecutar las operaciones autorizadas de abajo.
+    await sembrarSesionEnBase(
+      db,
+      const SesionUsuario(
+        usuarioId: 'usuario-maestro',
+        nombre: 'Maestro de prueba',
+        nombreUsuario: 'maestro',
+        esMaestro: true,
+        permisos: {},
+      ),
+    );
     container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(_SesionMaestroDePrueba.new),
@@ -116,6 +130,9 @@ void main() {
             fechaVencimiento: Value(ahora.subtract(const Duration(days: 20))),
           ),
         );
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() {

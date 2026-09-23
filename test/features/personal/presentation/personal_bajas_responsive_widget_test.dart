@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/features/inventario/data/repositories/asignacion_repository_impl.dart';
+import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
 import 'package:riseg_one/app/theme/app_theme.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
@@ -100,7 +101,7 @@ class _Semillas {
     ServicioValidator(clienteRepo, catalogoRepo),
   );
   late final CambiarEstatusServicioUseCase cambiarEstatusServicio = CambiarEstatusServicioUseCase(servicioRepo, clienteRepo);
-  late final RegistrarBajaLaboralUseCase registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, const EmpleadoValidator(), AsignacionRepositoryImpl(db), AsignacionVehiculoRepositoryImpl(db));
+  late final RegistrarBajaLaboralUseCase registrarBajaLaboral = RegistrarBajaLaboralUseCase(empleadoRepo, const EmpleadoValidator(), AsignacionRepositoryImpl(db), AsignacionVehiculoRepositoryImpl(db), usuarioRepository: UsuarioRepositoryImpl(db));
   late final RegistrarReingresoUseCase registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, const EmpleadoValidator());
   late final AsignarEmpleadoServicioUseCase asignarEmpleadoServicio =
       AsignarEmpleadoServicioUseCase(empleadoRepo, asignacionRepo, servicioRepo, comercialRepo, const AsignacionServicioValidator());

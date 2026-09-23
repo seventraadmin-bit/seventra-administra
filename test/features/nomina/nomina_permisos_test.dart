@@ -25,6 +25,7 @@ import 'package:riseg_one/features/personal/domain/usecases/empleado_validator.d
 import 'package:riseg_one/features/personal/personal_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionSinCorregirNiCancelar extends SesionController {
   @override
@@ -96,6 +97,9 @@ void main() {
   tearDown(() => db.close());
 
   test('tener nomina.modificar/cerrar/cancelarPago (sin nomina.corregir) NO permite corregir un renglón cerrado', () async {
+    // Etapa 3B: la autorización se revalida contra la base, así que
+    // este escenario —el de ESTA prueba— se persiste antes de usarlo.
+    await sembrarSesionEnBase(db, _SesionSinCorregirNiCancelar().build()!);
     final container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(db), sesionControllerProvider.overrideWith(_SesionSinCorregirNiCancelar.new)],
     );
@@ -113,6 +117,9 @@ void main() {
   });
 
   test('tener nomina.modificar/cerrar/cancelarPago (sin nomina.cancelar) NO permite cancelar la Nómina', () async {
+    // Etapa 3B: la autorización se revalida contra la base, así que
+    // este escenario —el de ESTA prueba— se persiste antes de usarlo.
+    await sembrarSesionEnBase(db, _SesionSinCorregirNiCancelar().build()!);
     final container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(db), sesionControllerProvider.overrideWith(_SesionSinCorregirNiCancelar.new)],
     );
@@ -126,6 +133,9 @@ void main() {
   });
 
   test('nomina.corregir y nomina.cancelar (sin ningún otro código) SÍ alcanzan para ambas acciones', () async {
+    // Etapa 3B: la autorización se revalida contra la base, así que
+    // este escenario —el de ESTA prueba— se persiste antes de usarlo.
+    await sembrarSesionEnBase(db, _SesionSoloCorregirYCancelar().build()!);
     final container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(db), sesionControllerProvider.overrideWith(_SesionSoloCorregirYCancelar.new)],
     );

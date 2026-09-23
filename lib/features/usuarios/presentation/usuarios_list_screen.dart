@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 
+import '../domain/identidad_usuario.dart';
 import '../domain/usecases/activar_usuario_usecase.dart';
 import '../domain/usecases/desactivar_usuario_usecase.dart';
 import 'sesion_controller.dart';
@@ -14,86 +15,108 @@ import 'widgets/cambiar_contrasena_usuario_dialog.dart';
 import 'widgets/gestionar_permisos_usuario_dialog.dart';
 import 'widgets/gestionar_usuario_dialog.dart';
 import 'widgets/historial_usuario_dialog.dart';
+import 'widgets/usuario_detalle_dialog.dart';
 
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
 
-/// Listado + CRUD de Usuarios (Etapa 11A) — primera funcionalidad real
-/// de `/configuracion` (hasta ahora un placeholder puro). Desde la
-/// Etapa 11B gana "Administrar permisos" (matriz dinámica) — ver
-/// `gestionar_permisos_usuario_dialog.dart`.
-class UsuariosListScreen extends ConsumerWidget {
-  const UsuariosListScreen({super.key});
+/// Desactiva una cuenta pidiendo motivo — compartido por el listado y
+/// por la ficha de detalle, para que la regla (motivo obligatorio,
+/// último Maestro bloqueado) tenga una sola implementación.
+Future<bool> desactivarUsuarioConMotivo(BuildContext context, WidgetRef ref, IdentidadUsuario identidad) async {
+  final l10n = AppLocalizations.of(context)!;
+  final motivoCtrl = TextEditingController();
+  String? errorGeneral;
 
-  Future<void> _desactivar(BuildContext context, WidgetRef ref, UsuarioData usuario) async {
-    final l10n = AppLocalizations.of(context)!;
-    final motivoCtrl = TextEditingController();
-    String? errorGeneral;
-
-    final confirmado = await RisegDialog.showForm<bool>(
-      context: context,
-      title: l10n.usuarioDesactivarDialogoTitulo(usuario.nombre),
-      confirmLabel: l10n.usuarioDesactivarBotonConfirmar,
-      cancelLabel: l10n.compraBotonCancelarFormulario,
-      contentBuilder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setState) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RisegTextField(label: l10n.usuarioDesactivarCampoMotivo, controller: motivoCtrl, autofocus: true),
-              if (errorGeneral != null) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(errorGeneral!, style: AppTypography.caption.copyWith(color: Theme.of(dialogContext).colorScheme.error)),
-              ],
+  final confirmado = await RisegDialog.showForm<bool>(
+    context: context,
+    title: l10n.usuarioDesactivarDialogoTitulo(identidad.nombreEfectivo),
+    confirmLabel: l10n.usuarioDesactivarBotonConfirmar,
+    cancelLabel: l10n.compraBotonCancelarFormulario,
+    contentBuilder: (dialogContext) => StatefulBuilder(
+      builder: (dialogContext, setState) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RisegTextField(label: l10n.usuarioDesactivarCampoMotivo, controller: motivoCtrl, autofocus: true),
+            if (errorGeneral != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                errorGeneral!,
+                style: AppTypography.caption.copyWith(color: Theme.of(dialogContext).colorScheme.error),
+              ),
             ],
-          );
-        },
-      ),
-      onConfirm: () async {
-        final motivo = motivoCtrl.text.trim();
-        if (motivo.isEmpty) {
+          ],
+        );
+      },
+    ),
+    onConfirm: () async {
+      final motivo = motivoCtrl.text.trim();
+      if (motivo.isEmpty) {
+        errorGeneral = l10n.usuarioDesactivarErrorMotivoRequerido;
+        return null;
+      }
+      final resultado = await ref
+          .read(usuariosControllerProvider.notifier)
+          .desactivar(usuarioId: identidad.usuario.id, motivo: motivo);
+      if (!context.mounted) return false;
+      switch (resultado) {
+        case DesactivarUsuarioExitoso():
+          return true;
+        case DesactivarUsuarioMotivoRequerido():
           errorGeneral = l10n.usuarioDesactivarErrorMotivoRequerido;
           return null;
-        }
-        final resultado = await ref.read(usuariosControllerProvider.notifier).desactivar(usuarioId: usuario.id, motivo: motivo);
-        if (!context.mounted) return false;
-        switch (resultado) {
-          case DesactivarUsuarioExitoso():
-            return true;
-          case DesactivarUsuarioMotivoRequerido():
-            errorGeneral = l10n.usuarioDesactivarErrorMotivoRequerido;
-            return null;
-          case DesactivarUsuarioBloqueadaPorUltimoMaestro():
-            RisegFeedback.showError(context, l10n.usuarioErrorUltimoMaestro);
-            return false;
-          case DesactivarUsuarioNoExiste():
-          case DesactivarUsuarioYaInactivo():
-          case DesactivarUsuarioErrorInesperado():
-            RisegFeedback.showError(context, l10n.usuarioErrorInesperado);
-            return false;
-        }
-      },
-    );
+        case DesactivarUsuarioBloqueadaPorUltimoMaestro():
+          RisegFeedback.showError(context, l10n.usuarioErrorUltimoMaestro);
+          return false;
+        case DesactivarUsuarioNoExiste():
+        case DesactivarUsuarioYaInactivo():
+        case DesactivarUsuarioErrorInesperado():
+          RisegFeedback.showError(context, l10n.usuarioErrorInesperado);
+          return false;
+      }
+    },
+  );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => motivoCtrl.dispose());
-    if (confirmado ?? false) {
-      if (context.mounted) RisegFeedback.showSuccess(context, l10n.usuarioDesactivarExito);
-    }
-  }
+  WidgetsBinding.instance.addPostFrameCallback((_) => motivoCtrl.dispose());
+  final exito = confirmado ?? false;
+  if (exito && context.mounted) RisegFeedback.showSuccess(context, l10n.usuarioDesactivarExito);
+  return exito;
+}
 
-  Future<void> _activar(BuildContext context, WidgetRef ref, UsuarioData usuario) async {
-    final l10n = AppLocalizations.of(context)!;
-    final resultado = await ref.read(usuariosControllerProvider.notifier).activar(usuario.id);
-    if (!context.mounted) return;
-    switch (resultado) {
-      case ActivarUsuarioExitoso():
-        RisegFeedback.showSuccess(context, l10n.usuarioActivarExito);
-      case ActivarUsuarioNoExiste():
-      case ActivarUsuarioYaActivo():
-      case ActivarUsuarioErrorInesperado():
-        RisegFeedback.showError(context, l10n.usuarioErrorInesperado);
-    }
+/// Reactiva una cuenta. Puede fallar porque la persona sigue de baja
+/// laboral: eso no es un error del sistema, es una regla, y se explica
+/// como tal.
+Future<bool> reactivarUsuario(BuildContext context, WidgetRef ref, IdentidadUsuario identidad) async {
+  final l10n = AppLocalizations.of(context)!;
+  final resultado = await ref.read(usuariosControllerProvider.notifier).activar(identidad.usuario.id);
+  if (!context.mounted) return false;
+  switch (resultado) {
+    case ActivarUsuarioExitoso():
+      RisegFeedback.showSuccess(context, l10n.usuarioActivarExito);
+      return true;
+    case ActivarUsuarioEmpleadoDeBaja(:final nombreEmpleado):
+      RisegFeedback.showError(context, l10n.usuarioErrorReactivarEmpleadoDeBaja(nombreEmpleado));
+      return false;
+    case ActivarUsuarioNoExiste():
+    case ActivarUsuarioYaActivo():
+    case ActivarUsuarioErrorInesperado():
+      RisegFeedback.showError(context, l10n.usuarioErrorInesperado);
+      return false;
   }
+}
+
+/// Listado + CRUD de Usuarios (Etapa 11A) — primera funcionalidad real
+/// de `/configuracion`. Desde la Etapa 11B gana "Administrar permisos"
+/// (matriz dinámica).
+///
+/// **Etapa 3B:** la tabla muestra la identidad EFECTIVA de cada cuenta
+/// (la del Empleado si está vinculada, la propia si no), la fila abre
+/// una ficha de detalle, y las cinco acciones sueltas se recogen en un
+/// menú ⋮ — mismo patrón que la Bóveda, y una columna de acciones que
+/// dejó de competir con el resto por el ancho.
+class UsuariosListScreen extends ConsumerWidget {
+  const UsuariosListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -116,75 +139,64 @@ class UsuariosListScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Expanded(
-            child: RisegTableBase<UsuarioData>(
+            child: RisegTableBase<IdentidadUsuario>(
               loading: state.cargando,
-              rows: state.usuarios,
+              rows: state.identidades,
+              onRowTap: (i) => mostrarFichaUsuario(context, i.usuario.id),
               emptyState: RisegEmptyState(title: l10n.usuariosListadoVacioTitulo, message: ''),
               columns: [
-                RisegColumn<UsuarioData>(label: l10n.usuariosColumnaNombre, cellBuilder: (u) => Text(u.nombre)),
-                RisegColumn<UsuarioData>(label: l10n.usuariosColumnaUsuario, cellBuilder: (u) => Text(u.nombreUsuario)),
-                RisegColumn<UsuarioData>(
-                  label: l10n.usuariosColumnaPuesto,
-                  cellBuilder: (u) => Text(state.nombrePuesto(u.puestoId) ?? '—'),
-                ),
-                RisegColumn<UsuarioData>(
-                  label: l10n.usuariosColumnaEstado,
-                  width: 130,
-                  cellBuilder: (u) => RisegStatusBadge(
-                    label: u.cicloVidaRegistro == 'activo' ? l10n.usuarioEstadoActivo : l10n.usuarioEstadoInactivo,
-                    tone: u.cicloVidaRegistro == 'activo' ? RisegStatusTone.success : RisegStatusTone.neutral,
-                  ),
-                ),
-                RisegColumn<UsuarioData>(
-                  label: l10n.usuariosColumnaUltimoAcceso,
-                  cellBuilder: (u) => Text(u.ultimoAccesoAt == null ? '—' : _formatoFechaHora.format(u.ultimoAccesoAt!)),
-                ),
-                RisegColumn<UsuarioData>(
-                  label: l10n.usuariosColumnaTipo,
-                  width: 120,
-                  cellBuilder: (u) => RisegStatusBadge(
-                    label: u.esMaestro ? l10n.usuarioTipoMaestro : l10n.usuarioTipoNormal,
-                    tone: u.esMaestro ? RisegStatusTone.warning : RisegStatusTone.neutral,
-                  ),
-                ),
-                RisegColumn<UsuarioData>(
-                  label: l10n.usuariosColumnaAcciones,
-                  width: 260,
-                  cellBuilder: (u) => Row(
-                    mainAxisSize: MainAxisSize.min,
+                RisegColumn<IdentidadUsuario>(
+                  label: l10n.usuariosColumnaNombre,
+                  // El nombre efectivo: el del expediente cuando la
+                  // cuenta pertenece a alguien de Personal. El icono
+                  // discreto dice que existe ese vínculo sin gastar una
+                  // columna entera en ello.
+                  cellBuilder: (i) => Row(
                     children: [
-                      _AccionIcono(
-                        tooltip: l10n.usuariosAccionEditar,
-                        icon: Icons.edit_outlined,
-                        onPressed: () => mostrarDialogoGestionarUsuario(context, ref, puestos: state.puestos, usuario: u),
-                      ),
-                      _AccionIcono(
-                        tooltip: l10n.usuariosAccionCambiarContrasena,
-                        icon: Icons.key_outlined,
-                        onPressed: () => mostrarDialogoCambiarContrasenaUsuario(context, ref, u),
-                      ),
-                      _AccionIcono(
-                        key: Key('usuarios_boton_permisos_${u.id}'),
-                        tooltip: l10n.usuariosAccionPermisos,
-                        icon: Icons.shield_outlined,
-                        onPressed: () => mostrarDialogoGestionarPermisosUsuario(context, ref, u),
-                      ),
-                      _AccionIcono(
-                        tooltip: u.cicloVidaRegistro == 'activo' ? l10n.usuariosAccionDesactivar : l10n.usuariosAccionActivar,
-                        icon: u.cicloVidaRegistro == 'activo' ? Icons.block_outlined : Icons.check_circle_outline,
-                        onPressed: () => u.cicloVidaRegistro == 'activo'
-                            ? _desactivar(context, ref, u)
-                            : _activar(context, ref, u),
-                      ),
-                      _AccionIcono(
-                        tooltip: l10n.usuariosAccionHistorial,
-                        icon: Icons.history,
-                        onPressed: () => mostrarDialogoHistorialUsuario(context, ref, u),
-                      ),
+                      Flexible(child: Text(i.nombreEfectivo, overflow: TextOverflow.ellipsis)),
+                      if (i.estaVinculado) ...[
+                        const SizedBox(width: AppSpacing.xxs),
+                        Tooltip(
+                          message: l10n.usuarioVinculoTooltip,
+                          child: Icon(Icons.badge_outlined, size: 15, color: context.colors.textMuted),
+                        ),
+                      ],
                     ],
                   ),
                 ),
+                RisegColumn<IdentidadUsuario>(
+                  label: l10n.usuariosColumnaUsuario,
+                  cellBuilder: (i) => Text(i.usuario.nombreUsuario, overflow: TextOverflow.ellipsis),
+                ),
+                RisegColumn<IdentidadUsuario>(
+                  label: l10n.usuariosColumnaPuesto,
+                  cellBuilder: (i) => Text(i.nombrePuestoEfectivo ?? '—', overflow: TextOverflow.ellipsis),
+                ),
+                RisegColumn<IdentidadUsuario>(
+                  label: l10n.usuariosColumnaEstado,
+                  width: 130,
+                  cellBuilder: (i) => RisegStatusBadge(
+                    label: i.cuentaActiva ? l10n.usuarioEstadoActivo : l10n.usuarioEstadoInactivo,
+                    tone: i.cuentaActiva ? RisegStatusTone.success : RisegStatusTone.neutral,
+                  ),
+                ),
+                RisegColumn<IdentidadUsuario>(
+                  label: l10n.usuariosColumnaUltimoAcceso,
+                  cellBuilder: (i) => Text(
+                    i.usuario.ultimoAccesoAt == null ? '—' : _formatoFechaHora.format(i.usuario.ultimoAccesoAt!),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                RisegColumn<IdentidadUsuario>(
+                  label: l10n.usuariosColumnaTipo,
+                  width: 120,
+                  cellBuilder: (i) => RisegStatusBadge(
+                    label: i.usuario.esMaestro ? l10n.usuarioTipoMaestro : l10n.usuarioTipoNormal,
+                    tone: i.usuario.esMaestro ? RisegStatusTone.warning : RisegStatusTone.neutral,
+                  ),
+                ),
               ],
+              rowActionsBuilder: (i) => _MenuAcciones(identidad: i, puestos: state.puestos),
             ),
           ),
           if (sesion != null) ...[
@@ -200,25 +212,59 @@ class UsuariosListScreen extends ConsumerWidget {
   }
 }
 
-/// Botón de acción compacto para la columna de Acciones — 5 acciones
-/// no caben con el tamaño mínimo de toque por defecto de `IconButton`
-/// (48×48, overflow real encontrado al probar con la columna a 220px).
-class _AccionIcono extends StatelessWidget {
-  const _AccionIcono({required this.tooltip, required this.icon, required this.onPressed, super.key});
+/// Las cinco acciones de una cuenta, en un menú.
+///
+/// Antes eran cinco `IconButton` en una columna de 260px que competía
+/// con Nombre y Puesto por el ancho disponible. Elegir una acción del
+/// menú NO abre además la ficha: el menú vive en la celda de acciones,
+/// que `RisegTableBase` excluye del `onRowTap`.
+class _MenuAcciones extends ConsumerWidget {
+  const _MenuAcciones({required this.identidad, required this.puestos});
 
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onPressed;
+  final IdentidadUsuario identidad;
+  final List<PuestoData> puestos;
 
   @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: tooltip,
-      icon: Icon(icon, size: 18),
-      onPressed: onPressed,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      visualDensity: VisualDensity.compact,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final activa = identidad.cuentaActiva;
+
+    return PopupMenuButton<String>(
+      key: Key('usuarios_menu_${identidad.usuario.id}'),
+      icon: const Icon(Icons.more_vert),
+      tooltip: l10n.usuariosColumnaAcciones,
+      onSelected: (accion) {
+        switch (accion) {
+          case 'editar':
+            mostrarDialogoGestionarUsuario(context, ref, puestos: puestos, identidad: identidad);
+          case 'contrasena':
+            mostrarDialogoCambiarContrasenaUsuario(context, ref, identidad.usuario);
+          case 'permisos':
+            mostrarDialogoGestionarPermisosUsuario(context, ref, identidad.usuario);
+          case 'estado':
+            if (activa) {
+              desactivarUsuarioConMotivo(context, ref, identidad);
+            } else {
+              reactivarUsuario(context, ref, identidad);
+            }
+          case 'historial':
+            mostrarDialogoHistorialUsuario(context, ref, identidad.usuario);
+        }
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(value: 'editar', child: Text(l10n.usuariosAccionEditar)),
+        PopupMenuItem(value: 'contrasena', child: Text(l10n.usuariosAccionCambiarContrasena)),
+        PopupMenuItem(
+          key: Key('usuarios_menu_permisos_${identidad.usuario.id}'),
+          value: 'permisos',
+          child: Text(l10n.usuariosAccionPermisos),
+        ),
+        PopupMenuItem(
+          value: 'estado',
+          child: Text(activa ? l10n.usuariosAccionDesactivar : l10n.usuariosAccionActivar),
+        ),
+        PopupMenuItem(value: 'historial', child: Text(l10n.usuariosAccionHistorial)),
+      ],
     );
   }
 }

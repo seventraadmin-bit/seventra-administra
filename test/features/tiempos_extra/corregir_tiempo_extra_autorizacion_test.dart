@@ -28,6 +28,7 @@ import 'package:riseg_one/features/tiempos_extra/domain/usecases/registrar_tiemp
 import 'package:riseg_one/features/tiempos_extra/tiempos_extra_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestro extends SesionController {
   @override
@@ -105,6 +106,9 @@ Future<String> _sembrarBase(AppDatabase db) async {
         curp: 'PEXJ900101HDFXXX02', rfc: 'PEXJ90010102', nss: '10000000002', estadoCivil: 'soltero', fechaIngreso: DateTime(2025, 1, 1), aniosExperienciaSeguridad: 3,
       ));
 
+  // Etapa 3B: la autorización se revalida contra la base, así que
+  // este escenario —el de ESTA prueba— se persiste antes de usarlo.
+  await sembrarSesionEnBase(db, _SesionMaestro().build()!);
   final container = ProviderContainer(overrides: [
     appDatabaseProvider.overrideWithValue(db),
     sesionControllerProvider.overrideWith(_SesionMaestro.new),
@@ -136,6 +140,9 @@ void main() {
   tearDown(() => db.close());
 
   test('un usuario sin tiempoExtra.corregir (aunque tenga crear/cancelar) no puede corregir', () async {
+    // Etapa 3B: la autorización se revalida contra la base, así que
+    // este escenario —el de ESTA prueba— se persiste antes de usarlo.
+    await sembrarSesionEnBase(db, _SesionSinPermiso().build()!);
     final container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(_SesionSinPermiso.new),
@@ -162,6 +169,9 @@ void main() {
   });
 
   test('un usuario con tiempoExtra.corregir sí puede corregir', () async {
+    // Etapa 3B: la autorización se revalida contra la base, así que
+    // este escenario —el de ESTA prueba— se persiste antes de usarlo.
+    await sembrarSesionEnBase(db, _SesionConPermisoCorregir().build()!);
     final container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(_SesionConPermisoCorregir.new),
@@ -189,6 +199,9 @@ void main() {
   });
 
   test('un usuario normal (incluso con todos los permisos dinámicos de Tiempos Extra) no puede eliminar físicamente', () async {
+    // Etapa 3B: la autorización se revalida contra la base, así que
+    // este escenario —el de ESTA prueba— se persiste antes de usarlo.
+    await sembrarSesionEnBase(db, _SesionConTodosLosPermisosMenosMaestro().build()!);
     final container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(_SesionConTodosLosPermisosMenosMaestro.new),
@@ -206,6 +219,9 @@ void main() {
   });
 
   test('el Usuario Maestro sí puede eliminar físicamente (tras cancelar)', () async {
+    // Etapa 3B: la autorización se revalida contra la base, así que
+    // este escenario —el de ESTA prueba— se persiste antes de usarlo.
+    await sembrarSesionEnBase(db, _SesionConPermisoCorregir().build()!);
     final containerNormal = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(_SesionConPermisoCorregir.new),
@@ -213,6 +229,9 @@ void main() {
     addTearDown(containerNormal.dispose);
     await containerNormal.read(cancelarTiempoExtraAutorizadoProvider)(tiempoExtraId: tiempoExtraId, motivo: 'Para eliminar después');
 
+    // Etapa 3B: la autorización se revalida contra la base, así que
+    // este escenario —el de ESTA prueba— se persiste antes de usarlo.
+    await sembrarSesionEnBase(db, _SesionMaestro().build()!);
     final containerMaestro = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(_SesionMaestro.new),

@@ -245,6 +245,17 @@ void main() {
 
     testWidgets('sin la obligación, /cambiar-contrasena no es alcanzable', (tester) async {
       final id = await crearCuentaConTemporal();
+      // El titular YA cumplió el cambio: la cuenta deja de arrastrar
+      // contraseña temporal.
+      //
+      // Etapa 3B — antes bastaba con inyectar una sesión que dijera
+      // `debeCambiarPassword: false` sobre una cuenta que en la base
+      // seguía obligada, y la prueba pasaba. Esa divergencia entre lo
+      // que la sesión cree y lo que la cuenta es fue justo lo que
+      // `SesionController.revalidar()` vino a cerrar, así que ahora la
+      // base tiene que decir lo mismo que la sesión.
+      await (db.update(db.usuario)..where((t) => t.id.equals(id)))
+          .write(const UsuarioCompanion(debeCambiarPassword: Value(false)));
       await montarConSesion(
         tester,
         SesionUsuario(

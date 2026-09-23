@@ -14,6 +14,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/crear_sucursal_u
 import 'package:riseg_one/features/organizacion/presentation/sucursales/ubicaciones_arbol_controller.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../../support/sesion_en_base.dart';
 
 /// Sesión Maestro fija — Etapa 11C activó autorización real en
 /// `UbicacionesArbolController`; sin este override todas las acciones
@@ -54,6 +55,9 @@ void main() {
     );
     addTearDown(container.dispose);
     container.listen(ubicacionesArbolControllerProvider(sucursalId), (_, _) {});
+    // Etapa 3B: autorizar revalida contra la base, así que la
+    // sesión de esta prueba tiene que corresponder a una cuenta real.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() => db.close());

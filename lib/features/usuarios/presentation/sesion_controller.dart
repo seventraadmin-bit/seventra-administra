@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:riseg_one/core/permissions/modulos_permiso.dart';
+
 import '../domain/sesion_usuario.dart';
 import '../domain/usecases/cambiar_contrasena_usuario_usecase.dart';
 import '../domain/usecases/login_usecase.dart';
@@ -71,6 +73,92 @@ class SesionController extends _$SesionController {
     state = null;
     unawaited(_limpiarSesionRecordada(usuarioId));
   }
+
+  /// Vuelve a preguntarle a la base quién es el usuario de esta sesión
+  /// (Etapa 3B) — el **único** mecanismo por el que una sesión ya
+  /// abierta deja de estar autorizada.
+  ///
+  /// Hasta esta etapa, desactivar una cuenta borraba su "Recuérdame" e
+  /// impedía volver a entrar, pero la sesión que ya estaba abierta
+  /// seguía operando con los permisos del momento del login. Con una
+  /// baja laboral eso significaba que la persona a la que acababan de
+  /// dar de baja conservaba acceso mientras no cerrara la aplicación.
+  ///
+  /// Qué hace, en dos consultas y sin ningún temporizador:
+  ///
+  ///  * la cuenta ya no existe o no está activa → **la sesión muere**
+  ///    (`state = null`), y el `redirect` del router manda a `/login`
+  ///    en esa misma evaluación;
+  ///  * la cuenta sigue viva → se rearman sus permisos, su condición de
+  ///    Maestro, su nombre y su obligación de cambiar contraseña. Ésta
+  ///    es la parte que cierra la deuda de "los permisos no se
+  ///    refrescan en vivo" de la Etapa 11B.
+  ///
+  /// **Sin polling y sin consultar la base desde ningún widget.** Se
+  /// invoca desde los DOS embudos de autorización del proyecto
+  /// (`autorizarUseCase` y `exigirMaestro`), desde el `redirect` del
+  /// router y desde los controladores que acaban de mutar una cuenta.
+  /// Nunca desde un `build`.
+  ///
+  /// Si no hay sesión no hace absolutamente nada: sin sesión el
+  /// `redirect` ya niega todo, y consultar la base sería trabajo
+  /// inútil en la pantalla de login.
+  ///
+  /// **Devuelve la sesión resultante** — `null` si dejó de ser válida.
+  ///
+  /// Devolverla, en vez de obligar a releer el provider después, no es
+  /// comodidad: `permissionServiceProvider` observa la sesión, así que
+  /// en cuanto esto la cambia ese provider queda marcado como obsoleto
+  /// y su propio `ref` ya no se puede usar. El resultado viaja de vuelta
+  /// por el valor de retorno, que siempre es el recién calculado.
+  Future<SesionUsuario?> revalidar() async {
+    final actual = state;
+    if (actual == null) return null;
+
+    final usuario = await ref.read(usuarioRepositoryProvider).obtenerPorId(actual.usuarioId);
+
+    // **Fail closed, sin excepciones.** Una sesión que afirma ser una
+    // cuenta que la fuente autoritativa no reconoce —porque no existe o
+    // porque está inactiva— no es una sesión: es una afirmación sin
+    // respaldo, y deja de autorizar.
+    //
+    // Que RISEG ONE no borre físicamente Usuarios hace que el primer
+    // caso sea raro, no que sea seguro darlo por bueno: restaurar un
+    // respaldo de otra instalación lo produce, y una identidad que no
+    // se puede comprobar nunca debe conservar acceso.
+    if (usuario == null || usuario.cicloVidaRegistro != 'activo') {
+      state = null;
+      return null;
+    }
+
+    final permisos = usuario.esMaestro
+        ? todosLosCodigosDePermiso()
+        : await ref.read(permisoUsuarioRepositoryProvider).obtenerCodigos(usuario.id);
+
+    // Se reemplaza el estado sólo si algo cambió de verdad: `state =`
+    // notifica a todo lo que observa la sesión (el sidebar, el gate de
+    // permisos), y hacerlo en cada navegación sin motivo sería
+    // reconstruir media aplicación por nada.
+    if (usuario.esMaestro == actual.esMaestro &&
+        usuario.debeCambiarPassword == actual.debeCambiarPassword &&
+        usuario.nombre == actual.nombre &&
+        usuario.nombreUsuario == actual.nombreUsuario &&
+        _mismosPermisos(permisos, actual.permisos)) {
+      return actual;
+    }
+
+    state = SesionUsuario(
+      usuarioId: usuario.id,
+      nombre: usuario.nombre,
+      nombreUsuario: usuario.nombreUsuario,
+      esMaestro: usuario.esMaestro,
+      permisos: permisos,
+      debeCambiarPassword: usuario.debeCambiarPassword,
+    );
+    return state;
+  }
+
+  static bool _mismosPermisos(Set<String> a, Set<String> b) => a.length == b.length && a.containsAll(b);
 
   /// El titular ya cumplió el cambio obligatorio (Etapa "Usuarios,
   /// permisos y UX de seguridad") — se apaga el candado en la sesión

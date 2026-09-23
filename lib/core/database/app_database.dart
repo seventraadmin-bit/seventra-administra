@@ -144,6 +144,7 @@ import 'migrations/migrar_iva_eventual_v89.dart';
 import 'migrations/migrar_origen_financiero_multicuenta_v91.dart';
 import 'migrations/migrar_receptor_fiscal_eventual_v90.dart';
 import 'migrations/migrar_servicios_eventuales_v87.dart';
+import 'migrations/migrar_vinculo_usuario_empleado_v92.dart';
 import 'migrations/migrar_usuarios_permisos_v78.dart';
 import 'migrations/migrar_origen_financiero_tiempo_extra_v69.dart';
 import 'migrations/migrar_deudas_credito_v61.dart';
@@ -353,7 +354,7 @@ class AppDatabase extends _$AppDatabase {
   final AlmacenClaveCifrado? _almacenClaveCifrado;
 
   @override
-  int get schemaVersion => 91;
+  int get schemaVersion => 92;
 
   @override
   MigrationStrategy get migration {
@@ -1276,6 +1277,11 @@ class AppDatabase extends _$AppDatabase {
         // Origen financiero multicuenta + transferencias entre cuentas.
         if (to >= 91 && from <= 90) {
           await migrarOrigenFinancieroMulticuentaV91(this, m);
+        }
+        // Etapa 3B: un Empleado, como máximo una cuenta. Sólo crea un
+        // índice único parcial — sin tablas, sin columnas, sin datos.
+        if (to >= 92 && from <= 91) {
+          await migrarVinculoUsuarioEmpleadoV92(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

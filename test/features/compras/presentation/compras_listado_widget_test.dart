@@ -38,6 +38,7 @@ import 'package:riseg_one/features/inventario/domain/usecases/crear_categoria_ar
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -123,6 +124,9 @@ void main() {
 
   testWidgets('el resumen KPI distingue Compras/Total/Artículos adquiridos/Proveedores, y la tabla no confunde renglones con unidades', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrar(db);
 
@@ -155,6 +159,9 @@ void main() {
 
   testWidgets('el filtro de Forma de pago narrows la tabla y "Limpiar filtros" restaura todo', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrar(db);
 
@@ -190,6 +197,9 @@ void main() {
 
   testWidgets('tocar una fila abre el expediente de la Compra correspondiente', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrar(db);
 
@@ -207,6 +217,9 @@ void main() {
 
   testWidgets('sin compras en absoluto muestra el empty state "Sin compras registradas"; filtrado sin coincidencias muestra el compacto', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     // Sin sembrar ninguna Compra.
 
@@ -220,6 +233,9 @@ void main() {
 
   testWidgets('un filtro sin coincidencias usa el empty state compacto "Sin compras"', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrar(db);
 
@@ -241,6 +257,9 @@ void main() {
 
   testWidgets('con más de 2 renglones, "Artículos comprados" trunca a "+N más" y el tooltip muestra la lista completa', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
 
     final articuloRepo = ArticuloRepositoryImpl(db);
@@ -294,6 +313,9 @@ void main() {
 
   testWidgets('una Compra solo de gasto directo (sin renglones de Inventario) muestra "—" en Artículos comprados', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
 
     final articuloRepo = ArticuloRepositoryImpl(db);

@@ -19,6 +19,7 @@ import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -114,6 +115,14 @@ Future<void> _pumpDashboard(
   SharedPreferences.setMockInitialValues({});
 
   final db = AppDatabase(NativeDatabase.memory());
+  // Etapa 3B: autorizar revalida contra la base, así que el
+  // escenario de la sesión tiene que estar persistido.
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-rrhh', nombre: 'RRHH de prueba', nombreUsuario: 'rrhh', esMaestro: false, permisos: {'personal.ver', 'personal.crear'}, ));
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-finanzas', nombre: 'Finanzas de prueba', nombreUsuario: 'finanzas', esMaestro: false, permisos: {'finanzas.ver'}, ));
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-compras', nombre: 'Compras de prueba', nombreUsuario: 'compras', esMaestro: false, permisos: {'compras.ver', 'compras.crear'}, ));
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-inventario', nombre: 'Inventario de prueba', nombreUsuario: 'inventario', esMaestro: false, permisos: {'inventario.ver'}, ));
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-sin-permisos', nombre: 'Sin permisos', nombreUsuario: 'sinpermisos', esMaestro: false, permisos: {}, ));
   addTearDown(db.close);
 
   await tester.pumpWidget(

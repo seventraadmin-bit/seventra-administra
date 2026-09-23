@@ -20666,6 +20666,18 @@ class UsuarioData extends DataClass implements Insertable<UsuarioData> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String cicloVidaRegistro;
+
+  /// Identidad visible **sólo cuando [empleadoId] es nulo**.
+  ///
+  /// Para una cuenta vinculada esta columna es un *snapshot técnico*:
+  /// conserva el último nombre independiente conocido, se sigue
+  /// escribiendo en el alta y al desvincular, y **nunca** se presenta
+  /// como identidad. Quien necesite el nombre a mostrar usa
+  /// `IdentidadUsuario.nombreEfectivo`, jamás esta columna directamente.
+  ///
+  /// No se elimina porque es lo que permite que desvincular devuelva la
+  /// cuenta a una identidad propia sin inventarla, y porque una cuenta
+  /// independiente —el caso del Maestro del bootstrap— no tiene otra.
   final String nombre;
   final String nombreUsuario;
   final String passwordHash;
@@ -20690,9 +20702,23 @@ class UsuarioData extends DataClass implements Insertable<UsuarioData> {
   /// **Una baja laboral NUNCA borra ni desvincula la cuenta** (regla
   /// explícita de Marlon): el vínculo se conserva para auditoría, y lo
   /// que corresponde es desactivarla (`cicloVidaRegistro`), que es
-  /// reversible si la persona reingresa. Cambiar de puesto o de
-  /// sucursal no toca nada aquí: esos datos se leen del Empleado en
-  /// cada consulta, así que no pueden divergir.
+  /// reversible si la persona reingresa.
+  ///
+  /// Etapa 3B — la baja laboral ahora **sí** desactiva la cuenta, en la
+  /// misma transacción que cierra el periodo (ver
+  /// `EmpleadoRepositoryImpl.registrarBajaLaboral`). Hasta esta etapa
+  /// nada lo hacía y la persona conservaba acceso en silencio.
+  ///
+  /// Etapa 3B — la versión anterior de este comentario afirmaba que el
+  /// nombre y el puesto "se leen del Empleado en cada consulta, así que
+  /// no pueden divergir". **Era falso**: nada leía nunca al Empleado, y
+  /// la columna era de sólo escritura. Ahora sí se lee, a través de
+  /// `IdentidadUsuario` y siempre en lote (nunca una consulta por
+  /// fila).
+  ///
+  /// Único por índice parcial (ver el `@TableIndex.sql` de la clase):
+  /// un Empleado no puede tener dos cuentas, y varios nulos siguen
+  /// conviviendo.
   final String? empleadoId;
   final bool esMaestro;
 
@@ -44046,6 +44072,20 @@ class EgresoData extends DataClass implements Insertable<EgresoData> {
   /// tarjeta (no sale efectivo todavía), nunca ambas. `null` en las dos
   /// sigue significando "sin especificar" — el estado de todo Egreso
   /// histórico, nunca un tercer caso nuevo.
+  ///
+  /// **LEGACY desde schemaVersion 91.** La verdad sobre de qué
+  /// cuenta(s) salió el dinero vive ahora en `EgresoFuente`, y
+  /// `calcularSaldosCanonico` lee **sólo** esa tabla: esta columna no
+  /// participa en ningún cálculo de saldo. Se conserva, y el
+  /// repositorio la sigue escribiendo, por sus consumidores actuales
+  /// —el diff de corrección de Compras y el nombre de cuenta que
+  /// muestra el detalle de un Descuento programado—, que sólo la usan
+  /// para **mostrar** información.
+  ///
+  /// Con varias fuentes queda `null`, porque ninguna cuenta sola
+  /// representa al Egreso; eso delata a cualquiera que intente volver
+  /// a tratarla como la verdad. **Ningún cálculo nuevo debe decidir la
+  /// cuenta desde aquí**: para eso está `EgresoFuente`.
   final String? cuentaFinancieraId;
 
   /// Etapa "Origen financiero de Egresos manuales: Cuenta vs. TDC"
@@ -99526,6 +99566,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_recarga_linea_telefonica_egreso_unico',
     'CREATE UNIQUE INDEX idx_recarga_linea_telefonica_egreso_unico ON recarga_linea_telefonica (egreso_id) WHERE egreso_id IS NOT NULL',
   );
+  late final Index idxUsuarioEmpleadoUnico = Index(
+    'idx_usuario_empleado_unico',
+    'CREATE UNIQUE INDEX idx_usuario_empleado_unico ON usuario (empleado_id) WHERE empleado_id IS NOT NULL',
+  );
   late final Index servicioEventualDocumentoFiscalVigente = Index(
     'servicio_eventual_documento_fiscal_vigente',
     'CREATE UNIQUE INDEX IF NOT EXISTS servicio_eventual_documento_fiscal_vigente ON servicio_eventual_documento_fiscal (servicio_eventual_id) WHERE estatus = \'registrado\'',
@@ -99688,6 +99732,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxLineaTelefonicaNumeroUnico,
     idxAsignacionLineaTelefonicaVigente,
     idxRecargaLineaTelefonicaEgresoUnico,
+    idxUsuarioEmpleadoUnico,
     servicioEventualDocumentoFiscalVigente,
   ];
   @override

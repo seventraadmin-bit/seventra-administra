@@ -27,4 +27,40 @@ abstract class PermissionService {
   /// puede volver a un usuario normal equivalente al Maestro para esa
   /// facultad.
   bool get esMaestroActivo;
+
+  /// El mismo servicio, pero **revalidado contra la fuente
+  /// autoritativa** (Etapa 3B, cierre de seguridad).
+  ///
+  /// Es la diferencia entre "lo que la sesión cree" y "lo que la cuenta
+  /// es ahora mismo". [hasCode] y [esMaestroActivo] responden en
+  /// memoria y son síncronos a propósito: los usa la interfaz —el
+  /// sidebar, cada botón, el `redirect` del router— y convertirlos en
+  /// asíncronos significaría consultar la base en cada `build`. Esto,
+  /// en cambio, se `await`ea exactamente en los dos embudos por los que
+  /// pasa toda operación protegida (`autorizarUseCase` y
+  /// `exigirMaestro`), que ya eran asíncronos.
+  ///
+  /// Resultado: **pintar** la interfaz no toca la base ni una vez, y
+  /// **ejecutar** una acción protegida pregunta siempre. Una cuenta
+  /// desactivada mientras alguien tiene una pantalla abierta deja de
+  /// autorizar en su siguiente acción, sin que haga falta navegar.
+  ///
+  /// La implementación por defecto se devuelve a sí misma: un servicio
+  /// que no está ligado a ninguna fuente de datos no tiene nada que
+  /// revalidar.
+  Future<PermissionService> vigente() async => this;
+
+  /// La sesión existe y puede EJECUTAR operaciones (Etapa 3B, cierre
+  /// de seguridad).
+  ///
+  /// Hoy sólo es `false` en un caso: la cuenta arrastra una contraseña
+  /// temporal que fijó otra persona (un reseteo administrativo). Esa
+  /// sesión existe —el titular tiene que poder cambiar su contraseña,
+  /// que es autoservicio y no pasa por aquí— pero no opera.
+  ///
+  /// Deliberadamente separado de [hasCode]: si esto se hubiera metido
+  /// dentro, los 94 lugares que consultan permisos para PINTAR la
+  /// interfaz habrían empezado a mentir sobre qué permisos tiene la
+  /// cuenta, cuando el problema no es el permiso sino el momento.
+  bool get puedeOperar => true;
 }

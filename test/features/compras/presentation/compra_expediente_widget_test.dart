@@ -34,6 +34,7 @@ import 'package:riseg_one/features/inventario/domain/usecases/crear_categoria_ar
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -119,6 +120,10 @@ void main() {
 
   testWidgets('cabecera muestra folio + proveedor/fecha + badge, y el resumen es Total/Artículos/Unidades/Forma de pago', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-normal', nombre: 'Usuario normal', nombreUsuario: 'normal', esMaestro: false, permisos: {'compras.ver', 'compras.crear', 'compras.cancelar'}, ));
     addTearDown(db.close);
     final compra = await _sembrarCompra(db);
 
@@ -145,6 +150,10 @@ void main() {
 
   testWidgets('Maestro ve el menú ⋯ con Eliminar físicamente; un usuario normal no lo ve', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-normal', nombre: 'Usuario normal', nombreUsuario: 'normal', esMaestro: false, permisos: {'compras.ver', 'compras.crear', 'compras.cancelar'}, ));
     addTearDown(db.close);
     await _sembrarCompra(db);
 
@@ -165,6 +174,10 @@ void main() {
 
   testWidgets('un usuario normal no ve el menú ⋯ (Eliminar físicamente es Maestro-only)', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-normal', nombre: 'Usuario normal', nombreUsuario: 'normal', esMaestro: false, permisos: {'compras.ver', 'compras.crear', 'compras.cancelar'}, ));
     addTearDown(db.close);
     await _sembrarCompra(db);
 
@@ -175,6 +188,10 @@ void main() {
 
   testWidgets('la sección Finanzas muestra el folio y monto reales del Egreso vinculado (FK Compra.egresoId)', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-normal', nombre: 'Usuario normal', nombreUsuario: 'normal', esMaestro: false, permisos: {'compras.ver', 'compras.crear', 'compras.cancelar'}, ));
     addTearDown(db.close);
     await _sembrarCompra(db);
     final egreso = await db.select(db.egreso).getSingle();
@@ -188,6 +205,10 @@ void main() {
 
   testWidgets('tocar el renglón de Artículo en el Detalle navega al expediente del Artículo', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-normal', nombre: 'Usuario normal', nombreUsuario: 'normal', esMaestro: false, permisos: {'compras.ver', 'compras.crear', 'compras.cancelar'}, ));
     addTearDown(db.close);
     await _sembrarCompra(db);
 

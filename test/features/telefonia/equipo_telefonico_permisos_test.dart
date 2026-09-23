@@ -27,6 +27,7 @@ import 'package:riseg_one/features/telefonia/domain/usecases/revelar_credencial_
 import 'package:riseg_one/features/telefonia/telefonia_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 /// Implementación en memoria de `AlmacenClaveCifrado` — la real usa
 /// canales de plataforma que no responden bajo `flutter test`. Se
@@ -59,7 +60,12 @@ const _mensajePermiso = 'No tiene permiso para realizar esta acción.';
 /// sesión configura la contraseña, otra distinta la revela) fallaría al
 /// descifrar por una clave distinta, no por el permiso que se está
 /// probando.
-ProviderContainer _container(AppDatabase db, SesionUsuario? sesion, {AlmacenClaveCifrado? almacen}) {
+Future<ProviderContainer> _container(AppDatabase db, SesionUsuario? sesion, {AlmacenClaveCifrado? almacen}) async {
+  // Etapa 3B: la autorización se revalida contra la base, así que
+  // el escenario de ESTA prueba se persiste aquí — no en el `setUp`,
+  // porque cada prueba declara su propio conjunto de permisos y
+  // sembrar uno solo volvería positivas las pruebas negativas.
+  if (sesion != null) await sembrarSesionEnBase(db, sesion);
   final container = ProviderContainer(
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
@@ -150,12 +156,12 @@ void main() {
 
       // Configura el equipo con una sesión que sí tiene permiso, para
       // tener algo real que leer después.
-      final containerEscritura = _container(db, _sesionCon({'telefonia.ver', 'telefonia.modificar'}));
+      final containerEscritura = await _container(db, _sesionCon({'telefonia.ver', 'telefonia.modificar'}));
       await containerEscritura.read(configurarEquipoTelefonicoAutorizadoProvider)(unidadId: unidadId, imei: '351234567890123');
 
       // La lectura se hace con una sesión SIN ningún permiso — la
       // consulta no está gateada por `autorizarUseCase` en absoluto.
-      final containerLectura = _container(db, _sesionCon({}));
+      final containerLectura = await _container(db, _sesionCon({}));
       final historia = await containerLectura.read(obtenerHistoriaEquipoTelefonicoUseCaseProvider).ejecutar(unidadId);
 
       expect(historia.movimientoAdquisicion, isNotNull, reason: 'la lectura funcionó, no fue rechazada por permisos');
@@ -163,7 +169,7 @@ void main() {
 
     test('ObtenerHistoriaEquipoTelefonicoUseCase también funciona sin ninguna sesión activa', () async {
       final unidadId = await _crearUnidadDePrueba(db);
-      final container = _container(db, null);
+      final container = await _container(db, null);
 
       final historia = await container.read(obtenerHistoriaEquipoTelefonicoUseCaseProvider).ejecutar(unidadId);
 
@@ -174,13 +180,13 @@ void main() {
   group('revelarCredencialEquipoTelefonicoAutorizadoProvider — gateado por telefonia.verCredenciales', () {
     test('sesión con telefonia.ver + telefonia.modificar pero SIN telefonia.verCredenciales: rechazada', () async {
       final unidadId = await _crearUnidadDePrueba(db);
-      final containerEscritura = _container(db, _sesionCon({'telefonia.ver', 'telefonia.modificar'}));
+      final containerEscritura = await _container(db, _sesionCon({'telefonia.ver', 'telefonia.modificar'}));
       await containerEscritura.read(cambiarContrasenaEquipoTelefonicoAutorizadoProvider)(
         unidadId: unidadId,
         contrasena: 'ClaveDePrueba123',
       );
 
-      final containerLectura = _container(db, _sesionCon({'telefonia.ver', 'telefonia.modificar'}));
+      final containerLectura = await _container(db, _sesionCon({'telefonia.ver', 'telefonia.modificar'}));
       final resultado = await containerLectura.read(revelarCredencialEquipoTelefonicoAutorizadoProvider)(
         unidadId: unidadId,
         accion: AccionRevelacionCredencial.mostrar,
@@ -192,7 +198,7 @@ void main() {
 
     test('sesión con SOLO telefonia.ver (sin .modificar ni .verCredenciales): también rechazada', () async {
       final unidadId = await _crearUnidadDePrueba(db);
-      final container = _container(db, _sesionCon({'telefonia.ver'}));
+      final container = await _container(db, _sesionCon({'telefonia.ver'}));
 
       final resultado = await container.read(revelarCredencialEquipoTelefonicoAutorizadoProvider)(
         unidadId: unidadId,
@@ -210,13 +216,13 @@ void main() {
     test('sesión CON telefonia.verCredenciales: sí puede revelar la contraseña vigente', () async {
       final unidadId = await _crearUnidadDePrueba(db);
       final almacen = _AlmacenClaveCifradoEnMemoria();
-      final containerEscritura = _container(db, _sesionCon({'telefonia.ver', 'telefonia.modificar'}), almacen: almacen);
+      final containerEscritura = await _container(db, _sesionCon({'telefonia.ver', 'telefonia.modificar'}), almacen: almacen);
       await containerEscritura.read(cambiarContrasenaEquipoTelefonicoAutorizadoProvider)(
         unidadId: unidadId,
         contrasena: 'ClaveDePrueba123',
       );
 
-      final containerLectura = _container(db, _sesionCon({'telefonia.ver', 'telefonia.verCredenciales'}), almacen: almacen);
+      final containerLectura = await _container(db, _sesionCon({'telefonia.ver', 'telefonia.verCredenciales'}), almacen: almacen);
       final resultado = await containerLectura.read(revelarCredencialEquipoTelefonicoAutorizadoProvider)(
         unidadId: unidadId,
         accion: AccionRevelacionCredencial.mostrar,
@@ -229,13 +235,13 @@ void main() {
     test('un Maestro siempre puede revelarla, sin ninguna fila de PermisoUsuario', () async {
       final unidadId = await _crearUnidadDePrueba(db);
       final almacen = _AlmacenClaveCifradoEnMemoria();
-      final containerEscritura = _container(db, _sesionMaestro, almacen: almacen);
+      final containerEscritura = await _container(db, _sesionMaestro, almacen: almacen);
       await containerEscritura.read(cambiarContrasenaEquipoTelefonicoAutorizadoProvider)(
         unidadId: unidadId,
         contrasena: 'ClaveDeMaestro456',
       );
 
-      final containerLectura = _container(db, _sesionMaestro, almacen: almacen);
+      final containerLectura = await _container(db, _sesionMaestro, almacen: almacen);
       final resultado = await containerLectura.read(revelarCredencialEquipoTelefonicoAutorizadoProvider)(
         unidadId: unidadId,
         accion: AccionRevelacionCredencial.mostrar,

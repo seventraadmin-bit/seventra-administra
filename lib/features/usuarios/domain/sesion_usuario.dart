@@ -1,15 +1,18 @@
 /// Sesión activa — todo lo que la app necesita saber sobre quién está
 /// usándola ahora mismo.
 ///
-/// `permisos` (Etapa 11B) se calcula una sola vez, en el momento del
-/// login (`LoginUseCase`): para un Maestro, el catálogo completo
-/// (`todosLosCodigosDePermiso()`); para cualquier otro, sus
-/// `PermisoUsuario` reales. **No se refresca en vivo**: si un Maestro
-/// cambia los permisos de un usuario con sesión ya abierta, esa sesión
-/// sigue viendo el conjunto con el que inició hasta su siguiente login
-/// — decisión deliberada por simplicidad y previsibilidad (ver el plan
-/// de la Etapa 11B, punto 12); no hay sincronización multiusuario en
-/// tiempo real todavía.
+/// `permisos` (Etapa 11B) nace en el login (`LoginUseCase`): para un
+/// Maestro, el catálogo completo (`todosLosCodigosDePermiso()`); para
+/// cualquier otro, sus `PermisoUsuario` reales.
+///
+/// **Etapa 3B — ya no es un conjunto congelado.** Hasta entonces la
+/// sesión conservaba los permisos del momento del login hasta el
+/// siguiente, y una cuenta desactivada seguía operando mientras no
+/// cerrara la aplicación. Ahora `SesionController.revalidar()` vuelve a
+/// leer la cuenta —permisos, condición de Maestro, estado— en cada
+/// navegación y justo después de cualquier mutación que la afecte. Sin
+/// temporizadores y sin consultar la base desde ningún widget: ver su
+/// doc comment para el detalle de cuándo exactamente.
 class SesionUsuario {
   const SesionUsuario({
     required this.usuarioId,

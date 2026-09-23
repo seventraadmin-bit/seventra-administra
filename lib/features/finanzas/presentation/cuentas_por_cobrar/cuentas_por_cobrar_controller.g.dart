@@ -7,7 +7,7 @@ part of 'cuentas_por_cobrar_controller.dart';
 // **************************************************************************
 
 String _$cuentasPorCobrarControllerHash() =>
-    r'4736b99a60941c81d50a005e116efaa20b8b99bf';
+    r'7a07db8e4b1423a081fa5c7880fff792ce26aac6';
 
 /// Controlador del listado de Cuentas por cobrar (Etapa 4J.1) — mismo
 /// diseño que `AgendaController`. "Solo vencidas" se filtra en memoria

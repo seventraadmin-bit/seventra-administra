@@ -42,6 +42,28 @@ class AuthorizationService {
   PermisoDenegado? verificar(String codigo) {
     return _permissionService.hasCode(codigo) ? null : PermisoDenegado(codigo);
   }
+
+  /// Igual que [verificar], pero preguntando antes a la fuente
+  /// autoritativa si la cuenta **sigue vigente** (Etapa 3B, cierre de
+  /// seguridad).
+  ///
+  /// Es lo que usa `autorizarUseCase`, y por tanto lo que se aplica a
+  /// toda operación protegida del proyecto. [verificar] se conserva
+  /// para consultas en memoria (la interfaz), pero ninguna EJECUCIÓN
+  /// pasa ya por ella.
+  ///
+  /// Cubre de una sola vez —y con un único mecanismo— la cuenta
+  /// desactivada, la cuenta que ya no existe, el permiso revocado, el
+  /// permiso recién concedido y el Maestro degradado: todos son el
+  /// mismo hecho, "la sesión en memoria dejó de describir a la cuenta".
+  Future<PermisoDenegado?> verificarVigente(String codigo) async {
+    final vigente = await _permissionService.vigente();
+    // Una cuenta con contraseña temporal pendiente no ejecuta nada,
+    // tenga el permiso que tenga: la contraseña vigente la conoce quien
+    // la fijó. Cambiar la propia contraseña no pasa por aquí.
+    if (!vigente.puedeOperar) return PermisoDenegado(codigo);
+    return vigente.hasCode(codigo) ? null : PermisoDenegado(codigo);
+  }
 }
 
 /// Envoltura única de toda operación protegida (Etapa 11C, corrección
@@ -60,14 +82,26 @@ class AuthorizationService {
 /// mensaje)` que cada tipo sellado del proyecto ya tiene — nunca se
 /// introduce un tipo de error nuevo ni se modifica ningún union
 /// existente para esto.
+///
+/// **Etapa 3B (cierre de seguridad)** — antes de autorizar se revalida
+/// la sesión contra la base. Hasta entonces la comprobación se hacía
+/// sólo contra el conjunto de permisos cargado en el login, así que
+/// quien no navegaba conservaba su autorización indefinidamente: una
+/// cuenta desactivada —o alguien a quien acababan de dar de baja—
+/// seguía pudiendo ejecutar mutaciones desde la pantalla que ya tenía
+/// abierta. La seguridad no podía depender del `redirect` del router.
+///
+/// El coste es **una consulta** (dos si la cuenta no es Maestra) por
+/// operación protegida, nunca durante el pintado. La firma no cambió:
+/// los 216 lugares que la invocan siguen escribiéndose igual.
 Future<R> autorizarUseCase<R>(
   AuthorizationService authorizationService,
   String codigo,
   Future<R> Function() operacion,
   R Function(String mensaje) errorInesperado,
-) {
-  if (authorizationService.verificar(codigo) != null) {
-    return Future.value(errorInesperado('No tiene permiso para realizar esta acción.'));
+) async {
+  if (await authorizationService.verificarVigente(codigo) != null) {
+    return errorInesperado('No tiene permiso para realizar esta acción.');
   }
   return operacion();
 }
@@ -82,13 +116,21 @@ Future<R> autorizarUseCase<R>(
 /// propio UseCase dedicado, con su propia validación de negocio — hoy
 /// lo usan los `EliminarXxxFisicamenteUseCase` (Etapa 11D) y
 /// Respaldo/Restauración (Etapa 14C).
+///
+/// **Etapa 3B (cierre de seguridad)** — igual que `autorizarUseCase`,
+/// comprueba el estado VIGENTE, no el que la sesión traía del login.
+/// Degradar a un Maestro tenía que dejar de bastar con que su sesión en
+/// memoria siguiera diciendo `esMaestro = true`: esta es exactamente la
+/// facultad donde eso importaba más, porque es la que autoriza la
+/// eliminación física y el respaldo.
 Future<R> exigirMaestro<R>(
   PermissionService permissionService,
   Future<R> Function() operacion,
   R Function(String mensaje) noAutorizado,
-) {
-  if (!permissionService.esMaestroActivo) {
-    return Future.value(noAutorizado('Esta acción requiere el Usuario Maestro.'));
+) async {
+  final vigente = await permissionService.vigente();
+  if (!vigente.puedeOperar || !vigente.esMaestroActivo) {
+    return noAutorizado('Esta acción requiere el Usuario Maestro.');
   }
   return operacion();
 }

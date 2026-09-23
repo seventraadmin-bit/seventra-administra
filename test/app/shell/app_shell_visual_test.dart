@@ -22,6 +22,7 @@ import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -51,6 +52,9 @@ Future<AppDatabase> _pumpApp(WidgetTester tester, {required Size tamano, require
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final db = AppDatabase(NativeDatabase.memory());
+  // Etapa 3B: autorizar revalida contra la base, así que el
+  // escenario de la sesión tiene que estar persistido.
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Usuario de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
   addTearDown(db.close);
 
   await tester.pumpWidget(

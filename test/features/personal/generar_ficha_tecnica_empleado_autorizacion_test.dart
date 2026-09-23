@@ -24,6 +24,7 @@ import 'package:riseg_one/features/personal/domain/usecases/generar_ficha_tecnic
 import 'package:riseg_one/features/personal/personal_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionSoloVer extends SesionController {
   @override
@@ -98,16 +99,23 @@ void main() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  ProviderContainer containerCon(SesionController Function() sesion) {
-    return ProviderContainer(overrides: [
+  Future<ProviderContainer> containerCon(SesionController Function() sesion) async {
+    final container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(sesion),
       attachmentStorageProvider.overrideWithValue(AttachmentStorage(tempDir.path)),
     ]);
+    // Etapa 3B: la autorización se revalida contra la base. Se
+    // persiste la sesión que ESTA prueba va a usar, leída del
+    // propio contenedor: el escenario sembrado y el inyectado no
+    // pueden divergir, y una prueba negativa sigue sin permisos.
+    final sesionDeLaPrueba = container.read(sesionControllerProvider);
+    if (sesionDeLaPrueba != null) await sembrarSesionEnBase(db, sesionDeLaPrueba);
+    return container;
   }
 
   test('un usuario con personal.ver (pero explícitamente SIN personal.crear) sí puede generar la ficha técnica', () async {
-    final container = containerCon(_SesionSoloVer.new);
+    final container = await containerCon(_SesionSoloVer.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(generarFichaTecnicaEmpleadoAutorizadoProvider)(empleadoId: empleadoId);
@@ -116,7 +124,7 @@ void main() {
   });
 
   test('un usuario sin personal.ver no puede generar la ficha técnica', () async {
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(generarFichaTecnicaEmpleadoAutorizadoProvider)(empleadoId: empleadoId);
@@ -129,7 +137,7 @@ void main() {
   });
 
   test('el Usuario Maestro (sin filas de PermisoUsuario) sí puede generar la ficha técnica', () async {
-    final container = containerCon(_SesionMaestro.new);
+    final container = await containerCon(_SesionMaestro.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(generarFichaTecnicaEmpleadoAutorizadoProvider)(empleadoId: empleadoId);
@@ -138,7 +146,7 @@ void main() {
   });
 
   test('generar la ficha técnica nunca muta la fila de Empleado (solo inserta un histórico de FichaTecnicaEmpleado)', () async {
-    final container = containerCon(_SesionSoloVer.new);
+    final container = await containerCon(_SesionSoloVer.new);
     addTearDown(container.dispose);
 
     final empleadoAntes = await container.read(empleadoRepositoryProvider).obtenerPorId(empleadoId);

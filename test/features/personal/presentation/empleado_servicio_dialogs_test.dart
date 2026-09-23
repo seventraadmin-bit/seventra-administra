@@ -48,6 +48,7 @@ import 'package:riseg_one/features/personal/presentation/empleados/widgets/crear
 import 'package:riseg_one/features/personal/presentation/empleados/widgets/sueldo_acordado_fields.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../../support/sesion_en_base.dart';
 
 /// Sesión Maestro fija — Etapa 11C activó autorización real en las
 /// acciones de estos diálogos; sin este override todas serían
@@ -149,6 +150,9 @@ void main() {
             passwordHash: 'x',
           ),
         );
+    // Etapa 3B: autorizar revalida contra la base, así que la
+    // sesión de esta prueba tiene que corresponder a una cuenta real.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() => db.close());

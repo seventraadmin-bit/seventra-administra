@@ -12,6 +12,8 @@ import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/crear_puesto_usecase.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/guardar_puesto_resultado.dart';
 import 'package:riseg_one/features/organizacion/domain/usecases/puesto_validator.dart';
+import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
+import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/data/repositories/permiso_usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/activar_usuario_usecase.dart';
@@ -53,7 +55,8 @@ void main() {
       GenerarCodigoUseCase(CodigoSecuenciaService(db)),
       PuestoValidator(AreaRepositoryImpl(db)),
     );
-    crearUsuario = CrearUsuarioUseCase(usuarioRepo, puestoRepo, hasher);
+    final empleadoRepo = EmpleadoRepositoryImpl(db, AsignacionServicioRepositoryImpl(db));
+    crearUsuario = CrearUsuarioUseCase(usuarioRepo, puestoRepo, hasher, empleadoRepo);
     corregirUsuario = CorregirUsuarioUseCase(usuarioRepo, puestoRepo);
     cambiarContrasena = CambiarContrasenaUsuarioUseCase(usuarioRepo, hasher);
     activarUsuario = ActivarUsuarioUseCase(usuarioRepo);

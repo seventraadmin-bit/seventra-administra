@@ -20,6 +20,7 @@ import 'package:riseg_one/features/boveda/presentation/boveda_screen.dart';
 import 'package:riseg_one/features/boveda/presentation/widgets/credencial_boveda_detalle_dialog.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 const _contrasenaDePrueba = 'Sup3r-Secreta-De-Prueba';
 
@@ -97,6 +98,9 @@ void main() {
           ),
         );
     credencialId = credencial.id;
+    // Etapa 3B: autorizar revalida contra la base, así que la
+    // sesión de esta prueba tiene que corresponder a una cuenta real.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'u-maestro', nombre: 'MARLON', nombreUsuario: 'marlon', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() => db.close());

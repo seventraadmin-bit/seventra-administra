@@ -145,6 +145,9 @@ final registrarBajaLaboralUseCaseProvider = Provider<RegistrarBajaLaboralUseCase
     ref.watch(empleadoValidatorProvider),
     ref.watch(asignacionRepositoryProvider),
     ref.watch(asignacionVehiculoRepositoryProvider),
+    // Etapa 3B: el invariante "nunca sin Maestro activo" se comprueba
+    // aquí, antes de escribir, porque la baja desactiva la cuenta.
+    usuarioRepository: ref.watch(usuarioRepositoryProvider),
   );
 });
 

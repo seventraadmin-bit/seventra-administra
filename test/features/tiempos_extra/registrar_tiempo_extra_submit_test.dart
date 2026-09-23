@@ -44,6 +44,7 @@ import 'package:riseg_one/features/tiempos_extra/data/tables/tiempo_extra_table.
 import 'package:riseg_one/features/tiempos_extra/presentation/widgets/registrar_tiempo_extra_dialog.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -158,6 +159,9 @@ void main() {
             fechaSaldoInicial: DateTime(2026, 1, 1),
           ),
         );
+    // Etapa 3B: autorizar revalida contra la base, así que la
+    // sesión de esta prueba tiene que corresponder a una cuenta real.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() => db.close());

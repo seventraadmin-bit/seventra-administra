@@ -93,6 +93,7 @@ import 'package:riseg_one/features/vehiculos/domain/usecases/asignar_vehiculo_us
 import 'package:riseg_one/features/vehiculos/domain/usecases/crear_vehiculo_usecase.dart';
 import 'package:riseg_one/features/vehiculos/domain/usecases/eliminar_vehiculo_fisicamente_usecase.dart';
 import 'package:riseg_one/features/vehiculos/vehiculos_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 const _actorUsuarioId = 'usuario-prueba';
 
@@ -107,7 +108,12 @@ class _SesionFija extends SesionController {
   SesionUsuario? build() => _sesion;
 }
 
-ProviderContainer _container(AppDatabase db, SesionUsuario? sesion) {
+Future<ProviderContainer> _container(AppDatabase db, SesionUsuario? sesion) async {
+  // Etapa 3B: la autorización se revalida contra la base, así que
+  // el escenario de ESTA prueba se persiste aquí — no en el `setUp`,
+  // porque cada prueba declara su propio conjunto de permisos y
+  // sembrar uno solo volvería positivas las pruebas negativas.
+  if (sesion != null) await sembrarSesionEnBase(db, sesion);
   final container = ProviderContainer(
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
@@ -824,7 +830,7 @@ void main() {
     });
 
     test('9. Maestro solamente — un no-Maestro con un código de permiso inventado sigue rechazado', () async {
-      final container = _container(
+      final container = await _container(
         db,
         const SesionUsuario(
           usuarioId: _actorUsuarioId,
@@ -921,7 +927,7 @@ void main() {
     });
 
     test('4. Maestro solamente — un no-Maestro con un código de permiso inventado sigue rechazado', () async {
-      final container = _container(
+      final container = await _container(
         db,
         const SesionUsuario(
           usuarioId: _actorUsuarioId,
@@ -1056,7 +1062,7 @@ void main() {
     });
 
     test('5. Maestro solamente — un no-Maestro con un código de permiso inventado sigue rechazado', () async {
-      final container = _container(
+      final container = await _container(
         db,
         const SesionUsuario(
           usuarioId: _actorUsuarioId,
@@ -1325,7 +1331,7 @@ void main() {
     );
 
     test('7. Maestro solamente — un no-Maestro con un código de permiso inventado sigue rechazado', () async {
-      final container = _container(
+      final container = await _container(
         db,
         const SesionUsuario(
           usuarioId: _actorUsuarioId,
@@ -1659,7 +1665,7 @@ void main() {
 
     test('Vehiculo — un no-Maestro con un código de permiso inventado ("vehiculos.eliminar") sigue '
         'rechazado, porque exigirMaestro nunca consulta PermisoUsuario/hasCode', () async {
-      final container = _container(db, sesionConPermisoInventado({'vehiculos.eliminar'}));
+      final container = await _container(db, sesionConPermisoInventado({'vehiculos.eliminar'}));
       final resultado =
           await container.read(eliminarVehiculoFisicamenteAutorizadoProvider)(vehiculoId: 'no-existe', motivo: 'prueba');
 
@@ -1668,7 +1674,7 @@ void main() {
     });
 
     test('Vehiculo — un Maestro sin ninguna fila de PermisoUsuario sí pasa (llega al dominio real)', () async {
-      final container = _container(db, sesionMaestroSinPermisos);
+      final container = await _container(db, sesionMaestroSinPermisos);
       final resultado =
           await container.read(eliminarVehiculoFisicamenteAutorizadoProvider)(vehiculoId: 'no-existe', motivo: 'prueba');
 
@@ -1678,7 +1684,7 @@ void main() {
 
     test('Articulo — un no-Maestro con un código de permiso inventado ("inventario.eliminar") sigue '
         'rechazado, porque exigirMaestro nunca consulta PermisoUsuario/hasCode', () async {
-      final container = _container(db, sesionConPermisoInventado({'inventario.eliminar'}));
+      final container = await _container(db, sesionConPermisoInventado({'inventario.eliminar'}));
       final resultado =
           await container.read(eliminarArticuloFisicamenteAutorizadoProvider)(articuloId: 'no-existe', motivo: 'prueba');
 
@@ -1687,7 +1693,7 @@ void main() {
     });
 
     test('Articulo — un Maestro sin ninguna fila de PermisoUsuario sí pasa (llega al dominio real)', () async {
-      final container = _container(db, sesionMaestroSinPermisos);
+      final container = await _container(db, sesionMaestroSinPermisos);
       final resultado =
           await container.read(eliminarArticuloFisicamenteAutorizadoProvider)(articuloId: 'no-existe', motivo: 'prueba');
 
@@ -1697,7 +1703,7 @@ void main() {
 
     test('RegularizarArticuloSerializado — un no-Maestro con un código de permiso inventado '
         '("inventario.modificar") sigue rechazado, porque exigirMaestro nunca consulta PermisoUsuario/hasCode', () async {
-      final container = _container(db, sesionConPermisoInventado({'inventario.modificar'}));
+      final container = await _container(db, sesionConPermisoInventado({'inventario.modificar'}));
       final resultado = await container.read(regularizarArticuloSerializadoAutorizadoProvider)(
         articuloId: 'no-existe',
         movimientoInventarioId: 'no-existe',
@@ -1709,7 +1715,7 @@ void main() {
     });
 
     test('RegularizarArticuloSerializado — un Maestro sin ninguna fila de PermisoUsuario sí pasa (llega al dominio real)', () async {
-      final container = _container(db, sesionMaestroSinPermisos);
+      final container = await _container(db, sesionMaestroSinPermisos);
       final resultado = await container.read(regularizarArticuloSerializadoAutorizadoProvider)(
         articuloId: 'no-existe',
         movimientoInventarioId: 'no-existe',
@@ -1722,7 +1728,7 @@ void main() {
 
     test('Empleado — un no-Maestro con un código de permiso inventado ("personal.eliminar") sigue '
         'rechazado, porque exigirMaestro nunca consulta PermisoUsuario/hasCode', () async {
-      final container = _container(db, sesionConPermisoInventado({'personal.eliminar'}));
+      final container = await _container(db, sesionConPermisoInventado({'personal.eliminar'}));
       final resultado =
           await container.read(eliminarEmpleadoFisicamenteAutorizadoProvider)(empleadoId: 'no-existe', motivo: 'prueba');
 
@@ -1735,6 +1741,9 @@ void main() {
       // sí necesita `AttachmentStorage` (limpia fotografía/documentos/PDFs
       // de fichas técnicas) — `attachmentStorageProvider` requiere
       // `appPathsProvider`, no disponible en pruebas sin sobreescribirlo.
+      // Por eso arma su contenedor a mano en vez de usar `_container`, y
+      // por eso la siembra del escenario va explícita aquí.
+      await sembrarSesionEnBase(db, sesionMaestroSinPermisos);
       final container = ProviderContainer(
         overrides: [
           appDatabaseProvider.overrideWithValue(db),

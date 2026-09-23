@@ -57,6 +57,7 @@ import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionControllerDePrueba extends SesionController {
   @override
@@ -170,6 +171,10 @@ Future<AppDatabase> _pumpAppEnExpediente(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final db = AppDatabase(NativeDatabase.memory());
+  // Etapa 3B: autorizar revalida contra la base, así que el
+  // escenario de la sesión tiene que estar persistido.
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba-2', nombre: 'Usuario de prueba', nombreUsuario: 'prueba2', esMaestro: false, permisos: { 'inventario.ver', 'inventario.crear', 'inventario.corregir', 'inventario.ajustarExistencia', 'inventario.archivar', }, ));
   addTearDown(db.close);
   await sembrar(db);
 

@@ -27,6 +27,7 @@ import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -118,6 +119,9 @@ void main() {
     'listado general muestra la columna Asignado, y el expediente del artículo muestra el mismo valor (SMARTPHONE: 2)',
     (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
+      // Etapa 3B: autorizar revalida contra la base, así que el
+      // escenario de la sesión tiene que estar persistido.
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
       await _sembrarSmartphoneConAsignados(db);
 

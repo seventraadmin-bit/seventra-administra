@@ -24,6 +24,7 @@ import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import 'support/sesion_en_base.dart';
 
 /// Sesión Maestro fija para pruebas de navegación — Etapa 11A introdujo
 /// login/bootstrap obligatorios; sin este override, cada una de las
@@ -64,6 +65,9 @@ Future<AppDatabase> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final db = AppDatabase(NativeDatabase.memory());
+  // Etapa 3B: autorizar revalida contra la base, así que el
+  // escenario de la sesión tiene que estar persistido.
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
   addTearDown(db.close);
 
   // Un router nuevo por prueba: `GoRouter` guarda estado de navegación
@@ -760,6 +764,10 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
+      // Etapa 3B — excepción deliberada: la base va SIN Usuarios porque
+      // eso es justamente lo que esta prueba verifica (el bootstrap sólo
+      // existe mientras `contarUsuarios() == 0`). Sembrar una cuenta
+      // aquí apagaría el escenario bajo prueba.
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
 
@@ -806,6 +814,9 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       final db = AppDatabase(NativeDatabase.memory());
+      // Etapa 3B: autorizar revalida contra la base, así que el
+      // escenario de la sesión tiene que estar persistido.
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
 
       // Pre-siembra fuera de la UI (mismo patrón que los tests de

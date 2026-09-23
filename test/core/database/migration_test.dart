@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/codigos/codigo_secuencia_service.dart';
 import 'package:riseg_one/core/codigos/generar_codigo_usecase.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/core/database/migrations/migrar_vinculo_usuario_empleado_v92.dart';
 import 'package:riseg_one/core/database/migrations/migrar_cuenta_por_cobrar_v14.dart';
 import 'package:riseg_one/core/database/migrations/migrar_correccion_cuenta_por_cobrar_v74.dart';
 import 'package:riseg_one/core/database/migrations/migrar_egreso_origen_tarjeta_v76.dart';
@@ -54,7 +55,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 91;
+const _currentSchemaVersion = 92;
 
 /// `AlmacenClaveCifrado` en memoria — la migración a `schemaVersion` 52
 /// cifra contraseñas de portal legadas con `CredentialCipher`, y el
@@ -14753,6 +14754,88 @@ void main() {
       final nombres = columnas.map((c) => c.data['name'] as String).toSet();
       expect(nombres, containsAll(<String>['origen_cobertura', 'vacante_operativa_id', 'descripcion_origen']));
 
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 91 → 92 (Etapa 3B, vínculo Usuario ↔ Empleado) conserva las cuentas reales, '
+    'NO las vincula a nadie automáticamente y deja la unicidad protegida',
+    () async {
+      final schemaV91 = await verifier.schemaAt(91);
+      final raw = schemaV91.rawDatabase;
+
+      // Las dos cuentas REALES de la instalación, tal como están hoy:
+      // ambas con empleado_id NULL, una Maestra y otra no, con sus
+      // permisos y su historial.
+      raw.execute('''
+        INSERT INTO usuario (
+          id, nombre, nombre_usuario, password_hash, es_maestro, debe_cambiar_password,
+          ciclo_vida_registro, created_at, updated_at
+        ) VALUES
+          ('u-marlon', 'MARLON', 'MARLONRH', 'pbkdf2' || char(36) || '1000' || char(36) || 'salt' || char(36) || 'hash', 1, 0, 'activo', 1700000000, 1700000000),
+          ('u-javier', 'JAVIER', 'JAVIER', 'pbkdf2' || char(36) || '1000' || char(36) || 'salt2' || char(36) || 'hash2', 0, 0, 'activo', 1700000000, 1700000000);
+      ''');
+      raw.execute('''
+        INSERT INTO permiso_usuario (usuario_id, codigo) VALUES
+          ('u-javier', 'personal.ver'), ('u-javier', 'nomina.ver'), ('u-javier', 'descuentos.crear');
+      ''');
+      raw.execute('''
+        INSERT INTO usuario_evento (usuario_id, actor_usuario_id, fecha_hora, tipo_evento, datos_relevantes)
+        VALUES
+          ('u-marlon', NULL, 1700000000, 'creado', '{"nombreUsuario":"MARLONRH"}'),
+          ('u-javier', 'u-marlon', 1700000100, 'creado', '{"nombreUsuario":"JAVIER"}'),
+          ('u-javier', 'u-marlon', 1700000200, 'permisosModificados', '{"agregados":["nomina.ver"]}');
+      ''');
+
+      // Abrir con la versión actual dispara el onUpgrade real (91 → 92).
+      final db = AppDatabase(schemaV91.newConnection());
+
+      // 1. Las cuentas sobreviven, íntegras.
+      final usuarios = await (db.select(db.usuario)..orderBy([(t) => OrderingTerm.asc(t.nombre)])).get();
+      expect(usuarios.map((u) => u.nombreUsuario), ['JAVIER', 'MARLONRH']);
+      expect(usuarios.firstWhere((u) => u.id == 'u-marlon').esMaestro, isTrue);
+      expect(usuarios.every((u) => u.cicloVidaRegistro == 'activo'), isTrue);
+
+      // 2. NADIE queda vinculado automáticamente. Emparejar por nombre
+      //    habría sido justo la adivinanza que este proyecto no hace.
+      expect(
+        usuarios.every((u) => u.empleadoId == null),
+        isTrue,
+        reason: 'la migración no infiere identidad por nombre, usuario ni puesto',
+      );
+
+      // 3. Permisos y auditoría intactos: no se reescribe historia.
+      final permisos = await db.select(db.permisoUsuario).get();
+      expect(permisos, hasLength(3));
+      final eventos = await (db.select(db.usuarioEvento)..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+      expect(eventos, hasLength(3));
+      expect(eventos.first.actorUsuarioId, isNull, reason: 'el bootstrap histórico sigue sin actor');
+      expect(eventos.last.tipoEvento, 'permisosModificados');
+
+      // 4. El login sigue funcionando: el hash no se tocó.
+      final marlon = usuarios.firstWhere((u) => u.id == 'u-marlon');
+      expect(marlon.passwordHash, r'pbkdf2$1000$salt$hash');
+
+      // 5. Y la unicidad ya está protegida por el índice nuevo.
+      final indices = await db.customSelect("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'usuario'").get();
+      expect(indices.map((f) => f.data['name']), contains('idx_usuario_empleado_unico'));
+
+      await db.close();
+    },
+  );
+
+  test(
+    'migración 91 → 92 es idempotente — correrla dos veces no falla ni duplica el índice',
+    () async {
+      final schemaV91 = await verifier.schemaAt(91);
+      final db = AppDatabase(schemaV91.newConnection());
+      await db.customSelect('SELECT 1').get();
+      await migrarVinculoUsuarioEmpleadoV92(db, Migrator(db));
+      await migrarVinculoUsuarioEmpleadoV92(db, Migrator(db));
+
+      final indices = await db.customSelect("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_usuario_empleado_unico'").get();
+      expect(indices, hasLength(1));
       await db.close();
     },
   );

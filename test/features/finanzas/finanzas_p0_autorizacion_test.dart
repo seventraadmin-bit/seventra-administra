@@ -36,6 +36,7 @@ import 'package:riseg_one/features/finanzas/presentation/ingresos/ingresos_contr
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_controller.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 /// Mismo mensaje que produce `autorizarUseCase` (`core/permissions/
 /// authorization_service.dart`) — reutilizado tal cual en
@@ -62,7 +63,12 @@ SesionUsuario _sesionCon(Set<String> permisos) => SesionUsuario(
       permisos: permisos,
     );
 
-ProviderContainer _container(AppDatabase db, SesionUsuario sesion) {
+Future<ProviderContainer> _container(AppDatabase db, SesionUsuario sesion) async {
+  // Etapa 3B: la autorización se revalida contra la base, así que
+  // el escenario de ESTA prueba se persiste aquí — no en el `setUp`,
+  // porque cada prueba declara su propio conjunto de permisos y
+  // sembrar uno solo volvería positivas las pruebas negativas.
+  await sembrarSesionEnBase(db, sesion);
   final container = ProviderContainer(
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
@@ -141,7 +147,7 @@ void main() {
 
   group('Registrar Egreso manual (egresos.crear) — EgresosController.registrar', () {
     test('sin egresos.crear no se registra ningún Egreso', () async {
-      final container = _container(db, _sesionCon({'finanzas.ver'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver'}));
 
       final resultado = await container.read(egresosControllerProvider.notifier).registrar(
             monto: 150000,
@@ -160,7 +166,7 @@ void main() {
     });
 
     test('con egresos.crear sí se registra el Egreso', () async {
-      final container = _container(db, _sesionCon({'finanzas.ver', 'egresos.crear'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver', 'egresos.crear'}));
 
       final resultado = await container.read(egresosControllerProvider.notifier).registrar(
             monto: 150000,
@@ -178,7 +184,7 @@ void main() {
 
   group('Registrar Ingreso manual (ingresos.crear) — IngresosController.registrarManual', () {
     test('sin ingresos.crear no se registra ningún Ingreso', () async {
-      final container = _container(db, _sesionCon({'finanzas.ver'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver'}));
 
       final resultado = await container.read(ingresosControllerProvider.notifier).registrarManual(
             monto: 80000,
@@ -197,7 +203,7 @@ void main() {
     });
 
     test('con ingresos.crear sí se registra el Ingreso', () async {
-      final container = _container(db, _sesionCon({'finanzas.ver', 'ingresos.crear'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver', 'ingresos.crear'}));
 
       final resultado = await container.read(ingresosControllerProvider.notifier).registrarManual(
             monto: 80000,
@@ -215,7 +221,7 @@ void main() {
 
   group('Categoría financiera — crear/actualizar/archivar, tres permisos distintos', () {
     test('sin categoriasFinancieras.crear no se crea ninguna categoría', () async {
-      final container = _container(db, _sesionCon({'finanzas.ver'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver'}));
 
       final resultado = await container.read(crearCategoriaFinancieraAutorizadoProvider)(
         codigo: 'CAT-P0-001',
@@ -230,7 +236,7 @@ void main() {
     });
 
     test('con categoriasFinancieras.crear sí se crea la categoría', () async {
-      final container = _container(db, _sesionCon({'finanzas.ver', 'categoriasFinancieras.crear'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver', 'categoriasFinancieras.crear'}));
 
       final resultado = await container.read(crearCategoriaFinancieraAutorizadoProvider)(
         codigo: 'CAT-P0-001',
@@ -245,7 +251,7 @@ void main() {
 
     test('con categoriasFinancieras.crear (pero sin categoriasFinancieras.corregir) no se puede actualizar la categoría',
         () async {
-      final containerCrear = _container(db, _sesionCon({'categoriasFinancieras.crear'}));
+      final containerCrear = await _container(db, _sesionCon({'categoriasFinancieras.crear'}));
       final creada = await containerCrear.read(crearCategoriaFinancieraAutorizadoProvider)(
         codigo: 'CAT-P0-002',
         nombre: 'Viáticos',
@@ -269,7 +275,7 @@ void main() {
     });
 
     test('con categoriasFinancieras.corregir sí se puede actualizar la categoría', () async {
-      final containerCrear = _container(db, _sesionCon({'categoriasFinancieras.crear'}));
+      final containerCrear = await _container(db, _sesionCon({'categoriasFinancieras.crear'}));
       final creada = await containerCrear.read(crearCategoriaFinancieraAutorizadoProvider)(
         codigo: 'CAT-P0-003',
         nombre: 'Viáticos',
@@ -278,7 +284,7 @@ void main() {
       );
       final categoriaId = (creada as CrearCategoriaFinancieraExitoso).categoria.id;
 
-      final containerModificar = _container(db, _sesionCon({'categoriasFinancieras.corregir'}));
+      final containerModificar = await _container(db, _sesionCon({'categoriasFinancieras.corregir'}));
       final resultado = await containerModificar.read(actualizarCategoriaFinancieraAutorizadoProvider)(
         id: categoriaId,
         codigo: 'CAT-P0-003',
@@ -294,7 +300,7 @@ void main() {
 
     test('con categoriasFinancieras.crear (pero sin categoriasFinancieras.archivar) no se puede archivar la categoría',
         () async {
-      final containerCrear = _container(db, _sesionCon({'categoriasFinancieras.crear'}));
+      final containerCrear = await _container(db, _sesionCon({'categoriasFinancieras.crear'}));
       final creada = await containerCrear.read(crearCategoriaFinancieraAutorizadoProvider)(
         codigo: 'CAT-P0-004',
         nombre: 'Ajustes varios',
@@ -312,7 +318,7 @@ void main() {
     });
 
     test('con categoriasFinancieras.archivar sí se puede archivar la categoría', () async {
-      final containerCrear = _container(db, _sesionCon({'categoriasFinancieras.crear'}));
+      final containerCrear = await _container(db, _sesionCon({'categoriasFinancieras.crear'}));
       final creada = await containerCrear.read(crearCategoriaFinancieraAutorizadoProvider)(
         codigo: 'CAT-P0-005',
         nombre: 'Ajustes varios',
@@ -321,7 +327,7 @@ void main() {
       );
       final categoriaId = (creada as CrearCategoriaFinancieraExitoso).categoria.id;
 
-      final containerArchivar = _container(db, _sesionCon({'categoriasFinancieras.archivar'}));
+      final containerArchivar = await _container(db, _sesionCon({'categoriasFinancieras.archivar'}));
       final resultado = await containerArchivar.read(archivarCategoriaFinancieraAutorizadoProvider)(categoriaId);
 
       expect(resultado, isA<ArchivarCategoriaFinancieraExitoso>());
@@ -333,7 +339,7 @@ void main() {
   group('Cancelar aplicación de Pago desde CxC (pagos.cancelarAplicacion) — PagosController.cancelarAplicacion', () {
     test('sin pagos.cancelarAplicacion no se cancela la aplicación ni se revierte el saldo', () async {
       final base = await _crearCuentaPorCobrarDePrueba(db, importeEmitido: 100000);
-      final container = _container(db, _sesionCon({'finanzas.ver'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver'}));
       final pagoRepo = container.read(pagoRepositoryProvider);
       final pago = await pagoRepo.crear(
         folioPago: 'PAG-P0-001',
@@ -360,7 +366,7 @@ void main() {
 
     test('con pagos.cancelarAplicacion sí se cancela la aplicación y se revierte el saldo', () async {
       final base = await _crearCuentaPorCobrarDePrueba(db, importeEmitido: 100000);
-      final container = _container(db, _sesionCon({'pagos.cancelarAplicacion'}));
+      final container = await _container(db, _sesionCon({'pagos.cancelarAplicacion'}));
       final pagoRepo = container.read(pagoRepositoryProvider);
       final pago = await pagoRepo.crear(
         folioPago: 'PAG-P0-002',
@@ -390,7 +396,7 @@ void main() {
       () {
     test('sin cuentaPorCobrar.reprogramarCobro no se reprograma el cobro', () async {
       final base = await _crearCuentaPorCobrarDePrueba(db);
-      final container = _container(db, _sesionCon({'finanzas.ver'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver'}));
 
       final resultado = await container.read(reprogramarCobroCuentaPorCobrarAutorizadoProvider)(
         cuentaPorCobrarId: base.cuentaId,
@@ -406,7 +412,7 @@ void main() {
 
     test('con cuentaPorCobrar.reprogramarCobro sí se reprograma el cobro', () async {
       final base = await _crearCuentaPorCobrarDePrueba(db);
-      final container = _container(db, _sesionCon({'cuentaPorCobrar.reprogramarCobro'}));
+      final container = await _container(db, _sesionCon({'cuentaPorCobrar.reprogramarCobro'}));
 
       final resultado = await container.read(reprogramarCobroCuentaPorCobrarAutorizadoProvider)(
         cuentaPorCobrarId: base.cuentaId,

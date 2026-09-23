@@ -41,6 +41,7 @@ import 'package:riseg_one/features/tiempos_extra/presentation/tiempos_extra_cont
 import 'package:riseg_one/features/tiempos_extra/presentation/widgets/eliminar_tiempo_extra_fisicamente_dialog.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -72,6 +73,10 @@ void main() {
             passwordHash: 'x',
           ),
         );
+    // Etapa 3B: la fila existe pero nace sin `esMaestro`, y la
+    // autorización se revalida contra la base — sin esto el propio
+    // `setUp` no podría ejecutar sus operaciones autorizadas.
+    await sembrarSesionEnBase(db, const SesionUsuario(usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}));
 
     final asignacionServicioRepo = AsignacionServicioRepositoryImpl(db);
     final servicioRepo = ServicioRepositoryImpl(db, asignacionServicioRepo);

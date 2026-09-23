@@ -23,6 +23,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/registrar_logo_c
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionSinPermiso extends SesionController {
   @override
@@ -71,16 +72,23 @@ void main() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  ProviderContainer containerCon(SesionController Function() sesion) {
-    return ProviderContainer(overrides: [
+  Future<ProviderContainer> containerCon(SesionController Function() sesion) async {
+    final container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(sesion),
       attachmentStorageProvider.overrideWithValue(AttachmentStorage(tempDir.path)),
     ]);
+    // Etapa 3B: la autorización se revalida contra la base. Se
+    // persiste la sesión que ESTA prueba va a usar, leída del
+    // propio contenedor: el escenario sembrado y el inyectado no
+    // pueden divergir, y una prueba negativa sigue sin permisos.
+    final sesionDeLaPrueba = container.read(sesionControllerProvider);
+    if (sesionDeLaPrueba != null) await sembrarSesionEnBase(db, sesionDeLaPrueba);
+    return container;
   }
 
   test('un usuario sin clientes.corregir no puede registrar el logo', () async {
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final totalAntes = (await db.select(db.attachment).get()).length;
@@ -106,7 +114,7 @@ void main() {
   });
 
   test('un usuario con clientes.corregir sí puede registrar el logo', () async {
-    final container = containerCon(_SesionConPermiso.new);
+    final container = await containerCon(_SesionConPermiso.new);
     addTearDown(container.dispose);
 
     final archivo = '${tempDir.path}/logo.png';
@@ -128,7 +136,7 @@ void main() {
   });
 
   test('un usuario sin clientes.corregir no puede eliminar el logo ya registrado', () async {
-    final registrador = containerCon(_SesionConPermiso.new);
+    final registrador = await containerCon(_SesionConPermiso.new);
     final archivo = '${tempDir.path}/logo.png';
     File(archivo).writeAsStringSync('contenido logo');
     final registrado = await registrador.read(registrarLogoClienteAutorizadoProvider)(
@@ -140,7 +148,7 @@ void main() {
     final attachmentId = registrado.cliente.logoAttachmentId!;
     registrador.dispose();
 
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(eliminarLogoClienteAutorizadoProvider)(clienteId);
@@ -153,7 +161,7 @@ void main() {
   });
 
   test('un usuario con clientes.corregir sí puede eliminar el logo', () async {
-    final registrador = containerCon(_SesionConPermiso.new);
+    final registrador = await containerCon(_SesionConPermiso.new);
     final archivo = '${tempDir.path}/logo.png';
     File(archivo).writeAsStringSync('contenido logo');
     final registrado = await registrador.read(registrarLogoClienteAutorizadoProvider)(
@@ -165,7 +173,7 @@ void main() {
     final attachmentId = registrado.cliente.logoAttachmentId!;
     registrador.dispose();
 
-    final container = containerCon(_SesionConPermiso.new);
+    final container = await containerCon(_SesionConPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(eliminarLogoClienteAutorizadoProvider)(clienteId);

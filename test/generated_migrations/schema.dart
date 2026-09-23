@@ -81,18 +81,19 @@ import 'schema_v75.dart' as v75;
 import 'schema_v76.dart' as v76;
 import 'schema_v77.dart' as v77;
 import 'schema_v78.dart' as v78;
-import 'schema_v85.dart' as v85;
-import 'schema_v86.dart' as v86;
 import 'schema_v79.dart' as v79;
 import 'schema_v80.dart' as v80;
 import 'schema_v81.dart' as v81;
 import 'schema_v82.dart' as v82;
 import 'schema_v83.dart' as v83;
+import 'schema_v85.dart' as v85;
+import 'schema_v86.dart' as v86;
 import 'schema_v87.dart' as v87;
 import 'schema_v88.dart' as v88;
 import 'schema_v89.dart' as v89;
 import 'schema_v90.dart' as v90;
 import 'schema_v91.dart' as v91;
+import 'schema_v92.dart' as v92;
 
 class GeneratedHelper implements SchemaInstantiationHelper {
   @override
@@ -254,10 +255,6 @@ class GeneratedHelper implements SchemaInstantiationHelper {
         return v77.DatabaseAtV77(db);
       case 78:
         return v78.DatabaseAtV78(db);
-      case 85:
-        return v85.DatabaseAtV85(db);
-      case 86:
-        return v86.DatabaseAtV86(db);
       case 79:
         return v79.DatabaseAtV79(db);
       case 80:
@@ -268,6 +265,10 @@ class GeneratedHelper implements SchemaInstantiationHelper {
         return v82.DatabaseAtV82(db);
       case 83:
         return v83.DatabaseAtV83(db);
+      case 85:
+        return v85.DatabaseAtV85(db);
+      case 86:
+        return v86.DatabaseAtV86(db);
       case 87:
         return v87.DatabaseAtV87(db);
       case 88:
@@ -278,6 +279,8 @@ class GeneratedHelper implements SchemaInstantiationHelper {
         return v90.DatabaseAtV90(db);
       case 91:
         return v91.DatabaseAtV91(db);
+      case 92:
+        return v92.DatabaseAtV92(db);
       default:
         throw MissingSchemaException(version, versions);
     }
@@ -362,17 +365,18 @@ class GeneratedHelper implements SchemaInstantiationHelper {
     76,
     77,
     78,
-    85,
-    86,
     79,
     80,
     81,
     82,
     83,
+    85,
+    86,
     87,
     88,
     89,
     90,
     91,
+    92,
   ];
 }

@@ -14,6 +14,7 @@ import 'package:riseg_one/features/vehiculos/vehiculos_providers.dart'
 import '../../data/tables/conciliacion_baja_table.dart';
 import '../../data/tables/empleado_table.dart';
 import '../../domain/usecases/conciliar_baja_empleado_usecase.dart';
+import '../../domain/usecases/registrar_baja_laboral_usecase.dart';
 import '../../personal_providers.dart';
 import 'empleados_list_screen.dart' show empleadoNombreCompleto;
 
@@ -193,6 +194,13 @@ class _ConciliarBajaEmpleadoScreenState extends ConsumerState<ConciliarBajaEmple
         setState(() => _error = detalle);
       case ConciliarBajaEmpleadoAutorizadorInvalido():
         setState(() => _error = l10n.conciliacionBajaErrorAutorizadorInvalido);
+      // Etapa 3B: el rechazo por "último Maestro activo" trae su propia
+      // explicación y merece decirse con palabras. El genérico "ocurrió
+      // un error" dejaría a alguien reintentando una baja que nunca va
+      // a pasar, sin saber que lo que falta es nombrar otro Maestro.
+      case ConciliarBajaEmpleadoBajaRechazada(:final resultado)
+          when resultado is RegistrarBajaLaboralBloqueadaPorUltimoMaestro:
+        setState(() => _error = l10n.usuarioBajaLaboralUltimoMaestro(resultado.nombreUsuario));
       case ConciliarBajaEmpleadoBajaRechazada():
       case ConciliarBajaEmpleadoErrorInesperado():
         setState(() => _error = l10n.conciliacionBajaErrorInesperado);

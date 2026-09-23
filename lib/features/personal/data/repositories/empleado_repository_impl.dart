@@ -4,6 +4,8 @@ import 'package:drift/drift.dart';
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
 import 'package:riseg_one/core/database/app_database.dart';
+import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
+import 'package:riseg_one/features/usuarios/domain/repositories/usuario_repository.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/asignacion_linea_telefonica_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/domain/repositories/asignacion_linea_telefonica_repository.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
@@ -25,12 +27,25 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
     this._asignacionServicioRepository, {
     AttachmentStorage? attachmentStorage,
     AsignacionLineaTelefonicaRepository? asignacionLineaTelefonicaRepository,
+    UsuarioRepository? usuarioRepository,
   })  : _attachmentStorage = attachmentStorage,
         _asignacionLineaTelefonicaRepository =
-            asignacionLineaTelefonicaRepository ?? AsignacionLineaTelefonicaRepositoryImpl(_db);
+            asignacionLineaTelefonicaRepository ?? AsignacionLineaTelefonicaRepositoryImpl(_db),
+        _usuarioRepository = usuarioRepository ?? UsuarioRepositoryImpl(_db);
 
   final AppDatabase _db;
   final AsignacionServicioRepository _asignacionServicioRepository;
+
+  /// Etapa 3B — la cuenta de acceso entra por la misma puerta que
+  /// Servicios y Telefonía: al cerrar la relación laboral hay que
+  /// cerrar TODO lo que la persona tenía vigente, y poder entrar a
+  /// RISEG ONE es lo primero de esa lista. Hasta esta etapa nada lo
+  /// hacía y quien causaba baja conservaba acceso en silencio.
+  ///
+  /// Mismo sentido único de dependencia (Personal → Usuarios): el
+  /// repositorio de Usuarios no conoce `EmpleadoRepository`, así que no
+  /// hay ciclo.
+  final UsuarioRepository _usuarioRepository;
 
   /// Telefonía entra aquí por la misma puerta que Servicios: al cerrar
   /// la relación laboral hay que cerrar TODO lo que la persona tenía
@@ -261,6 +276,30 @@ class EmpleadoRepositoryImpl implements EmpleadoRepository {
         actorUsuarioId: actorUsuarioId,
         datosRelevantes: {'motivo': motivo},
       );
+
+      // Etapa 3B — la cuenta de acceso se cierra AQUÍ, dentro de la
+      // misma transacción que cierra el periodo laboral. No es un paso
+      // posterior que pueda fallar por su cuenta: o la persona queda de
+      // baja y sin acceso, o no queda de baja. El estado "Empleado dado
+      // de baja + Usuario activo" deja de ser alcanzable.
+      //
+      // Se delega en `UsuarioRepository.desactivar`, nunca se escribe
+      // `usuario` a mano: así la baja hereda gratis todo lo que esa
+      // operación ya garantiza —su `UsuarioEvento`, y el borrado de
+      // "Recuérdame en este equipo"— y no nace una segunda forma de
+      // desactivar una cuenta que mañana diverja de la primera.
+      //
+      // El actor es el mismo humano que confirmó la baja: la
+      // desactivación es consecuencia de SU decisión, no de un
+      // "sistema" que no existe.
+      final cuenta = await _usuarioRepository.obtenerPorEmpleadoId(empleadoId);
+      if (cuenta != null && cuenta.cicloVidaRegistro == CicloVidaRegistro.activo.name) {
+        await _usuarioRepository.desactivar(
+          usuarioId: cuenta.id,
+          actorUsuarioId: actorUsuarioId,
+          motivo: 'Baja laboral del empleado',
+        );
+      }
 
       // Nunca debe quedar "Empleado = Baja, Servicio = Todavía asignado"
       // (Resolución explícita de Marlon, Etapa 5D) — se cierra en la

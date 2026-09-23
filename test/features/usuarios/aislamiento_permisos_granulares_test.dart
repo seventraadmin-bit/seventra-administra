@@ -52,6 +52,7 @@ import 'package:riseg_one/features/personal/domain/usecases/registrar_baja_labor
 import 'package:riseg_one/features/personal/personal_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 /// Mismo mensaje que produce `autorizarUseCase` (`core/permissions/
 /// authorization_service.dart`) — reutilizado tal cual en
@@ -74,7 +75,12 @@ SesionUsuario _sesionCon(Set<String> permisos) => SesionUsuario(
       permisos: permisos,
     );
 
-ProviderContainer _container(AppDatabase db, SesionUsuario sesion) {
+Future<ProviderContainer> _container(AppDatabase db, SesionUsuario sesion) async {
+  // Etapa 3B: la autorización se revalida contra la base, así que
+  // el escenario de ESTA prueba se persiste aquí — no en el `setUp`,
+  // porque cada prueba declara su propio conjunto de permisos y
+  // sembrar uno solo volvería positivas las pruebas negativas.
+  await sembrarSesionEnBase(db, sesion);
   final container = ProviderContainer(
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
@@ -181,7 +187,7 @@ void main() {
   group('1) Egresos — puede crear pero no corregir', () {
     test('con solo egresos.crear (+finanzas.ver), corregir un Egreso se rechaza y no cambia nada', () async {
       final egresoId = await _sembrarEgreso(db);
-      final container = _container(db, _sesionCon({'finanzas.ver', 'egresos.crear'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver', 'egresos.crear'}));
 
       final resultado = await container.read(egresosControllerProvider.notifier).corregir(
             egresoId: egresoId,
@@ -197,7 +203,7 @@ void main() {
 
     test('con egresos.corregir además, sí puede corregir', () async {
       final egresoId = await _sembrarEgreso(db);
-      final container = _container(db, _sesionCon({'finanzas.ver', 'egresos.crear', 'egresos.corregir'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver', 'egresos.crear', 'egresos.corregir'}));
 
       final resultado = await container.read(egresosControllerProvider.notifier).corregir(
             egresoId: egresoId,
@@ -214,7 +220,7 @@ void main() {
   group('2) Egresos — puede corregir pero no cancelar', () {
     test('con egresos.crear+corregir (sin egresos.cancelar), cancelar se rechaza y el estatus no cambia', () async {
       final egresoId = await _sembrarEgreso(db);
-      final container = _container(db, _sesionCon({'finanzas.ver', 'egresos.crear', 'egresos.corregir'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver', 'egresos.crear', 'egresos.corregir'}));
 
       final resultado = await container.read(egresosControllerProvider.notifier).cancelar(
             egresoId: egresoId,
@@ -229,7 +235,7 @@ void main() {
 
     test('con egresos.cancelar además, sí puede cancelar', () async {
       final egresoId = await _sembrarEgreso(db);
-      final container = _container(db, _sesionCon({'finanzas.ver', 'egresos.crear', 'egresos.corregir', 'egresos.cancelar'}));
+      final container = await _container(db, _sesionCon({'finanzas.ver', 'egresos.crear', 'egresos.corregir', 'egresos.cancelar'}));
 
       final resultado = await container.read(egresosControllerProvider.notifier).cancelar(
             egresoId: egresoId,
@@ -246,7 +252,7 @@ void main() {
     test('con nomina.ver+registrarPago (sin nomina.cancelarPago), cancelar se rechaza y el estatus no cambia', () async {
       final empleadoId = await _sembrarEmpleado(db);
       final pagoNominaId = await _sembrarPagoNomina(db, empleadoId);
-      final container = _container(db, _sesionCon({'nomina.ver', 'nomina.registrarPago'}));
+      final container = await _container(db, _sesionCon({'nomina.ver', 'nomina.registrarPago'}));
 
       final resultado = await container.read(nominasControllerProvider.notifier).cancelarPago(
             pagoNominaId: pagoNominaId,
@@ -262,7 +268,7 @@ void main() {
     test('con nomina.cancelarPago además, sí puede cancelar el pago', () async {
       final empleadoId = await _sembrarEmpleado(db);
       final pagoNominaId = await _sembrarPagoNomina(db, empleadoId);
-      final container = _container(db, _sesionCon({'nomina.ver', 'nomina.registrarPago', 'nomina.cancelarPago'}));
+      final container = await _container(db, _sesionCon({'nomina.ver', 'nomina.registrarPago', 'nomina.cancelarPago'}));
 
       final resultado = await container.read(nominasControllerProvider.notifier).cancelarPago(
             pagoNominaId: pagoNominaId,
@@ -278,7 +284,7 @@ void main() {
   group('4) Personal — puede modificar pero no dar de baja', () {
     test('con personal.ver+modificar (sin personal.archivar), la Baja se rechaza y el Empleado sigue activo', () async {
       final empleadoId = await _sembrarEmpleado(db);
-      final container = _container(db, _sesionCon({'personal.ver', 'personal.modificar'}));
+      final container = await _container(db, _sesionCon({'personal.ver', 'personal.modificar'}));
 
       final resultado = await container.read(registrarBajaLaboralAutorizadoProvider)(
         empleadoId: empleadoId,
@@ -295,7 +301,7 @@ void main() {
 
     test('con personal.archivar además, sí puede dar de baja', () async {
       final empleadoId = await _sembrarEmpleado(db);
-      final container = _container(db, _sesionCon({'personal.ver', 'personal.modificar', 'personal.archivar'}));
+      final container = await _container(db, _sesionCon({'personal.ver', 'personal.modificar', 'personal.archivar'}));
 
       final resultado = await container.read(registrarBajaLaboralAutorizadoProvider)(
         empleadoId: empleadoId,
@@ -311,7 +317,7 @@ void main() {
 
   group('5) Finanzas — trabajar con Egresos no habilita registrar Deudas', () {
     test('con egresos.crear+corregir+cancelar (sin ningún deudas.*), registrar Deuda se rechaza y no crea nada', () async {
-      final container = _container(db, _sesionCon({'egresos.crear', 'egresos.corregir', 'egresos.cancelar'}));
+      final container = await _container(db, _sesionCon({'egresos.crear', 'egresos.corregir', 'egresos.cancelar'}));
 
       final resultado = await container.read(registrarDeudaAutorizadoProvider)(
         nombre: 'Préstamo de prueba',
@@ -331,7 +337,7 @@ void main() {
     });
 
     test('con deudas.crear sí puede registrar la Deuda', () async {
-      final container = _container(db, _sesionCon({'deudas.crear'}));
+      final container = await _container(db, _sesionCon({'deudas.crear'}));
 
       final resultado = await container.read(registrarDeudaAutorizadoProvider)(
         nombre: 'Préstamo de prueba',
@@ -348,7 +354,7 @@ void main() {
 
   group('6) Finanzas — gestionar Cuentas financieras no habilita Egresos (y viceversa)', () {
     test('con cuentasFinancieras.* (sin ningún egresos./ingresos./pagos./deudas.*), registrar Egreso se rechaza', () async {
-      final container = _container(
+      final container = await _container(
         db,
         _sesionCon({'cuentasFinancieras.crear', 'cuentasFinancieras.corregir', 'cuentasFinancieras.cambiarEstatus'}),
       );
@@ -370,7 +376,7 @@ void main() {
     });
 
     test('con egresos.crear además, sí puede registrar el Egreso', () async {
-      final container = _container(
+      final container = await _container(
         db,
         _sesionCon({'cuentasFinancieras.crear', 'cuentasFinancieras.corregir', 'cuentasFinancieras.cambiarEstatus', 'egresos.crear'}),
       );
@@ -387,7 +393,7 @@ void main() {
     });
 
     test('en dirección inversa: con solo egresos.crear, registrar Cuenta financiera se rechaza', () async {
-      final container = _container(db, _sesionCon({'egresos.crear'}));
+      final container = await _container(db, _sesionCon({'egresos.crear'}));
 
       final resultado = await container.read(registrarCuentaFinancieraAutorizadoProvider)(
         nombre: 'Cuenta de prueba',
@@ -406,7 +412,7 @@ void main() {
     });
 
     test('con cuentasFinancieras.crear sí puede registrar la Cuenta financiera', () async {
-      final container = _container(db, _sesionCon({'cuentasFinancieras.crear'}));
+      final container = await _container(db, _sesionCon({'cuentasFinancieras.crear'}));
 
       final resultado = await container.read(registrarCuentaFinancieraAutorizadoProvider)(
         nombre: 'Cuenta de prueba',

@@ -40,6 +40,7 @@ import 'package:riseg_one/features/telefonia/domain/usecases/cambiar_contrasena_
 import 'package:riseg_one/core/security/credential_cipher.dart';
 import 'package:riseg_one/features/inventario/data/repositories/inventario_repository_impl.dart';
 import 'package:riseg_one/features/telefonia/data/repositories/equipo_telefonico_repository_impl.dart';
+import '../../support/sesion_en_base.dart';
 
 const _mensajePermiso = 'No tiene permiso para realizar esta acción.';
 
@@ -61,10 +62,17 @@ class _SesionFija extends SesionController {
   SesionUsuario? build() => _sesion;
 }
 
-SesionUsuario _sesionCon(Set<String> permisos) => SesionUsuario(
-      usuarioId: 'usuario-prueba',
+/// Etapa 3B — [id] permite que una prueba use DOS escenarios a la vez.
+///
+/// Los permisos se revalidan contra la base, así que dos contenedores
+/// vivos al mismo tiempo con conjuntos distintos no pueden compartir
+/// cuenta: el último sembrado decidiría por ambos. Casi ninguna prueba
+/// lo necesita, y por eso el valor por omisión sigue siendo el de
+/// siempre.
+SesionUsuario _sesionCon(Set<String> permisos, {String id = 'usuario-prueba'}) => SesionUsuario(
+      usuarioId: id,
       nombre: 'Usuario de prueba',
-      nombreUsuario: 'prueba',
+      nombreUsuario: id,
       esMaestro: false,
       permisos: permisos,
     );
@@ -86,14 +94,20 @@ void main() {
 
   tearDown(() => db.close());
 
-  ProviderContainer contenedor(Set<String> permisos) {
+  Future<ProviderContainer> contenedor(Set<String> permisos, {String id = 'usuario-prueba'}) async {
     final container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
-        sesionControllerProvider.overrideWith(() => _SesionFija(_sesionCon(permisos))),
+        sesionControllerProvider.overrideWith(() => _SesionFija(_sesionCon(permisos, id: id))),
       ],
     );
     addTearDown(container.dispose);
+    // Etapa 3B: la autorización se revalida contra la base. Se
+    // persiste la sesión que ESTA prueba va a usar, leída del
+    // propio contenedor: así el escenario sembrado y el inyectado
+    // no pueden divergir, y una prueba negativa sigue sin permisos.
+    final sesionDeLaPrueba = container.read(sesionControllerProvider);
+    if (sesionDeLaPrueba != null) await sembrarSesionEnBase(db, sesionDeLaPrueba);
     return container;
   }
 
@@ -207,7 +221,7 @@ void main() {
     });
 
     test('un equipo pendiente de recuperación no puede empezar a traer una línea', () async {
-      final c = contenedor({'telefonia.ver', 'telefonia.crear', 'telefonia.modificar', 'inventario.ver'});
+      final c = await contenedor({'telefonia.ver', 'telefonia.crear', 'telefonia.modificar', 'inventario.ver'});
       final lineaId = await crearLinea(c);
       final empleado = await crearEmpleado();
       final tel = await crearTelefono();
@@ -268,7 +282,7 @@ void main() {
     }
 
     test('deja un asiento propio: actor, antes/después, equipo y la operación de Inventario que la causó', () async {
-      final c = contenedor({'telefonia.ver', 'telefonia.crear', 'telefonia.modificar', 'inventario.ver', 'inventario.corregir'});
+      final c = await contenedor({'telefonia.ver', 'telefonia.crear', 'telefonia.modificar', 'inventario.ver', 'inventario.corregir'});
       final empleadoA = await crearEmpleado(n: 1);
       final empleadoB = await crearEmpleado(n: 2);
       final armado = await armar(c, empleadoA.id);
@@ -303,7 +317,7 @@ void main() {
     });
 
     test('un cambio MANUAL de línea no produce ese asiento — así se distinguen', () async {
-      final c = contenedor({'telefonia.ver', 'telefonia.crear', 'telefonia.modificar', 'inventario.ver'});
+      final c = await contenedor({'telefonia.ver', 'telefonia.crear', 'telefonia.modificar', 'inventario.ver'});
       final lineaId = await crearLinea(c);
       final empleadoA = await crearEmpleado(n: 1);
       final empleadoB = await crearEmpleado(n: 2);
@@ -331,9 +345,11 @@ void main() {
     });
 
     test('permiso de Inventario NO concede capacidad manual sobre Telefonía', () async {
-      final soloInventario = contenedor({'inventario.ver', 'inventario.corregir', 'telefonia.ver'});
+      final soloInventario = await contenedor({'inventario.ver', 'inventario.corregir', 'telefonia.ver'});
       final maestroDeDatos =
-          contenedor({'telefonia.ver', 'telefonia.crear', 'telefonia.modificar', 'inventario.ver'});
+          // Cuenta DISTINTA: este contenedor convive con `soloInventario`
+          // dentro de la misma prueba, y cada uno necesita sus permisos.
+          await contenedor({'telefonia.ver', 'telefonia.crear', 'telefonia.modificar', 'inventario.ver'}, id: 'usuario-datos');
 
       final empleadoA = await crearEmpleado(n: 1);
       final empleadoB = await crearEmpleado(n: 2);
@@ -395,7 +411,7 @@ void main() {
     }
 
     test('se clasifica como Telefonía, nunca como Manual', () async {
-      final c = contenedor({'telefonia.ver', 'telefonia.recargar', 'finanzas.ver'});
+      final c = await contenedor({'telefonia.ver', 'telefonia.recargar', 'finanzas.ver'});
       final r = await recargarDesdeCuenta(c);
 
       final clasificado = await c.read(clasificarEgresosPorOrigenUseCaseProvider).ejecutar();
@@ -406,7 +422,7 @@ void main() {
     });
 
     test('su origen automático apunta a la línea por FK real, nunca por concepto ni importe', () async {
-      final c = contenedor({'telefonia.ver', 'telefonia.recargar', 'finanzas.ver'});
+      final c = await contenedor({'telefonia.ver', 'telefonia.recargar', 'finanzas.ver'});
       final r = await recargarDesdeCuenta(c);
 
       final origen = await c.read(obtenerOrigenAutomaticoEgresoUseCaseProvider).ejecutar(r.egresoId);
@@ -422,7 +438,7 @@ void main() {
     });
 
     test('deja de ser corregible y cancelable desde Finanzas: se resuelve desde Telefonía', () async {
-      final c = contenedor({'telefonia.ver', 'telefonia.recargar', 'finanzas.ver', 'egresos.corregir', 'egresos.cancelar'});
+      final c = await contenedor({'telefonia.ver', 'telefonia.recargar', 'finanzas.ver', 'egresos.corregir', 'egresos.cancelar'});
       final r = await recargarDesdeCuenta(c);
 
       final notifier = c.read(egresosControllerProvider.notifier);
@@ -467,7 +483,7 @@ void main() {
       final cipher = CredentialCipher(almacen: _AlmacenClaveEnMemoria());
       final unidadId = await equipoConCredencial(cipher);
 
-      final sinPermiso = contenedor({'telefonia.ver', 'telefonia.modificar'});
+      final sinPermiso = await contenedor({'telefonia.ver', 'telefonia.modificar'});
       final r = await sinPermiso.read(revelarCredencialEquipoTelefonicoAutorizadoProvider)(
         unidadId: unidadId,
         accion: AccionRevelacionCredencial.mostrar,
@@ -513,7 +529,7 @@ void main() {
   // ===============================================================
   group('§23 — invariantes financieras', () {
     test('Cuenta → exactamente UN Egreso; cancelar lo revierte una vez', () async {
-      final c = contenedor({'telefonia.ver', 'telefonia.recargar', 'finanzas.ver'});
+      final c = await contenedor({'telefonia.ver', 'telefonia.recargar', 'finanzas.ver'});
       final lineaId = await crearLinea(c);
       final cuentaId = await crearCuenta(c);
       final repo = c.read(recargaLineaTelefonicaRepositoryProvider);
@@ -536,7 +552,7 @@ void main() {
     });
 
     test('una recarga legacy sin origen no adquiere cuenta al mostrarse', () async {
-      final c = contenedor({'telefonia.ver', 'finanzas.ver'});
+      final c = await contenedor({'telefonia.ver', 'finanzas.ver'});
       final lineaId = await crearLinea(c);
       await db.into(db.recargaLineaTelefonica).insert(
             RecargaLineaTelefonicaCompanion.insert(

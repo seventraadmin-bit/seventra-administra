@@ -20,6 +20,7 @@ import 'package:riseg_one/features/usuarios/domain/usecases/buscar_auditoria_use
 import 'package:riseg_one/features/usuarios/presentation/auditoria/accion_auditoria.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMarlon extends SesionController {
   @override
@@ -69,6 +70,9 @@ void main() {
       sesionControllerProvider.overrideWith(_SesionMarlon.new),
       attachmentStorageProvider.overrideWithValue(AttachmentStorage('.')),
     ]);
+    // Etapa 3B: autorizar revalida contra la base, así que la
+    // sesión de esta prueba tiene que corresponder a una cuenta real.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'u-marlon', nombre: 'MARLON', nombreUsuario: 'marlon', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() {

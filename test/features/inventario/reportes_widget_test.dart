@@ -34,6 +34,7 @@ import 'package:riseg_one/features/inventario/presentation/articulos/articulos_l
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -196,6 +197,9 @@ void main() {
 
   testWidgets('el resumen KPI muestra Disponible/Asignado/Dañado-Perdido/Asignaciones vigentes y Valor del inventario', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarConDanoYDescuento(db);
 
@@ -224,6 +228,9 @@ void main() {
 
   testWidgets('el Historial de movimientos filtra por tipo y muestra la nota de "Últimos 100"', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarConDanoYDescuento(db);
 
@@ -261,6 +268,9 @@ void main() {
 
   testWidgets('"Valor del inventario" se oculta cuando algún artículo con existencia carece de costo', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarCostoParcialSinDescuentos(db);
 
@@ -278,6 +288,9 @@ void main() {
 
   testWidgets('Descuentos pendientes usa el empty state compacto cuando no hay ninguno', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarCostoParcialSinDescuentos(db);
 
@@ -291,6 +304,9 @@ void main() {
 
   testWidgets('Existencias actuales se filtra por nombre o folio sin tocar el resto de las secciones', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarCostoParcialSinDescuentos(db);
 

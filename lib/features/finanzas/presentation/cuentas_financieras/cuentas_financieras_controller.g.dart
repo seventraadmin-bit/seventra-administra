@@ -7,7 +7,7 @@ part of 'cuentas_financieras_controller.dart';
 // **************************************************************************
 
 String _$cuentasFinancierasControllerHash() =>
-    r'bfa0b4efc0ed221162014e813fa5b520ae3ea643';
+    r'52952ebfdc15652291ebe9c2de2dc4264e24643c';
 
 /// Controlador del listado de Cuentas financieras (Etapa 19C) — mismo
 /// diseño que `DeudasCreditoController`. El saldo por cuenta se

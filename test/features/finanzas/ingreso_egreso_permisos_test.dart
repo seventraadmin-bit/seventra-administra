@@ -25,6 +25,7 @@ import 'package:riseg_one/features/finanzas/presentation/egresos/egresos_control
 import 'package:riseg_one/features/finanzas/presentation/ingresos/ingresos_controller.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 const _mensajePermiso = 'No tiene permiso para realizar esta acción.';
 
@@ -44,7 +45,12 @@ SesionUsuario _sesionCon(Set<String> permisos, {bool esMaestro = false}) => Sesi
       permisos: permisos,
     );
 
-ProviderContainer _container(AppDatabase db, SesionUsuario sesion) {
+Future<ProviderContainer> _container(AppDatabase db, SesionUsuario sesion) async {
+  // Etapa 3B: la autorización se revalida contra la base, así que
+  // el escenario de ESTA prueba se persiste aquí — no en el `setUp`,
+  // porque cada prueba declara su propio conjunto de permisos y
+  // sembrar uno solo volvería positivas las pruebas negativas.
+  await sembrarSesionEnBase(db, sesion);
   final container = ProviderContainer(
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
@@ -78,7 +84,7 @@ void main() {
 
   group('Ingresos', () {
     test('ingresos.crear sin corregir/cancelar: SÍ registra, NO corrige, NO cancela', () async {
-      final container = _container(db, _sesionCon({'ingresos.crear'}));
+      final container = await _container(db, _sesionCon({'ingresos.crear'}));
       final controller = container.read(ingresosControllerProvider.notifier);
 
       final registrado = await controller.registrarManual(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto');
@@ -95,13 +101,13 @@ void main() {
     });
 
     test('ingresos.corregir sin crear/cancelar: SÍ corrige un Ingreso ya existente, NO registra, NO cancela', () async {
-      final registrarSetup = _container(db, _sesionCon({'ingresos.crear'}));
+      final registrarSetup = await _container(db, _sesionCon({'ingresos.crear'}));
       final registrado = await registrarSetup
           .read(ingresosControllerProvider.notifier)
           .registrarManual(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto');
       final ingresoId = (registrado as RegistrarIngresoManualExitoso).ingreso.id;
 
-      final container = _container(db, _sesionCon({'ingresos.corregir'}));
+      final container = await _container(db, _sesionCon({'ingresos.corregir'}));
       final controller = container.read(ingresosControllerProvider.notifier);
 
       final registradoSinPermiso = await controller.registrarManual(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto 2');
@@ -117,13 +123,13 @@ void main() {
     });
 
     test('ingresos.cancelar sin crear/corregir: SÍ cancela, NO registra, NO corrige', () async {
-      final registrarSetup = _container(db, _sesionCon({'ingresos.crear'}));
+      final registrarSetup = await _container(db, _sesionCon({'ingresos.crear'}));
       final registrado = await registrarSetup
           .read(ingresosControllerProvider.notifier)
           .registrarManual(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto');
       final ingresoId = (registrado as RegistrarIngresoManualExitoso).ingreso.id;
 
-      final container = _container(db, _sesionCon({'ingresos.cancelar'}));
+      final container = await _container(db, _sesionCon({'ingresos.cancelar'}));
       final controller = container.read(ingresosControllerProvider.notifier);
 
       final corregido = await controller.corregir(ingresoId: ingresoId, monto: 200000, motivo: 'Intento sin permiso');
@@ -135,7 +141,7 @@ void main() {
     });
 
     test('Maestro: acceso completo sin ninguna fila de PermisoUsuario', () async {
-      final container = _container(db, _sesionCon({}, esMaestro: true));
+      final container = await _container(db, _sesionCon({}, esMaestro: true));
       final controller = container.read(ingresosControllerProvider.notifier);
 
       final registrado = await controller.registrarManual(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto');
@@ -152,7 +158,7 @@ void main() {
 
   group('Egresos', () {
     test('egresos.crear sin corregir/cancelar: SÍ registra, NO corrige, NO cancela', () async {
-      final container = _container(db, _sesionCon({'egresos.crear'}));
+      final container = await _container(db, _sesionCon({'egresos.crear'}));
       final controller = container.read(egresosControllerProvider.notifier);
 
       final registrado = await controller.registrar(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto');
@@ -169,13 +175,13 @@ void main() {
     });
 
     test('egresos.corregir sin crear/cancelar: SÍ corrige un Egreso ya existente, NO registra, NO cancela', () async {
-      final registrarSetup = _container(db, _sesionCon({'egresos.crear'}));
+      final registrarSetup = await _container(db, _sesionCon({'egresos.crear'}));
       final registrado = await registrarSetup
           .read(egresosControllerProvider.notifier)
           .registrar(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto');
       final egresoId = (registrado as RegistrarEgresoExitoso).egreso.id;
 
-      final container = _container(db, _sesionCon({'egresos.corregir'}));
+      final container = await _container(db, _sesionCon({'egresos.corregir'}));
       final controller = container.read(egresosControllerProvider.notifier);
 
       final registradoSinPermiso = await controller.registrar(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto 2');
@@ -191,13 +197,13 @@ void main() {
     });
 
     test('egresos.cancelar sin crear/corregir: SÍ cancela, NO registra, NO corrige', () async {
-      final registrarSetup = _container(db, _sesionCon({'egresos.crear'}));
+      final registrarSetup = await _container(db, _sesionCon({'egresos.crear'}));
       final registrado = await registrarSetup
           .read(egresosControllerProvider.notifier)
           .registrar(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto');
       final egresoId = (registrado as RegistrarEgresoExitoso).egreso.id;
 
-      final container = _container(db, _sesionCon({'egresos.cancelar'}));
+      final container = await _container(db, _sesionCon({'egresos.cancelar'}));
       final controller = container.read(egresosControllerProvider.notifier);
 
       final corregido = await controller.corregir(egresoId: egresoId, monto: 200000, motivo: 'Intento sin permiso');
@@ -209,7 +215,7 @@ void main() {
     });
 
     test('Maestro: acceso completo sin ninguna fila de PermisoUsuario', () async {
-      final container = _container(db, _sesionCon({}, esMaestro: true));
+      final container = await _container(db, _sesionCon({}, esMaestro: true));
       final controller = container.read(egresosControllerProvider.notifier);
 
       final registrado = await controller.registrar(monto: 100000, fecha: DateTime(2026, 1, 1), formaPago: 'efectivo', concepto: 'Concepto');

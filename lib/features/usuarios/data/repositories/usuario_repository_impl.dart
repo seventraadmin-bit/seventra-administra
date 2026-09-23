@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 
+import '../../domain/identidad_usuario.dart';
 import '../../domain/repositories/usuario_repository.dart';
 import '../tables/usuario_table.dart';
 
@@ -24,11 +25,70 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
   }
 
   @override
+  Future<UsuarioData?> obtenerPorEmpleadoId(String empleadoId) {
+    return (_db.select(_db.usuario)..where((t) => t.empleadoId.equals(empleadoId))).getSingleOrNull();
+  }
+
+  @override
   Future<List<UsuarioData>> listar({String? cicloVidaRegistro}) {
     final query = _db.select(_db.usuario);
     if (cicloVidaRegistro != null) query.where((t) => t.cicloVidaRegistro.equals(cicloVidaRegistro));
     query.orderBy([(t) => OrderingTerm.asc(t.nombre)]);
     return query.get();
+  }
+
+  @override
+  Future<List<IdentidadUsuario>> listarConIdentidad({String? cicloVidaRegistro}) async {
+    final usuarios = await listar(cicloVidaRegistro: cicloVidaRegistro);
+    if (usuarios.isEmpty) return const [];
+
+    // Consulta 2: SOLO los Empleados realmente vinculados, en un `IN`.
+    // Si ninguna cuenta está vinculada —el caso de hoy— esta consulta
+    // ni siquiera se lanza.
+    final empleadoIds = {for (final u in usuarios) if (u.empleadoId != null) u.empleadoId!};
+    final empleados = empleadoIds.isEmpty
+        ? const <EmpleadoData>[]
+        : await (_db.select(_db.empleado)..where((t) => t.id.isIn(empleadoIds))).get();
+    final empleadoPorId = {for (final e in empleados) e.id: e};
+
+    // Consulta 3: el catálogo COMPLETO de Puestos, activos e inactivos.
+    // Un puesto desactivado después sigue siendo el puesto que la
+    // cuenta tiene — filtrar por activos era justo lo que hacía
+    // aparecer "—" en el listado (auditoría 3A).
+    final puestoPorId = {for (final p in await _db.select(_db.puesto).get()) p.id: p};
+
+    return [
+      for (final u in usuarios) _componer(u, empleadoPorId[u.empleadoId], puestoPorId),
+    ];
+  }
+
+  @override
+  Future<IdentidadUsuario?> obtenerConIdentidad(String id) async {
+    final usuario = await obtenerPorId(id);
+    if (usuario == null) return null;
+
+    final empleadoId = usuario.empleadoId;
+    final empleado = empleadoId == null
+        ? null
+        : await (_db.select(_db.empleado)..where((t) => t.id.equals(empleadoId))).getSingleOrNull();
+
+    final puestoId = empleado != null ? empleado.puestoId : usuario.puestoId;
+    final puesto = puestoId == null
+        ? null
+        : await (_db.select(_db.puesto)..where((t) => t.id.equals(puestoId))).getSingleOrNull();
+
+    return IdentidadUsuario(usuario: usuario, empleado: empleado, puesto: puesto);
+  }
+
+  /// La regla híbrida, en un solo sitio: el puesto efectivo es el del
+  /// Empleado cuando la cuenta está vinculada, y el propio cuando no.
+  IdentidadUsuario _componer(UsuarioData u, EmpleadoData? empleado, Map<String, PuestoData> puestoPorId) {
+    final puestoId = empleado != null ? empleado.puestoId : u.puestoId;
+    return IdentidadUsuario(
+      usuario: u,
+      empleado: empleado,
+      puesto: puestoId == null ? null : puestoPorId[puestoId],
+    );
   }
 
   @override
@@ -183,6 +243,55 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
         usuarioId: usuarioId,
         tipoEvento: TipoEventoUsuario.contrasenaCambiada,
         actorUsuarioId: actorUsuarioId,
+      );
+
+      return (_db.select(_db.usuario)..where((t) => t.id.equals(usuarioId))).getSingle();
+    });
+  }
+
+  @override
+  Future<UsuarioData> cambiarVinculoEmpleado({
+    required String usuarioId,
+    required String? empleadoIdNuevo,
+    String? nombreCongelado,
+    String? puestoIdCongelado,
+    String? etiquetaAnterior,
+    String? etiquetaNueva,
+    String? actorUsuarioId,
+    String? motivo,
+  }) {
+    return _db.transaction(() async {
+      final anterior = await (_db.select(_db.usuario)..where((t) => t.id.equals(usuarioId))).getSingle();
+      final desvincula = empleadoIdNuevo == null;
+
+      await (_db.update(_db.usuario)..where((t) => t.id.equals(usuarioId))).write(
+        UsuarioCompanion(
+          empleadoId: Value(empleadoIdNuevo),
+          // Al desvincular se CONGELA la identidad efectiva que la
+          // cuenta tenía hasta este instante — la del Empleado. Así la
+          // cuenta sigue llamándose igual al volverse independiente, en
+          // lugar de resucitar el nombre con el que se dio de alta hace
+          // meses. Al vincular no se toca nada: `nombre`/`puestoId`
+          // quedan como snapshot y dejan de presentarse.
+          nombre: desvincula && nombreCongelado != null ? Value(nombreCongelado) : const Value.absent(),
+          puestoId: desvincula && puestoIdCongelado != null ? Value(puestoIdCongelado) : const Value.absent(),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      await _registrarEventoInterno(
+        usuarioId: usuarioId,
+        tipoEvento: TipoEventoUsuario.vinculoEmpleadoModificado,
+        observacion: motivo,
+        actorUsuarioId: actorUsuarioId,
+        datosRelevantes: {
+          'empleadoIdAnterior': anterior.empleadoId,
+          'empleadoIdNuevo': empleadoIdNuevo,
+          // Nombres ya resueltos: el historial nunca muestra un UUID
+          // como texto principal.
+          if (etiquetaAnterior != null) 'empleadoAnterior': etiquetaAnterior,
+          if (etiquetaNueva != null) 'empleadoNuevo': etiquetaNueva,
+        },
       );
 
       return (_db.select(_db.usuario)..where((t) => t.id.equals(usuarioId))).getSingle();

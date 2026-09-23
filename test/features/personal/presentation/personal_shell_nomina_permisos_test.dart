@@ -25,6 +25,7 @@ import 'package:riseg_one/features/nomina/data/tables/nomina_table.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../../support/sesion_en_base.dart';
 
 const _folioSecreto = 'NOM-SECRETA-0001';
 
@@ -107,6 +108,10 @@ void main() {
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     await _sembrarNominaSecreta(db);
+    // Etapa 3B: autorizar revalida contra la base, así que la
+    // sesión de esta prueba tiene que corresponder a una cuenta real.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-personal', nombre: 'RRHH sin nómina', nombreUsuario: 'rrhh-sin-nomina', esMaestro: false, permisos: {'personal.ver'}, ));
   });
 
   tearDown(() => db.close());

@@ -80,6 +80,24 @@ GoRouter createAppRouter() {
       }
       if (path == '/bootstrap-maestro') return '/login';
 
+      // Etapa 3B — revalidación central de la sesión viva. Es el único
+      // punto del proyecto donde una sesión ya abierta puede dejar de
+      // estar autorizada, y está aquí por dos razones: este `redirect`
+      // ya corre en CADA navegación y ya es asíncrono, así que no hace
+      // falta ni un temporizador ni un observador nuevo; y corre
+      // ANTES de construir cualquier pantalla, así que una cuenta
+      // desactivada no alcanza a ver nada.
+      //
+      // Va justo antes de leer la sesión, nunca después: si la cuenta
+      // dejó de estar activa, `revalidar()` deja el estado en `null` y
+      // la comprobación de las líneas siguientes —la de siempre— manda
+      // a `/login` en esta misma evaluación.
+      //
+      // Coste: dos consultas por clave primaria sobre SQLite local. Lo
+      // que compra es que desactivar una cuenta (a mano o por una baja
+      // laboral) y cambiar permisos surtan efecto sin cerrar sesión.
+      await container.read(sesionControllerProvider.notifier).revalidar();
+
       final sesion = container.read(sesionControllerProvider);
       if (sesion == null) {
         return path == '/login' ? null : '/login';

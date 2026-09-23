@@ -24,21 +24,24 @@ import 'package:riseg_one/features/organizacion/domain/usecases/puesto_validator
 import 'package:riseg_one/features/organizacion/presentation/areas/area_expediente_screen.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../../support/sesion_en_base.dart';
 
-class _SesionControllerDePrueba extends SesionController {
-  _SesionControllerDePrueba({this.esMaestro = true});
-  final bool esMaestro;
-
-  @override
-  SesionUsuario? build() {
-    return SesionUsuario(
+/// La sesión del escenario, en un solo sitio: la usa el doble y la
+/// usa la siembra, así no pueden divergir.
+SesionUsuario _sesionDePrueba({required bool esMaestro}) => SesionUsuario(
       usuarioId: 'usuario-prueba',
       nombre: 'Usuario de prueba',
       nombreUsuario: 'prueba',
       esMaestro: esMaestro,
       permisos: const {},
     );
-  }
+
+class _SesionControllerDePrueba extends SesionController {
+  _SesionControllerDePrueba({this.esMaestro = true});
+  final bool esMaestro;
+
+  @override
+  SesionUsuario? build() => _sesionDePrueba(esMaestro: esMaestro);
 }
 
 Future<void> _pumpScreen(
@@ -52,6 +55,12 @@ Future<void> _pumpScreen(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+
+  // Etapa 3B: la autorización se revalida contra la base. El escenario
+  // se siembra AQUÍ, no en el `setUp`, porque este archivo usa la misma
+  // cuenta como Maestra y como no-Maestra: sembrar una sola volvería
+  // positiva la prueba que comprueba justo lo contrario.
+  await sembrarSesionEnBase(db, _sesionDePrueba(esMaestro: esMaestro));
 
   await tester.pumpWidget(
     ProviderScope(

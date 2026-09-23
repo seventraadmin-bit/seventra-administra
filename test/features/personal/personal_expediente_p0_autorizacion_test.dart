@@ -40,6 +40,7 @@ import 'package:riseg_one/features/personal/domain/usecases/retirar_empleado_ser
 import 'package:riseg_one/features/personal/personal_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionSinPermiso extends SesionController {
   @override
@@ -106,18 +107,24 @@ void main() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  ProviderContainer containerCon(SesionController Function() sesion) {
+  Future<ProviderContainer> containerCon(SesionController Function() sesion) async {
     final container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(sesion),
       attachmentStorageProvider.overrideWithValue(AttachmentStorage(tempDir.path)),
     ]);
+    // Etapa 3B: la autorización se revalida contra la base. Se
+    // persiste la sesión que ESTA prueba va a usar, leída del
+    // propio contenedor: así el escenario sembrado y el inyectado
+    // no pueden divergir, y una prueba negativa sigue sin permisos.
+    final sesionDeLaPrueba = container.read(sesionControllerProvider);
+    if (sesionDeLaPrueba != null) await sembrarSesionEnBase(db, sesionDeLaPrueba);
     return container;
   }
 
   group('actualizarFotografiaEmpleadoAutorizadoProvider (representativa a fondo)', () {
     test('un usuario sin personal.modificar no puede actualizar la fotografía', () async {
-      final container = containerCon(_SesionSinPermiso.new);
+      final container = await containerCon(_SesionSinPermiso.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/foto.png';
@@ -137,7 +144,7 @@ void main() {
     });
 
     test('un usuario con personal.modificar sí puede actualizar la fotografía', () async {
-      final container = containerCon(_SesionConPermiso.new);
+      final container = await containerCon(_SesionConPermiso.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/foto.png';
@@ -159,7 +166,7 @@ void main() {
 
   group('guardarDomicilioEmpleadoAutorizadoProvider (representativa a fondo)', () {
     test('un usuario sin personal.modificar no puede guardar el domicilio', () async {
-      final container = containerCon(_SesionSinPermiso.new);
+      final container = await containerCon(_SesionSinPermiso.new);
       addTearDown(container.dispose);
 
       final resultado = await container.read(guardarDomicilioEmpleadoAutorizadoProvider)(
@@ -183,7 +190,7 @@ void main() {
     });
 
     test('un usuario con personal.modificar sí puede guardar el domicilio', () async {
-      final container = containerCon(_SesionConPermiso.new);
+      final container = await containerCon(_SesionConPermiso.new);
       addTearDown(container.dispose);
 
       final resultado = await container.read(guardarDomicilioEmpleadoAutorizadoProvider)(
@@ -207,7 +214,7 @@ void main() {
 
   group('adjuntarDocumentoEmpleadoAutorizadoProvider (representativa a fondo)', () {
     test('un usuario sin personal.modificar no puede adjuntar un documento', () async {
-      final container = containerCon(_SesionSinPermiso.new);
+      final container = await containerCon(_SesionSinPermiso.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/ine.pdf';
@@ -226,7 +233,7 @@ void main() {
     });
 
     test('un usuario con personal.modificar sí puede adjuntar un documento', () async {
-      final container = containerCon(_SesionConPermiso.new);
+      final container = await containerCon(_SesionConPermiso.new);
       addTearDown(container.dispose);
 
       final archivo = '${tempDir.path}/ine.pdf';
@@ -254,7 +261,7 @@ void main() {
   // positivo.
 
   test('asignarEmpleadoServicioAutorizadoProvider rechaza sin personal.modificar', () async {
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(asignarEmpleadoServicioAutorizadoProvider)(
@@ -267,7 +274,7 @@ void main() {
   });
 
   test('cambiarServicioEmpleadoAutorizadoProvider rechaza sin personal.modificar', () async {
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(cambiarServicioEmpleadoAutorizadoProvider)(
@@ -280,7 +287,7 @@ void main() {
   });
 
   test('retirarEmpleadoServicioAutorizadoProvider rechaza sin personal.modificar', () async {
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(retirarEmpleadoServicioAutorizadoProvider)(
@@ -293,7 +300,7 @@ void main() {
   });
 
   test('registrarPerfilPsicologicoAutorizadoProvider rechaza sin personal.modificar', () async {
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(registrarPerfilPsicologicoAutorizadoProvider)(
@@ -306,7 +313,7 @@ void main() {
   });
 
   test('registrarEstudioSocioeconomicoAutorizadoProvider rechaza sin personal.modificar', () async {
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(registrarEstudioSocioeconomicoAutorizadoProvider)(
@@ -319,7 +326,7 @@ void main() {
   });
 
   test('registrarAntidopingAutorizadoProvider rechaza sin personal.modificar', () async {
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(registrarAntidopingAutorizadoProvider)(

@@ -28,6 +28,7 @@ import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -44,6 +45,9 @@ class _SesionMaestroDePrueba extends SesionController {
 
 Future<AppDatabase> _sembrarActividadDePrueba() async {
   final db = AppDatabase(NativeDatabase.memory());
+  // Etapa 3B: autorizar revalida contra la base, así que el
+  // escenario de la sesión tiene que estar persistido.
+  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
   final hoy = DateTime.now();
 
   final cliente = await db.into(db.cliente).insertReturning(
@@ -140,6 +144,9 @@ void main() {
 
   testWidgets('Sin ninguna actividad real, muestra el mensaje de vacío — nunca una tarjeta por tipo', (tester) async {
     final db = AppDatabase(NativeDatabase.memory());
+    // Etapa 3B: autorizar revalida contra la base, así que el
+    // escenario de la sesión tiene que estar persistido.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _pumpApp(tester, db);
 
@@ -256,6 +263,9 @@ void main() {
       '5 pagos del mismo Cliente el mismo día se agrupan en una sola fila con el conteo y la suma reales',
       (tester) async {
         final db = AppDatabase(NativeDatabase.memory());
+        // Etapa 3B: autorizar revalida contra la base, así que el
+        // escenario de la sesión tiene que estar persistido.
+        await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
         addTearDown(db.close);
         final hoy = DateTime.now();
         final cliente = await db.into(db.cliente).insertReturning(
@@ -289,6 +299,9 @@ void main() {
       '2 pagos de Clientes distintos el mismo día NO se agrupan entre sí (eventos distintos)',
       (tester) async {
         final db = AppDatabase(NativeDatabase.memory());
+        // Etapa 3B: autorizar revalida contra la base, así que el
+        // escenario de la sesión tiene que estar persistido.
+        await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
         addTearDown(db.close);
         final hoy = DateTime.now();
         final clienteA = await db.into(db.cliente).insertReturning(
@@ -331,6 +344,9 @@ void main() {
       '4 movimientos de salidaAsignacion el mismo día se agrupan; un movimiento de tipo distinto el mismo día NO se mezcla con ellos',
       (tester) async {
         final db = AppDatabase(NativeDatabase.memory());
+        // Etapa 3B: autorizar revalida contra la base, así que el
+        // escenario de la sesión tiene que estar persistido.
+        await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
         addTearDown(db.close);
         final hoy = DateTime.now();
         final categoria = await db.into(db.categoriaArticulo).insertReturning(
@@ -378,6 +394,9 @@ void main() {
       'Requiere atención → tarjeta con utilización alta navega (push) al expediente de ESA Deuda por ID, nunca por coincidencia de nombre',
       (tester) async {
         final db = AppDatabase(NativeDatabase.memory());
+        // Etapa 3B: autorizar revalida contra la base, así que el
+        // escenario de la sesión tiene que estar persistido.
+        await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
         addTearDown(db.close);
         final egresoRepo = EgresoRepositoryImpl(db);
         final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
@@ -422,6 +441,9 @@ void main() {
   group('Etapa 20 — Saldo disponible de caja (5º KPI)', () {
     testWidgets('con cuentas financieras activas configuradas, muestra el saldo real derivado', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
+      // Etapa 3B: autorizar revalida contra la base, así que el
+      // escenario de la sesión tiene que estar persistido.
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
       await db.into(db.cuentaFinanciera).insert(
             CuentaFinancieraCompanion.insert(
@@ -443,6 +465,9 @@ void main() {
 
     testWidgets('sin ninguna cuenta financiera activa, muestra el estado honesto — nunca \$0.00 disfrazado de saldo real', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
+      // Etapa 3B: autorizar revalida contra la base, así que el
+      // escenario de la sesión tiene que estar persistido.
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
 
       await _pumpApp(tester, db);
@@ -457,6 +482,9 @@ void main() {
   group('Etapa "Dashboard: posición financiera" — Crédito disponible (6º KPI) y "pago vencido"', () {
     testWidgets('con TDC activas, suma el disponible de todas — nunca mezclado con la caja', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
+      // Etapa 3B: autorizar revalida contra la base, así que el
+      // escenario de la sesión tiene que estar persistido.
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
       final egresoRepo = EgresoRepositoryImpl(db);
       final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
@@ -487,6 +515,9 @@ void main() {
 
     testWidgets('sin ninguna TDC activa, muestra el estado honesto — nunca \$0.00 disfrazado de disponible real', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
+      // Etapa 3B: autorizar revalida contra la base, así que el
+      // escenario de la sesión tiene que estar persistido.
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
 
       await _pumpApp(tester, db);
@@ -499,6 +530,9 @@ void main() {
 
     testWidgets('una TDC con un ciclo cubierto viejo (ciclos reales saltados) aparece en "Requiere atención" como pago vencido', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
+      // Etapa 3B: autorizar revalida contra la base, así que el
+      // escenario de la sesión tiene que estar persistido.
+      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
       final egresoRepo = EgresoRepositoryImpl(db);
       final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);

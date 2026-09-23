@@ -24,6 +24,7 @@ import 'package:riseg_one/features/compras/presentation/compras_controller.dart'
 import 'package:riseg_one/features/finanzas/data/tables/pago_table.dart' show FormaPago;
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 class _SesionSinCorregir extends SesionController {
   @override
@@ -73,6 +74,12 @@ void main() {
   tearDown(() => db.close());
 
   test('tener compras.crear y compras.cancelar (sin compras.corregir) NO permite corregir el origen financiero', () async {
+    // Etapa 3B: la cuenta se persiste CON sus permisos reales —crear,
+    // cancelar y ver— y sin `compras.corregir`. Importa que exista: si
+    // no existiera, la denegación vendría de "cuenta desconocida" y
+    // esta prueba pasaría por el motivo equivocado, dejando de vigilar
+    // lo único que vino a vigilar.
+    await sembrarSesionEnBase(db, _SesionSinCorregir().build()!);
     final container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(db), sesionControllerProvider.overrideWith(_SesionSinCorregir.new)],
     );
@@ -98,6 +105,9 @@ void main() {
             passwordHash: 'x',
           ),
         );
+    // Etapa 3B: el permiso que esta prueba SÍ concede tiene que
+    // existir en la base para que la autorización lo vea.
+    await sembrarSesionEnBase(db, _SesionSoloCorregir().build()!);
     final container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(db), sesionControllerProvider.overrideWith(_SesionSoloCorregir.new)],
     );
@@ -115,6 +125,9 @@ void main() {
   });
 
   test('compras.corregir NO alcanza para cancelar — compras.cancelar sigue siendo un permiso aparte', () async {
+    // Etapa 3B: el permiso que esta prueba SÍ concede tiene que
+    // existir en la base para que la autorización lo vea.
+    await sembrarSesionEnBase(db, _SesionSoloCorregir().build()!);
     final container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(db), sesionControllerProvider.overrideWith(_SesionSoloCorregir.new)],
     );

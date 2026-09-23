@@ -26,6 +26,7 @@ import 'package:riseg_one/features/organizacion/domain/usecases/obtener_expedien
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 /// `AttachmentStorage.abrir` invocaría `cmd /c start` real — se
 /// sobreescribe para solo registrar la llamada, mismo patrón que
@@ -131,8 +132,8 @@ void main() {
   // que `attachmentStorageProvider` en los demás archivos de prueba de
   // autorización. La autorización en sí (`autorizarUseCase` +
   // `organizacion.ver`) sigue viniendo 100% del contenedor real.
-  ProviderContainer containerCon(SesionController Function() sesion) {
-    return ProviderContainer(overrides: [
+  Future<ProviderContainer> containerCon(SesionController Function() sesion) async {
+    final container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sesionControllerProvider.overrideWith(sesion),
       generarTarjetaFiscalPdfUseCaseProvider.overrideWithValue(
@@ -145,10 +146,17 @@ void main() {
         ),
       ),
     ]);
+    // Etapa 3B: la autorización se revalida contra la base. Se
+    // persiste la sesión que ESTA prueba va a usar, leída del
+    // propio contenedor: el escenario sembrado y el inyectado no
+    // pueden divergir, y una prueba negativa sigue sin permisos.
+    final sesionDeLaPrueba = container.read(sesionControllerProvider);
+    if (sesionDeLaPrueba != null) await sembrarSesionEnBase(db, sesionDeLaPrueba);
+    return container;
   }
 
   test('un usuario sin organizacion.ver no puede generar la tarjeta fiscal', () async {
-    final container = containerCon(_SesionSinPermiso.new);
+    final container = await containerCon(_SesionSinPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(generarTarjetaFiscalPdfAutorizadoProvider)();
@@ -161,7 +169,7 @@ void main() {
   });
 
   test('un usuario con organizacion.ver sí puede generar la tarjeta fiscal', () async {
-    final container = containerCon(_SesionConPermiso.new);
+    final container = await containerCon(_SesionConPermiso.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(generarTarjetaFiscalPdfAutorizadoProvider)();
@@ -172,7 +180,7 @@ void main() {
   });
 
   test('el Usuario Maestro (sin filas de PermisoUsuario) sí puede generar la tarjeta fiscal', () async {
-    final container = containerCon(_SesionMaestro.new);
+    final container = await containerCon(_SesionMaestro.new);
     addTearDown(container.dispose);
 
     final resultado = await container.read(generarTarjetaFiscalPdfAutorizadoProvider)();
@@ -181,7 +189,7 @@ void main() {
   });
 
   test('generar la tarjeta fiscal nunca muta Empresa ni crea ningún Attachment', () async {
-    final container = containerCon(_SesionConPermiso.new);
+    final container = await containerCon(_SesionConPermiso.new);
     addTearDown(container.dispose);
 
     final empresaAntes = await container.read(empresaRepositoryProvider).obtenerActiva();

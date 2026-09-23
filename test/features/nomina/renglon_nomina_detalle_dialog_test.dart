@@ -37,34 +37,35 @@ import 'package:riseg_one/features/personal/data/repositories/asignacion_servici
 import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
-class _SesionControllerDePrueba extends SesionController {
+/// Maestro: el escenario POSITIVO por omisión.
+const _sesionMaestra = SesionUsuario(
+  usuarioId: 'usuario-prueba',
+  nombre: 'Usuario de prueba',
+  nombreUsuario: 'prueba',
+  esMaestro: true,
+  permisos: {},
+);
+
+class _SesionDePrueba extends SesionController {
+  _SesionDePrueba(this._sesion);
+  final SesionUsuario _sesion;
+
   @override
-  SesionUsuario? build() {
-    return const SesionUsuario(
-      usuarioId: 'usuario-prueba',
-      nombre: 'Usuario de prueba',
-      nombreUsuario: 'prueba',
-      esMaestro: true,
-      permisos: {},
-    );
-  }
+  SesionUsuario? build() => _sesion;
 }
 
 /// Etapa 4 — sin `nomina.corregir` (y sin ser Maestro): una Nómina
 /// cerrada/pagada debe seguir siendo estrictamente de solo lectura.
-class _SesionSinCorregirDePrueba extends SesionController {
-  @override
-  SesionUsuario? build() {
-    return const SesionUsuario(
-      usuarioId: 'usuario-prueba',
-      nombre: 'Usuario de prueba',
-      nombreUsuario: 'prueba',
-      esMaestro: false,
-      permisos: {'nomina.ver', 'nomina.modificar'},
-    );
-  }
-}
+/// Es el escenario NEGATIVO del archivo.
+const _sesionSinCorregir = SesionUsuario(
+  usuarioId: 'usuario-prueba',
+  nombre: 'Usuario de prueba',
+  nombreUsuario: 'prueba',
+  esMaestro: false,
+  permisos: {'nomina.ver', 'nomina.modificar'},
+);
 
 Finder _campoTexto(String label) => find.descendant(
       of: find.byWidgetPredicate((w) => w is RisegTextField && w.label == label),
@@ -118,6 +119,7 @@ void main() {
     final generado = (await generarNomina.ejecutar(anio: 2026, mes: 8, tipo: TipoPeriodoNomina.primera)) as GenerarNominaExitoso;
     nominaId = generado.nomina.id;
     nominaEmpleadoId = (await nominaRepo.listarEmpleados(generado.nomina.id)).single.id;
+
   });
 
   tearDown(() => db.close());
@@ -126,8 +128,14 @@ void main() {
     WidgetTester tester, {
     Size tamano = const Size(1440, 1400),
     bool nominaCerrada = false,
-    SesionController Function()? sesion,
+    // Etapa 3B: la autorización se revalida contra la base, así que el
+    // escenario se SIEMBRA aquí y no en el `setUp` — este archivo usa
+    // el mismo `usuarioId` para el caso Maestro y para el caso sin
+    // `nomina.corregir`, y sembrar uno solo volvería positiva la prueba
+    // negativa.
+    SesionUsuario sesion = _sesionMaestra,
   }) async {
+    await sembrarSesionEnBase(db, sesion);
     tester.view.physicalSize = tamano;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -137,7 +145,7 @@ void main() {
       ProviderScope(
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
-          sesionControllerProvider.overrideWith(sesion ?? _SesionControllerDePrueba.new),
+          sesionControllerProvider.overrideWith(() => _SesionDePrueba(sesion)),
         ],
         child: MaterialApp(
           theme: AppTheme.light(),
@@ -222,7 +230,7 @@ void main() {
     'sin botón "Guardar cambios" — solo lectura',
     (tester) async {
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
-      await abrirDialogo(tester, nominaCerrada: true, sesion: _SesionSinCorregirDePrueba.new);
+      await abrirDialogo(tester, nominaCerrada: true, sesion: _sesionSinCorregir);
 
       expect(find.text(l10n.renglonNominaDetalleBotonGuardarCambios), findsNothing);
       expect(_botonSegmento(l10n.renglonNominaDetalleAsistenciaTabFaltas), findsNothing, reason: 'el selector Capturar por no aparece en modo lectura');
@@ -290,7 +298,7 @@ void main() {
     });
 
     testWidgets('ancho mínimo razonable soportado, modo solo lectura (Nómina cerrada, sin nomina.corregir)', (tester) async {
-      await abrirDialogo(tester, tamano: const Size(480, 1400), nominaCerrada: true, sesion: _SesionSinCorregirDePrueba.new);
+      await abrirDialogo(tester, tamano: const Size(480, 1400), nominaCerrada: true, sesion: _sesionSinCorregir);
       expect(tester.takeException(), isNull);
     });
 
@@ -327,11 +335,12 @@ void main() {
         ],
       );
 
+      await sembrarSesionEnBase(db, _sesionMaestra);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
-            sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
+            sesionControllerProvider.overrideWith(() => _SesionDePrueba(_sesionMaestra)),
           ],
           child: MaterialApp.router(
             theme: AppTheme.light(),

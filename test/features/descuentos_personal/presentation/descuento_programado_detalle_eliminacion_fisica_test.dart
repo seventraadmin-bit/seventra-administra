@@ -27,6 +27,7 @@ import 'package:riseg_one/features/personal/data/repositories/asignacion_servici
 import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -140,6 +141,10 @@ void main() {
     await db.into(db.usuario).insert(
           UsuarioCompanion.insert(id: const Value('usuario-maestro'), nombre: 'Maestro de prueba', nombreUsuario: 'maestro', passwordHash: 'x'),
         );
+    // Etapa 3B: autorizar revalida contra la base, así que la
+    // sesión de esta prueba tiene que corresponder a una cuenta real.
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-normal', nombre: 'Usuario de prueba', nombreUsuario: 'normal', esMaestro: false, permisos: {'descuentos.ver', 'descuentos.crear', 'descuentos.corregir', 'descuentos.cancelar'}, ));
   });
 
   tearDown(() => db.close());

@@ -3,6 +3,7 @@ import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 
 import 'package:riseg_one/features/inventario/domain/repositories/asignacion_repository.dart';
 import 'package:riseg_one/features/vehiculos/domain/repositories/asignacion_vehiculo_repository.dart';
+import 'package:riseg_one/features/usuarios/domain/repositories/usuario_repository.dart';
 
 import '../repositories/empleado_repository.dart';
 import 'empleado_validator.dart';
@@ -35,6 +36,22 @@ class RegistrarBajaLaboralResguardosSinConciliar extends RegistrarBajaLaboralRes
   final List<String> asignacionVehiculoIds;
 }
 
+/// Etapa 3B — la persona tiene la única cuenta Maestra activa de RISEG
+/// ONE, y la baja la desactivaría.
+///
+/// Se bloquea la baja ENTERA, sin escribir nada. Las alternativas eran
+/// peores: completar la baja dejando el sistema sin acceso
+/// administrativo (nadie podría siquiera arreglarlo después), o
+/// completarla sin desactivar la cuenta, que es exactamente el agujero
+/// silencioso que esta etapa cierra. Quien decide es una persona: que
+/// nombre a otro Maestro, o que resuelva esa cuenta, y entonces vuelva.
+class RegistrarBajaLaboralBloqueadaPorUltimoMaestro extends RegistrarBajaLaboralResultado {
+  RegistrarBajaLaboralBloqueadaPorUltimoMaestro(this.nombreUsuario);
+
+  /// Para poder nombrar la cuenta en el mensaje — nunca el `usuarioId`.
+  final String nombreUsuario;
+}
+
 class RegistrarBajaLaboralErrorInesperado extends RegistrarBajaLaboralResultado {
   RegistrarBajaLaboralErrorInesperado(this.mensaje);
   final String mensaje;
@@ -56,8 +73,14 @@ class RegistrarBajaLaboralUseCase {
     this._repository,
     this._validator,
     this._asignacionRepository,
-    this._asignacionVehiculoRepository,
-  );
+    this._asignacionVehiculoRepository, {
+    required UsuarioRepository usuarioRepository,
+  }) : _usuarioRepository = usuarioRepository;
+
+  /// Etapa 3B — para el invariante "nunca sin Maestro activo". Es una
+  /// dependencia obligatoria, no opcional con un `null` permisivo: una
+  /// baja que no pueda comprobar esto no debe poder ejecutarse.
+  final UsuarioRepository _usuarioRepository;
 
   final EmpleadoRepository _repository;
   final EmpleadoValidator _validator;
@@ -106,6 +129,20 @@ class RegistrarBajaLaboralUseCase {
         vehiculosSinResolver.where((a) => a.pendienteRecuperacionDesde == null).map((a) => a.id).toList();
     if (inventarioPendiente.isNotEmpty || vehiculoPendiente.isNotEmpty) {
       return RegistrarBajaLaboralResguardosSinConciliar(inventarioPendiente, vehiculoPendiente);
+    }
+
+    // Etapa 3B — la baja desactivará la cuenta de esta persona (ver
+    // `EmpleadoRepositoryImpl.registrarBajaLaboral`). Si esa cuenta es
+    // el último Maestro activo, completar la baja dejaría a RISEG ONE
+    // sin nadie capaz de administrarlo. Se comprueba ANTES de escribir
+    // nada: el invariante se defiende aquí, no confiando en que la
+    // pantalla avise.
+    final cuenta = await _usuarioRepository.obtenerPorEmpleadoId(empleadoId);
+    if (cuenta != null && cuenta.cicloVidaRegistro == 'activo' && cuenta.esMaestro) {
+      final otrosMaestros = await _usuarioRepository.contarMaestrosActivos(excluirUsuarioId: cuenta.id);
+      if (otrosMaestros == 0) {
+        return RegistrarBajaLaboralBloqueadaPorUltimoMaestro(cuenta.nombreUsuario);
+      }
     }
 
     try {

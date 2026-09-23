@@ -19,6 +19,7 @@ import 'package:riseg_one/features/finanzas/finanzas_providers.dart';
 import 'package:riseg_one/features/finanzas/presentation/pagos/pagos_controller.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
+import '../../support/sesion_en_base.dart';
 
 const _mensajePermiso = 'No tiene permiso para realizar esta acción.';
 
@@ -38,7 +39,12 @@ SesionUsuario _sesionCon(Set<String> permisos) => SesionUsuario(
       permisos: permisos,
     );
 
-ProviderContainer _container(AppDatabase db, SesionUsuario sesion) {
+Future<ProviderContainer> _container(AppDatabase db, SesionUsuario sesion) async {
+  // Etapa 3B: la autorización se revalida contra la base, así que
+  // el escenario de ESTA prueba se persiste aquí — no en el `setUp`,
+  // porque cada prueba declara su propio conjunto de permisos y
+  // sembrar uno solo volvería positivas las pruebas negativas.
+  await sembrarSesionEnBase(db, sesion);
   final container = ProviderContainer(
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
@@ -89,7 +95,7 @@ void main() {
 
   test('pagos.corregir sin pagos.cancelar: SÍ puede corregir, NO puede cancelar', () async {
     final pagoId = await _crearPagoDePrueba(db);
-    final container = _container(db, _sesionCon({'pagos.corregir'}));
+    final container = await _container(db, _sesionCon({'pagos.corregir'}));
 
     final corregido = await container.read(pagosControllerProvider.notifier).corregir(
           pagoId: pagoId,
@@ -111,7 +117,7 @@ void main() {
 
   test('pagos.cancelar sin pagos.corregir: SÍ puede cancelar, NO puede corregir', () async {
     final pagoId = await _crearPagoDePrueba(db);
-    final container = _container(db, _sesionCon({'pagos.cancelar'}));
+    final container = await _container(db, _sesionCon({'pagos.cancelar'}));
 
     final corregido = await container.read(pagosControllerProvider.notifier).corregir(
           pagoId: pagoId,
